@@ -99,7 +99,7 @@ public class Frame extends Lockable<Frame> {
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( Vec vec : vecs ) assert DKV.get(vec._key) != null : "null vec: "+vec._key;
+    for( Vec vec : vecs ) assert DKV.get(vec._key) != null : " null vec: "+vec._key;
 
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
@@ -1115,8 +1115,18 @@ public class Frame extends Lockable<Frame> {
    * @return The fresh copy of fr.
    */
   public Frame deepCopy(String keyName) {
-    DoCopyFrame t = new DoCopyFrame(this.vecs()).doAll(this);
-    return keyName==null ? new Frame(names(),t._vecs) : new Frame(Key.make(keyName),names(),t._vecs);
+    return new MRTask() {
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        for(int col=0;col<cs.length;++col)
+          for(int row=0;row<cs[0]._len;++row) {
+            if( cs[col].isNA(row) ) ncs[col].addNA();
+            else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
+            else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
+            else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
+            else ncs[col].addNum(cs[col].atd(row));
+          }
+      }
+    }.doAll(this.numCols(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
   }
 
   // _vecs put into kv store already
@@ -1208,13 +1218,15 @@ public class Frame extends Lockable<Frame> {
     return new CSVStream(headers, hex_string);
   }
 
-  private class CSVStream extends InputStream {
+  public class CSVStream extends InputStream {
     private final boolean _hex_string;
     byte[] _line;
     int _position;
+    public int _curChkIdx;
     long _row;
 
     CSVStream(boolean headers, boolean hex_string) {
+      _curChkIdx=0;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
@@ -1234,6 +1246,7 @@ public class Frame extends Lockable<Frame> {
         StringBuilder sb = new StringBuilder();
         Vec vs[] = vecs();
         for( int i = 0; i < vs.length; i++ ) {
+          _curChkIdx = vs[0].elem2ChunkIdx(_row);
           if(i > 0) sb.append(',');
           if(!vs[i].isNA(_row)) {
             if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');

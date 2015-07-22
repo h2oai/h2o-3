@@ -308,6 +308,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' @param ... Extra args passed in for use by other functions.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -315,6 +316,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, data=prostate.hex)
+#' }
 #' @export
 h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   # Some parameter checking
@@ -375,6 +377,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -385,6 +388,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.auc(perf)
+#' }
 #' @export
 h2o.auc <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AUC )
@@ -431,6 +435,7 @@ h2o.aic <- function(object, valid=FALSE, ...) {
 #' @param \dots extra arguments to be passed if `object` is of type
 #'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -439,6 +444,7 @@ h2o.aic <- function(object, valid=FALSE, ...) {
 #' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
 #'
 #' h2o.r2(m)
+#' }
 #' @export
 h2o.r2 <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$r2 )
@@ -467,6 +473,7 @@ h2o.r2 <- function(object, valid=FALSE, ...) {
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #'          threshold metrics.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -477,6 +484,7 @@ h2o.r2 <- function(object, valid=FALSE, ...) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.giniCoef(perf)
+#' }
 #' @export
 h2o.giniCoef <- function(object, valid=FALSE, ...) {
   if(is(object, "H2OModelMetrics")) return( object@metrics$Gini )
@@ -534,6 +542,7 @@ h2o.coef_norm <- function(object) {
 #'          \code{\link{h2o.metric}} for the various threshold metrics. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -544,6 +553,7 @@ h2o.coef_norm <- function(object) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.mse(perf)
+#' }
 #' @export
 h2o.mse <- function(object, valid=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$MSE )
@@ -711,6 +721,7 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -721,6 +732,7 @@ h2o.hit_ratio_table <- function(object, valid=FALSE, ...) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.F1(perf)
+#' }
 #' @export
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
@@ -1082,6 +1094,7 @@ h2o.null_dof <- function(object, valid=FALSE, ...) {
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -1092,6 +1105,7 @@ h2o.null_dof <- function(object, valid=FALSE, ...) {
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, hex)
 #' h2o.confusionMatrix(perf)
+#' }
 #' @export
 setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
@@ -1223,7 +1237,7 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
       stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
 
-    sdevH2O <- as.numeric(x@model$pc_importance[1,])
+    sdevH2O <- h2o.sdev(x)
     if(missing(main))
       main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
     if(type == "barplot")
@@ -1232,6 +1246,17 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
       lines(sdevH2O[1:npcs]^2, main = main, ylab = "Variances", ...)
     else
       stop("type must be either 'barplot' or 'lines'")
+}
+
+#'
+#' Retrieve the standard deviations of principal components
+#'
+#' @param object An \linkS4class{H2ODimReductionModel} object.
+#' @export
+h2o.sdev <- function(object) {
+  if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
+    stop("object must be a H2O PCA model")
+  as.numeric(object@model$importance[1,])
 }
 
 # Handles ellipses

@@ -13,13 +13,7 @@ import water.Job;
 public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJobV3<J, S>> extends JobV3<J, S> {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
   public ModelParametersSchema parameters;
-
-  @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase messages[];
-
-  @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
-  public int error_count;
-
+  
   @Override
   public S fillFromImpl(ModelBuilder builder) {
     super.fillFromImpl((Job)builder);

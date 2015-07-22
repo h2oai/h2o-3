@@ -1,27 +1,30 @@
 package water.parser;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.zip.*;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.exceptions.H2OParseException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingSetInt;
 import water.util.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash

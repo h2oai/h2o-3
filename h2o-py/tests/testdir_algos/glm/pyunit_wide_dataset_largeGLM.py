@@ -14,8 +14,7 @@ def wide_dataset_large(ip,port):
     trainData = h2o.H2OFrame(np.column_stack((trainDataResponse, trainDataFeatures)).tolist())
 
     print("Run model on 3250 columns of Arcene with strong rules off.")
-    model = h2o.glm(x=trainData[1:3250], y=trainData[0].asfactor(), family="binomial", lambda_search=False, alpha=[1],
-                    use_all_factor_levels=True)
+    model = h2o.glm(x=trainData[1:3250], y=trainData[0].asfactor(), family="binomial", lambda_search=False, alpha=[1])
 
     print("Test model on validation set.")
     validDataResponse = np.genfromtxt(h2o.locate("smalldata/arcene/arcene_valid_labels.labels"), delimiter=' ')

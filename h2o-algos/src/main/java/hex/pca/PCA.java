@@ -12,7 +12,7 @@ import hex.glrm.GLRMModel;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV99;
+import hex.schemas.PCAV3;
 
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
@@ -39,7 +39,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV99();
+    return new PCAV3();
   }
 
   @Override
@@ -54,10 +54,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelCategory[] can_build() {
-    return new ModelCategory[]{ModelCategory.Clustering};
+    return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   @Override
   protected void checkMemoryFootPrint() {
@@ -83,9 +83,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
-    // if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
-    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
-      _parms._loading_name = "PCALoading_" + Key.rand();
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
@@ -128,15 +125,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         prop_var[i] = vars[i] / pca._output._total_variance;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
       }
-      pca._output._pc_importance = new TwoDimTable("Importance of components", null,
+      pca._output._importance = new TwoDimTable("Importance of components", null,
               new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][]{pca._output._std_deviation, prop_var, cum_var});
-      pca._output._model_summary = pca._output._pc_importance;
+      pca._output._model_summary = pca._output._importance;
     }
 
     protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {
       // Fill PCA model with additional info needed for scoring
-      if(_parms._keep_loading) pca._output._loading_key = svd._output._u_key;
       pca._output._normSub = svd._output._normSub;
       pca._output._normMul = svd._output._normMul;
       pca._output._permutation = svd._output._permutation;
@@ -209,8 +205,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     @Override protected void compute2() {
       PCAModel model = null;
       DataInfo dinfo = null;
-      DataInfo xinfo = null;
-      Frame x = null;
 
       try {
         init(true);   // Initialize parameters
@@ -257,8 +251,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Calculate standard deviation and projection as well
           parms._only_v = false;
-          parms._u_name = _parms._loading_name;
-          parms._keep_u = _parms._keep_loading;
+          parms._keep_u = false;
 
           SVDModel svd = null;
           SVD job = null;
@@ -340,8 +333,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         _parms.read_unlock_frames(PCA.this);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
-        if (xinfo != null) xinfo.remove();
-        if (x != null && !_parms._keep_loading) x.delete();
       }
       tryComplete();
     }

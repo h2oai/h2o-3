@@ -300,12 +300,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         switch( type ) {  // ordered by "popularity"
           case AGG.T_AVG: /* fall through */
-          case AGG.T_SUM: setSum(  g,c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits,i);   break;
+          case AGG.T_SUM: setSum(g, c == null ? Double.doubleToRawLongBits(that._sum[i]) : bits, i);   break;
           case AGG.T_MIN: setMin(  g,c==null ? Double.doubleToRawLongBits(that._min[i]) : bits,i);   break;
           case AGG.T_MAX: setMax(  g,c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
-          case AGG.T_VAR: /* fall through */
-          case AGG.T_SD:
-          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i);   break;
+          case AGG.T_VAR:
+          case AGG.T_SD:  setSum(g, c == null ? Double.doubleToRawLongBits(that._sum[i]) : bits, i); /* fall through */
+          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i, c==null);   break;
           case AGG.T_F:   setFirst(g,c==null ? that._f[i] : chkRow+rowOffset,i);   break;
           case AGG.T_L:   setLast(g, c == null ? that._l[i] : chkRow + rowOffset, i);   break;
           default:
@@ -343,11 +343,16 @@ import java.util.concurrent.atomic.AtomicInteger;
       while(!G.CAS_sum(g,G.doubleRawIdx(c),Double.doubleToRawLongBits(o),Double.doubleToRawLongBits(o+v)))
         o=g._sum[c];
     }
-    private static void setSS(G g, long vv, int c) {
+    private static void setSS(G g, long vv, int c, boolean isReduce) {
       double v = Double.longBitsToDouble(vv);
       double o = g._ss[c];
-      while(!G.CAS_ss(g, G.doubleRawIdx(c), Double.doubleToRawLongBits(o), Double.doubleToRawLongBits(o + v * v)))
-        o=g._ss[c];
+      if( isReduce ) {
+        while(!G.CAS_ss(g,G.doubleRawIdx(c), Double.doubleToRawLongBits(o), Double.doubleToRawLongBits(o+v)))
+          o = g._ss[c];
+      } else {
+        while (!G.CAS_ss(g, G.doubleRawIdx(c), Double.doubleToRawLongBits(o), Double.doubleToRawLongBits(o + v * v)))
+          o = g._ss[c];
+      }
     }
     private static void setNA(G g, long n, int c) {
       long o = g._NA[c];

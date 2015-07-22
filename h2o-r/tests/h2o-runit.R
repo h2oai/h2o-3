@@ -141,7 +141,10 @@ root.path  <- locate("h2o-package/R/", "h2o-r")
 utils.path <- locate("tests/Utils/", "h2o-r")
 src.utils(utils.path)
 src(root.path)   # uncomment to source R code directly  (overrides package load)
-
+library(h2o)
+h2o.init(ip            = ipPort[[1]],
+         port          = ipPort[[2]],
+         startH2O      = FALSE)
 
 #The master seed is set by the runnerSetup.R script.
 #It serves as a way to reproduce all of the tests

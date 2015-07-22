@@ -1,5 +1,6 @@
 package water;
 
+import com.brsanthu.googleanalytics.GoogleAnalytics;
 import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
@@ -16,8 +17,8 @@ import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.GAUtils;
 import water.util.Log;
-import water.util.PrettyPrint;
 import water.util.OSUtils;
+import water.util.PrettyPrint;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
 import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
@@ -631,7 +631,7 @@ final public class H2O {
     apisRegistered = true;
 
     long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered REST APIs in: " + registerApisMillis + "mS");
+    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "mS");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -1521,7 +1521,7 @@ final public class H2O {
               defReq.clientId(bakedGaId);
             }
           }
-        } catch (IOException ignore) {}
+        } catch (Exception ignore) {}
         defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {

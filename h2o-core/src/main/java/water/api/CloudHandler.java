@@ -6,6 +6,11 @@ import water.Paxos;
 
 class CloudHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public CloudV3 head(int version, CloudV3 cloud) {
+    return cloud;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public CloudV3 status(int version, CloudV3 cloud) {
     // TODO: this really ought to be in the water package
     cloud.version = H2O.ABV.projectVersion();
@@ -19,6 +24,7 @@ class CloudHandler extends Handler {
     }
 
     cloud.cloud_name = H2O.ARGS.name;
+    cloud.is_client  = H2O.ARGS.client;
     cloud.cloud_size = H2O.CLOUD.size();
     cloud.cloud_uptime_millis = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
     cloud.consensus = Paxos._commonKnowledge;

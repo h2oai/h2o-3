@@ -484,8 +484,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
           float gf = (float)(_parms._learn_rate * m1class * gp.gamma(k,i));
-          if( gp._denom[k][i]==0 ) // Bad split; all corrections sum to zero
-            gf = (float)(Math.signum(gp._num[k][i])*1e4);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -537,8 +535,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       private double _num[/*tree/klass*/][/*tree-relative node-id*/];
       private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
       double gamma(int tree, int nid) {
+        if (_denom[tree][nid] == 0) return 0;
         double g = _num[tree][nid]/ _denom[tree][nid];
-        assert(!Double.isInfinite(g)) : "numeric overflow"; //TODO: handle gracefully with signum(g)*1e19"
+        assert(!Double.isInfinite(g)) : "numeric overflow";
+        assert(!Double.isNaN(g)) : "numeric overflow";
         if (_dist == Distributions.Family.poisson
                 || _dist == Distributions.Family.gamma
                 || _dist == Distributions.Family.tweedie
@@ -608,7 +608,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               num[idx] += w * y;
               denom[idx] += w*expfx;
             } else if ( _dist == Distributions.Family.gamma) {
-              double yexp_negf = z + 1;
+              double yexp_negf = z + 1; //same as y*Math.exp(-preds.atd(row)-offset.atd(row));
               num[idx] += w * yexp_negf;
               denom[idx] += w;
             } else if ( _dist == Distributions.Family.tweedie) {

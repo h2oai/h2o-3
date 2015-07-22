@@ -26,6 +26,10 @@ def to_H2OFrame(ip,port):
     the_frame = h2o.H2OFrame(python_obj=python_obj)
     h2o.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
+    python_obj = [["a", "b"], ["c", "d"]]
+    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    h2o.check_dims_values(python_obj, the_frame, rows=2, cols=2)
+
     #   d. jagged
     python_obj = [[6,7,8,9,10], [1,2,3,4], [3,2,2]]
     the_frame = h2o.H2OFrame(python_obj=python_obj)

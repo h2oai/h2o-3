@@ -43,6 +43,9 @@ K-Means falls in the general category of clustering algorithms.
 
 - **Standardize**: To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
+ >**Note**: If standardization is enabled, each column of numeric data is centered and scaled so that its mean is zero and its standard deviation is one before the algorithm is used. At the end of the process, the cluster centers on both the standardized scale (`centers_std`) and the de-standardized scale (`centers`) are displayed. 
+ >To de-standardize the centers, the algorithm multiplies by the original standard deviation of the corresponding column and adds the original mean. Enabling standardization is mathematically equivalent to using `h2o.scale` in R with `center` = TRUE and `scale` = TRUE on the numeric columns. Therefore, there will be no discernible difference if standardization is enabled or not for K-Means, since H2O calculates unstandardized centroids. 
+ 
 - **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a K-Means Model
@@ -170,15 +173,21 @@ The GLM suite includes:
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Nfolds**: Specify the number of folds for cross-validation. 
+
+- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+
+- **Response_column**: (Required) Select the column to use as the independent variable.
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
-
 - **Offset_column**: Select a column to use as the offset. 
+	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **Family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
 
@@ -204,11 +213,15 @@ The GLM suite includes:
 
 - **Max_iterations**: Specify the number of training iterations.   
 
-- **Link**: Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
+- **Link**: Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
 - **Max\_confusion\_matrix\_size**: Specify the maximum size (number of classes) for the confusion matrices printed in the logs. 
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
+
+- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
 - **Intercept**: To include a constant term in the model, check this checkbox. This option is selected by default. 
 
@@ -382,13 +395,21 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Nfolds**: Specify the number of folds for cross-validation. 
+
+- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+
+- **Response_column**: (Required) Select the column to use as the independent variable.
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
+- **Offset_column**: Select a column to use as the offset. 
+	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **Ntrees**: Specify the number of trees.  
 
@@ -420,7 +441,13 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
+- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
+
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
+
+- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
 
 ###Interpreting a DRF Model
@@ -476,8 +503,7 @@ By default, the following output displays:
 ###DRF Algorithm 
 
 
-<iframe src="http://www.slideshare.net/slideshow/embed_code/20546878" width="427" height="356" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC;border-width:1px 1px 0;margin-bottom:5px" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="https://www.slideshare.net/0xdata/jan-vitek-distributedrandomforest522013" title="Jan vitek distributedrandomforest_5-2-2013" target="_blank">Jan vitek distributedrandomforest_5-2-2013</a> </strong> from <strong><a href="http://www.slideshare.net/0xdata" target="_blank">0xdata</a></strong></div>
-
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/tASzUyJ19dtJsQ" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/0xdata/rf-brighttalk" title="Building Random Forest at Scale" target="_blank">Building Random Forest at Scale</a> </strong> from <strong><a href="//www.slideshare.net/0xdata" target="_blank">Sri Ambati</a></strong> </div>
 
 ###References
 
@@ -499,11 +525,11 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Response_column**: (Required) Select the column to use as the independent variable.
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
-
-- **Response_column**: (Required) Select the column to use as the independent variable.
 
 - **Laplace**: Specify the Laplace smoothing parameter.  
 
@@ -673,9 +699,9 @@ PCA is commonly used to model without regularization or perform dimensionality r
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default.   
 
 - **PCA_method**: Select the algorithm to use for computing the principal components: 
-	- *GramSVD*: Computes the Gram matrix of the training frame, then calculates a local SVD on the result using the JAMA package
+	- *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
 	- *Power*: Computes the SVD using the power iteration method
-	- *GLRM*: Builds a generalized low-rank model with L1 loss function and no regularization, then recovers the SVD from the resulting X and Y matrices
+	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
 - **Use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first factor level of each categorical column when expanding into indicator columns. 
 
@@ -742,6 +768,10 @@ For the GramSVD and Power methods, all rows containing missing values are ignore
 - **What if there are a large number of categorical factor levels?**
 
   Each factor level (with the exception of the first, depending on whether **use\_all\_factor\_levels** is enabled) is assigned an indicator column. The indicator column is 1 if the observation corresponds to a particular factor; otherwise, it is 0. As a result, many factor levels result in a large Gram matrix and slower computation of the SVD. 
+
+- **How are categorical columns handled during model building?**
+  
+  If the GramSVD or Power methods are used, the categorical columns are expanded into 0/1 indicator columns for each factor level. The algorithm is then performed on this expanded training frame. For GLRM, the multidimensional loss function for categorical columns is discussed in Section 6.1 of ["Generalized Low Rank Models"](https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf) by Boyd et al. 
 
 
 ###PCA Algorithm
@@ -841,6 +871,8 @@ Singular values: \( \sum \in \rm \Bbb I \!\Bbb R^{k * k} \) diagonal
 
 Left singular vectors: \( (QU) \in \rm \Bbb I \!\Bbb R^{n * k}\)
 
+
+
 ###References
 
 Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and Its Applications)." (2010): 566-567. 
@@ -864,15 +896,21 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Nfolds**: Specify the number of folds for cross-validation. 
+
+- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+
+- **Response_column**: (Required) Select the column to use as the independent variable.
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
-
 - **Offset_column**: Select a column to use as the offset. 
+	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **Ntrees**: Specify the number of trees.  
 
@@ -888,7 +926,7 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, or gaussian.  
+- **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -900,10 +938,15 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
-- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
+- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
+- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
+ 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
+- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
 
 ###Interpreting a GBM Model
@@ -1028,15 +1071,21 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Nfolds**: Specify the number of folds for cross-validation. 
+
+- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+
+- **Response_column**: Select the column to use as the independent variable.
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Response_column**: Select the column to use as the independent variable.
-
 - **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **Offset_column**: Select a column to use as the offset. 
+	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
 - **Activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).   
 
@@ -1076,7 +1125,13 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
+- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
+
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
+
+- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
 - **Overwrite\_with\_best\_model**: Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 

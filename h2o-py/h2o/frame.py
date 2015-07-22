@@ -2,7 +2,7 @@
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp
 from expr import h2o,ExprNode
-import gc, random
+import gc
 
 
 class H2OFrame:
@@ -33,6 +33,7 @@ class H2OFrame:
     :return: An instance of an H2OFrame object.
     """
     self._id        = _py_tmp_key()  # gets overwritten if a parse happens
+    self._keep      = False
     self._nrows     = None
     self._ncols     = None
     self._col_names = None
@@ -53,6 +54,7 @@ class H2OFrame:
     fr._ncols = res["total_column_count"]
     fr._id = res["frame_id"]["name"]
     fr._computed = True
+    fr._keep = True
     fr._col_names = [c["label"] for c in res["columns"]]
     return fr
 
@@ -67,6 +69,7 @@ class H2OFrame:
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     self._ncols = parse["number_columns"]
     self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
+    self._keep = True
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
@@ -102,13 +105,13 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()                 # write the header
-    csv_writer.writerows(data_to_write)      # write the data
-    tmp_file.close()                         # close the streams
-    self._upload_raw_data(tmp_path, header)  # actually upload the data to H2O
-    os.remove(tmp_path)                      # delete the tmp file
+    csv_writer.writeheader()             # write the header
+    csv_writer.writerows(data_to_write)  # write the data
+    tmp_file.close()                     # close the streams
+    self._upload_raw_data(tmp_path)      # actually upload the data to H2O
+    os.remove(tmp_path)                  # delete the tmp file
 
-  def _handle_text_key(self, text_key):
+  def _handle_text_key(self, text_key, check_header=None):
     """
     Handle result of upload_file
     :param test_key: A key pointing to raw text to be parsed
@@ -116,20 +119,22 @@ class H2OFrame:
     """
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
+    if check_header is not None: setup["check_header"] = check_header
     parse = h2o.parse(setup, _py_tmp_key())
     self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]
-    self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols)]
+    self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
+    self._keep = True
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
 
-  def _upload_raw_data(self, tmp_file_path, column_names):
+  def _upload_raw_data(self, tmp_file_path):
     fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
     dest_key = _py_tmp_key()                                                  # create a random name for the data
     h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
-    self._handle_text_key(dest_key)                                           # actually parse the data and setup self._vecs
+    self._handle_text_key(dest_key, 1)                                        # actually parse the data and setup self._vecs
 
   def __iter__(self):
     """
@@ -171,6 +176,10 @@ class H2OFrame:
   def __rpow__(self, i): return H2OFrame(expr=ExprNode("^",i,  self))
   # unops
   def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
+
+  def __contains__(self, i):
+    if _is_str_list(i) or isinstance(i,(unicode,str)): return H2OFrame(expr=ExprNode("h2o.which",self,i)).any()
+    else:                                              return all([any(t==self) for t in i]) if _is_num_list(i) else any(i==self)
 
   def mult(self, matrix):
     """
@@ -289,14 +298,15 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("unique", self))._frame()
 
-  def show(self): self.head(10,sys.maxint)  # all columns
+  def show(self): self.head(rows=10,cols=sys.maxint,show=True)  # all columns
 
-  def head(self, rows=10, cols=200, **kwargs):
+  def head(self, rows=10, cols=200, show=False, **kwargs):
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
+    :param show: Display the output.
     :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
@@ -306,11 +316,12 @@ class H2OFrame:
     colnames = self.names()[0:ncols]
     head = self[0:10,0:ncols]
     res = head.as_data_frame(False)[1:]
-    print "First {} rows and first {} columns: ".format(nrows, ncols)
-    h2o.H2ODisplay(res,colnames)
+    if show:
+      print "First {} rows and first {} columns: ".format(nrows, ncols)
+      h2o.H2ODisplay(res,colnames)
     return head
 
-  def tail(self, rows=10, cols=200, **kwargs):
+  def tail(self, rows=10, cols=200, show=False, **kwargs):
     """
     Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
@@ -326,8 +337,9 @@ class H2OFrame:
     tail = self[start_idx:(start_idx+nrows),:]
     res = tail.as_data_frame(False)
     colnames = res.pop(0)
-    print "Last {} rows and first {} columns: ".format(nrows,ncols)
-    h2o.H2ODisplay(res,colnames)
+    if show:
+      print "Last {} rows and first {} columns: ".format(nrows,ncols)
+      h2o.H2ODisplay(res,colnames)
     return tail
 
   def levels(self, col=None):
@@ -337,10 +349,14 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    if self.ncol()==1:    levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-    elif col is not None: levels=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
-    else: levels=None
-    return None if levels is None or levels==[] else [i[0] for i in levels]
+    if self.ncol()==1 or col is None:
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
+      levels=[level for l in lol for level in l] if self.ncol()==1 else lol
+    elif col is not None:
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+      levels=[level for l in lol for level in l]
+    else:                             levels=None
+    return None if levels is None or levels==[] else levels
 
   def nlevels(self, col=None):
     """
@@ -425,6 +441,7 @@ class H2OFrame:
     Generate summary of the frame on a per-Vec basis.
     :return: None
     """
+    self._eager()
     fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
     type = ["type"]
     mins = ["mins"]
@@ -446,11 +463,10 @@ class H2OFrame:
     headers = self._col_names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
-  # def __repr__(self):
-  #   if self._vecs is None or self._vecs == []:
-  #     raise ValueError("Frame Removed")
-  #   self.show()
-  #   return ""
+  def __repr__(self):
+    if sys.gettrace() is None:
+      self.show()
+      return ""
 
   def as_date(self,format):
     """
@@ -491,11 +507,11 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("prod",self,na_rm))._scalar()
 
-  def any(self):
+  def any(self,na_rm=False):
     """
     :return: True if any element is True in the column.
     """
-    return H2OFrame(expr=ExprNode("any",self))._scalar()
+    return H2OFrame(expr=ExprNode("any",self,na_rm))._scalar()
 
   def all(self):
     """
@@ -517,7 +533,7 @@ class H2OFrame:
 
   def ischaracter(self):
     """
-    :return: True if the column is a character column, otherweise False (same as isstring)
+    :return: True if the column is a character column, otherwise False (same as isstring)
     """
     return self.isstring()
 
@@ -533,6 +549,30 @@ class H2OFrame:
     cols = sorted(cols)
     return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
 
+  def structure(self):
+    """
+    Similar to R's str method: Compactly Display the Structure of this H2OFrame instance.
+
+    :return: None
+    """
+    df = self.head().as_data_frame(use_pandas=False)
+    nr = self.nrow()
+    nc = len(df[0])
+    cn = df.pop(0)
+    width = max([len(c) for c in cn])
+    isfactor = [c.isfactor() for c in self]
+    numlevels  = [self.nlevels(i) for i in range(nc)]
+    lvls = self.levels()
+    print "H2OFrame '{}': \t {} obs. of {} variables(s)".format(self._id,nr,nc)
+    for i in range(nc):
+      print "$ {} {}: ".format(cn[i], ' '*(width-max(0,len(cn[i])))),
+      if isfactor[i]:
+        nl = numlevels[i]
+        print "Factor w/ {} level(s) {},..: ".format(nl, '"' + '","'.join(zip(*lvls)[i]) + '"'),
+        print " ".join(it[0] for it in h2o.as_list(self[:10,i].match(list(zip(*lvls)[i])), False)[1:]),
+        print "..."
+      else:
+        print "num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:]))
 
   def as_data_frame(self, use_pandas=True):
     """
@@ -550,7 +590,7 @@ class H2OFrame:
     else:
       cr = csv.reader(response)
       rows = []
-      for row in cr: rows.append(row)
+      for row in cr: rows.append([''] if row == [] else row)
       return rows
 
   # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
@@ -625,7 +665,9 @@ class H2OFrame:
   def __float__(self): return self._scalar()
 
   def __del__(self):
-    if self._computed: h2o.remove(self)
+    if not self._keep and self._computed: h2o.remove(self)
+
+  def keep(self): self._keep = True
 
   def drop(self, i):
     """
@@ -683,6 +725,7 @@ class H2OFrame:
     :return: a list of frames
     """
     j = h2o.H2OConnection.post_json("SplitFrame", dataset=self._id, ratios=ratios, destination_frames=destination_frames)
+    h2o.H2OJob(j, "Split Frame").poll()
     return [h2o.get_frame(i["name"]) for i in j["destination_frames"]]
 
   # ddply in h2o
@@ -697,6 +740,7 @@ class H2OFrame:
   def group_by(self,cols,aggregates,order_by=None):
     """
     GroupBy
+
     :param cols: The columns to group on.
     :param a: A dictionary of aggregates having the following shape: \
     {"colname":[aggregate, column, naMethod]}\
@@ -994,6 +1038,12 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("as.character", self))
 
+  def na_omit(self):
+    """
+    :return: Removes rows with NAs
+    """
+    return H2OFrame(expr=ExprNode("na.omit", self))._frame()
+
   def isna(self):
     """
     :return: Returns a new boolean H2OVec.
@@ -1154,7 +1204,8 @@ def _handle_python_lists(python_obj):
   data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
   return header, data_to_write
 
-
+def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(str,unicode)) for i in l])
+def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int  )) for i in l])
 def _is_list_of_lists(o):                  return any(isinstance(l, (list, tuple)) for l in o)
 def _handle_numpy_array(python_obj):       return _handle_python_lists(python_obj=python_obj.tolist())
 def _handle_pandas_data_frame(python_obj): return _handle_numpy_array(python_obj=python_obj.as_matrix())

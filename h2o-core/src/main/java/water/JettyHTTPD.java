@@ -13,10 +13,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.Connector;
 
 import water.api.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
@@ -37,10 +39,21 @@ public class JettyHTTPD {
   //------------------------------------------------------------------------------------------
 
   private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
+  private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
+
   private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
 
   private static void startRequestLifecycle() {
     _startMillis.set(System.currentTimeMillis());
+    _status.set(999);
+  }
+
+  private static void setStatus(int sc) {
+    _status.set(sc);
+  }
+
+  private static int getStatus() {
+    return _status.get();
   }
 
   protected static long getStartMillis() {
@@ -60,6 +73,20 @@ public class JettyHTTPD {
    */
   public static String getUserAgent() {
     return _userAgent.get();
+  }
+
+  //------------------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------------------
+
+  protected static void setResponseStatus(HttpServletResponse response, int sc) {
+    setStatus(sc);
+    response.setStatus(sc);
+  }
+
+  @SuppressWarnings("unused")
+  protected static void sendResponseError(HttpServletResponse response, int sc, String msg) throws java.io.IOException {
+    setStatus(sc);
+    response.sendError(sc, msg);
   }
 
   //------------------------------------------------------------------------------------------
@@ -131,7 +158,7 @@ public class JettyHTTPD {
     _acceptRequests = true;
   }
 
-  protected void createServer(ServerConnector connector) throws Exception {
+  protected void createServer(Connector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
     registerHandlers(_server);
     _server.start();
@@ -139,7 +166,7 @@ public class JettyHTTPD {
 
   protected void startHttp() throws Exception {
     _server = new Server();
-    ServerConnector connector=new ServerConnector(_server);
+    Connector connector=new SocketConnector();
     if (_ip != null) {
       connector.setHost(_ip);
     }
@@ -202,6 +229,7 @@ public class JettyHTTPD {
     }
   }
 
+  @SuppressWarnings("unused")
   protected void handle1(String target,
                          Request baseRequest,
                          HttpServletRequest request,
@@ -239,7 +267,7 @@ public class JettyHTTPD {
         Matcher m = p.matcher(uri);
         boolean b = m.matches();
         if (!b) {
-          response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+          setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
           response.getWriter().write("Improperly formatted URI");
           return;
         }
@@ -249,10 +277,13 @@ public class JettyHTTPD {
         NodePersistentStorage nps = H2O.getNPS();
         AtomicLong length = new AtomicLong();
         InputStream is = nps.get(categoryName, keyName, length);
+        if (length.get() > (long)Integer.MAX_VALUE) {
+          throw new Exception("NPS value size exceeds Integer.MAX_VALUE");
+        }
         response.setContentType("application/octet-stream");
-        response.setContentLengthLong(length.get());
+        response.setContentLength((int)length.get());
         response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
-        response.setStatus(HttpServletResponse.SC_OK);
+        setResponseStatus(response, HttpServletResponse.SC_OK);
         OutputStream os = response.getOutputStream();
         water.util.FileUtils.copyStream(is, os, 2048);
       }
@@ -273,7 +304,7 @@ public class JettyHTTPD {
         Matcher m = p.matcher(uri);
         boolean b = m.matches();
         if (!b) {
-          response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+          setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
           response.getWriter().write("Improperly formatted URI");
           return;
         }
@@ -317,7 +348,7 @@ public class JettyHTTPD {
           destination_frame = "upload" + Key.rand();
         }
         if (!validKeyName(destination_frame)) {
-          response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+          setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
           response.getWriter().write("Invalid key name, contains illegal characters");
           return;
         }
@@ -355,7 +386,7 @@ public class JettyHTTPD {
   private static InputStream extractPartInputStream (HttpServletRequest request, HttpServletResponse response) throws IOException{
     String ct = request.getContentType();
     if (! ct.startsWith("multipart/form-data")) {
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
       response.getWriter().write("Content type must be multipart/form-data");
       return null;
     }
@@ -363,7 +394,7 @@ public class JettyHTTPD {
     String boundaryString;
     int idx = ct.indexOf("boundary=");
     if (idx < 0) {
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
       response.getWriter().write("Boundary missing");
       return null;
     }
@@ -404,7 +435,7 @@ public class JettyHTTPD {
       H2OError error = ee.toH2OError(uri);
 
       Log.warn("Caught exception: " + error.toString());
-      response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      setResponseStatus(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
       try {
@@ -424,7 +455,7 @@ public class JettyHTTPD {
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
       else if (e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      response.setStatus(error._http_status);
+      setResponseStatus(response, error._http_status);
 
       Log.warn("Caught exception: " + error.toString());
 
@@ -522,7 +553,7 @@ public class JettyHTTPD {
         String choppedNanoStatus = resp.status.substring(0, 3);
         assert (choppedNanoStatus.length() == 3);
         int sc = Integer.parseInt(choppedNanoStatus);
-        response.setStatus(sc);
+        setResponseStatus(response, sc);
 
         response.setContentType(resp.mimeType);
 
@@ -542,7 +573,13 @@ public class JettyHTTPD {
 
         // Handle shutdown if it was requested.
         if (H2O.getShutdownRequested()) {
-          H2O.shutdown(0);
+          (new Thread() {
+            public void run() {
+              try { Thread.sleep(2000); }
+              catch (Exception ignore) {}
+              H2O.shutdown(0);
+            }
+          }).start();
         }
 
         endTransaction();
@@ -552,8 +589,9 @@ public class JettyHTTPD {
 
   //--------------------------------------------------
 
+  @SuppressWarnings("unused")
   protected static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
-    Log.httpd(method, request.getRequestURI(), response.getStatus(), System.currentTimeMillis() - getStartMillis());
+    Log.httpd(method, request.getRequestURI(), getStatus(), System.currentTimeMillis() - getStartMillis());
   }
 
   private static String readLine(InputStream in) throws IOException {
