@@ -100,9 +100,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_cats >= 1<<16) error ("_nbins_cats", "_nbins_cats must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
-    if (_parms._distribution == Distributions.Family.tweedie) {
-      _parms._distribution.tweedie.p = _parms._tweedie_power;
-    }
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -681,4 +678,46 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       cancel(msg);
     }
   }
+
+  /**
+   * Compute the inital value for a given distribution
+   * @return initial value
+   */
+  protected double getInitialValue() {
+    return new InitialValue(_parms._distribution, _parms._tweedie_power).doAll(
+            _response,
+            hasWeightCol() ? _weights : _response.makeCon(1),
+            hasOffsetCol() ? _offset : _response.makeCon(0)
+    ).initialValue();
+  }
+
+  // Helper MRTask to compute the initial value
+  private static class InitialValue extends MRTask<InitialValue> {
+    public  InitialValue(Distributions.Family family, double power) { _dist = new Distributions(family, power); }
+    final private Distributions _dist;
+    private double _num;
+    private double _denom;
+
+    public  double initialValue() {
+      if (_dist.distribution == Distributions.Family.multinomial)
+        return -0.5*new Distributions(Distributions.Family.bernoulli).link(_num/_denom);
+      else return _dist.link(_num / _denom);
+    }
+    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
+      for (int i=0;i<response._len;++i) {
+        if (response.isNA(i)) continue;
+        double w = weight.atd(i);
+        if (w == 0) continue;
+        double y = response.atd(i);
+        double o = offset.atd(i);
+        _num += _dist.initFNum(w,o,y);
+        _denom += _dist.initFDenom(w,o);
+      }
+    }
+    @Override public void reduce(InitialValue mrt) {
+      _num += mrt._num;
+      _denom += mrt._denom;
+    }
+  }
+
 }

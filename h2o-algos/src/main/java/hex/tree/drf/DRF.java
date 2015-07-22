@@ -71,6 +71,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     if (_parms._distribution != Distributions.Family.AUTO)
       error("_distribution", "Only AUTO distribution is implemented so far.");
+    _initialPrediction = getInitialValue();
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
     if (hasOffsetCol())
@@ -280,7 +281,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
-                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : responseMean());
+                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
               }
               continue;
             }

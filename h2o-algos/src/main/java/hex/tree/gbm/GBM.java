@@ -81,10 +81,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         GBM.this.updateValidationMessages();
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
       }
-      mean = responseMean();
-      _initialPrediction = _nclass == 1 ? mean
-              : (_nclass == 2 ? -0.5 * Distributions.Family.bernoulli.link(mean)/*0.0*/ : 0.0/*not a single value*/);
-
       if (_parms._distribution == Distributions.Family.AUTO) {
         if (_nclass == 1) _parms._distribution = Distributions.Family.gaussian;
         if (_nclass == 2) _parms._distribution = Distributions.Family.bernoulli;
@@ -92,17 +88,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } else if (_parms._distribution == Distributions.Family.poisson) {
         if (_response.min() < 0)
           error("_respons e", "Response cannot be negative for Poisson distribution.");
-        _initialPrediction = poissonInitialValue();
       } else if (_parms._distribution == Distributions.Family.gamma) {
         if (_response.min() < 0)
           error("_response", "Response cannot be negative for Gamma distribution.");
-        _initialPrediction = gammaInitialValue();
       } else if (_parms._distribution == Distributions.Family.tweedie) {
         if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
           error("_tweedie_power", "Tweedie power must be between 1 and 2.");
         if (_response.min() < 0)
           error("_response", "Response cannot be negative for Tweedie distribution.");
-        _initialPrediction = tweedieInitialValue(_parms._tweedie_power);
       }
       if (hasOffsetCol() && isClassifier() && _parms._distribution == Distributions.Family.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
@@ -111,15 +104,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
+      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
     }
 
     switch( _parms._distribution) {
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", "Binomial requires the response to be a 2-class categorical");
-      else if( _response != null ) {
-        _initialPrediction = _parms._distribution.link(mean);
-      }
       break;
     case multinomial:
       if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
@@ -144,109 +135,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
-  }
-
-  /**
-   * Compute the inital value for Poisson distribution
-   * @return initial value
-   */
-  private double poissonInitialValue() {
-    return new PoissonInitialValue().doAll(
-            _response,
-            hasWeightCol() ? _weights : _response.makeCon(1),
-            hasOffsetCol() ? _offset : _response.makeCon(0)
-    ).initialValue();
-  }
-
-  private static class PoissonInitialValue extends MRTask<PoissonInitialValue> {
-    private double _num;
-    private double _denom;
-    public  double initialValue() {
-      return Distributions.Family.poisson.link(_num / _denom);
-    }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
-        if (w == 0) continue;
-        _num += w*response.atd(i);
-        _denom += w*Distributions.Family.poisson.linkInv(offset.atd(i));
-      }
-    }
-    @Override public void reduce(PoissonInitialValue mrt) {
-      _num += mrt._num;
-      _denom += mrt._denom;
-    }
-  }
-
-  /**
-   * Compute the inital value for Poisson distribution
-   * @return initial value
-   */
-  private double gammaInitialValue() {
-    return new GammaInitialValue().doAll(
-            _response,
-            hasWeightCol() ? _weights : _response.makeCon(1),
-            hasOffsetCol() ? _offset : _response.makeCon(0)
-    ).initialValue();
-  }
-
-  private static class GammaInitialValue extends MRTask<GammaInitialValue> {
-    private double _num;
-    private double _denom;
-    public  double initialValue() {
-      return Distributions.Family.gamma.link(_num / _denom);
-    }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
-        if (w == 0) continue;
-        _num += w*response.atd(i)*Distributions.Family.gamma.linkInv(-offset.atd(i));
-        _denom += w;
-      }
-    }
-    @Override public void reduce(GammaInitialValue mrt) {
-      _num += mrt._num;
-      _denom += mrt._denom;
-    }
-  }
-
-  /**
-   * Compute the inital value for Poisson distribution
-   * @return initial value
-   */
-  private double tweedieInitialValue(double power) {
-    return new TweedieInitialValue(power).doAll(
-            _response,
-            hasWeightCol() ? _weights : _response.makeCon(1),
-            hasOffsetCol() ? _offset : _response.makeCon(0)
-    ).initialValue();
-  }
-
-  private static class TweedieInitialValue extends MRTask<TweedieInitialValue> {
-    TweedieInitialValue(double power) {_power = power;}
-    private double _power;
-    private double _num;
-    private double _denom;
-    public  double initialValue() {
-      return Distributions.Family.tweedie.link(_num / _denom);
-    }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
-        if (w == 0) continue;
-        double o = offset.atd(i);
-        double y = response.atd(i);
-        _num += w*y*Distributions.exp(o*(1-_power));
-        _denom += w*Distributions.exp(o*(2-_power));
-      }
-    }
-    @Override public void reduce(TweedieInitialValue mrt) {
-      _num += mrt._num;
-      _denom += mrt._denom;
-    }
   }
 
   // ----------------------
@@ -346,12 +234,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk ys = chk_resp(chks);
         Chunk offset = chk_offset(chks);
         Chunk weight = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+        Distributions dist = new Distributions(Distributions.Family.bernoulli);
         for( int row = 0; row < ys._len; row++) {
           double w = weight.atd(row);
+          if (w == 0) continue;
           if (ys.isNA(row)) continue;
           double y = ys.atd(row);
           double o = offset.atd(row);
-          double p = Distributions.Family.bernoulli.linkInv(o+_init);
+          double p = dist.linkInv(o + _init);
           _num += w*(y-p);
           _denom += w*p*(1.-p);
         }
@@ -370,9 +260,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk tr = chk_tree(chks,0); // Prior tree sums
+        Chunk tr = chk_tree(chks, 0); // Prior tree sums
         Chunk wk = chk_work(chks,0); // Place to store residuals
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
+        Distributions dist = new Distributions(_parms._distribution, _parms._tweedie_power);
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
           double f = tr.atd(row) + offset.atd(row);
@@ -394,8 +285,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               }
             }
           } else {
-            _parms._distribution.p = _parms._tweedie_power; //FIXME PUBDEV-1670: p isn't serialized properly as part of Enum
-            wk.set(row, (float) _parms._distribution.gradient(y, f));
+            wk.set(row, (float) dist.gradient(y, f));
           }
         }
       }
@@ -544,7 +434,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                 || _dist == Distributions.Family.tweedie
                 || _dist == Distributions.Family.gaussian)
         {
-          return _dist.link(g);
+          return new Distributions(_dist, _parms._tweedie_power).link(g);
         } else {
           return g; //bernoulli/multinomial - leave alone //TODO: Check (bernoulli link won't be able to handle 0 or 1)
         }
@@ -692,7 +582,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double f = chk_tree(chks,0).atd(row) + offset;
-    double p = _parms._distribution.linkInv(f);
+    double p = new Distributions(_parms._distribution).linkInv(f);
     if( _parms._distribution == Distributions.Family.bernoulli ) {
       fs[2] = p;
       fs[1] = 1.0-p;
