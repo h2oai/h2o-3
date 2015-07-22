@@ -6,7 +6,6 @@ import water.Futures;
 import water.Iced;
 import water.exceptions.H2OParseException;
 import water.fvec.AppendableVec;
-import water.fvec.C16Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -53,7 +52,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         AppendableVec [] v = _vecs;
         _vecs = dout._vecs;
         for(int i = 1; i < _vecs.length; ++i)
-          _vecs[i]._espc = _vecs[0]._espc;
+          _vecs[i]._tmp_espc = _vecs[0]._tmp_espc;
         dout._vecs = v;
       }
       for(int i = 0; i < dout._vecs.length; ++i) {

@@ -22,7 +22,7 @@ public class NewChunkTest extends TestUtil {
   }
   void post() {
     cc = nc.compress();
-    av._espc[0] = K; //HACK
+    av._tmp_espc[0] = K; //HACK
     cc._start = 0; //HACK
     cc._cidx = 0; // HACK as well
     Futures fs = new Futures();
