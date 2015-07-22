@@ -1,17 +1,15 @@
 package hex.tree.drf;
 
-import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
-import water.fvec.Chunk;
 import water.util.MathUtils;
 import water.util.SB;
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
-    int _mtries = -1;
-    float _sample_rate = 0.632f;
+    public int _mtries = -1;
+    public float _sample_rate = 0.632f;
     public boolean _binomial_double_trees = false;
     public DRFParameters() {
       super();
