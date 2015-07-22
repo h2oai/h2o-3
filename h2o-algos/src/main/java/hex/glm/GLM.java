@@ -1002,11 +1002,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 GLMCoordinateDescentTaskSeq stupdate;
                 if(intercept)
                   stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, 4 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
-                        new double [] {beta[p-1]} , _activeData._catLvls[i] , null , _activeData._normMul, _activeData._normSub).doAll(fr3);
+                        new double [] {beta[p-1]}, _activeData._catLvls[i], null, null, null, null, null).doAll(fr3);
                 else
                   stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, 1 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
                           Arrays.copyOfRange(beta, _activeData._catOffsets[i-1], _activeData._catOffsets[i]) ,  _activeData._catLvls[i] ,
-                          _activeData._catLvls[i-1] ,  _activeData._normMul, _activeData._normSub ).doAll(fr3);
+                          _activeData._catLvls[i-1], null, null, null, null ).doAll(fr3);
 
                 for(int j=0; j < level_num; ++j)
                  beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage(stupdate._temp[j] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
@@ -1020,20 +1020,36 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 fr3.add("xj", _activeData._adaptedFrame.vec(i+_activeData._cats)); // add current variable col
                 boolean intercept = (i == 0 && _activeData.numStart() == 0); // if true then all numeric case and doing beta_1
 
+                double [] meannew=null, meanold=null, varnew=null, varold=null;
                 if(i > 0 || intercept) {// previous var is a numeric var
                     cat_num = 3;
                     if(!intercept)
                      fr3.add("xjm1", _activeData._adaptedFrame.vec(i - 1 + _activeData._cats)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
-                    stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] {betaold[_activeData.numStart()+ i]},
-                            new double [] {beta[(_activeData.numStart()+i-1+p)%p]}, null, null,  _activeData._normMul, _activeData._normSub).doAll(fr3);
+                  if( _activeData._normMul!=null ) {
+                    varold = new double[]{_activeData._normMul[i]};
+                    meanold = new double[]{_activeData._normSub[i]};
+                    if (i!= 0){
+                      varnew = new double []{ _activeData._normMul[i-1]};
+                      meannew = new double [] { _activeData._normSub[i-1]};
+                    }
+                  }
+                  stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] { betaold[_activeData.numStart()+ i]},
+                              new double []{ beta[ (_activeData.numStart()+i-1+p)%p ]}, null, null,
+                             varold, meanold, varnew, meannew).doAll(fr3);
+
                     beta[i+_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
                             / (denums[i+_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                    }
                 else if (i == 0 && !intercept){ // previous one is the last categorical variable
                     int prev_level_num = _activeData.numStart()-_activeData._catOffsets[_activeData._cats-1];
                     fr3.add("xjm1", _activeData._adaptedFrame.vec(_activeData._cats-1)); // add previous categorical variable
+                    if( _activeData._normMul!=null){
+                      varold = new double []{ _activeData._normMul[i]};
+                      meanold =  new double [] { _activeData._normSub[i]};
+                    }
                     stupdate = new GLMCoordinateDescentTaskSeq(intercept, false, cat_num , new double [] {betaold[ _activeData.numStart()]},
-                            Arrays.copyOfRange(beta,_activeData._catOffsets[_activeData._cats-1],_activeData.numStart() ), null, _activeData._catLvls[_activeData._cats-1], _activeData._normMul, _activeData._normSub).doAll(fr3);
+                            Arrays.copyOfRange(beta,_activeData._catOffsets[_activeData._cats-1],_activeData.numStart() ), null, _activeData._catLvls[_activeData._cats-1],
+                            varold, meanold, null, null ).doAll(fr3);
                     beta[_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / stupdate._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0])
                             / (denums[_activeData.numStart()] / stupdate._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                   }
@@ -1046,11 +1062,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               if( _activeData._adaptedFrame.vec(  _activeData._adaptedFrame.numCols()- 2  ).isEnum()) {
                 cat_num = 2;
                 iupdate = new GLMCoordinateDescentTaskSeq( false, true, cat_num , new double [] {betaold[betaold.length-1]},
-                        Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ), null, _activeData._catLvls[_activeData._cats-1] , _activeData._normMul, _activeData._normSub ).doAll(fr3);
+                        Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ), null, _activeData._catLvls[_activeData._cats-1] ,
+                        null, null, null, null ).doAll(fr3);
               }
               else {
                 cat_num = 3;
-                iupdate = new GLMCoordinateDescentTaskSeq(false, true, cat_num , new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }, null, null,  _activeData._normMul, _activeData._normSub).doAll(fr3);
+                double [] meannew=null, varnew=null;
+                if(_activeData._normMul!=null){
+                  varnew = new double [] {_activeData._normMul[_activeData._normMul.length-1]};
+                  meannew = new double [] {_activeData._normSub[_activeData._normSub.length-1]};
+                }
+                iupdate = new GLMCoordinateDescentTaskSeq(false, true, cat_num , new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }, null, null,
+                        null,null, varnew, meannew ).doAll(fr3);
               }
                beta[beta.length - 1] = iupdate._temp[0] / wsum;
 

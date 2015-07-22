@@ -1041,10 +1041,10 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
       params._valid = fr._key;
-      params._lambda = new double[]{0.01};//{0.02934494}; // null;
+      params._lambda = new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.IRLSM; //Solver.COORDINATE_DESCENT_SEQ;
+      params._solver = Solver.COORDINATE_DESCENT_SEQ; //Solver.COORDINATE_DESCENT_SEQ;
       params._lambda_search = true;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();

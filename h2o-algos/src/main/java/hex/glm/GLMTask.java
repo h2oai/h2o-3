@@ -889,8 +889,10 @@ public abstract class GLMTask  {
   }
 
   public static class GLMCoordinateDescentTaskSeq extends MRTask<GLMCoordinateDescentTaskSeq> {
-    public double [] _normMul;
-    public double [] _normSub;
+    public double [] _normMulold;
+    public double [] _normSubold;
+    public double [] _normMulnew;
+    public double [] _normSubnew;
     final double [] _betaold; // current old value at j
     final double [] _betanew; // global beta @ j-1 that was just updated.
     final int [] _catLvls_new; // sorted list of indices of active levels only for one categorical variable
@@ -901,11 +903,14 @@ public abstract class GLMTask  {
     boolean _interceptnew;
     boolean _interceptold;
 
-    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num , double [] betaold, double [] betanew,
-                                        int [] catLvlsold, int [] catLvlsnew, double [] normMul, double [] normSub ){ // pass it norm mul and norm sup - in the weights already done. norm
+    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num ,
+                                        double [] betaold, double [] betanew, int [] catLvlsold, int [] catLvlsnew,
+                                        double [] normMulold, double [] normSubold, double [] normMulnew, double [] normSubnew ){ // pass it norm mul and norm sup - in the weights already done. norm
       //mul and mean will be null without standardization.
-      _normMul = normMul;
-      _normSub = normSub;
+      _normMulold = normMulold;
+      _normSubold = normSubold;
+      _normMulnew = normMulnew;
+      _normSubnew = normSubnew;
       _cat_num = cat_num;
       _betaold = betaold;
       _betanew = betanew;
@@ -961,27 +966,27 @@ public abstract class GLMTask  {
         }
         else if(_cat_num == 2){
           val = xChunk.atd(i); // current num and previous cat
-          if (_normMul != null && _normSub != null)
-            val = (val - _normSub[i]) * _normMul[i];
+          if (_normMulold != null && _normSubold != null)
+            val = (val - _normSubold[0]) * _normMulold[0];
           observation_level_p = (int) xpChunk.at8(i);
           if (_catLvls_new != null)
             observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
         }
         else if(_cat_num == 3){
           val = xChunk.atd(i); // both num
-          if (_normMul != null && _normSub != null)
-            val = (val - _normSub[i]) * _normMul[i];
+          if (_normMulold != null && _normSubold != null)
+            val = (val - _normSubold[0]) * _normMulold[0];
           valp = xpChunk.atd(i);
-          if (_normMul != null && _normSub != null)
-            valp = (valp - _normSub[i]) * _normMul[i];
+          if (_normMulnew != null && _normSubnew != null)
+            valp = (valp - _normSubnew[0]) * _normMulnew[0];
         }
         else if(_cat_num == 4){
           observation_level = (int) xChunk.at8(i); // current cat
           if (_catLvls_old != null)
             observation_level = Arrays.binarySearch(_catLvls_old, observation_level); // search to see if this level is active.
           valp = xpChunk.atd(i); //prev numeric
-          if (_normMul != null && _normSub != null)
-            valp = (valp - _normSub[i]) * _normMul[i];
+          if (_normMulnew != null && _normSubnew != null)
+            valp = (valp - _normSubnew[0]) * _normMulnew[0];
         }
 
         if(observation_level >= 0)
