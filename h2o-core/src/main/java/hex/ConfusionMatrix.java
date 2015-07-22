@@ -86,7 +86,7 @@ public class ConfusionMatrix extends Iced {
     double err = n;
     for( int d = 0; d < _cm.length; ++d )
       err -= _cm[d][d];
-    return (double) err / n;
+    return err / n;
   }
   public double errCount() {
     double err = totalRows();

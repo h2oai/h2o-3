@@ -323,7 +323,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Convenience helper which creates and fill an impl. */
   final public I createAndFillImpl() {
-    return (I)this.fillImpl(this.createImpl());
+    return this.fillImpl(this.createImpl());
   }
 
   // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
