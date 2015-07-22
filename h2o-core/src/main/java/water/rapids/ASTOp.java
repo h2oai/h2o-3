@@ -245,6 +245,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTNLevels());
     putPrefix(new ASTLevels());
     putPrefix(new ASTHist());
+    putPrefix(new ASTNAOmit());
     // string mungers
     putPrefix(new ASTGSub());
     putPrefix(new ASTStrSplit());
@@ -3502,6 +3503,34 @@ class ASTHist extends ASTUniPrefixOp {
       while( vv > o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
         o = _max[x];
     }
+  }
+}
+
+class ASTNAOmit extends ASTUniPrefixOp {
+  @Override String opStr() { return "na.omit"; }
+  public ASTNAOmit() { super(new String[]{"x"}); }
+  @Override ASTNAOmit make() { return new ASTNAOmit(); }
+  @Override void apply(Env e) {
+    Frame fr = e.popAry();
+    Frame f2 = new MRTask() {
+      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+        for(int i=0;i<cs.length;++i) {
+          if( cs[i] instanceof CStrChunk ) ncs[i].addStr(cs[i],row);
+          else if( cs[i] instanceof C16Chunk ) ncs[i].addUUID(cs[i],row);
+          else if( cs[i].hasFloat() ) ncs[i].addNum(cs[i].atd(row));
+          else ncs[i].addNum(cs[i].at8(row),0);
+        }
+      }
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        int col;
+        for(int row=0;row<cs[0]._len;++row) {
+          for( col = 0; col < cs.length; ++col)
+            if( cs[col].isNA(row) ) break;
+          if( col==cs.length ) copyRow(row,cs,ncs);
+        }
+      }
+    }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
+   e.pushAry(f2);
   }
 }
 
