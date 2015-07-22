@@ -97,8 +97,6 @@ The following changes represent features that have been added since the previous
 #####System
 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/f738707830052bfa499d83ff91c29d2e7d13e113): changed to new AMI
-- [PUBDEV-679](https://0xdata.atlassian.net/browse/PUBDEV-679): Create cross-validation holdout sets using the per-row weights
-- [PUBDEV-1691](https://0xdata.atlassian.net/browse/PUBDEV-1691): Cross validation: access to models and cardinality, access to folds 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/3c7f296804d72b9b6940aaccc63f329383ab01fb): Add user_name. Add ExtensionHandler1.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0ddf0740ad2e13a2a45137b4d017775900066244): Added auth options to h2o.init(). 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0f9f71335e16a2632c3072782143f47657883129): Added H2O.calcNextUniqueModelId().
@@ -119,10 +117,8 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/1fad4e3f0b8e30ffa9138d4adb9be645ff20d74b): Add option during kmeans scoring to return matrix of indicator columns for cluster assignment, which is necessary for initializing GLRM
 - [GitHub](https://github.com/h2oai/h2o-3/commit/763ea02e1bc6e30f5e1a56437c0f374ac59e67a1): Output number of processed observations in PCA
 - [GitHub](https://github.com/h2oai/h2o-3/commit/7d13f34e6dcd4a09871bd3c19d9724e2d2d80660): Add validation into PCA with GramSVD
-- [GitHub](https://github.com/h2oai/h2o-3/commit/84ae7075b22fb1f480e7076cc1c276a41969043c): Code cleanup of distributions. Also rename _n_folds -> _nfolds for consistency 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/a6716f9ab503d653189c328a287aaf5213f6d737): Remove restriction to data frames with more than 1 column
 - [GitHub](https://github.com/h2oai/h2o-3/commit/650b599938945bb91ca07bbb860207709a394564): Add debugging output for DL auto-tuning.
-- [PUBDEV-556](https://0xdata.atlassian.net/browse/PUBDEV-556): implement algo-agnostic cross-validation mechanism via a column of weights
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8001b5336960629b738da9df36261ca6c538e760): When initializing with kmeans++ set X to matrix of indicator columns corresponding to cluster assignments, unless closed form solution exists
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8c8fc92eb4a36cee5751597430687729f3527c60): Always print DL auto-tuning info for now.
 - [PUBDEV-1657](https://0xdata.atlassian.net/browse/PUBDEV-1657): pca: would be good to remove the redundant std dev from flow pca model object
@@ -179,11 +175,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1654](https://0xdata.atlassian.net/browse/PUBDEV-1654): pca: gram-svd std dev differs for v2 vs v3 for attached data 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/42831143c9b208596fa60f3d8f86c5bd1109ec64): Fix DL
 - [GitHub](https://github.com/h2oai/h2o-3/commit/19794673a5e2a5cf4b5f5d550f4184266ae8799a): Fix a bug in PCA utilities for k = 1
-- [PUBDEV-1700](https://0xdata.atlassian.net/browse/PUBDEV-1700): nfolds: flow-when set nfold =1 job hangs  for ever; in terminal get java.lang.AssertionError
-- [PUBDEV-1706](https://0xdata.atlassian.net/browse/PUBDEV-1706): GBM/DRF: is balance_classes=TRUE and nfolds>1 valid? [GitHub](https://github.com/h2oai/h2o-3/commit/5f82d3b5f24f11f3a62823b139bd3dd0f44f6c44)
 - [PUBDEV-806](https://0xdata.atlassian.net/browse/PUBDEV-806): GLM => `runit_demo_glm_uuid.R` : water.exceptions.H2OIllegalArgumentException
-- [PUBDEV-1696](https://0xdata.atlassian.net/browse/PUBDEV-1696): Client (model-build) is blocked when passing illegal nfolds value. [GitHub](https://github.com/h2oai/h2o-3/commit/456fe73a8b120351fbfd5e3a21963439c00cd630)
-- [PUBDEV-1690](https://0xdata.atlassian.net/browse/PUBDEV-1690): Cross Validation: if nfolds > number of observations, should it default to leave-one-out cross-validation?
 - [PUBDEV-1537](https://0xdata.atlassian.net/browse/PUBDEV-1537): pca: on airlines get  java.lang.AssertionError at hex.svd.SVD$SVDDriver.compute2(SVD.java:219) [GitHub](https://github.com/h2oai/h2o-3/commit/0923c60d47cd089bda1163feeb425e3f2d7e586c)
 - [PUBDEV-1603](https://0xdata.atlassian.net/browse/PUBDEV-1603): pca: glrm giving very different std dev than R and h2o's other methods for attached data
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0f38e2f0c732095b005dc75cbb0b5b6c04c0b031): Fix a potential race condition in tree validation scoring.
@@ -206,7 +198,6 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1501](https://0xdata.atlassian.net/browse/PUBDEV-1501): Python and R h2o clients need "unique" operator, like R's [GitHub](https://github.com/h2oai/h2o-3/commit/90423fa68058d68524efb2306fe5a7b272ccd964)
 - [PUBDEV-1711](https://0xdata.atlassian.net/browse/PUBDEV-1711): is.numeric in R interface faulty [GitHub](https://github.com/h2oai/h2o-3/commit/fbb44071f7cd19b43a7ac40a8a0652d2010363ea)
 - [PUBDEV-1719](https://0xdata.atlassian.net/browse/PUBDEV-1719): Intermittent: `runit_deeplearning_autoencoder_large.R` : gets wrong answer?
-- [PUBDEV-1688](https://0xdata.atlassian.net/browse/PUBDEV-1688): 2 nfolds tests fail intermittently: `runit_RF_iris_nfolds.R` and `runit_GBM_cv_nfolds.R` [GitHub](https://github.com/h2oai/h2o-3/commit/9095d1e5d52de27e0622f7ac309d1afbcf09aefb)
 - [PUBDEV-1718](https://0xdata.atlassian.net/browse/PUBDEV-1718): Intermittent: `runit_deeplearning_anomaly_large.R `: training slows down to 0 samples/ sec [GitHub](https://github.com/h2oai/h2o-3/commit/d43d47014ff812744c2522dad27246a5e6014738)
 
 #####Rapids
@@ -447,7 +438,6 @@ The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 
-- [GitHub](https://github.com/h2oai/h2o-3/commit/b358eb0a5f12e0dab006f012a8a8e9ea7e51d46c): Fix weights for GBM - add weight correction to Gamma computation.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8b646239e9433c719d390b03ba475715cf3b4f5e): Skip rows with weight 0.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c6f11a9069d3553694dee3e33f574f482567613d): x_ignore must be set when autoencoder is TRUE
 
@@ -819,7 +809,6 @@ The following changes are to resolve incorrect software behavior:
 ##### Algorithms
 
 - [HEXDEV-209](https://0xdata.atlassian.net/browse/HEXDEV-209):Poisson distributions for GLM
-- [HEXDEV-210](https://0xdata.atlassian.net/browse/HEXDEV-210): Gamma distributions for GLM
 
 ##### Python
 
