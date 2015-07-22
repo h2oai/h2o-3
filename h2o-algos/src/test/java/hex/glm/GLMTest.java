@@ -23,6 +23,8 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
+import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -1039,13 +1041,20 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
       params._valid = fr._key;
-      params._lambda = null;
+      params._lambda = new double[]{0.01};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._solver = Solver.IRLSM; //Solver.COORDINATE_DESCENT_SEQ;
       params._lambda_search = true;
-      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categoricals, no standardization", params);
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
+      double [] beta = model1.beta();
+      double l1pen = ArrayUtils.l1norm(beta,true);
+      double l2pen = ArrayUtils.l2norm(beta,true);
+      System.out.println( " lambda min " + params._lambda[params._lambda.length-1] );
+      System.out.println( " lambda_max " + model1._lambda_max);
+      double objective = job.likelihood()/model1._nobs + params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      System.out.println( " objective value " + objective);
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
