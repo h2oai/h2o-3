@@ -10,11 +10,9 @@ The following changes represent features that have been added since the previous
 
 ##### Algorithms
 
-- [HEXDEV-214](https://0xdata.atlassian.net/browse/HEXDEV-214): Gamma distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/19d0eda15d589a6b75525bad94429f0547e15c1b)
-	- More distributions for GBM and DRF (regression only for now)- Poisson, Gamma, Tweedie, and Lognormal. At the high level, this is tantamount to supporting more distributions for each individual regression model in the ensemble. 
+
 - [HEXDEV-213](https://0xdata.atlassian.net/browse/HEXDEV-213): Tweedie distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/a5892087d08bcee9b8c017bd6173601d262d9f79)
 - [HEXDEV-212](https://0xdata.atlassian.net/browse/HEXDEV-212): Poisson distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/861322058519cc3455e924449cbe7dfdecf67514)
-- [PUBDEV-1704](https://0xdata.atlassian.net/browse/PUBDEV-1704): Accept a fold assignment vector
 - [PUBDEV-1115](https://0xdata.atlassian.net/browse/PUBDEV-1115): properly test PCA and mark it non-experimental
 
 #####Python
