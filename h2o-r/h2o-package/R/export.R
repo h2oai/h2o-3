@@ -41,7 +41,8 @@ h2o.exportFile <- function(data, path, force = FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force))
     stop("`force` must be TRUE or FALSE")
 
-  .h2o.__remoteSend(data@conn, .h2o.__EXPORT_FILES(data,path,force))
+  res <- .h2o.__remoteSend(data@conn, .h2o.__EXPORT_FILES(data,path,force))
+  .h2o.__waitOnJob(data@conn, res$job$key$name)
 }
 
 #'
@@ -66,6 +67,7 @@ h2o.exportHDFS <- function(data,path,force=FALSE) { h2o.exportFile(data,path,for
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
@@ -75,6 +77,7 @@ h2o.exportHDFS <- function(data,path,force=FALSE) { h2o.exportFile(data,path,for
 #' h2o.downloadCSV(iris.hex, myFile)
 #' file.info(myFile)
 #' file.remove(myFile)
+#' }
 #' @export
 h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))

@@ -355,9 +355,9 @@ def np_comparison_check(h2o_data, np_data, num_elements):
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
 def run_test(sys_args, test_to_run):
-  import pkg_resources
-  ver = pkg_resources.get_distribution("h2o").version
-  print "H2O PYTHON PACKAGE VERSION: " + str(ver)
+  # import pkg_resources
+  # ver = pkg_resources.get_distribution("h2o").version
+  # print "H2O PYTHON PACKAGE VERSION: " + str(ver)
   ip, port = sys_args[2].split(":")
   init(ip,port)
   log_and_echo("------------------------------------------------------------")
@@ -623,7 +623,7 @@ def cluster_status():
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
   """
   Initiate an H2O connection to the specified ip and port.
 
@@ -651,7 +651,7 @@ def export_file(frame,path,force=False):
   :param force: Overwrite any preexisting file with the same path
   :return: None
   """
-  H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false"))
+  H2OJob(H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
 def cluster_info():
