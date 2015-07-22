@@ -46,7 +46,7 @@ RefineDateColumn <- function(train, dateCol, datePattern, dateTimeZone = "Etc/UT
   train$WeekDay <- refinedDateCols$WeekDay
   train$HourOfDay <- refinedDateCols$HourOfDay
   train$Weekend <- refinedDateCols$Weekend
-  train$Season <- refinedDateCols$Weekend
+  train$Season <- refinedDateCols$Season
   train
 }
 

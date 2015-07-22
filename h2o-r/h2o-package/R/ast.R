@@ -22,13 +22,17 @@ function(node) {
   else if( is(node, "ASTNode") || is(node, "ASTSpan") )  paste0("(", node@root@op, " ", paste0(.visitor(node@children), collapse = " "), ")")
   else if( is(node, "ASTSeries") )                       paste0(" ", node@op, paste0(.visitor(node@children), collapse = ";"), "}")
   else if( is(node, "ASTEmpty") )                        node@key
-  else if( is(node, "H2OFrame") ) {
-    if( node@mutable$computed )                          node@id
+  else if( is(node, "H2OFrame") ) {                              # Frames often cache results in temps
+    if( node@mutable$computed )                          node@id # Precomputed, re-use via temp name
     else {
-      res <- paste0("(tmp= ",node@id," ",.visitor(node@mutable$ast),")")
-      node@mutable$computed <- T
-      node@mutable$ast <- NULL
-      res
+      ast <- .visitor(node@mutable$ast)                          # Build compute expression
+      if( !node@GC )                                     ast     # Not GCd', so not ever in a temp, so recompute via full 'ast'
+      else {                                                     # Else compute, and assign expr result to temp
+        res <- paste0("(tmp= ",node@id," ",ast,")")
+        node@mutable$computed <- T
+        node@mutable$ast <- NULL
+        res
+      }
     }
   } else                                                 node
 }

@@ -124,26 +124,7 @@ h2o.getFrame <- function(id) {
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  fr <- .newH2OFrame(id=id, mutable=mutable)
-  .h2o.protectFromGC(fr)
-  fr
-}
-
-#'
-#' Get an R Reference to an H2O Dataset, that WILL be GC'd by default
-#'
-#' Get the reference to a frame with the given id in the H2O instance.
-#'
-#' @param id A string indicating the unique frame of the dataset to retrieve.
-.h2o.getGCFrame <- function(id) {
-  if( is.null(id) ) stop("Expected frame id")
-  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", id))$frames[[1]]
-  cnames <- unlist(lapply(res$columns, function(c) c$label))
-
-  mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  fr <- .newH2OFrame(id=id, mutable=mutable)
-  .h2o.allowGC(fr)
-  fr
+  .newH2OFrame(id=id, GC=T, mutable=mutable)
 }
 
 #' Get an R reference to an H2O model

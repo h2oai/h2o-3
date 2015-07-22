@@ -1,13 +1,13 @@
 package water.currents;
 
+import water.parser.ParseSetup;
+import water.parser.ParseDataset;
+import java.io.File;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.TestUtil;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
 
 import java.util.Arrays;
 
@@ -279,4 +279,187 @@ public class CurrentsTest extends TestUtil {
       if( f != null ) f.delete();
     }
   }
+
+  static Frame exec_str( String str, String id ) {
+    Val val = Exec.exec(str);
+    switch( val.type() ) {
+    case Val.FRM:
+      Frame fr = val.getFrame();
+      Key k = Key.make(id);
+      // Smart delete any prior top-level result
+      Iced i = DKV.getGet(k);
+      if( i instanceof Lockable) ((Lockable)i).delete();
+      else if( i instanceof Keyed ) ((Keyed)i).remove();
+      else if( i != null ) throw new IllegalArgumentException("Attempting to overright an unexpected key");
+      DKV.put(fr = new Frame(k,fr._names,fr.vecs()));
+      System.out.println(fr);
+      return fr;
+    case Val.NUM:
+      System.out.println("num= "+val.getNum());
+      assert id==null;
+      return null;
+    case Val.STR:
+      System.out.println("str= "+val.getStr());
+      assert id==null;
+      return null;
+    default:
+      throw water.H2O.fail();
+    }
+  }
+
+
+  @Test public void testChicago() {
+    Frame weather=null, crimes=null, census=null;
+    try {
+      weather = parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
+      crimes  = parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
+      String fname = "smalldata/chicago/chicagoCensus.csv";
+      File f = find_test_file(fname);
+      assert f != null && f.exists():" file not found: " + fname;
+      NFSFileVec nfs = NFSFileVec.make(f);
+      ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
+      ps.getColumnTypes()[1] = Vec.T_ENUM;
+      census = ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
+
+      census = exec_str("(colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"])", "census.hex");
+
+      crimes = exec_str("(colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"])", "crimes.hex");
+
+      exec_str("(setTimeZone \"Etc/UTC\")", null);
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) [22] [0:9999]) 22 \"Day\")", "crimes.hex");
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) [23] [0:9999]) 23 \"Month\")", "crimes.hex");
+      
+      Keyed.remove(Key.make("nary_op_30"));
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) [17] [0:9999]) 17 \"Year\")", "crimes.hex");
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_10 (week nary_op_5)) [24] [0:9999]) 24 \"WeekNum\")", "crimes.hex");
+
+      Keyed.remove(Key.make("binary_op_32"));
+      Keyed.remove(Key.make("binary_op_31"));
+      Keyed.remove(Key.make("unary_op_8"));
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) [25] [0:9999]) 25 \"WeekDay\")", "crimes.hex");
+      Keyed.remove(Key.make("nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip"));
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_12 (hour nary_op_5)) [26] [0:9999]) 26 \"HourOfDay\")", "crimes.hex");
+
+      crimes = exec_str("(colnames= (= crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) [27] [0:9999]) 27 \"Weekend\")", "crimes.hex");
+
+      // Season is incorrectly assigned in the original chicago demo; picks up the Weekend flag
+      crimes = exec_str("(colnames= (= crimes.hex nary_op_16 [28] [0:9999]) 28 \"Season\")", "crimes.hex");
+
+      // Standard "head of 10 rows" pattern for printing
+      Frame subset_33 = exec_str("(rows crimes.hex [0:10])", "subset_33");
+      Keyed.remove(Key.make("subset_33"));
+
+      Keyed.remove(Key.make("subset_33"));
+      Keyed.remove(Key.make("unary_op_29"));
+      Keyed.remove(Key.make("nary_op_28"));
+      Keyed.remove(Key.make("nary_op_27"));
+      Keyed.remove(Key.make("nary_op_26"));
+      Keyed.remove(Key.make("binary_op_25"));
+      Keyed.remove(Key.make("binary_op_24"));
+      Keyed.remove(Key.make("binary_op_23"));
+      Keyed.remove(Key.make("binary_op_22"));
+      Keyed.remove(Key.make("binary_op_21"));
+      Keyed.remove(Key.make("binary_op_20"));
+      Keyed.remove(Key.make("binary_op_19"));
+      Keyed.remove(Key.make("binary_op_18"));
+      Keyed.remove(Key.make("binary_op_17"));
+      Keyed.remove(Key.make("nary_op_16"));
+      Keyed.remove(Key.make("binary_op_15"));
+      Keyed.remove(Key.make("binary_op_14"));
+      Keyed.remove(Key.make("binary_op_13"));
+      Keyed.remove(Key.make("unary_op_12"));
+      Keyed.remove(Key.make("unary_op_11"));
+      Keyed.remove(Key.make("unary_op_10"));
+      Keyed.remove(Key.make("binary_op_9"));
+      Keyed.remove(Key.make("unary_op_8"));
+      Keyed.remove(Key.make("unary_op_7"));
+      Keyed.remove(Key.make("unary_op_6"));
+      Keyed.remove(Key.make("nary_op_5"));
+
+      // Standard "head of 10 rows" pattern for printing
+      Frame subset_34 = exec_str("(rows crimes.hex [0:10])", "subset_34");
+      Keyed.remove(Key.make("subset_34"));
+
+      census = exec_str("(colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"])", "census.hex");
+      Keyed.remove(Key.make("subset_34"));
+
+      Frame subset_35 = exec_str("(cols  crimes.hex [-3])", "subset_35");
+      Frame subset_36 = exec_str("(cols weather.hex [-1])", "subset_36");
+
+      subset_36 = exec_str("(colnames= subset_36 [0 1 2 3 4 5] [\"Month\" \"Day\" \"Year\" \"maxTemp\" \"meanTemp\" \"minTemp\"])", "subset_36");
+
+      crimes.remove();
+      weather.remove();
+
+      Frame nary_op_37 = exec_str("(merge subset_35 census.hex FALSE FALSE)", "nary_op_37");
+
+      Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 FALSE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");
+
+      // Standard "head of 10 rows" pattern for printing
+      Frame subset_44 = exec_str("(rows subset_41 [0:10])", "subset_44");
+      Keyed.remove(Key.make("subset_44"));
+
+      Keyed.remove(Key.make("subset_44"));
+      Keyed.remove(Key.make("binary_op_40"));
+      Keyed.remove(Key.make("nary_op_37"));
+
+      // Crash here....
+      Frame subset_43 = exec_str("(rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8)))", "subset_43");
+
+    } finally {
+      if( weather != null ) weather.remove();
+      if( crimes  != null ) crimes .remove();
+      if( census  != null ) census .remove();
+
+      for( String s : new String[]{"nary_op_5",
+                                   "unary_op_6",
+                                   "unary_op_7",
+                                   "unary_op_8",
+                                   "binary_op_9",
+                                   "unary_op_10",
+                                   "unary_op_11",
+                                   "unary_op_12",
+                                   "binary_op_13",
+                                   "binary_op_14",
+                                   "binary_op_15",
+                                   "nary_op_16",
+                                   "binary_op_17",
+                                   "binary_op_18",
+                                   "binary_op_19",
+                                   "binary_op_20",
+                                   "binary_op_21",
+                                   "binary_op_22",
+                                   "binary_op_23",
+                                   "binary_op_24",
+                                   "binary_op_25",
+                                   "nary_op_26",
+                                   "nary_op_27",
+                                   "nary_op_28",
+                                   "unary_op_29",
+                                   "binary_op_30",
+                                   "binary_op_31",
+                                   "binary_op_32",
+                                   "subset_33",
+                                   "subset_34",
+                                   "subset_35",
+                                   "subset_36",
+                                   "nary_op_37",
+                                   "nary_op_38",
+                                   "nary_op_39",
+                                   "binary_op_40",
+                                   "subset_41",
+                                   "binary_op_42",
+                                   "subset_43",
+                                   "subset_44",
+        } )
+        Keyed.remove(Key.make(s));
+    }
+  }
+
 }

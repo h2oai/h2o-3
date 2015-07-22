@@ -15,7 +15,7 @@ class ASTAssign extends ASTPrim {
 
     // Check for append; add a col of NAs if appending
     if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {
-      dst = new Frame(dst);
+      dst = new Frame(dst._names.clone(),dst.vecs().clone());
       dst.add(Frame.defaultColName(dst.numCols()), dst.anyVec().makeCon(Double.NaN));
     }
 

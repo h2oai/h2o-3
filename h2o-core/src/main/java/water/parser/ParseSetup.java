@@ -117,6 +117,7 @@ public final class ParseSetup extends Iced {
       types[i] = Vec.TYPE_STR[_column_types[i]];
     return types;
   }
+  public byte[] getColumnTypes() { return _column_types; }
 
   public static byte[] strToColumnTypes(String[] strs) {
     if (strs == null) return null;

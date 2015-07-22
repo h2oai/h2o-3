@@ -124,7 +124,7 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
   job_key  <- res$key$name
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
-  .h2o.getGCFrame(dest_key)
+  h2o.getFrame(dest_key)
 }
 
 h2o.kappa <- function(act,pred,nclass) { .h2o.nary_frame_op("kappa", act, pred, nclass) }
@@ -223,7 +223,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   job_key  <- res$key$name
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
-  .h2o.getGCFrame(dest_key)
+  h2o.getFrame(dest_key)
 }
 
 #' Replicate Elements of Vectors or Lists into H2O
@@ -315,7 +315,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   job_key <- res$key$name
   .h2o.__waitOnJob(job_key)
 
-  splits <- lapply(res$destination_frames, function(s) .h2o.getGCFrame(s$name))
+  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
 }
 
 #'
@@ -783,6 +783,10 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   }
   if (missingI) {
     nrows <- x@mutable$nrows
+    # All rows vertical slices do a shallow-copy on the server, so cannot be
+    # cached in a temp (lest we delete the shared copy on the server when we
+    # delete the temp).  Do not delete on a GC.
+    GC <- F
   } else {
     nrows <- NA_integer_
     if (is(i, "H2OFrame")) {
@@ -792,10 +796,14 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     else
       rows <- .eval(substitute(i), parent.frame())
     ast <- new("ASTNode", root = new("ASTApply", op = "rows"), children = list(ast, rows))
+    # Complex row slices make deep copies, so can be assigned to temp results,
+    # and their lifetime is tracked by the temp's lifetime, and should be
+    # deleted when the temp is GC'd
+    GC <- T
   }
 
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OFrame(id = .key.make("subset"), mutable = mutable)
+  .newH2OFrame(id = .key.make("subset"), GC = GC, mutable = mutable)
 })
 
 #' @rdname H2OFrame-Extract

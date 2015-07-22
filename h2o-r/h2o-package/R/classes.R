@@ -82,8 +82,8 @@ setMethod("show", "H2OConnection", function(object) {
 #' @aliases H2OObject
 #' @export
 setClass("H2OObject",
-         representation(id="character", finalizer="environment"),
-         prototype(id=NA_character_),
+         representation(id="character", envir="environment", GC="logical"),
+         prototype(id=NA_character_, GC=T),
          contains="VIRTUAL")
 
 #
@@ -94,16 +94,14 @@ setClass("H2OObject",
 #  Can probably assert that >= is actually only ever ==
 #  < implies there's a more recent living version therefore, do not perform remove.
 .keyFinalizer <- function(envir) {
-  if( !is.null(envir$id) && envir$deleteOnGC ) {
-    this.ver <- envir$version
-    that.ver <- .pkg.env$key.map[[envir$id]]
-    if( !is.null(this.ver) && !is.null(that.ver) && (this.ver == that.ver) ) {
-      h2o.rm(envir$id)
+  this.ver <- envir$version
+  that.ver <- .pkg.env$key.map[[envir$id]]
+  if( !is.null(this.ver) && !is.null(that.ver) && (this.ver == that.ver) ) {
+    h2o.rm(envir$id)
 # CNC - Do not wipe out the reference, because need to ensure counts
 # monotonically increase.  If we reset the counts we can get confused when the
 # same (id, number) pair comes around again.
 #      .pkg.env$key.map[[envir$id]] <- NULL  # wipe out the reference to the id as well
-    }
   }
   invisible(NULL)
 }
@@ -112,19 +110,17 @@ setClass("H2OObject",
 #' @param .Object an \code{H2OObject}
 #' @param \dots additional parameters to pass on to functions
 #' @export
-setMethod("initialize", signature="H2OObject", function(.Object, ..., id=character()) {
+setMethod("initialize", signature="H2OObject", function(.Object, ..., id=character(), GC=logical()) {
   envir <- new.env()
-  assign("id", id, envir)
-  assign("deleteOnGC", TRUE, envir)
-  if( is.null(.pkg.env$key.map[[id]]) ) .pkg.env$key.map[[id]] <- 0L
-  .pkg.env$key.map[[id]] <- .pkg.env$key.map[[id]] + 1L  # bump the version of the id
-  assign("version", .pkg.env$key.map[[id]], envir)
-  reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-  callNextMethod(.Object, ..., id=id, finalizer=envir)
+  if( GC ) {
+    assign("id", id, envir)
+    if( is.null(.pkg.env$key.map[[id]]) ) .pkg.env$key.map[[id]] <- 0L
+    .pkg.env$key.map[[id]] <- .pkg.env$key.map[[id]] + 1L  # bump the version of the id
+    assign("version", .pkg.env$key.map[[id]], envir)
+    reg.finalizer(envir, .keyFinalizer, onexit = TRUE)
+  }
+  callNextMethod(.Object, ..., id=id, envir = envir, GC=GC)
 })
-
-.h2o.protectFromGC <- function(.Object) { assign("deleteOnGC", FALSE, .Object@finalizer) }
-.h2o.allowGC       <- function(.Object) { assign("deleteOnGC",  TRUE, .Object@finalizer) }
 
 
 #'
@@ -236,14 +232,14 @@ setClass("H2OFrame",
          contains="H2OObject"
          )
 
-setMethod("initialize", signature("H2OFrame"), function(.Object, id, mutable) {
+setMethod("initialize", signature("H2OFrame"), function(.Object, id, GC, mutable) {
   .Object@mutable <- mutable
-  callNextMethod(.Object, id=id)
+  callNextMethod(.Object, id=id, GC=GC)
 })
 
 # Frame-specific constructor
-.newH2OFrame <- function(id, mutable=NULL) {
-  new("H2OFrame", id=id, mutable=mutable)
+.newH2OFrame <- function(id, GC, mutable=NULL) {
+  new("H2OFrame", id=id, GC=GC, mutable=mutable)
 }
 
 #' @rdname H2OFrame-class
@@ -281,7 +277,7 @@ setMethod("show", "H2OFrame", function(object) {
 setClass("H2ORawData", contains="H2OObject")
 
 setMethod("initialize", signature="H2ORawData", function(.Object, ..., id=character()) {
-  callNextMethod(.Object, ..., id=id)
+  callNextMethod(.Object, ..., id=id, GC=T)
 })
 
 .newH2ORawData <- function(id) {
