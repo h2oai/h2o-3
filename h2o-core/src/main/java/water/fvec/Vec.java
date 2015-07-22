@@ -185,7 +185,6 @@ public class Vec extends Keyed<Vec> {
   public static final byte T_NUM  =  3; // Numeric, but not enum or time
   public static final byte T_ENUM =  4; // Integer, with a enum/factor String mapping
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
-  public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
@@ -215,7 +214,7 @@ public class Vec extends Keyed<Vec> {
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is a time column.  */
-  public final boolean isTime   (){ return _type>=T_TIME && _type<T_TIMELAST; }
+  public final boolean isTime   (){ return _type==T_TIME; }
 //  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
   /** Time formatting string.
    *  @return Time formatting string */
@@ -238,7 +237,7 @@ public class Vec extends Keyed<Vec> {
     super(key);
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
-    assert T_BAD <= type && type < T_TIMELAST; // Note that T_BAD is allowed for all-NA Vecs
+    assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
     _type = type;
     _espc = espc;
     _domain = domain;

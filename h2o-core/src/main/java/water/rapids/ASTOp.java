@@ -4615,11 +4615,7 @@ class ASTAsNumeric extends ASTUniPrefixOp {
             case Vec.T_ENUM:
             case Vec.T_TIME: nc.addNum(c.atd(i)); break;
             default:
-              if (_type > Vec.T_TIME && _type <= Vec.T_TIMELAST)
-                nc.addNum(c.atd(i));
-              else
                 throw new IllegalArgumentException("Unsupported vector type: " + _type);
-              break;
           }
         }
       }
