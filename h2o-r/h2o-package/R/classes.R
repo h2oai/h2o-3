@@ -718,3 +718,15 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
     }
   }
 }
+
+setClass("H2OGrid", representation(conn="H2OConnection", grid_id="character", model_ids="list"))
+setMethod("show", "H2OGrid", function(object) {
+  cat("H2O Grid Details\n")
+  cat("================\n\n")
+  cat("Grid ID:", object@grid_id, "\n")
+  cat("Models:\n")
+  lapply(object@model_ids, function(model_id) {
+    cat("  ", model_id, "\n")
+  })
+})
+

@@ -378,4 +378,65 @@ public class PojoUtils {
       return false;
     }
   }
+
+  public static void setField(Object o, String fieldName, Object value, FieldNaming objectNamingConvention) {
+    String destFieldName = null;
+    switch (objectNamingConvention) {
+      case CONSISTENT: destFieldName = fieldName; break;
+      case DEST_HAS_UNDERSCORES:
+        if (fieldName.startsWith("_"))
+          destFieldName = fieldName;
+        else
+          destFieldName = "_" + fieldName;
+        break;
+      case ORIGIN_HAS_UNDERSCORES:
+        if (fieldName.startsWith("_"))
+          destFieldName = fieldName.substring(1);
+        else
+          throw new IllegalArgumentException("Wrong combination of options!");
+        break;
+    }
+    setField(o, destFieldName, value);
+  }
+
+  /**
+   * Set given field to given value on given object.
+   *
+   * @param o  object to modify
+   * @param fieldName  name of field to set
+   * @param value  value to write the the field
+   */
+  public static void setField(Object o, String fieldName, Object value) {
+    try {
+      Field f = o.getClass().getField(fieldName);
+      f.set(o, value);
+    } catch (NoSuchFieldException e) {
+      throw new IllegalArgumentException("Field " + fieldName + " not found!", e);
+    } catch (IllegalAccessException e) {
+      throw new IllegalArgumentException("Field=" + fieldName + " cannot be set to value=" + value, e);
+    }
+  }
+
+  /**
+   * Returns field value.
+   *
+   * @param o  object to read field value from
+   * @param name  name of field to read
+   * @return  returns field value
+   *
+   * @throws java.lang.IllegalArgumentException  when o is <code>null</code>, or field is not found,
+   * or field cannot be read.
+   */
+  public static Object getFieldValue(Object o, String name) {
+    if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
+    Field f = null;
+    try {
+      f = o.getClass().getField(name);
+      return f.get(o);
+    } catch (NoSuchFieldException e) {
+      throw new IllegalArgumentException("Field not found: '" + name + "' on object " + o);
+    } catch (IllegalAccessException e) {
+      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "' on object " + o);
+    }
+  }
 }
