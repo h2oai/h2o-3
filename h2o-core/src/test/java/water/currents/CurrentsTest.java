@@ -293,20 +293,41 @@ public class CurrentsTest extends TestUtil {
       else if( i != null ) throw new IllegalArgumentException("Attempting to overright an unexpected key");
       DKV.put(fr = new Frame(k,fr._names,fr.vecs()));
       System.out.println(fr);
+      checkSaneFrame();
       return fr;
     case Val.NUM:
       System.out.println("num= "+val.getNum());
       assert id==null;
+      checkSaneFrame();
       return null;
     case Val.STR:
       System.out.println("str= "+val.getStr());
       assert id==null;
+      checkSaneFrame();
       return null;
     default:
       throw water.H2O.fail();
     }
   }
 
+  static void checkSaneFrame() {  assert checkSaneFrame_impl(); }
+  static boolean checkSaneFrame_impl() {
+    for( Key k : H2O.localKeySet() ) {
+      Value val = H2O.raw_get(k);
+      if( val.isFrame() ) {
+        Frame fr = val.get();
+        Vec vecs[] = fr.vecs();
+        for( int i=0; i<vecs.length; i++ ) {
+          Vec v = vecs[i];
+          if( DKV.get(v._key) == null ) {
+            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key+", name="+fr._names[i]);
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
 
   @Test public void testChicago() {
     Frame weather=null, crimes=null, census=null;
@@ -340,6 +361,7 @@ public class CurrentsTest extends TestUtil {
       Keyed.remove(Key.make("binary_op_32"));
       Keyed.remove(Key.make("binary_op_31"));
       Keyed.remove(Key.make("unary_op_8"));
+      checkSaneFrame();
 
       crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) [25] [0:9999]) 25 \"WeekDay\")", "crimes.hex");
       Keyed.remove(Key.make("nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip"));
@@ -381,6 +403,7 @@ public class CurrentsTest extends TestUtil {
       Keyed.remove(Key.make("unary_op_7"));
       Keyed.remove(Key.make("unary_op_6"));
       Keyed.remove(Key.make("nary_op_5"));
+      checkSaneFrame();
 
       // Standard "head of 10 rows" pattern for printing
       Frame subset_34 = exec_str("(rows crimes.hex [0:10])", "subset_34");
@@ -397,17 +420,24 @@ public class CurrentsTest extends TestUtil {
       crimes.remove();
       weather.remove();
 
+      // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
       Frame nary_op_37 = exec_str("(merge subset_35 census.hex FALSE FALSE)", "nary_op_37");
 
+      // nary_op_38 = merge( nary_op_37 subset_36); Vecs in nary_op_38 and nary_pop_37 and X shared
       Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 FALSE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");
 
       // Standard "head of 10 rows" pattern for printing
       Frame subset_44 = exec_str("(rows subset_41 [0:10])", "subset_44");
       Keyed.remove(Key.make("subset_44"));
-
       Keyed.remove(Key.make("subset_44"));
+
+      checkSaneFrame();
       Keyed.remove(Key.make("binary_op_40"));
+      checkSaneFrame();
+      // All is good here, but nary_op_37 and nary_op_38 sharing Vecs
       Keyed.remove(Key.make("nary_op_37"));
+      // dies here... missing at least 'Year' in nary_op_38
+      checkSaneFrame();
 
       // Crash here....
       Frame subset_43 = exec_str("(rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8)))", "subset_43");
