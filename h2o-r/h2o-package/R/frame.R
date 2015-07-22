@@ -749,7 +749,7 @@ NULL
 #' @aliases [,H2OFrame-method
 #' @rdname H2OFrame-Extract
 #' @export
-setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
+setMethod("[", c("H2OFrame", i="ANY", j="ANY", drop="ANY"), function(x, i, j, ..., drop = TRUE) {
   missingI <- missing(i)
   missingJ <- missing(j)
 

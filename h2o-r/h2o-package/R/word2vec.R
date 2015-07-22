@@ -87,7 +87,7 @@ function(word2vec, target, count) {
 #    vec <- colSums(as.data.frame(vecs))
 #    params$vec <- vec
 #    res <- .h2o.__remoteSend(data@conn, .h2o.__SYNONYMS, params)
-#    return(.h2o.getGCFrame(res$key))
+#    return(h2o.getFrame(res$key))
   }
 }
 

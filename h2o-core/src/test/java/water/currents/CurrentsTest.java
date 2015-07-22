@@ -430,64 +430,29 @@ public class CurrentsTest extends TestUtil {
       Frame subset_44 = exec_str("(rows subset_41 [0:10])", "subset_44");
       Keyed.remove(Key.make("subset_44"));
       Keyed.remove(Key.make("subset_44"));
-
-      checkSaneFrame();
       Keyed.remove(Key.make("binary_op_40"));
-      checkSaneFrame();
-      // All is good here, but nary_op_37 and nary_op_38 sharing Vecs
       Keyed.remove(Key.make("nary_op_37"));
-      // dies here... missing at least 'Year' in nary_op_38
-      checkSaneFrame();
 
-      // Crash here....
       Frame subset_43 = exec_str("(rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8)))", "subset_43");
+
+      // Chicago demo continues on past, but this is all I've captured for now
+
+      checkSaneFrame();
 
     } finally {
       if( weather != null ) weather.remove();
       if( crimes  != null ) crimes .remove();
       if( census  != null ) census .remove();
 
-      for( String s : new String[]{"nary_op_5",
-                                   "unary_op_6",
-                                   "unary_op_7",
-                                   "unary_op_8",
-                                   "binary_op_9",
-                                   "unary_op_10",
-                                   "unary_op_11",
-                                   "unary_op_12",
-                                   "binary_op_13",
-                                   "binary_op_14",
-                                   "binary_op_15",
-                                   "nary_op_16",
-                                   "binary_op_17",
-                                   "binary_op_18",
-                                   "binary_op_19",
-                                   "binary_op_20",
-                                   "binary_op_21",
-                                   "binary_op_22",
-                                   "binary_op_23",
-                                   "binary_op_24",
-                                   "binary_op_25",
-                                   "nary_op_26",
-                                   "nary_op_27",
-                                   "nary_op_28",
-                                   "unary_op_29",
-                                   "binary_op_30",
-                                   "binary_op_31",
-                                   "binary_op_32",
-                                   "subset_33",
-                                   "subset_34",
-                                   "subset_35",
-                                   "subset_36",
-                                   "nary_op_37",
-                                   "nary_op_38",
-                                   "nary_op_39",
-                                   "binary_op_40",
-                                   "subset_41",
-                                   "binary_op_42",
-                                   "subset_43",
-                                   "subset_44",
-        } )
+      for( String s : new String[]{"nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
+                                   "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
+                                   "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
+                                   "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
+                                   "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
+                                   "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
+                                   "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
+                                   "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
+                                   "subset_41", "binary_op_42", "subset_43", "subset_44", } )
         Keyed.remove(Key.make(s));
     }
   }

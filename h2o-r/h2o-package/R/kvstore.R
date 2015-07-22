@@ -108,7 +108,7 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   if(key == data@id) stop("Destination key must differ from input frame ", data@id)
   .h2o.raw_expr_op(data@id, key=key)
-  .h2o.getGCFrame(key)
+  h2o.getFrame(key)
 }
 
 #'

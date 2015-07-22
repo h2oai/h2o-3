@@ -110,7 +110,9 @@ setClass("H2OObject",
 #' @param .Object an \code{H2OObject}
 #' @param \dots additional parameters to pass on to functions
 #' @export
-setMethod("initialize", signature="H2OObject", function(.Object, ..., id=character(), GC=logical()) {
+setMethod("initialize", signature="H2OObject", function(.Object, ..., id, GC) {
+  if( missing(GC) || length(GC)!=1 || !is.logical(GC) )
+    print(sys.calls())
   envir <- new.env()
   if( GC ) {
     assign("id", id, envir)

@@ -74,6 +74,11 @@ public class ASTMerge extends ASTPrim {
         for( int j=0; j<ids.length; j++ )  id_maps[i][j] = j;
       }
     }
+    
+    // The lifetime of the large dataset is independent of the original
+    // dataset, so it needs to be a deep copy.  
+    // TODO: COW Optimization
+    large = large.deepCopy(null);
 
     // MergeSet is from local (non-replicated) chunks/row to other-chunks/row.
     // Row object in table has e.g. chunks and a row number; passed-in Row

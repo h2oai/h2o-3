@@ -1108,12 +1108,10 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
-  /**
-   * Create a copy of the input Frame and return that copied Frame. All Vecs in this are copied in parallel.
-   * Caller mut do the DKV.put
-   * @param keyName Key for resulting frame. If null, no key will be given.
-   * @return The fresh copy of fr.
-   */
+  /** Create a copy of the input Frame and return that copied Frame.  All Vecs
+   *  in this are copied in parallel.  Caller mut do the DKV.put
+   *  @param keyName Key for resulting frame. If null, no key will be given.
+   *  @return The fresh copy of fr.   */
   public Frame deepCopy(String keyName) {
     DoCopyFrame t = new DoCopyFrame(this.vecs()).doAll(this);
     return keyName==null ? new Frame(names(),t._vecs) : new Frame(Key.make(keyName),names(),t._vecs);
