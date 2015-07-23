@@ -1352,4 +1352,51 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  // just a simple sanity check - not a golden test
+  @Test
+  public void testDistributions() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    for (Distributions.Family dist : new Distributions.Family[]{
+            Distributions.Family.AUTO,
+            Distributions.Family.gaussian,
+            Distributions.Family.poisson,
+            Distributions.Family.gamma,
+            Distributions.Family.tweedie
+    }) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        for (String s : new String[]{
+                "Merit", "Class"
+        }) {
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        }
+        DKV.put(tfr);
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = "Cost";
+        parms._seed = 0xdecaf;
+        parms._distribution = dist;
+        parms._min_rows = 1;
+        parms._ntrees = 3;
+        parms._learn_rate = 1e-3f;
+
+        // Build a first model; all remaining models should be equal
+        GBM job = new GBM(parms);
+        gbm = job.trainModel().get();
+
+        ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+
+        job.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (vfr != null) vfr.remove();
+        if (gbm != null) gbm.delete();
+        Scope.exit();
+      }
+    }
+  }
 }
