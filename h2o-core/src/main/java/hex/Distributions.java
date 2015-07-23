@@ -166,4 +166,57 @@ public class Distributions extends Iced {
         throw H2O.unimpl();
     }
   }
+
+  /**
+   * Contribution to numerator for GBM's leaf node prediction
+   * @param w weight
+   * @param y response
+   * @param z residual
+   * @param f predicted value (including offset)
+   * @return weighted contribution to numerator
+   */
+  public double gammaNum(double w, double y, double z, double f) {
+    switch (distribution) {
+      case gaussian:
+      case bernoulli:
+      case multinomial:
+        return w * z;
+      case poisson:
+        return w * y;
+      case gamma:
+        return w * (z+1); //z+1 == y*exp(-f)
+      case tweedie:
+        return w * y * exp(f*(1-p));
+      default:
+        throw H2O.unimpl();
+    }
+  }
+
+  /**
+   * Contribution to denominator for GBM's leaf node prediction
+   * @param w weight
+   * @param y response
+   * @param z residual
+   * @param f predicted value (including offset)
+   * @return
+   */
+  public double gammaDenom(double w, double y, double z, double f) {
+    switch (distribution) {
+      case gaussian:
+      case gamma:
+        return w;
+      case bernoulli:
+        double ff = y-z;
+        return w * ff*(1-ff);
+      case multinomial:
+        double absz = Math.abs(z);
+        return w * (absz*(1-absz));
+      case poisson:
+        return w * (y-z);
+      case tweedie:
+        return w * exp(f*(2-p));
+      default:
+        throw H2O.unimpl();
+    }
+  }
 }

@@ -462,6 +462,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
           if( tree.root() instanceof LeafNode ) continue;
+          Distributions dist = new Distributions(_parms._distribution, _parms._tweedie_power);
           for( int row=0; row<nids._len; row++ ) { // For all rows
             int nid = (int)nids.at8(row);          // Get Node to decide from
             if( nid < 0 ) continue;                // Missing response
@@ -485,31 +486,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             double w = hasWeightCol() ? chk_weight(chks).atd(row) : 1; //weight
             double y = resp.atd(row); //response
             double z = ress.atd(row); //residual
+            double f = preds.atd(row) + offset.atd(row);
             int idx=leafnid-leaf;
-            if( _dist == Distributions.Family.bernoulli ) {
-              double p = y - z;
-              num[idx] += w * z;
-              denom[idx] += w*p*(1-p);
-            } else if ( _dist == Distributions.Family.gaussian) {
-              num[idx] += w * z;
-              denom[idx] += w;
-            } else if ( _dist == Distributions.Family.poisson) {
-              double expfx = y - z;
-              num[idx] += w * y;
-              denom[idx] += w*expfx;
-            } else if ( _dist == Distributions.Family.gamma) {
-              double yexp_negf = z + 1; //same as y*Math.exp(-preds.atd(row)-offset.atd(row));
-              num[idx] += w * yexp_negf;
-              denom[idx] += w;
-            } else if ( _dist == Distributions.Family.tweedie) {
-              double f = preds.atd(row) + offset.atd(row);
-              num[idx] += w * y * Distributions.exp(f*(1-_parms._tweedie_power));
-              denom[idx] += w * Distributions.exp(f*(2-_parms._tweedie_power));
-            } else if ( _dist == Distributions.Family.multinomial) {
-              double absz = Math.abs(z);
-              num[idx] += w * z;
-              denom[idx] += w*(absz*(1-absz));
-            }
+            num[idx] += dist.gammaNum(w, y, z, f);
+            denom[idx] += dist.gammaDenom(w, y, z, f);
           }
         }
       }
