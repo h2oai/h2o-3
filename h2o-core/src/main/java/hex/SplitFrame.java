@@ -21,7 +21,7 @@ public class SplitFrame extends Transformer<SplitFrame> {
   /** Output destination keys. */
   public Key<Frame>[] destination_frames;
 
-  public SplitFrame() { this(Key.make()); }
+  public SplitFrame() { this(Key.<SplitFrame>make()); }
   public SplitFrame(Key<SplitFrame> dest) { this(dest, "SplitFrame job"); }
   public SplitFrame(Key<SplitFrame> dest, String desc) { super(dest, desc); }
 

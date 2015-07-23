@@ -51,11 +51,7 @@ public class ShuffleSplitFrame {
                 ncs[x + j].addNum(cs[j].atd(i));
                 break;
               default:
-                if (colType > Vec.T_TIME && colType <= Vec.T_TIMELAST)
-                  ncs[x + j].addNum(cs[j].atd(i));
-                else
                   throw new IllegalArgumentException("Unsupported vector type: " + colType);
-                break;
             }
           }
         }

@@ -114,7 +114,7 @@ class ModelMetricsHandler extends Handler {
       // Shouldn't need to do this manually. . .
       this.model = (mml._model == null ? null : new KeyV3.ModelKeyV3(mml._model._key));
       this.frame = (mml._frame == null ? null : new KeyV3.FrameKeyV3(mml._frame._key));
-      this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.make(mml._predictions_name)));
+      this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.<Frame>make(mml._predictions_name)));
       this.reconstruction_error = mml._reconstruction_error;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 

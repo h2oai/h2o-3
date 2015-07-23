@@ -2,14 +2,60 @@
 
 ##H2O
 
-###Simons (3.0.1.2) - 7/20/15
+###Simons (3.0.1.3) - 7/24/15
 
 ####New Features
 
 The following changes represent features that have been added since the previous release:
 
-##### Algorithms
+#####Python
 
+- [PUBDEV-1734](https://0xdata.atlassian.net/browse/PUBDEV-1734): Add save and load model to python api
+- [PUBDEV-1314](https://0xdata.atlassian.net/browse/PUBDEV-1314): Python needs "str" operator, like R's
+- [GitHub](https://github.com/h2oai/h2o-3/commit/df27d5c46011647ddb6363431ca085cc4dba37a5): turn on `H2OFrame __repr__`
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####API 
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/d22b508c215fb6033ed11fe5009de744bd38f2d7): Increase sleep from 2 to 3 because h2o itself does a sleep 2 on the REST API before triggering the shutdown.
+
+#####System
+
+- [PUBDEV-1730](https://0xdata.atlassian.net/browse/PUBDEV-1730): Make export file a  job [GitHub](https://github.com/h2oai/h2o-3/commit/31cdef5b6a48f11b6568e0131fcb4e0acb06f5ad)
+
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+#####Algorithms
+
+- PUBDEV-1743: gbm poisson w weights: deviance off 
+- PUBDEV-1736: gbm poisson with offset: seems to be giving wrong leaf predictions
+
+#####Python
+
+- [PUBDEV-1731](https://0xdata.atlassian.net/browse/PUBDEV-1731): Python get_frame() results in deleting a frame created by Flow
+- [HEXDEV-389](https://0xdata.atlassian.net/browse/HEXDEV-389): Split frame from python 
+- [HEXDEV-388](https://0xdata.atlassian.net/browse/HEXDEV-388): python client H2OFrame constructor puts the header into the data (as the first row)
+
+#####R
+
+- [PUBDEV-1504](https://0xdata.atlassian.net/browse/PUBDEV-1504): Runit intermittent fails : runit_pub_180_ddply.R 
+- [PUBDEV-1678](https://0xdata.atlassian.net/browse/PUBDEV-1678): Client mode jobs fail on runit_hex_1750_strongRules_mem.R
+
+#####System
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/9f83f68ffc70f164de51188c4837345a6a12ac13): Model parameters should be always public.
+
+###Simons (3.0.1.1) - 7/20/15
+
+####New Features
+
+##### Algorithms
 
 - [HEXDEV-213](https://0xdata.atlassian.net/browse/HEXDEV-213): Tweedie distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/a5892087d08bcee9b8c017bd6173601d262d9f79)
 - [HEXDEV-212](https://0xdata.atlassian.net/browse/HEXDEV-212): Poisson distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/861322058519cc3455e924449cbe7dfdecf67514)
@@ -98,7 +144,6 @@ The following changes represent features that have been added since the previous
 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/f738707830052bfa499d83ff91c29d2e7d13e113): changed to new AMI
 - [PUBDEV-679](https://0xdata.atlassian.net/browse/PUBDEV-679): Create cross-validation holdout sets using the per-row weights
-- [PUBDEV-1691](https://0xdata.atlassian.net/browse/PUBDEV-1691): Cross validation: access to models and cardinality, access to folds 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/3c7f296804d72b9b6940aaccc63f329383ab01fb): Add user_name. Add ExtensionHandler1.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0ddf0740ad2e13a2a45137b4d017775900066244): Added auth options to h2o.init(). 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0f9f71335e16a2632c3072782143f47657883129): Added H2O.calcNextUniqueModelId().
@@ -109,8 +154,6 @@ The following changes represent features that have been added since the previous
 - [HEXDEV-231](https://0xdata.atlassian.net/browse/HEXDEV-231): Flow: Ability to change column type post-Parse
 
 ####Enhancements
-
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -168,8 +211,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes 
-
-The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 
@@ -241,8 +282,6 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1606](https://0xdata.atlassian.net/browse/PUBDEV-1606): Flow :=> Cannot save flow on hdfs
 - [PUBDEV-1527](https://0xdata.atlassian.net/browse/PUBDEV-1527): missing .java extension when downloading pojo
 - [PUBDEV-1653](https://0xdata.atlassian.net/browse/PUBDEV-1653): Flow: the column names do not modify when user changes the dataset in model builder
-
-
 
 ---
 
@@ -447,7 +486,6 @@ The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 
-- [GitHub](https://github.com/h2oai/h2o-3/commit/b358eb0a5f12e0dab006f012a8a8e9ea7e51d46c): Fix weights for GBM - add weight correction to Gamma computation.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8b646239e9433c719d390b03ba475715cf3b4f5e): Skip rows with weight 0.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c6f11a9069d3553694dee3e33f574f482567613d): x_ignore must be set when autoencoder is TRUE
 
@@ -819,7 +857,6 @@ The following changes are to resolve incorrect software behavior:
 ##### Algorithms
 
 - [HEXDEV-209](https://0xdata.atlassian.net/browse/HEXDEV-209):Poisson distributions for GLM
-- [HEXDEV-210](https://0xdata.atlassian.net/browse/HEXDEV-210): Gamma distributions for GLM
 
 ##### Python
 

@@ -31,7 +31,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** All the parameters required to build the model. */
   public P _parms;
-  private P parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
@@ -143,7 +142,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P ignore) {
-    super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.");
+    super(Key.<M>make("Failed"),"ModelBuilder constructor needs to be overridden.");
     throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 

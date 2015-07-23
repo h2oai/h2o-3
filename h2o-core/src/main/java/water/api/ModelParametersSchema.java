@@ -108,8 +108,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : Key.make(this.training_frame.name));
-    impl._valid = (null == this.validation_frame ? null : Key.make(this.validation_frame.name));
+    impl._train = (null == this.training_frame ? null : Key.<Frame>make(this.training_frame.name));
+    impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
 
     return impl;
   }

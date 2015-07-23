@@ -1038,6 +1038,12 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("as.character", self))
 
+  def na_omit(self):
+    """
+    :return: Removes rows with NAs
+    """
+    return H2OFrame(expr=ExprNode("na.omit", self))._frame()
+
   def isna(self):
     """
     :return: Returns a new boolean H2OVec.

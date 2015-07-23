@@ -48,7 +48,7 @@ public class AppendableVec extends Vec {
   long _naCnt;
   long _enumCnt;
   long _strCnt;
-  final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
+  long _timCnt;
   long _totalCnt;
 
   public int _chunkOff;         // Public so the parser can find it
@@ -78,7 +78,7 @@ public class AppendableVec extends Vec {
     _naCnt += chk.naCnt();
     _enumCnt += chk.enumCnt();
     _strCnt += chk.strCnt();
-    for( int i=0; i<_timCnt.length; i++ ) _timCnt[i] += chk._timCnt[i];
+    _timCnt += chk._timCnt;
     _totalCnt += chk._len;
   }
 
@@ -107,7 +107,7 @@ public class AppendableVec extends Vec {
     _strCnt += av._strCnt;
     _naCnt += av._naCnt;
     _enumCnt += av._enumCnt;
-    ArrayUtils.add(_timCnt, av._timCnt);
+    _timCnt += av._timCnt;
     _totalCnt += av._totalCnt;
   }
 
@@ -141,7 +141,7 @@ public class AppendableVec extends Vec {
     _naCnt += nv._naCnt;
     _enumCnt += nv._enumCnt;
     _strCnt += nv._strCnt;
-    water.util.ArrayUtils.add(_timCnt,nv._timCnt);
+    _timCnt += nv._timCnt;
     _totalCnt += nv._totalCnt;
   }
 
@@ -175,14 +175,6 @@ public class AppendableVec extends Vec {
       if (nchunk == 0) ctypes[ENUM]++;                   // No rows in vec
     }
 
-    // Make sure time is consistent
-    int t = -1;
-    for( int i=0; i<_timCnt.length; i++ )
-      if( _timCnt[i] != 0 )
-        if( t== -1 ) t=i;     // common time parse
-        else t = -2;          // inconsistent parse
-    if( t== -2 ) ctypes[TIME] = 0; // Blow off inconsistent time parse
-
     // Find the dominant non-NA Chunk type.
     int idx = 0;
     for( int i=0; i<ctypes.length; i++ )
@@ -203,7 +195,7 @@ public class AppendableVec extends Vec {
     switch( idx ) {
     case ENUM  : type = T_ENUM; break;
     case NUMBER: type = T_NUM ; break;
-    case TIME  : type = (byte)(T_TIME+t); break;
+    case TIME  : type = T_TIME; break;
     case UUID  : type = T_UUID; break;
     case STRING: type = T_STR ; break;
     default    : type = T_BAD ; break;

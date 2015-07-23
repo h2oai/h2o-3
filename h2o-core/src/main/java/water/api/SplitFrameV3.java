@@ -15,6 +15,6 @@ public class SplitFrameV3 extends JobV3<SplitFrame, SplitFrameV3> {
   public FrameKeyV3[] destination_frames;
 
   @Override public SplitFrame createImpl() {
-    return new SplitFrame(Key.make(), "SplitFrame job");
+    return new SplitFrame(Key.<SplitFrame>make(), "SplitFrame job");
   }
 }

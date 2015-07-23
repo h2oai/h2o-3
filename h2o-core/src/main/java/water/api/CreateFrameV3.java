@@ -2,6 +2,7 @@ package water.api;
 
 import hex.CreateFrame;
 import water.Key;
+import water.fvec.Frame;
 
 class CreateFrameV3 extends JobV3<CreateFrame, CreateFrameV3> {
   @API(help = "Number of rows", json=true)
@@ -49,6 +50,6 @@ class CreateFrameV3 extends JobV3<CreateFrame, CreateFrameV3> {
   @API(help = "Whether an additional response column should be generated", json=true)
   public boolean has_response;
 
-  @Override public CreateFrame createImpl( ) { return new CreateFrame(Key.make(), null); }
+  @Override public CreateFrame createImpl( ) { return new CreateFrame(Key.<Frame>make(), null); }
 }
 
