@@ -717,7 +717,7 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
       job = jobs[[1]]
 
       status = job$status
-      print(paste0("Job status: ", status))
+#      print(paste0("Job status: ", status))
       stopifnot(is.character(status))
 
       # check failed up front...
