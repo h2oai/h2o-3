@@ -105,7 +105,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
-      _initialPrediction = _nclass > 2 || _parms._distribution == Distributions.Family.bernoulli ? 0 : getInitialValue();
+      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
     }
 
     switch( _parms._distribution) {

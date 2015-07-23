@@ -84,8 +84,7 @@ public class Distributions extends Iced {
       case gaussian:
         return f;
       case bernoulli:
-        assert(0<f && f<1);
-        return log(f / (1 - f));
+        return log(f/(1-f));
       case multinomial:
       case poisson:
       case gamma:
