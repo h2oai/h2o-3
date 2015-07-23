@@ -96,6 +96,14 @@
 }
 
 
+.h2o.modelJob <- function( algo, params, do_future ) {
+  .h2o.eval.frame(params$training_frame)
+  if( !is.null(params$validation_frame) ) 
+    .h2o.eval.frame(params$validation_frame)
+  job <- .h2o.startModelJob(algo, params)
+  if( do_future )         job
+  else h2o.getFutureModel(job)
+}
 
 
 .h2o.startModelJob <- function(algo, params) {
@@ -185,18 +193,6 @@
   dest_key <- res$job$dest$name
 
   new("H2OModelFuture", job_key=job_key, model_id=dest_key)
-}
-
-.h2o.createModel <- function(algo, params) {
-  params$training_frame <- get("training_frame", parent.frame())
-  .h2o.eval.frame(params$training_frame)
-
-  if (!is.null(params$validation_frame)){
-    params$validation_frame <- get("validation_frame", parent.frame())
-    .h2o.eval.frame(params$validation_frame)
-  }
-
-  h2o.getFutureModel(.h2o.startModelJob(algo, params))
 }
 
 h2o.getFutureModel <- function(object) {

@@ -118,13 +118,13 @@ h2o.assign <- function(data, key) {
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) {
+h2o.getFrame <- function(id, GC=TRUE) {
   if( is.null(id) ) stop("Expected frame id")
   res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", id))$frames[[1]]
   cnames <- unlist(lapply(res$columns, function(c) c$label))
 
   mutable <- new("H2OFrameMutableState", nrows = res$rows, ncols = length(res$columns), col_names = cnames, computed=T)
-  .newH2OFrame(id=id, GC=T, mutable=mutable)
+  .newH2OFrame(id=id, GC, mutable=mutable)
 }
 
 #' Get an R reference to an H2O model
@@ -189,7 +189,7 @@ h2o.getModel <- function(model_id) {
   })
 
   # Convert ignored_columns/response_column to valid R x/y
-  cols <- colnames(h2o.getFrame(parameters$training_frame))
+  cols <- colnames(h2o.getFrame(parameters$training_frame, GC=FALSE))
 
   parameters$x <- setdiff(cols, parameters$ignored_columns)
   allparams$x <- setdiff(cols, allparams$ignored_columns)

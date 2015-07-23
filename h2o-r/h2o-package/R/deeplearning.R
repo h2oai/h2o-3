@@ -313,7 +313,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  .h2o.createModel('deeplearning', parms)
+  .h2o.modelJob('deeplearning', parms, do_future=FALSE)
 }
 
 #' Anomaly Detection via H2O Deep Learning Model

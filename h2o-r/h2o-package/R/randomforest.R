@@ -120,6 +120,5 @@ h2o.randomForest <- function( x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  if( do_future ) .h2o.startModelJob('drf', parms)
-  else            .h2o.createModel('drf', parms)
+  .h2o.modelJob('drf', parms)
 }

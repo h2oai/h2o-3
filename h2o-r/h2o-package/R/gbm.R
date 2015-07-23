@@ -136,7 +136,6 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  if( do_future ) .h2o.startModelJob('gbm', parms)
-  else            .h2o.createModel('gbm', parms)
+  .h2o.modelJob('gbm', parms, do_future)
 }
 

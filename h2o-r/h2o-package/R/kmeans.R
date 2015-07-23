@@ -95,5 +95,5 @@ h2o.kmeans <- function(training_frame, x, k,
   }
 
   # Error check and build model
-  .h2o.createModel('kmeans', parms)
+  .h2o.modelJob('kmeans', parms, do_future=FALSE)
 }

@@ -165,7 +165,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
     .h2o.eval.frame(beta_constraints)
     parms$beta_constraints <- beta_constraints
   }
-  m <- .h2o.createModel('glm', parms)
+  m <- .h2o.modelJob('glm', parms, do_future=FALSE)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m

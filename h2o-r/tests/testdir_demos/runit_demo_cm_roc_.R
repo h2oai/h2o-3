@@ -7,27 +7,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-options(echo=TRUE)
-
-heading("BEGIN TEST")
-
-# RStudio interactive mode
-if (! exists("myIP")) {
-  library(h2o)
-  myIP = "localhost"
-  myPort = 54321
-}
-
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
-
 #uploading data file to h2o
-air <- h2o.importFile(path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+air <- h2o.importFile(path=.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
 s <- h2o.runif(air)    # Useful when number of rows too large for R to handle
 air.train <- air[s <= 0.8,]
-air.valid <- air[s > 0.8,]
+air.valid <- air[s >  0.8,]
 
 myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", "fDayOfWeek" )
 myY <- "IsDepDelayed"
@@ -44,7 +31,7 @@ print(air.glm)
 print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
-air.test <- h2o.importFile(path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+air.test <- h2o.importFile(path=.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 #predicting & performance on test file
 pred.gbm <- predict(air.gbm, air.test)
