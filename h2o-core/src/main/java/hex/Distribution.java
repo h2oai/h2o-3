@@ -8,7 +8,12 @@ import water.Iced;
  */
 //TODO: Separate into family/link
 public class Distribution extends Iced {
-  public enum Family {AUTO, multinomial, gaussian, bernoulli, poisson, gamma, tweedie, huber, laplace}
+  public enum Family {
+    AUTO,         //model-specific behavior
+    bernoulli,    //binomial classification (nclasses == 2)
+    multinomial,  //classification (nclasses >= 2)
+    gaussian, poisson, gamma, tweedie, huber, laplace //regression
+  }
 
   /**
    * Short constructor for non-Tweedie distributions

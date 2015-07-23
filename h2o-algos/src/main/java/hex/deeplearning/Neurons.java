@@ -510,7 +510,7 @@ public abstract class Neurons {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final float t = _input._a.get(row);
     final float y = _a.get(row);
-    return (float)Neurons.getDistribution(params._loss).gradient(t, y);
+    return (float)Neurons.getDistribution(params._loss).deviance(1., t, y);
   }
 
   /**
