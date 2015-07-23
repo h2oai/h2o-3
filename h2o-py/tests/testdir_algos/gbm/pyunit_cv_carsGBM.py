@@ -4,8 +4,6 @@ import h2o
 import random
 
 def cv_carsGBM(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
 
     # read in the dataset and construct training set (and validation set)
     cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
@@ -32,17 +30,33 @@ def cv_carsGBM(ip,port):
     print "Response column: {0}".format(response_col)
 
     ## cross-validation
-    ## check that cv metrics are the same over (seeded) repeated runs
+    ## check that cv metrics are the same over repeated "Modulo" runs
     nfolds = random.randint(3,10)
-    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, seed=1234)
-    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, seed=1234)
+    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+                   fold_assignment="Modulo")
+    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+                   fold_assignment="Modulo")
     h2o.check_models(gbm1, gbm2)
+
+    # ## check that cv metrics are different over repeated "Random" runs
+    # # TODO: PUBDEV-1752
+    # nfolds = random.randint(3,10)
+    # gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+    #                fold_assignment="Random")
+    # gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+    #                fold_assignment="Random")
+    # try:
+    #     h2o.check_models(gbm1, gbm2)
+    #     assert False, "Expected models to be different over repeated Random runs"
+    # except EnvironmentError:
+    #     assert True
+
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution, seed=1234)
     # TODO: manually construct the cross-validation metrics and compare
-    # TODO: PUBDEV-1697
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution,
+                  fold_assignment="Modulo")
 
     # 2. nfolds = 0
     gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=0, distribution=distribution)
@@ -50,13 +64,16 @@ def cv_carsGBM(ip,port):
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution)
     h2o.check_models(gbm1, gbm2)
 
-    # 3. more folds than observations equivalent to (seeded) leave-one-out
-    gbm3 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution, seed=1234)
-    h2o.check_models(gbm, gbm3)
+    # 3. cross-validation and regular validation attempted
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+    gbm = h2o.gbm(y=train[response_col], x=train[predictors], nfolds=random.randint(3,10), validation_y=valid[1],
+                  validation_x=valid[predictors], distribution=distribution)
+
 
     ## error cases
     # 1. nfolds == 1 or < 0
-    # TODO: PUBDEV-1696
     try:
         gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(-10000,-1),
                       distribution=distribution)
@@ -65,14 +82,11 @@ def cv_carsGBM(ip,port):
     except EnvironmentError:
         assert True
 
-    # 2. cross-validation and regular validation attempted
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    # 2. more folds than observations
     try:
-        gbm = h2o.gbm(y=train[response_col], x=train[predictors], nfolds=random.randint(3,10), validation_y=valid[1],
-                      validation_x=valid[predictors], distribution=distribution)
-        assert False, "Expected model-build to fail when both cross-validation and regular validation is attempted"
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution,
+                       fold_assignment="Modulo")
+        assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
         assert True
 
