@@ -104,7 +104,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
-      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
+      // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
+      _initialPrediction = _nclass > 2 || _parms._distribution == Distributions.Family.bernoulli ? 0 : getInitialValue();
     }
 
     switch( _parms._distribution) {
@@ -261,7 +262,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk tr = chk_tree(chks, 0); // Prior tree sums
-        Chunk wk = chk_work(chks,0); // Place to store residuals
+        Chunk wk = chk_work(chks, 0); // Place to store residuals
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
         Distributions dist = new Distributions(_parms._distribution, _parms._tweedie_power);
         for( int row = 0; row < wk._len; row++) {
