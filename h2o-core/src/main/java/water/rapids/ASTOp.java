@@ -1914,7 +1914,7 @@ class ASTSum extends ASTReducerOp {
 }
 
 class ASTProd extends ASTReducerOp {
-  ASTProd() {super(0);}
+  ASTProd() {super(1);}
   @Override String opStr(){ return "prod";}
   @Override ASTOp make() {return new ASTProd();}
   @Override double op(double d0, double d1) { return d0*d1;}
@@ -1939,7 +1939,7 @@ class ASTProd extends ASTReducerOp {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
 //        assert C.vec().isNumeric();
-        double prod=_d;
+        double prod=1.;
         if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) prod *= d; }
         else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        prod *= d; }
         _d = prod;
