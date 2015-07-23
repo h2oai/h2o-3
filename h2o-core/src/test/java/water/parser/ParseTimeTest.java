@@ -3,6 +3,8 @@ package water.parser;
 import org.junit.*;
 
 import org.joda.time.DateTimeZone;
+
+import water.Key;
 import water.TestUtil;
 import water.fvec.*;
 
@@ -61,5 +63,62 @@ public class ParseTimeTest extends TestUtil {
         exp[i][j] += pst.getOffset((long)exp[i][j]) - localTZ.getOffset((long)exp[i][j]);
     //File items will be converted to ms for local timezone
     ParserTest.testParsed(parse_test_file("smalldata/junit/ven-11.csv"),exp,exp.length);
+  }
+
+  @Test public void testTimeParse3() {
+    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
+    DateTimeZone localTZ = DateTimeZone.getDefault();
+    String[] data = new String[] {
+        "12Jun10:10:00:00",
+        "12JUN2010:10:00:00",
+        "\"12JUN2010 10:00:00\"",
+        "\"12JUN2010:10:00:00 PM\"",
+        "12JUN2010:10:00:00.123456789",
+        "\"12JUN2010:10:00:00.123456789 PM\"",
+        "12June2010",
+        "\"24-MAR-14 06.10.48.000000000 PM\"",
+        "\"24-MAR-14 06.10.48.000000000PM\"",
+        "\"24-MAR-14:06.10.48.123 AM\"",
+        "24-MAR-14:06.10.48.123AM",
+        "24-MAR-14:06.10.48.000000000",
+        "\"24-MAR-14:06.10:48.000 PM\"",
+        "\"24MAR14:06.10:48.000 PM\"",
+        "\"4MAR2014:06.10:48.000 PM\"",  // should handle days with one digit
+        "\"24MAR78:06.10:48.000 PM\"",   // should assume 1978
+        "\"24MAR1968:06.10:48.000 PM\"",   // should be a negative time, pre-Epoch
+
+    };
+
+    double[][] exp = new double[][] {  // These ms counts all presume PST
+        d(1276362000000L ),
+        d(1276362000000L ),
+        d(1276362000000L ),
+        d(1276405200000L ),
+        d(1276362000123L ),
+        d(1276405200123L ),
+        d(1276326000000L ),
+        d(1395709848000L ),
+        d(1395709848000L ),
+        d(1395666648123L ),
+        d(1395666648123L ),
+        d(1395666648000L ),
+        d(1395709848000L ),
+        d(1395709848000L ),
+        d(1393985448000L ),
+        d(259639848000L  ),
+        d(-55892952000L  ),
+    };
+
+    StringBuilder sb1 = new StringBuilder();
+    for( String ds : data ) sb1.append(ds).append("\n");
+    Key k1 = ParserTest.makeByteVec(sb1.toString());
+    Key r1 = Key.make("r1");
+    Frame dataFrame = ParseDataset.parse(r1, k1);
+
+    for (int i=0; i < exp.length; i++ )  // Adjust exp[][] to local time
+      for (int j=0; j < 1; j++)
+        exp[i][j] += pst.getOffset((long)exp[i][j]) - localTZ.getOffset((long)exp[i][j]);
+    //File items will be converted to ms for local timezone
+    ParserTest.testParsed(dataFrame, exp, exp.length);
   }
 }
