@@ -61,7 +61,13 @@ public class LogsHandler extends Handler {
                 || name.equals("httpd")
                 ) {
           name = water.util.Log.getLogFileName(name);
-          logPathFilename = Log.getLogDir() + File.separator + name;
+          try {
+            String logDir = Log.getLogDir();
+            logPathFilename = logDir + File.separator + name;
+          }
+          catch (Exception e) {
+            log = "H2O logging not configured.";
+          }
         }
         else {
           throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
