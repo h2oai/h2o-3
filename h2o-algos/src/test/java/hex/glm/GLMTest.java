@@ -1028,11 +1028,10 @@ public class GLMTest  extends TestUtil {
   // test categorical autoexpansions, run on airlines which has several categorical columns,
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test
-  public void test_COD_Airlines() {
+  public void test_COD_Airlines_SingleLambda() {
     GLM job = null;
     GLMModel model1 = null;
-    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip");
-    //  Distance + Origin + Dest + UniqueCarrier
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
@@ -1041,7 +1040,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
       params._valid = fr._key;
-      params._lambda = new double[]{0.02934};//{0.02934494}; // null;
+      params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT_SEQ; //Solver.COORDINATE_DESCENT_SEQ;
@@ -1051,17 +1050,56 @@ public class GLMTest  extends TestUtil {
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm(beta,true);
-      System.out.println( " lambda min " + params._lambda[params._lambda.length-1] );
-      System.out.println( " lambda_max " + model1._lambda_max);
-      double objective = job.likelihood()/model1._nobs + params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
-      System.out.println( " objective value " + objective);
+      //System.out.println( " lambda min " + params._lambda[params._lambda.length-1] );
+      //System.out.println( " lambda_max " + model1._lambda_max);
+      //System.out.println( " objective value " + objective);
+      //System.out.println(" intercept " + beta[beta.length-1]);
+      double objective = job.likelihood()/model1._nobs +
+              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      assertEquals(0.670921, objective,1e-4);
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
-//      if(score != null)score.delete();
       if (job != null) job.remove();
     }
   }
+
+
+  @Test
+  public void test_COD_Airlines_LambdaSearch() {
+    GLM job = null;
+    GLMModel model1 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._valid = fr._key;
+      params._lambda = null; // new double [] {0.25};
+      params._alpha = new double[]{1};
+      params._standardize = false;
+      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._lambda_search = true;
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
+      model1 = job.trainModel().get();
+      GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
+      double [] beta = sm.beta;
+      System.out.println("lambda " + sm.lambda_value);
+      double l1pen = ArrayUtils.l1norm(beta,true);
+      double l2pen = ArrayUtils.l2norm(beta,true);
+      double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
+              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      assertEquals(0.65689, objective,1e-4);
+    } finally {
+      fr.delete();
+      if (model1 != null) model1.delete();
+      if (job != null) job.remove();
+    }
+  }
+
 
 
   @Test
