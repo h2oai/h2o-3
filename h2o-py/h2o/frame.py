@@ -175,10 +175,8 @@ class H2OFrame:
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame(expr=ExprNode("^",i,  self))
   # unops
-  def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
-
-  def __contains__(self, i):
-    return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
+  def __abs__ (self):        return H2OFrame(expr=ExprNode("abs",self))
+  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
 
   def mult(self, matrix):
     """
