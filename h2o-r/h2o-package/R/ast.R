@@ -167,7 +167,8 @@ function(a, name=NULL) {
     res <- eval(a)
     if (is.null(res)) "()"
     else if (is.vector(res)) {
-      if (length(res) > 1L) {
+      if (length(res) == 0L)  "[]"
+      else if (length(res) > 1L) {
         if (is.numeric(res))  res <- as.numeric(res)
         if( is.numeric(res) ) paste0("[", paste0(res, collapse=" "), "]")
         else                  paste0("[", paste0(unlist(lapply(res, deparse)), collapse= " "), "]")

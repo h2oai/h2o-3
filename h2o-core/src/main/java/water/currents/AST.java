@@ -55,7 +55,9 @@ abstract public class AST extends Iced {
     init(new ASTCosh  ());
     init(new ASTExp   ());
     init(new ASTFloor ());
+    init(new ASTIsNA  ());
     init(new ASTLog   ());
+    init(new ASTNot   ());
     init(new ASTRound ());
     init(new ASTSignif());
     init(new ASTSin   ());
@@ -113,8 +115,9 @@ abstract public class AST extends Iced {
     init(new ASTasDate());
 
     // Complex Math
-    init(new ASTVariance());
+    init(new ASTImpute());
     init(new ASTTable());
+    init(new ASTVariance());
 
     // Generic data mungers
     init(new ASTAsFactor());

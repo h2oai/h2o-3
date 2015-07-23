@@ -127,7 +127,7 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
 
 #' @rdname H2OS4groupGeneric
 #' @export
-setMethod("!",     "H2OFrame", function(x) .h2o.unary_row_op("!", x))
+setMethod("!",     "H2OFrame", function(x) .h2o.unary_row_op("!!", x))
 #' @rdname H2OS4groupGeneric
 #' @export
 setMethod("is.na", "H2OFrame", function(x) .h2o.unary_row_op("is.na", x) )

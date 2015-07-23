@@ -2262,7 +2262,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 
   # handle the data
   .h2o.eval.frame(data)
-  gb.cols <- NULL
+  gb.cols <- seq_len(0)
   if( !is.null(by) ) {
     if(is.character(by)) {
       vars <- match(by, colnames(data))
@@ -2270,11 +2270,11 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
         stop('No column named ', by, ' in ', substitute(data), '.')
       } else if(is.integer(by)) { vars <- by }
       else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
-      # 1-index -> 0-index and sanity check
-      vars <- vars - 1L
-      if(vars < 0L || vars > (ncol(data)-1L))
-        stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
-      gb.cols <- vars
+    # 1-index -> 0-index and sanity check
+    vars <- vars - 1L
+    if(vars < 0L || vars > (ncol(data)-1L))
+      stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+    gb.cols <- vars
   }
 
   args <- list(data, col.id, method, combine_method, gb.cols, inplace)

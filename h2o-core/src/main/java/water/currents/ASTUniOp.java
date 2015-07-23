@@ -41,11 +41,41 @@ class ASTCosh  extends ASTUniOp { String str() { return "cosh" ; } double op(dou
 class ASTExp   extends ASTUniOp { String str() { return "exp"  ; } double op(double d) { return Math.exp  (d); } }
 class ASTFloor extends ASTUniOp { String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
 class ASTLog   extends ASTUniOp { String str() { return "log"  ; } double op(double d) { return Math.log  (d); } }
+class ASTNot   extends ASTUniOp { String str() { return "!!"   ; } double op(double d) { return d==0?1:0; } }
 class ASTSin   extends ASTUniOp { String str() { return "sin"  ; } double op(double d) { return Math.sin  (d); } }
 class ASTSqrt  extends ASTUniOp { String str() { return "sqrt" ; } double op(double d) { return Math.sqrt (d); } }
 class ASTTan   extends ASTUniOp { String str() { return "tan"  ; } double op(double d) { return Math.tan  (d); } }
 class ASTTanh  extends ASTUniOp { String str() { return "tanh" ; } double op(double d) { return Math.tanh (d); } }
 class ASTTrunc extends ASTUniOp { String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
+
+// Split out in it's own function, instead of Yet Another UniOp, because it
+// needs a "is.NA" check instead of just using the Double.isNaN hack... because
+// it works on UUID and String columns.
+class ASTIsNA  extends ASTPrim { 
+  @Override String str() { return "is.na"; } 
+  @Override int nargs() { return 1+1; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val val = stk.track(asts[1].exec(env));
+    switch( val.type() ) {
+    case Val.NUM: return new ValNum(op(val.getNum()));
+    case Val.FRM: 
+      Frame fr = val.getFrame();
+      return new ValFrame(new MRTask() {
+          @Override public void map( Chunk cs[], NewChunk ncs[] ) {
+            for( int col=0; col<cs.length; col++ ) {
+              Chunk c = cs[col];
+              NewChunk nc = ncs[col];
+              for( int i=0; i<c._len; i++ )
+                nc.addNum(c.isNA(i) ? 1 : 0);
+            }
+          }
+        }.doAll(fr.numCols(),fr).outputFrame());
+    case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
+    default: throw H2O.fail();
+    }
+  }
+  double op(double d) { return Double.isNaN(d)?1:0; } 
+}
 
 class ASTRunif extends ASTPrim {
   @Override int nargs() { return 1+2; } // (h2o.runif frame seed)
