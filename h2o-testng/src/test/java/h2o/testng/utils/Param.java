@@ -1,9 +1,16 @@
 package h2o.testng.utils;
 
+import java.io.File;
 import java.lang.reflect.Field;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
+
+import water.Key;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.TestNGUtil;
+import water.parser.ParseDataset;
 
 public class Param {
 	public String name = null;
@@ -35,6 +42,31 @@ public class Param {
 		}
 
 		return false;
+	}
+	
+	public static Frame createFrame(String fileName, String key) {
+		
+		System.out.println("Create frame with " + fileName);
+
+		key = key + ".hex";
+
+		Frame fr = null;
+		File file = TestNGUtil.find_test_file_static(fileName);
+		assert file.exists();
+		
+		NFSFileVec nfs_dataset = NFSFileVec.make(file);
+		Key key_dataset = Key.make(key);
+
+		try {
+			fr = ParseDataset.parse(key_dataset, nfs_dataset._key);
+		}
+		catch (Exception e) {
+			nfs_dataset.remove();
+			key_dataset.remove();
+			throw e;
+		}
+		
+		return fr;
 	}
 
 	public boolean parseAndSet(Object params, String value) {
