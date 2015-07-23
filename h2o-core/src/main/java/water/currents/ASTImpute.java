@@ -1,15 +1,13 @@
 package water.currents;
 
 import hex.quantile.QuantileModel;
-import java.util.Arrays;
 import water.*;
 import water.fvec.*;
-import water.nbhm.*;
 
 public class ASTImpute extends ASTPrim {
   @Override String str(){ return "h2o.impute";}
   @Override int nargs() { return 1+6; } // (h2o.impute data col method combine_method groupby in.place)
-  private static enum ImputeMethod { MEAN , MEDIAN, MODE }
+  private enum ImputeMethod { MEAN , MEDIAN, MODE }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // Argument parsing and sanity checking
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
