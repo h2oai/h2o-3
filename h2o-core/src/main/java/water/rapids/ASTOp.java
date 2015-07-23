@@ -2040,13 +2040,13 @@ class ASTCumProd extends ASTUniPrefixOp {
     CumProdTask(int nchks) { _nchks = nchks; }
     @Override public void setupLocal() { _chkProds = new double[_nchks]; }
     @Override public void map(Chunk c, NewChunk nc) {
-      double sum=0;
+      double prod=1;
       for(int i=0;i<c._len;++i) {
-        sum *= c.isNA(i) ? Double.NaN : c.atd(i);
-        if( Double.isNaN(sum) ) nc.addNA();
-        else                    nc.addNum(sum);
+        prod *= c.isNA(i) ? Double.NaN : c.atd(i);
+        if( Double.isNaN(prod) ) nc.addNA();
+        else                    nc.addNum(prod);
       }
-      _chkProds[c.cidx()] = sum;
+      _chkProds[c.cidx()] = prod;
     }
     @Override public void reduce(CumProdTask t) { if( _chkProds != t._chkProds ) ArrayUtils.add(_chkProds, t._chkProds); }
     @Override public void postGlobal() {
