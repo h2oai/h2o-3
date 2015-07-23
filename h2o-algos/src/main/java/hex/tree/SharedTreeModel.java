@@ -35,6 +35,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
 
     public boolean _build_tree_one_node = false;
+    public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
+    public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
 
     /** Distribution functions.  Note: AUTO will select gaussian for
      *  continuous, and multinomial for categorical response

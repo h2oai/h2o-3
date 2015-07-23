@@ -17,6 +17,7 @@ import atexit
 import pkg_resources
 from two_dim_table import H2OTwoDimTable
 import h2o
+import logging
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
@@ -445,6 +446,14 @@ class H2OConnection(object):
       if query_string != '':
         url = "{}?{}".format(url, query_string)
 
+    if logging._is_logging():
+      logging._log_rest("------------------------------------------------------------\n")
+      logging._log_rest("\n")
+      logging._log_rest("Time:     {0}\n".format(time.strftime('Y-%m-%d %H:%M:%OS3')))
+      logging._log_rest("\n")
+      logging._log_rest("{0} {1}\n".format(method, url))
+      logging._log_rest("postBody: {0}\n".format(post_body))
+
     begin_time_seconds = time.time()
     http_result = self._attempt_rest(url, method, post_body, file_upload_info)
     end_time_seconds = time.time()
@@ -465,19 +474,16 @@ class H2OConnection(object):
                               "detailed error messages: {}")
                              .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
-    # TODO: is.logging? -> write to logs
-    # TODO: basically transform this R into Python
-    #   if (.h2o.isLogging()) {
-    #   .h2o.logRest("")
-    #   .h2o.logRest(sprintf("curlError:         %s", as.character(.__curlError)))
-    #   .h2o.logRest(sprintf("curlErrorMessage:  %s", .__curlErrorMessage))
-    #   .h2o.logRest(sprintf("httpStatusCode:    %d", httpStatusCode))
-    #   .h2o.logRest(sprintf("httpStatusMessage: %s", httpStatusMessage))
-    #   .h2o.logRest(sprintf("millis:            %s", as.character(as.integer(deltaMillis))))
-    #   .h2o.logRest("")
-    #   .h2o.logRest(payload)
-    #   .h2o.logRest("")
-    #   }
+
+    if logging._is_logging():
+      logging._log_rest("\n")
+      logging._log_rest("httpStatusCode:    {0}\n".format(http_result.status_code))
+      logging._log_rest("httpStatusMessage: {0}\n".format(http_result.reason))
+      logging._log_rest("millis:            {0}\n".format(elapsed_time_millis))
+      logging._log_rest("\n")
+      logging._log_rest("{0}\n".format(http_result.json()))
+      logging._log_rest("\n")
+
 
     return http_result
 

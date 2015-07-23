@@ -8,16 +8,15 @@ test.RF.nfolds <- function(conn) {
                                   ntrees = 50, nfolds = 5)
   print(iris.nfolds)
 
-  iris.nfolds <- h2o.getModel(conn, iris.noflds@model_id)
+  iris.nfolds <- h2o.getModel(conn, iris.nfolds@model_id)
 
   print(iris.nfolds)
 
   print("")
 
-  # Can't specify both nfolds >= 2 and validation at same time
-  expect_error(h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
-                                ntrees = 50, nfolds = 5,
-                                validation_frame = iris.hex))
+  h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
+                   ntrees = 50, nfolds = 5,
+                   validation_frame = iris.hex)
   testEnd()
 }
 

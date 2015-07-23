@@ -170,6 +170,14 @@ def ifelse(test,yes,no):
   """
   return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
 
+def get_future_model(future_model):
+  """
+  Waits for the future model to finish building, and then returns the model.
+
+  :param future_model: an H2OModelFuture object
+  :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
+  """
+  return h2o_model_builder._resolve_model(future_model)
 
 def get_model(model_id):
   """
@@ -347,9 +355,9 @@ def np_comparison_check(h2o_data, np_data, num_elements):
       "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
 def run_test(sys_args, test_to_run):
-  import pkg_resources
-  ver = pkg_resources.get_distribution("h2o").version
-  print "H2O PYTHON PACKAGE VERSION: " + str(ver)
+  # import pkg_resources
+  # ver = pkg_resources.get_distribution("h2o").version
+  # print "H2O PYTHON PACKAGE VERSION: " + str(ver)
   ip, port = sys_args[2].split(":")
   init(ip,port)
   log_and_echo("------------------------------------------------------------")
@@ -615,7 +623,7 @@ def cluster_status():
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
   """
   Initiate an H2O connection to the specified ip and port.
 
@@ -643,7 +651,7 @@ def export_file(frame,path,force=False):
   :param force: Overwrite any preexisting file with the same path
   :return: None
   """
-  H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false"))
+  H2OJob(H2OConnection.post_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
 def cluster_info():
@@ -704,6 +712,17 @@ def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
 
+def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW).
+  Note: this function is the same as glm(), but it doesn't block on model-build. Instead, it returns and H2OModelFuture
+  object immediately. The model can be retrieved from the H2OModelFuture object with get_future_model().
+
+  :return: H2OModelFuture
+  """
+
+  kwargs["do_future"] = True
+  return glm(x,y,validation_x,validation_y,**kwargs)
 
 def kmeans(x,validation_x=None,**kwargs):
   """
@@ -745,7 +764,6 @@ def prcomp(x,validation_x=None,**kwargs):
   every categorical variable will be dropped. Defaults to FALSE.
   :return: a new dim reduction model
   """
-  kwargs['_rest_version'] = 99
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
 
 

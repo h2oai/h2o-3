@@ -68,6 +68,7 @@ public class h2odriver extends Configured implements Tool {
   static String jksFileName = null;
   static String jksPass = null;
   static boolean hashLogin = false;
+  static boolean ldapLogin = false;
   static String loginConfFileName = null;
   static String userName = System.getProperty("user.name");
 
@@ -641,8 +642,10 @@ public class h2odriver extends Configured implements Tool {
         jksPass = args[i];
       }
       else if (s.equals("-hash_login")) {
-        i++; if (i >= args.length) { usage(); }
         hashLogin = true;
+      }
+      else if (s.equals("-ldap_login")) {
+        ldapLogin = true;
       }
       else if (s.equals("-login_conf")) {
         i++; if (i >= args.length) { usage(); }
@@ -888,6 +891,7 @@ public class h2odriver extends Configured implements Tool {
     conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + Integer.toString(mapperConfLength), name);
     conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(mapperConfLength), value);
     conf.set(h2omapper.H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(mapperConfLength), payload);
+    mapperConfLength++;
   }
 
   private int run2(String[] args) throws Exception {
@@ -1023,6 +1027,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (hashLogin) {
       addMapperArg(conf, "-hash_login");
+    }
+    if (ldapLogin) {
+      addMapperArg(conf, "-ldap_login");
     }
     addMapperArg(conf, "-user_name", userName);
 

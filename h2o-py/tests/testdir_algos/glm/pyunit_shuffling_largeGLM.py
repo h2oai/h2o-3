@@ -12,16 +12,14 @@ def shuffling_large(ip,port):
 
 
     print("Create model on original Arcene dataset.")
-    h2o_model = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5],
-                        use_all_factor_levels=True)
+    h2o_model = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5])
 
     print("Create second model on original Arcene dataset.")
-    h2o_model_2 = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5],
-                          use_all_factor_levels=True)
+    h2o_model_2 = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5])
 
     print("Create model on shuffled Arcene dataset.")
     h2o_model_s = h2o.glm(x=train_data_shuffled[0:1000], y=train_data_shuffled[1000], family="binomial",
-                          lambda_search=True, alpha=[0.5], use_all_factor_levels=True)
+                          lambda_search=True, alpha=[0.5])
 
     print("Assert that number of predictors remaining and their respective coefficients are equal.")
 

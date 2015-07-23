@@ -192,7 +192,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Initialize Y and X matrices
     // tinfo = original training data A, dinfo = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, DataInfo dinfo) {
+    private double[][] initialXY(DataInfo tinfo, DataInfo dinfo, long na_cnt) {
       double[][] centers, centers_exp = null;
 
       if (null != _parms._user_points) { // User-specified starting points
@@ -264,7 +264,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
-          if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm())
+          if(frob != 0 && !Double.isNaN(frob) && na_cnt == 0 && !_parms.hasClosedForm())
             initialXKmeans(dinfo, km);
         } finally {
           if (job != null) job.remove();
@@ -440,8 +440,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._names_expanded = tinfo.coefNames();
 
         long nobs = _train.numRows() * _train.numCols();
-        for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        model._output._nobs = nobs;
+        long na_cnt = 0;
+        for(int i = 0; i < _train.numCols(); i++)
+          na_cnt += _train.vec(i).naCnt();
+        model._output._nobs = nobs - na_cnt;   // TODO: Should we count NAs?
 
         // 0) Initialize Y and X matrices
         // Jam A and X into a single frame for distributed computation
@@ -455,9 +457,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(dinfo._key, dinfo);
 
         // Use closed form solution for X if L2 loss and regularization
-        double[][] yt = initialXY(tinfo, dinfo);
+        double[][] yt = initialXY(tinfo, dinfo, na_cnt);
         yt = ArrayUtils.transpose(yt);
-        if (_parms.hasClosedForm()) initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
+        if (na_cnt == 0 && _parms.hasClosedForm())
+          initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _ncolA, _ncolX, model._output._normSub, model._output._normMul, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);

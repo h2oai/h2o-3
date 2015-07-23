@@ -15,9 +15,9 @@ test.pca.quasar <- function(conn) {
   fitGLRM <- h2o.prcomp(quasar.hex, k = 5, transform = "STANDARDIZE", max_iterations = 2000, pca_method = "GLRM", use_all_factor_levels = TRUE, seed = 1436)
   
   # Note: GLRM depends immensely on initial X, Y matrices in this case, so changing seed will affect results
-  Log.info(paste("Standard deviation with GramSVD:", paste(fitGramSVD@model$std_deviation, collapse = " ")))
-  Log.info(paste("Standard deviation with Power  :", paste(fitPower@model$std_deviation, collapse = " ")))
-  Log.info(paste("Standard deviation with GLRM   :", paste(fitGLRM@model$std_deviation, collapse = " ")))
+  Log.info(paste("Standard deviation with GramSVD:", paste(h2o.sdev(fitGramSVD), collapse = " ")))
+  Log.info(paste("Standard deviation with Power  :", paste(h2o.sdev(fitPower), collapse = " ")))
+  Log.info(paste("Standard deviation with GLRM   :", paste(h2o.sdev(fitGLRM), collapse = " ")))
   Log.info(paste("GLRM final objective value:", fitGLRM@model$objective))
   testEnd()
 }

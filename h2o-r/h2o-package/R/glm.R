@@ -47,6 +47,7 @@
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "Random" or "Modulo"
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
@@ -109,6 +110,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     nfolds = 0,
                     fold_column = NULL,
                     fold_assignment = c("Random","Modulo"),
+                    keep_cross_validation_predictions = FALSE,
                     beta_constraints = NULL,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -163,6 +165,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if( !missing(intercept) )                 parms$intercept              <- intercept
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.

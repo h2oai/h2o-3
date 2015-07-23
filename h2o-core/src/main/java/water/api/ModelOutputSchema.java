@@ -22,7 +22,10 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public String[][] domains;
 
   @API(help="Cross-validation models (model ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)
-  public KeyV3[] cross_validation_models;
+  public KeyV3.ModelKeyV3[] cross_validation_models;
+
+  @API(help="Cross-validation predictions (frame ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public KeyV3.FrameKeyV3[] cross_validation_predictions;
 
   @API(help="Category of the model (e.g., Binomial)", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
   public ModelCategory model_category;

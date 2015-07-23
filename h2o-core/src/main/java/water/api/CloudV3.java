@@ -69,6 +69,9 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
   @API(help="Cloud is accepting new members or not", direction=API.Direction.OUTPUT)
   public boolean locked;
 
+  @API(help="Cloud is in client mode.", direction=API.Direction.OUTPUT)
+  public boolean is_client;
+
   @API(help="nodes", direction=API.Direction.OUTPUT)
   public NodeV3[] nodes;
 

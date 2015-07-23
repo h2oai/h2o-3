@@ -411,9 +411,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Now model already contains tid-trees in serialized form
     if( _parms._score_each_iteration ||
         finalScoring ||
-        (now-_firstScore < 4000) || // Score every time for 4 secs
+        (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
         // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
-        (sinceLastScore > 4000 && // Limit scoring updates to every 4sec
+        (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
          (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
 
       checkMemoryFootPrint();
