@@ -325,7 +325,7 @@ public class KMeansTest extends TestUtil {
       try {
         fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
-        SplitFrame sf = new SplitFrame(Key.make());
+        SplitFrame sf = new SplitFrame();
         sf.dataset = fr;
         sf.ratios = new double[] { 0.5, 0.5 };
         sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
