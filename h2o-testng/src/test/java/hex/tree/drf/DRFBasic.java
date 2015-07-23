@@ -4,7 +4,6 @@ import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
 import hex.Distributions.Family;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -16,12 +15,9 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import water.Key;
 import water.Scope;
 import water.TestNGUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.parser.ParseDataset;
 
 public class DRFBasic extends TestNGUtil {
 
@@ -75,6 +71,7 @@ public class DRFBasic extends TestNGUtil {
 			String train_dataset_filename, String validate_dataset_id, String validate_dataset_filename,
 			String[] rawInput) {
 
+		DRFModel.DRFParameters DRFParameter = null;
 		redirectStandardStreams();
 
 		try {
@@ -90,8 +87,10 @@ public class DRFBasic extends TestNGUtil {
 				Assert.fail(String.format(notImplMessage));
 			}
 			else {
-				_basic(testcase_id, test_description, train_dataset_id, train_dataset_filename, validate_dataset_id,
-						validate_dataset_filename, toDRFParameters(rawInput), rawInput);
+				DRFParameter = toDRFParameters(dataset_directory, train_dataset_id, train_dataset_filename,
+						validate_dataset_id, validate_dataset_filename, rawInput);
+
+				_basic(testcase_id, test_description, DRFParameter, rawInput);
 			}
 		}
 		finally {
@@ -108,9 +107,7 @@ public class DRFBasic extends TestNGUtil {
 		}
 	}
 
-	private void _basic(String testcase_id, String test_description, String train_dataset_id,
-			String train_dataset_filename, String validate_dataset_id, String validate_dataset_filename,
-			DRFModel.DRFParameters parameter, String[] rawInput) {
+	private void _basic(String testcase_id, String test_description, DRFModel.DRFParameters parameter, String[] rawInput) {
 
 		System.out.println(String.format("Testcase: %s", testcase_id));
 		System.out.println(String.format("Description: %s", test_description));
@@ -133,17 +130,29 @@ public class DRFBasic extends TestNGUtil {
 		try {
 			Scope.enter();
 
-			// Build a first model; all remaining models should be equal
+			System.out.println("Build model");
 			job = new DRF(parameter);
+
+			System.out.println("Train model:");
 			drfModel = job.trainModel().get();
 
+			System.out.println("Predict testcase " + testcase_id);
 			score = drfModel.score(trainFrame);
-			System.out.println("Test is passed.");
+
+			System.out.println("Predict success.");
+			System.out.println("Testcase is passed.");
 		}
 		catch (IllegalArgumentException ex) {
 			// can't predict testcase
-			Assert.fail("Test is failed. It can't predict");
 			ex.printStackTrace();
+			System.out.println("Cannot predit testcase " + testcase_id);
+			System.out.println("Testcase is failed");
+			Assert.fail("Testcase is failed");
+		}
+		catch(Exception ex){
+			ex.printStackTrace();
+			System.out.println("Testcase is failed");
+			Assert.fail("Testcase is failed.");
 		}
 		finally {
 			if (job != null) {
@@ -237,7 +246,8 @@ public class DRFBasic extends TestNGUtil {
 		return result;
 	}
 
-	private static DRFModel.DRFParameters toDRFParameters(String[] input) {
+	private static DRFModel.DRFParameters toDRFParameters(String dataset_directory, String train_dataset_id,
+			String train_dataset_filename, String validate_dataset_id, String validate_dataset_filename, String[] input) {
 
 		System.out.println("Create DRFParameters object with testcase: " + input[tcHeaders.indexOf("testcase_id")]);
 
@@ -258,59 +268,46 @@ public class DRFBasic extends TestNGUtil {
 			drfParams._distribution = f;
 		}
 
-		String datasetDirectory = input[tcHeaders.indexOf("dataset_directory")].trim();
-		String train_dataset_id = input[tcHeaders.indexOf("train_dataset_id")].trim();
-		String train_dataset_filename = input[tcHeaders.indexOf("train_dataset_filename")].trim();
-		String validate_dataset_id = input[tcHeaders.indexOf("validate_dataset_id")].trim();
-		String validate_dataset_filename = input[tcHeaders.indexOf("validate_dataset_filename")].trim();
-
-		if ("bigdata".equals(datasetDirectory)) {
-			datasetDirectory = "bigdata/laptop/testng/";
-		}
-		else {
-			datasetDirectory = "smalldata/testng/";
-		}
-
+		// set train/validate params
 		Frame trainFrame = null;
 		Frame validateFrame = null;
 
-		// create train dataset
-		File train_dataset = find_test_file_static(datasetDirectory + train_dataset_filename);
-		System.out.println("Is train dataset exist? If no, abort the test.\n");
-		assert train_dataset.exists();
-		NFSFileVec nfs_train_dataset = NFSFileVec.make(train_dataset);
-		Key key_train_dataset = Key.make(train_dataset_id + ".hex");
+		if ("bigdata".equals(dataset_directory)) {
+			dataset_directory = "bigdata/laptop/testng/";
+		}
+		else {
+			dataset_directory = "smalldata/testng/";
+		}
 		
 		try {
-			trainFrame = ParseDataset.parse(key_train_dataset, nfs_train_dataset._key);
+
+			System.out.println("Create train frame: " + train_dataset_filename);
+			trainFrame = Param.createFrame(dataset_directory + train_dataset_filename, train_dataset_id);
+
+			if (StringUtils.isNotEmpty(validate_dataset_filename)) {
+				System.out.println("Create validate frame: " + validate_dataset_filename);
+				validateFrame = Param.createFrame(dataset_directory + validate_dataset_filename, validate_dataset_id);
+			}
 		}
 		catch (Exception e) {
-			nfs_train_dataset.remove();
-			key_train_dataset.remove();
+			if (trainFrame != null) {
+				trainFrame.remove();
+			}
+			if (validateFrame != null) {
+				validateFrame.remove();
+			}
 			throw e;
 		}
+
+		System.out.println("Set train frame");
 		drfParams._train = trainFrame._key;
 
-		// create validate dataset
-		if (StringUtils.isNotEmpty(validate_dataset_filename)) {
-			File validate_dataset = find_test_file_static(datasetDirectory + validate_dataset_filename);
-			assert validate_dataset.exists();
-			NFSFileVec nfs_validate_dataset = NFSFileVec.make(validate_dataset);
-			Key key_validate_dataset = Key.make(validate_dataset_id + ".hex");
-			
-			try {
-				validateFrame = ParseDataset.parse(key_validate_dataset, nfs_validate_dataset._key);
-			}
-			catch (Exception e) {
-				trainFrame.delete();
-				nfs_validate_dataset.remove();
-				key_validate_dataset.remove();
-				throw e;
-			}
-			
+		if (validateFrame != null) {
+			System.out.println("Set validate frame");
 			drfParams._valid = validateFrame._key;
 		}
 
+		System.out.println("Create success DRFParameters object.");
 		return drfParams;
 	}
 
@@ -328,16 +325,12 @@ public class DRFBasic extends TestNGUtil {
 		new Param("_min_rows", "double"),
 		new Param("_nbins", "int"),
 		new Param("_nbins_cats", "int"),
-		// there properties is "default" accessor. Thus, we cannot set value
-//		new Param("_mtries", "int"),
-//		new Param("_sample_rate", "float"),
 		new Param("_score_each_iteration", "boolean"),
 		new Param("_balance_classes", "boolean"),
 		new Param("_max_confusion_matrix_size", "int"),
 		new Param("_max_hit_ratio_k", "int"),
 		new Param("_r2_stopping", "double"),
 		new Param("_build_tree_one_node", "boolean"),
-//		new Param("_binomial_double_trees", "boolean"),
 		new Param("_class_sampling_factors", "float[]"),
 		
 		new Param("_response_column", "String"),
@@ -371,15 +364,12 @@ public class DRFBasic extends TestNGUtil {
 			"_min_rows",
 			"_nbins",
 			"_nbins_cats",
-//			"_mtries",
-//			"_sample_rate",
 			"_score_each_iteration",
 			"_balance_classes",
 			"_max_confusion_matrix_size",
 			"_max_hit_ratio_k",
 			"_r2_stopping",
 			"_build_tree_one_node",
-//			"_binomial_double_trees",
 			"_class_sampling_factors",
 			
 			// testcase description
