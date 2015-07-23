@@ -3033,7 +3033,8 @@ class ASTRange extends ASTUniPrefixOp {
 
 class ASTMatch extends ASTUniPrefixOp {
   double _nomatch;
-  String[] _matches;
+  String[] _strsTable;
+  double[] _dblsTable;
   @Override String opStr() { return "match"; }
   ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
   @Override ASTOp make() { return new ASTMatch(); }
@@ -3043,10 +3044,13 @@ class ASTMatch extends ASTUniPrefixOp {
 
     // The `table` arg
     AST a = E.parse();
-    if( a instanceof ASTString ) _matches = new String[]{((ASTString)a)._s};
-    else if( a instanceof ASTStringList ) _matches = ((ASTStringList)a)._s;
+    if( a instanceof ASTString ) _strsTable = new String[]{((ASTString)a)._s};
+    else if( a instanceof ASTStringList ) _strsTable = ((ASTStringList)a)._s;
+    else if( a instanceof ASTNum ) _dblsTable = new double[]{((ASTNum)a)._d};
+    else if( a instanceof ASTDoubleList ) _dblsTable = ((ASTDoubleList)a)._d;
     else throw new IllegalArgumentException("`table` expected to be either a String or an slist. Got: " + a.getClass());
-    Arrays.sort(_matches);
+    if(_strsTable!=null) Arrays.sort(_strsTable);
+    else Arrays.sort(_dblsTable);
 
     // `nomatch` is just a number in case no match
     AST nm = E.parse();
@@ -3066,16 +3070,41 @@ class ASTMatch extends ASTUniPrefixOp {
     Frame fr = e.popAry();
     if (fr.numCols() != 1 && !fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
     Key tmp = Key.make();
-    final String[] matches = _matches;
+    final String[] strsTable = _strsTable;
+    final double[] dblsTable = _dblsTable;
     Frame rez = new MRTask() {
       @Override public void map(Chunk c, NewChunk n) {
         int rows = c._len;
-        for (int r = 0; r < rows; ++r) n.addNum(in(matches, c.vec().domain()[(int)c.at8(r)]));
+        if(strsTable==null)
+          for (int r = 0; r < rows; ++r) n.addNum(in(dblsTable, c.atd(r)),0);
+        else
+          for (int r = 0; r < rows; ++r) n.addNum(in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
     e.pushAry(rez);
   }
   private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0;}
+  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0;}
+
+  private static int binarySearchDoublesUlp(double[] a, int from, int to, double key) {
+    int lo = from;
+    int hi = to-1;
+    while( lo <= hi ) {
+      int mid = (lo + hi) >>> 1;
+      double midVal = a[mid];
+      if( MathUtils.equalsWithinOneSmallUlp(midVal,key) ) return mid;
+      if (midVal < key)      lo = mid + 1;
+      else if (midVal > key) hi = mid - 1;
+      else {
+        long midBits = Double.doubleToLongBits(midVal);
+        long keyBits = Double.doubleToLongBits(key);
+        if (midBits == keyBits) return mid;
+        else if (midBits < keyBits) lo = mid + 1;
+        else                        hi = mid - 1;
+      }
+    }
+    return -(lo + 1);  // key not found.
+  }
 }
 
 // R like binary operator ||
