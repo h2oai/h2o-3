@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 
+import hex.ModelMetricsRegression;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
@@ -852,6 +853,57 @@ public class DeepLearningTest extends TestUtil {
       } finally {
         if (frTrain != null) frTrain.remove();
         if (model != null) model.delete();
+        Scope.exit();
+      }
+    }
+  }
+
+  // just a simple sanity check - not a golden test
+  @Test
+  public void testDistributions() {
+    Frame tfr = null, vfr = null;
+    DeepLearningModel dl = null;
+
+    for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
+            DeepLearningParameters.Loss.Automatic,
+            DeepLearningParameters.Loss.MeanSquare,
+            DeepLearningParameters.Loss.Huber,
+            DeepLearningParameters.Loss.Absolute,
+    }) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        for (String s : new String[]{
+                "Merit", "Class"
+        }) {
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        }
+        DKV.put(tfr);
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._epochs = 1;
+        parms._reproducible = true;
+        parms._hidden = new int[]{50,50};
+        parms._response_column = "Cost";
+        parms._seed = 0xdecaf;
+        parms._loss = loss;
+
+        // Build a first model; all remaining models should be equal
+        DeepLearning job = new DeepLearning(parms);
+        dl = job.trainModel().get();
+
+        ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
+
+        if (loss == DeepLearningParameters.Loss.MeanSquare)
+          Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
+        else
+          Assert.assertTrue(mm._mean_residual_deviance > 0);
+
+        job.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (vfr != null) vfr.remove();
+        if (dl != null) dl.delete();
         Scope.exit();
       }
     }

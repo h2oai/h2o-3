@@ -428,7 +428,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return value of gradient
    */
   public double deviance(double w, double y, double f) {
-    return new Distributions(Distributions.Family.gaussian).deviance(w, y, f);
+    return new Distribution(Distribution.Family.gaussian).deviance(w, y, f);
   }
 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The

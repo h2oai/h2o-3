@@ -7,14 +7,14 @@ import water.Iced;
  * Distribution functions to be used by ML Algos
  */
 //TODO: Separate into family/link
-public class Distributions extends Iced {
-  public enum Family {AUTO, multinomial, gaussian, bernoulli, poisson, gamma, tweedie}
+public class Distribution extends Iced {
+  public enum Family {AUTO, multinomial, gaussian, bernoulli, poisson, gamma, tweedie, huber, laplace}
 
   /**
    * Short constructor for non-Tweedie distributions
    * @param distribution
    */
-  public Distributions(Family distribution) {
+  public Distribution(Family distribution) {
     assert(distribution != Family.tweedie);
     this.distribution = distribution;
     this.tweediePower = 0;
@@ -25,7 +25,7 @@ public class Distributions extends Iced {
    * @param distribution
    * @param tweediePower Tweedie Power
    */
-  public Distributions(Family distribution, double tweediePower) {
+  public Distribution(Family distribution, double tweediePower) {
     this.distribution = distribution;
     assert(tweediePower >1 && tweediePower <2);
     this.tweediePower = tweediePower;
@@ -62,6 +62,14 @@ public class Distributions extends Iced {
       case AUTO:
       case gaussian:
         return w * (y - f) * (y - f);
+      case huber:
+        if (Math.abs(y-f) < 1) {
+          return w * (y-f) * (y-f);
+        } else {
+          return w * 2 * Math.abs(y-f) - 1;
+        }
+      case laplace:
+        return w*Math.abs(y-f);
       case bernoulli:
         return -2 * w * (y * f - log(1 + exp(f)));
       case poisson:
@@ -79,7 +87,7 @@ public class Distributions extends Iced {
   /**
    * Gradient of given distribution function at predicted value f
    * @param y (actual) response
-   * @param f (predicted) response in link space
+   * @param f (predicted) response in link space (including offset)
    * @return value of gradient
    */
   public double gradient(double y, double f) {
@@ -94,6 +102,14 @@ public class Distributions extends Iced {
       case tweedie:
         assert (tweediePower > 1 && tweediePower < 2);
         return y * exp(f * (1 - tweediePower)) - exp(f * (2 - tweediePower));
+      case huber:
+        if (Math.abs(y-f) < 1) {
+          return y - f;
+        } else {
+          return f - 1 >= y ? -2 : 2;
+        }
+      case laplace:
+        return f > y ? -1f : 1f;
       default:
         throw H2O.unimpl();
     }
@@ -108,6 +124,8 @@ public class Distributions extends Iced {
     switch (distribution) {
       case AUTO:
       case gaussian:
+      case huber:
+      case laplace:
         return f;
       case bernoulli:
         return log(f/(1-f));
@@ -131,6 +149,8 @@ public class Distributions extends Iced {
     switch (distribution) {
       case AUTO:
       case gaussian:
+      case huber:
+      case laplace:
         return f;
       case bernoulli:
         return 1 / (1 + exp(-f));
@@ -153,6 +173,8 @@ public class Distributions extends Iced {
     switch (distribution) {
       case AUTO:
       case gaussian:
+      case huber:
+      case laplace:
         return f;
       case bernoulli:
         return "1/(1+" + expString("-" + f) + ")";

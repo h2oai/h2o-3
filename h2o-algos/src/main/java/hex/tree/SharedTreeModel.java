@@ -44,13 +44,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public Distributions.Family _distribution = Distributions.Family.AUTO;
+    public Distribution.Family _distribution = Distribution.Family.AUTO;
     public float _tweedie_power=1.5f;
   }
 
   @Override
   public double deviance(double w, double y, double f) {
-    return new Distributions(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
+    return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
   }
 
   final public VarImp varImp() { return _output._varimp; }

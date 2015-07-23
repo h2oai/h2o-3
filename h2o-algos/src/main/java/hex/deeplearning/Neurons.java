@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
+import hex.Distribution;
 import water.*;
 import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
@@ -38,6 +39,25 @@ public abstract class Neurons {
     s += "\nParameters:\n" + params.toString();
     if (_dropout != null) s += "\nDropout:\n" + _dropout.toString();
     return s;
+  }
+
+  /**
+   * For regression models, we can turn the loss function into a distribution
+   * @param loss
+   * @return
+   */
+  static Distribution getDistribution(DeepLearningParameters.Loss loss) {
+    switch(loss) {
+      case Automatic:
+      case MeanSquare:
+        return new Distribution(Distribution.Family.gaussian);
+      case Huber:
+        return new Distribution(Distribution.Family.huber);
+      case Absolute:
+        return new Distribution(Distribution.Family.laplace);
+      default:
+        throw H2O.unimpl(loss.toString());
+    }
   }
 
   /**
@@ -490,23 +510,7 @@ public abstract class Neurons {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final float t = _input._a.get(row);
     final float y = _a.get(row);
-    float g;
-    if (params._loss == DeepLearningParameters.Loss.MeanSquare) {
-      g = t - y;
-    } else if (params._loss == DeepLearningParameters.Loss.Absolute) {
-      g = y > t ? -1f : 1f;
-    }
-    // Huber:
-    // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
-    // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
-    else if (params._loss == DeepLearningParameters.Loss.Huber) {
-      if (Math.abs(y-t) < 1) {
-        g = t - y;
-      } else {
-        g = y >= t + 1f ? -2f : 2f;
-      }
-    } else throw H2O.unimpl("Loss " + params._loss + " not implemented for Auto-Encoder.");
-    return g;
+    return (float)Neurons.getDistribution(params._loss).gradient(t, y);
   }
 
   /**
@@ -1031,31 +1035,38 @@ public abstract class Neurons {
         final float t = (row == target ? 1f : 0f);
         final float y = _a.get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
-        if (params._loss == DeepLearningParameters.Loss.CrossEntropy) {
-          //nothing else needed, -dCE/dy * dy/dnet = target - y
-          //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
-          g = t - y;
-        } else if (params._loss == DeepLearningParameters.Loss.Absolute) {
-          g = (2*t-1) * (1f - y) * y; //-dL/dy = 2*t-1
-        } else if (params._loss == DeepLearningParameters.Loss.MeanSquare) {
-          //-dMSE/dy = target-y
-          g = (t - y) * (1f - y) * y;
-        } else if (params._loss == DeepLearningParameters.Loss.Huber) {
-          if (t==0) {
-            if (y<0.5) {
-              g = -4*y; //L=2*y^2 for y<0.5
+        switch(params._loss) {
+          case CrossEntropy:
+            //nothing else needed, -dCE/dy * dy/dnet = target - y
+            //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
+            g = t - y;
+            break;
+          case Absolute:
+            g = (2 * t - 1) * (1f - y) * y; //-dL/dy = 2*t-1
+            break;
+          case MeanSquare:
+            //-dMSE/dy = target-y
+            g = (t - y) * (1f - y) * y;
+            break;
+          case Huber:
+            if (t == 0) {
+              if (y < 0.5) {
+                g = -4 * y; //L=2*y^2 for y<0.5
+              } else {
+                g = -2;   //L=2*y-0.5 for y>=0.5
+              }
             } else {
-              g = -2;   //L=2*y-0.5 for y>=0.5
+              if (y > 0.5) {
+                g = 4 * (1 - y); //L=2*(1-y)^2 for y<0.5
+              } else {
+                g = 2;   //L=2*(1-y)-0.5 for y>=0.5
+              }
             }
-          } else {
-            if (y>0.5) {
-              g = 4*(1-y); //L=2*(1-y)^2 for y<0.5
-            } else {
-              g = 2;   //L=2*(1-y)-0.5 for y>=0.5
-            }
-          }
-          g *= (1f - y) * y;
-        } else throw H2O.unimpl("Loss " + params._loss + " not implemented for classification.");
+            g *= (1f - y) * y;
+            break;
+          default:
+            throw H2O.unimpl();
+        }
         // this call expects dE/dnet
         bprop(row, g, r, m);
       }
@@ -1080,25 +1091,7 @@ public abstract class Neurons {
       final int row = 0;
       final float t = target;
       final float y = _a.get(row);
-      float g;
-      // Computing partial derivative: dE/dnet = dE/dy * dy/dnet = dE/dy * 1
-      if (params._loss == DeepLearningParameters.Loss.MeanSquare) {
-        g = t - y; //for MSE -dMSE/dy = target-y
-      }
-      // L = |y-t|, -dL/dy = -/+1
-      else if (params._loss == DeepLearningParameters.Loss.Absolute) {
-        g = y > t ? -1f : 1f;
-      }
-      // Huber:
-      // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
-      // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
-      else if (params._loss == DeepLearningParameters.Loss.Huber) {
-        if (Math.abs(y-t) < 1) {
-          g = t - y;
-        } else {
-          g = y >= t + 1f ? -2f : 2f;
-        }
-      } else throw H2O.unimpl("Loss " + params._loss + " not implemented for regression.");
+      float g = (float)Neurons.getDistribution(params._loss).gradient(t, y);
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       bprop(row, g, r, m);

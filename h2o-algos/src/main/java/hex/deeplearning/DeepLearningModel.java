@@ -69,6 +69,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
+  @Override
+  public double deviance(double w, double y, double f) {
+    return Neurons.getDistribution(_parms._loss).deviance(w,y,f);
+  }
+
   // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
