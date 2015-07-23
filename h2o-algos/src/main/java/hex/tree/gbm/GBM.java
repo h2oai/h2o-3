@@ -563,7 +563,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double f = chk_tree(chks,0).atd(row) + offset;
-    double p = new Distributions(_parms._distribution).linkInv(f);
+    double p = new Distributions(_parms._distribution, _parms._tweedie_power).linkInv(f);
     if( _parms._distribution == Distributions.Family.bernoulli ) {
       fs[2] = p;
       fs[1] = 1.0-p;

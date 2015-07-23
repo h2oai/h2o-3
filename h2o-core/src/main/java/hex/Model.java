@@ -421,10 +421,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /**
+   * Deviance of given distribution function at predicted value f
    * @param w observation weight
-   * @param y response
-   * @param f predicted value
-   * @return
+   * @param y (actual) response
+   * @param f (predicted) response in original response space
+   * @return value of gradient
    */
   public double deviance(double w, double y, double f) {
     return new Distributions(Distributions.Family.gaussian).deviance(w, y, f);

@@ -35,7 +35,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       hex.genmodel.GenModel.GBM_rescale(preds);
     } else { //Regression
       double f = preds[0] + _output._init_f + offset;
-      preds[0] = new Distributions(_parms._distribution).linkInv(f);
+      preds[0] = new Distributions(_parms._distribution, _parms._tweedie_power).linkInv(f);
     }
     return preds;
   }
@@ -55,7 +55,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     }
     if( _output.nclasses() == 1 ) { // Regression
       body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-      body.ip("preds[0] = " + new Distributions(_parms._distribution).linkInvString("preds[0]") + ";").nl();
+      body.ip("preds[0] = " + new Distributions(_parms._distribution, _parms._tweedie_power).linkInvString("preds[0]") + ";").nl();
       return;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
