@@ -115,7 +115,7 @@ public class Distributions extends Iced {
       case poisson:
       case gamma:
       case tweedie:
-        assert(0<f);
+        assert(0<=f);
         return log(f);
       default:
         throw H2O.unimpl();
