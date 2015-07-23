@@ -899,29 +899,39 @@ class ASTAny extends ASTUniPrefixOp {
     if( env.isNum() ) { any = env.popDbl()!=0; }  // got a number on the stack... if 0 then all is FALSE, otherwise TRUE
     else {
       Frame fr = env.popAry();
-      if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
-      Vec v = fr.anyVec();
-      if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
-      if( v.isConst() )
-        if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
-      else
-        if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
-      any = new AllTask().doAll(fr.anyVec()).any;
+      for(int i=0;i<fr.numCols();i++) {
+        Vec v = fr.vec(i);
+        if( !v.isInt() ) throw new IllegalArgumentException("all columns must be a columns of 1s and 0s.");
+        if( v.isConst() )
+          if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
+        else
+          if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
+      }
+      any = new AnyTask(_narm).doAll(fr).any;
     }
     env.push(new ValStr(any?"TRUE":"FALSE"));
   }
 
-  private static class AllTask extends MRTask<AllTask> {
+  private static class AnyTask extends MRTask<AnyTask> {
     private boolean any=false;
-    @Override public void map(Chunk c) {
-      for(int i=0;i<c._len;++i) {
-        if( !any ) {
-          if( c.isNA(i) ) { any = false; break; }
-          any |= c.atd(i)==1;
-        } else break;
+    private final boolean _narm;
+    AnyTask(boolean narm) { _narm=narm; }
+    @Override public void map(Chunk[] c) {
+      int j=0;
+      for (Chunk aC : c) {
+        for( j=0; j<c[0]._len;++j ) {
+          if( !any ) {
+            if(aC.isNA(j) && !_narm) {
+              any = false;
+              break;
+            }
+            any |= aC.atd(j) == 1;
+          } else break;
+        }
+        if( j!=c[0]._len) break;
       }
     }
-    @Override public void reduce(AllTask t) { any &= t.any; }
+    @Override public void reduce(AnyTask t) { any &= t.any; }
   }
 }
 

@@ -178,8 +178,7 @@ class H2OFrame:
   def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
 
   def __contains__(self, i):
-    if _is_str_list(i) or isinstance(i,(unicode,str)): return H2OFrame(expr=ExprNode("h2o.which",self,i)).any()
-    else:                                              return all([any(t==self) for t in i]) if _is_num_list(i) else any(i==self)
+    return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
 
   def mult(self, matrix):
     """
@@ -1204,6 +1203,7 @@ def _handle_python_lists(python_obj):
   data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
   return header, data_to_write
 
+def _is_list(l)    : return isinstance(l, (tuple, list))
 def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(str,unicode)) for i in l])
 def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int  )) for i in l])
 def _is_list_of_lists(o):                  return any(isinstance(l, (list, tuple)) for l in o)
