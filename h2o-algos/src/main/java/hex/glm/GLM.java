@@ -344,7 +344,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       GLMGradientTask gtBetastart = itsk._gtBetaStart != null?itsk._gtBetaStart:itsk._gtNull;
       _bc.adjustGradient(itsk._gtNull._beta,itsk._gtNull._gradient);
       if(_parms._alpha == null)
-        _parms._alpha = new double[]{_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT_SEQ ?.5:0};
+        _parms._alpha = new double[]{_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT ?.5:0};
       double lmax =  lmax(itsk._gtNull);
       double objval = gtBetastart._likelihood/gtBetastart._nobs;
       double l2pen = .5 * lmax * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gtBetastart._beta, _dinfo._intercept);
@@ -949,7 +949,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           break;
         }
-        case COORDINATE_DESCENT_SEQ: {
+        case COORDINATE_DESCENT: {
 
           int p = _activeData.fullN()+ 1;
           double wsum; // intercept denum
@@ -1062,8 +1062,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               if( _activeData._adaptedFrame.vec(  _activeData._adaptedFrame.numCols()- 2  ).isEnum()) {
                 cat_num = 2;
                 iupdate = new GLMCoordinateDescentTaskSeq( false, true, cat_num , new double [] {betaold[betaold.length-1]},
-                        Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ), null, _activeData._catLvls[_activeData._cats-1] ,
-                        null, null, null, null ).doAll(fr3);
+                        Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ),
+                        null, _activeData._catLvls[_activeData._cats-1], null, null, null, null ).doAll(fr3);
               }
               else {
                 cat_num = 3;
@@ -1073,7 +1073,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   meannew = new double [] {_activeData._normSub[_activeData._normSub.length-1]};
                 }
                 iupdate = new GLMCoordinateDescentTaskSeq(false, true, cat_num , new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }, null, null,
-                        null,null, varnew, meannew ).doAll(fr3);
+                        null, null, varnew, meannew ).doAll(fr3);
               }
                beta[beta.length - 1] = iupdate._temp[0] / wsum;
 
@@ -1101,44 +1101,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (Vec v : newVecs) v.remove();
           break;
         }
-        case COORDINATE_DESCENT_BULK:
-//          throw H2O.unimpl();
-          // _taskInfo._beta = new double[_dinfo.fullN()+1];
 
-          double[] beta = _taskInfo._beta.clone();
-          assert beta.length == _activeData.fullN() + 1;
-          int iter1=0;
-
-          while (iter1 <1000) {
-            // coordinate descent iterations
-            while (iter1++ < 1000 ) {
-
-              // return vector with temp values to be used in ST expression for each variable update - same task info beta given to all the nodes to generate the weights etc. active data has only the active columns.
-              GLMCoordinateDescentTask gcd = new GLMCoordinateDescentTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, beta.clone(), _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, null).doAll(_activeData._adaptedFrame);
-
-              // single cycle over all vars
-              for (int i = 0; i < beta.length - 1; ++i) {
-
-                beta[i] = ADMM.shrinkage(gcd._temp[i] / gcd._nobs, _parms._lambda[_lambdaId] * _parms._alpha[0]) / (gcd._varsum[i] / gcd._nobs + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
-              }
-              beta[beta.length - 1] = gcd._temp[gcd._temp.length - 1] / gcd._ws;
-
-              double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, gcd._betacd), false); // false to keep the intercept
-              if (linf < _parms._beta_epsilon)
-                break;
-            }
-
-            double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false);
-
-            if (linf < _parms._beta_epsilon)
-              break;
-
-            _taskInfo._beta=beta;
-
-          }
-          System.out.println("iter1 = " + iter1);
-          _taskInfo._iter=iter1;
-          break;
 
 //        case COORDINATE_DESCENT:
 //          double l1pen = _parms._alpha[0]*_parms._lambda[_lambdaId];

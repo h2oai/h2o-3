@@ -580,7 +580,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = true;
       params._family = Family.binomial;
-      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._solver = Solver.COORDINATE_DESCENT;
       params._response_column = "IsDepDelayed";
       params._ignored_columns = new String[]{"IsDepDelayed_REC"};
       params._train = fr._key;
@@ -609,7 +609,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = true;
       params._family = Family.gaussian;
-      params._solver = Solver.COORDINATE_DESCENT_SEQ;//COORDINATE_DESCENT;
+      params._solver = Solver.COORDINATE_DESCENT;//COORDINATE_DESCENT;
       params._response_column = "C1";
       params._train = fr._key;
       GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
@@ -1043,7 +1043,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT_SEQ; //Solver.COORDINATE_DESCENT_SEQ;
+      params._solver = Solver.COORDINATE_DESCENT; //Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
@@ -1081,7 +1081,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = null; // new double [] {0.25};
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
@@ -1434,7 +1434,7 @@ public class GLMTest  extends TestUtil {
       Scope.enter();
       // test LBFGS with l1 pen
       GLMParameters params = new GLMParameters(Family.gaussian);
-      params._solver = Solver.COORDINATE_DESCENT_SEQ;
+      params._solver = Solver.COORDINATE_DESCENT;
       params._response_column = fr._names[0];
       params._train = parsed;
       params._alpha = new double[]{0};
@@ -1454,7 +1454,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 215;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{ Solver.IRLSM}){//Solver.COORDINATE_DESCENT_SEQ,}) { // LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{ Solver.IRLSM}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
         params._solver = s;
         job = new GLM(modelKey, "glm test simple poisson", params);
         job.trainModel().get();

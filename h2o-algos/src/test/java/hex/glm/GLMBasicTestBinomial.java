@@ -133,7 +133,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}){//, Solver.COORDINATE_DESCENT_SEQ}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
