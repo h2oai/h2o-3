@@ -636,8 +636,10 @@ class H2OFrame:
       if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
 
       if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)):
-        return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
-      return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
+        return H2OFrame(expr=ExprNode("[", self, item[0], item[1]))._scalar()
+      return H2OFrame(expr=ExprNode("[",self,item[0],item[1]))
+      #   return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
+      # return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
 
   def __setitem__(self, b, c):
     """

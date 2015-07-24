@@ -1333,7 +1333,7 @@ class ASTSlice extends AST {
     }
     if (env.isSpan()) {
       ValSpan a = env.popSpan();
-      if( Double.isNaN(a._max) || a._max > len) a._max=len-1;
+      if( Double.isNaN(a._max) || a._max > len) a._max=Math.max(0,len-1);
 //      else a._max = Math.min(len,a._max-1);
       if (!a.isValid()) throw new IllegalArgumentException("Cannot mix negative and positive array selection.");
       // if selecting out columns, build a long[] cols and return that.
