@@ -31,8 +31,9 @@ dependencies {
   compile 'commons-collections:commons-collections:3.0'
   compile 'org.javassist:javassist:3.18.2-GA'
 
-   // org.Reflections library 
-  compile 'com.github.ronmamo:reflections:-SNAPSHOT'
+  // org.Reflections library 
+  //compile 'com.github.ronmamo:reflections:-SNAPSHOT'
+  compile "org.reflections:reflections:0.9.9"
 
   // Jets3t is required by S3N support
   compile 'net.java.dev.jets3t:jets3t:0.6.1'
