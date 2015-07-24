@@ -32,6 +32,7 @@ class MetricsBase(object):
     types_w_mult =       ['ModelMetricsMultinomial']
     types_w_bin =        ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
     types_w_r2 =         ['ModelMetricsBinomial', 'ModelMetricsRegression'] + types_w_glm + types_w_mult
+    types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
     types_w_logloss =    types_w_bin + types_w_mult
 
     print
@@ -41,12 +42,16 @@ class MetricsBase(object):
       print reported_on.format("train")
     elif self._on_valid:
       print reported_on.format("validation")
+    elif self._on_xval:
+      print reported_on.format("cross-validation")
     else:
       print reported_on.format("test")
     print
     print   "MSE: "                                           + str(self.mse())
     if metric_type in types_w_r2:
       print "R^2: "                                           + str(self.r2())
+    if metric_type in types_w_mean_residual_deviance:
+      print "Mean Residual Deviance: "                        + str(self.mean_residual_deviance())
     if metric_type in types_w_logloss:
       print "LogLoss: "                                       + str(self.logloss())
     if metric_type in types_w_glm:

@@ -167,6 +167,8 @@ class ModelBase(object):
     if tm: tm.show()
     vm = model["validation_metrics"]
     if vm: vm.show()
+    xm = model["cross_validation_metrics"]
+    if xm: xm.show()
 
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
