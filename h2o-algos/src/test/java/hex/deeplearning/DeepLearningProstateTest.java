@@ -104,7 +104,7 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.Maxout,
 //                      DeepLearningParameters.Activation.MaxoutWithDropout
                   }) {
-                    if (!activation.toString().contains("Tanh")) {
+                    if (!activation.toString().contains("Tanh") || !replicate) {
                       switch (dist) {
                         case tweedie:
                         case gamma:
