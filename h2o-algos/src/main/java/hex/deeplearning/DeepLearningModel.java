@@ -71,7 +71,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   @Override
   public double deviance(double w, double y, double f) {
-    return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w,y,f);
+    // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(get_params()._distribution != Distribution.Family.AUTO);
+    return new Distribution(get_params()._distribution, get_params()._tweedie_power).deviance(w,y,f);
   }
 
   // Default publicly visible Schema is V2

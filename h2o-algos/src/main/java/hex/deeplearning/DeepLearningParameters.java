@@ -772,7 +772,7 @@ public class DeepLearningParameters extends Model.Parameters {
      *
      * @param fromParms      raw user-given parameters from the REST API
      * @param toParms        modified set of parameters, with defaults filled in
-     * @param nClasses       number of classes (1 for regerssion, or 0 for autoencoder)
+     * @param nClasses       number of classes (1 for regression or autoencoder)
      */
     static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, int nClasses) {
       if (fromParms._hidden_dropout_ratios == null) {
