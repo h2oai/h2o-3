@@ -71,9 +71,8 @@ def cv_carsGBM(ip,port):
     ## error cases
     # 1. nfolds == 1 or < 0
     try:
-        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(-10000,-1),
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.sample([-1,1], 1)[0],
                       distribution=distribution)
-        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=1, distribution=distribution)
         assert False, "Expected model-build to fail when nfolds is 1 or < 0"
     except EnvironmentError:
         assert True
