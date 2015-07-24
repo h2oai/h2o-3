@@ -2,8 +2,8 @@ package hex.deeplearning;
 
 
 import hex.Distribution;
-import static hex.Distribution.*;
 import static hex.Distribution.Family.*;
+import hex.ModelMetricsAutoEncoder;
 import hex.ModelMetricsRegression;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
@@ -899,9 +899,8 @@ public class DeepLearningTest extends TestUtil {
 
         if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.MeanSquare)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
-        else {
+        else
           Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
-        }
 
         job.remove();
       } finally {
@@ -951,9 +950,8 @@ public class DeepLearningTest extends TestUtil {
 
         if (dist == gaussian || dist == AUTO)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
-        else {
+        else
           Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
-        }
 
         job.remove();
       } finally {
@@ -965,5 +963,45 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testAutoEncoder() {
+    Frame tfr = null, vfr = null;
+    DeepLearningModel dl = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+      for (String s : new String[]{
+              "Merit", "Class"
+      }) {
+        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+      }
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 100;
+      parms._reproducible = true;
+      parms._hidden = new int[]{5,5,5};
+      parms._response_column = "Cost";
+      parms._seed = 0xdecaf;
+      parms._autoencoder = true;
+      parms._input_dropout_ratio = 0.1;
+      parms._activation = DeepLearningParameters.Activation.Tanh;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      dl = job.trainModel().get();
+
+      ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
+      Assert.assertEquals(mm._MSE, 0.10820468552102394, 1e-8);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (dl != null) dl.delete();
+      Scope.exit();
+    }
+  }
 
 }
