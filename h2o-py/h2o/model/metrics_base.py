@@ -480,9 +480,9 @@ class H2OBinomialModelMetrics(MetricsBase):
     raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
-    super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
+  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
+    super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
 
 class H2ODimReductionModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
-    super(H2ODimReductionModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
+  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
+    super(H2ODimReductionModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
