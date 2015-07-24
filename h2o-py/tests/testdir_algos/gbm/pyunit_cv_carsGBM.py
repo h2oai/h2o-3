@@ -85,7 +85,5 @@ def cv_carsGBM(ip,port):
     except EnvironmentError:
         assert True
 
-    # TODO: what should the model metrics look like? add cross-validation metric check to pyunit_metric_json_check.
-
 if __name__ == "__main__":
     h2o.run_test(sys.argv, cv_carsGBM)
