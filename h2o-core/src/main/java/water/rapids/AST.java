@@ -7,6 +7,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.ValueString;
 import water.util.IcedInt;
 
 import java.util.ArrayList;
@@ -1229,7 +1230,10 @@ class ASTSlice extends AST {
       try {
         if (ary.vecs()[col].isEnum()) {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
-        } else env.push(new ValNum(ary.vecs()[col].at(row)));
+        } else {
+          if(ary.vecs()[col].isString()) env.push(new ValStr(ary.vecs()[col].atStr(new ValueString(),row).toString()));
+          else                           env.push(new ValNum(ary.vecs()[col].at(row)));
+        }
       } catch (ArrayIndexOutOfBoundsException e) {
         if( col < 0 ) {
           int rm_col = -1*col - 1;  // 1 -> 0 idx...
