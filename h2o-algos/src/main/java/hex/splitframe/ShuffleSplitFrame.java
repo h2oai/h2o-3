@@ -15,7 +15,7 @@ import water.parser.ValueString;
  */
 public class ShuffleSplitFrame {
 
-  public static Frame[] shuffleSplitFrame( Frame fr, Key[] keys, final double ratios[], final long seed ) {
+  public static Frame[] shuffleSplitFrame( Frame fr, Key<Frame>[] keys, final double ratios[], final long seed ) {
     // Sanity check the ratios
     assert keys.length == ratios.length;
     double sum = ratios[0];
