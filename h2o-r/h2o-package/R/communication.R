@@ -127,18 +127,22 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  if (method == "GET") {
-    h = basicHeaderGatherer()
-    tmp = tryCatch(getURL(url = url,
-                          headerfunction = h$update,
-                          useragent = R.version.string,
-                          timeout = timeout_secs,
-                          .opts = opts),
-                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if ((method == "GET") || (method == "DELETE")) {
+    h <- basicHeaderGatherer()
+    t <- basicTextGatherer()
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
-      payload = tmp
+      payload = t$value()
     }
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
@@ -177,25 +181,7 @@
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
-  } else if (method == "DELETE") {
-    h <- basicHeaderGatherer()
-    t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url,
-                                customrequest = method,
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                verbose = FALSE,
-                                timeout = timeout_secs,
-                                .opts = opts),
-                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    if (! .__curlError) {
-      httpStatusCode = as.numeric(h$value()["status"])
-      httpStatusMessage = h$value()["statusMessage"]
-      payload = t$value()
-    }
-  }
-  else {
+  } else {
     message = sprintf("Unknown HTTP method %s", method)
     stop(message)
   }
