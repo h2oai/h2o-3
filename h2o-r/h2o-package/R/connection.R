@@ -355,7 +355,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   port_ <- 54321
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
-  if( url.exists(myURL) ) {
+  if( .h2o.startedH2O() && url.exists(myURL) ) {
     tryCatch(h2o.shutdown(conn=new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",

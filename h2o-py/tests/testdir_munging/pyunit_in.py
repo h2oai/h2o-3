@@ -11,5 +11,7 @@ def test_in(ip,port):
     assert not 99 in iris, "didn't expect 99 to be in the dataset, but it was"
     assert "Iris-setosa" in iris[4], "expected Iris-setosa to be in the dataset, but it wasn't"
 
+    h2o.remove(iris)
+
 if __name__ == "__main__":
     h2o.run_test(sys.argv, test_in)
