@@ -278,10 +278,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final boolean _subset;      // True if working a subset of cols
     final boolean _build_tree_one_node;
     float[] _improvPerVar;      // Squared Error improvement per variable per split
-    Distributions.Family _family;
+    Distribution.Family _family;
     
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar, Distributions.Family family) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -693,14 +693,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper MRTask to compute the initial value
   private static class InitialValue extends MRTask<InitialValue> {
-    public  InitialValue(Distributions.Family family, double power) { _dist = new Distributions(family, power); }
-    final private Distributions _dist;
+    public  InitialValue(Distribution.Family family, double power) { _dist = new Distribution(family, power); }
+    final private Distribution _dist;
     private double _num;
     private double _denom;
 
     public  double initialValue() {
-      if (_dist.distribution == Distributions.Family.multinomial)
-        return -0.5*new Distributions(Distributions.Family.bernoulli).link(_num/_denom);
+      if (_dist.distribution == Distribution.Family.multinomial)
+        return -0.5*new Distribution(Distribution.Family.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
     @Override public void map(Chunk response, Chunk weight, Chunk offset) {

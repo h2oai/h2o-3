@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
-import hex.Distributions;
-import hex.tree.SharedTreeModel;
+import hex.Distribution;
 
 import water.*;
 import water.fvec.*;
@@ -50,7 +49,7 @@ public class GBMBasic extends TestNGUtil {
             fr = parse_test_file("smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
-            parms._distribution = Distributions.Family.gaussian;
+            parms._distribution = Distribution.Family.gaussian;
             parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
             parms._ntrees = 1;
             parms._max_depth = 1;

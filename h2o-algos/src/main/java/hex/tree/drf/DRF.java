@@ -1,6 +1,6 @@
 package hex.tree.drf;
 
-import hex.Distributions;
+import hex.Distribution;
 import hex.ModelCategory;
 import hex.schemas.DRFV3;
 import hex.tree.*;
@@ -69,9 +69,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols))
         error("_mtries","Computed mtries should be -1 or in interval <1,#cols> but it is " + _parms._mtries);
     }
-    if (_parms._distribution == Distributions.Family.AUTO) {
-      if (_nclass == 1) _parms._distribution = Distributions.Family.gaussian;
-      if (_nclass >= 2) _parms._distribution = Distributions.Family.multinomial;
+    if (_parms._distribution == Distribution.Family.AUTO) {
+      if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
+      if (_nclass >= 2) _parms._distribution = Distribution.Family.multinomial;
     }
     if (expensive) {
       _initialPrediction = isClassifier() ? 0 : getInitialValue();

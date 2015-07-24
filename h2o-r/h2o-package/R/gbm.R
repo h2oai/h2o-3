@@ -13,8 +13,9 @@
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param distribution A \code{character} string. The loss function to be implemented.
+#' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
@@ -56,6 +57,7 @@
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
+                    tweedie_power = 1.5,
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
@@ -115,6 +117,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$model_id <- model_id
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))

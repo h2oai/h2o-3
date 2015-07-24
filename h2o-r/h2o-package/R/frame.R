@@ -519,8 +519,10 @@ setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) all(sappl
 
 #' Remove Rows With NAs
 #'
+#' @param object H2OFrame object
+#' @param ... Ignored
 #' @export
-na.omit.H2OFrame <- function(object, ...) .h2o.nary_frame_op("na.omit", object)
+setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.omit", object) )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
