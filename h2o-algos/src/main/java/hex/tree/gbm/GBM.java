@@ -85,18 +85,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
         if (_nclass == 2) _parms._distribution = Distribution.Family.bernoulli;
         if (_nclass >= 3) _parms._distribution = Distribution.Family.multinomial;
-      } else if (_parms._distribution == Distribution.Family.poisson) {
-        if (_response.min() < 0)
-          error("_respons e", "Response cannot be negative for Poisson distribution.");
-      } else if (_parms._distribution == Distribution.Family.gamma) {
-        if (_response.min() < 0)
-          error("_response", "Response cannot be negative for Gamma distribution.");
-      } else if (_parms._distribution == Distribution.Family.tweedie) {
-        if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
-          error("_tweedie_power", "Tweedie power must be between 1 and 2.");
-        if (_response.min() < 0)
-          error("_response", "Response cannot be negative for Tweedie distribution.");
       }
+      checkDistributions();
       if (hasOffsetCol() && isClassifier() && _parms._distribution == Distribution.Family.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }

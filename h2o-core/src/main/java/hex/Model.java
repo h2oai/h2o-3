@@ -63,6 +63,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Random, Modulo
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.Random;
+    public Distribution.Family _distribution = Distribution.Family.AUTO;
+    public double _tweedie_power = 1.5f;
 
     // TODO: This field belongs in the front-end column-selection process and
     // NOT in the parameters - because this requires all model-builders to have

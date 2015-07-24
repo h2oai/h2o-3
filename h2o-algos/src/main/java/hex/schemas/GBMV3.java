@@ -38,7 +38,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 				"seed",
 				"build_tree_one_node",
         "learn_rate",
-        "distribution"
+        "distribution",
+        "tweedie_power"
     };
 
     // Input fields
@@ -47,5 +48,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, gridable = true)
     public Distribution.Family distribution;
+
+    @API(help = "Tweedie Power (between 1 and 2)", level = API.Level.secondary, gridable = true)
+    public double tweedie_power;
   }
 }

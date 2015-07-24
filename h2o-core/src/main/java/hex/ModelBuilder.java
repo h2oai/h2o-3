@@ -652,6 +652,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
     }
+    if (_parms._distribution != Distribution.Family.tweedie) {
+      hide("_tweedie_power", "Only for Tweedie Distribution.");
+    }
+    if (_parms._tweedie_power <= 1 || _parms._tweedie_power >= 2) {
+      error("_tweedie_power", "Tweedie power must be between 1 and 2 (exclusive).");
+    }
+    if (expensive) {
+      checkDistributions();
+    }
+
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
       _train.remove(_parms._ignored_columns);
@@ -759,6 +769,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert(_parms._offset_column != null == hasOffsetCol());
     assert(_fold != null == hasFoldCol());
     assert(_parms._fold_column != null == hasFoldCol());
+  }
+
+  public void checkDistributions() {
+    if (_parms._distribution == Distribution.Family.poisson) {
+      if (_response.min() < 0)
+        error("_respons e", "Response cannot be negative for Poisson distribution.");
+    } else if (_parms._distribution == Distribution.Family.gamma) {
+      if (_response.min() < 0)
+        error("_response", "Response cannot be negative for Gamma distribution.");
+    } else if (_parms._distribution == Distribution.Family.tweedie) {
+      if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
+        error("_tweedie_power", "Tweedie power must be between 1 and 2.");
+      if (_response.min() < 0)
+        error("_response", "Response cannot be negative for Tweedie distribution.");
+    }
   }
 
   abstract class FilterCols {

@@ -269,12 +269,6 @@ public class DeepLearningParameters extends Model.Parameters {
    */
   public Loss _loss = Loss.Automatic;
 
-  /** Distribution functions.
-   * Note: AUTO will select gaussian for continuous, and multinomial for categorical response
-   */
-  public Distribution.Family _distribution = Distribution.Family.AUTO;
-  double _tweedie_power = 1.5f;
-
 /*Scoring*/
   /**
    * The minimum time (in seconds) to elapse between model scoring. The actual
@@ -517,7 +511,7 @@ public class DeepLearningParameters extends Model.Parameters {
         dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
     }
     if (!classification && _loss == Loss.CrossEntropy)
-      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
+      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
     if (classification) {
       switch(_distribution) {
         case gaussian:
@@ -526,7 +520,7 @@ public class DeepLearningParameters extends Model.Parameters {
         case tweedie:
         case gamma:
         case poisson:
-          dl.error("_distribution", "Distribution " + _distribution  + " is not allowed for classification.");
+          dl.error("_distribution", _distribution  + " distribution is not allowed for classification.");
           break;
         case AUTO:
         case bernoulli:
@@ -539,7 +533,7 @@ public class DeepLearningParameters extends Model.Parameters {
       switch(_distribution) {
         case multinomial:
         case bernoulli:
-          dl.error("_distribution", "Distribution " + _distribution  + " is not allowed for regression.");
+          dl.error("_distribution", _distribution  + " distribution is not allowed for regression.");
           break;
         case tweedie:
         case gamma:
@@ -562,6 +556,7 @@ public class DeepLearningParameters extends Model.Parameters {
           break;
       }
     }
+    if (expensive) dl.checkDistributions();
 
     if (_score_training_samples < 0)
       dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
