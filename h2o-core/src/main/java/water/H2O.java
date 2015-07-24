@@ -194,6 +194,9 @@ final public class H2O {
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
 
+    /** -disable_web; disable web API port (used by Sparkling Water) */
+    public boolean disable_web = false;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -372,6 +375,9 @@ final public class H2O {
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
         ARGS.flow_dir = args[i];
+      }
+      else if (s.matches("disable_web")) {
+        ARGS.disable_web = true;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
@@ -1540,14 +1546,12 @@ final public class H2O {
     try {
       String logDir = Log.getLogDir();
       Log.info("Log dir: '" + logDir + "'");
-
-      Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
     }
     catch (Exception e) {
-      System.err.println("ERROR: Log.getLogDir() failed, exiting now.");
-      e.printStackTrace();
-      H2O.exit(1);
+      Log.info("Log dir: (Log4j configuration inherited)");
     }
+
+    Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
 
     //Print extra debug info now that logs are setup
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();

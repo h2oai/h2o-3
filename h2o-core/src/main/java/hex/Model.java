@@ -420,6 +420,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _output = output;  // Output won't be set if we're assert output != null;
   }
 
+  /**
+   * Deviance of given distribution function at predicted value f
+   * @param w observation weight
+   * @param y (actual) response
+   * @param f (predicted) response in original response space
+   * @return value of gradient
+   */
+  public double deviance(double w, double y, double f) {
+    return new Distributions(Distributions.Family.gaussian).deviance(w, y, f);
+  }
 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
    *  intention here is that ModelBuilders can assume the test set has the same

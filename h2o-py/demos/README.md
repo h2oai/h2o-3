@@ -47,6 +47,10 @@ Open the prostateGBM.ipynb file. The notebook contains a demo that starts H2O, i
 
     $ ipython notebook prostateGBM.ipynb
 
+All demos are available here:
+
+ * [iPython Demos](https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos)
+
 ---
 
 

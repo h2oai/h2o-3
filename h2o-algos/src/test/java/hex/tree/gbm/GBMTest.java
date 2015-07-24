@@ -57,6 +57,7 @@ public class GBMTest extends TestUtil {
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.26,mse,0.1);
       assertEquals(79152.26,gbm._output._scored_train[1]._mse,0.1);
+      assertEquals(79152.26,gbm._output._scored_train[1]._residual_deviance,0.1);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
@@ -420,7 +421,7 @@ public class GBMTest extends TestUtil {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); } };
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Distributions.Family.multinomial)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Distributions.Family.multinomial)._scored_valid;
-    // FIXME: 0-tree scores don't match between WithoutVal and WithVal for multinomial
+    // FIXME: 0-tree scores don't match between WithoutVal and WithVal for multinomial - because we compute initial_MSE(_response,_vresponse)) in SharedTree.java
     scoredWithoutVal = Arrays.copyOfRange(scoredWithoutVal, 1, scoredWithoutVal.length);
     scoredWithVal = Arrays.copyOfRange(scoredWithVal, 1, scoredWithVal.length);
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
@@ -1349,6 +1350,53 @@ public class GBMTest extends TestUtil {
       if (vfr != null) vfr.remove();
       if (gbm != null) gbm.delete();
       Scope.exit();
+    }
+  }
+
+  // just a simple sanity check - not a golden test
+  @Test
+  public void testDistributions() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    for (Distributions.Family dist : new Distributions.Family[]{
+            Distributions.Family.AUTO,
+            Distributions.Family.gaussian,
+            Distributions.Family.poisson,
+            Distributions.Family.gamma,
+            Distributions.Family.tweedie
+    }) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        for (String s : new String[]{
+                "Merit", "Class"
+        }) {
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        }
+        DKV.put(tfr);
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = "Cost";
+        parms._seed = 0xdecaf;
+        parms._distribution = dist;
+        parms._min_rows = 1;
+        parms._ntrees = 3;
+        parms._learn_rate = 1e-3f;
+
+        // Build a first model; all remaining models should be equal
+        GBM job = new GBM(parms);
+        gbm = job.trainModel().get();
+
+        ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+
+        job.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (vfr != null) vfr.remove();
+        if (gbm != null) gbm.delete();
+        Scope.exit();
+      }
     }
   }
 }
