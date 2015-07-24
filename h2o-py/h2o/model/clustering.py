@@ -70,7 +70,7 @@ class H2OClusteringModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["avg_ss"]
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["totss"]
     return m.values()[0] if len(m) == 1 else m
 
   def tot_withinss(self, train=False, valid=False, xval=False):
@@ -88,7 +88,7 @@ class H2OClusteringModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["avg_within_ss"]
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["tot_withinss"]
     return m.values()[0] if len(m) == 1 else m
 
   def withinss(self, train=False, valid=False, xval=False):

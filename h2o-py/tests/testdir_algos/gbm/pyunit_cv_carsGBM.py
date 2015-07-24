@@ -36,20 +36,19 @@ def cv_carsGBM(ip,port):
                    fold_assignment="Modulo")
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
                    fold_assignment="Modulo")
-    h2o.check_models(gbm1, gbm2)
+    h2o.check_models(gbm1, gbm2, True)
 
-    # ## check that cv metrics are different over repeated "Random" runs
-    # # TODO: PUBDEV-1752
-    # nfolds = random.randint(3,10)
-    # gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
-    #                fold_assignment="Random")
-    # gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
-    #                fold_assignment="Random")
-    # try:
-    #     h2o.check_models(gbm1, gbm2)
-    #     assert False, "Expected models to be different over repeated Random runs"
-    # except EnvironmentError:
-    #     assert True
+    ## check that cv metrics are different over repeated "Random" runs
+    nfolds = random.randint(3,10)
+    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+                   fold_assignment="Random")
+    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+                   fold_assignment="Random")
+    try:
+        h2o.check_models(gbm1, gbm2, True)
+        assert False, "Expected models to be different over repeated Random runs"
+    except AssertionError:
+        assert True
 
 
     ## boundary cases
@@ -65,11 +64,8 @@ def cv_carsGBM(ip,port):
     h2o.check_models(gbm1, gbm2)
 
     # 3. cross-validation and regular validation attempted
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
-    gbm = h2o.gbm(y=train[response_col], x=train[predictors], nfolds=random.randint(3,10), validation_y=valid[1],
-                  validation_x=valid[predictors], distribution=distribution)
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col],
+                  validation_x=cars[predictors], distribution=distribution)
 
 
     ## error cases
@@ -85,7 +81,7 @@ def cv_carsGBM(ip,port):
     # 2. more folds than observations
     try:
         gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution,
-                       fold_assignment="Modulo")
+                      fold_assignment="Modulo")
         assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
         assert True

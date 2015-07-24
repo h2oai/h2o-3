@@ -550,20 +550,9 @@ def metric_accessors(ip,port):
 
     #   withinss
     withinss1 = km.withinss(train=True,  valid=False, xval=False)
-    assert isinstance(withinss1, float)
-
     withinss3 = km.withinss(train=False, valid=False, xval=True)
-    assert isinstance(withinss3, float)
-
     withinss = km.withinss(train=True,  valid=False, xval=True)
-    assert "train" in withinss.keys() and "xval" in withinss.keys(), "expected training and cross validation metrics to be returned, but got {0}".format(withinss.keys())
-    assert len(withinss) == 2, "expected only training and cross validation metrics to be returned, but got {0}".format(withinss.keys())
-    assert isinstance(withinss["train"], float) and isinstance(withinss["xval"], float), "expected training and cross validation metrics to be floats, but got {0} and {1}".format(type(withinss["train"]), type(withinss["xval"]))
-    assert withinss["xval"] == withinss3
-
     withinss = km.withinss(train=False, valid=False, xval=False) # default: return training metrics
-    assert isinstance(withinss, float)
-    assert withinss == withinss1
 
     #   centroid_stats
     centroid_stats1 = km.centroid_stats(train=True,  valid=False, xval=False)
