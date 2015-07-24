@@ -175,7 +175,6 @@ public class DeepLearningModelInfo extends Iced {
     final int num_input = dinfo.fullN();
     final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
     if (!get_params()._autoencoder) assert(num_output == nClasses);
-    else assert(nClasses == 0);
 
     _saw_missing_cats = dinfo._cats > 0 ? new boolean[data_info._cats] : null;
     assert (num_input > 0);

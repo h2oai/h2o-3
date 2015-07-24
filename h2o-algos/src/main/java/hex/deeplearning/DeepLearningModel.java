@@ -1293,6 +1293,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       else {
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
+      bodySb.i(2).p("preds[1] = " + new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInvString("preds[1]")+";").nl();
       bodySb.i(2).p("if (Double.isNaN(preds[1])) throw new RuntimeException(\"Predicted regression target NaN!\");").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();

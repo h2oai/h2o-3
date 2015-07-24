@@ -644,8 +644,6 @@ public class DeepLearningParameters extends Model.Parameters {
             "_input_dropout_ratio",
             "_hidden_dropout_ratios",
             "_loss",
-            "_distribution",
-            "_tweedie_power",
             "_overwrite_with_best_model",
             "_missing_values_handling",
             "_average_activation",
@@ -679,7 +677,9 @@ public class DeepLearningParameters extends Model.Parameters {
             "_ignore_const_cols",
             "_max_categorical_features",
             "_keep_cross_validation_splits",
-            "_nfolds"
+            "_nfolds",
+            "_distribution",
+            "_tweedie_power"
     };
 
     static void checkCompleteness() {
@@ -875,12 +875,6 @@ public class DeepLearningParameters extends Model.Parameters {
             throw H2O.unimpl();
         }
       }
-
-      if (nClasses >= 1)
-        Log.info("Doing " + (nClasses > 1 ? "classification":"regression") + " with " + toParms._distribution+ " distribution and " + toParms._loss + " loss function.");
-      else
-        Log.info("Doing autoencoding with" + toParms._distribution+ " distribution and " + toParms._loss + " loss function.");
-
       if (fromParms._reproducible) {
         Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
                 + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");

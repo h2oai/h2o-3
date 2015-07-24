@@ -506,11 +506,11 @@ public abstract class Neurons {
    * @param row neuron index
    * @return difference between the output (auto-encoder output layer activation) and the target (input layer activation)
    */
-  protected float autoEncoderError(int row) {
+  protected float autoEncoderGradient(Distribution dist, int row) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final float t = _input._a.get(row);
     final float y = _a.get(row);
-    return (float)new Distribution(params._distribution).deviance(1., t, y);
+    return (float)dist.gradient(t, y);
   }
 
   /**
@@ -820,9 +820,10 @@ public abstract class Neurons {
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       if (_w instanceof Storage.DenseRowMatrix) {
         final int rows = _a.size();
+        Distribution dist = (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length) ?
+                new Distribution(params._distribution) : null;
         for (int row = 0; row < rows; row++) {
-          if (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length)
-            _e.set(row, autoEncoderError(row));
+          if (dist != null) _e.set(row, autoEncoderGradient(dist, row));
           float g = _e.get(row) * (1f - _a.get(row) * _a.get(row));
           bprop(row, g, r, m);
         }
@@ -955,9 +956,10 @@ public abstract class Neurons {
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       final int rows = _a.size();
       if (_w instanceof Storage.DenseRowMatrix) {
+        Distribution dist = (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length) ?
+                new Distribution(params._distribution) : null;
         for (int row = 0; row < rows; row++) {
-          if (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length)
-            _e.set(row, autoEncoderError(row));
+          if (dist != null) _e.set(row, autoEncoderGradient(dist, row));
           //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
           float g = _a.get(row) > 0f ? _e.get(row) : 0f;
           bprop(row, g, r, m);
