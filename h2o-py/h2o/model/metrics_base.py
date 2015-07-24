@@ -10,10 +10,11 @@ class MetricsBase(object):
 
   The methods here are available acorss different model categories, and so appear here.
   """
-  def __init__(self, metric_json,on_train,on_valid,algo):
+  def __init__(self, metric_json,on_train,on_valid,on_xval,algo):
     self._metric_json = metric_json
-    self._on_train = on_train   # train and valid are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+    self._on_train = on_train   # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
     self._on_valid = on_valid
+    self._on_xval = on_xval
     self._algo = algo
 
   def __repr__(self):
@@ -80,6 +81,12 @@ class MetricsBase(object):
     """
     return self._metric_json["logloss"]
 
+  def mean_residual_deviance(self):
+    """
+    :return: Retrieve the mean residual deviance for this set of metrics.
+    """
+    return self._metric_json["mean_residual_deviance"]
+
   def auc(self):
     """
     :return: Retrieve the AUC for this set of metrics.
@@ -142,13 +149,13 @@ class H2ORegressionModelMetrics(MetricsBase):
 
   It is possible to retrieve the R^2 (1 - MSE/variance) and MSE
   """
-  def __init__(self,metric_json,on_train=False,on_valid=False,algo=""):
-    super(H2ORegressionModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
+  def __init__(self,metric_json,on_train=False,on_valid=False,on_xval=False,algo=""):
+    super(H2ORegressionModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
 
 
 class H2OClusteringModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
-    super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
+  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
+    super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
 
   def tot_withinss(self):
     """
@@ -175,8 +182,8 @@ class H2OClusteringModelMetrics(MetricsBase):
     return None
 
 class H2OMultinomialModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
-    super(H2OMultinomialModelMetrics, self).__init__(metric_json, on_train, on_valid,algo)
+  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
+    super(H2OMultinomialModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
 
   def confusion_matrix(self):
     """
@@ -198,17 +205,18 @@ class H2OBinomialModelMetrics(MetricsBase):
   To input the different criteria, use the static variable `criteria`
   """
 
-  def __init__(self, metric_json, on_train=False, on_valid=False, algo=""):
+  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
     """
       Create a new Binomial Metrics object (essentially a wrapper around some json)
 
       :param metric_json: A blob of json holding all of the needed information
       :param on_train: Metrics built on training data (default is False)
       :param on_valid: Metrics built on validation data (default is False)
+      :param on_xval: Metrics built on cross validation data (default is False)
       :param algo: The algorithm the metrics are based off of (e.g. deeplearning, gbm, etc.)
       :return: A new H2OBinomialModelMetrics object.
       """
-    super(H2OBinomialModelMetrics, self).__init__(metric_json, on_train, on_valid, algo)
+    super(H2OBinomialModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
 
   def F1(self, thresholds=None):
     """
