@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
+import hex.Distribution;
 import hex.FrameTask;
 import water.DKV;
 import water.H2O;
@@ -289,12 +290,19 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
             ((Neurons.Softmax) neurons[neurons.length - 1]).bprop(target_label);
           }
         } else {
+          // compute prediction (in link space)
           ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
+          // add offset (in link space)
           if (offset > 0) {
             double mul = minfo.data_info()._normRespMul[0];
             double sub = minfo.data_info()._normRespSub[0];
             neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
           }
+//          //bring prediction to response space
+//          float pred = neurons[neurons.length - 1]._a.get(0);
+//          pred = (float)new Distribution(minfo.get_params()._distribution, minfo.get_params()._tweedie_power).link(pred); //bring (descaled) response back to link domain
+//          neurons[neurons.length - 1]._a.set(0, pred);
+
           if (training) {
             for (int i = 1; i < neurons.length - 1; i++)
               Arrays.fill(neurons[i]._e.raw(), 0);
@@ -302,7 +310,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
             if (Double.isNaN(responses[0])) { //missing response
               target_value = Neurons.missing_real_value;
             } else {
-              target_value = (float) responses[0];
+              target_value = (float)responses[0]; //actual response in response space
             }
             ((Neurons.Linear) neurons[neurons.length - 1]).bprop(target_value);
           }

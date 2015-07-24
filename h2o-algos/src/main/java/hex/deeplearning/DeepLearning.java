@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
+import hex.Distribution;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
@@ -88,6 +89,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
    * @return
    */
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms) {
+    double x = 0.782347234;
+    boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
     return new DataInfo(
             Key.make(), //dest key
             train,
@@ -95,7 +98,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
+            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
@@ -200,7 +203,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       Scope.enter();
       DeepLearningModel cp = null;
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid);
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         cp.model_info().initializeMembers();
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -239,7 +242,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           assert (actualNewP != previous.model_info().get_params());
           assert (actualNewP != newP);
           assert (actualNewP != oldP);
-          DeepLearningParameters.Sanity.update(actualNewP, newP, isClassifier());
+          DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
 
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");

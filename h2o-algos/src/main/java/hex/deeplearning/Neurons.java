@@ -510,7 +510,7 @@ public abstract class Neurons {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final float t = _input._a.get(row);
     final float y = _a.get(row);
-    return (float)Neurons.getDistribution(params._loss).deviance(1., t, y);
+    return (float)new Distribution(params._distribution).deviance(1., t, y);
   }
 
   /**
@@ -1036,6 +1036,7 @@ public abstract class Neurons {
         final float y = _a.get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
         switch(params._loss) {
+          case Automatic:
           case CrossEntropy:
             //nothing else needed, -dCE/dy * dy/dnet = target - y
             //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
@@ -1089,9 +1090,9 @@ public abstract class Neurons {
     protected void bprop(float target) {
       assert (target != missing_real_value);
       final int row = 0;
-      final float t = target;
+      final float t = target; //t is in response space
       final float y = _a.get(row);
-      float g = (float)Neurons.getDistribution(params._loss).gradient(t, y);
+      float g = (float)new Distribution(params._distribution, params._tweedie_power).gradient(t, y); //y is in link space
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       bprop(row, g, r, m);

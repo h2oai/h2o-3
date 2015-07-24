@@ -46,6 +46,7 @@ public class Distribution extends Iced {
 
   // helper - sanitized log function
   public static double log(double x) {
+    x = Math.max(0,x);
     return x == 0 ? -19 : Math.max(-19, Math.min(19, Math.log(x)));
   }
 
@@ -138,7 +139,6 @@ public class Distribution extends Iced {
       case poisson:
       case gamma:
       case tweedie:
-        assert(0<=f);
         return log(f);
       default:
         throw H2O.unimpl();
