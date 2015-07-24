@@ -194,6 +194,9 @@ final public class H2O {
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
 
+    /** -disable_web; disable web API port (used by Sparkling Water) */
+    public boolean disable_web = false;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -372,6 +375,9 @@ final public class H2O {
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
         ARGS.flow_dir = args[i];
+      }
+      else if (s.matches("disable_web")) {
+        ARGS.disable_web = true;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
