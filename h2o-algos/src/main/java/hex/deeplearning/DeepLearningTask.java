@@ -294,8 +294,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
           // add offset (in link space)
           if (offset > 0) {
-            double mul = minfo.data_info()._normRespMul[0];
-            double sub = minfo.data_info()._normRespSub[0];
+            double mul = minfo.data_info()._normRespMul == null ? 1 : minfo.data_info()._normRespMul[0];
+            double sub = minfo.data_info()._normRespSub == null ? 0 : minfo.data_info()._normRespSub[0];
             neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
           }
 //          //bring prediction to response space
