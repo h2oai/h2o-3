@@ -187,7 +187,7 @@ class ModelBase(object):
     else:
       print "Warning: This model doesn't have variable importances"
 
-  def residual_deviance(self,train=False,valid=False):
+  def residual_deviance(self,train=False,valid=False,xval=False):
     """
     Retreive the residual deviance if this model has the attribute, or None otherwise.
 
@@ -195,6 +195,7 @@ class ModelBase(object):
     :param valid: Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the residual deviance, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -205,7 +206,7 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].residual_deviance()
 
-  def residual_degrees_of_freedom(self,train=False,valid=False):
+  def residual_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
     Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
 
@@ -213,6 +214,7 @@ class ModelBase(object):
     :param valid: Get the residual dof for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the residual dof, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -223,7 +225,7 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
 
-  def null_deviance(self,train=False,valid=False):
+  def null_deviance(self,train=False,valid=False,xval=False):
     """
     Retreive the null deviance if this model has the attribute, or None otherwise.
 
@@ -231,6 +233,7 @@ class ModelBase(object):
     :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the null deviance, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -241,7 +244,7 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].null_deviance()
 
-  def null_degrees_of_freedom(self,train=False,valid=False):
+  def null_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
     Retreive the null degress of freedom if this model has the attribute, or None otherwise.
 
@@ -249,6 +252,7 @@ class ModelBase(object):
     :param valid: Get the null dof for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the null dof, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
