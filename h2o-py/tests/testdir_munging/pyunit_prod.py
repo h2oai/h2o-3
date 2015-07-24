@@ -15,6 +15,6 @@ def test_prod(ip,port):
 
     assert abs(h2o_prod - np_prod) < 1e-06, "check unsuccessful! h2o computed {0} and numpy computed {1}. expected " \
                                             "equal quantile values between h2o and numpy".format(h2o_prod,np_prod)
-
+    h2o.remove(h2o_data)
 if __name__ == "__main__":
     h2o.run_test(sys.argv, test_prod)
