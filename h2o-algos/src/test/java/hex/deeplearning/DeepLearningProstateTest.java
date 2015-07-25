@@ -104,14 +104,13 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.Maxout,
 //                      DeepLearningParameters.Activation.MaxoutWithDropout
                   }) {
-                    if (!activation.toString().contains("Tanh") || !replicate) {
-                      switch (dist) {
-                        case tweedie:
-                        case gamma:
-                        case poisson:
-                          continue;
-                        default:
-                      }
+                    boolean reproducible=false;
+                    switch (dist) {
+                      case tweedie:
+                      case gamma:
+                      case poisson:
+                        reproducible=true;
+                      default:
                     }
                     for (boolean load_balance : new boolean[]{
                             true,
@@ -199,6 +198,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               p._train_samples_per_iteration = train_samples_per_iteration;
                                               p._force_load_balance = load_balance;
                                               p._replicate_training_data = replicate;
+                                              p._reproducible = reproducible;
                                               p._shuffle_training_data = shuffle;
                                               p._score_training_samples = scoretraining;
                                               p._score_validation_samples = scorevalidation;
@@ -263,6 +263,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               p2._valid = valid == null ? null : valid._key;
                                               p2._l1 = 1e-3;
                                               p2._l2 = 1e-3;
+                                              p2._reproducible = reproducible;
                                               p2._response_column = frame._names[resp];
                                               p2._overwrite_with_best_model = overwrite_with_best_model;
                                               p2._epochs = epochs;
