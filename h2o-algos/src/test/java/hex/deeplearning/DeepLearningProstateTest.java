@@ -23,7 +23,7 @@ import java.util.Random;
 import static hex.ConfusionMatrix.buildCM;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
 
   @Test public void run() throws Exception { runFraction(0.000015f); }
 
@@ -234,7 +234,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 // no sampling - every node does its share of the full data
                                                 if (!replicate) assert ((double) model1._output._scoring_history.get(1, 3) == 1);
                                                   // every node passes over the full dataset
-                                                else assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
+                                                else {
+                                                  if (!reproducible)
+                                                    assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
+                                                }
                                               }
 
                                               if (n_folds != 0) {
