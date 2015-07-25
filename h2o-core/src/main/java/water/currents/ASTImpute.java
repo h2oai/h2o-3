@@ -4,6 +4,23 @@ import hex.quantile.QuantileModel;
 import water.*;
 import water.fvec.*;
 
+// TODO: do the data+col xform on the client; currents takes only the single vec:
+
+// (h2o.impute data col method combine_method gb in.place)  ==>
+// (h2o.impute (cols data col) method combine_method gb in.place)
+
+// TODO: Define impute in terms of "groupby"
+// (h2o.impute col method combine_method gb in.place)
+//    IMPUTE <- { col method . (ifelse (is.na col) (method col) col)}
+// if in.place
+//    IMPUTE <- { col method . (= col (IMPUTE col method) [0] [all])}
+// If gb!=null then
+//    (groupby (cbind [gb] col) [gb] {col . (IMPUTE col method)})
+// else 
+//    (IMPUTE col method)
+//
+
+
 public class ASTImpute extends ASTPrim {
   @Override String str(){ return "h2o.impute";}
   @Override int nargs() { return 1+6; } // (h2o.impute data col method combine_method groupby in.place)

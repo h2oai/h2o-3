@@ -8,6 +8,10 @@ import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.ArrayUtils;
 
+// TODO:  Define "table" in terms of "groupby"
+// (table X Y) ==>
+// (groupby (cbind X Y) [X Y] nrow TRUE)
+
 /** Variance between columns of a frame */
 class ASTTable extends ASTPrim {
   @Override int nargs() { return -1; } // (table X)  or (table X Y)
