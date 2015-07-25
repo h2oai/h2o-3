@@ -115,6 +115,18 @@ Word2Vec, along with other natural language processing (NLP) algos, are currentl
 
 ---
 
+**What are the "best practices" for preparing data for a K-Means model?**
+
+There aren't specific "best practices," as it depends on your data and the column types. However, removing outliers and transforming any categorical columns to have the same weight as the numeric columns will help, especially if you're standardizing your data. 
+
+
+---
+
+**What is your implementation of Deep Learning based on?**
+
+Our Deep Learning algorithm is based on the feedforward neural net. For more information, refer to our Data Science documentation or [Wikipedia](https://en.wikipedia.org/wiki/Feedforward_neural_network). 
+---
+
 <!---
 #commenting out as still in dev but wanted to save for later
 
@@ -701,6 +713,43 @@ Yes, make sure to install `libcurl`, which allows H2O to communicate with R. We 
 
 ---
 
+**How do I change variable/header names on an H2O frame in R?**
+
+There are two ways to change header names. To specify the headers during parsing, import the headers in R and then specify the header as the column name when the actual data frame is imported: 
+
+```
+header <- h2o.importFile(path = pathToHeader)
+data   <- h2o.importFile(path = pathToData, col.names = header)
+data
+```
+
+You can also use the `names()` function: 
+```
+header <- c("user", "specified", "column", "names")
+data   <- h2o.importFile(path = pathToData)
+names(data) <- header
+```
+
+To replace specific column names, you can also use a `sub/gsub` in R: 
+
+```
+header <- c("user", "specified", "column", "names")
+## I want to replace "user" column with "computer"
+data   <- h2o.importFile(path = pathToData)
+names(data) <- sub(pattern = "user", replacement = "computer", x = names(header))
+```
+---
+
+**My R terminal crashed - how can I re-access my H2O frame?**
+
+Launch H2O and use your web browser to access the web UI, Flow, at `localhost:54321`. Click the **Data** menu, then click **List All Frames**. Copy the frame ID, then run `h2o.ls()` in R to list all the frames, or use the frame ID in the following code (replacing `YOUR_FRAME_ID` with the frame ID): 
+
+```
+library(h2o)
+localH2O = h2o.init(ip="sri.h2o.ai", port=54321, startH2O = F, strict_version_check=T)
+data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID",conn = localH2O)
+``` 
+
 ##Sparkling Water
 
 **How do I filter an H2OFrame using Sparkling Water?**
@@ -851,6 +900,26 @@ For more information, refer to the [Sparkling Water development documentation](h
 After starting `H2OServices` by starting `H2OContext`, point your client to the IP address and port number specified in `H2OContext`. 
 
 ---
+**I'm getting a `java.lang.ArrayIndexOutOfBoundsException` when I try to run Sparkling Water - what do I need to do to resolve this error?**
+
+This error message displays if you have not set up the `H2OContext` before running Sparkling Water. To set up the `H2OContext`: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc)
+```
+After setting up `H2OContext`, try to run Sparkling Water again. 
+
+---
+
+##Tableau
+
+**Where can I learn more about running H2O with Tableau?**
+
+For more information about using H2O with Tableau, refer to [this link](http://learn.h2o.ai/content/demos/integration_with_tableau_and_excel.html) and our [demo](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_demos/runit_demo_tableau.R) in our GitHub repository. Other demos are available [here](https://s3-us-west-1.amazonaws.com/testing-amy/Demo_Template_9.0Windows.twb) and [here](https://github.com/h2oai/h2o/blob/master/tableau/meta_data/airlines_meta.csv). 
+
+---
+
 
 ##Tunneling between servers with H2O
 
@@ -904,4 +973,5 @@ on 192.168.1.173:55599
 
     
 ---
+
 

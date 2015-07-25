@@ -43,6 +43,6 @@ public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLear
   // Version&Schema-specific filling into the impl
   @Override public DeepLearningModel createImpl() {
     DeepLearningParameters parms = parameters.createImpl();
-    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningModelOutput(null), null, null);
+    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningModelOutput(null), null, null, 0);
   }
 }

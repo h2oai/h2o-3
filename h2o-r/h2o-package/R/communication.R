@@ -127,18 +127,22 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  if (method == "GET") {
-    h = basicHeaderGatherer()
-    tmp = tryCatch(getURL(url = url,
-                          headerfunction = h$update,
-                          useragent = R.version.string,
-                          timeout = timeout_secs,
-                          .opts = opts),
-                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if ((method == "GET") || (method == "DELETE")) {
+    h <- basicHeaderGatherer()
+    t <- basicTextGatherer()
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
-      payload = tmp
+      payload = t$value()
     }
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
@@ -177,25 +181,7 @@
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
-  } else if (method == "DELETE") {
-    h <- basicHeaderGatherer()
-    t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url,
-                                customrequest = method,
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                verbose = FALSE,
-                                timeout = timeout_secs,
-                                .opts = opts),
-                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    if (! .__curlError) {
-      httpStatusCode = as.numeric(h$value()["status"])
-      httpStatusMessage = h$value()["statusMessage"]
-      payload = t$value()
-    }
-  }
-  else {
+  } else {
     message = sprintf("Unknown HTTP method %s", method)
     stop(message)
   }
@@ -625,7 +611,12 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
   clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
-  cat("R is connected to H2O cluster:\n")
+  is.client <- res$is_client
+  assign("IS_CLIENT", is.client, .pkg.env)
+  m <- ": \n"
+  if( is.client ) m <- " (in client mode): \n"
+
+  cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
@@ -681,6 +672,11 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   0L
 }
 
+#'
+#' Check Client Mode Connection
+#'
+#' @export
+h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   Job Polling
@@ -707,6 +703,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
       job = jobs[[1]]
 
       status = job$status
+#      print(paste0("Job status: ", status))
       stopifnot(is.character(status))
 
       # check failed up front...

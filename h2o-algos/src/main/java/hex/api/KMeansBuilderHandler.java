@@ -3,12 +3,11 @@ package hex.api;
 import hex.kmeans.KMeans;
 import hex.schemas.KMeansV3;
 import water.api.ModelBuilderHandler;
-import water.api.Schema;
 
 public class KMeansBuilderHandler extends ModelBuilderHandler<KMeans, KMeansV3, KMeansV3.KMeansParametersV3> {
   /** Required so that Handler.handle() gets the correct schema types. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema train(int version, KMeansV3 builderSchema) {
+  public KMeansV3 train(int version, KMeansV3 builderSchema) {
     return super.do_train(version, builderSchema);
   }
 

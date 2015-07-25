@@ -9,7 +9,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
-#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
+#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -47,8 +47,12 @@
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Uniform: -value ... value, Normal: stddev
-#' @param loss Loss function: Automatic, CrossEntropy (for classification only), MeanSquare, Absolute
-#'        (experimental) or Huber (experimental)
+#' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute"
+#'        (experimental) or "Huber" (experimental)
+#' @param distribution A \code{character} string. The distribution function of the response.
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
+#'        "laplace", "huber" or "gaussian"
+#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param score_interval Shortest time interval (in secs) between model scoring
 #' @param score_training_samples Number of training set samples for scoring (0 for all)
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all)
@@ -98,6 +102,7 @@
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "Random" or "Modulo"
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -140,6 +145,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
                              loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),
+                             distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber"),
+                             tweedie_power = 1.5,
                              score_interval = 5,
                              score_training_samples,
                              score_validation_samples,
@@ -173,6 +180,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              nfolds = 0,
                              fold_column = NULL,
                              fold_assignment = c("Random","Modulo"),
+                             keep_cross_validation_predictions = FALSE,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
@@ -260,6 +268,10 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$initial_weight_scale <- initial_weight_scale
   if(!missing(loss))
     parms$loss <- loss
+  if (!missing(distribution))
+    parms$distribution <- distribution
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
   if(!missing(score_interval))
     parms$score_interval <- score_interval
   if(!missing(score_training_samples))
@@ -320,6 +332,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
   .h2o.createModel(training_frame@conn, 'deeplearning', parms)
 }
 
@@ -335,6 +348,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'         reconstruction MSE.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
@@ -343,6 +357,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
 #' head(prostate.anon)
+#' }
 #' @export
 h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
@@ -364,6 +379,7 @@ h2o.anomaly <- function(object, data) {
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
 #' @examples
+#' \dontrun{
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
@@ -374,6 +390,7 @@ h2o.anomaly <- function(object, data) {
 #' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 2)
 #' head(prostate.deepfeatures_layer1)
 #' head(prostate.deepfeatures_layer2)
+#' }
 #' @export
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1

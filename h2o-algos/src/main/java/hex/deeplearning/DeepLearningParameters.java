@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.Distribution;
 import hex.Model;
 import water.H2O;
 import water.Key;
@@ -503,14 +504,60 @@ public class DeepLearningParameters extends Model.Parameters {
         dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
       }
       //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
-    } else if (_loss != Loss.Automatic) {
+    } else {
       if (_autoencoder && _loss == Loss.CrossEntropy)
         dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
       if (!classification && _loss == Loss.CrossEntropy)
         dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
     }
     if (!classification && _loss == Loss.CrossEntropy)
-      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
+      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
+    if (classification) {
+      switch(_distribution) {
+        case gaussian:
+        case huber:
+        case laplace:
+        case tweedie:
+        case gamma:
+        case poisson:
+          dl.error("_distribution", _distribution  + " distribution is not allowed for classification.");
+          break;
+        case AUTO:
+        case bernoulli:
+        case multinomial:
+        default:
+          //OK
+          break;
+      }
+    } else {
+      switch(_distribution) {
+        case multinomial:
+        case bernoulli:
+          dl.error("_distribution", _distribution  + " distribution is not allowed for regression.");
+          break;
+        case tweedie:
+        case gamma:
+        case poisson:
+          if (_loss != Loss.Automatic)
+            dl.error("_distribution", "Only Automatic loss (deviance) is allowed for " + _distribution + " distribution.");
+          break;
+        case laplace:
+          if (_loss != Loss.Absolute && _loss != Loss.Automatic)
+            dl.error("_distribution", "Only Automatic or Absolute loss is allowed for " + _distribution + " distribution.");
+          break;
+        case huber:
+          if (_loss != Loss.Huber && _loss != Loss.Automatic)
+            dl.error("_distribution", "Only Automatic or Huber loss is allowed for " + _distribution + " distribution.");
+          break;
+        case AUTO:
+        case gaussian:
+        default:
+          //OK
+          break;
+      }
+    }
+    if (expensive) dl.checkDistributions();
+
     if (_score_training_samples < 0)
       dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
     if (_score_validation_samples < 0)
@@ -630,7 +677,9 @@ public class DeepLearningParameters extends Model.Parameters {
             "_ignore_const_cols",
             "_max_categorical_features",
             "_keep_cross_validation_splits",
-            "_nfolds"
+            "_nfolds",
+            "_distribution",
+            "_tweedie_power"
     };
 
     static void checkCompleteness() {
@@ -649,7 +698,7 @@ public class DeepLearningParameters extends Model.Parameters {
      * Check that checkpoint continuation is possible
      *
      * @param oldP old DL parameters (from checkpoint)
-     * @param newP new DL parmaeters (user-given, to restart from checkpoint)
+     * @param newP new DL parameters (user-given, to restart from checkpoint)
      */
     static void checkpoint(final DeepLearningParameters oldP, final DeepLearningParameters newP) {
       checkCompleteness();
@@ -695,7 +744,7 @@ public class DeepLearningParameters extends Model.Parameters {
      * @param actualNewP parameters in the model (that will be trained from a checkpoint restart)
      * @param newP       user-specified parameters
      */
-    static void update(DeepLearningParameters actualNewP, DeepLearningParameters newP, boolean classification) {
+    static void update(DeepLearningParameters actualNewP, DeepLearningParameters newP, int nClasses) {
       for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
         if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
           for (Field fAfter : newP.getClass().getDeclaredFields()) {
@@ -715,7 +764,7 @@ public class DeepLearningParameters extends Model.Parameters {
         }
       }
       // update parameters in place to set defaults etc.
-      modifyParms(actualNewP, actualNewP, classification);
+      modifyParms(actualNewP, actualNewP, nClasses);
     }
 
     /**
@@ -723,9 +772,9 @@ public class DeepLearningParameters extends Model.Parameters {
      *
      * @param fromParms      raw user-given parameters from the REST API
      * @param toParms        modified set of parameters, with defaults filled in
-     * @param classification
+     * @param nClasses       number of classes (1 for regression or autoencoder)
      */
-    static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, boolean classification) {
+    static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, int nClasses) {
       if (fromParms._hidden_dropout_ratios == null) {
         if (fromParms._activation == Activation.TanhWithDropout
                 || fromParms._activation == Activation.MaxoutWithDropout
@@ -776,9 +825,55 @@ public class DeepLearningParameters extends Model.Parameters {
           toParms._overwrite_with_best_model = false;
         }
       }
+
+      // Automatically set the distribution
+      if (fromParms._distribution == Distribution.Family.AUTO) {
+        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/MeanSquare/Huber/Absolute
+        if (nClasses > 1) {
+          toParms._distribution = nClasses == 2 ? Distribution.Family.bernoulli : Distribution.Family.multinomial;
+        }
+        else {
+          //regression/autoencoder
+          switch(fromParms._loss) {
+            case Automatic:
+            case MeanSquare:
+              toParms._distribution = Distribution.Family.gaussian;
+              break;
+            case Absolute:
+              toParms._distribution = Distribution.Family.laplace;
+              break;
+            case Huber:
+              toParms._distribution = Distribution.Family.huber;
+              break;
+            default:
+              throw H2O.unimpl();
+          }
+        }
+      }
+
       if (fromParms._loss == Loss.Automatic) {
-        toParms._loss = (classification && !fromParms._autoencoder) ? Loss.CrossEntropy : Loss.MeanSquare;
-        Log.info("_loss: Automatically setting loss function to " + toParms._loss);
+        switch (fromParms._distribution) {
+          case gaussian:
+            toParms._loss = Loss.MeanSquare;
+            break;
+          case laplace:
+            toParms._loss = Loss.Absolute;
+            break;
+          case huber:
+            toParms._loss = Loss.Huber;
+            break;
+          case multinomial:
+          case bernoulli:
+            toParms._loss = Loss.CrossEntropy;
+            break;
+          case tweedie:
+          case poisson:
+          case gamma:
+            toParms._loss = Loss.Automatic; //deviance
+            break;
+          default:
+            throw H2O.unimpl();
+        }
       }
       if (fromParms._reproducible) {
         Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"

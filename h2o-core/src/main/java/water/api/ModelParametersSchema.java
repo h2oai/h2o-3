@@ -48,8 +48,11 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
   public int nfolds;
 
-  @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
+  @API(help="Keep cross-validation training/validation split frames", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_splits;
+
+  @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
+  public boolean keep_cross_validation_predictions;
 
   @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
   public FrameV3.ColSpecifierV3 response_column;
@@ -105,8 +108,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : Key.make(this.training_frame.name));
-    impl._valid = (null == this.validation_frame ? null : Key.make(this.validation_frame.name));
+    impl._train = (null == this.training_frame ? null : Key.<Frame>make(this.training_frame.name));
+    impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
 
     return impl;
   }

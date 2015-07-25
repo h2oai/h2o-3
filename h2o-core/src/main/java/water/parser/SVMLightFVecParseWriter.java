@@ -51,7 +51,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
       _vecs  = Arrays.copyOf(_vecs  , newColCnt);
       _ctypes= Arrays.copyOf(_ctypes, newColCnt);
       for(int i = oldColCnt; i < newColCnt; ++i) {
-        _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._espc,_vecs[0]._chunkOff);
+        _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._tmp_espc,_vecs[0]._chunkOff);
         _vecs[i].setPrecedingChunkTypes(_cidx, AppendableVec.NUMBER);
         _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
         _ctypes[i] = Vec.T_NUM;

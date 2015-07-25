@@ -24,7 +24,7 @@ test.pubdev.1383 <- function(conn) {
   checkSignedCols(eigvecH2O, eigvecR, tolerance = 1e-5)
   
   impR <- summary(fitR)$importance
-  impH2O <- fitH2O@model$pc_importance
+  impH2O <- fitH2O@model$importance
   Log.info("R PC Importance:"); print(impR[,1:k])
   Log.info("H2O PC Importance:"); print(impH2O)
   expect_equal(as.numeric(impR[1,1:k]), as.numeric(impH2O[1,]), tolerance = 1e-6)

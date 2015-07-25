@@ -69,6 +69,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
+  @Override
+  public double deviance(double w, double y, double f) {
+    // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(get_params()._distribution != Distribution.Family.AUTO);
+    return new Distribution(get_params()._distribution, get_params()._tweedie_power).deviance(w,y,f);
+  }
+
   // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
@@ -228,6 +235,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
+    if (_output.getModelCategory() == ModelCategory.Regression) {
+      colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%.5f");
     }
@@ -242,6 +252,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     if (get_params()._valid != null) {
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+      if (_output.getModelCategory() == ModelCategory.Regression) {
+        colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+      }
       if (!_output.autoencoder) {
         colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%.5f");
       }
@@ -290,6 +303,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
+      if (_output.getModelCategory() == ModelCategory.Regression) {
+        table.set(row, col++, e.scored_train != null ? e.scored_train._residual_deviance : Double.NaN);
+      }
       if (!_output.autoencoder) {
         table.set(row, col++, e.scored_train != null ? e.scored_train._r2 : Double.NaN);
       }
@@ -304,6 +320,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       if (get_params()._valid != null) {
         table.set(row, col++, e.scored_valid != null ? e.scored_valid._mse : Double.NaN);
+        if (_output.getModelCategory() == ModelCategory.Regression) {
+          table.set(row, col++, e.scored_valid != null ? e.scored_valid._residual_deviance : Double.NaN);
+        }
         if (!_output.autoencoder) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._r2 : Double.NaN);
         }
@@ -407,17 +426,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param output
    * @param train
    * @param valid
+   * @param nClasses
    */
-  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
+  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
-    boolean classification = train.lastVec().isEnum();
     final DataInfo dinfo = makeDataInfo(train, valid, _parms);
     _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo);
-    model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
+    model_info = new DeepLearningModelInfo(parms, dinfo, nClasses, train, valid);
     model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms._nfolds != 0) actual_best_model_key = null;
@@ -799,10 +818,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // label assignment happens later - explicitly mark it as invalid here
       preds[0] = -1;
     } else {
-      if (model_info().data_info()._normRespMul != null)
+      if (model_info().data_info()._normRespMul != null) //either both are null or none
         preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
         preds[0] = (double)out[0];
+      // transform prediction to response space
+      preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
       if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
@@ -1274,6 +1295,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       else {
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
+      bodySb.i(2).p("preds[1] = " + new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInvString("preds[1]")+";").nl();
       bodySb.i(2).p("if (Double.isNaN(preds[1])) throw new RuntimeException(\"Predicted regression target NaN!\");").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();

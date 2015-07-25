@@ -13,10 +13,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.Connector;
 
 import water.api.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
@@ -156,7 +158,7 @@ public class JettyHTTPD {
     _acceptRequests = true;
   }
 
-  protected void createServer(ServerConnector connector) throws Exception {
+  protected void createServer(Connector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
     registerHandlers(_server);
     _server.start();
@@ -164,7 +166,7 @@ public class JettyHTTPD {
 
   protected void startHttp() throws Exception {
     _server = new Server();
-    ServerConnector connector=new ServerConnector(_server);
+    Connector connector=new SocketConnector();
     if (_ip != null) {
       connector.setHost(_ip);
     }
@@ -275,8 +277,11 @@ public class JettyHTTPD {
         NodePersistentStorage nps = H2O.getNPS();
         AtomicLong length = new AtomicLong();
         InputStream is = nps.get(categoryName, keyName, length);
+        if (length.get() > (long)Integer.MAX_VALUE) {
+          throw new Exception("NPS value size exceeds Integer.MAX_VALUE");
+        }
         response.setContentType("application/octet-stream");
-        response.setContentLengthLong(length.get());
+        response.setContentLength((int)length.get());
         response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
         setResponseStatus(response, HttpServletResponse.SC_OK);
         OutputStream os = response.getOutputStream();
@@ -568,7 +573,13 @@ public class JettyHTTPD {
 
         // Handle shutdown if it was requested.
         if (H2O.getShutdownRequested()) {
-          H2O.shutdown(0);
+          (new Thread() {
+            public void run() {
+              try { Thread.sleep(2000); }
+              catch (Exception ignore) {}
+              H2O.shutdown(0);
+            }
+          }).start();
         }
 
         endTransaction();

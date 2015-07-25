@@ -1,5 +1,7 @@
 package water.api;
 
+import com.google.code.regexp.Matcher;
+import com.google.code.regexp.Pattern;
 import water.*;
 import water.exceptions.*;
 import water.fvec.Frame;
@@ -14,8 +16,6 @@ import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import com.google.code.regexp.Matcher;
-import com.google.code.regexp.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -101,7 +101,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Admin
     addToNavbar(register("/3/Cloud",      "GET", CloudHandler.class,  "status", "Determine the status of the nodes in the H2O cloud."), "/Cloud", "Cloud", "Admin");
-    register("/3/Cloud",                  "HEAD",CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
+    register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", "Determine the status of the nodes in the H2O cloud.");
     addToNavbar(register("/3/Jobs"       ,"GET", JobsHandler.class,   "list",   "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
     addToNavbar(register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
@@ -145,7 +145,7 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
+    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"frame_id", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");

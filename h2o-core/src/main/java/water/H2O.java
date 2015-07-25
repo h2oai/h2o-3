@@ -1,5 +1,6 @@
 package water;
 
+import com.brsanthu.googleanalytics.GoogleAnalytics;
 import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
@@ -16,8 +17,8 @@ import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.GAUtils;
 import water.util.Log;
-import water.util.PrettyPrint;
 import water.util.OSUtils;
+import water.util.PrettyPrint;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
 import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
@@ -193,6 +193,9 @@ final public class H2O {
 
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
+
+    /** -disable_web; disable web API port (used by Sparkling Water) */
+    public boolean disable_web = false;
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -372,6 +375,9 @@ final public class H2O {
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
         ARGS.flow_dir = args[i];
+      }
+      else if (s.matches("disable_web")) {
+        ARGS.disable_web = true;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
@@ -631,7 +637,7 @@ final public class H2O {
     apisRegistered = true;
 
     long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered REST APIs in: " + registerApisMillis + "mS");
+    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "mS");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -1521,7 +1527,7 @@ final public class H2O {
               defReq.clientId(bakedGaId);
             }
           }
-        } catch (IOException ignore) {}
+        } catch (Exception ignore) {}
         defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
@@ -1540,14 +1546,12 @@ final public class H2O {
     try {
       String logDir = Log.getLogDir();
       Log.info("Log dir: '" + logDir + "'");
-
-      Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
     }
     catch (Exception e) {
-      System.err.println("ERROR: Log.getLogDir() failed, exiting now.");
-      e.printStackTrace();
-      H2O.exit(1);
+      Log.info("Log dir: (Log4j configuration inherited)");
     }
+
+    Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
 
     //Print extra debug info now that logs are setup
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();

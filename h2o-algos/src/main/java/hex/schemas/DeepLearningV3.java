@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.Distribution;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningParameters;
 import water.api.API;
@@ -18,6 +19,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 				"validation_frame",
         "nfolds",
         "keep_cross_validation_splits",
+        "keep_cross_validation_predictions",
         "fold_assignment",
         "fold_column",
 				"response_column",
@@ -58,6 +60,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "initial_weight_distribution",
         "initial_weight_scale",
         "loss",
+        "distribution",
+        "tweedie_power",
         "score_interval",
         "score_training_samples",
         "score_validation_samples",
@@ -399,6 +403,12 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      */
     @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT)
     public DeepLearningParameters.Loss loss;
+
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, level = API.Level.secondary)
+    public Distribution.Family distribution;
+
+    @API(help = "Tweedie Power", level = API.Level.secondary)
+    public double tweedie_power;
 
     /*Scoring*/
     /**
