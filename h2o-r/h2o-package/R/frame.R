@@ -24,7 +24,19 @@
 #` any variable; these expressions exist with a refcnt of 0.  The next GC will
 #` reclaim them.  GC will also visit expressions that went dead previously,
 #` there is a 'nuked' flag to prevent double-deletion.
-
+#`
+#` AST Node/Environment Fields
+#` E$op       <- Operation or opcode, a string
+#` E$children <- A (possibly empty) list of dependent Nodes
+#` # Only one of the next two fields is present:
+#` # If the ID field is present, this Node is user-managed, and will NOT be
+#` # deleted by GC or refcnting.  The refcnt field is missing.
+#` E$id       <- A user-specified name, used in the H2O cluster; the refcnt field is missing
+#` # If the REFCNT field is present, this Node is client-managed, and will be
+#` # deleted by GC or refcnt falling to zero.  The ID field is missing.
+#` E$refcnt   <- A count of outstanding references; when it falls to zero the item is deleted.  The ID field is missing
+#` E$nuked    <- This REFCNT'd Node has been deleted from H2O
+#` E$visit    <- A temporary field used to manage DAG visitation
 
 # GC Finalizer - called when GC collects a Frame
 # Must be defined ahead of constructors
@@ -37,7 +49,7 @@
 }
 
 # Ref-count down-count.  If it goes to zero, recursively ref-down-count the
-# left & right, plus also remove the backing H2O store
+# children, plus also remove the backing H2O store
 .refdown <- function(x,xsub) {
   if( !is.null(x$id) ) return(); # Named, no refcnt, no GC
   # Ok to be here once from GC, and once from killing last link calling
@@ -122,6 +134,7 @@
 #
 # Overload Assignment!
 #
+assign("<-", NULL )
 assign("<-", function(x,y) {
   # Get a symbol for 'x'
   assign("xsub",substitute(x))
