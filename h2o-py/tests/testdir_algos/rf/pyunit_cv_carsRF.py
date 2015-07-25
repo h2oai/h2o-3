@@ -4,8 +4,6 @@ import h2o
 import random
 
 def cv_carsRF(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
 
     # read in the dataset and construct training set (and validation set)
     cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
@@ -28,17 +26,27 @@ def cv_carsRF(ip,port):
     print "Response column: {0}".format(response_col)
 
     ## cross-validation
-    ## check that cv metrics are the same over repeated (seeded) runs
+    ## check that cv metrics are the same over repeated seeded "Modulo" runs
     nfolds = random.randint(3,10)
-    rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, seed=1234)
-    rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, seed=1234)
-    h2o.check_models(rf1, rf2)
+    rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
+    rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
+    h2o.check_models(rf1, rf2, True)
+
+    ## check that cv metrics are different over repeated "Random" runs
+    nfolds = random.randint(3,10)
+    rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
+    rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
+    try:
+        h2o.check_models(rf1, rf2, True)
+        assert False, "Expected models to be different over repeated Random runs"
+    except AssertionError:
+        assert True
+
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), seed=1234)
     # TODO: manually construct the cross-validation metrics and compare
-    # TODO: PUBDEV-1697
+    rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), fold_assignment="Modulo")
 
     # 2. nfolds = 0
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=0, seed=1234)
@@ -46,32 +54,25 @@ def cv_carsRF(ip,port):
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], seed=1234)
     h2o.check_models(rf1, rf2)
 
-    # 3. more folds than observations equivalent to (seeded) leave-one-out
-    rf3 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, seed=1234)
-    h2o.check_models(rf, rf3)
+    # 3. cross-validation and regular validation attempted
+    rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10),
+                           validation_y=cars[response_col], validation_x=cars[predictors])
+
 
     ## error cases
     # 1. nfolds == 1 or < 0
-    # TODO: PUBDEV-1696
     try:
-        rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=random.randint(-10000,-1))
-        rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=1)
+        rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=random.sample([-1,1], 1)[0])
         assert False, "Expected model-build to fail when nfolds is 1 or < 0"
     except EnvironmentError:
         assert True
 
-    # 2. cross-validation and regular validation attempted
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    # 2. more folds than observations
     try:
-        rf = h2o.random_forest(y=train[response_col], x=train[predictors], nfolds=random.randint(3,10),
-                                validation_y=valid[1], validation_x=valid[predictors])
-        assert False, "Expected model-build to fail when both cross-validation and regular validation is attempted"
+        rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, fold_assignment="Modulo")
+        assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
         assert True
-
-        # TODO: what should the model metrics look like? add cross-validation metric check to pyunit_metric_json_check.
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, cv_carsRF)
