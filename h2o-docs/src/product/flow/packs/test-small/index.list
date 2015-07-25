@@ -108,7 +108,6 @@ gbm_flow_examples_seeds_dataset.flow
 gbm_test_titanic_sub.flow
 gbm_test_titanic.flow
 gbm_test_wine.flow
-gbm_iris_iris_wheader_65_rows.flow
 gbm_iris_iris_wheader-nonspd.flow
 gbm_iris_iris_wheader.flow
 gbm_iris_iris2.flow
