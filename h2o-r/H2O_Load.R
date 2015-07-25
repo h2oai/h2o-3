@@ -9,9 +9,10 @@ src <-
 function() {
   warning("MAY NOT WORK ON YOUR SYSTEM -- **TRY TO CHANGE `ROOT.PATH`!**")
   to_src <- c("classes.R", "connection.R", "constants.R", "logging.R", "communication.R", 
-              "kvstore.R", "exec.R", "ops.R", "frame.R", "ast.R", "astfun.R", "import.R", 
+              "import.R", "frame.R", "kvstore.R", 
               "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R", 
               "gbm.R", "deeplearning.R", "naivebayes.R", "randomForest.R", "svd.R", "locate.R")
+  # "exec.R", "ops.R", "ast.R", "astfun.R", 
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }

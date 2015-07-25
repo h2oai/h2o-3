@@ -32,13 +32,14 @@
 
 # Ref-count up-count, only if a Frame.  Return x, for flow coding
 .refup <- function(x) {
-  if( class(x) == "Frame" ) assign("refcnt",x$refcnt + 1,envir=x)
+  if( class(x)[1] == "Frame" && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
   x
 }
 
 # Ref-count down-count.  If it goes to zero, recursively ref-down-count the
 # left & right, plus also remove the backing H2O store
 .refdown <- function(x,xsub) {
+  if( !is.null(x$id) ) return(); # Named, no refcnt, no GC
   # Ok to be here once from GC, and once from killing last link calling
   # .refdown - hence might be zero but never negative
   stopifnot(x$refcnt >= 0 )
@@ -50,10 +51,13 @@
   }
 }
 
-#` Pick a name for this Node.  Just use the evironment's C pointer address.
+# Pick a name for this Node.  Just use the evironment's C pointer address, if
+# one's not provided
 .id <- function(x) {
-  str <- capture.output(str(x))
-  substring(str,nchar(str)-19,nchar(str)-2)
+  if( is.null(x$id ) ) {
+    str <- capture.output(str(x))
+    substring(str,nchar(str)-19,nchar(str)-2)
+  } else x$id
 }
 
 # Internal recursive printer
@@ -122,22 +126,37 @@ assign("<-", function(x,y) {
   # Get a symbol for 'x'
   assign("xsub",substitute(x))
   # Evaluate complex LHS arguments, attempting to get an OLD value
-  assign("e", try(eval(xsub,parent.frame()),silent=TRUE))
+  assign("e", try(silent=TRUE,
+      if (is.symbol(xsub))
+          get(as.character(xsub), parent.frame(), inherits=FALSE)  # eval doesn't let us do inherits=FALSE for symbols
+      else
+          eval(xsub,parent.frame())
+  ))
   # If the OLD value was a Frame, down the ref-cnt
-  if( class(e) == "Frame" ) .refdown(e,xsub);
+  if( class(e) == "Fr" ) .refdown(e,xsub);
   # If the NEW value is about to be a Frame, up the ref-cnt
   .refup(y)
-
-  # Dispatch to the primitive assign method.
-  # Really ugly dispatch that's working
-  if( !is.symbol(xsub) && xsub[[1]]=="$" )
-    assign(as.character(xsub[[3]]),y,envir=get(as.character(xsub[[2]]),parent.frame()))
+  # Dispatch to various assignment techniques
+  if( is.symbol(xsub) || (is.character(xsub) && length(xsub)==1) )
+    assign(as.character(xsub), y, envir=parent.frame())
+  else if (xsub[[1]]=="$")
+    assign(as.character(xsub[[3]]), y, envir=eval(xsub[[2]], parent.frame(), parent.frame()))
   else
-    assign(as.character(xsub     ),y,envir=                            parent.frame() )
-  # Not working yet, cause it keeps recursively dispatching back to this version
-  #eval(as.call(list(.Primitive("="),xsub,y)), parent.frame())
-  #invisible()
+    stop("NYI xsub = ", deparse(xsub))
+  invisible(y)
 })
+
+
+# Make a raw named data frame.  The key will exist on the server, and will be
+# the passed-in ID.  Because it is named, it is no GCd
+.newFrame <- function(op,id) {
+  assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
+  node$op <- op
+  node$id <- id
+  node$children <- list()
+  node
+}
+
 
 # S3 Overload all standard operators.
 # Just build a lazy-eval structure.
@@ -151,33 +170,42 @@ Ops.Frame <- function(x,y) {
 }
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+# Casting Operations: as.data.frame, as.factor,
+#-----------------------------------------------------------------------------------------------------------------------
 
-########## 
-## Cleanup prior fun temps
-#assign("fr",NULL)
-#assign("x",NULL)
-#assign("y",NULL)
-#gc()
-#gc()
-#
-## Build a "as-if from CSV" parsed file backed by H2O cluster
-#assign("fr",structure(new.env(), class="Frame"))
-#fr$op <- "from_file_iris.csv"
-#fr$refcnt <- 1L
-#
-#print(fr)
-#x <- 3+fr
-#print(x)
-#y <- x*x
-#print(y)
-#x <- NULL
-#y <- NULL
-#print(y)
-#gc()
-#gc()
-#
-## Some sample exprs
-#3+fr+3
-#3*fr
-#gc()
-#rm(list=ls())
+#'
+#' R data.frame -> H2OFrame
+#'
+#' Import a local R data frame to the H2O cloud.
+#'
+#' @param object An \code{R} data frame.
+#' @param destination_frame A string with the desired name for the H2O Frame.
+#' @export
+as.h2o <- function(object, destination_frame= "") {
+  .key.validate(destination_frame)
+
+  # TODO: Be careful, there might be a limit on how long a vector you can define in console
+  if(!is.data.frame(object)) {
+    object <- as.data.frame(object)
+  }
+  types <- sapply(object, class)
+  types <- gsub("integer", "numeric", types)
+  types <- gsub("double", "numeric", types)
+  types <- gsub("complex", "numeric", types)
+  types <- gsub("logical", "enum", types)
+  types <- gsub("factor", "enum", types)
+  types <- gsub("character", "string", types)
+  types <- gsub("Date", "Time", types)
+  tmpf <- tempfile(fileext = ".csv")
+  write.csv(object, file = tmpf, row.names = FALSE, na="NA_h2o")
+  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+                        col.names=colnames(object, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(object)))
+  file.remove(tmpf)
+  h2f
+}
+
+.h2o.gc <- function() {
+  print("H2O triggered a GC in R")
+  gc()
+}

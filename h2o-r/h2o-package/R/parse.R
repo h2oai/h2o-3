@@ -5,7 +5,7 @@
 #'
 #' Parse the Raw Data produced by the import phase.
 #'
-#' @param data An \linkS4class{H2ORawData} object to be parsed.
+#' @param data An \linkS3class{Frame} object to be parsed.
 #' @param destination_frame (Optional) The hex key assigned to the parsed file.
 #' @param header (Optional) A logical value indicating whether the first row is
 #'        the column header. If missing, H2O will automatically try to detect
@@ -13,7 +13,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A \linkS4class{H2OFrame} object containing a
+#' @param col.names (Optional) A \linkS3class{Frame} object containing a
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.
@@ -51,7 +51,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   # Poll on job
   .h2o.__waitOnJob(res$job$key$name)
 
-  # Return a new H2OFrame object
+  # Return a new Frame object
   h2o.getFrame(id=hex)
 }
 
@@ -62,7 +62,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
 
   # quick sanity checking
-  if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
+  if( class(data)[1] != "Frame" ) stop("`data` must be an Frame object")
   .key.validate(destination_frame)
   if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
   if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
@@ -72,7 +72,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup.params <- list()
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
-  parseSetup.params$source_frames = .collapse.char(data@id)
+  parseSetup.params$source_frames = .collapse.char(data$id)
 
   # set field sep
   # if( nchar(sep) > 0 ) parseSetup.params$separator <- .asc(sep)
@@ -85,8 +85,8 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
   # set the column names
   if( !is.null(col.names) ) {
-    if( is(col.names, "H2OFrame") ) parseSetup.params$column_names <- .collapse.char(colnames(col.names))
-    else                            parseSetup.params$column_names <- .collapse.char(col.names)
+    if( is(col.names, "Frame") ) parseSetup.params$column_names <- .collapse.char(colnames(col.names))
+    else                         parseSetup.params$column_names <- .collapse.char(col.names)
   }
 
   # check the types
@@ -140,8 +140,9 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 #'
 #' The H2OFrame Constructor
 .h2o.parsedData <- function(destination_frame, nrows, ncols, col_names) {
-  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
-  .newH2OFrame(id=destination_frame, mutable=mutable)
+#  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
+#  .newH2OFrame(id=destination_frame, mutable=mutable)
+  stop() # unimplemented
 }
 
 
