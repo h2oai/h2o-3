@@ -105,9 +105,9 @@ gbm_flow_examples_ad.flow
 gbm_flow_examples_arrhythmia.flow
 gbm_flow_examples_mnist.flow
 gbm_flow_examples_seeds_dataset.flow
-gbm_gbm_test_titanic_sub.flow
-gbm_gbm_test_titanic.flow
-gbm_gbm_test_wine.flow
+gbm_test_titanic_sub.flow
+gbm_test_titanic.flow
+gbm_test_wine.flow
 gbm_iris_iris_wheader_65_rows.flow
 gbm_iris_iris_wheader-nonspd.flow
 gbm_iris_iris_wheader.flow
