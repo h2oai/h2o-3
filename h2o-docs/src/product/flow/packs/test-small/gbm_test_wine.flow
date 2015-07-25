@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/wine.data\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/wine.data\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/wine.data\"]\n  destination_frame: \"wine_data.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"wine_data.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"wine_data.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"wine_data.hex\", [0.25], [\"wine_data_test.hex_0.250\",\"wine_data_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-7da170b1-17b7-4215-a9d7-7cdc968e8e80\",\"training_frame\":\"wine_data_train.hex_0.750\",\"validation_frame\":\"wine_data_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C2\",\"ntrees\":\"10\",\"max_depth\":\"2\",\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1310151124759720000,\"learn_rate\":0.1,\"distribution\":\"gaussian\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-7da170b1-17b7-4215-a9d7-7cdc968e8e80\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-7da170b1-17b7-4215-a9d7-7cdc968e8e80\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-7da170b1-17b7-4215-a9d7-7cdc968e8e80\", frame: \"wine_data_test.hex_0.250\", predictions_frame: \"prediction-52cb6683-fd1f-4207-a74d-12d5e6065765\""
+    }
+  ]
+}
