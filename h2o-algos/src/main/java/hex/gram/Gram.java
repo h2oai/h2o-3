@@ -785,8 +785,8 @@ public final class Gram extends Iced<Gram> {
     // nums
     for(int i = 0; i < _denseN; ++i) if(row.numVals[i] != 0) {
       final double [] mrow = _xx[i+denseRowStart];
-      final double d = w* row.numVals[i];
-      for(int j = 0; j <= i; ++j)if(row.numVals[j] != 0)
+      final double d = w * row.numVals[i];
+      for(int j = 0; j <= i; ++j) if(row.numVals[j] != 0)
         mrow[j+denseColStart] += d* row.numVals[j];
       if(_hasIntercept)
         interceptRow[i+denseColStart] += d; // intercept*x[i]

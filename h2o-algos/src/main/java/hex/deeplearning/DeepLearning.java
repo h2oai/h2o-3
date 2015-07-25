@@ -100,6 +100,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
             parms._offset_column != null,
