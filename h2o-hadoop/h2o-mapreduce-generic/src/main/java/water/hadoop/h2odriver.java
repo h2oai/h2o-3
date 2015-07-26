@@ -81,6 +81,9 @@ public class h2odriver extends Configured implements Tool {
   volatile boolean clusterHasNodeWithLocalhostIp = false;
   volatile boolean shutdownRequested = false;
   volatile AtomicInteger numNodesStarted = new AtomicInteger();
+  volatile AtomicInteger numNodesReportingFullCloudSize = new AtomicInteger();
+  volatile String clusterIp = null;
+  volatile int clusterPort = -1;
 
   public void setShutdownRequested() {
     shutdownRequested = true;
@@ -88,6 +91,16 @@ public class h2odriver extends Configured implements Tool {
 
   public boolean getShutdownRequested() {
     return shutdownRequested;
+  }
+
+  public void setClusterIpPort(String ip, int port) {
+    clusterIp = ip;
+    clusterPort = port;
+  }
+
+  public String getClusterUrl() {
+    String scheme = (jksFileName == null) ? "http" : "https";
+    return scheme + "://" + clusterIp + ":" + clusterPort;
   }
 
   public boolean usingYarn() {
@@ -263,11 +276,15 @@ public class h2odriver extends Configured implements Tool {
             // Do this under a synchronized block to avoid getting multiple cluster ready notification files.
             synchronized (h2odriver.class) {
               if (! clusterIsUp) {
-                if (clusterReadyFileName != null) {
-                  createClusterReadyFile(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
-                  System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+                int n = numNodesReportingFullCloudSize.incrementAndGet();
+                if (n == numNodes) {
+                  if (clusterReadyFileName != null) {
+                    createClusterReadyFile(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
+                    System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+                  }
+                  setClusterIpPort(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
+                  clusterIsUp = true;
                 }
-                clusterIsUp = true;
               }
             }
           }
@@ -1138,12 +1155,16 @@ public class h2odriver extends Configured implements Tool {
       // status stuff in H2O has settled down.
       Thread.sleep(CLOUD_FORMATION_SETTLE_DOWN_SECONDS);
 
+      System.out.println("Open H2O Flow in your web browser: " + getClusterUrl());
       System.out.println("Disowning cluster and exiting.");
       Runtime.getRuntime().removeShutdownHook(ctrlc);
       return 0;
     }
 
     System.out.println("(Note: Use the -disown option to exit the driver after cluster formation)");
+    System.out.println("");
+    System.out.println("Open H2O Flow in your web browser: " + getClusterUrl());
+    System.out.println("");
     System.out.println("(Press Ctrl-C to kill the cluster)");
     System.out.println("Blocking until the H2O cluster shuts down...");
     waitForClusterToShutdown();
