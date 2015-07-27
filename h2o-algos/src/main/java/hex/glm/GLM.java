@@ -981,7 +981,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             int iter1 = 0;
 
             // coordinate descent loop
-            while (iter1++ < 200) {
+            while (iter1++ < 300) {
               Frame fr2 = new Frame();
               fr2.add("w", w);
               fr2.add("z", z);
@@ -1061,7 +1061,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               Frame fr3 = new Frame(fr2);
               fr3.add("xjm1", _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1 ) ); // add last variable updated in cycle to the frame
               GLMCoordinateDescentTaskSeq iupdate ;
-              if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1  ).isEnum()) { // only categorical vars
+              if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1).isEnum()) { // only categorical vars
                 cat_num = 2;
                 iupdate = new GLMCoordinateDescentTaskSeq( false, true, cat_num , new double [] {betaold[betaold.length-1]},
                         Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ),
@@ -1077,6 +1077,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 iupdate = new GLMCoordinateDescentTaskSeq(false, true, cat_num , new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }, null, null,
                         null, null, varnew, meannew , skipFirstLevel ).doAll(fr3);
               }
+              if(_parms._intercept)
                beta[beta.length - 1] = iupdate._temp[0] / wsum;
 
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept

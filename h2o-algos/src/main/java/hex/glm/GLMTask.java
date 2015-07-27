@@ -934,7 +934,7 @@ public abstract class GLMTask  {
       _temp = new double[_betaold.length];
       if (_interceptnew) {
         xChunk = new C0DChunk(1,chunks[0]._len);
-        xpChunk = chunks[cnt++]; // MISTAKE THIS TAKES THE WEIGHT VECTOR INSTEAD OF THE LAST COLUMN IF THE DATA.
+        xpChunk = chunks[cnt++];
       } else {
         if (_interceptold) {
           xChunk = chunks[cnt++];
@@ -1136,6 +1136,7 @@ public abstract class GLMTask  {
     public void reduce(GLMGenerateWeightsTask git){ // adding contribution of all the chunks
       ArrayUtils.add(denums, git.denums);
       wsum+=git.wsum;
+      wsumu += git.wsumu;
       super.reduce(git);
     }
 

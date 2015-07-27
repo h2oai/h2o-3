@@ -1043,7 +1043,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._solver = Solver.COORDINATE_DESCENT;//COORDINATE_DESCENT
       params._lambda_search = true;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
@@ -1081,7 +1081,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = null; // new double [] {0.25};
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._solver = Solver.COORDINATE_DESCENT;//IRLSM
       params._lambda_search = true;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
