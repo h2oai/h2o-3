@@ -349,6 +349,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         cvModel._parms._weights_column = weightName;
         cvModel._parms._train = cvTrain._key;
         cvModel._parms._valid = cvVal._key;
+        cvModel._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
         cvModel.modifyParmsForCrossValidationSplits(i, N);
 
         cvModel.trainModelImpl(-1);
