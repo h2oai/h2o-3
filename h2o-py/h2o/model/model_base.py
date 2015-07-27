@@ -14,7 +14,7 @@ class ModelBase(object):
     # setup training metrics
     if "training_metrics" in model_json["output"]:
       tm = model_json["output"]["training_metrics"]
-      tm = metrics_class(tm,True,False,model_json["algo"])
+      tm = metrics_class(tm,True,False,False,model_json["algo"])
       model_json["output"]["training_metrics"] = tm
 
     # setup validation metrics
@@ -23,10 +23,21 @@ class ModelBase(object):
       if vm is None:
         model_json["output"]["validation_metrics"] = None
       else:
-        vm = metrics_class(vm,False,True,model_json["algo"])
+        vm = metrics_class(vm,False,True,False,model_json["algo"])
         model_json["output"]["validation_metrics"] = vm
     else:
       model_json["output"]["validation_metrics"] = None
+
+    # setup cross validation metrics
+    if "cross_validation_metrics" in model_json["output"]:
+      cvm = model_json["output"]["cross_validation_metrics"]
+      if cvm is None:
+        model_json["output"]["cross_validation_metrics"] = None
+      else:
+        cvm = metrics_class(cvm,False,False,True,model_json["algo"])
+        model_json["output"]["cross_validation_metrics"] = cvm
+    else:
+      model_json["output"]["cross_validation_metrics"] = None
 
     self._model_json = model_json
     self._metrics_class = metrics_class
@@ -156,6 +167,8 @@ class ModelBase(object):
     if tm: tm.show()
     vm = model["validation_metrics"]
     if vm: vm.show()
+    xm = model["cross_validation_metrics"]
+    if xm: xm.show()
 
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
@@ -174,7 +187,7 @@ class ModelBase(object):
     else:
       print "Warning: This model doesn't have variable importances"
 
-  def residual_deviance(self,train=False,valid=False):
+  def residual_deviance(self,train=False,valid=False,xval=False):
     """
     Retreive the residual deviance if this model has the attribute, or None otherwise.
 
@@ -182,6 +195,7 @@ class ModelBase(object):
     :param valid: Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the residual deviance, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -192,7 +206,7 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].residual_deviance()
 
-  def residual_degrees_of_freedom(self,train=False,valid=False):
+  def residual_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
     Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
 
@@ -200,6 +214,7 @@ class ModelBase(object):
     :param valid: Get the residual dof for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the residual dof, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -210,7 +225,7 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
 
-  def null_deviance(self,train=False,valid=False):
+  def null_deviance(self,train=False,valid=False,xval=False):
     """
     Retreive the null deviance if this model has the attribute, or None otherwise.
 
@@ -218,6 +233,7 @@ class ModelBase(object):
     :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the null deviance, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -228,7 +244,7 @@ class ModelBase(object):
     else:
       return self._model_json["output"]["validation_metrics"].null_deviance()
 
-  def null_degrees_of_freedom(self,train=False,valid=False):
+  def null_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
     Retreive the null degress of freedom if this model has the attribute, or None otherwise.
 
@@ -236,6 +252,7 @@ class ModelBase(object):
     :param valid: Get the null dof for the validation set. If both train and valid are True, then train is selected by default.
     :return: Return the null dof, or None if it is not present.
     """
+    if xval: raise ValueError("Cross-validation metrics are not available.")
     if not train and not valid:
       train = True
     if train and valid:
@@ -271,89 +288,128 @@ class ModelBase(object):
     tbl = tbl.cell_values
     return {a[0]:a[2] for a in tbl}
 
-  def r2(self, train=False, valid=False):
+  def r2(self,  train=False, valid=False, xval=False):
     """
     Return the R^2 for this regression model.
 
     The R^2 value is defined to be 1 - MSE/var,
     where var is computed as sigma*sigma.
 
-    :param train: If train is True, then return the R^2 value for the training data. If train and valid are both False, then return the training R^2.
-    :param valid: If valid is True, then return the R^2 value for the validation data. If train and valid are both True, then return the validation R^2.
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    :param train: If train is True, then return the R^2 value for the training data.
+    :param valid: If valid is True, then return the R^2 value for the validation data.
+    :param xval:  If xval is True, then return the R^2 value for the cross validation data.
     :return: The R^2 for this regression model.
     """
-    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train,valid))
-    if tm is None: return None
-    return tm.r2()
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.r2()
+    return m.values()[0] if len(m) == 1 else m
 
-  def mse(self, train=False,valid=False):
+  def mse(self, train=False, valid=False, xval=False):
     """
-    :param train: If train is True, then return the MSE value for the training data. If train and valid are both False, then return the training MSE.
-    :param valid: If valid is True, then return the MSE value for the validation data. If train and valid are both True, then return the validation MSE.
+    Get the MSE(s).
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    :param train: If train is True, then return the MSE value for the training data.
+    :param valid: If valid is True, then return the MSE value for the validation data.
+    :param xval:  If xval is True, then return the MSE value for the cross validation data.
     :return: The MSE for this regression model.
     """
-    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train,valid))
-    if tm is None: return None
-    return tm.mse()
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.mse()
+    return m.values()[0] if len(m) == 1 else m
 
-  def logloss(self, train=False, valid=False):
+  def logloss(self, train=False, valid=False, xval=False):
     """
-    Get the Log Loss.
-    If both train and valid are False, return the train.
-    If both train and valid are True, return the valid.
+    Get the Log Loss(s).
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
 
-    :param train: Return the log loss for training data.
-    :param valid: Return the log loss for the validation data.
-    :return: Retrieve the log loss coefficient for this set of metrics
+    :param train: If train is True, then return the Log Loss value for the training data.
+    :param valid: If valid is True, then return the Log Loss value for the validation data.
+    :param xval:  If xval is True, then return the Log Loss value for the cross validation data.
+    :return: The Log Loss for this binomial model.
     """
-    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
-    if tm is None: return None
-    return tm.logloss()
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.logloss()
+    return m.values()[0] if len(m) == 1 else m
 
-  def auc(self, train=False, valid=False):
+  def mean_residual_deviance(self, train=False, valid=False, xval=False):
     """
-    Get the AUC.
-    If both train and valid are False, return the train.
-    If both train and valid are True, return the valid.
+    Get the Mean Residual Deviances(s).
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
 
-    :param train: Return the AUC for training data.
-    :param valid: Return the AUC for the validation data.
-    :return: Retrieve the AUC coefficient for this set of metrics
+    :param train: If train is True, then return the Mean Residual Deviance value for the training data.
+    :param valid: If valid is True, then return the Mean Residual Deviance value for the validation data.
+    :param xval:  If xval is True, then return the Mean Residual Deviance value for the cross validation data.
+    :return: The Mean Residual Deviance for this regression model.
     """
-    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
-    if tm is None: return None
-    tm = tm._metric_json
-    return tm["AUC"]
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.mean_residual_deviance()
+    return m.values()[0] if len(m) == 1 else m
 
-  def aic(self, train=False, valid=False):
+  def auc(self, train=False, valid=False, xval=False):
     """
-    Get the AIC.
-    If both train and valid are False, return the train.
-    If both train and valid are True, return the valid.
+    Get the AUC(s).
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
 
-    :param train: Return the AIC for training data.
-    :param valid: Return the AIC for the validation data.
-    :return: Retrieve the AIC for this set of metrics
+    :param train: If train is True, then return the AUC value for the training data.
+    :param valid: If valid is True, then return the AUC value for the validation data.
+    :param xval:  If xval is True, then return the AUC value for the validation data.
+    :return: The AUC.
     """
-    tm = ModelBase._get_metrics(self,*ModelBase._train_or_valid(train, valid))
-    if tm is None: return None
-    tm = tm._metric_json
-    return tm["AIC"]
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.auc()
+    return m.values()[0] if len(m) == 1 else m
 
-  def giniCoef(self, train=False, valid=False):
+  def aic(self, train=False, valid=False, xval=False):
     """
-    Get the Gini.
-    If both train and valid are False, return the train.
-    If both train and valid are True, return the valid.
+    Get the AIC(s).
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
 
-    :param train: Return the Gini for training data.
-    :param valid: Return the Gini for the validation data.
-    :return: Retrieve the Gini coefficient for this set of metrics
+    :param train: If train is True, then return the AIC value for the training data.
+    :param valid: If valid is True, then return the AIC value for the validation data.
+    :param xval:  If xval is True, then return the AIC value for the validation data.
+    :return: The AIC.
     """
-    tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
-    if tm is None: return None
-    tm = tm._metric_json
-    return tm.giniCoef()
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.aic()
+    return m.values()[0] if len(m) == 1 else m
+
+  def giniCoef(self, train=False, valid=False, xval=False):
+    """
+    Get the Gini Coefficient(s).
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    :param train: If train is True, then return the Gini Coefficient value for the training data.
+    :param valid: If valid is True, then return the Gini Coefficient value for the validation data.
+    :param xval:  If xval is True, then return the Gini Coefficient value for the cross validation data.
+    :return: The Gini Coefficient for this binomial model.
+    """
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.giniCoef()
+    return m.values()[0] if len(m) == 1 else m
 
   def download_pojo(self,path=""):
     """
@@ -366,24 +422,13 @@ class ModelBase(object):
     h2o.download_pojo(self,path)  # call the "package" function
 
   @staticmethod
-  def _get_metrics(o, train, valid):
-    if train:
-      return o._model_json["output"]["training_metrics"]
-    if valid:
-      return o._model_json["output"]["validation_metrics"]
-    raise ValueError("`_get_metrics` demands `train` or `valid` to be True.")
-
-  @staticmethod
-  def _train_or_valid(train,valid):
-    """
-    Internal static method.
-
-    :param train: a boolean for train. Ignored, however.
-    :param valid: a boolean for valid
-    :return: true if train, false if valid. If both are false, return True for train.
-    """
-    if valid: return [False, True]
-    return [True,False]
+  def _get_metrics(o, train, valid, xval):
+    metrics = {}
+    if train: metrics["train"] = o._model_json["output"]["training_metrics"]
+    if valid: metrics["valid"] = o._model_json["output"]["validation_metrics"]
+    if xval : metrics["xval"]  = o._model_json["output"]["cross_validation_metrics"]
+    if len(metrics) == 0: metrics["train"] = o._model_json["output"]["training_metrics"]
+    return metrics
 
   # Delete from cluster as model goes out of scope
   # def __del__(self):
