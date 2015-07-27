@@ -519,6 +519,8 @@ public /* final */ class AutoBuffer {
     assert !_read;
     _read = true;
     _bb.flip();
+    if(_firstPage)
+      _bb.position(2);
     _firstPage = true;
     return this;
   }
