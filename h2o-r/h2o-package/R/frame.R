@@ -65,7 +65,7 @@ is.Frame <- function(x) is(x, "Frame")
   if( x$refcnt > 0 ) assign("refcnt",x$refcnt - 1,envir=x)
   if( x$refcnt == 0 && is.null(x$nuked) ) {
     lapply(x$children, function(child) .refdown(child,paste0(xsub,"child")) )
-    print(paste("Qh2o.rm(",xsub,")"))
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", .id(x)), method = "DELETE")
     assign("nuked",TRUE,envir=x)
   }
 }
@@ -166,10 +166,11 @@ Ops.Frame <- function(x,y) {
 .pfr <- function(x){
   if( !is.null(x$visit) || is.null(x$refcnt) ) return(.id(x))
   x$visit <- TRUE
-  str <- if( x$refcnt > 1 ) paste0(.id(x),"<- ")
+  tmp1 <- if( x$refcnt > 1 ) paste0("(tmp= ",.id(x))
+  tmp2 <- if( x$refcnt > 1 ) paste0(")")
   res <- ifelse( is.null(x$children), "EVALd",
                  paste(sapply(x$children, function(child) { if( is.environment(child) ) .pfr(child) else child }),collapse=" "))
-  paste0(str,"(",x$op," ",res," #",x$refcnt,")")
+  paste0(tmp1,"(",x$op," ",res,")",tmp2)
 }
 
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
@@ -179,9 +180,12 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
   if( !is.null(x$children) ) {
-    xxx <- .pfr(x)
-    print(paste0("CURRENTS: ",xxx))
-    stop("unimplemented")
+    exec_str <- .pfr(x);  .clearvisit(x)
+    print(paste0("EXPR: ",exec_str))
+    # Execute the AST on H2O
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=.id(x), method = "POST")
+    if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
+    # Flag as executed
     rm("children",envir=x)
   }
   x
@@ -198,7 +202,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
 #' @export
-dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x$nrow,ncol(data))) }
 
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))

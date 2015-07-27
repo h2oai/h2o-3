@@ -43,3 +43,27 @@
   x$data
 }
 
+#` Flush any cached data
+.flush.data <- function(x) {
+  rm("data",envir=x);
+  rm("nrow",envir=x);
+}
+
+#
+#' Delete Objects In H2O
+#'
+#' Remove the h2o Big Data object(s) having the key name(s) from ids.
+#'
+#' @param ids The hex key associated with the object to be removed.
+#' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
+#' @export
+h2o.rm <- function(ids) {
+  if( is.Frame(ids) ) { 
+    if( !is.null(ids$refcnt) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
+    ids <- .id(ids); 
+  }
+  if(!is.character(ids)) stop("`ids` must be of class character")
+
+  for(i in seq_len(length(ids)))
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
+}
