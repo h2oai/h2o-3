@@ -108,7 +108,7 @@ public class TCPReceiverThread extends Thread {
           int sz = _bb.getShort(start); // message size in bytes
           assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
           read(start + sz - _bb.position());
-          assert (0xFF & _bb.get(start + sz)) == 0xef;
+          assert (0xFF & _bb.get(start + sz)) == 0xef:"Missing expected sentinel at the end of the message, likely out of sync, start = " + start + ", size = " + sz;
           // extract the bytes
           byte[] ary = new byte[Math.max(sz, 18)];
           for (int i = 0; i < sz; ++i)
