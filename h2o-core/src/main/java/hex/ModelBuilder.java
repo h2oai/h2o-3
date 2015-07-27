@@ -336,25 +336,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       modelKeys[i] = Key.make(identifier);
 
       // Build CV model - launch a separate Job
-      Model m;
+      Model m = null;
       {
-        ModelBuilder<M, P, O> cvModel = (ModelBuilder<M, P, O>) this.clone();
-        cvModel._dest = modelKeys[i];
-        cvModel._key = Key.make(_key.toString() + "_cv" + i);
-        cvModel._state = JobState.CREATED;
-        cvModel._description = identifier;
+        ModelBuilder<M, P, O> cvModel = null;
+        try {
+          cvModel = (ModelBuilder<M, P, O>) this.clone();
+          cvModel._dest = modelKeys[i];
+          cvModel._key = Key.make(_key.toString() + "_cv" + i);
+          cvModel._state = JobState.CREATED;
+          cvModel._description = identifier;
 
-        // Fix up some parameters
-        cvModel._parms = (P)_parms.clone();
-        cvModel._parms._weights_column = weightName;
-        cvModel._parms._train = cvTrain._key;
-        cvModel._parms._valid = cvVal._key;
-        cvModel._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-        cvModel.modifyParmsForCrossValidationSplits(i, N);
-
-        cvModel.trainModelImpl(-1);
-        m = cvModel.get();
-        cvModel.remove(); //keep the cv jobs around
+          // Fix up some parameters
+          cvModel._parms = (P) _parms.clone(); //NOTE: This is not a deep clone - we can only change simple top-level parameters here
+          cvModel._parms._weights_column = weightName;
+          cvModel._parms._train = cvTrain._key;
+          cvModel._parms._valid = cvVal._key;
+          cvModel._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+          cvModel.modifyParmsForCrossValidationSplits(i, N);
+          cvModel.trainModelImpl(-1);
+          m = cvModel.get();
+        } catch(Throwable t) {
+          throw t;
+        } finally {
+          if (cvModel != null) cvModel.remove();
+        }
+      }
+      if (isCancelledOrCrashed()) {
+        Log.warn("Cancelling all N-fold cross-validation jobs.");
+        break;
       }
 
       // holdout scoring
@@ -380,13 +389,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
 
-    Log.info("Building main model.");
-    _state = JobState.CREATED;
-    _deleteProgressKey = true; //delete progress after the main model is done
-    modifyParmsForCrossValidationMainModel(N);
+    if (!isCancelledOrCrashed()) {
+      Log.info("Building main model.");
+      _state = JobState.CREATED;
+      _deleteProgressKey = true; //delete progress after the main model is done
+      modifyParmsForCrossValidationMainModel(N);
 
-    Job<M> main = trainModelImpl(-1);
-    Model mainModel = main.get();
+      Job<M> main = trainModelImpl(-1);
+      Model mainModel = main.get();
 
 //    new TAtomic<JobList>() {
 //      @Override public JobList atomic(JobList old) {
@@ -397,19 +407,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 //      }
 //    }.invoke(LIST);
 
-    Log.info("Computing " + N + "-fold cross-validation metrics.");
-    mainModel._output._cross_validation_models = new Key[N];
-    mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? new Key[N] : null;
-    for (int i=0; i<N; ++i) {
-      if (i>0) mb[0].reduce(mb[i]);
-      mainModel._output._cross_validation_models[i] = modelKeys[i];
-      if (_parms._keep_cross_validation_predictions)
-        mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
+      Log.info("Computing " + N + "-fold cross-validation metrics.");
+      mainModel._output._cross_validation_models = new Key[N];
+      mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? new Key[N] : null;
+      for (int i = 0; i < N; ++i) {
+        if (i > 0) mb[0].reduce(mb[i]);
+        mainModel._output._cross_validation_models[i] = modelKeys[i];
+        if (_parms._keep_cross_validation_predictions)
+          mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
+      }
+      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
+      mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
+      DKV.put(mainModel);
     }
-    mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
-    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
-    DKV.put(mainModel);
-    return main;
+    return this;
   }
   /**
    * Override with model-specific checks / modifications to _parms for N-fold cross-validation splits.
