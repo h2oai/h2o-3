@@ -443,6 +443,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
+    public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta) {
+      this(dinfo,column_names,domains,coefficient_names,binomial);
+      _global_beta=beta;
+    }
+
     public GLMOutput() {_isSupervised = true;}
 
     public GLMOutput(GLM glm) {
