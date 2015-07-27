@@ -48,9 +48,6 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
   public int nfolds;
 
-  @API(help="Keep cross-validation training/validation split frames", level = API.Level.expert, direction=API.Direction.INOUT)
-  public boolean keep_cross_validation_splits;
-
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 

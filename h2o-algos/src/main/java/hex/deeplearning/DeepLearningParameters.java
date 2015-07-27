@@ -676,7 +676,6 @@ public class DeepLearningParameters extends Model.Parameters {
             "_nesterov_accelerated_gradient",
             "_ignore_const_cols",
             "_max_categorical_features",
-            "_keep_cross_validation_splits",
             "_nfolds",
             "_distribution",
             "_tweedie_power"
