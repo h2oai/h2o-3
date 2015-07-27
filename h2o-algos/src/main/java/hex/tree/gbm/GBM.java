@@ -12,9 +12,9 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.Log;
-import water.util.Timer;
-import water.util.ArrayUtils;
+import water.util.*;
+
+import java.util.Map;
 
 /** Gradient Boosted Trees
  *
@@ -167,12 +167,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
         // Compute predictions and resulting residuals for trees built so far
         // ESL2, page 387, Steps 2a, 2b
-        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node);
+        ComputePredAndRes cpr = new ComputePredAndRes();
+        cpr.doAll(_train, _parms._build_tree_one_node);
 
         // Build more trees, based on residuals above
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
-        buildNextKTrees();
+
+        buildNextKTrees(cpr.minValues, cpr.maxValues);
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         GBM.this.update(1);
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
@@ -248,16 +250,41 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // --------------------------------------------------------------------------
     // Compute Residuals
     class ComputePredAndRes extends MRTask<ComputePredAndRes> {
+      public IcedHashMap<IcedLong,IcedDouble> minValues;
+      public IcedHashMap<IcedLong,IcedDouble> maxValues;
       @Override public void map( Chunk chks[] ) {
+        minValues = new IcedHashMap<>();
+        maxValues = new IcedHashMap<>();
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk tr = chk_tree(chks, 0); // Prior tree sums
         Chunk wk = chk_work(chks, 0); // Place to store residuals
+        boolean computeMinMax = ( _parms._distribution == Distribution.Family.poisson
+                || _parms._distribution == Distribution.Family.gamma
+                || _parms._distribution == Distribution.Family.tweedie);
+        Chunk nids = computeMinMax ? chk_nids(chks, 0) : null; // NID
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
         Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
+        IcedLong nidx = new IcedLong(0);
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
           double f = tr.atd(row) + offset.atd(row);
+          if (computeMinMax) {
+            nidx._val = nids.at8(row);
+            IcedDouble mins = minValues.get(nidx);
+            double oldMin = mins == null ? Double.MAX_VALUE : mins._val;
+            IcedDouble ff = new IcedDouble(f);
+            if (f < oldMin) {
+              if (mins == null) minValues.put(nidx, ff);
+              else minValues.replace(nidx, ff);
+            }
+            IcedDouble maxs = maxValues.get(nidx);
+            double oldMax = maxs == null ? Double.MIN_VALUE : maxs._val;
+            if (f > oldMax) {
+              if (maxs == null) maxValues.put(nidx, ff);
+              else maxValues.replace(nidx, ff);
+            }
+          }
           double y = ys.at8(row);
           if( _parms._distribution == Distribution.Family.multinomial ) {
             double weight = hasWeightCol() ? chk_weight(chks).atd(row) : 1;
@@ -280,12 +307,37 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }
       }
+
+      @Override
+      public void reduce(ComputePredAndRes mrt) {
+        if (mrt.minValues == null || minValues == null) return;
+        if (mrt.maxValues == null || maxValues == null) return;
+        for (Map.Entry<IcedLong,IcedDouble> e : mrt.minValues.entrySet()) {
+          IcedDouble x = minValues.get(e.getKey());
+          if (x != null) {
+            x._val=Math.min(e.getValue()._val, x._val);
+          } else {
+            minValues.put(e.getKey(), e.getValue());
+          }
+        }
+        for (Map.Entry<IcedLong,IcedDouble> e : mrt.maxValues.entrySet()) {
+          IcedDouble x = maxValues.get(e.getKey());
+          if (x != null) {
+            x._val=Math.max(e.getValue()._val, x._val);
+          } else {
+            maxValues.put(e.getKey(), e.getValue());
+          }
+        }
+      }
     }
 
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
-    private void buildNextKTrees() {
+    private void buildNextKTrees(
+            final IcedHashMap<IcedLong,IcedDouble> minValues,
+            final IcedHashMap<IcedLong,IcedDouble> maxValues
+    ) {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -358,7 +410,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
       // For regression (gaussian):
       //    gamma_i = sum res_i / count(res_i)
-      GammaPass gp = new GammaPass(ktrees,leafs,_parms._distribution).doAll(_train);
+      GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution, minValues, maxValues).doAll(_train);
       double m1class = _nclass > 1 && _parms._distribution != Distribution.Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
       for( int k=0; k<_nclass; k++ ) {
         final DTree tree = ktrees[k];
@@ -415,22 +467,51 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       final Distribution.Family _dist;
       private double _num[/*tree/klass*/][/*tree-relative node-id*/];
       private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
+      final IcedHashMap<IcedLong,IcedDouble> _minValues;
+      final IcedHashMap<IcedLong,IcedDouble> _maxValues;
+
       double gamma(int tree, int nid) {
-        if (_denom[tree][nid] == 0) return 0;
-        double g = _num[tree][nid]/ _denom[tree][nid];
+        double g = _denom[tree][nid] == 0 ? 0 : _num[tree][nid]/ _denom[tree][nid];
         assert(!Double.isInfinite(g)) : "numeric overflow";
         assert(!Double.isNaN(g)) : "numeric overflow";
         if (_dist == Distribution.Family.poisson
                 || _dist == Distribution.Family.gamma
-                || _dist == Distribution.Family.tweedie
-                || _dist == Distribution.Family.gaussian)
+                || _dist == Distribution.Family.tweedie )
         {
-          return new Distribution(_dist, _parms._tweedie_power).link(g);
+          double gamma = new Distribution(_dist, _parms._tweedie_power).link(g);
+
+          // special case for overflows: Set to
+          if (_minValues != null && _maxValues != null) {
+            IcedLong nidx = new IcedLong(nid);
+            if (_minValues.get(nidx) != null && _maxValues.get(nidx) != null) {
+              double min = _minValues.get(nidx)._val;
+              if (min + gamma < Distribution.MIN_LOG) {
+                gamma = Distribution.MIN_LOG - min;
+              }
+              double max = _maxValues.get(nidx)._val;
+              if (max + gamma > Distribution.MAX_LOG) {
+                gamma = Distribution.MAX_LOG - max;
+              }
+            }
+          }
+          return gamma;
         } else {
           return g; //bernoulli/multinomial - leave alone //TODO: Check (bernoulli link won't be able to handle 0 or 1)
         }
       }
-      GammaPass(DTree trees[], int leafs[], Distribution.Family distribution) { _leafs=leafs; _trees=trees; _dist = distribution; }
+
+      GammaPass(DTree trees[],
+                int leafs[],
+                Distribution.Family distribution,
+                final IcedHashMap<IcedLong,IcedDouble> minValues,
+                final IcedHashMap<IcedLong,IcedDouble> maxValues
+      ) {
+        _leafs=leafs;
+        _trees=trees;
+        _dist = distribution;
+        _minValues = minValues;
+        _maxValues = maxValues;
+      }
       @Override public void map( Chunk[] chks ) {
         _denom = new double[_nclass][];
         _num = new double[_nclass][];
