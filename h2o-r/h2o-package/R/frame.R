@@ -496,7 +496,7 @@ cut.H2OFrame <- h2o.cut
 #' \dontrun{
 #' h2o.init()
 #' hex <- as.h2o(iris)
-#' match(hex[,5], c("setosa", "versicola"))
+#' match(hex[,5], c("setosa", "versicola"))   # versipepsi
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {

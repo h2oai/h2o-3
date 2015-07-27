@@ -7,6 +7,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.ValueString;
 import water.util.IcedInt;
 
 import java.util.ArrayList;
@@ -1229,7 +1230,10 @@ class ASTSlice extends AST {
       try {
         if (ary.vecs()[col].isEnum()) {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
-        } else env.push(new ValNum(ary.vecs()[col].at(row)));
+        } else {
+          if(ary.vecs()[col].isString()) env.push(new ValStr(ary.vecs()[col].atStr(new ValueString(),row).toString()));
+          else                           env.push(new ValNum(ary.vecs()[col].at(row)));
+        }
       } catch (ArrayIndexOutOfBoundsException e) {
         if( col < 0 ) {
           int rm_col = -1*col - 1;  // 1 -> 0 idx...
@@ -1333,7 +1337,7 @@ class ASTSlice extends AST {
     }
     if (env.isSpan()) {
       ValSpan a = env.popSpan();
-      if( Double.isNaN(a._max) || a._max > len) a._max=len-1;
+      if( Double.isNaN(a._max) || a._max > len) a._max=Math.max(0,len-1);
 //      else a._max = Math.min(len,a._max-1);
       if (!a.isValid()) throw new IllegalArgumentException("Cannot mix negative and positive array selection.");
       // if selecting out columns, build a long[] cols and return that.

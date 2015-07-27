@@ -149,6 +149,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double[][] value = new double[K][N];
     double[] means = normSub == null ? MemoryManager.malloc8d(nnums) : normSub;
     double[] mults = normMul == null ? MemoryManager.malloc8d(nnums) : normMul;
+    if(normMul == null) Arrays.fill(mults, 1.0);
 
     for (int clu = 0; clu < K; clu++) {
       System.arraycopy(centers[clu], 0, value[clu], 0, ncats);

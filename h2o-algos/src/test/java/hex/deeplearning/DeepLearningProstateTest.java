@@ -23,7 +23,7 @@ import java.util.Random;
 import static hex.ConfusionMatrix.buildCM;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
 
   @Test public void run() throws Exception { runFraction(0.000015f); }
 
@@ -104,14 +104,13 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.Maxout,
 //                      DeepLearningParameters.Activation.MaxoutWithDropout
                   }) {
-                    if (!activation.toString().contains("Tanh") || !replicate) {
-                      switch (dist) {
-                        case tweedie:
-                        case gamma:
-                        case poisson:
-                          continue;
-                        default:
-                      }
+                    boolean reproducible=false;
+                    switch (dist) {
+                      case tweedie:
+                      case gamma:
+                      case poisson:
+                        reproducible=true;
+                      default:
                     }
                     for (boolean load_balance : new boolean[]{
                             true,
@@ -199,6 +198,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               p._train_samples_per_iteration = train_samples_per_iteration;
                                               p._force_load_balance = load_balance;
                                               p._replicate_training_data = replicate;
+                                              p._reproducible = reproducible;
                                               p._shuffle_training_data = shuffle;
                                               p._score_training_samples = scoretraining;
                                               p._score_validation_samples = scorevalidation;
@@ -234,7 +234,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 // no sampling - every node does its share of the full data
                                                 if (!replicate) assert ((double) model1._output._scoring_history.get(1, 3) == 1);
                                                   // every node passes over the full dataset
-                                                else assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
+                                                else {
+                                                  if (!reproducible)
+                                                    assert ((double) model1._output._scoring_history.get(1, 3) == H2O.CLOUD.size());
+                                                }
                                               }
 
                                               if (n_folds != 0) {
@@ -263,6 +266,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               p2._valid = valid == null ? null : valid._key;
                                               p2._l1 = 1e-3;
                                               p2._l2 = 1e-3;
+                                              p2._reproducible = reproducible;
                                               p2._response_column = frame._names[resp];
                                               p2._overwrite_with_best_model = overwrite_with_best_model;
                                               p2._epochs = epochs;
