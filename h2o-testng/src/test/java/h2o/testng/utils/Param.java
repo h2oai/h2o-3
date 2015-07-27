@@ -2,6 +2,7 @@ package h2o.testng.utils;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -143,32 +144,52 @@ public class Param {
 		value = value.trim();
 
 		if (StringUtils.isEmpty(value)) {
-			return null;
+			if (isRequired) {
+				return name + "is empty";
+			}
+			else {
+				return null;
+			}
 		}
 
 		String result = null;
 		switch (type) {
 			case "int":
-				if(!NumberUtils.isDigits(value)){
+				if (!NumberUtils.isDigits(value)) {
 					result = name + " is not digits";
 				}
 				break;
 
 			case "float":
 			case "double":
-				if(!NumberUtils.isNumber(value)){
+				if (!NumberUtils.isNumber(value)) {
 					result = name + " is not numberic";
 				}
 				break;
 
 			case "double[]":
-				//TODO: implement it
+				// TODO: implement it
 				break;
 
 			default:
 				break;
 		}
 
+		return result;
+	}
+	
+	public static String validateAutoSetParams(Param[] params, String[] input, List<String> tcHeaders){
+		String result = null;
+		
+		for (Param p : params) {
+			if (p.isAutoSet) {
+				result = p.validate(input[tcHeaders.indexOf(p.name)]);
+				if (result != null) {
+					break;
+				}
+			}
+		}
+		
 		return result;
 	}
 
