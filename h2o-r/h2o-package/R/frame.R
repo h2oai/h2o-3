@@ -141,14 +141,7 @@ NULL
 
 #' @rdname H2OS3GroupGeneric
 #' @export
-Ops.Frame <- function(x,y) {
-  assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
-  assign("op",.Generic,node)
-  assign("refcnt",0L,node)
-  assign("children", lapply(list(x,y), .refup), node)
-  reg.finalizer(node, .nodeFinalizer, onexit = TRUE)
-  node
-}
+Ops.Frame <- function(x,y) { .newExpr(.Generic,x,y) }
 
 
 # Pick a name for this Node.  Just use the evironment's C pointer address, if
@@ -323,7 +316,7 @@ as.h2o <- function(x, destination_frame= "") {
 #' nrow(prostate.train) + nrow(prostate.test)
 #' @export
 h2o.runif <- function(x, seed = -1) {
-  if (!is(x, "Frame")) stop("`data` must be an Frame object")
+  stopifnot(is(x,"Frame"))
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
   .newExpr("h2o.runif", x, seed)

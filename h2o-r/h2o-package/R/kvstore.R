@@ -84,5 +84,5 @@ h2o.rm <- function(ids) {
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
-  .eval.frame(.newExpr("ls"))
+  .fetch.data(.newExpr("ls"))
 }
