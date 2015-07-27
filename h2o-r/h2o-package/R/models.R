@@ -367,8 +367,8 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #' Retrieve the AUC
 #'
 #' Retrieves the AUC value from an \linkS4class{H2OBinomialMetrics}.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AUC value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AUCs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
@@ -430,8 +430,8 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 
 #'
 #' Retrieve the AIC.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AIC value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AICs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}.
@@ -478,8 +478,8 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' Retrieve the R2 value
 #'
 #' Retrieves the R2 value from an H2O model.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training R2 value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of R2s are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -533,11 +533,70 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   }
 }
 
+#'
+#' Retrieve the Mean Residual Deviance value
+#'
+#' Retrieves the Mean Residual Deviance value from an H2O model.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training Mean Residual Deviance value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of Mean Residual Deviances are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param train Retrieve the training Mean Residual Deviance
+#' @param valid Retrieve the validation Mean Residual Deviance
+#' @param xval Retrieve the cross-validation Mean Residual Deviance
+#' @param \dots extra arguments to be passed if `object` is of type
+#'              \linkS4class{H2OModel} (e.g. train=TRUE)
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#'
+#' h <- h2o.init()
+#' fr <- as.h2o(iris)
+#'
+#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#'
+#' h2o.mean_residual_deviance(m)
+#' }
+#' @export
+h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_residual_deviance )
+  else if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$mean_residual_deviance )
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$mean_residual_deviance)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      else {
+        v <- c(v,model.parts$vm@metrics$mean_residual_deviance)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      else {
+        v <- c(v,model.parts$xm$mean_residual_deviance)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    names(v) <- v_names
+    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+  } else {
+    warning(paste0("No Mean Residual Deviance for ", class(object)))
+    invisible(NULL)
+  }
+}
+
 #' Retrieve the GINI Coefficcient
 #'
 #' Retrieves the GINI coefficient from an \linkS4class{H2OBinomialMetrics}.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training GINIvalue is returned. If more
+#' than one parameter is set to TRUE, then a named vector of GINIs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object an \linkS4class{H2OBinomialMetrics} object.
@@ -628,8 +687,8 @@ h2o.coef_norm <- function(object) {
 #'
 #' Retrieves the mean squared error value from an \linkS4class{H2OModelMetrics}
 #' object.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training MSEvalue is returned. If more
+#' than one parameter is set to TRUE, then a named vector of MSEs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' This function only supports \linkS4class{H2OBinomialMetrics},
@@ -698,8 +757,8 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #'
 #' Retrieves the log loss output for a \linkS4class{H2OBinomialMetrics} or
 #' \linkS4class{H2OMultinomialMetrics} object
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training Log Loss value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of Log Losses are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object a \linkS4class{H2OModelMetrics} object of the correct type.
@@ -822,8 +881,8 @@ h2o.biases <- function(object, vector_id=1, ...){
 
 #'
 #' Retrieve the Hit Ratios
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named list of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training Hit Ratios value is returned. If more
+#' than one parameter is set to TRUE, then a named list of Hit Ratio tables are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -1081,8 +1140,8 @@ h2o.withinss <- function(object, ...) { h2o.mse(object, ...) }
 
 #'
 #' Get the total within cluster sum of squares.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training tot_withinss value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of tot_withinss' are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
@@ -1120,8 +1179,8 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
 
 #'
 #' Get the between cluster sum of squares.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training betweenss value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of betweenss' are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
@@ -1159,8 +1218,8 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 
 #'
 #' Get the total sum of squares.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training totss value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of totss' are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
@@ -1206,8 +1265,8 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 
 #'
 #' Retrieve the centroid statistics
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named list of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training centroid stats value is returned. If more
+#' than one parameter is set to TRUE, then a named list of centroid stats data frames are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
@@ -1245,8 +1304,8 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...
 
 #'
 #' Retrieve the cluster sizes
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training cluster sizes value is returned. If more
+#' than one parameter is set to TRUE, then a named list of cluster size vectors are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
@@ -1285,8 +1344,8 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
 
 #'
 #' Retrieve the null deviance
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training null deviance value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of null deviances are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
@@ -1326,8 +1385,8 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
 }
 
 #' Retrieve the residual deviance
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training residual deviance value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of residual deviances are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
@@ -1368,8 +1427,8 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
 
 
 #' Retrieve the residual degrees of freedom
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training residual degrees of freedom value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of residual degrees of freedom are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
@@ -1409,8 +1468,8 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
 }
 
 #' Retrieve the null degrees of freedom
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training null degrees of freedom value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of null degrees of freedom are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
@@ -1590,11 +1649,12 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 })
 
 #' @export
-plot.H2OModel <- function(x, ...) {
+plot.H2OModel <- function(x, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(x, "H2OBinomialModel") ) {
-    if( !is.null(x@model$validation_metrics@metrics) ) metrics <- x@model$validation_metrics
-    else                                               metrics <- x@model$training_metrics
-    plot.H2OBinomialMetrics(metrics, ...)
+    if ( !train && !valid && !xval ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...)
+    } else if ( valid ) plot.H2OBinomialMetrics(x@model$validation_metrics, ...)
+    } else if ( xval )  warning(paste("Plotting cross-valiation metrics is currently not supported."))
+    } else if ( train ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...) }
   } else NULL
 }
 
