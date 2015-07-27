@@ -118,6 +118,15 @@ assign("<-", function(x,y) {
   node
 }
 
+.newExpr <- function(op,...) {
+  assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
+  assign("op",op,node)
+  assign("refcnt",0L,node)
+  assign("children", lapply(list(...), .refup), node)
+  reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
+  node
+}
+
 
 #' S3 Group Generic Functions for H2O
 #'
@@ -292,3 +301,32 @@ as.h2o <- function(x, destination_frame= "") {
   gc()
 }
 
+
+#' Produe a Vector of Random Uniform Numbers
+#'
+#' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
+#' dataset.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param seed A random seed used to generate draws from the uniform distribution.
+#' @return A vector of random, uniformly distributed numbers. The elements are between 0 and 1.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
+#' s = h2o.runif(prostate.hex)
+#' summary(s)
+#'
+#' prostate.train = prostate.hex[s <= 0.8,]
+#' prostate.train = h2o.assign(prostate.train, "prostate.train")
+#' prostate.test = prostate.hex[s > 0.8,]
+#' prostate.test = h2o.assign(prostate.test, "prostate.test")
+#' nrow(prostate.train) + nrow(prostate.test)
+#' @export
+h2o.runif <- function(x, seed = -1) {
+  if (!is(x, "Frame")) stop("`data` must be an Frame object")
+  if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
+  if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
+  .newExpr("h2o.runif", x, seed)
+}

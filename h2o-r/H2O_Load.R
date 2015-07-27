@@ -1,18 +1,18 @@
 # Change this global variable to match your own system's path
 CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/h2o-3/"
 SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/h2o-dev/"
-ROOT.PATH <- CLIFF.ROOT.PATH
+ROOT.PATH <- SPENCER.ROOT.PATH
 DEV.PATH  <- "h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
 src <-
 function() {
   warning("MAY NOT WORK ON YOUR SYSTEM -- **TRY TO CHANGE `ROOT.PATH`!**")
-  to_src <- c("classes.R", "connection.R", "constants.R", "logging.R", "communication.R", 
-              "import.R", "frame.R", "kvstore.R", 
-              "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R", 
+  to_src <- c("classes.R", "connection.R", "constants.R", "logging.R", "communication.R",
+              "import.R", "frame.R", "kvstore.R",
+              "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R",
               "gbm.R", "deeplearning.R", "naivebayes.R", "randomForest.R", "svd.R", "locate.R")
-  # "exec.R", "ops.R", "ast.R", "astfun.R", 
+  # "exec.R", "ops.R", "ast.R", "astfun.R",
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }

@@ -67,3 +67,22 @@ h2o.rm <- function(ids) {
   for(i in seq_len(length(ids)))
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
 }
+
+
+#'
+#' List Keys on an H2O Cluster
+#'
+#' Accesses a list of object keys in the running instance of H2O.
+#'
+#' @return Returns a list of hex keys in the current H2O instance.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' h2o.ls(localH2O)
+#' @export
+h2o.ls <- function() {
+  .h2o.gc()
+  .eval.frame(.newExpr("ls"))
+}
