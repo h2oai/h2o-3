@@ -48,7 +48,7 @@ def _add_col_to_x_and_validation_x(col_name,x,validation_x,kwargs,xval=False):
   :return: x and validation_x, with the respective columns added
   """
   # training_frame
-  if col_name not in x._col_names:
+  if col_name not in x._col_names and not col_name is None:
     if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `" +
                                                                col_name + "`not part of `x`")
     if not col_name in kwargs["training_frame"].col_names():
@@ -58,7 +58,7 @@ def _add_col_to_x_and_validation_x(col_name,x,validation_x,kwargs,xval=False):
 
   # validation_frame
   if validation_x is not None and not xval:
-    if col_name not in validation_x._col_names:
+    if col_name not in validation_x._col_names and not col_name is None:
       if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
                                                                    "`" + col_name + "` not part of `validation_x`")
       if not col_name in kwargs["validation_frame"].col_names():
@@ -83,7 +83,7 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
 
   if "weights_column" in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["weights_column"],x, validation_x, kwargs)
   if "offset_column"  in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["offset_column"], x, validation_x, kwargs)
-  if "fold_column"   in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["fold_column"],  x, validation_x, kwargs, xval=True)
+  if "fold_column"   in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["fold_column"],    x, validation_x, kwargs, xval=True)
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
