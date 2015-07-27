@@ -51,14 +51,15 @@ def cv_carsGBM(ip,port):
         assert True
 
     # 3. folds_column
-    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,5)] for f in range(cars.nrow())])
+    num_folds = random.randint(2,5)
+    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow())])
     fold_assignments.setNames(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], training_frame=cars, distribution=distribution,
                   fold_column="fold_assignments", keep_cross_validation_predictions=True)
     num_cv_models = len(gbm._model_json['output']['cross_validation_models'])
-    assert num_cv_models==fold_assignments.max()+1, "Expected {0} cross-validation models, but got " \
-                                                    "{1}".format(fold_assignments.max()+1, num_cv_models)
+    assert num_cv_models==num_folds, "Expected {0} cross-validation models, but got " \
+                                                    "{1}".format(num_folds, num_cv_models)
     cv_model1 = h2o.get_model(gbm._model_json['output']['cross_validation_models'][0]['name'])
     cv_model2 = h2o.get_model(gbm._model_json['output']['cross_validation_models'][1]['name'])
     assert isinstance(cv_model1, type(gbm)), "Expected cross-validation model to be the same model type as the " \
@@ -71,7 +72,7 @@ def cv_carsGBM(ip,port):
     assert cv_predictions is None, "Expected cross-validation predictions to be None, but got {0}".format(cv_predictions)
 
     cv_predictions = gbm._model_json['output']['cross_validation_predictions']
-    assert len(cv_predictions)==fold_assignments.max()+1, "Expected the same number of cross-validation predictions " \
+    assert len(cv_predictions)==num_folds, "Expected the same number of cross-validation predictions " \
                                                           "as folds, but got {0}".format(len(cv_predictions))
 
     # # 5. manually construct models
