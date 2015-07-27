@@ -187,17 +187,11 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
   x
 }
 
-<<<<<<< HEAD
 #` Dimensions of an H2O Frame
-dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x$nrow,ncol(data))) }
-=======
-#<<<<<<< Updated upstream
-##` Dimensions of an H2O Frame
-#dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
-#
-##` Column names of an H2O Frame
-#dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
->>>>>>> origin/cliffc_currents
+dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
+
+#` Column names of an H2O Frame
+dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
 #' Returns the Dimensions of an H2O Frame
 #'
@@ -298,3 +292,4 @@ as.h2o <- function(x, destination_frame= "") {
   print("H2O triggered a GC in R")
   gc()
 }
+
