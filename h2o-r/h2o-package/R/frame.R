@@ -40,8 +40,7 @@
 #` 
 #` # A number of fields represent cached queries of an evaluated frame
 #` E$data   <- an R dataframe holding the first N (typically 10) rows and all cols of the frame
-
-.defaultHeadRows <- 10
+#` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
 `is.Frame` <- function(x) class(x)[1]=="Frame"
 
@@ -162,23 +161,21 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
 }
 
 #` Dimensions of an H2O Frame
-dim.Frame <- function(x) .Primitive("dim")(.fetch.data(x,1))
+dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
 
-#' @rdname H2OFrame-class
+#` Column names of an H2O Frame
+dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
+
+#' @rdname Frame-class
 #' @export
-`show.Frame` <- function(x) {
-  print("CRUNK")
+print.Frame <- function(x) {
   nr <- nrow(x)
-  print(nr)
   nc <- ncol(x)
   cat("Frame with ",
       nr, ifelse(!is.na(nr) && nr == 1L, " row and ", " rows and "),
       nc, ifelse(!is.na(nc) && nc == 1L, " column\n", " columns\n"), sep = "")
-  if (!is.na(nr)) {
-    if( nr > 10L ) cat("\nFirst 10 rows:\n")
-    cat(head(x, 10L))
-  }
-  stop("show.Frame needs to be debugged")
+  if( nr > 10L ) cat("\nFirst 10 rows:\n")
+  print(head(.fetch.data(x,10L), 10L))
   invisible(x)
 }
 
@@ -189,43 +186,40 @@ dim.Frame <- function(x) .Primitive("dim")(.fetch.data(x,1))
 #' @param cols Logical indicating whether or not to do the str for all columns.
 #' @param \dots Extra args
 #' @export
-#str.Frame <- function(x, cols=FALSE, ...) {
-#  if (length(l <- list(...)) && any("give.length" == names(l)))
-#    invisible(NextMethod("str", ...))
-#  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
-#
-#  if( cols ) {
-#    nc <- ncol(x)
-#    nr <- nrow(x)
-#    cc <- colnames(x)
-#    width <- max(nchar(cc))
-#    df <- as.data.frame(x[1L:10L,])
-#    isfactor <- as.data.frame(is.factor(x))[,1]
-#    num.levels <- as.data.frame(h2o.nlevels(x))[,1]
-#    lvls <- as.data.frame(h2o.levels(x))
-#    # header statement
-#    cat("\nH2OFrame '", x@id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-#    l <- list()
-#    for( i in 1:nc ) {
-#      cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
-#      first.10.rows <- df[,i]
-#      if( isfactor[i] ) {
-#        nl <- num.levels[i]
-#        lvls.print <- lvls[1L:min(nl,2L),i]
-#        cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
-#        cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
-#      } else
-#        cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
-#    }
-#  }
-#}
+str.Frame <- function(x, cols=FALSE, ...) {
+  if (length(l <- list(...)) && any("give.length" == names(l)))
+    invisible(NextMethod("str", ...))
+  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
+
+  nc <- ncol(x)
+  nr <- nrow(x)
+  cc <- colnames(x)
+  width <- max(nchar(cc))
+  df <- head(.fetch.data(x,10L),10L)
+
+  # header statement
+  cat("\nFrame '", .id(x), "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+  l <- list()
+  for( i in 1:nc ) {
+    cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+    first.10.rows <- df[,i]
+    if( is.factor(first.10.rows) ) {
+      lvls <- levels(first.10.rows)
+      nl <- length(lvls)
+      lvls.print <- lvls[1L:min(nl,2L)]
+      cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
+      cat(paste(match(first.10.rows, lvls), collapse=" "), " ...\n", sep="")
+    } else
+      cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+  }
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
-#' R data.frame -> H2OFrame
+#' R data.frame -> Frame
 #'
 #' Import a local R data frame to the H2O cloud.
 #'
@@ -254,64 +248,6 @@ as.h2o <- function(x, destination_frame= "") {
   file.remove(tmpf)
   h2f
 }
-
-#'
-#' Converts a Parsed H2O data into a Data Frame
-#'
-#' Downloads the H2O data and then scans it in to an R data frame.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @param ... Further arguments to be passed down from other methods.
-#' @examples
-#' localH2O <- h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
-#' as.data.frame(prostate.hex)
-#' @export
-#as.data.frame.H2OFrame <- function(x, ...) {
-#  .h2o.eval.frame(x)
-#
-#  # Versions of R prior to 3.1 should not use hex string.
-#  # Versions of R including 3.1 and later should use hex string.
-#  use_hex_string <- getRversion() >= "3.1"
-#  conn = h2o.getConnection()
-#
-#  url <- paste0('http://', conn@ip, ':', conn@port,
-#                '/3/DownloadDataset',
-#                '?frame_id=', URLencode(x@id),
-#                '&hex_string=', as.numeric(use_hex_string))
-#
-#  ttt <- getURL(url)
-#  n <- nchar(ttt)
-#
-#  # Delete last 1 or 2 characters if it's a newline.
-#  # Handle \r\n (for windows) or just \n (for not windows).
-#  chars_to_trim <- 0L
-#  if (n >= 2L) {
-#      c <- substr(ttt, n, n)
-#      if (c == "\n") {
-#          chars_to_trim <- chars_to_trim + 1L
-#      }
-#      if (chars_to_trim > 0L) {
-#          c <- substr(ttt, n-1L, n-1L)
-#          if (c == "\r") {
-#              chars_to_trim <- chars_to_trim + 1L
-#          }
-#      }
-#  }
-#
-#  if (chars_to_trim > 0L) {
-#    ttt2 <- substr(ttt, 1L, n-chars_to_trim)
-#    # Is this going to use an extra copy?  Or should we assign directly to ttt?
-#    ttt <- ttt2
-#  }
-#
-#  # Substitute NAs for blank cells rather than skipping
-#  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
-#  # df <- read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
-#  close(tcon)
-#  df
-#}
 
 .h2o.gc <- function() {
   print("H2O triggered a GC in R")
