@@ -60,7 +60,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_splits;
     public boolean _keep_cross_validation_predictions;
     public enum FoldAssignmentScheme {
-      Random, Modulo
+      AUTO, Random, Modulo
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.Random;
     public Distribution.Family _distribution = Distribution.Family.AUTO;

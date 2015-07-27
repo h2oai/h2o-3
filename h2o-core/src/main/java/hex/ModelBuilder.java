@@ -258,6 +258,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           for (int i = 0; i < foldAssignment._len; ++i) {
             int fold;
             switch (foldAssignmentScheme) {
+              case AUTO:
               case Random:
                 fold = Math.abs(getRNG(foldAssignment.start() + actualSeed + i).nextInt()) % N;
                 break;
@@ -651,6 +652,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_keep_cross_validation_splits", "Only for cross-validation.");
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+        error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
+      }
     }
     if (_parms._distribution != Distribution.Family.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");

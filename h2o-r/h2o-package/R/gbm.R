@@ -34,7 +34,7 @@
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
