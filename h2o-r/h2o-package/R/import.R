@@ -75,10 +75,10 @@ h2o.importFolder <- function(path, pattern = "",
   if(length(res$files) > 0L) {
     if(parse) {
       srcKey <- res$destination_frames
-      rawData <- .newH2ORawData(id=srcKey)  # do not gc, H2O handles these nfs:// vecs
+      rawData <- .newFrame(op="ImportFolder",id=srcKey)  # do not gc, H2O handles these nfs:// vecs
       ret <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, na.strings=na.strings)
     } else {
-      myData <- lapply(res$destination_frames, function(x) .newH2ORawData( id=x))  # do not gc, H2O handles these nfs:// vecs
+      myData <- lapply(res$destination_frames, function(x) .newFrame( op="ImportFolder", id=x))  # do not gc, H2O handles these nfs:// vecs
       if(length(res$destination_frames) == 1L)
         ret <- myData[[1L]]
       else

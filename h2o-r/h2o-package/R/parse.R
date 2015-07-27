@@ -133,10 +133,6 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   else "[]"
 }
 
-.h2o.fetchNRows <- function(id) {
-  .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", id))$frames[[1]]$rows
-}
-
 #'
 #' The H2OFrame Constructor
 .h2o.parsedData <- function(destination_frame, nrows, ncols, col_names) {
