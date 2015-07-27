@@ -53,7 +53,7 @@ h2o.kmeans <- function(training_frame, x, k,
                        seed,
                        nfolds = 0,
                        fold_column = NULL,
-                       fold_assignment = c("Random","Modulo"),
+                       fold_assignment = c("AUTO","Random","Modulo"),
                        keep_cross_validation_predictions = FALSE)
 {
   # Training_frame may be a key or an H2OFrame object
