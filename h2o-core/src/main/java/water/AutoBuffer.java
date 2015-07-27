@@ -58,6 +58,7 @@ public /* final */ class AutoBuffer {
   // asserts all over the place.
   private boolean _firstPage;
 
+
   // Total size written out from 'new' to 'close'.  Only updated when actually
   // reading or writing data, or after close().  For profiling only.
   int _size;
@@ -510,7 +511,8 @@ public /* final */ class AutoBuffer {
     assert _read;
     _read = false;
     _bb.clear();
-    _bb.position(2);
+    if(_h2o != null) // network messages leave first to bytes empty to fill in message size
+      _bb.position(2);
     _firstPage = true;
     return this;
   }
@@ -519,6 +521,8 @@ public /* final */ class AutoBuffer {
     assert !_read;
     _read = true;
     _bb.flip();
+    if(_firstPage && _h2o != null) // network messages leave first to bytes empty to fill in message size
+      _bb.position(2);
     _firstPage = true;
     return this;
   }
