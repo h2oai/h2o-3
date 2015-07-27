@@ -147,10 +147,8 @@ Ops.Frame <- function(x,y) {
 # Pick a name for this Node.  Just use the evironment's C pointer address, if
 # one's not provided
 .id <- function(x) {
-  if( is.null(x$id ) ) {
-    s <- capture.output(str(x))
-    paste0("RTMP",gsub("(.*x)|(> )", "",s))
-  } else x$id
+  if( is.null(x$id ) ) paste0("RTMP",gsub("(.*x)|(> )", "",capture.output(str(x))))
+  else                 x$id
 }
 
 # Internal recursive clear-visit-flag function, goes hand-n-hand with a
