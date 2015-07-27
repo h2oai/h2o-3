@@ -13,6 +13,7 @@ import water.fvec.*;
 import water.parser.ParseDataset;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -133,7 +134,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}){//, Solver.COORDINATE_DESCENT_SEQ}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}){//, Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -513,8 +514,8 @@ public class GLMBasicTestBinomial extends TestUtil {
       9, 6, 2, 6, 2, 2, 9, 0, 9, 8,
       1, 2, 6, 3, 4, 1, 2, 2, 3, 0
     };
-
-
+    //double [] weights = new double[290];
+    //Arrays.fill(weights, 1);
 
     Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
     Vec.Writer vw = offsetVecTrain.open();
@@ -563,7 +564,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-6;
     params._max_iterations = 1000; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;

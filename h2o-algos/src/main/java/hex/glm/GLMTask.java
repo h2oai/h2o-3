@@ -898,6 +898,7 @@ public abstract class GLMTask  {
     final int [] _catLvls_new; // sorted list of indices of active levels only for one categorical variable
     final int [] _catLvls_old;
     public double [] _temp;
+    boolean _skipFirst;
     long _nobs;
     int _cat_num; // 1: c and p categorical, 2:c numeric and p categorical, 3:c and p numeric , 4: c categorical and previous num.
     boolean _interceptnew;
@@ -905,7 +906,7 @@ public abstract class GLMTask  {
 
     public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num ,
                                         double [] betaold, double [] betanew, int [] catLvlsold, int [] catLvlsnew,
-                                        double [] normMulold, double [] normSubold, double [] normMulnew, double [] normSubnew ){ // pass it norm mul and norm sup - in the weights already done. norm
+                                        double [] normMulold, double [] normSubold, double [] normMulnew, double [] normSubnew, boolean skipFirst ){ // pass it norm mul and norm sup - in the weights already done. norm
       //mul and mean will be null without standardization.
       _normMulold = normMulold;
       _normSubold = normSubold;
@@ -918,6 +919,7 @@ public abstract class GLMTask  {
       _interceptnew = interceptnew; // if currently updating the intercept value
       _catLvls_old = catLvlsold;
       _catLvls_new = catLvlsnew;
+      _skipFirst = skipFirst;
     }
 
     @Override
@@ -932,7 +934,7 @@ public abstract class GLMTask  {
       _temp = new double[_betaold.length];
       if (_interceptnew) {
         xChunk = new C0DChunk(1,chunks[0]._len);
-        xpChunk = chunks[cnt++];
+        xpChunk = chunks[cnt++]; // MISTAKE THIS TAKES THE WEIGHT VECTOR INSTEAD OF THE LAST COLUMN IF THE DATA.
       } else {
         if (_interceptold) {
           xChunk = chunks[cnt++];
@@ -963,14 +965,24 @@ public abstract class GLMTask  {
           observation_level_p = (int) xpChunk.at8(i); // both cat
           if (_catLvls_new != null)
             observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
+
+          if(_skipFirst){
+            observation_level--;
+            observation_level_p--;
+          }
         }
         else if(_cat_num == 2){
           val = xChunk.atd(i); // current num and previous cat
           if (_normMulold != null && _normSubold != null)
             val = (val - _normSubold[0]) * _normMulold[0];
+
           observation_level_p = (int) xpChunk.at8(i);
           if (_catLvls_new != null)
             observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
+
+          if(_skipFirst){
+            observation_level_p--;
+          }
         }
         else if(_cat_num == 3){
           val = xChunk.atd(i); // both num
@@ -984,6 +996,10 @@ public abstract class GLMTask  {
           observation_level = (int) xChunk.at8(i); // current cat
           if (_catLvls_old != null)
             observation_level = Arrays.binarySearch(_catLvls_old, observation_level); // search to see if this level is active.
+          if(_skipFirst){
+            observation_level--;
+          }
+
           valp = xpChunk.atd(i); //prev numeric
           if (_normMulnew != null && _normSubnew != null)
             valp = (valp - _normSubnew[0]) * _normMulnew[0];
@@ -1056,7 +1072,7 @@ public abstract class GLMTask  {
     final GLMParameters _params;
     final double [] _betaw;
     double [] denums;
-    double wsum;
+    double wsum,wsumu;
     DataInfo _dinfo;
 
     public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
@@ -1103,6 +1119,7 @@ public abstract class GLMTask  {
         zChunk.set(i,z);
 
         wsum+=w;
+        wsumu+=r.weight; // just add the user observation weight for the scaling.
 
         for(int j = 0; j < r.nBins; ++j)  { // go over cat variables
           denums[r.binIds[j]] +=  w; // binIds skips the zeros.

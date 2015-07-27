@@ -609,7 +609,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = true;
       params._family = Family.gaussian;
-      params._solver = Solver.COORDINATE_DESCENT;//COORDINATE_DESCENT;
+      params._solver = Solver.COORDINATE_DESCENT;
       params._response_column = "C1";
       params._train = fr._key;
       GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
@@ -1043,7 +1043,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT; //Solver.COORDINATE_DESCENT;
+      params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
