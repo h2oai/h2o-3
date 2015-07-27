@@ -8,15 +8,21 @@ def cv_carsGLM(ip,port):
     # read in the dataset and construct training set (and validation set)
     cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
 
+    # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
+    # 2:poisson
+    problem = random.sample(range(3),1)[0]
     # pick the predictors and response column, along with the correct family
     predictors = ["displacement","power","weight","acceleration","year"]
-    if random.randint(0,1) == 1   :
+    if problem == 1   :
         response_col = "economy_20mpg"
         family = "binomial"
         cars[response_col] = cars[response_col].asfactor()
+    elif problem == 2 :
+        family = "poisson"
+        response_col = "cylinders"
     else              :
-        response_col = "economy"
         family = "gaussian"
+        response_col = "economy"
 
     print "Distribution: {0}".format(family)
     print "Response column: {0}".format(response_col)
