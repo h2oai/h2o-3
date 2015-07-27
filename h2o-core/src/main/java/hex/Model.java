@@ -62,7 +62,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo
     }
-    public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.Random;
+    public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5f;
 
