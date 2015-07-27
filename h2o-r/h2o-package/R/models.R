@@ -1652,8 +1652,8 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 plot.H2OModel <- function(x, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(x, "H2OBinomialModel") ) {
     if ( !train && !valid && !xval ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...)
-    } else if ( valid ) plot.H2OBinomialMetrics(x@model$validation_metrics, ...)
-    } else if ( xval )  warning(paste("Plotting cross-valiation metrics is currently not supported."))
+    } else if ( valid ) { plot.H2OBinomialMetrics(x@model$validation_metrics, ...)
+    } else if ( xval )  { warning(paste("Plotting cross-valiation metrics is currently not supported."))
     } else if ( train ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...) }
   } else NULL
 }
