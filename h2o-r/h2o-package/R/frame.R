@@ -42,7 +42,7 @@
 #` E$data   <- an R dataframe holding the first N (typically 10) rows and all cols of the frame
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
-`is.Frame` <- function(x) class(x)[1]=="Frame"
+is.Frame <- function(x) is(x, "Frame")
 
 # GC Finalizer - called when GC collects a Frame
 # Must be defined ahead of constructors
@@ -119,8 +119,21 @@ assign("<-", function(x,y) {
 }
 
 
-# S3 Overload all standard operators.  Just build a lazy-eval structure.
-# It is unnamed, and has a refcnt (initialially zero)
+#' S3 Group Generic Functions for H2O
+#'
+#' Methods for group generic functions and H2O objects.
+#'
+
+
+#' @param x,y H2O Frame objects.
+#' @param digits number of digits to be used in \code{round} or \code{signif}
+#' @param \dots further arguments passed to or from methods
+#' @param na.rm logical: should missing values be removed?
+#' @name H2OS3GroupGeneric
+NULL
+
+#' @rdname H2OS3GroupGeneric
+#' @export
 Ops.Frame <- function(x,y) {
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
   assign("op",.Generic,node)
@@ -159,10 +172,10 @@ Ops.Frame <- function(x,y) {
   paste0(str,"(",x$op," ",res," #",x$refcnt,")")
 }
 
-#` Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
+# Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
 pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); invisible() }
 
-#` Evaluate this Frame on demand
+# Evaluate this Frame on demand
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
   if( !is.null(x$children) ) {
@@ -174,13 +187,34 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
   x
 }
 
+<<<<<<< HEAD
 #` Dimensions of an H2O Frame
 dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x$nrow,ncol(data))) }
+=======
+#<<<<<<< Updated upstream
+##` Dimensions of an H2O Frame
+#dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
+#
+##` Column names of an H2O Frame
+#dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
+>>>>>>> origin/cliffc_currents
 
-#` Column names of an H2O Frame
-dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
+#' Returns the Dimensions of an H2O Frame
+#'
+#' Returns the number of rows and columns for a Frame object.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @seealso \code{\link[base]{dim}} for the base R method.
+#' @examples
+#' localH2O <- h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' dim(iris.hex)
+#' @export
+dim.Frame <- function(x) stop("unimplemented")    # .Primitive("dim")(.fetch.data(x,1))
 
-#' @rdname Frame-class
+#' Print An H2O Frame
+#'
+#' @param x An H2O Frame object
 #' @export
 print.Frame <- function(x) {
   nr <- nrow(x)
@@ -193,12 +227,10 @@ print.Frame <- function(x) {
   invisible(x)
 }
 
+#' Display the structure of an H2O Frame object
 #'
-#' Describe an Frame
-#'
-#' @param x An Frame.
-#' @param cols Logical indicating whether or not to do the str for all columns.
-#' @param \dots Extra args
+#' @param An H2O Frame object
+#' @param cols Print the per-column str for the Frame
 #' @export
 Qstr.Frame <- function(x, cols=FALSE, ...) {
   if (length(l <- list(...)) && any("give.length" == names(l)))
