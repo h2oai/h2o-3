@@ -119,15 +119,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   // Lower is better
   public float error() {
-    return (float) (_output.isClassifier() ? cm().err() : mse());
-//    boolean valid = _parms.valid() != null;
-//    if (!_output.isClassifier()) {
-//      return (float)(valid ? _output._validation_metrics._MSE : _output._training_metrics._MSE);
-//    } else if (_output.nclasses() == 2){
-//      return -(float)(valid ? ((ModelMetricsBinomial)_output._validation_metrics)._auc._auc : ((ModelMetricsBinomial)_output._training_metrics)._auc._auc);
-//    } else {
-//      return -(float)(valid ? ((ModelMetricsMultinomial)_output._validation_metrics)._logloss : ((ModelMetricsMultinomial)_output._training_metrics)._logloss);
-//    }
+    return (float) (_output.isClassifier() ? cm().err() : deviance());
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -156,7 +148,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
     //training/validation sets
     boolean validation;
-    int num_folds;
     public long score_training_samples;
     public long score_validation_samples;
 
@@ -195,8 +186,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       StringBuilder sb = new StringBuilder();
       if (scored_train!=null) sb.append("Training " + scored_train.toString());
       if (classification) sb.append("Training " + train_confusion_matrix.table().toString(1));
-      if (validation || num_folds>0) {
-        if (num_folds > 0) sb.append("\nDoing " + num_folds + "-fold cross-validation:");
+      if (validation) {
         if (scored_valid!=null) sb.append("Validation " + scored_valid.toString());
         if (classification) sb.append("Validation " + valid_confusion_matrix.table().toString(1));
       }
@@ -208,20 +198,23 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public ConfusionMatrix cm() {
     final DeepLearningScoring lasterror = last_scored();
     if (lasterror == null) return null;
-    ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
-            lasterror.valid_confusion_matrix :
-            lasterror.train_confusion_matrix;
+    ConfusionMatrix cm = lasterror.validation ? lasterror.valid_confusion_matrix : lasterror.train_confusion_matrix;
     return cm;
   }
 
   public double mse() {
     if (errors == null) return Double.NaN;
-    return last_scored().validation || last_scored().num_folds > 0 ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double deviance() {
+    if (errors == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
   }
 
   public double logloss() {
     if (errors == null) return Double.NaN;
-    return last_scored().validation || last_scored().num_folds > 0 ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
@@ -304,7 +297,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
       if (_output.getModelCategory() == ModelCategory.Regression) {
-        table.set(row, col++, e.scored_train != null ? e.scored_train._residual_deviance : Double.NaN);
+        table.set(row, col++, e.scored_train != null ? e.scored_train._mean_residual_deviance : Double.NaN);
       }
       if (!_output.autoencoder) {
         table.set(row, col++, e.scored_train != null ? e.scored_train._r2 : Double.NaN);
@@ -321,7 +314,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (get_params()._valid != null) {
         table.set(row, col++, e.scored_valid != null ? e.scored_valid._mse : Double.NaN);
         if (_output.getModelCategory() == ModelCategory.Regression) {
-          table.set(row, col++, e.scored_valid != null ? e.scored_valid._residual_deviance : Double.NaN);
+          table.set(row, col++, e.scored_valid != null ? e.scored_valid._mean_residual_deviance : Double.NaN);
         }
         if (!_output.autoencoder) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._r2 : Double.NaN);
@@ -444,7 +437,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
-      errors[0].num_folds = parms._nfolds;
       _output.errors = last_scored();
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);

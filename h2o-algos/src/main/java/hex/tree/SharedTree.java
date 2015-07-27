@@ -571,7 +571,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, i);
       ScoreKeeper st = _output._scored_train[i];
       table.set(row, col++, st._mse);
-      if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._residual_deviance);
+      if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
       if (_output.isClassifier()) table.set(row, col++, st._classError);
@@ -579,7 +579,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (_valid != null) {
         st = _output._scored_valid[i];
         table.set(row, col++, st._mse);
-        if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._residual_deviance);
+        if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
         if (_output.isClassifier()) table.set(row, col++, st._classError);
