@@ -107,8 +107,6 @@ public class GLMBasicTestRegression extends TestUtil {
           if(scoreTrain != null) scoreTrain.delete();
         }
       }
-
-
   }
 
   @AfterClass
