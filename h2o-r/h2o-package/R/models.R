@@ -1093,10 +1093,29 @@ h2o.withinss <- function(object, ...) { h2o.mse(object, ...) }
 #' @export
 h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   model.parts <- .model.parts(object)
-  if( valid ) {
-    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.parts$vm@metrics$tot_withinss )
-  } else                          return( model.parts$tm@metrics$tot_withinss )
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$tot_withinss )
+  v <- c()
+  v_names <- c()
+  if ( train ) {
+    v <- c(v,model.parts$tm@metrics$tot_withinss)
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v <- c(v,model.parts$vm@metrics$tot_withinss)
+      v_names <- c(v_names,"valid")
+    }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v <- c(v,model.parts$xm$tot_withinss)
+      v_names <- c(v_names,"xval")
+    }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -1113,10 +1132,29 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
 #' @export
 h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   model.parts <- .model.parts(object)
-  if( valid ) {
-    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.parts$vm@metrics$betweenss )
-  } else                          return( model.parts$tm@metrics$betweenss )
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$betweenss )
+  v <- c()
+  v_names <- c()
+  if ( train ) {
+    v <- c(v,model.parts$tm@metrics$betweenss)
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v <- c(v,model.parts$vm@metrics$betweenss)
+      v_names <- c(v_names,"valid")
+    }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v <- c(v,model.parts$xm$betweenss)
+      v_names <- c(v_names,"xval")
+    }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -1133,10 +1171,29 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @export
 h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   model.parts <- .model.parts(object)
-  if( valid ) {
-    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.parts$vm@metrics$totss )
-  } else                          return( model.parts$tm@metrics$totss )
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$totss )
+  v <- c()
+  v_names <- c()
+  if ( train ) {
+    v <- c(v,model.parts$tm@metrics$totss)
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v <- c(v,model.parts$vm@metrics$totss)
+      v_names <- c(v_names,"valid")
+    }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v <- c(v,model.parts$xm$totss)
+      v_names <- c(v_names,"xval")
+    }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -1149,17 +1206,41 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 
 #'
 #' Retrieve the centroid statistics
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
+#' than one parameter is set to TRUE, then a named list of metrics are returned, where the names are "train", "valid"
+#' or "xval".
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param valid Retrieve the validation metric.
+#' @param train Retrieve the training centroid statistics
+#' @param valid Retrieve the validation centroid statistics
+#' @param xval Retrieve the cross-validation centroid statistics
 #' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.centroid_stats <- function(object, valid=FALSE, ...) {
   model.parts <- .model.parts(object)
-  if( valid ) {
-    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.parts$vm@metrics$centroid_stats )
-  } else                          return( model.parts$tm@metrics$centroid_stats )
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats )
+  v <- list()
+  v_names <- c()
+  if ( train ) {
+    v[[length(v)+1]] <- model.parts$tm@metrics$centroid_stats
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats
+      v_names <- c(v_names,"valid")
+    }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$xm$centroid_stats
+      v_names <- c(v_names,"xval")
+    }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 #'
@@ -1176,10 +1257,29 @@ h2o.centroid_stats <- function(object, valid=FALSE, ...) {
 #' @export
 h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   model.parts <- .model.parts(object)
-  if( valid ) {
-    if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-    else                          return( model.parts$vm@metrics$centroid_stats$size )
-  } else                          return( model.parts$tm@metrics$centroid_stats$size )
+  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats$size )
+  v <- list()
+  v_names <- c()
+  if ( train ) {
+    v[[length(v)+1]] <- model.parts$tm@metrics$centroid_stats$size
+    v_names <- c(v_names,"train")
+  }
+  if ( valid ) {
+    if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats$size
+      v_names <- c(v_names,"valid")
+    }
+  }
+  if ( xval ) {
+    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+    else {
+      v[[length(v)+1]] <- model.parts$xm$centroid_stats$size
+      v_names <- c(v_names,"xval")
+    }
+  }
+  names(v) <- v_names
+  if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 }
 
 
