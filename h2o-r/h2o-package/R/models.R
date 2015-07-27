@@ -823,7 +823,7 @@ h2o.biases <- function(object, vector_id=1, ...){
 #'
 #' Retrieve the Hit Ratios
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training metric value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of metrics are returned, where the names are "train", "valid"
+#' than one parameter is set to TRUE, then a named list of metrics are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -836,10 +836,29 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
   if( is(object, "H2OModelMetrics") ) return( object@metrics$hit_ratio_table )
   else if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if( valid ) {
-      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-      else                          return( model.parts$vm@metrics$hit_ratio_table )
-    } else                          return( model.parts$tm@metrics$hit_ratio_table )
+    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$hit_ratio_table )
+    v <- list()
+    v_names <- c()
+    if ( train ) {
+      v[[length(v)+1]] <- model.parts$tm@metrics$hit_ratio_table
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      else {
+        v[[length(v)+1]] <- model.parts$vm@metrics$hit_ratio_table
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      else {
+        v[[length(v)+1]] <- model.parts$xm$hit_ratio_table
+        v_names <- c(v_names,"xval")
+      }
+    }
+    names(v) <- v_names
+    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
 
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
   } else if( is(object, "data.frame") ) return(object)
