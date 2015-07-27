@@ -33,7 +33,6 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 //    @API(help="Number of folds for n-fold cross-validation (0 to n)", direction= API.Direction.INOUT)
 //    public int n_folds;
 //    @API(help="Keep cross-validation Frames", direction=API.Direction.INOUT)
-//    public boolean keep_cross_validation_splits = false;
 //
 //    /**
 //     * A model key associated with a previously trained Deep Learning

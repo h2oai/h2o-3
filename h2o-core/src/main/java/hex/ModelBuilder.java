@@ -377,13 +377,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           predictionKeys[i] = Key.make(predName);
           m.predictScoreImpl(cvVal, adaptFr, predName);
         }
-        if (!_parms._keep_cross_validation_splits) {
-          weights[2 * i].remove();
-          weights[2 * i + 1].remove();
-          DKV.remove(cvTrain._key);
-          DKV.remove(cvVal._key);
-          if (origWeightsName == null) origWeight.remove();
-        }
+        weights[2 * i].remove();
+        weights[2 * i + 1].remove();
+        DKV.remove(cvTrain._key);
+        DKV.remove(cvVal._key);
+        if (origWeightsName == null) origWeight.remove();
         Model.cleanup_adapt(adaptFr, cvVal);
         DKV.remove(adaptFr._key);
       }
@@ -661,7 +659,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // hide cross-validation parameters unless cross-val is enabled
     if (_parms._nfolds ==0 && _parms._fold_column == null) {
-      hide("_keep_cross_validation_splits", "Only for cross-validation.");
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
       if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
