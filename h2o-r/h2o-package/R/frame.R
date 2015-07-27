@@ -42,22 +42,20 @@
 #` E$data   <- an R dataframe holding the first N (typically 10) rows and all cols of the frame
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
-is.Frame <- function(x) is(x, "Frame")
-
 # GC Finalizer - called when GC collects a Frame
 # Must be defined ahead of constructors
 .nodeFinalizer <- function(x) { .refdown(x,"GC_finalizer"); }
 
 # Ref-count up-count, only if a Frame.  Return x, for flow coding
 .refup <- function(x) {
-  if( is.Frame(x) && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
+  if( is(x, "Frame") && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
   x
 }
 
 # Ref-count down-count.  If it goes to zero, recursively ref-down-count the
 # children, plus also remove the backing H2O store
 .refdown <- function(x,xsub) {
-  if( !is.Frame(x) ) return()
+  if( !is(x, "Frame") ) return()
   if( is.null(x$refcnt) ) return(); # Named, no refcnt, no GC
   # Ok to be here once from GC, and once from killing last link calling
   # .refdown - hence might be zero but never negative
@@ -85,7 +83,7 @@ assign("<-", function(x,y) {
           eval(xsub,parent.frame())
   ))
   # If the OLD value was a Frame, down the ref-cnt
-  if( is.Frame(e) ) .refdown(e,xsub);
+  if( is(e, "Frame") ) .refdown(e,xsub);
   # If the NEW value is about to be a Frame, up the ref-cnt
   .refup(y)
 
@@ -181,11 +179,11 @@ Ops.Frame <- function(x,y) {
 }
 
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
-pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); invisible() }
+pfr <- function(x) { stopifnot(is(x, "Frame")); print(.pfr(x)); .clearvisit(x); invisible() }
 
 # Evaluate this Frame on demand
 .eval.frame <- function(x) {
-  stopifnot(is.Frame(x))
+  stopifnot(is(x, "Frame"))
   if( !is.null(x$children) ) {
     exec_str <- .pfr(x);  .clearvisit(x)
     print(paste0("EXPR: ",exec_str))

@@ -24,7 +24,7 @@
 
 #` Fetch the first N rows on demand, caching them in x$data; also cache x$nrow
 .fetch.data <- function(x,N) {
-  stopifnot(is.Frame(x))
+  stopifnot(is(x, "Frame"))
   stopifnot(!missing(N))
   .eval.frame(x)
   if( is.null(x$data) || nrow(x$data) < N ) {
@@ -58,7 +58,7 @@
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
 h2o.rm <- function(ids) {
-  if( is.Frame(ids) ) { 
+  if( is(ids, "Frame") ) {
     if( !is.null(ids$refcnt) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
     ids <- .id(ids); 
   }
