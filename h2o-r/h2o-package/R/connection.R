@@ -48,7 +48,7 @@
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = TRUE) {
+                     ice_root = tempdir(), strict_version_check = FALSE) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -147,14 +147,16 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   h2o.clusterInfo()
   cat("\n")
 
-  verH2O <- h2o.getVersion()
-  verPkg <- packageVersion("h2o")
-  if (verH2O != verPkg) {
-    message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
-    if (strict_version_check)
-      stop(message)
-    else
-      warning(message)
+  if( strict_version_check ) {
+    verH2O <- h2o.getVersion()
+    verPkg <- packageVersion("h2o")
+    if (verH2O != verPkg) {
+      message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
+      if (strict_version_check)
+        stop(message)
+      else
+        warning(message)
+    }
   }
 
   if (warnNthreads) {

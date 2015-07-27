@@ -148,8 +148,8 @@ Ops.Frame <- function(x,y) {
 # one's not provided
 .id <- function(x) {
   if( is.null(x$id ) ) {
-    str <- capture.output(str(x))
-    paste0("RTMP",substring(str,nchar(str)-19,nchar(str)-2))
+    s <- capture.output(str(x))
+    paste0("RTMP",gsub("(.*x)|(> )", "",s))
   } else x$id
 }
 
