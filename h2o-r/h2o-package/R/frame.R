@@ -57,15 +57,16 @@
 # Ref-count down-count.  If it goes to zero, recursively ref-down-count the
 # children, plus also remove the backing H2O store
 .refdown <- function(x,xsub) {
+  if( !is.Frame(x) ) return()
   if( is.null(x$refcnt) ) return(); # Named, no refcnt, no GC
   # Ok to be here once from GC, and once from killing last link calling
   # .refdown - hence might be zero but never negative
   stopifnot(x$refcnt >= 0 )
   if( x$refcnt > 0 ) assign("refcnt",x$refcnt - 1,envir=x)
   if( x$refcnt == 0 && is.null(x$nuked) ) {
-    lapply(x$children, function(child) { if( is.environment(child) ) .refdown(child,paste0(xsub,"child")) })
-    print(paste("h2o.rm(",xsub,")"))
-    x$nuked <- TRUE
+    lapply(x$children, function(child) .refdown(child,paste0(xsub,"child")) )
+    print(paste("Qh2o.rm(",xsub,")"))
+    assign("nuked",TRUE,envir=x)
   }
 }
 
@@ -87,11 +88,24 @@ assign("<-", function(x,y) {
   if( is.Frame(e) ) .refdown(e,xsub);
   # If the NEW value is about to be a Frame, up the ref-cnt
   .refup(y)
+
   # Dispatch to various assignment techniques
-  if (is.symbol(xsub))
+  if( is.symbol(xsub) || (is.character(xsub) && length(xsub)==1) )
     assign(as.character(xsub), y, envir=parent.frame())
-  else
+  else if (xsub[[1]]=="$") {
+    assign("lhs", eval(xsub[[2]], parent.frame(), parent.frame()))
+    if( typeof(lhs)=="list" )
+      `=`(lhs[[as.character(xsub[[3]])]],y)
+    else 
+      assign(as.character(xsub[[3]]), y, envir=eval(xsub[[2]], parent.frame(), parent.frame()))
+  } else
     eval(as.call(list(.Primitive("<-"),xsub,y)), parent.frame())
+
+  #if (is.symbol(xsub))
+  #  assign(as.character(xsub), y, envir=parent.frame())
+  #else
+  #  eval(as.call(list(.Primitive("<-"),xsub,y)), parent.frame())
+
   invisible(y)
 })
 
@@ -109,9 +123,9 @@ assign("<-", function(x,y) {
 # It is unnamed, and has a refcnt (initialially zero)
 Ops.Frame <- function(x,y) {
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
-  node$op <- .Generic
-  node$refcnt <- 0L
-  node$children <- lapply(list(x,y), .refup)
+  assign("op",.Generic,node)
+  assign("refcnt",0L,node)
+  assign("children", lapply(list(x,y), .refup), node)
   reg.finalizer(node, .nodeFinalizer, onexit = TRUE)
   node
 }
@@ -152,8 +166,8 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
   if( !is.null(x$children) ) {
-    str <- .pfr(x)
-    print(paste0("CURRENTS: ",str))
+    xxx <- .pfr(x)
+    print(paste0("CURRENTS: ",xxx))
     stop("unimplemented")
     rm("children",envir=x)
   }
@@ -161,7 +175,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
 }
 
 #` Dimensions of an H2O Frame
-dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x$nrow,ncol(data))) }
 
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
@@ -186,7 +200,7 @@ print.Frame <- function(x) {
 #' @param cols Logical indicating whether or not to do the str for all columns.
 #' @param \dots Extra args
 #' @export
-str.Frame <- function(x, cols=FALSE, ...) {
+Qstr.Frame <- function(x, cols=FALSE, ...) {
   if (length(l <- list(...)) && any("give.length" == names(l)))
     invisible(NextMethod("str", ...))
   else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
@@ -230,9 +244,8 @@ as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(!is.data.frame(x)) {
+  if(!is.data.frame(x))
     x <- as.data.frame(x)
-  }
   types <- sapply(x, class)
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
