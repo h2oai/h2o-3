@@ -267,8 +267,8 @@ public class GLMBasic extends TestNGUtil {
 		}
 		catch (IllegalArgumentException ex) {
 			// can't predict testcase
-			Assert.fail("Test is failed. It can't predict");
 			ex.printStackTrace();
+			Assert.fail("Test is failed. It can't predict",ex);
 		}
 		finally {
 			if (trainFrame != null) {
@@ -302,19 +302,9 @@ public class GLMBasic extends TestNGUtil {
 
 		String result = null;
 
-		for (Param p : params) {
-			if (p.isAutoSet) {
-				result = p.validate(rawInput[tcHeaders.indexOf(p.name)]);
-				if (result != null) {
-					return result;
-				}
-			}
-		}
-
 		String dataset_directory = rawInput[tcHeaders.indexOf("dataset_directory")].trim();
 		String train_dataset_id = rawInput[tcHeaders.indexOf("train_dataset_id")].trim();
 		String train_dataset_filename = rawInput[tcHeaders.indexOf("train_dataset_filename")].trim();
-		String response_column = rawInput[tcHeaders.indexOf("_response_column")].trim();
 
 		if (StringUtils.isEmpty(dataset_directory)) {
 			result = "Dataset directory is empty";
@@ -322,8 +312,8 @@ public class GLMBasic extends TestNGUtil {
 		else if (StringUtils.isEmpty(train_dataset_id) || StringUtils.isEmpty(train_dataset_filename)) {
 			result = "Dataset files is empty";
 		}
-		else if (StringUtils.isEmpty(response_column)) {
-			result = "_response_column is empty";
+		else{
+			result = Param.validateAutoSetParams(params, rawInput, tcHeaders);
 		}
 
 		if(result != null){

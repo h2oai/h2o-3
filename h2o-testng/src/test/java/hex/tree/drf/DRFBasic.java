@@ -93,6 +93,13 @@ public class DRFBasic extends TestNGUtil {
 				_basic(testcase_id, test_description, DRFParameter, rawInput);
 			}
 		}
+		catch (Exception ex) {
+			System.out.println("Testcase is failed");
+			ex.printStackTrace();
+			if(!isNegativeTestcase(rawInput)){
+				Assert.fail("Testcase is failed",ex);
+			}
+		}
 		finally {
 
 			// wait 100 mili-sec for output/error to be stored
@@ -144,15 +151,19 @@ public class DRFBasic extends TestNGUtil {
 		}
 		catch (IllegalArgumentException ex) {
 			// can't predict testcase
-			ex.printStackTrace();
 			System.out.println("Cannot predit testcase " + testcase_id);
 			System.out.println("Testcase is failed");
-			Assert.fail("Testcase is failed");
+			ex.printStackTrace();
+			if(!isNegativeTestcase(rawInput)){
+				Assert.fail("Testcase is failed",ex);
+			}
 		}
 		catch(Exception ex){
-			ex.printStackTrace();
 			System.out.println("Testcase is failed");
-			Assert.fail("Testcase is failed.");
+			ex.printStackTrace();
+			if(!isNegativeTestcase(rawInput)){
+				Assert.fail("Testcase is failed",ex);
+			}
 		}
 		finally {
 			if (job != null) {
@@ -182,19 +193,9 @@ public class DRFBasic extends TestNGUtil {
 		System.out.println("Validate DRFParameters object with testcase: " + input[tcHeaders.indexOf("testcase_id")]);
 		String result = null;
 
-		for (Param p : params) {
-			if (p.isAutoSet) {
-				result = p.validate(input[tcHeaders.indexOf(p.name)]);
-				if (result != null) {
-					return result;
-				}
-			}
-		}
-
 		String dataset_directory = input[tcHeaders.indexOf("dataset_directory")].trim();
 		String train_dataset_id = input[tcHeaders.indexOf("train_dataset_id")];
 		String train_dataset_filename = input[tcHeaders.indexOf("train_dataset_filename")];
-		String response_column = input[tcHeaders.indexOf("_response_column")];
 
 		if (StringUtils.isEmpty(dataset_directory)) {
 			result = "Dataset directory is empty";
@@ -202,8 +203,8 @@ public class DRFBasic extends TestNGUtil {
 		else if (StringUtils.isEmpty(train_dataset_id) || StringUtils.isEmpty(train_dataset_filename)) {
 			result = "Dataset files is empty";
 		}
-		else if (StringUtils.isEmpty(response_column)) {
-			result = "_response_column is empty";
+		else{
+			result = Param.validateAutoSetParams(params, input, tcHeaders);
 		}
 
 		if (result != null) {
@@ -310,6 +311,17 @@ public class DRFBasic extends TestNGUtil {
 		System.out.println("Create success DRFParameters object.");
 		return drfParams;
 	}
+	
+	private boolean isNegativeTestcase(String[] input) {
+
+		final String negative = "negative";
+
+		if (negative.equals(input[tcHeaders.indexOf("testcase_type")].trim())) {
+			return true;
+		}
+
+		return false;
+	}
 
 	private static Param[] params = new Param[] {
 		
@@ -333,7 +345,7 @@ public class DRFBasic extends TestNGUtil {
 		new Param("_build_tree_one_node", "boolean"),
 		new Param("_class_sampling_factors", "float[]"),
 		
-		new Param("_response_column", "String"),
+		new Param("_response_column", "String",true,true),
 	}; 
 	
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
@@ -341,7 +353,8 @@ public class DRFBasic extends TestNGUtil {
 			"1",
 			"test_description",
 			"testcase_id",
-
+			"testcase_type",
+			
 			// DRF Parameters
 			"regression",
 			"classification",

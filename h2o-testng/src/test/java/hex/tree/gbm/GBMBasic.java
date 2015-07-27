@@ -169,19 +169,9 @@ public class GBMBasic extends TestNGUtil {
 		System.out.println("Validate Parameters object with testcase: " + input[tcHeaders.indexOf("testcase_id")]);
 		String result = null;
 
-		for (Param p : params) {
-			if (p.isAutoSet) {
-				result = p.validate(input[tcHeaders.indexOf(p.name)]);
-				if (result != null) {
-					return result;
-				}
-			}
-		}
-
 		String dataset_directory = input[tcHeaders.indexOf("dataset_directory")].trim();
 		String train_dataset_id = input[tcHeaders.indexOf("train_dataset_id")];
 		String train_dataset_filename = input[tcHeaders.indexOf("train_dataset_filename")];
-		String response_column = input[tcHeaders.indexOf("_response_column")];
 
 		if (StringUtils.isEmpty(dataset_directory)) {
 			result = "Dataset directory is empty";
@@ -189,8 +179,8 @@ public class GBMBasic extends TestNGUtil {
 		else if (StringUtils.isEmpty(train_dataset_id) || StringUtils.isEmpty(train_dataset_filename)) {
 			result = "Dataset files is empty";
 		}
-		else if (StringUtils.isEmpty(response_column)) {
-			result = "_response_column is empty";
+		else {
+			result = Param.validateAutoSetParams(params, input, tcHeaders);
 		}
 
 		if (result != null) {
