@@ -50,7 +50,7 @@ def _add_col_to_x_and_validation_x(col_name,x,validation_x,kwargs,xval=False):
   # training_frame
   if col_name not in x._col_names:
     if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `" +
-                                                               col_name + "`not part of `target`")
+                                                               col_name + "`not part of `x`")
     if not col_name in kwargs["training_frame"].col_names():
       raise ValueError("`" + col_name + "` wasn't found in the training_frame. Only these columns were found: "
                                         "{0}".format(kwargs["training_frame"].col_names()))
@@ -83,7 +83,7 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
 
   if "weights_column" in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["weights_column"],x, validation_x, kwargs)
   if "offset_column"  in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["offset_column"], x, validation_x, kwargs)
-  if "folds_column"   in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["folds_column"],  x, validation_x, kwargs, xval=True)
+  if "fold_column"   in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["fold_column"],  x, validation_x, kwargs, xval=True)
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
