@@ -27,3 +27,18 @@
   key
 }
 
+
+#` Fetch the first N rows on demand
+.fetch.data <- function(x,N) {
+  stopifnot(is.Frame(x))
+  stopifnot(!missing(N))
+  .eval.frame(x)
+  if( is.null(x$data) || nrow(x$data) < N ) {
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", .id(x)))$frames[[1]]
+    cnames <- unlist(lapply(res$columns, function(c) c$label))
+    print(res)
+    stop("unimplemented")
+  }
+  x$data
+}
+

@@ -25,18 +25,25 @@
 #` reclaim them.  GC will also visit expressions that went dead previously,
 #` there is a 'nuked' flag to prevent double-deletion.
 #`
-#` AST Node/Environment Fields
-#` E$op       <- Operation or opcode, a string
-#` E$children <- A (possibly empty) list of dependent Nodes
+#` Frame/AST Node/environment Fields
+#` E$op       <- Operation or opcode that produces this Frame, a string
+#` E$children <- A (possibly empty) list of dependent Nodes.  Removed for evaluated ops
 #` # Only one of the next two fields is present:
-#` # If the ID field is present, this Node is user-managed, and will NOT be
-#` # deleted by GC or refcnting.  The refcnt field is missing.
+#` # If the ID field is present the refcnt field is missing.  This Node is
+#` # user-managed, and will NOT be deleted by GC or refcnting.
 #` E$id       <- A user-specified name, used in the H2O cluster; the refcnt field is missing
-#` # If the REFCNT field is present, this Node is client-managed, and will be
-#` # deleted by GC or refcnt falling to zero.  The ID field is missing.
+#` # If the REFCNT field is present, then the ID field is missing.  This Node
+#` # is client-managed, and will be deleted by GC or refcnt falling to zero.
 #` E$refcnt   <- A count of outstanding references; when it falls to zero the item is deleted.  The ID field is missing
 #` E$nuked    <- This REFCNT'd Node has been deleted from H2O
 #` E$visit    <- A temporary field used to manage DAG visitation
+#` 
+#` # A number of fields represent cached queries of an evaluated frame
+#` E$data   <- an R dataframe holding the first N (typically 10) rows and all cols of the frame
+
+.defaultHeadRows <- 10
+
+`is.Frame` <- function(x) class(x)[1]=="Frame"
 
 # GC Finalizer - called when GC collects a Frame
 # Must be defined ahead of constructors
@@ -44,7 +51,7 @@
 
 # Ref-count up-count, only if a Frame.  Return x, for flow coding
 .refup <- function(x) {
-  if( class(x)[1] == "Frame" && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
+  if( is.Frame(x) && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
   x
 }
 
@@ -63,74 +70,6 @@
   }
 }
 
-# Pick a name for this Node.  Just use the evironment's C pointer address, if
-# one's not provided
-.id <- function(x) {
-  if( is.null(x$id ) ) {
-    str <- capture.output(str(x))
-    substring(str,nchar(str)-19,nchar(str)-2)
-  } else x$id
-}
-
-# Internal recursive printer
-.pfr <- function(x){
-  if( !is.null(x$visit) || is.null(x$refcnt) ) return(.id(x))
-  x$visit <- TRUE
-  str <- if( x$refcnt > 1 ) paste0(.id(x),"<- ")
-  res <- paste(sapply(x$children, function(child) { if( is.environment(child) ) .pfr(child) else child }),collapse=" ")
-  paste0(str,"(",x$op," ",res," #",x$refcnt,")")
-}
-
-# Internal recursive clear-visit-flag function, goes hand-n-hand with a
-# recursive visitor
-.clearvisit <- function(x) {
-  if( is.null(x$visit) ) return()
-  rm("visit",envir=x);
-  lapply(x$children, function(child) { if( is.environment(child) ) .clearvisit(child) } )
-}
-
-#` S3 overload print
-#` Pretty print the reachable execution DAG from this Frame
-"print.Frame" <- function(x) { print(.pfr(x)); .clearvisit(x); invisible() }
-
-#'
-#' Describe an Frame object
-#'
-#' @param object An Frame object.
-#' @param cols Logical indicating whether or not to do the str for all columns.
-#' @param \dots Extra args
-#' @export
-#str.Frame <- function(object, cols=FALSE, ...) {
-#  if (length(l <- list(...)) && any("give.length" == names(l)))
-#    invisible(NextMethod("str", ...))
-#  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
-#
-#  if( cols ) {
-#    nc <- ncol(object)
-#    nr <- nrow(object)
-#    cc <- colnames(object)
-#    width <- max(nchar(cc))
-#    df <- as.data.frame(object[1L:10L,])
-#    isfactor <- as.data.frame(is.factor(object))[,1]
-#    num.levels <- as.data.frame(h2o.nlevels(object))[,1]
-#    lvls <- as.data.frame(h2o.levels(object))
-#    # header statement
-#    cat("\nH2OFrame '", object@id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-#    l <- list()
-#    for( i in 1:nc ) {
-#      cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
-#      first.10.rows <- df[,i]
-#      if( isfactor[i] ) {
-#        nl <- num.levels[i]
-#        lvls.print <- lvls[1L:min(nl,2L),i]
-#        cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
-#        cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
-#      } else
-#        cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
-#    }
-#  }
-#}
-
 #
 # Overload Assignment!
 #
@@ -146,7 +85,7 @@ assign("<-", function(x,y) {
           eval(xsub,parent.frame())
   ))
   # If the OLD value was a Frame, down the ref-cnt
-  if( class(e) == "Fr" ) .refdown(e,xsub);
+  if( is.Frame(e) ) .refdown(e,xsub);
   # If the NEW value is about to be a Frame, up the ref-cnt
   .refup(y)
   # Dispatch to various assignment techniques
@@ -154,28 +93,15 @@ assign("<-", function(x,y) {
     assign(as.character(xsub), y, envir=parent.frame())
   else
     eval(as.call(list(.Primitive("<-"),xsub,y)), parent.frame())
-
-  #if( is.symbol(xsub) || (is.character(xsub) && length(xsub)==1) )
-  #  assign(as.character(xsub), y, envir=parent.frame())
-  #else if (xsub[[1]]=="$") {
-  #  assign("lhs",eval(xsub[[2]], parent.frame(), parent.frame()))
-  #  if( typeof(lhs)=="list" )
-  #    `=`(lhs[[as.character(xsub[[3]])]],y)
-  #  else 
-  #    assign(as.character(xsub[[3]]), y, envir=eval(xsub[[2]], parent.frame(), parent.frame()))
-  #} else
-  #  stop("NYI xsub = ", deparse(xsub))
   invisible(y)
 })
 
-
 # Make a raw named data frame.  The key will exist on the server, and will be
-# the passed-in ID.  Because it is named, it is not GCd
+# the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
 .newFrame <- function(op,id,...) {
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
   assign("op",op,node)
   assign("id",id,node)
-  assign("children",list(...),node)
   node
 }
 
@@ -192,6 +118,108 @@ Ops.Frame <- function(x,y) {
 }
 
 
+# Pick a name for this Node.  Just use the evironment's C pointer address, if
+# one's not provided
+.id <- function(x) {
+  if( is.null(x$id ) ) {
+    str <- capture.output(str(x))
+    paste0("RTMP",substring(str,nchar(str)-19,nchar(str)-2))
+  } else x$id
+}
+
+# Internal recursive clear-visit-flag function, goes hand-n-hand with a
+# recursive visitor
+.clearvisit <- function(x) {
+  if( is.null(x$visit) ) return()
+  rm("visit",envir=x);
+  if( !is.null(x$children))
+    lapply(x$children, function(child) { if( is.environment(child) ) .clearvisit(child) } )
+}
+
+# Internal recursive printer
+.pfr <- function(x){
+  if( !is.null(x$visit) || is.null(x$refcnt) ) return(.id(x))
+  x$visit <- TRUE
+  str <- if( x$refcnt > 1 ) paste0(.id(x),"<- ")
+  res <- ifelse( is.null(x$children), "EVALd",
+                 paste(sapply(x$children, function(child) { if( is.environment(child) ) .pfr(child) else child }),collapse=" "))
+  paste0(str,"(",x$op," ",res," #",x$refcnt,")")
+}
+
+#` Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
+pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); invisible() }
+
+#` Evaluate this Frame on demand
+.eval.frame <- function(x) {
+  stopifnot(is.Frame(x))
+  if( !is.null(x$children) ) {
+    str <- .pfr(x)
+    print(paste0("CURRENTS: ",str))
+    stop("unimplemented")
+    rm("children",envir=x)
+  }
+  x
+}
+
+#` Dimensions of an H2O Frame
+dim.Frame <- function(x) .Primitive("dim")(.fetch.data(x,1))
+
+#' @rdname H2OFrame-class
+#' @export
+`show.Frame` <- function(x) {
+  print("CRUNK")
+  nr <- nrow(x)
+  print(nr)
+  nc <- ncol(x)
+  cat("Frame with ",
+      nr, ifelse(!is.na(nr) && nr == 1L, " row and ", " rows and "),
+      nc, ifelse(!is.na(nc) && nc == 1L, " column\n", " columns\n"), sep = "")
+  if (!is.na(nr)) {
+    if( nr > 10L ) cat("\nFirst 10 rows:\n")
+    cat(head(x, 10L))
+  }
+  stop("show.Frame needs to be debugged")
+  invisible(x)
+}
+
+#'
+#' Describe an Frame
+#'
+#' @param x An Frame.
+#' @param cols Logical indicating whether or not to do the str for all columns.
+#' @param \dots Extra args
+#' @export
+#str.Frame <- function(x, cols=FALSE, ...) {
+#  if (length(l <- list(...)) && any("give.length" == names(l)))
+#    invisible(NextMethod("str", ...))
+#  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
+#
+#  if( cols ) {
+#    nc <- ncol(x)
+#    nr <- nrow(x)
+#    cc <- colnames(x)
+#    width <- max(nchar(cc))
+#    df <- as.data.frame(x[1L:10L,])
+#    isfactor <- as.data.frame(is.factor(x))[,1]
+#    num.levels <- as.data.frame(h2o.nlevels(x))[,1]
+#    lvls <- as.data.frame(h2o.levels(x))
+#    # header statement
+#    cat("\nH2OFrame '", x@id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+#    l <- list()
+#    for( i in 1:nc ) {
+#      cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+#      first.10.rows <- df[,i]
+#      if( isfactor[i] ) {
+#        nl <- num.levels[i]
+#        lvls.print <- lvls[1L:min(nl,2L),i]
+#        cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
+#        cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
+#      } else
+#        cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+#    }
+#  }
+#}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
@@ -201,17 +229,17 @@ Ops.Frame <- function(x,y) {
 #'
 #' Import a local R data frame to the H2O cloud.
 #'
-#' @param object An \code{R} data frame.
+#' @param x An \code{R} data frame.
 #' @param destination_frame A string with the desired name for the H2O Frame.
 #' @export
-as.h2o <- function(object, destination_frame= "") {
+as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(!is.data.frame(object)) {
-    object <- as.data.frame(object)
+  if(!is.data.frame(x)) {
+    x <- as.data.frame(x)
   }
-  types <- sapply(object, class)
+  types <- sapply(x, class)
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
   types <- gsub("complex", "numeric", types)
@@ -220,12 +248,70 @@ as.h2o <- function(object, destination_frame= "") {
   types <- gsub("character", "string", types)
   types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(object, file = tmpf, row.names = FALSE, na="NA_h2o")
+  write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                        col.names=colnames(object, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(object)))
+                        col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
   file.remove(tmpf)
   h2f
 }
+
+#'
+#' Converts a Parsed H2O data into a Data Frame
+#'
+#' Downloads the H2O data and then scans it in to an R data frame.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param ... Further arguments to be passed down from other methods.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' as.data.frame(prostate.hex)
+#' @export
+#as.data.frame.H2OFrame <- function(x, ...) {
+#  .h2o.eval.frame(x)
+#
+#  # Versions of R prior to 3.1 should not use hex string.
+#  # Versions of R including 3.1 and later should use hex string.
+#  use_hex_string <- getRversion() >= "3.1"
+#  conn = h2o.getConnection()
+#
+#  url <- paste0('http://', conn@ip, ':', conn@port,
+#                '/3/DownloadDataset',
+#                '?frame_id=', URLencode(x@id),
+#                '&hex_string=', as.numeric(use_hex_string))
+#
+#  ttt <- getURL(url)
+#  n <- nchar(ttt)
+#
+#  # Delete last 1 or 2 characters if it's a newline.
+#  # Handle \r\n (for windows) or just \n (for not windows).
+#  chars_to_trim <- 0L
+#  if (n >= 2L) {
+#      c <- substr(ttt, n, n)
+#      if (c == "\n") {
+#          chars_to_trim <- chars_to_trim + 1L
+#      }
+#      if (chars_to_trim > 0L) {
+#          c <- substr(ttt, n-1L, n-1L)
+#          if (c == "\r") {
+#              chars_to_trim <- chars_to_trim + 1L
+#          }
+#      }
+#  }
+#
+#  if (chars_to_trim > 0L) {
+#    ttt2 <- substr(ttt, 1L, n-chars_to_trim)
+#    # Is this going to use an extra copy?  Or should we assign directly to ttt?
+#    ttt <- ttt2
+#  }
+#
+#  # Substitute NAs for blank cells rather than skipping
+#  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
+#  # df <- read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
+#  close(tcon)
+#  df
+#}
 
 .h2o.gc <- function() {
   print("H2O triggered a GC in R")
