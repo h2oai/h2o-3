@@ -57,7 +57,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds;
-    public boolean _keep_cross_validation_splits;
     public boolean _keep_cross_validation_predictions;
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo
