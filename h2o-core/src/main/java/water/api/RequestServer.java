@@ -632,7 +632,7 @@ public class RequestServer extends NanoHTTPD {
       else if (e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
 
-      Log.warn("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
       return wrap(new H2OErrorV3().fillFromImpl(error), type);
