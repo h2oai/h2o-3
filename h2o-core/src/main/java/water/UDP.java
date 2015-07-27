@@ -66,10 +66,10 @@ public abstract class UDP {
   }
 
   // Dispatch on the enum opcode and return a pretty string
-  static private final byte[] pbuf = new byte[16];
+  static private final byte[] pbuf = new byte[18];
   static public String printx16( long lo, long hi ) {
-    UnsafeUtils.set8(pbuf, 0, lo);
-    UnsafeUtils.set8(pbuf, 8, hi);
+    UnsafeUtils.set8(pbuf, 2, lo);
+    UnsafeUtils.set8(pbuf, 10, hi);
     return udp.UDPS[(int)(lo&0xFF)]._udp.print16(new AutoBuffer(pbuf));
   }
   private static class IO_record extends UDP {

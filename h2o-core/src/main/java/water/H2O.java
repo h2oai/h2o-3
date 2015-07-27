@@ -232,6 +232,7 @@ final public class H2O {
 
     /** -beta, -experimental */
     public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
+    public boolean useUDP = false;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -1203,7 +1204,9 @@ final public class H2O {
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread().start();
+    new TCPReceiverThread(NetworkInit._tcpSocketBig, false).start();
+    if(!H2O.ARGS.useUDP)
+      new TCPReceiverThread(NetworkInit._tcpSocketSmall, true).start();
     // Register the default Requests
     Object x = water.api.RequestServer.class;
   }

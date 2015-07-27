@@ -1,5 +1,6 @@
 package water;
 
+import water.AutoBuffer.BBPool;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.DocGen.HTML;
@@ -8,6 +9,7 @@ import water.util.UnsafeUtils;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
@@ -211,6 +213,56 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   private int _socksAvail=_socks.length;
   // Count of concurrent TCP requests both incoming and outgoing
   static final AtomicInteger TCPS = new AtomicInteger(0);
+
+  private SocketChannel _rawChannel;
+
+
+
+
+  /**
+   * Send small message as raw bytes via tcp
+   * @param bb
+   */
+  public synchronized void sendRaw(ByteBuffer bb) {
+    int sleep = 0;
+    int sz = bb.limit();
+    while (true) {
+      bb.position(0);
+      bb.limit(sz);
+      if (_rawChannel == null || !_rawChannel.isOpen() || !_rawChannel.isConnected()) { // open the channel
+        // Must make a fresh socket
+        try {
+          SocketChannel sock = SocketChannel.open();
+          sock.socket().setReuseAddress(true);
+          sock.socket().setSendBufferSize(AutoBuffer.BBP_SML.size());
+          InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort() + 1);
+          boolean res = sock.connect(isa);
+          sock.configureBlocking(false);
+          assert res && !sock.isConnectionPending() && !sock.isBlocking() && sock.isConnected() && sock.isOpen();
+          _rawChannel = sock;
+        } catch(IOException ioe) {
+          continue;
+        }
+      }
+      try {
+        while (bb.hasRemaining())
+          _rawChannel.write(bb);
+        return;
+      } catch (IOException ioe) {
+        try {
+          _rawChannel.close();
+        } catch (Throwable t) {
+        }
+        _rawChannel = null;
+      }
+      if(_rawChannel != null)
+        try {_rawChannel.close();} catch (Throwable t) {}
+      _rawChannel = null;
+      sleep = Math.min(5000,(sleep + 1) << 1);
+      Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
+      try {Thread.sleep(sleep);} catch (InterruptedException e) {}
+    }
+  }
   SocketChannel getTCPSocket() throws IOException {
     // Under lock, claim an existing open socket if possible
     synchronized(this) {
@@ -221,7 +273,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
       SocketChannel sock = _socks[--_socksAvail];
       if( sock != null ) {
         if( sock.isOpen() ) return sock; // Return existing socket!
-        // Else its an already-closed socket, lower open TCP count
+        // Else it's an already-closed socket, lower open TCP count
         assert TCPS.get() > 0;
         TCPS.decrementAndGet();
       }
@@ -385,17 +437,16 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         assert r._computed : "Found RPCCall not computed "+r._tsknum;
         boolean forceTCP;
         DTask dt = r._dt;
-        if(forceTCP = (r != null && ++r._ackResendCnt  >= H2O.ARGS.switch_tcp) && dt != null)
-          Log.warn("Got " + r._ackResendCnt + " resends on ack for task # " + r._tsknum + ", class = " + r._dt.getClass().getSimpleName() + ", enforcing TCP");
+        if(++r._ackResendCnt  % 10 == 0)
+          Log.warn("Got " + r._ackResendCnt + " resends on ack for task # " + r._tsknum + ", class = " + r._dt.getClass().getSimpleName());
         // RPC from somebody who dropped out of cloud?
         if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
             // Timedout client?
             (r._client._heartbeat._client && r._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
           r._client.remove_task_tracking(r._tsknum);
         } else if( r._dt != null ) { // Not yet seen the ACKACK?
-          r.resend_ack(forceTCP);            // Resend ACK, hoping for ACKACK
-          if(!forceTCP)
-            PENDING.add(r);            // And queue up to send again
+          r.resend_ack();            // Resend ACK, hoping for ACKACK
+          PENDING.add(r);            // And queue up to send again
         }
       }
     }

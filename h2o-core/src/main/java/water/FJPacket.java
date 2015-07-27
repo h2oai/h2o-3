@@ -1,6 +1,7 @@
 package water;
 
 import water.H2O.H2OCountedCompleter;
+import water.UDP.udp;
 
 /**
  * A class to handle the work of a received UDP packet.  Typically we'll do a
@@ -32,5 +33,7 @@ class FJPacket extends H2OCountedCompleter {
     return true;
   }
   // Run at max priority until we decrypt the packet enough to get priorities out
-  @Override protected byte priority() { return UDP.udp.UDPS[_ctrl]._prior; }
+  @Override protected byte priority() {
+    return UDP.udp.UDPS[_ctrl]._prior;
+  }
 }

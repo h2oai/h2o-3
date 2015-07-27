@@ -115,7 +115,7 @@ public /* final */ class AutoBuffer {
     // Read Inet from socket, port from the stream, figure out H2ONode
     _h2o = H2ONode.intern(sock.socket().getInetAddress(), getPort());
     _firstPage = true;          // Yes, must reset this.
-    assert _h2o != null && _h2o != H2O.SELF;
+    assert _h2o != null && _h2o != H2O.SELF:"h2o = " + _h2o + " SELF = " + H2O.SELF;
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
   }
@@ -125,6 +125,7 @@ public /* final */ class AutoBuffer {
   // requests will send via UDP.
   AutoBuffer( H2ONode h2o ) {
     _bb = BBP_SML.make();       // Get a small / UDP-sized ByteBuffer
+    _bb.position(2);            // first 2 bytes reserved for message size
     _chan = null;               // Channel made lazily only if we write alot
     _h2o = h2o;
     _read = false;              // Writing by default
@@ -154,6 +155,16 @@ public /* final */ class AutoBuffer {
     _firstPage = true;
     _chan = null;
     _h2o = H2ONode.intern(pack.getAddress(), getPort());
+    _persist = 0;               // No persistance
+  }
+
+  public AutoBuffer( H2ONode h2o, byte[] buf ) {
+    _h2o = h2o;
+    _bb = ByteBuffer.wrap(buf).order(ByteOrder.nativeOrder());
+    _bb.position(2);
+    _chan = null;
+    _read = true;
+    _firstPage = true;
     _persist = 0;               // No persistance
   }
 
@@ -315,8 +326,8 @@ public /* final */ class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-  public final int close() { return close(false);}
-  public final int close(boolean forceTCP) {
+
+  public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
     assert _h2o != null || _chan != null; // Byte-array backed should not be closed
@@ -327,12 +338,12 @@ public /* final */ class AutoBuffer {
         // For small-packet write, send via UDP.  Since nothing is sent until
         // now, this close() call trivially orders - since the reader will not
         // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU && !forceTCP) return udpSend();
+        if( _bb.position() < MTU) return udpSend();
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
-      if( hasTCP() || forceTCP ) {          // TCP connection?
+      if( hasTCP()) {          // TCP connection?
         try {
           if( _read ) {         // Reader?
             int x = get1U();    // Read 1 more byte
@@ -480,11 +491,16 @@ public /* final */ class AutoBuffer {
     assert _chan == null;
     TimeLine.record_send(this,false);
     _size += _bb.position();
+    _bb.putShort(0,(short)_size);
+    _bb.put((byte)0xef);
     _bb.flip();                 // Flip for sending
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
       water.init.NetworkInit.multicast(_bb);
     } else {                    // Else single-cast send
-      water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
+      if(H2O.ARGS.useUDP)
+        water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
+      else
+        _h2o.sendRaw(_bb);
     }
     return 0;                   // Flow-coding
   }
@@ -494,6 +510,7 @@ public /* final */ class AutoBuffer {
     assert _read;
     _read = false;
     _bb.clear();
+    _bb.position(2);
     _firstPage = true;
     return this;
   }
@@ -556,7 +573,7 @@ public /* final */ class AutoBuffer {
   /** Put as needed to keep from overflowing the ByteBuffer. */
   private ByteBuffer putSp( int sz ) {
     assert !_read;
-    if( sz <= _bb.remaining() ) return _bb;
+    if( sz <= _bb.remaining()-1 ) return _bb; // leave one byte in the end for the sentinel marker
     return sendPartial();
   }
   // Do something with partial results, because the ByteBuffer is full.
@@ -575,8 +592,10 @@ public /* final */ class AutoBuffer {
     }
     // Doing I/O with the full ByteBuffer - ship partial results
     _size += _bb.position();
-    if( _chan == null )
-      TimeLine.record_send(this,true);
+    if( _chan == null ) {
+      _bb.putShort(0,(short)0); // don't know what the full message size is, set size to 0
+      TimeLine.record_send(this, true);
+    }
     _bb.flip(); // Prep for writing.
     try {
       if( _chan == null )
@@ -845,25 +864,23 @@ public /* final */ class AutoBuffer {
     return sz;
   }
 
-
   // -----------------------------------------------
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
-  int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
+  int  getCtrl( ) { return getSz(2+1).get(2+0)&0xFF; }
   // Get the port in next 2 bytes
-  int  getPort( ) { return getSz(1+2).getChar(1); }
+  int  getPort( ) { return getSz(2+1+2).getChar(2+1); }
   // Get the task# in the next 4 bytes
-  int  getTask( ) { return getSz(1+2+4).getInt(1+2); }
+  int  getTask( ) { return getSz(2+1+2+4).getInt(2+1+2); }
   // Get the flag in the next 1 byte
-  int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
+  int  getFlag( ) { return getSz(2+1+2+4+1).get(2+1+2+4); }
 
   // Set the ctrl, port, task.  Ready to write more bytes afterwards
   AutoBuffer putUdp (UDP.udp type) {
-    assert _bb.position()==0;
-    putSp(1+2);
+    assert _bb.position() == 2;
+    putSp(_bb.position()+1+2);
     _bb.put    ((byte)type.ordinal());
     _bb.putChar((char)H2O.H2O_PORT  ); // Outgoing port is always the sender's (me) port
-    assert _bb.position()==1+2;
     return this;
   }
 
@@ -871,8 +888,8 @@ public /* final */ class AutoBuffer {
     return putUdp(type).put4(tasknum);
   }
   AutoBuffer putTask(int ctrl, int tasknum) {
-    assert _bb.position()==0;
-    putSp(1+2+4);
+    assert _bb.position() == 2;
+    putSp(_bb.position()+1+2+4);
     _bb.put((byte)ctrl).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }

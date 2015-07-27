@@ -92,12 +92,25 @@ public class TimeLine extends UDP {
   }
 
   private static void record1( AutoBuffer b, boolean tcp, int sr, int drop) {
-    if( b.position() < 16 ) b.position(16);
-    final long ns = System.nanoTime();
-    record2(b._h2o, ns, tcp,sr,drop,b.get8(0),b.get8(8));
+    try {
+      int lim = b._bb.limit();
+      int pos = b._bb.position();
+      b._bb.limit(18);
+      long lo = b.get8(2), hi = b.get8(10);
+      final long ns = System.nanoTime();
+      record2(b._h2o, ns, tcp, sr, drop, lo, hi);
+      b._bb.limit(lim);
+      b._bb.position(pos);
+    } catch(Throwable t) {
+      System.err.println("Timeline record failed, " + t.toString());
+    }
   }
-  static void record_send( AutoBuffer b, boolean tcp)           { record1(b,tcp,0,   0); }
-  static void record_recv( AutoBuffer b, boolean tcp, int drop) { record1(b,tcp,1,drop); }
+  static void record_send( AutoBuffer b, boolean tcp)           {
+    record1(b,tcp,0,   0);
+  }
+  static void record_recv( AutoBuffer b, boolean tcp, int drop) {
+    record1(b,tcp,1,drop);
+  }
 
   // Record a completed I/O event.  The nanosecond time slot is actually nano's-blocked-on-io
 //  static void record_IOclose( AutoBuffer b, int flavor ) {

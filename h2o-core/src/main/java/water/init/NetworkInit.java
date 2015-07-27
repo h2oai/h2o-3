@@ -306,6 +306,8 @@ public class NetworkInit {
   }
 
   public static DatagramChannel _udpSocket;
+  public static ServerSocketChannel _tcpSocketBig;
+  public static ServerSocketChannel _tcpSocketSmall;
   public static ServerSocket _apiSocket;
   // Default NIO Datagram channel
   public static DatagramChannel CLOUD_DGRAM;
@@ -345,27 +347,35 @@ public class NetworkInit {
         InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
         _udpSocket.socket().bind(isa);
         // Bind to the TCP socket also
-        TCPReceiverThread.SOCK = ServerSocketChannel.open();
-        TCPReceiverThread.SOCK.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
-        TCPReceiverThread.SOCK.socket().bind(isa);
+        _tcpSocketBig = ServerSocketChannel.open();
+        _tcpSocketBig.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+        _tcpSocketBig.socket().bind(isa);
 
+        if(!H2O.ARGS.useUDP) {
+          _tcpSocketSmall = ServerSocketChannel.open();
+          _tcpSocketBig.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+          InetSocketAddress isa2 = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT+1);
+          _tcpSocketSmall.socket().bind(isa2);
+        }
         _apiSocket.close();
         H2O.getJetty().start(H2O.ARGS.ip, H2O.API_PORT);
         break;
       } catch (Exception e) {
         if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
-        if( TCPReceiverThread.SOCK != null ) try { TCPReceiverThread.SOCK.close(); } catch( IOException ie ) { }
+        if( _tcpSocketBig != null ) try { _tcpSocketBig.close(); } catch( IOException ie ) { }
+        if( _tcpSocketSmall != null ) try { _tcpSocketSmall.close(); } catch( IOException ie ) { }
         _apiSocket = null;
         _udpSocket = null;
-        TCPReceiverThread.SOCK = null;
+        _tcpSocketBig = null;
+        _tcpSocketSmall = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
               " some of the required ports " + H2O.ARGS.port +
               ", " + (H2O.ARGS.port+1) +
               " are not available, change -port PORT and try again.");
       }
-      H2O.API_PORT += 2;
+      H2O.API_PORT += 4;
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
