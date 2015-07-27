@@ -2,8 +2,10 @@ package hex.tree;
 
 import hex.*;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,15 +28,49 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
 
-    // TRUE: Continue extending an existing checkpointed model
-    // FALSE: Overwrite any prior model
-    public boolean _checkpoint;
-
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
 
     public boolean _build_tree_one_node = false;
+
     public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
+
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
+
+    /** Fields which can be modified if checkpoint is specified.
+     * FIXME: should be defined in Schema API annotation
+     */
+    private static String[] MODIFIABLE_BY_CHECKPOINT_FIELDS = new String[] { "_ntrees", "_max_depth", "_min_rows", "_r2_stopping"};
+
+    protected String[] getCheckpointModifiableFields() {
+      return MODIFIABLE_BY_CHECKPOINT_FIELDS;
+    }
+
+    /** This method will take actual parameters and validate them with parameters of
+     * requested checkpoint. In case of problem, it throws an API exception.
+     *
+     * @param checkpointParameters checkpoint parameters
+     */
+    public void validateWithCheckpoint(SharedTreeParameters checkpointParameters) {
+      String[] fieldNames = getCheckpointModifiableFields();
+      Field[] allFields = this.getClass().getDeclaredFields();
+      for (Field f : allFields) {
+        for (String modifiableFieldName : fieldNames) {
+          // Skip modifiable fields
+          if (modifiableFieldName.equals(f.getName())) {
+            continue;
+          }
+          // Make sure that value in fields are same!
+
+          try {
+            if (!PojoUtils.equals(this, f, checkpointParameters, checkpointParameters.getClass().getDeclaredField(f.getName()))) {
+              throw new H2OIllegalArgumentException(f.getName(), "TreeBuilder", "Field cannot be modified if checkpoint is specified!");
+            }
+          } catch (NoSuchFieldException e) {
+            throw new H2OIllegalArgumentException(f.getName(), "TreeBuilder", "Field is not supported by checkpoint!");
+          }
+        }
+      }
+    }
   }
 
   @Override

@@ -810,6 +810,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _vresponse = null;
     }
 
+    if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
+      error("_checkpoint", "Checkpoint has to point to existing model!");
+    }
+
     assert(_weights != null == hasWeightCol());
     assert(_parms._weights_column != null == hasWeightCol());
     assert(_offset != null == hasOffsetCol());
