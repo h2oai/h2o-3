@@ -52,7 +52,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   .h2o.__waitOnJob(res$job$key$name)
 
   # Return a new Frame object
-  h2o.getFrame(id=hex)
+  .newFrame("Parse",id=hex)
 }
 
 #'

@@ -51,7 +51,7 @@
 # Ref-count down-count.  If it goes to zero, recursively ref-down-count the
 # children, plus also remove the backing H2O store
 .refdown <- function(x,xsub) {
-  if( !is.null(x$id) ) return(); # Named, no refcnt, no GC
+  if( is.null(x$refcnt) ) return(); # Named, no refcnt, no GC
   # Ok to be here once from GC, and once from killing last link calling
   # .refdown - hence might be zero but never negative
   stopifnot(x$refcnt >= 0 )
@@ -74,7 +74,7 @@
 
 # Internal recursive printer
 .pfr <- function(x){
-  if( !is.null(x$visit) ) return(.id(x))
+  if( !is.null(x$visit) || is.null(x$refcnt) ) return(.id(x))
   x$visit <- TRUE
   str <- if( x$refcnt > 1 ) paste0(.id(x),"<- ")
   res <- paste(sapply(x$children, function(child) { if( is.environment(child) ) .pfr(child) else child }),collapse=" ")
@@ -150,29 +150,38 @@ assign("<-", function(x,y) {
   # If the NEW value is about to be a Frame, up the ref-cnt
   .refup(y)
   # Dispatch to various assignment techniques
-  if( is.symbol(xsub) || (is.character(xsub) && length(xsub)==1) )
+  if (is.symbol(xsub))
     assign(as.character(xsub), y, envir=parent.frame())
-  else if (xsub[[1]]=="$")
-    assign(as.character(xsub[[3]]), y, envir=eval(xsub[[2]], parent.frame(), parent.frame()))
   else
-    stop("NYI xsub = ", deparse(xsub))
+    eval(as.call(list(.Primitive("<-"),xsub,y)), parent.frame())
+
+  #if( is.symbol(xsub) || (is.character(xsub) && length(xsub)==1) )
+  #  assign(as.character(xsub), y, envir=parent.frame())
+  #else if (xsub[[1]]=="$") {
+  #  assign("lhs",eval(xsub[[2]], parent.frame(), parent.frame()))
+  #  if( typeof(lhs)=="list" )
+  #    `=`(lhs[[as.character(xsub[[3]])]],y)
+  #  else 
+  #    assign(as.character(xsub[[3]]), y, envir=eval(xsub[[2]], parent.frame(), parent.frame()))
+  #} else
+  #  stop("NYI xsub = ", deparse(xsub))
   invisible(y)
 })
 
 
 # Make a raw named data frame.  The key will exist on the server, and will be
-# the passed-in ID.  Because it is named, it is no GCd
-.newFrame <- function(op,id) {
+# the passed-in ID.  Because it is named, it is not GCd
+.newFrame <- function(op,id,...) {
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
-  node$op <- op
-  node$id <- id
-  node$children <- list()
+  assign("op",op,node)
+  assign("id",id,node)
+  assign("children",list(...),node)
   node
 }
 
 
-# S3 Overload all standard operators.
-# Just build a lazy-eval structure.
+# S3 Overload all standard operators.  Just build a lazy-eval structure.
+# It is unnamed, and has a refcnt (initialially zero)
 Ops.Frame <- function(x,y) {
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
   node$op <- .Generic
