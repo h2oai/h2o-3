@@ -187,12 +187,6 @@ pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); inv
   x
 }
 
-#` Dimensions of an H2O Frame
-dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
-
-#` Column names of an H2O Frame
-dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
-
 #' Returns the Dimensions of an H2O Frame
 #'
 #' Returns the number of rows and columns for a Frame object.
@@ -204,7 +198,10 @@ dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
 #' @export
-dim.Frame <- function(x) stop("unimplemented")    # .Primitive("dim")(.fetch.data(x,1))
+dim.Frame <- function(x) unlist(list(x$nrow,ncol(.fetch.data(x,1))))
+
+#` Column names of an H2O Frame
+dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
 #' Print An H2O Frame
 #'
