@@ -20,6 +20,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public long _seed = System.nanoTime(); // RNG seed
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
     public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
+    public boolean _impute_missing = false;   // Should missing numeric values be imputed with the column mean?
 
     public enum Method {
       GramSVD, Power, GLRM
