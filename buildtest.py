@@ -7,8 +7,8 @@ ARG_PARSER = argparse.ArgumentParser(description='Runs a process with a specifie
 
 SUCCESS, TIMEOUT_ERR = range(2);
 EXIT_CODE = SUCCESS;
-DIR = "/Users/nkalonia/h2o/h2o-3/h2o-algos";
-CMD = ["sh", "testMultiNode.sh"];
+DIR = "";
+CMD = [];
 OUT_FILE = None;
 TIME_LIMIT = 10;
 
