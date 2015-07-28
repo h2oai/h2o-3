@@ -132,7 +132,8 @@ public class TCPReceiverThread extends Thread {
           TimeLine.record_recv(ab, false, 0);
           H2O.submitTask(new FJPacket(ab, ctrl));
           start += sz + 1;
-          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 2 + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
+          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
+            Log.info("compacting TCP-UDP buffer, position = " + _bb.position() + ", start = " + start);
             _bb.limit(_bb.position());
             _bb.position(start);
             _bb.compact();
