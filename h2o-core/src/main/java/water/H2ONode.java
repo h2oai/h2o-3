@@ -251,7 +251,9 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
           _rawChannel.write(bb);
         return;
       } catch (IOException ioe) {
+        Log.err(ioe);
         try {
+
           _rawChannel.close();
         } catch (Throwable t) {
         }

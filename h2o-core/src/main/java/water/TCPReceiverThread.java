@@ -80,6 +80,18 @@ public class TCPReceiverThread extends Thread {
       _bb = AutoBuffer.BBP_BIG.make();
     }
 
+    public String printBytes(ByteBuffer bb, int start, int sz) {
+      StringBuilder sb = new StringBuilder();
+      int idx = start + sz;
+      try {
+        for (int i = 5; i > 0; --i)
+          sb.append("-" + i + ": " + (0xFF & bb.get(idx - i)) + " ");
+        sb.append("0: " + (0xFF & bb.get(idx)));
+        for (int i = 1; i <= 5; ++i)
+          sb.append("+" + i + ": " + (0xFF & bb.get(idx + i)) + " ");
+      } catch(Throwable t) {}
+      return sb.toString();
+    }
     private int read(int n)  throws IOException {
       if(_bb.remaining() < n)
         throw new IllegalStateException("Reading more bytes than available, reading " + n + " bytes, remaining = " + _bb.remaining());
@@ -108,7 +120,7 @@ public class TCPReceiverThread extends Thread {
           int sz = _bb.getShort(start); // message size in bytes
           assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
           read(start + sz - _bb.position());
-          assert (0xFF & _bb.get(start + sz)) == 0xef:"Missing expected sentinel at the end of the message, likely out of sync, start = " + start + ", size = " + sz;
+          assert (0xFF & _bb.get(start + sz)) == 0xef:"Missing expected sentinel (0xef==239) at the end of the message, likely out of sync, start = " + start + ", size = " + sz + ", bytes = " + printBytes(_bb,start,sz);
           // extract the bytes
           byte[] ary = new byte[Math.max(sz, 18)];
           for (int i = 0; i < sz; ++i)
