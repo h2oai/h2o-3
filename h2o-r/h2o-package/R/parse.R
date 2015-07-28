@@ -62,7 +62,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
 
   # quick sanity checking
-  if( class(data)[1] != "Frame" ) stop("`data` must be an Frame object")
+  stopifnot( is.Frame(data) )
   .key.validate(destination_frame)
   if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
   if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
@@ -85,8 +85,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
   # set the column names
   if( !is.null(col.names) ) {
-    if( is(col.names, "Frame") ) parseSetup.params$column_names <- .collapse.char(colnames(col.names))
-    else                         parseSetup.params$column_names <- .collapse.char(col.names)
+    parseSetup.params$column_names <- .collapse.char(if(is.Frame(col.names)) colnames(col.names) else col.names)
   }
 
   # check the types

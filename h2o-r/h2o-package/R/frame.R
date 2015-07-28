@@ -43,7 +43,8 @@
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
 
-
+is.Frame <- function(fr) class(fr)[1]=="Frame"
+#.isFr <- function(fr) is(fr,"Frame")
 
 # GC Finalizer - called when GC collects a Frame
 # Must be defined ahead of constructors
@@ -51,14 +52,14 @@
 
 # Ref-count up-count, only if a Frame.  Return x, for flow coding
 .refup <- function(x) {
-  if( is(x, "Frame") && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
+  if( is.Frame(x) && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
   x
 }
 
 # Ref-count down-count.  If it goes to zero, recursively ref-down-count the
 # children, plus also remove the backing H2O store
 .refdown <- function(x,xsub) {
-  if( !is(x, "Frame") ) return()
+  if( !is.Frame(x) ) return()
   if( is.null(x$refcnt) ) return(); # Named, no refcnt, no GC
   # Ok to be here once from GC, and once from killing last link calling
   # .refdown - hence might be zero but never negative
@@ -86,7 +87,7 @@ assign("<-", function(x,y) {
           eval(xsub,parent.frame())
   ))
   # If the OLD value was a Frame, down the ref-cnt
-  if( is(e, "Frame") ) .refdown(e,xsub);
+  if( is.Frame(e) ) .refdown(e,xsub);
   # If the NEW value is about to be a Frame, up the ref-cnt
   .refup(y)
 
@@ -109,44 +110,6 @@ assign("<-", function(x,y) {
 
   invisible(y)
 })
-
-
-#` Overload dataframe slice; build a lazy eval slice
-`[.Frame` <- function(data,row,col) {
-  # Wrong thing, trampoline through the primitive
-  if( !is(data,"Frame") ) return(.Primitive("[")(data,row,col))
-
-  # Have a column selector?
-  if( !missing(col) ) {
-    if( is.logical(col) ) { # Columns by boolean choice
-      print(col)
-      stop("unimplemented1")
-    } else if( is.character(col) ) { # Columns by name
-      print(col)
-      stop("unimplemented2")
-    } else { # Generic R expression, evaluate in parent scope
-      col <- eval(substitute(col), parent.frame())
-      if( is.numeric(col) ) # number list for column selection; zero based
-        col <- paste0('[',paste0(lapply(col,function(x) x-1),collapse=" "),']')
-    }
-    data <- .newExpr("cols",data,col) # Column selector
-  }
-
-  # Have a row selector?
-  if( !missing(row) ) {
-    if( is(row,"Frame") ) { # Rows by boolean choice
-      print(row)
-      stop("unimplemented3")
-    } else { # Generic R expression, evaluate in parent scope
-      row <- eval(substitute(row), parent.frame())
-      if( is.numeric(row) ) # number list for row selection; zero based
-        row <- paste0('[',paste0(lapply(row,function(x) x-1),collapse=" "),']')
-    }
-    data <- .newExpr("rows",data,row) # Row selector
-  }
-
-  data
-}
 
 # Make a raw named data frame.  The key will exist on the server, and will be
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
@@ -210,17 +173,17 @@ Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
   if( !is.null(x$refcnt) && x$refcnt > 1 ) { tmp1 <- paste0("(tmp= ",.id(x)," "); tmp2 <- ")" }
   else { tmp1 <- tmp2 <- "" }
   res <- ifelse( is.null(x$children), "EVALd",
-                 paste(sapply(x$children, function(child) { if( is(child,"Frame") ) .pfr(child) else child }),collapse=" "))
+                 paste(sapply(x$children, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "))
   paste0(tmp1,"(",x$op," ",res,")",tmp2)
 }
 
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
-pfr <- function(x) { stopifnot(is(x, "Frame")); print(.pfr(x)); .clearvisit(x); invisible() }
+pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); invisible() }
 
 # Evaluate this Frame on demand.  The children field is used as a flag to
 # signal that the node has already been executed.  
 .eval.frame <- function(x) {
-  stopifnot(is(x, "Frame"))
+  stopifnot(is.Frame(x))
   if( !is.null(x$children) ) {
     exec_str <- .pfr(x);  .clearvisit(x)
     print(paste0("EXPR: ",exec_str))
@@ -297,6 +260,105 @@ Qstr.Frame <- function(x, cols=FALSE, ...) {
   }
 }
 
+.h2o.gc <- function() {
+  print("H2O triggered a GC in R")
+  gc()
+}
+
+
+# Convert a row or column selector to zero-based numbering and return a string
+.row.col.selector <- function( sel ) {
+  # number list for column selection; zero based
+  ifelse( is.numeric(sel), paste0('[',paste0(lapply(sel,function(x) x-1),collapse=" "),']'), as.character(sel) )
+}
+
+
+#` Overload dataframe slice; build a lazy eval slice
+`[.Frame` <- function(data,row,col) {
+  stopifnot( is.Frame(data) )
+  # Have a column selector?
+  if( !missing(col) ) {
+    if( is.logical(col) ) { # Columns by boolean choice
+      print(col)
+      stop("unimplemented1")
+    } else if( is.character(col) ) { # Columns by name
+      print(col)
+      stop("unimplemented2")
+    } else { # Generic R expression
+      col <- .row.col.selector(col)
+    }
+    data <- .newExpr("cols",data,col) # Column selector
+  }
+  # Have a row selector?
+  if( !missing(row) ) {
+    if( is.Frame(row) ) { # Rows by boolean choice
+      print(row)
+      stop("unimplemented3")
+    } else { # Generic R expression
+      row <- .row.col.selector(row, parent)
+    }
+    data <- .newExpr("rows",data,row) # Row selector
+  }
+  data
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
+#-----------------------------------------------------------------------------------------------------------------------
+#` Overload dataframe slice assignment; build a lazy eval slice
+`[<-.Frame` <- function(data,row,col,...,value) {
+  stopifnot( is.Frame(data) )
+  allRow <- missing(row)
+  allCol <- missing(col)
+  if( !allCol && is.na(col) ) col <- as.list(match.call())$col
+
+  if( !allRow && is.character(row) && allCol ) {  ## case where fr["baz"] <- qux
+    allRow <- TRUE
+    allCol <- FALSE
+    col <- row
+  }
+
+  if(!allRow && !is.numeric(row))
+    stop("`row` must be missing or a numeric vector")
+  if(!allCol && !is.numeric(col) && !is.character(col))
+    stop("`col` must be missing or a numeric or character vector")
+  if( !is.Frame(value) && is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
+  if( !is.Frame(value) && !is.numeric(value) && !is.character(value))
+    stop("`value` can only be an Frame object or a numeric or character vector")
+
+  # Row arg is missing, means "all the rows"
+  if(allRow) row <- nrow(data)
+  rows <- .row.col.selector(row)
+
+  name <- NA
+  if( allCol ) {   # Col arg is missing, means "all the cols"
+    idx <- ncol(data)
+  } else {
+    idx <- match(col, colnames(data))
+    if( any(is.na(idx)) ) {
+      if( is.numeric(col) ) {
+        idx <- col
+      } else {
+        name <- col
+        idx <- ncol(data)+1
+      }
+    }
+  }
+  cols <- .row.col.selector(idx)
+
+  value <- if( is.Frame(value) )   value
+           else if( is.na(value) ) "%NA"
+           else                    force(value)
+  res <- .newExpr("=", data, value, cols, rows)
+  # Set col name and return updated frame
+  if( !is.na(name) ) res <- .setColName(res,idx,name)
+  res
+}
+
+# Set a column name.
+.setColName <- function(fr, idx, name) .newExpr("colnames=", fr, idx-1, name)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
@@ -331,11 +393,66 @@ as.h2o <- function(x, destination_frame= "") {
   h2f
 }
 
-.h2o.gc <- function() {
-  print("H2O triggered a GC in R")
-  gc()
+#'
+#' Converts a Parsed H2O data into a Data Frame
+#'
+#' Downloads the H2O data and then scans it in to an R data frame.
+#'
+#' @param x An \linkS3class{Frame} object.
+#' @param ... Further arguments to be passed down from other methods.
+#' @examples
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' as.data.frame(prostate.hex)
+#' @export
+as.data.frame.Frame <- function(x, ...) {
+  .eval.frame(x)
+
+  # Versions of R prior to 3.1 should not use hex string.
+  # Versions of R including 3.1 and later should use hex string.
+  use_hex_string <- getRversion() >= "3.1"
+  conn = h2o.getConnection()
+
+  url <- paste0('http://', conn@ip, ':', conn@port,
+                '/3/DownloadDataset',
+                '?frame_id=', URLencode(.id(x)),
+                '&hex_string=', as.numeric(use_hex_string))
+
+  ttt <- getURL(url)
+  n <- nchar(ttt)
+
+  # Delete last 1 or 2 characters if it's a newline.
+  # Handle \r\n (for windows) or just \n (for not windows).
+  chars_to_trim <- 0L
+  if (n >= 2L) {
+      c <- substr(ttt, n, n)
+      if (c == "\n") {
+          chars_to_trim <- chars_to_trim + 1L
+      }
+      if (chars_to_trim > 0L) {
+          c <- substr(ttt, n-1L, n-1L)
+          if (c == "\r") {
+              chars_to_trim <- chars_to_trim + 1L
+          }
+      }
+  }
+
+  if (chars_to_trim > 0L) {
+    ttt2 <- substr(ttt, 1L, n-chars_to_trim)
+    # Is this going to use an extra copy?  Or should we assign directly to ttt?
+    ttt <- ttt2
+  }
+
+  # Substitute NAs for blank cells rather than skipping
+  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
+  # df <- read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
+  close(tcon)
+  df
 }
 
+#' @export
+as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
 #' Produe a Vector of Random Uniform Numbers
 #'
@@ -360,7 +477,7 @@ as.h2o <- function(x, destination_frame= "") {
 #' nrow(prostate.train) + nrow(prostate.test)
 #' @export
 h2o.runif <- function(x, seed = -1) {
-  stopifnot(is(x,"Frame"))
+  stopifnot( is.Frame(x) )
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
   .newExpr("h2o.runif", x, seed)

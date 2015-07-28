@@ -24,7 +24,7 @@
 
 #` Fetch the first N rows on demand, caching them in x$data; also cache x$nrow
 .fetch.data <- function(x,N) {
-  stopifnot(is(x, "Frame"))
+  stopifnot( is.Frame(x) )
   stopifnot(!missing(N))
   .eval.frame(x)
   if( is.null(x$data) || nrow(x$data) < N ) {
@@ -83,7 +83,7 @@ h2o.rm <- function(ids,pattern="") {
     keys <- h2o.ls()[,"key"]
     ids <- keys[grep(pattern, keys)]
   }
-  if( is(ids, "Frame") ) {
+  if( is.Frame(ids) ) {
     if( !is.null(ids$refcnt) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
     ids <- .id(ids); 
   }
