@@ -229,6 +229,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     while (true) {
       bb.position(0);
       bb.limit(sz);
+      assert bb.getShort(0) == sz-1:"unexpected size, got " + bb.getShort(0) + ", expected " + (sz-1);
+      assert (0xFF & bb.get(bb.getShort(0))) == 0xef:"sending message without the sentinel in the end?";
       if (_rawChannel == null || !_rawChannel.isOpen() || !_rawChannel.isConnected()) { // open the channel
         // Must make a fresh socket
         try {
