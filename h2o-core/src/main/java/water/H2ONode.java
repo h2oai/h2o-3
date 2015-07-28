@@ -239,8 +239,9 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
           sock.socket().setSendBufferSize(AutoBuffer.BBP_SML.size());
           InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort() + 1);
           boolean res = sock.connect(isa);
-          sock.configureBlocking(false);
-          assert res && !sock.isConnectionPending() && !sock.isBlocking() && sock.isConnected() && sock.isOpen();
+          boolean blocking = true;
+          sock.configureBlocking(blocking);
+          assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
           _rawChannel = sock;
         } catch(IOException ioe) {
           continue;
