@@ -45,7 +45,7 @@ def stop_logging():
 
     :return: None
     """
-    global __IS_LOGGING__ = False
+    __IS_LOGGING__ = False
     print "Logging stopped\n"
 
 def clear_log():
