@@ -63,7 +63,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              weights_column = NULL,
                              nfolds = 0,
                              fold_column = NULL,
-                             fold_assignment = c("Random","Modulo"),
+                             fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE,
                              ...)
 {
