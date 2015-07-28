@@ -150,7 +150,8 @@ assign("<-", function(x,y) {
 
 # Make a raw named data frame.  The key will exist on the server, and will be
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
-.newFrame <- function(op,id,...) {
+.newFrame <- function(op,id) {
+  stopifnot( is.character(id) )
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
   assign("op",op,node)
   assign("id",id,node)
@@ -204,10 +205,10 @@ Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
 # Internal recursive printer
 .pfr <- function(x) {
-  if( !is.null(x$visit) || is.null(x$refcnt) ) return(.id(x))
+  if( !is.null(x$visit) || is.null(x$children) ) return(.id(x))
   x$visit <- TRUE
-  tmp1 <- if( x$refcnt > 1 ) paste0("(tmp= ",.id(x)," ")
-  tmp2 <- if( x$refcnt > 1 ) paste0(")")
+  if( !is.null(x$refcnt) && x$refcnt > 1 ) { tmp1 <- paste0("(tmp= ",.id(x)," "); tmp2 <- ")" }
+  else { tmp1 <- tmp2 <- "" }
   res <- ifelse( is.null(x$children), "EVALd",
                  paste(sapply(x$children, function(child) { if( is(child,"Frame") ) .pfr(child) else child }),collapse=" "))
   paste0(tmp1,"(",x$op," ",res,")",tmp2)
@@ -216,7 +217,8 @@ Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
 pfr <- function(x) { stopifnot(is(x, "Frame")); print(.pfr(x)); .clearvisit(x); invisible() }
 
-# Evaluate this Frame on demand
+# Evaluate this Frame on demand.  The children field is used as a flag to
+# signal that the node has already been executed.  
 .eval.frame <- function(x) {
   stopifnot(is(x, "Frame"))
   if( !is.null(x$children) ) {

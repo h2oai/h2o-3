@@ -28,7 +28,7 @@
   stopifnot(!missing(N))
   .eval.frame(x)
   if( is.null(x$data) || nrow(x$data) < N ) {
-    # TODO: extract N rows instead of 100
+    # TODO: extract N rows instead of the default 100
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", .id(x)))$frames[[1]]
     data    <- as.data.frame(lapply(res$columns, function(c) c$data ))
     colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
@@ -47,6 +47,25 @@
 .flush.data <- function(x) {
   rm("data",envir=x);
   rm("nrow",envir=x);
+}
+
+#'
+#' Rename an H2O object.
+#'
+#' Makes a copy of the data frame and gives it the desired the key.
+#'
+#' @param data An \linkS3class{Frame} object
+#' @param key The hex key to be associated with the H2O parsed data object
+#'
+#' @export
+h2o.assign <- function(data, key) {
+  .key.validate(key)
+  if( key == .id(data) ) stop("Destination key must differ from input frame ", .id(data))
+  # Eager evalute, copied from .eval.frame
+  exec_str <- .pfr(data);  .clearvisit(data)
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
+  if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
+  .newFrame("h2o.assign",key)
 }
 
 #
@@ -83,10 +102,10 @@ h2o.rm <- function(ids,pattern="") {
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
-#' h2o.ls(localH2O)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.ls()
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
@@ -99,26 +118,16 @@ h2o.ls <- function() {
 #' Removes the data from the h2o cluster, but does not remove the local references.
 #'
 #' of the H2O server.
-#' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' iris.h2o <- as.h2o(iris)
-#' h2o.ls(localH2O)
-#' h2o.removeAll(localH2O)
-#' h2o.ls(localH2O)
+#' h2o.ls()
+#' h2o.removeAll()
+#' h2o.ls()
 #' @export
-h2o.removeAll <- function(timeout_secs=0) {
-  tryCatch(
-    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
-    error = function(e) {
-      print("Timeout on DELETE /DKV from R")
-      print("Attempt thread dump...")
-      h2o.killMinus3()
-      stop(e)
-    })
-}
+h2o.removeAll <- function() invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE"))
 
 #'
 #' Get an R Reference to an H2O Dataset, that will NOT be GC'd by default
@@ -127,7 +136,4 @@ h2o.removeAll <- function(timeout_secs=0) {
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) {
-  stopifnot( !missing(id) )
-  .newFrame("getFrame",id)
-}
+h2o.getFrame <- function(id) .newFrame("getFrame",id)
