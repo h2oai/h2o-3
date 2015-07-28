@@ -812,18 +812,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     return res;
   }
 
-  @Override public Frame score(Frame fr, String destination_key) {
-    if (!_parms._autoencoder)
-      return super.score(fr, destination_key);
-    else {
-      Frame adaptFr = new Frame(fr);
-      adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
-      Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
-      cleanup_adapt( adaptFr, fr );
-      return output;
-    }
-  }
-
    /**
    * Score auto-encoded reconstruction (on-the-fly, and materialize the deep features of given layer
    * @param frame Original data (can contain response, will be ignored)
