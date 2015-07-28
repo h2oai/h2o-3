@@ -76,8 +76,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _vresponse_key = _vresponse._key;
     if(_response != null)
       _response_key = _response._key;
-    if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
-      error("_nclass", "Too many levels in response column!");
 
     if( _parms._min_rows < 0 )
       error("_min_rows", "Requested min_rows must be greater than 0");
