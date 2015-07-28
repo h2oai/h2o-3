@@ -34,7 +34,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[], double preds[], double weight, double offset) {
     super.score0(data, preds, weight, offset);
-    int N = _parms._ntrees;
+    int N = _output._ntrees;
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
       preds[0] /= N;
     } else { // classification
