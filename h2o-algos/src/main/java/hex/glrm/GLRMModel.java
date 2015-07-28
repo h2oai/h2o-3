@@ -67,7 +67,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Hinge:
           return Math.max(1-a*u,0);
         case Logistic:
-          return Math.log(1+Math.exp(-a*u));
+          return Math.log(1 + Math.exp(-a * u));
         case Periodic:
           return 1-Math.cos((a-u)*(2*Math.PI)/_period);
         default:
@@ -321,7 +321,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
 
-  // TODO: What should we do for scoring GLRM?
+  // TODO: GLRM prediction is matrix product XY (w/ poss transformation depending on domain)
   @Override protected double[] score0(double[] data, double[] preds) {
     throw H2O.unimpl();
   }
@@ -335,13 +335,19 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       super(model, frame, Double.NaN);
     }
 
-    // GLRM currently does not have any model metrics to compute during scoring
     public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
       public GLRMModelMetrics(int dims) {
         _work = new double[dims];
       }
 
-      @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+      @Override public double[] perRow(double[] preds, float[] dataRow, Model m) {
+        for(int i = 0; i < dataRow.length; i++) {
+          if(Double.isNaN(dataRow[i])) continue;
+          double diff = dataRow[i] - preds[i];
+          _sumsqe += diff * diff;
+        }
+        return preds;
+      }
 
       @Override
       public ModelMetrics makeModelMetrics(Model m, Frame f) {
