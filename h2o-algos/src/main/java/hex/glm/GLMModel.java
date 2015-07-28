@@ -126,7 +126,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
           }
         }
+      } else if (glm.nclasses() > 1 ) { //only binomial can handle classification
+        glm.error("_response_column", "Illegal response for " + _family + " family, cannot be categorical");
       }
+
       if(!_lambda_search) {
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");
