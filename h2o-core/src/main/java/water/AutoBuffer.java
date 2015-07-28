@@ -491,7 +491,9 @@ public /* final */ class AutoBuffer {
   private int udpSend() throws IOException {
     assert _chan == null;
     TimeLine.record_send(this,false);
-    _size += _bb.position();
+    assert _size == 0;
+    _size = _bb.position();
+    assert _size < AutoBuffer.BBP_SML.size();
     _bb.putShort(0,(short)_size);
     _bb.put((byte)0xef);
     _bb.flip();                 // Flip for sending
