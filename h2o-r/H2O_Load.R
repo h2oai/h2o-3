@@ -1,8 +1,8 @@
 # Change this global variable to match your own system's path
-CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/h2o-3/"
-SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/h2o-dev/"
+CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/"
+SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 ROOT.PATH <- SPENCER.ROOT.PATH
-DEV.PATH  <- "h2o-r/h2o-package/R/"
+DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
 src <-

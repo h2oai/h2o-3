@@ -55,9 +55,15 @@
 #' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
 #' @param ids The hex key associated with the object to be removed.
+#' @param pattern A regular expression used to select Frames to remove.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
-h2o.rm <- function(ids) {
+h2o.rm <- function(ids,pattern="") {
+  if( missing(ids) ) {
+    stopifnot(length(pattern) > 1L, is.character(pattern))
+    keys <- h2o.ls()[,"key"]
+    ids <- keys[grep(pattern, keys)]
+  }
   if( is(ids, "Frame") ) {
     if( !is.null(ids$refcnt) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
     ids <- .id(ids); 
@@ -84,5 +90,44 @@ h2o.rm <- function(ids) {
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
-  .fetch.data(.newExpr("ls"))
+  .fetch.data(.newExpr("ls"),10L)
+}
+
+#'
+#' Remove All Objects on the H2O Cluster
+#'
+#' Removes the data from the h2o cluster, but does not remove the local references.
+#'
+#' of the H2O server.
+#' @param timeout_secs Timeout in seconds. Default is no timeout.
+#' @seealso \code{\link{h2o.rm}}
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' iris.h2o <- as.h2o(iris)
+#' h2o.ls(localH2O)
+#' h2o.removeAll(localH2O)
+#' h2o.ls(localH2O)
+#' @export
+h2o.removeAll <- function(timeout_secs=0) {
+  tryCatch(
+    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    error = function(e) {
+      print("Timeout on DELETE /DKV from R")
+      print("Attempt thread dump...")
+      h2o.killMinus3()
+      stop(e)
+    })
+}
+
+#'
+#' Get an R Reference to an H2O Dataset, that will NOT be GC'd by default
+#'
+#' Get the reference to a frame with the given id in the H2O instance.
+#'
+#' @param id A string indicating the unique frame of the dataset to retrieve.
+#' @export
+h2o.getFrame <- function(id) {
+  stopifnot( !missing(id) )
+  .newFrame("getFrame",id)
 }

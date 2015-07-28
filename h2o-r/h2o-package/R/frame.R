@@ -157,6 +157,7 @@ assign("<-", function(x,y) {
   node
 }
 
+# A new lazy expression
 .newExpr <- function(op,...) {
   assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
   assign("op",op,node)
@@ -182,7 +183,7 @@ NULL
 
 #' @rdname H2OS3GroupGeneric
 #' @export
-Ops.Frame <- function(x,y) { .newExpr(.Generic,x,y) }
+Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
 
 # Pick a name for this Node.  Just use the evironment's C pointer address, if
