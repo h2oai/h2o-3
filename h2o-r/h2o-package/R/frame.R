@@ -42,6 +42,9 @@
 #` E$data   <- an R dataframe holding the first N (typically 10) rows and all cols of the frame
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
+
+
+
 # GC Finalizer - called when GC collects a Frame
 # Must be defined ahead of constructors
 .nodeFinalizer <- function(x) { .refdown(x,"GC_finalizer"); }
@@ -107,6 +110,44 @@ assign("<-", function(x,y) {
   invisible(y)
 })
 
+
+#` Overload dataframe slice; build a lazy eval slice
+`[.Frame` <- function(data,row,col) {
+  # Wrong thing, trampoline through the primitive
+  if( !is(data,"Frame") ) return(.Primitive("[")(data,row,col))
+
+  # Have a column selector?
+  if( !missing(col) ) {
+    if( is.logical(col) ) { # Columns by boolean choice
+      print(col)
+      stop("unimplemented1")
+    } else if( is.character(col) ) { # Columns by name
+      print(col)
+      stop("unimplemented2")
+    } else { # Generic R expression, evaluate in parent scope
+      col <- eval(substitute(col), parent.frame())
+      if( is.numeric(col) ) # number list for column selection; zero based
+        col <- paste0('[',paste0(lapply(col,function(x) x-1),collapse=" "),']')
+    }
+    data <- .newExpr("cols",data,col) # Column selector
+  }
+
+  # Have a row selector?
+  if( !missing(row) ) {
+    if( is(row,"Frame") ) { # Rows by boolean choice
+      print(row)
+      stop("unimplemented3")
+    } else { # Generic R expression, evaluate in parent scope
+      row <- eval(substitute(row), parent.frame())
+      if( is.numeric(row) ) # number list for row selection; zero based
+        row <- paste0('[',paste0(lapply(row,function(x) x-1),collapse=" "),']')
+    }
+    data <- .newExpr("rows",data,row) # Row selector
+  }
+
+  data
+}
+
 # Make a raw named data frame.  The key will exist on the server, and will be
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
 .newFrame <- function(op,id,...) {
@@ -161,13 +202,13 @@ Ops.Frame <- function(x,y) { .newExpr(.Generic,x,y) }
 }
 
 # Internal recursive printer
-.pfr <- function(x){
+.pfr <- function(x) {
   if( !is.null(x$visit) || is.null(x$refcnt) ) return(.id(x))
   x$visit <- TRUE
-  tmp1 <- if( x$refcnt > 1 ) paste0("(tmp= ",.id(x))
+  tmp1 <- if( x$refcnt > 1 ) paste0("(tmp= ",.id(x)," ")
   tmp2 <- if( x$refcnt > 1 ) paste0(")")
   res <- ifelse( is.null(x$children), "EVALd",
-                 paste(sapply(x$children, function(child) { if( is.environment(child) ) .pfr(child) else child }),collapse=" "))
+                 paste(sapply(x$children, function(child) { if( is(child,"Frame") ) .pfr(child) else child }),collapse=" "))
   paste0(tmp1,"(",x$op," ",res,")",tmp2)
 }
 

@@ -50,7 +50,7 @@ class ASTColSlice extends ASTPrim {
 
 /** Row Slice */
 class ASTRowSlice extends ASTPrim {
-  @Override int nargs() { return 1+2; } // (rows dest [numlist])
+  @Override int nargs() { return 1+2; } // (rows src [row_list])
   @Override String str() { return "rows" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
