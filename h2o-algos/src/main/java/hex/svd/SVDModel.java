@@ -138,14 +138,6 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return preds;
   }
 
-  @Override public Frame score(Frame fr, String destination_key) {
-    Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true, false);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
-    cleanup_adapt( adaptFr, fr );
-    return output;
-  }
-
   @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
     sb = super.toJavaInit(sb, fileContextSB);
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();

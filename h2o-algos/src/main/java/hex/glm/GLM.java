@@ -146,7 +146,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return res;
     }
   }
-  private transient ScoringHistory _sc = new ScoringHistory();
+  private transient ScoringHistory _sc;
 
   long _t0 = System.currentTimeMillis();
 
@@ -156,7 +156,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient GLMModel _model;
 
   @Override public void init(boolean expensive) {
-    if (_parms._nfolds != 0) error("_nfolds", "nfolds != 0 is not supported");
+    _sc = new ScoringHistory();
     _t0 = System.currentTimeMillis();
     super.init(expensive);
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
@@ -744,8 +744,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       }
       _parms.read_lock_frames(GLM.this);
-      if(_parms._nfolds != 0)
-        throw H2O.unimpl();
       //todo: fill in initialization for n-folds
       new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
     }

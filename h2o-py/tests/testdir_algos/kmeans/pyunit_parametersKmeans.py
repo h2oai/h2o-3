@@ -3,13 +3,11 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def parametersKmeans(ip,port):
-    # Connect to a pre-existing cluster
-    h2o.init(ip,port)  # connect to localhost:54321
 
-    #Log.info("Getting data...")
+    print "Getting data..."
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 
-    #Log.info("Create and and duplicate...")
+    print "Create and and duplicate..."
     iris_km = h2o.kmeans(x=iris[0:4], k=3, seed=1234)
     parameters = iris_km._model_json['parameters']
     param_dict = {}
@@ -18,12 +16,12 @@ def parametersKmeans(ip,port):
 
     iris_km_again = h2o.kmeans(x=iris[0:4], **param_dict)
 
-    #Log.info("wss")
+    print "wss"
     wss = iris_km.withinss().sort()
     wss_again = iris_km_again.withinss().sort()
     assert wss == wss_again, "expected wss to be equal"
 
-    #Log.info("centers")
+    print "centers"
     centers = iris_km.centers()
     centers_again = iris_km_again.centers()
     assert centers == centers_again, "expected centers to be the same"

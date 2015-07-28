@@ -187,6 +187,7 @@ class ASTTrim extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     if (fr.numCols() != 1) throw new IllegalArgumentException("trim works on a single column at a time.");
+    if( !fr.anyVec().isEnum() ) throw new IllegalArgumentException("column must be character.");
     String[] doms = fr.anyVec().domain();
     for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
     fr.anyVec().setDomain(doms);
