@@ -14,7 +14,6 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
 				"training_frame",
 				"validation_frame",
         "nfolds",
-        "keep_cross_validation_splits",
         "keep_cross_validation_predictions",
         "fold_assignment",
         "fold_column",

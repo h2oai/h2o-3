@@ -161,7 +161,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     for( int c=1; c<scored.length; c++ ) {
       final double original_fraction = priorClassDist[c-1];
       final double oversampled_fraction = modelClassDist[c-1];
-      assert(!Double.isNaN(scored[c]));
+      assert(!Double.isNaN(scored[c])) : "Predicted NaN class probability";
       if (original_fraction != 0 && oversampled_fraction != 0) scored[c] *= original_fraction / oversampled_fraction;
       probsum += scored[c];
     }

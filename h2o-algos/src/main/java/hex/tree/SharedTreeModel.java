@@ -11,8 +11,6 @@ import java.util.List;
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
-    /** Maximal number of supported levels in response. */
-    static final int MAX_SUPPORTED_LEVELS = 1000;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 

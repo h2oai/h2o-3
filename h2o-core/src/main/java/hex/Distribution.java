@@ -35,24 +35,28 @@ public class Distribution extends Iced {
     assert(tweediePower >1 && tweediePower <2);
     this.tweediePower = tweediePower;
   }
+  static public double MAX_LOG = 19;
+  static public double MIN_LOG = -19;
+  static public double MAX = 1e19;
+  static public double MIN = 1e-19;
 
   public final Family distribution;
   public final double tweediePower; //tweedie power
 
   // helper - sanitized exponential function
   public static double exp(double x) {
-    return Math.max(1e-19, Math.min(1e19, Math.exp(x)));
+    return Math.max(MIN, Math.min(MAX, Math.exp(x)));
   }
 
   // helper - sanitized log function
   public static double log(double x) {
     x = Math.max(0,x);
-    return x == 0 ? -19 : Math.max(-19, Math.min(19, Math.log(x)));
+    return x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.min(MAX_LOG, Math.log(x)));
   }
 
   // helper - string version of sanititized exp(x)
   public static String expString(String x) {
-    return "Math.max(1e-19, Math.min(1e19, Math.exp(" + x + ")))";
+    return "Math.max(" + MIN + ", Math.min(" + MAX + ", Math.exp(" + x + ")))";
   }
 
    /**
