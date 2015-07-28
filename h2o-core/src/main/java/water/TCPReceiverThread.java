@@ -77,7 +77,7 @@ public class TCPReceiverThread extends Thread {
       super("TCP-UDP");
       _ia = ia;
       _chan = chan;
-      _bb = AutoBuffer.BBP_BIG.make();
+      _bb = ByteBuffer.allocateDirect(32*AutoBuffer.BBP_SML.size()).order(ByteOrder.nativeOrder());//AutoBuffer.BBP_BIG.make();
     }
 
     public String printBytes(ByteBuffer bb, int start, int sz) {
@@ -85,10 +85,10 @@ public class TCPReceiverThread extends Thread {
       int idx = start + sz;
       try {
         for (int i = 5; i > 0; --i)
-          sb.append("-" + i + ": " + (0xFF & bb.get(idx - i)) + " ");
-        sb.append("0: " + (0xFF & bb.get(idx)));
+          sb.append("-" + i + ":" + (0xFF & bb.get(idx - i)) + " ");
+        sb.append("0: " + (0xFF & bb.get(idx)) + " ");
         for (int i = 1; i <= 5; ++i)
-          sb.append("+" + i + ": " + (0xFF & bb.get(idx + i)) + " ");
+          sb.append("+" + i + ":" + (0xFF & bb.get(idx + i)) + " ");
       } catch(Throwable t) {}
       return sb.toString();
     }
