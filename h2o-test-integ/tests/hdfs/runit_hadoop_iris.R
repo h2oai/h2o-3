@@ -32,8 +32,10 @@ myY = 5
 iris.gbm <- h2o.gbm(myX, myY, training_frame = iris.hex, distribution = 'multinomial')
 print(iris.gbm)
 
+myZ = 1
+
 # GLM Model
-iris.glm <- h2o.glm(myX, myY, training_frame = iris.hex, family = "gaussian")
+iris.glm <- h2o.glm(myX, myZ, training_frame = iris.hex, family = "gaussian")
 print(iris.glm)
 
 
