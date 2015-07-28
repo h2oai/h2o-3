@@ -97,8 +97,7 @@ public class TCPReceiverThread extends Thread {
         throw new IllegalStateException("Reading more bytes than available, reading " + n + " bytes, remaining = " + _bb.remaining());
       int sizeRead = 0;
       while(sizeRead < n) {
-        int res = 0; // Read more
-        res = _chan.read(_bb);
+        int res = _chan.read(_bb);
         if( res == -1 )
           throw new EOFException("Reading "+n+" bytes, AB="+this);
         if( res ==  0 ) throw new RuntimeException("Reading zero bytes - so no progress?");
@@ -119,7 +118,8 @@ public class TCPReceiverThread extends Thread {
           idle = false;
           int sz = _bb.getShort(start); // message size in bytes
           assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
-          read(start + sz - _bb.position());
+          int rem = _bb.position() - start;
+          read(sz + 1 - rem);
           assert (0xFF & _bb.get(start + sz)) == 0xef:"Missing expected sentinel (0xef==239) at the end of the message, likely out of sync, start = " + start + ", size = " + sz + ", bytes = " + printBytes(_bb,start,sz);
           // extract the bytes
           byte[] ary = new byte[Math.max(sz, 18)];
