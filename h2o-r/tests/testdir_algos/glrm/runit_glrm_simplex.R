@@ -19,9 +19,13 @@ test.glrm.simplex <- function(conn) {
 
   Log.info("Check that X matrix consists of rows within standard probability simplex")
   fitX.mat <- as.matrix(fitX)
-  expect_true(all(fitX.mat >= 0))
-  expect_true(all(apply(fitX.mat, 1, sum) == 1))
-  expect_equal(sum((train - fitX.mat %*% fitY)^2), fitH2O@model$objective)
+  if(fitH2O@model$objective == "Infinity") {
+    expect_false(all(fitX.mat >= 0) && all(apply(fitX.mat, 1, sum) == 1))
+  } else {
+    expect_true(all(fitX.mat >= 0))
+    expect_true(all(apply(fitX.mat, 1, sum) == 1))
+    expect_equal(sum((train - fitX.mat %*% fitY)^2), fitH2O@model$objective)
+  }
   testEnd()
 }
 
