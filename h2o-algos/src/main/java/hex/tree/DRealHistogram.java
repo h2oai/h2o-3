@@ -25,7 +25,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   }
   @Override public double var (int b) {
     double n = _bins[b];
-    if( n==0 ) return 0;
+    if( n<=1  ) return 0;
     return (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1);
   }
 

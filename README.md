@@ -143,6 +143,15 @@ Syncing smalldata is not required after each pull, but if tests fail due to miss
     pip install tabulate
     pip install wheel
 
+Python tests require:
+
+    pip install sklearn
+    pip install numpy
+    pip install scipy
+    pip install pandas
+    pip install statsmodles
+    pip install patsy
+
 ### 4.3. Setup on Windows
 
 ##### Step 1: Download and install [WinPython](https://winpython.github.io). 

@@ -171,7 +171,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   protected static Pattern _version_pattern = null;
   /** Extract the version number from the schema class name.  Returns -1 if there's no version number at the end of the classname. */
-  public static int extractVersion(String clz_name) {
+  private static int extractVersion(String clz_name) {
     if (null == _version_pattern) // can't just use a static initializer
       _version_pattern = Pattern.compile(".*V(\\d+)");
     Matcher m =  _version_pattern.matcher(clz_name);
@@ -181,13 +181,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   public int getSchemaVersion() {
     return __meta.schema_version;
-  }
-
-  /** Helper to fetch the class name in a static initializer block. */
-  private static class CurClassNameGetter extends SecurityManager {
-    public Class getClz(){
-      return getClassContext()[1];
-    }
   }
 
 
@@ -206,7 +199,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   /** Register the given schema class. */
-  public static void register(Class<? extends Schema> clz) {
+  private static void register(Class<? extends Schema> clz) {
     synchronized(clz) {
       // Was there a race to get here?  If so, return.
       Class<? extends Schema> existing = schemas.get(clz.getSimpleName());
@@ -323,7 +316,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Convenience helper which creates and fill an impl. */
   final public I createAndFillImpl() {
-    return (I)this.fillImpl(this.createImpl());
+    return this.fillImpl(this.createImpl());
   }
 
   // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
@@ -351,22 +344,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return _impl_class;
   }
 
-  // TODO: this really does not belong in the schema layer; it's a hack for the
-  // TODO: old-school-web-UI
-  // This Schema accepts a Frame as it's first & main argument, used by the
-  // Frame Inspect & Parse pages to give obvious options for Modeling, Summary,
-  // export-to-CSV etc options.  Return a URL or null if not appropriate.
-  @Deprecated
-  protected String acceptsFrame( Frame fr ) { return null; }
-
   // Fill self from parms.  Limited to dumb primitive parsing and simple
   // reflective field filling.  Ignores fields not in the Schema.  Throws IAE
   // if the primitive parameter cannot be parsed as the primitive field type.
 
-  // Dupped args are handled by Nano, as 'parms' can only have a single arg
+  // Duplicate args are handled by the web server, as 'parms' can only have a single arg
   // mapping for a given name.
 
-  // Also does various sanity checks for broken Schemas.  Fields must not b
+  // Also does various sanity checks for broken Schemas.  Fields must not be
   // private.  Input fields get filled here, so must not be final.
   public S fillFromParms(Properties parms) {
     // Get passed-in fields, assign into Schema
@@ -713,23 +698,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   /**
    * Return an immutable Map of all the schemas: schema_name -> schema Class.
    */
-  public static Map<String, Class<? extends Schema>> schemas() {
+  protected static Map<String, Class<? extends Schema>> schemas() {
     return Collections.unmodifiableMap(new HashMap<>(schemas));
-  }
-
-  /**
-   * For a given version and Iced object return the appropriate Schema class, if any.
-   * @see #schemaClass(int, java.lang.String)
-   */
-  public static Class<? extends Schema> schemaClass(int version, Iced impl) {
-    return schemaClass(version, impl.getClass().getSimpleName());
   }
 
   /**
    * For a given version and Iced class return the appropriate Schema class, if any.f
    * @see #schemaClass(int, java.lang.String)
    */
-  public static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
+  protected static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
     return schemaClass(version, impl_class.getSimpleName());
   }
 
@@ -741,7 +718,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
    * be returned.  This compatibility lookup is cached.
    */
-  public static Class<? extends Schema> schemaClass(int version, String type) {
+  private static Class<? extends Schema> schemaClass(int version, String type) {
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
@@ -752,13 +729,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
     if (null != clz) iced_to_schema.put(new Pair(type, version), clz); // found a lower-numbered schema: cache
     return clz;
-  }
-
-  /**
-   * For a given schema_name (e.g., "FrameV2") return the schema class (e.g., water.api.Framev2).
-   */
-  public static Class<? extends Schema>  schemaClass(String schema_name) {
-    return schemas.get(schema_name);
   }
 
   /**
@@ -797,7 +767,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then an instance
    * of FrameV2 will be returned.  This compatibility lookup is cached.
    */
-  public static Schema schema(int version, String type) {
+  private static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);
     if (null == clz)
       clz = schemaClass(Schema.getExperimentalVersion(), type);
@@ -811,17 +781,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   /**
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
-  public static Schema schema(String schema_name) {
+  protected static Schema newInstance(String schema_name) {
     Class<? extends Schema> clz = schemas.get(schema_name);
     if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
                                                             "Failed to find schema for schema_name: " + schema_name);
-    return Schema.newInstance(clz);
-  }
-
-  /**
-   * For a given schema class (e.g., water.api.FrameV2) return a new instance (e.g., a water.api.Framev2).
-   */
-  public static Schema schema(Class<? extends Schema> clz) {
     return Schema.newInstance(clz);
   }
 
