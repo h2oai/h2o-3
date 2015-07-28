@@ -1466,6 +1466,7 @@ final public class H2O {
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
       return;                   // Already started
 
+    SignalHandling.registerSignalHandlers();
     // Copy all ai.h2o.* system properties to the tail of the command line,
     // effectively overwriting the earlier args.
     ArrayList<String> args2 = new ArrayList<>(Arrays.asList(args));
