@@ -120,7 +120,8 @@ public class TCPReceiverThread extends Thread {
           assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
           int rem = _bb.position() - start;
           read(sz + 1 - rem);
-          assert (0xFF & _bb.get(start + sz)) == 0xef:"Missing expected sentinel (0xef==239) at the end of the message, likely out of sync, start = " + start + ", size = " + sz + ", bytes = " + printBytes(_bb,start,sz);
+          if((0xFF & _bb.get(start + sz)) != 0xef)
+            H2O.fail("Missing expected sentinel (0xef==239) at the end of the message, likely out of sync, start = " + start + ", size = " + sz + ", bytes = " + printBytes(_bb,start,sz));
           // extract the bytes
           byte[] ary = new byte[Math.max(sz, 18)];
           for (int i = 0; i < sz; ++i)
