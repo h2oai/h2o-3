@@ -384,7 +384,7 @@ public final class ParseSetup extends Iced {
         int n = mergedSetup._data.length;
         int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + setupB._data.length - 1);
         mergedSetup._data = Arrays.copyOf(mergedSetup._data, m);
-        System.arraycopy(setupB._data, 0, mergedSetup._data, n, m - n);
+        System.arraycopy(setupB._data, 1, mergedSetup._data, n, m - n);
       }
       return mergedSetup;
     }
