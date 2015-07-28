@@ -751,6 +751,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _nclass = 1;
     }
 
+    if( _nclass > Model.Parameters.MAX_SUPPORTED_LEVELS ) {
+      error("_nclass", "Too many levels in response column: " + _nclass + ", maximum supported number of classes is " + Model.Parameters.MAX_SUPPORTED_LEVELS + ".");
+    }
+
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
     Frame va = _parms.valid();  // User-given validation set

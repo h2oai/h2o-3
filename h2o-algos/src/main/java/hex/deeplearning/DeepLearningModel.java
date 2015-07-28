@@ -119,7 +119,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   // Lower is better
   public float error() {
-    return (float) (_output.isClassifier() ? cm().err() : deviance());
+    return (float) (_output.isClassifier() ? classification_error() : deviance());
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -139,40 +139,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   public static class DeepLearningScoring extends Iced {
-//    static final int API_WEAVER = 1;
-//    static public DocGen.FieldDoc[] DOC_FIELDS;
-
     public double epoch_counter;
     public double training_samples;
     public long training_time_ms;
-
-    //training/validation sets
     boolean validation;
     public long score_training_samples;
     public long score_validation_samples;
-
     public boolean classification;
-
     VarImp variable_importances;
-
-    // classification
     ScoreKeeper scored_train = new ScoreKeeper();
     ScoreKeeper scored_valid = new ScoreKeeper();
-    public ConfusionMatrix train_confusion_matrix;
-    public ConfusionMatrix valid_confusion_matrix;
-//    public double train_err = Double.NaN;
-//    public double valid_err = Double.NaN;
-//    public double train_logloss = Double.NaN;
-//    public double valid_logloss = Double.NaN;
     public AUC2 training_AUC;
     public AUC2 validation_AUC;
-
-    // regression
-//    public double training_MSE = Double.NaN;
-//    public double validation_MSE = Double.NaN;
-//    public double training_R2 = Double.NaN;
-//    public double validation_R2 = Double.NaN;
-
     public long scoring_time;
 
     DeepLearningScoring deep_clone() {
@@ -181,25 +159,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       ab.flipForReading();
       return (DeepLearningScoring) new DeepLearningScoring().read(ab);
     }
-
-    @Override public String toString() {
-      StringBuilder sb = new StringBuilder();
-      if (scored_train!=null) sb.append("Training " + scored_train.toString());
-      if (classification) sb.append("Training " + train_confusion_matrix.table().toString(1));
-      if (validation) {
-        if (scored_valid!=null) sb.append("Validation " + scored_valid.toString());
-        if (classification) sb.append("Validation " + valid_confusion_matrix.table().toString(1));
-      }
-      sb.append("\n");
-      return sb.toString();
-    }
   }
 
-  public ConfusionMatrix cm() {
-    final DeepLearningScoring lasterror = last_scored();
-    if (lasterror == null) return null;
-    ConfusionMatrix cm = lasterror.validation ? lasterror.valid_confusion_matrix : lasterror.train_confusion_matrix;
-    return cm;
+  public double classification_error() {
+    if (errors == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
   }
 
   public double mse() {
@@ -593,11 +557,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
             err.training_AUC = mm._auc;
-            err.train_confusion_matrix = mm.cm();
-          }
-          else if (mm1 instanceof ModelMetricsMultinomial) {
-            ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
-            err.train_confusion_matrix = mm.cm();
           }
           if (ftrain.numRows() != training_rows) {
             _output._training_metrics._description = "Metrics reported on temporary training frame with " + ftrain.numRows() + " samples";
@@ -619,10 +578,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
               if (mtest instanceof ModelMetricsBinomial) {
                 ModelMetricsBinomial mm = (ModelMetricsBinomial)mtest;
                 err.validation_AUC = mm._auc;
-                err.valid_confusion_matrix = mm.cm();
-              } else if (mtest instanceof ModelMetricsMultinomial) {
-                ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mtest;
-                err.valid_confusion_matrix = mm.cm();
               }
               if (ftest.numRows() != validation_rows) {
                 _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + ftest.numRows() + " samples";
