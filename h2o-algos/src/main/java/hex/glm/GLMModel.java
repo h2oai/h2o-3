@@ -126,8 +126,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
           }
         }
-      } else if (glm.nclasses() > 1 ) { //only binomial can handle classification
-        glm.error("_response_column", "Illegal response for " + _family + " family, cannot be categorical");
+      } else if (glm.nclasses() > 2 ) {
+        glm.error("_response_column", "Illegal response for " + _family + " family, cannot be categorical with more than 2 levels");
       }
 
       if(!_lambda_search) {
