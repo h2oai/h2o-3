@@ -39,5 +39,6 @@ public class ModelSchemaBase<M extends Iced, S extends Schema<M, S>>
     this.model_id = new ModelKeyV3(m._key);
     this.algo = ModelBuilder.getAlgo(m);
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+    
   }
 }
