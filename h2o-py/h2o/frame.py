@@ -69,6 +69,7 @@ class H2OFrame:
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     self._ncols = parse["number_columns"]
     self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
+    self._keep = True
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
@@ -125,6 +126,7 @@ class H2OFrame:
     self._ncols = parse["number_columns"]
     self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
+    self._keep = True
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
 
@@ -173,11 +175,8 @@ class H2OFrame:
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame(expr=ExprNode("^",i,  self))
   # unops
-  def __abs__ (self):    return H2OFrame(expr=ExprNode("abs",self))
-
-  def __contains__(self, i):
-    if _is_str_list(i) or isinstance(i,(unicode,str)): return H2OFrame(expr=ExprNode("h2o.which",self,i)).any()
-    else:                                              return all([any(t==self) for t in i]) if _is_num_list(i) else any(i==self)
+  def __abs__ (self):        return H2OFrame(expr=ExprNode("abs",self))
+  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
 
   def mult(self, matrix):
     """
@@ -637,8 +636,10 @@ class H2OFrame:
       if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
 
       if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)):
-        return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
-      return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
+        return H2OFrame(expr=ExprNode("[", self, item[0], item[1]))._scalar()
+      return H2OFrame(expr=ExprNode("[",self,item[0],item[1]))
+      #   return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
+      # return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
 
   def __setitem__(self, b, c):
     """
@@ -723,6 +724,7 @@ class H2OFrame:
     :return: a list of frames
     """
     j = h2o.H2OConnection.post_json("SplitFrame", dataset=self._id, ratios=ratios, destination_frames=destination_frames)
+    h2o.H2OJob(j, "Split Frame").poll()
     return [h2o.get_frame(i["name"]) for i in j["destination_frames"]]
 
   # ddply in h2o
@@ -737,6 +739,7 @@ class H2OFrame:
   def group_by(self,cols,aggregates,order_by=None):
     """
     GroupBy
+
     :param cols: The columns to group on.
     :param a: A dictionary of aggregates having the following shape: \
     {"colname":[aggregate, column, naMethod]}\
@@ -1034,6 +1037,12 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("as.character", self))
 
+  def na_omit(self):
+    """
+    :return: Removes rows with NAs
+    """
+    return H2OFrame(expr=ExprNode("na.omit", self))._frame()
+
   def isna(self):
     """
     :return: Returns a new boolean H2OVec.
@@ -1194,6 +1203,7 @@ def _handle_python_lists(python_obj):
   data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
   return header, data_to_write
 
+def _is_list(l)    : return isinstance(l, (tuple, list))
 def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(str,unicode)) for i in l])
 def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int  )) for i in l])
 def _is_list_of_lists(o):                  return any(isinstance(l, (list, tuple)) for l in o)

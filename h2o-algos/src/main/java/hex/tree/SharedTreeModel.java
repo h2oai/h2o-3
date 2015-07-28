@@ -11,8 +11,6 @@ import java.util.List;
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
-    /** Maximal number of supported levels in response. */
-    static final int MAX_SUPPORTED_LEVELS = 1000;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -35,15 +33,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
 
     public boolean _build_tree_one_node = false;
+    public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
+    public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
+  }
 
-    /** Distribution functions.  Note: AUTO will select gaussian for
-     *  continuous, and multinomial for categorical response
-     *
-     *  <p>TODO: Replace with drop-down that displays different distributions
-     *  depending on cont/cat response
-     */
-    public Distributions.Family _distribution = Distributions.Family.AUTO;
-    public float _tweedie_power=1.5f;
+  @Override
+  public double deviance(double w, double y, double f) {
+    return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
   }
 
   final public VarImp varImp() { return _output._varimp; }

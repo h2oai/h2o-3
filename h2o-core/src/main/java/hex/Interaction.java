@@ -23,7 +23,7 @@ public class Interaction extends Job<Frame> {
   transient public int[] _factors = new int[0];
 
   public Interaction(Key<Frame> dest, String desc) { super(dest, (desc == null ? "CreateFrame" : desc)); }
-  public Interaction() { super(Key.make(), "CreateFrame"); }
+  public Interaction() { super(Key.<Frame>make(), "CreateFrame"); }
 
   public Frame execImpl() {
     try {

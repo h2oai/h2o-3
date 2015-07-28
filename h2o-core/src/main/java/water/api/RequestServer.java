@@ -145,7 +145,7 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
+    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"frame_id", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
@@ -632,7 +632,7 @@ public class RequestServer extends NanoHTTPD {
       else if (e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
 
-      Log.warn("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
       return wrap(new H2OErrorV3().fillFromImpl(error), type);

@@ -245,12 +245,12 @@ def is_running_internal_to_h2o():
     internal = False
   return internal
 
-def check_models(model1, model2, use_validation=False, op='e'):
+def check_models(model1, model2, use_cross_validation=False, op='e'):
   """
   Check that the given models are equivalent
   :param model1:
   :param model2:
-  :param use_validation: boolean. if True, use validation metrics to determine model equality. Otherwise, use
+  :param use_cross_validation: boolean. if True, use validation metrics to determine model equality. Otherwise, use
   training metrics.
   :param op: comparison operator to use. 'e':==, 'g':>, 'ge':>=
   :return: None. Throw meaningful error messages if the check fails
@@ -264,18 +264,18 @@ def check_models(model1, model2, use_validation=False, op='e'):
   # 2. Check model metrics
   if isinstance(model1,H2OBinomialModel): #   2a. Binomial
     # F1
-    f1_1 = model1.F1(valid=use_validation)
-    f1_2 = model2.F1(valid=use_validation)
-    if op == 'e': assert f1_1 == f1_2, "The first model has an F1 of {0} and the second model has an F1 of " \
-                                       "{1}. Expected the first to be == to the second.".format(f1_1, f1_2)
-    elif op == 'g': assert f1_1 > f1_2, "The first model has an F1 of {0} and the second model has an F1 of " \
-                                        "{1}. Expected the first to be > than the second.".format(f1_1, f1_2)
-    elif op == 'ge': assert f1_1 >= f1_2, "The first model has an F1 of {0} and the second model has an F1 of " \
-                                          "{1}. Expected the first to be >= than the second.".format(f1_1, f1_2)
+    f1_1 = model1.F1(xval=use_cross_validation)
+    f1_2 = model2.F1(xval=use_cross_validation)
+    if op == 'e': assert f1_1[0][1] == f1_2[0][1], "The first model has an F1 of {0} and the second model has an F1 of " \
+                                       "{1}. Expected the first to be == to the second.".format(f1_1[0][1], f1_2[0][1])
+    elif op == 'g': assert f1_1[0][1] > f1_2[0][1], "The first model has an F1 of {0} and the second model has an F1 of " \
+                                        "{1}. Expected the first to be > than the second.".format(f1_1[0][1], f1_2[0][1])
+    elif op == 'ge': assert f1_1[0][1] >= f1_2[0][1], "The first model has an F1 of {0} and the second model has an F1 of " \
+                                          "{1}. Expected the first to be >= than the second.".format(f1_1[0][1], f1_2[0][1])
   elif isinstance(model1,H2ORegressionModel): #   2b. Regression
     # MSE
-    mse1 = model1.mse(valid=use_validation)
-    mse2 = model2.mse(valid=use_validation)
+    mse1 = model1.mse(xval=use_cross_validation)
+    mse2 = model2.mse(xval=use_cross_validation)
     if op == 'e': assert mse1 == mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
                                        "{1}. Expected the first to be == to the second.".format(mse1, mse2)
     elif op == 'g': assert mse1 > mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
@@ -287,8 +287,8 @@ def check_models(model1, model2, use_validation=False, op='e'):
     pass
   elif isinstance(model1,H2OClusteringModel): #   2d. Clustering
     # totss
-    totss1 = model1.totss(valid=use_validation)
-    totss2 = model2.totss(valid=use_validation)
+    totss1 = model1.totss(xval=use_cross_validation)
+    totss2 = model2.totss(xval=use_cross_validation)
     if op == 'e': assert totss1 == totss2, "The first model has an TOTSS of {0} and the second model has an " \
                                            "TOTSS of {1}. Expected the first to be == to the second.".format(totss1,
                                                                                                              totss2)
@@ -651,7 +651,7 @@ def export_file(frame,path,force=False):
   :param force: Overwrite any preexisting file with the same path
   :return: None
   """
-  H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false"))
+  H2OJob(H2OConnection.post_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
 def cluster_info():

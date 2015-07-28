@@ -9,16 +9,16 @@ To set up your R environment to run these examples the user will need to downloa
 
 ### Available Demos
 
-  * [`Predict Airlines Delays`](large/airlines_delay.R) - Takes historical airlines flight data and builds multiple classification models to label any flight as either delayed or not delayed.
+  * [`Predict Airlines Delays`](large/airlines_delay.R) - Uses historical airlines flight data to build multiple classification models to label any flight as either delayed or not delayed.
 
-  * [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R) - Takes historical airlines flight and weather data and join the two datasets into one large table. Then, build multiple classification models to label any flight as either delayed or not delayed.
+  * [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R) - Uses historical airlines flight and weather data and joins the two datasets into one large table, then builds multiple classification models to label any flight as either delayed or not delayed.
   
-  * [`NYC Citibike Demand with Weather`](large/citibike_nyc.R) - Takes monthly bike ride data for the past two years to predict bike demand at each bike share station. Weather data is also incorporate to better predict bike usage.
+  * [`NYC Citibike Demand with Weather`](large/citibike_nyc.R) - Uses monthly bike ride data for the past two years to predict bike demand at each bike share station. Weather data is also incorporated to better predict bike usage.
   
   
 ### Corresponding Datasets
 
-  *  **Airlines Data** for [`Predict Airlines Delays`](large/airlines_delay.R) and [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R) - Any of the following datasets will work for the demo, choose appropriate dataset size to test speed and scale.
+  *  **Airlines Data** for [`Predict Airlines Delays`](large/airlines_delay.R) and [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R) - Any of the following datasets will work for the demo; choose an appropriate dataset size based on speed and scale.
   
   	* [2 Thousand Rows - 4.3MB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv)
   	* [5.8 Million Rows - 580MB](https://s3.amazonaws.com/h2o-airlines-unpacked/airlines_all.05p.csv)
@@ -28,7 +28,7 @@ To set up your R environment to run these examples the user will need to downloa
   
   	* [2005-2008 Weather Data Near Chicago Airport](https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/Chicago_Ohare_International_Airport.csv)
   
-  *  **Citibike Data** for [`NYC Citibike Demand with Weather`](large/citibike_nyc.R) - Choose the month of bike ride data you want for your analysis, you can choose from a single month to all months available.
+  *  **Citibike Data** for [`NYC Citibike Demand with Weather`](large/citibike_nyc.R) - Choose the amount of bike ride data you want for your analysis; the range is from a single month to all available months.
   
   	* [2013-07 - 157MB](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/2013-07.csv)
   	* [2013-08 - 186MB](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/2013-08.csv)
@@ -55,15 +55,15 @@ To set up your R environment to run these examples the user will need to downloa
 
 ###  Running Examples from Command Line
 
-0. Edit the working directory for each script if necessary.
-0. Download the appropriate dataset and edit the path to the dataset in the R script if they are not place in your working directory.
-0. To run a R demo script run `R -f` followed by the file, for example to run the airlines demo:
+0. If necessary, edit the working directory for each script.
+0. Download the appropriate dataset and edit the dataset path in the R script if it is not located in your working directory.
+0. To run a R demo script, run `R -f` followed by the file. For example to run the airlines demo:
 
 ```
 R -f airlines_delay.R
 ```
 
 ###  Running Examples from R
-0. Edit the working directory for each script if necessary.
-0. Download the appropriate dataset and edit the path to the dataset in the R script if they are not place in your working directory.
-0. To run a R demo script, open up the R script and executing the notebook line by line (using Control+Return).
+0. If necessary, edit the working directory for each script.
+0. Download the appropriate dataset and edit the dataset path in the R script if it is not located in your working directory.
+0. To run a R demo script, open up the R script and execute the notebook line by line using Control+Return/Enter.

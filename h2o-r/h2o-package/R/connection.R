@@ -355,7 +355,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   port_ <- 54321
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
-  if( url.exists(myURL) ) {
+  if( .h2o.startedH2O() && url.exists(myURL) ) {
     tryCatch(h2o.shutdown(conn=new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
@@ -425,7 +425,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   args <- mem_args
   ltrs <- paste0(sample(letters,3, replace = TRUE), collapse="")
   nums <- paste0(sample(0:9, 3,  replace = TRUE),     collapse="")
-  name <- paste0("H2O_started_from_R_", Sys.info()["user"],"_",ltrs,nums)
+  name <- paste0("H2O_started_from_R_",gsub(" ","_",Sys.info()["user"]),"_",ltrs,nums)
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)

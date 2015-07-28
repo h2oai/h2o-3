@@ -259,7 +259,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
-  static Key make(byte[] kb, byte rf) {
+  static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
     if( rf == -1 ) throw new IllegalArgumentException();
     Key key = new Key(kb);
     Key key2 = H2O.getk(key); // Get the interned version, if any
@@ -284,24 +284,26 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   /** Factory making a Key from a byte[]
    *  @return Desired Key */ 
-  public static Key make(byte[] kb) { return make(kb,DEFAULT_DESIRED_REPLICA_FACTOR); }
+  public static <P extends Keyed> Key<P> make(byte[] kb) { return make(kb, DEFAULT_DESIRED_REPLICA_FACTOR); }
   /** Factory making a Key from a String
    *  @return Desired Key */ 
-  public static Key make(String s) { return make(decodeKeyName(s));}
-  public static Key makeSystem(String s) { return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false);}
+  public static <P extends Keyed> Key<P> make(String s) { return make(decodeKeyName(s));}
+  public static <P extends Keyed> Key<P> makeSystem(String s) {
+    return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY, false);
+  }
 
   /**
    * Make a random key, homed to a given node.
    * @param node a node at which the new key is homed.
    * @return the new key
    */
-  public static Key make(H2ONode node) {
+  public static <P extends Keyed> Key<P> make(H2ONode node) {
     return make(decodeKeyName(rand()),DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false,node);
   }
-  static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
+  static <P extends Keyed> Key<P> make(String s, byte rf) { return make(decodeKeyName(s), rf);}
   /** Factory making a random Key
    *  @return Desired Key */ 
-  public static Key make() { return make(rand()); }
+  public static <P extends Keyed> Key<P> make() { return make(rand()); }
 
   /** Factory making a homed system Key.  Requires the initial system byte but
    *  then allows a String for the remaining bytes.  Requires a list of exactly
@@ -310,7 +312,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  substituted.  The rf parameter and passing more than 1 H2ONode are both
    *  depreciated.
    *  @return the desired Key   */
-  public static Key make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
+  public static <P extends Keyed> Key<P> make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
     return make(decodeKeyName(s),rf,systemType,hint,replicas);
   }
   /** Factory making a homed system Key.  Requires the initial system byte and
@@ -320,13 +322,13 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  substituted.  The rf parameter and passing more than 1 H2ONode are both
    *  depreciated.
    *  @return the desired Key   */
-  public static Key make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
+  public static <P extends Keyed> Key<P> make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
     return make(rand(),rf,systemType,hint,replicas);
   }
 
 
   // Make a Key which is homed to specific nodes.
-  static Key make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
+  static <P extends Keyed> Key<P> make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
     // no more than 3 replicas allowed to be stored in the key
     assert 0 <=replicas.length && replicas.length<=3;
     assert systemType<32; // only system keys allowed
@@ -360,7 +362,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
-  public static Key makeUserHidden(final Key orig) {
+  public static <P extends Keyed> Key<P> makeUserHidden(final Key<P> orig) {
     if (!orig.user_allowed()) return orig; //already hidden
     byte[] kb = orig._kb.clone();
     kb[0] = Key.HIDDEN_USER_KEY;

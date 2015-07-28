@@ -48,9 +48,6 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
   public int nfolds;
 
-  @API(help="Keep cross-validation training/validation split frames", level = API.Level.expert, direction=API.Direction.INOUT)
-  public boolean keep_cross_validation_splits;
-
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 
@@ -66,7 +63,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help = "Column with cross-validation fold index assignment per observation", is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT)
   public FrameV3.ColSpecifierV3 fold_column;
 
-  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"Random", "Modulo"}, level = API.Level.expert, direction=API.Direction.INOUT)
+  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"AUTO", "Random", "Modulo"}, level = API.Level.expert, direction=API.Direction.INOUT)
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
@@ -108,8 +105,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : Key.make(this.training_frame.name));
-    impl._valid = (null == this.validation_frame ? null : Key.make(this.validation_frame.name));
+    impl._train = (null == this.training_frame ? null : Key.<Frame>make(this.training_frame.name));
+    impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
 
     return impl;
   }
