@@ -26,16 +26,16 @@
 #`
 #` The result is something like the following:
 #` {arg1 arg2 arg3 . body}
-.fun.to.ast <- function(fun) {
+.fun.to.ast <- function(fun,envs) {
   f <- formals(fun)
   if( is.null(f) ) stop(paste0("Function '",fun,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
   args <- paste0(names(formals(fun)), collapse=" ")
   b <- body(fun)
-  stmnts <- .process.body(b)
+  stmnts <- .process.body(b,envs)
   paste0("{ ",args," . ",stmnts," }")
 }
 
-.process.body <- function(b) {
+.process.body <- function(b,envs) {
   stmnts <- as.list(b)
   tmp1 <- ""; tmp2 <- ""
   # Leading { means a list of statements, there is no trailing close-}
@@ -44,7 +44,7 @@
     tmp1 <- "(, "; tmp2 <- ")"  # Wrap result in a comma-operator
   }
   # return a list of ast_stmnts
-  paste0(tmp1,paste0(lapply(stmnts, .stmnt.to.ast.switchboard),collapse=" "),tmp2)
+  paste0(tmp1,paste0(lapply(stmnts, .stmnt.to.ast.switchboard, envs),collapse=" "),tmp2)
 }
 
 
@@ -67,7 +67,7 @@
 #`  3. Function call / Operation
 #`
 #` This switchboard takes exactly ONE statement at a time.
-.stmnt.to.ast.switchboard <- function(stmnt) {
+.stmnt.to.ast.switchboard <- function(stmnt,envs) {
   if( is.null(stmnt) ) return("")
 
   # convenience variable
@@ -88,7 +88,7 @@
   if(identical(quote(`->`), s1)) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
 
   # everything else is a function call or operation
-  .process.stmnt(stmnt)
+  .process.stmnt(stmnt,envs)
 }
 
 
@@ -124,7 +124,7 @@
 #`      D. .h2o.nary_op: '"trunc"', '"log"'  (could be either unary_op or nary_op)
 #`
 #` Each of the above types of statements will handle their own arguments and return an appropriate AST
-.process.stmnt <- function(stmnt) {
+.process.stmnt <- function(stmnt,envs) {
   # convenience variable
   stmnt_list <- as.list(stmnt)
   s1 <- stmnt_list[[1L]]
@@ -141,7 +141,7 @@
   # Got an Op; function call of some sort
   if( length(stmnt) > 1L && (typeof(s1) == "builtin" || typeof(s1)=="symbol") ) {
     # Convert all args to a list of Currents strings
-    args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard )
+    args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard, envs )
 
     # H2O primitives we invoke directly
     fname <- as.character(substitute(s1))
@@ -164,6 +164,21 @@
       stopifnot(length(args)==2)
       return(paste0("[",args[1L],":",args[2L],"]"))
     }
+
+    # Look up unknown symbols calls in the calling environment,
+    # and assume they are function calls
+    if( typeof(s1)=="symbol" ) {
+      # Full normal lookup, NA if symbol is undefined.  Search the passed in
+      # dynamic environment in reverse order.
+      for( i in rev(seq_along(envs)) ) {
+        sym = mget(fname,envir=envs[[i]],ifnotfound=NA)[[1L]]
+        if( typeof(sym) == "closure" )
+          return(paste0("(",.fun.to.ast(sym,envs)," ",paste0(args,collapse=" "),")"))
+      }
+      # If we get here, the lookup failed and it's an unknown variable name in
+      # the function body.  This is a classic R syntactic error, masked by R's
+      # lazy-evaluation semantics.  For H2O, this is an eager error.
+    }
   }
 
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
@@ -178,18 +193,18 @@
 }
 
 # Subtract 1 from the text form of "idx" (zero based indexing),
-# then wrap "str" with a call from "op": '(op str idx)'
+# then wrap "frame" with a call from "rowcol_op": '(rowcol_op frame idx)'
 # If "idx" is empty, skip the whole thing, as it defaults to "all"
-.row_col_adjust <- function(str,idx,op) {
-  if( idx=="" ) return(str)
+.row_col_adjust <- function(frame,idx,rowcol_op) {
+  if( idx=="" ) return(frame)
   # Raw number
   nidx <- suppressWarnings(as.numeric(idx))
-  if( !is.na(nidx) ) return(paste0("(",op," ",str," ",nidx-1,")"))
+  if( !is.na(nidx) ) return(paste0("(",rowcol_op," ",frame," ",nidx-1,")"))
   # Numeric range [lo:hi], convert to [lo-1:(hi-1o)]
   s2 <- unlist(strsplit(idx,"\\[|:|]"))
   lo <- suppressWarnings(as.numeric(s2[2L]))
   hi <- suppressWarnings(as.numeric(s2[3L]))
   if( length(s2) == 3 && !is.na(lo) && !is.na(hi) )
-    return(paste0("(",op," ",str," [",lo-1,":",hi-lo+1,"] )"))
+    return(paste0("(",rowcol_op," ",frame," [",lo-1,":",hi-lo+1,"] )"))
   stop(idx)
 }

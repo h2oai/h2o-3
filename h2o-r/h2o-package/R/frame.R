@@ -568,11 +568,15 @@ apply <- function(X, MARGIN, FUN, ...) {
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
-  if( typeof(FUN) == "builtin" ) {
-    fun.ast <- as.character(substitute(FUN))
-    if( fname %in% .h2o.primitives ) return(.newExpr("apply",X,MARGIN,fun.ast))
-    stop(paste0("Function '",fun,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
+  if( typeof(FUN) == "builtin" || typeof(FUN) == "symbol") {
+    fname <- as.character(substitute(FUN))
+    if( fname %in% .h2o.primitives ) return(.newExpr("apply",X,MARGIN,fname))
+    stop(paste0("Function '",fname,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
   }
-  # Explode anonymous function into a Currents AST
-  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN))
+
+  # Explode anonymous function into a Currents AST.  Pass along the dynamic
+  # environment (not the static environment the H2O wrapper itself is compiled
+  # in).  Unknown variables in the function body will be looked up in the
+  # dynamic scope.
+  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, sys.frames() ))
 }

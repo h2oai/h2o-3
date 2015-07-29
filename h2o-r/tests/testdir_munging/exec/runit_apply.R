@@ -37,8 +37,8 @@ test.apply <- function() {
   # Apply, with some R-defined user-defined functions
   x <- function(x) { stop("shadowed function x, so never call me") }
   sqr  <- function(x) { x*x }
-  cube <- function(x) { x*x*x }
-  print(apply( hex, 2, function(x) { sqr(x)+cube(x) })
+  quad <- function(x) { sqr(x)*sqr(x) }
+  print(apply( hex, 2, function(x) { quad(x) }))
   gc()
   print(h2o.ls())
 
