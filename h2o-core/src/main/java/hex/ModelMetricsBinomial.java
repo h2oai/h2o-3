@@ -27,9 +27,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
-    sb.append(" AUC: " + (float)_auc._auc + "\n");
+    if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
     sb.append(" logloss: " + (float)_logloss + "\n");
-    sb.append(" CM: " + cm().toASCII());
+    if (cm() != null) sb.append(" CM: " + cm().toASCII());
     return sb.toString();
   }
 

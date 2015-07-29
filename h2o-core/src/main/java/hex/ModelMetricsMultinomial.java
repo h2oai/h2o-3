@@ -26,10 +26,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     sb.append(super.toString());
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
-    if (cm().nclasses() <= 20)
-      sb.append(" CM: " + cm().toASCII());
-    else
-      sb.append(" CM: too large to print.\n");
+    if (cm() != null) {
+      if (cm().nclasses() <= 20)
+        sb.append(" CM: " + cm().toASCII());
+      else
+        sb.append(" CM: too large to print.\n");
+    }
     return sb.toString();
   }
 

@@ -33,8 +33,8 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     sb.append(" total sum of squares: " + (float)_totss + "\n");
     sb.append(" total within sum of squares: " + (float)_tot_withinss + "\n");
     sb.append(" total between sum of squares: " + (float)_betweenss + "\n");
-    sb.append(" per cluster sizes: " + Arrays.toString(_size) + "\n");
-    sb.append(" per cluster within sum of squares: " + Arrays.toString(_withinss) + "\n");
+    if (_size != null) sb.append(" per cluster sizes: " + Arrays.toString(_size) + "\n");
+    if (_withinss != null) sb.append(" per cluster within sum of squares: " + Arrays.toString(_withinss) + "\n");
     return sb.toString();
   }
 
