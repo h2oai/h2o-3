@@ -596,7 +596,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
             return ackack(ab, _tasknum); // Ignore duplicate response packet
           ab.drainClose();
         } else {
-          UDPTimeOutThread.PENDING.remove(this);
+          // don't do PENDING remove, too costly when having many threads
+//          UDPTimeOutThread.PENDING.remove(this);
           _dt.read(ab);             // Read the answer (under lock?)
           _size_rez = ab.size();    // Record received size
           ab.close();               // Also finish the read (under lock?  even if canceled, since need to drain TCP)
