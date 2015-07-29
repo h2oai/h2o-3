@@ -1,8 +1,11 @@
 package hex.glrm;
 
 import hex.*;
+import water.DKV;
 import water.H2O;
 import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -261,6 +264,40 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
     }
+
+    // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for real numeric values
+    public final double impute(double u) {
+      switch(_loss) {
+        case L2:
+        case L1:
+        case Huber:
+        case Periodic:
+          return u;
+        case Poisson:
+          return Math.exp(u)-1;
+        case Hinge:
+          return 1/u;
+        case Logistic:
+          if (u == 0) return 0;   // Any finite real number is minimizer if u = 0
+          return (u > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
+        default:
+          throw new RuntimeException("Unknown loss function " + _loss);
+      }
+    }
+
+    // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for categorical values {0,1,2,...}
+    public final int mimpute(double[] u) {
+      switch(_multi_loss) {
+        case Categorical:
+        case Ordinal:
+          double[] cand = new double[u.length];
+          for (int a = 0; a < cand.length; a++)
+            cand[a] = mloss(u, a);
+          return ArrayUtils.minIndex(cand);
+        default:
+          throw new RuntimeException("Unknown multidimensional loss function " + _multi_loss);
+      }
+    }
   }
 
   public static class GLRMOutput extends Model.Output {
@@ -319,9 +356,64 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
   }
 
-  public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
+  public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey, parms, output); }
 
-  // TODO: GLRM prediction is matrix product XY (w/ poss transformation depending on domain)
+  // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    final int ncols = _output._names.length;
+    for(int i = 0; i < ncols; i++)
+      loadingFrm.add(_output._names[i],loadingFrm.anyVec().makeZero());
+
+    new MRTask() {
+      @Override public void map( Chunk chks[] ) {
+        double tmp [] = new double[_parms._k];
+        double preds[] = new double[ncols];
+        for( int row = 0; row < chks[0]._len; row++ ) {
+          double p[] = impute_data(chks, row, tmp, preds);
+          for( int c=0; c<preds.length; c++ )
+            chks[_parms._k+c].set(row, p[c]);
+        }
+      }
+    }.doAll(loadingFrm);
+
+    // Return the imputed training frame
+    int x = _parms._k, y = loadingFrm.numCols();
+    Frame f = loadingFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
+
+    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    DKV.put(f);
+    makeMetricBuilder(null).makeModelMetrics(this, orig);
+    return f;
+  }
+
+  private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+    final int ncols = _output._names.length;
+    final int ncols_exp = _output._archetypes[0].length;
+    double[] xy = new double[ncols_exp];
+
+    for( int d=0; d<ncols_exp; d++) {
+      for (int k=0; k<tmp.length; k++) {
+        tmp[k] = chks[k].atd(row_in_chunk);
+        xy[d] += tmp[k] * _output._archetypes[k][d];
+      }
+    }
+
+    // Impute data based on domain of column
+    // Categorical columns
+    /* for (int d = 0; d < _output._ncats; d++) {
+      // TODO: Want to get block of xY for this categorical column
+      preds[d] = _parms.mimpute(xy[idx_ycat(d, level, _dinfo)]);
+    }
+
+    // Numeric columns
+    for (int d = _output._ncats; d < ncols; d++) {
+      int ds = d - _output._ncats;
+      preds[d] = _parms.impute(xy[idx_ynum(ds,_dinfo)]);
+    } */
+    return preds;
+  }
+
   @Override protected double[] score0(double[] data, double[] preds) {
     throw H2O.unimpl();
   }

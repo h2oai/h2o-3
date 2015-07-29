@@ -37,11 +37,11 @@ public class PCATest extends TestUtil {
 
     Frame train = null;
     try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");   // TODO: Move this outside loop
       for (DataInfo.TransformType std : new DataInfo.TransformType[] {
               DataInfo.TransformType.DEMEAN,
               DataInfo.TransformType.STANDARDIZE }) {
         PCAModel model = null;
-        train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");   // TODO: Move this outside loop
         try {
           PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
           parms._train = train._key;
