@@ -211,6 +211,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( _model != null ) _model.unlock(_key);
         _parms.read_unlock_frames(SharedTree.this);
         if( _model==null ) Scope.exit();
@@ -428,7 +429,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
-      if (out._ntrees > 0) Log.info("Training " + out._scored_train[out._ntrees].toString());
 
       // Score again on validation data
       if( _parms._valid != null ) {
@@ -436,8 +436,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
-        if (out._ntrees > 0) Log.info("Validation " + out._scored_valid[out._ntrees].toString());
       }
+      Log.info(_model.toString());
 
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._model_summary = createModelSummaryTable(out);

@@ -15,8 +15,6 @@ import hex.pca.PCAModel;
 import hex.schemas.GLRMV99;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
-import hex.svd.SVD;
-import hex.svd.SVDModel;
 
 import water.*;
 import water.fvec.*;
@@ -53,8 +51,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return new GLRMV99();
   }
 
-  @Override public Job<GLRMModel> trainModelImpl(long work) {
-    return start(new GLRMDriver(), work);
+  @Override public Job<GLRMModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new GLRMDriver(), work, restartTimer);
   }
 
   @Override
@@ -539,6 +537,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           throw t;
         }
       } finally {
+        updateModelOutput();
         _parms.read_unlock_frames(GLRM.this);
         if (model != null) model.unlock(_key);
         if (tinfo != null) tinfo.remove();

@@ -25,6 +25,19 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     _withinss = null;
     _totss = _tot_withinss = _betweenss = Double.NaN;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" total sum of squares: " + (float)_totss + "\n");
+    sb.append(" total within sum of squares: " + (float)_tot_withinss + "\n");
+    sb.append(" total between sum of squares: " + (float)_betweenss + "\n");
+    if (_size != null) sb.append(" per cluster sizes: " + Arrays.toString(_size) + "\n");
+    if (_withinss != null) sb.append(" per cluster within sum of squares: " + Arrays.toString(_withinss) + "\n");
+    return sb.toString();
+  }
+
   /**
    * Populate TwoDimTable from members _size and _withinss
    * @return TwoDimTable

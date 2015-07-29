@@ -58,9 +58,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   /** Start the KMeans training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<KMeansModel> trainModelImpl(long work) {
-    return start(new KMeansDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<KMeansModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new KMeansDriver(), work, restartTimer);
   }
 
   @Override
@@ -342,6 +343,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(KMeans.this);
       }

@@ -290,7 +290,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
      *  (run-time, etc) but that has to wait until Job is split from
      *  ModelBuilder. */
-    public Job.JobState _state;
+    public Job.JobState _status;
+    public long _start_time;
+    public long _end_time;
+    public long _run_time;
 
     /**
      * Training set metrics obtained during model training
@@ -389,7 +392,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               getModelCategory().ordinal();
     }
 
-    private void printTwoDimTables(StringBuilder sb, Object o) {
+    public void printTwoDimTables(StringBuilder sb, Object o) {
       for (Field f : Weaver.getWovenFields(o.getClass())) {
         Class<?> c = f.getType();
         if (c.isAssignableFrom(TwoDimTable.class)) {
@@ -406,6 +409,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
+      if (_training_metrics!=null) sb.append(_training_metrics.toString());
+      if (_validation_metrics!=null) sb.append(_validation_metrics.toString());
+      if (_cross_validation_metrics!=null) sb.append(_cross_validation_metrics.toString());
       printTwoDimTables(sb, this);
       return sb.toString();
     }
@@ -1051,6 +1057,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (m!=null) m.delete(); //delete all subparts
       }
     }
+  }
+
+  @Override public String toString() {
+    return _output.toString();
   }
 
 }

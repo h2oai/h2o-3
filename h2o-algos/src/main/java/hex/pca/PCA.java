@@ -43,8 +43,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   @Override
-  public Job<PCAModel> trainModelImpl(long work) {
-    return start(new PCADriver(), work);
+  public Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new PCADriver(), work, restartTimer);
   }
 
   @Override
@@ -329,6 +329,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           throw t;
         }
       } finally {
+        updateModelOutput();
         _parms.read_unlock_frames(PCA.this);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();

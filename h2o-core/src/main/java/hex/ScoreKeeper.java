@@ -1,6 +1,5 @@
 package hex;
 
-import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import water.Iced;
 import water.util.MathUtils;
 
@@ -43,22 +42,6 @@ public class ScoreKeeper extends Iced {
       _classError = ((ModelMetricsMultinomial)m)._cm.err();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
     }
-  }
-
-  /**
-   * Light-weight print of metrics to a String, meant to take least amount of lines possible
-   * @return String containing metrics printed for human consumption
-   */
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("r2 is " + String.format("%5f",_r2) + ", MSE is " + String.format("%5f",_mse));
-    if (!Double.isNaN(_mean_residual_deviance)) sb.append(", residual deviance is " + String.format("%5f", _mean_residual_deviance));
-    if (!Double.isNaN(_logloss)) sb.append(", logloss is " + String.format("%5f",_logloss));
-    if (!Double.isNaN(_AUC)) sb.append(", AUC is " + String.format("%5f",_AUC));
-    if (!Double.isNaN(_classError)) sb.append(", classification error is " + String.format("%5f",_classError));
-    if (_hitratio != null) sb.append("\n" + getHitRatioTable(_hitratio));
-    return sb.toString();
-
   }
 
   /**
