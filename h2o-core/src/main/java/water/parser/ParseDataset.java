@@ -120,7 +120,7 @@ public final class ParseDataset extends Job<Frame> {
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(job, keys, setup, deleteOnDone); // Fire off background parse
-    job.start(fjt, totalParseSize);
+    job.start(fjt, totalParseSize, true);
     return job;
   }
 

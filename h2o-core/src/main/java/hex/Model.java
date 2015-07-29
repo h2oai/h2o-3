@@ -291,6 +291,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (run-time, etc) but that has to wait until Job is split from
      *  ModelBuilder. */
     public Job.JobState _state;
+    public long _start_time;
+    public long _end_time;
+    public long _msec;
 
     /**
      * Training set metrics obtained during model training

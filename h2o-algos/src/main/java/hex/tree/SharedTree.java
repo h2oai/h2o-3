@@ -211,6 +211,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( _model != null ) _model.unlock(_key);
         _parms.read_unlock_frames(SharedTree.this);
         if( _model==null ) Scope.exit();

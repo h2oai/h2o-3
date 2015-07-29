@@ -69,7 +69,7 @@ public class CreateFrame extends Job<Frame> {
     if (_dest == null) throw new IllegalArgumentException("Destination key cannot be null.");
 
     FrameCreator fc = new FrameCreator(this, this._key);
-    start(fc, fc.nChunks()*5);
+    start(fc, fc.nChunks()*5, true);
     return this;
   }
 }
