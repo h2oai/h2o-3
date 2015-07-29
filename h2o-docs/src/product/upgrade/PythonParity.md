@@ -4,7 +4,8 @@ The following is a list of R functions alongside the equivalent Python ones.
 
 **Note**: This is not a complete listing of the R or Python H2O API. Please refer to the [complete documentation](http://h2o-release.s3.amazonaws.com/h2o/master/3098/docs-website/h2o-py/docs/index.html). 
 
-**H2O Algorithms**
+**H2O Algorithms**:
+
 |R             | Python        | Function Description     |
 |------------- |---------------| -------------|
 | `h2o.naiveBayes`      | `h2o.naive_bayes` | Computes Naive Bayes probabilities on an H2O dataset. |
@@ -16,7 +17,8 @@ The following is a list of R functions alongside the equivalent Python ones.
 | `h2o.randomForest`      | `h2o.random_forest` | |
 | `h2o.kmeans`      | `h2o.kmeans` | |
 
-**H2OFrame Operations**
+**H2OFrame Operations**:
+
 |R             | Python        | Function Description     |
 |------------- |---------------| -------------|
 | `%/%`          | `//`          | Floor division.                        | 
@@ -165,7 +167,8 @@ The following is a list of R functions alongside the equivalent Python ones.
 |`week`|`week`||
 |`year`|`year`||
 
-**H2O Model Operations**
+**H2O Model Operations**:
+
 |R             | Python        | Function Description     |
 |------------- |---------------| -------------|
 |`h2o.predict`|`predict`| |
@@ -212,7 +215,8 @@ The following is a list of R functions alongside the equivalent Python ones.
 |`h2o.withinss`|`withinss`| |
 |`h2o.anomaly`|`anomaly`| |
 
-**Other Methods**
+**Other Methods**:
+
 |`h2o.clusterInfo`|`h2o.cluster_info`| |
 |`h2o.getFrame`|`h2o.get_frame`| |
 |`h2o.getModel`|`h2o.get_model`| |
