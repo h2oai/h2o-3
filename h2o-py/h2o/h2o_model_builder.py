@@ -5,6 +5,7 @@ This file builds H2O model
 from connection import H2OConnection
 from frame      import H2OFrame
 from job        import H2OJob
+from model.model_future import H2OModelFuture
 
 
 # Response variable model building
@@ -37,11 +38,35 @@ def _check_frame(x,y,response):
   if y is not None: x[response._col_names[0]] = y
   return x
 
-# Add the weights column to the training and/or validation data
-def _add_weights_col(target, source, weights_column):
-  if not isinstance(weights_column, str): raise ValueError("`weights_column` must be a column name, but got "
-                                                           "{0}".format(weights_column))
-  target[weights_column] = source[weights_column]
+def _add_col_to_x_and_validation_x(col_name,x,validation_x,kwargs,xval=False):
+  """
+  Add column to x/validation_x, if it isn't already there. Grabs the column from the training_frame or
+  validation_frame parameters.
+
+  :param col_name: the name of the column to add
+  :param xval: if True, don't add folds_column to validation_x
+  :return: x and validation_x, with the respective columns added
+  """
+  # training_frame
+  if col_name not in x._col_names and not col_name is None:
+    if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `" +
+                                                               col_name + "`not part of `x`")
+    if not col_name in kwargs["training_frame"].col_names():
+      raise ValueError("`" + col_name + "` wasn't found in the training_frame. Only these columns were found: "
+                                        "{0}".format(kwargs["training_frame"].col_names()))
+    x[col_name] = kwargs["training_frame"][col_name]
+
+  # validation_frame
+  if validation_x is not None and not xval:
+    if col_name not in validation_x._col_names and not col_name is None:
+      if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
+                                                                   "`" + col_name + "` not part of `validation_x`")
+      if not col_name in kwargs["validation_frame"].col_names():
+        raise ValueError("`" + col_name + "` wasn't found in the validation_frame. Only these columns were found: "
+                                          "{0}".format(kwargs["validation_frame"].col_names()))
+      validation_x[col_name] = kwargs["validation_frame"][col_name]
+
+  return x, validation_x
 
 # Build an H2O model
 def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
@@ -56,21 +81,9 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   x = _check_frame(x,y,y)
   if validation_x is not None: validation_x = _check_frame(validation_x,validation_y,y)
 
-  if "weights_column" in kwargs.keys():
-    # training_frame
-    if kwargs["weights_column"] not in x._col_names:
-      if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `weights`"
-                                                                 "not part of `x`")
-      _add_weights_col(x, kwargs["training_frame"], kwargs["weights_column"])
-      assert kwargs["weights_column"] in x._col_names
-
-    # validation_frame
-    if validation_x is not None:
-      if kwargs["weights_column"] not in validation_x._col_names:
-        if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
-                                                                     "`weights` not part of `validation_x`")
-        _add_weights_col(validation_x, kwargs["validation_frame"], kwargs["weights_column"])
-        assert kwargs["weights_column"] in validation_x._col_names
+  if "weights_column" in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["weights_column"],x, validation_x, kwargs)
+  if "offset_column"  in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["offset_column"], x, validation_x, kwargs)
+  if "fold_column"   in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["fold_column"],    x, validation_x, kwargs, xval=True)
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
@@ -78,35 +91,49 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
 
   if y is not None: kwargs['response_column']=y._col_names[0]
 
-  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
+  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if
+                 kwargs[k] is not None])
 
-  # launch the job and poll
-  job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
-  model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]
+  # launch the job (only resolve the model if do_future is False)
+  do_future = "do_future" in kwargs.keys() and kwargs["do_future"]
+  if "do_future" in kwargs.keys(): kwargs.pop("do_future")
+  future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs),
+                                       job_type=(algo_url+" Model Build")), x)
+  if do_future: return future_model
+  else: return _resolve_model(future_model, **kwargs)
+
+def _resolve_model(future_model, **kwargs):
+  future_model.poll() # Wait for model-building to be complete
+  if '_rest_version' in kwargs.keys():
+    model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key,
+                                        _rest_version=kwargs['_rest_version'])["models"][0]
+  else:
+    model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
+
   model_type = model_json["output"]["model_category"]
   if model_type=="Binomial":
     from model.binomial import H2OBinomialModel
-    model = H2OBinomialModel(job.dest_key,model_json)
+    model = H2OBinomialModel(future_model.job.dest_key,model_json)
 
   elif model_type=="Clustering":
     from model.clustering import H2OClusteringModel
-    model = H2OClusteringModel(job.dest_key,model_json)
+    model = H2OClusteringModel(future_model.job.dest_key,model_json)
 
   elif model_type=="Regression":
     from model.regression import H2ORegressionModel
-    model = H2ORegressionModel(job.dest_key,model_json)
+    model = H2ORegressionModel(future_model.job.dest_key,model_json)
 
   elif model_type=="Multinomial":
     from model.multinomial import H2OMultinomialModel
-    model = H2OMultinomialModel(job.dest_key,model_json)
+    model = H2OMultinomialModel(future_model.job.dest_key,model_json)
 
   elif model_type=="AutoEncoder":
     from model.autoencoder import H2OAutoEncoderModel
-    model = H2OAutoEncoderModel(job.dest_key,model_json)
+    model = H2OAutoEncoderModel(future_model.job.dest_key,model_json)
 
   elif model_type=="DimReduction":
     from model.dim_reduction import H2ODimReductionModel
-    model = H2ODimReductionModel(job.dest_key,model_json)
+    model = H2ODimReductionModel(future_model.job.dest_key,model_json)
 
   else:
     print model_type

@@ -19,14 +19,20 @@ class H2OMultinomialModel(ModelBase):
         j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + data._id)
         return j["model_metrics"][0]["cm"]["table"]
 
-    def hit_ratio_table(self, train=False, valid=False):
+    def hit_ratio_table(self, train=False, valid=False, xval=False):
         """
         Retrieve the Hit Ratios
 
-        :param train: Return the hit ratios for training data.
-        :param valid: Return the hit ratios for the validation data.
-        :return: The hit ratio table (H2OTwoDimTable).
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+        and "xval"
+
+        :param train: If train is True, then return the R^2 value for the training data.
+        :param valid: If valid is True, then return the R^2 value for the validation data.
+        :param xval:  If xval is True, then return the R^2 value for the cross validation data.
+        :return: The R^2 for this regression model.
         """
-        tm = ModelBase._get_metrics(self, *ModelBase._train_or_valid(train, valid))
-        if tm is None: return None
-        return tm.hit_ratio_table()
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.hit_ratio_table()
+        return m.values()[0] if len(m) == 1 else m
