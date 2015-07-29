@@ -399,8 +399,24 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
     return getResult();         // Block For All
   }
+
+
+  // Special mode doing 1 map per key.  No frame
+  public void asyncExec( Key... keys ) {
+    // Raise the priority, so that if a thread blocks here, we are guaranteed
+    // the task completes (perhaps using a higher-priority thread from the
+    // upper thread pools).  This prevents thread deadlock.
+    _topGlobal = true;
+    _keys = keys;
+    _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
+    setupLocal0();              // Local setup
+    H2O.submitTask(this);       // Begin normal execution on a FJ thread
+  }
+
   // Special mode to run once-per-node
   public T doAllNodes() { return doAll((Key[])null); }
+
+  public void asyncExecOnAllNodes() { asyncExec((Key[]) null); }
 
   /**
    * Invokes the map/reduce computation over the given Frame instance. This call is

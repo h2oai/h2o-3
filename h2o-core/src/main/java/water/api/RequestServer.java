@@ -107,6 +107,7 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
     addToNavbar(register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
     addToNavbar(register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something."),"/NetworkTest", "NetworkTest",   "Admin");
+    addToNavbar(register("/3/NetworkBench","GET",NetworkTestHandler.class,"runBench"    ,"Something something something."),"/NetworkBench","NetworkBench",  "Admin");
     register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     addToNavbar(register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
 

@@ -11,7 +11,7 @@ import java.util.Random;
 /**
  * Created by tomasnykodym on 7/28/15.
  */
-public class NetworkBench {
+public class NetworkBench extends Iced {
   public static int [] MSG_SZS = new int[]{1, 4, 16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304};
   public static int [] MSG_CNT = new int[]{50000, 25000, 12500, 6250, 3125, 1563, 781, 391, 195, 98, 49, 25};
 
@@ -34,19 +34,27 @@ public class NetworkBench {
       // String[] colFormats, String colHeaderForRowHeaders) {
       String title = "Network Bench, sz = " + _msgSz + "B, cnt = " + _msgCnt + ", total sz = " + 0.01*((int)(100*_msgSz*_msgCnt/(1024.0*1024))) + "MB";
       String [] rowHeaders = new String[H2O.CLOUD.size() + 1];
-      for(int i = 0;)
-
-      TwoDimTable td = new TwoDimTable(title, "Network benchmark results", );
-      return null;
-    }
-
-    public TwoDimTable summary(){
-      return null;
+      rowHeaders[H2O.CLOUD.size()] = "MrTasks";
+      String [] colHeaders = new String[H2O.CLOUD.size()];
+      String [] colTypes = new String[H2O.CLOUD.size()];
+      String [] colFormats = new String[H2O.CLOUD.size()];
+      for(int i = 0; i < H2O.CLOUD.size(); ++i) {
+        rowHeaders[i] = colHeaders[i] = H2O.CLOUD._memary[i].toString();
+        colTypes[i] = "double";
+        colFormats[i] = "%2f";
+      }
+      TwoDimTable td = new TwoDimTable(title, "Network benchmark results, round-trip bandwidth in MB/s", rowHeaders, colHeaders, colTypes, colFormats, "");
+      for(int i = 0 ; i < _all2AllTimes.length; ++i) {
+        for (int j = 0; j < _all2AllTimes.length; ++j)
+          td.set(i, j, 0.01 * ((int) (_msgSz * _msgCnt / (_all2AllTimes[i][j] * 0.00001))));
+        td.set(H2O.CLOUD.size(),i, 0.01 * ((int) (_msgSz * _msgCnt / (_mrtTimes[i] * 0.00001))));
+      }
+      return td;
     }
   }
 
-  NetworkBenchResults [] _results;
-  public void doTest(){
+  public NetworkBenchResults [] _results;
+  public NetworkBench doTest(){
      _results = new NetworkBenchResults[MSG_SZS.length];
     for(int i = 0; i < MSG_SZS.length; ++i) {
       long [] mrts = new long[H2O.CLOUD.size()];
@@ -58,6 +66,7 @@ public class NetworkBench {
       }
       _results[i] = new NetworkBenchResults(MSG_SZS[i],MSG_CNT[i],all2all,mrts);
     }
+    return this;
   }
 
   private static class TestAll2All extends MRTask<TestAll2All> {
@@ -70,6 +79,16 @@ public class NetworkBench {
       _msgCnt = msgCnt;
     }
 
+    private static class SendRandomBytesTsk extends DTask{
+      final byte [] dd;
+
+      public SendRandomBytesTsk(int sz) {
+        dd = new byte[sz];
+        new Random().nextBytes(dd);
+      }
+      @Override
+      protected void compute2() {tryComplete();}
+    }
     @Override
     public void setupLocal(){
       _time = new long[H2O.CLOUD.size()][];
@@ -82,20 +101,10 @@ public class NetworkBench {
           fs.add(new RecursiveAction() {
             @Override
             protected void compute() {
-              H2ONode h2o = H2O.CLOUD._memary[fi];
-              final byte [] data = new byte[_msgSz];
-              new Random().nextBytes(data);
               long t1 = System.currentTimeMillis();
               Futures fs2 = new Futures();
               for(int j = 0; j < _msgCnt; ++j)
-                fs2.add(RPC.call(h2o, new DTask() {
-                  byte [] dd = data;
-                  @Override
-                  protected void compute2() {
-                    dd = null; // don't send the data back
-                    tryComplete();
-                  }
-                }));
+                fs2.add(RPC.call(H2O.CLOUD._memary[fi], new SendRandomBytesTsk(_msgSz)));
               fs2.blockForPending();
               long t2 = System.currentTimeMillis();
               _time[myId][fi] = (t2 - t1);

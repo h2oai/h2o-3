@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 
 import sun.misc.Unsafe;
 import water.nbhm.UtilUnsafe;
+import water.util.Log;
 
 /**
 
@@ -103,6 +104,7 @@ public class TimeLine extends UDP {
       b._bb.position(pos);
     } catch(Throwable t) {
       System.err.println("Timeline record failed, " + t.toString());
+      Log.err(t);
     }
   }
   static void record_send( AutoBuffer b, boolean tcp)           {
