@@ -31,7 +31,7 @@
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
 #' @seealso \href{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with the default settings.
 #' localH2O = h2o.init()
@@ -42,10 +42,6 @@
 #'
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with 5 gigabytes of memory.
-#' localH2O = h2o.init(max_mem_size = "5g")
-#'
-#' # Try to connect to a local H2O instance that is already running.
-#' # If not found, start a local H2O instance from R that uses 5 gigabytes of memory.
 #' localH2O = h2o.init(max_mem_size = "5g")
 #' }
 #' @export
@@ -257,7 +253,7 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 #'        and port of the server running H2O.
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' localH2O <- h2o.init()
 #' h2o.clusterStatus(localH2O)
 #' }
