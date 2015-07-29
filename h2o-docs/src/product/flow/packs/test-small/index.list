@@ -16,13 +16,6 @@ dl_iris.flow
 gbm_anomaly.flow
 gbm_chess.flow
 glm_gbm_test_bostonhousing.flow
-glm_gbm_test_czechboard_300x300.flow
-glm_gbm_test_ecology_eval.flow
-glm_gbm_test_ecology_model.flow
-glm_gbm_test_Mfgdata_gaussian_GBM_testing.flow
-glm_gbm_test_smtrees.flow
-glm_gbm_test_swpreds_1000x3.flow
-glm_gbm_test.flow
 glm_iris_2.flow
 glm_iris_test_numeric_missing_extra.flow
 glm_iris_wheader_65_rows.flow
