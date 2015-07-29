@@ -53,9 +53,10 @@ public class TCPReceiverThread extends Thread {
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
         // Pass off the TCP connection to a separate reader thread
-        if(_udpLike)
-          new TCP_UDP_ReaderThread(sock.socket().getInetAddress(),sock).start();
-        else new TCPReaderThread(sock,new AutoBuffer(sock)).start();
+        if(_udpLike) {
+          Log.info("starting new UDP-TCP receiver thread connected to " + sock.getRemoteAddress());
+          new TCP_UDP_ReaderThread(sock.socket().getInetAddress(), sock).start();
+        } else new TCPReaderThread(sock,new AutoBuffer(sock)).start();
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
       } catch( Exception e ) {
