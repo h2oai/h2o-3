@@ -310,7 +310,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Average change in objective function this iteration
     public double _avg_change_obj;
 
-    // Mapping from training data to lower dimensional k-space (Y)
+    // Mapping from training data to lower dimensional k-space (Y')
     public double[][] _archetypes;
 
     // Final step size
@@ -389,13 +389,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     final int ncols = _output._names.length;
-    final int ncols_exp = _output._archetypes[0].length;
+    final int ncols_exp = _output._archetypes.length;
     double[] xy = new double[ncols_exp];
 
     for( int d=0; d<ncols_exp; d++) {
       for (int k=0; k<tmp.length; k++) {
         tmp[k] = chks[k].atd(row_in_chunk);
-        xy[d] += tmp[k] * _output._archetypes[k][d];
+        xy[d] += tmp[k] * _output._archetypes[d][k];
       }
     }
 

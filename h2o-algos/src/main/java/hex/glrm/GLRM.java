@@ -453,11 +453,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(dinfo._key, dinfo);
+
         int weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
+        int[] numLevels = dinfo._adaptedFrame.numLevels();
 
         // Use closed form solution for X if L2 loss and regularization
         double[][] yinit = initialXY(tinfo, dinfo, na_cnt);
-        Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, dinfo._catOffsets, dinfo._adaptedFrame.domains());
+        Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, dinfo._catOffsets, numLevels);
         if (na_cnt == 0 && _parms.hasClosedForm())
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
@@ -481,7 +483,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 2) Update Y matrix given fixed X
           UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, weightId);
           double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
-          Archetypes ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, dinfo._adaptedFrame.domains());
+          Archetypes ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
 
           // 3) Compute average change in objective function
           objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, weightId).doAll(dinfo._adaptedFrame);
@@ -521,8 +523,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;
-        // model._output._archetypes = yt;
-        model._output._archetypes = yt._archetypes;
+        model._output._archetypes = yt._archetypes;   // TODO: Should I transpose to get Y?
         model._output._step_size = step;
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
@@ -569,18 +570,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double[][] _archetypes;
     boolean _transposed;    // Is _archetypes = Y' (Y transpose)? Used during model building for convenience.
     final int[] _catOffsets;
-    final String[][] _domains;
+    final int[] _numLevels;
 
-    Archetypes(double[][] y, boolean transposed, int[] catOffsets, String[][] domains) {
+    Archetypes(double[][] y, boolean transposed, int[] catOffsets, int[] numLevels) {
       _archetypes = y;
       _transposed = transposed;
       _catOffsets = catOffsets;
-      _domains = domains;
-    }
-
-    // If transpose = true, we want to return Y'
-    public double[][] getY(boolean transpose) {
-      return (transpose ^ _transposed) ? ArrayUtils.transpose(_archetypes) : _archetypes;
+      _numLevels = numLevels;
     }
 
     public int rank() {
@@ -591,6 +587,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return _transposed ? _archetypes.length : _archetypes[0].length;
     }
 
+    // If transpose = true, we want to return Y'
+    public double[][] getY(boolean transpose) {
+      return (transpose ^ _transposed) ? ArrayUtils.transpose(_archetypes) : _archetypes;
+    }
+
     // For j = 0 to number of numeric columns - 1
     public int getNumCidx(int j) {
       return _catOffsets[_catOffsets.length-1]+j;
@@ -598,8 +599,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // For j = 0 to number of categorical columns - 1, and level = 0 to number of levels in categorical column - 1
     public int getCatCidx(int j, int level) {
-      assert _domains[j] != null : "Domain of categorical column cannot be null";
-      assert !Double.isNaN(level) && level >= 0 && level < _domains[j].length;
+      assert _numLevels[j] != 0 : "Domain of categorical column cannot be null";
+      assert !Double.isNaN(level) && level >= 0 && level < _numLevels[j];
       return _catOffsets[j]+level;
     }
 
@@ -625,10 +626,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // Extract Y_j the k by d_j block of Y corresponding to categorical column j
     // Note: d_j = number of levels in categorical column j
     protected final double[][] getCatBlock(int j) {
-      assert _domains[j] != null : "Domain of categorical column cannot be null";
-      int catlvls = _domains[j].length;
+      assert _numLevels[j] != 0 : "Domain of categorical column cannot be null";
+      double[][] block = new double[rank()][_numLevels[j]];
 
-      double[][] block = new double[rank()][catlvls];
       if (_transposed) {
         for (int k = 0; k < block.length; k++) {
           for (int level = 0; level < block[0].length; level++)
@@ -713,7 +713,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
           // double[] xy = new double[_dinfo._catLvls[j].length];
-          double[] xy = new double[_yt._domains[j].length];
+          double[] xy = new double[_yt._numLevels[j]];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xold(cs,k,_ncolA).atd(row) * _yt.getCat(j, level, k);
@@ -835,7 +835,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
           // double[] xy = new double[_dinfo._catLvls[j].length];
-          double[] xy = new double[_ytold._domains[j].length];
+          double[] xy = new double[_ytold._numLevels[j]];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold.getCat(j,level,k);
@@ -953,7 +953,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
           // double[] xy = new double[_dinfo._catLvls[j].length];
-          double[] xy = new double[_yt._domains[j].length];
+          double[] xy = new double[_yt._numLevels[j]];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt.getCat(j, level, k);
