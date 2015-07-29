@@ -121,7 +121,6 @@ dl_pca_test_fgl_tr.flow
 dl_pca_test_iris_PCAscore.flow
 dl_pca_test_USArrests_PCAscore.flow
 dl_pca_test_USArrests.flow
-dl_poisson_Goalies-csv.flow
 dl_prostate_prostate_complete-csv-zip.flow
 dl_prostate_prostate-csv-zip.flow
 dl_prostate_prostate.flow
