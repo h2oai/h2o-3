@@ -243,12 +243,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract public Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
   abstract public long progressUnits();
 
+  @Override
+  protected boolean canBeDone() {
+    return (_parms._fold_column == null && _parms._nfolds == 0);
+  }
+
   /**
    * Default naive (serial) implementation of N-fold cross-validation
    * @return Cross-validation Job
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public Job<M> computeCrossValidation() {
+    assert(_state == JobState.RUNNING); //main Job is still running
     final Frame origTrainFrame = train();
 
     // Step 1: Assign each row to a fold
@@ -366,29 +372,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Build CV model - launch a separate Job
       Model m = null;
       {
-        ModelBuilder<M, P, O> cvModel = null;
+        ModelBuilder<M, P, O> cvModelBuilder = null;
         try {
-          cvModel = (ModelBuilder<M, P, O>) this.clone();
-          cvModel._dest = modelKeys[i];
-          cvModel._key = Key.make(_key.toString() + "_cv" + i);
-          cvModel._state = JobState.CREATED;
-          cvModel._description = identifier;
+          cvModelBuilder = (ModelBuilder<M, P, O>) this.clone();
+          cvModelBuilder._dest = modelKeys[i];
+          cvModelBuilder._key = Key.make(_key.toString() + "_cv" + i);
+          cvModelBuilder._state = JobState.CREATED;
+          cvModelBuilder._description = identifier;
 
           // Fix up some parameters
-          cvModel._parms = (P) _parms.clone(); //NOTE: This is not a deep clone - we can only change simple top-level parameters here
-          cvModel._parms._weights_column = weightName;
-          cvModel._parms._train = cvTrain._key;
-          cvModel._parms._valid = cvVal._key;
-          cvModel._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-          cvModel.modifyParmsForCrossValidationSplits(i, N);
-          cvModel._start_time = System.currentTimeMillis();
-          cvModel.trainModelImpl(-1, true);
-          cvModel.get();
-          m = DKV.getGet(cvModel.dest());
+          cvModelBuilder._parms = (P) _parms.clone(); //NOTE: This is not a deep clone - we can only change simple top-level parameters here
+          cvModelBuilder._parms._weights_column = weightName;
+          cvModelBuilder._parms._train = cvTrain._key;
+          cvModelBuilder._parms._valid = cvVal._key;
+          cvModelBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+          cvModelBuilder.modifyParmsForCrossValidationSplits(i, N);
+          cvModelBuilder._start_time = System.currentTimeMillis();
+          cvModelBuilder.trainModelImpl(-1, true);
+          cvModelBuilder.block();
+          cvModelBuilder.done();
+          m = DKV.getGet(cvModelBuilder.dest());
+          assert(_state == JobState.RUNNING); //main Job is still running
         } catch(Throwable t) {
           throw t;
         } finally {
-          if (cvModel != null) cvModel.remove();
+          if (cvModelBuilder != null) cvModelBuilder.remove();
           DKV.remove(cvTrain._key);
         }
       }
@@ -423,12 +431,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if (!isCancelledOrCrashed()) {
       Log.info("Building main model.");
+
+      //HACK:
+      // Can't use changeJobState (it assumes that state transitions are monotonic)
+      // instead - we use the
+      assert (DKV.get(_key).get() == this);
+      assert(_state == JobState.RUNNING);
+      assert (((Job)DKV.getGet(_key))._state == JobState.RUNNING);
       _state = JobState.CREATED;
+      assert (((Job)DKV.getGet(_key))._state == JobState.CREATED);
+
+      assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
       modifyParmsForCrossValidationMainModel(N);
 
-      Job<M> main = trainModelImpl(-1, false);
-      main.get(); //block
+      trainModelImpl(-1, false);
+      block(); //don't call done() yet, as we need to compute and stitch in the N-fold CV metrics first
       Model mainModel = DKV.getGet(dest());
 
       Log.info("Computing " + N + "-fold cross-validation metrics.");
@@ -443,6 +461,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       DKV.put(mainModel);
+      assert(!isDone());
+      done(true); //now, we can mark the job as done
+      updateModelOutput(); //update the state of the model
       Log.info(mainModel._output._cross_validation_metrics.toString());
     }
     return this;
