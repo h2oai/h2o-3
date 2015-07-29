@@ -27,8 +27,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   public ModelBuilderSchema schema() { return new QuantileV3(); }
 
-  @Override public Quantile trainModelImpl(long work) {
-    return (Quantile)start(new QuantileDriver(), work);
+  @Override public Quantile trainModelImpl(long work, boolean restartTimer) {
+    return (Quantile)start(new QuantileDriver(), work, restartTimer);
   }
 
   @Override
@@ -118,6 +118,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Quantile.this);
         Scope.exit(model == null ? null : model._key);

@@ -530,8 +530,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private static final long WORK_TOTAL = 1000000;
   @Override
-  public Job<GLMModel> trainModelImpl(long work) {
-    start(new GLMDriver(null), work);
+  public Job<GLMModel> trainModelImpl(long work, boolean restartTimer) {
+    start(new GLMDriver(null), work, restartTimer);
     return this;
   }
 
@@ -685,6 +685,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 
     private void doCleanup(){
+      updateModelOutput();
       try {
         _parms.read_unlock_frames(GLM.this);
       }
@@ -710,8 +711,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     @Override public void onCompletion(CountedCompleter cc) {
       _model.unlock(GLM.this._key);
-      doCleanup();
       done();
+      doCleanup();
     }
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       if(!_gotException.getAndSet(true)){

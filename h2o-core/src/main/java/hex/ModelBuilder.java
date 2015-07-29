@@ -3,7 +3,6 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.api.ModelMetricsBase;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -143,7 +142,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P ignore) {
-    super(Key.<M>make("Failed"),"ModelBuilder constructor needs to be overridden.");
+    super(Key.<M>make("Failed"), "ModelBuilder constructor needs to be overridden.");
     throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
@@ -192,32 +191,56 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return modelBuilder;
   }
 
+  protected void updateModelOutput() {
+    // TODO: Remove this check
+    final ModelBuilder<M,P,O> j = DKV.getGet(_key);
+    assert(j._start_time == _start_time);
+    assert(j._end_time == _end_time);
+    assert(j._state == _state);
+
+    new TAtomic<M>() {
+      @Override
+      public M atomic(M old) {
+        if (old != null) {
+          old._output._state = _state;
+          old._output._start_time = _start_time;
+          old._output._end_time = _end_time;
+          old._output._msec = _end_time - _start_time;
+        }
+        return old;
+      }
+    }.invoke(dest());
+  }
+
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
-//    init(false); //parameter sanity check (such as _fold_column, etc.)
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     }
-    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits()) :
+    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits(), true) :
             // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-            start(new H2O.H2OCountedCompleter(){
-              @Override protected void compute2() {
+            start(new H2O.H2OCountedCompleter() {
+              @Override
+              protected void compute2() {
                 computeCrossValidation();
                 tryComplete();
               }
-              @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+
+              @Override
+              public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                 failed(ex);
                 return true;
               }
-            }, (_parms._nfolds+1)*progressUnits());
+            }, (_parms._nfolds + 1) * progressUnits(), true);
   }
 
   /**
    * Model-specific implementation of model training
    * @param progressUnits Number of progress units (each advances the Job's progress bar by a bit)
+   * @param restartTimer
    * @return ModelBuilder job
    */
-  abstract public Job<M> trainModelImpl(long progressUnits);
+  abstract public Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
   abstract public long progressUnits();
 
   /**
@@ -358,8 +381,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           cvModel._parms._valid = cvVal._key;
           cvModel._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
           cvModel.modifyParmsForCrossValidationSplits(i, N);
-          cvModel.trainModelImpl(-1);
-          m = cvModel.get();
+          cvModel._start_time = System.currentTimeMillis();
+          cvModel.trainModelImpl(-1, true);
+          cvModel.get();
+          m = DKV.getGet(cvModel.dest());
         } catch(Throwable t) {
           throw t;
         } finally {
@@ -402,8 +427,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _deleteProgressKey = true; //delete progress after the main model is done
       modifyParmsForCrossValidationMainModel(N);
 
-      Job<M> main = trainModelImpl(-1);
-      Model mainModel = main.get();
+      Job<M> main = trainModelImpl(-1, false);
+      main.get(); //block
+      Model mainModel = DKV.getGet(dest());
 
       Log.info("Computing " + N + "-fold cross-validation metrics.");
       mainModel._output._cross_validation_models = new Key[N];

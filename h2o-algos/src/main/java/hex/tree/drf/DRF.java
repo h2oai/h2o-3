@@ -46,9 +46,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public DRFV3 schema() { return new DRFV3(); }
 
   /** Start the DRF training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work) {
-    return start(new DRFDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new DRFDriver(), work, restartTimer);
   }
 
 

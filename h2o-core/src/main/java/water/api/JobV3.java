@@ -34,7 +34,7 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
   @API(help="Start time", direction=API.Direction.OUTPUT)
   public long start_time;
 
-  @API(help="runtime", direction=API.Direction.OUTPUT)
+  @API(help="Runtime in milliseconds", direction=API.Direction.OUTPUT)
   public long msec;
 
   @API(help="destination key", direction=API.Direction.INOUT)
