@@ -292,10 +292,10 @@ public class ArrayUtils {
   }
   public static double[][] formGram(double[][] x) { return formGram(x, false); }
 
-  public static String[] permuteCols(String[] vec, int[] idx) {
+  public static double[] permuteCols(double[] vec, int[] idx) {
     if(vec == null) return null;
     assert vec.length == idx.length : "Length of vector must match permutation vector length: Got " + vec.length + " != " + idx.length;
-    String[] res = new String[vec.length];
+    double[] res = new double[vec.length];
 
     for(int i = 0; i < vec.length; i++)
       res[i] = vec[idx[i]];

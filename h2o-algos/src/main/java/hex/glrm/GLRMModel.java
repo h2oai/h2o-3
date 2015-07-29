@@ -362,7 +362,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame loadingFrm = DKV.get(_output._loading_key).get();
     final int ncols = _output._names.length;
     for(int i = 0; i < ncols; i++)
-      loadingFrm.add(_output._names[i],loadingFrm.anyVec().makeZero());
+      loadingFrm.add(_output._names[_output._permutation[i]],loadingFrm.anyVec().makeZero());
 
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
@@ -382,10 +382,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig);
+    makeMetricBuilder(null).makeModelMetrics(this, orig);   // TODO: Model metrics aren't being calculated during scoring
     return f;
   }
 
+  // TODO: Need to undo permutation
   private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
@@ -393,7 +394,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     return preds;
   }
 
-  // Impute data based on domain of column
   private double[] impute_data(double[] tmp, double[] preds) {
     assert preds.length == _output._archetypes_obj.nfeatures();
 
@@ -409,6 +409,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double xy = _output._archetypes_obj.lmulNumCol(tmp, ds);
       preds[d] = _parms.impute(xy);
     }
+
+    // Undo permutation so columns ordered as in original frame
     return preds;
   }
 
@@ -421,19 +423,23 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   public static class ModelMetricsGLRM extends ModelMetricsUnsupervised {
-    public long _miscls;
+    public double _numerr;
+    public double _caterr;
 
-    public ModelMetricsGLRM(Model model, Frame frame, long miscls) {
+    public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr) {
       super(model, frame, Double.NaN);
-      _miscls = miscls;
+      _numerr = numerr;
+      _caterr = caterr;
     }
 
     public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
-      public long _miscls;     // Number of misclassified categorical values
+      public double _miscls;     // Number of misclassified categorical values
+      public long _ncount;      // Number of observed numeric entries
+      public long _ccount;     // Number of observed categorical entries
 
       public GLRMModelMetrics(int dims) {
         _work = new double[dims];
-        _miscls = 0;
+        _miscls = _ncount = _ccount = 0;
       }
 
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) {
@@ -444,12 +450,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         for(int i = 0; i < gm._output._ncats; i++) {
           if(Double.isNaN(dataRow[i])) continue;
           if(dataRow[i] != preds[i]) _miscls++;
+          _ccount++;
         }
 
         for(int i = gm._output._ncats; i < dataRow.length; i++) {
           if(Double.isNaN(dataRow[i])) continue;
           double diff = dataRow[i] - preds[i];
           _sumsqe += diff * diff;
+          _ncount++;
         }
         return preds;
       }
@@ -458,10 +466,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         GLRMModelMetrics mm = (GLRMModelMetrics) mb;
         super.reduce(mm);
         _miscls += mm._miscls;
+        _ncount += mm._ncount;
+        _ccount += mm._ccount;
       }
 
       @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
-        return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, _miscls));
+        double numerr = _ncount > 0 ? _sumsqe / _ncount : Double.NaN;
+        double caterr = _ccount > 0 ? _miscls / _ccount : Double.NaN;
+        return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
       }
     }
   }

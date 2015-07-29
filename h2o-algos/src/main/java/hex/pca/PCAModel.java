@@ -64,9 +64,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
 
-    // Frame key for right singular vectors from SVD
-    public Key<Frame> _loading_key;
-
     public PCAOutput(PCA b) { super(b); }
 
     /** Override because base class implements ncols-1 for features with the
