@@ -1,9 +1,6 @@
 package hex.deeplearning;
 
-import hex.DataInfo;
-import hex.Distribution;
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
@@ -54,10 +51,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   /** Start the DeepLearning training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<DeepLearningModel> trainModelImpl(long work) {
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<DeepLearningModel> trainModelImpl(long work, boolean restartTimer) {
     // We look at _train before init(true) is called, so step around that here:
-    return start(new DeepLearningDriver(), work);
+    return start(new DeepLearningDriver(), work, restartTimer);
   }
 
   @Override
@@ -188,6 +186,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw t;
         }
       } finally {
+        updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
       }

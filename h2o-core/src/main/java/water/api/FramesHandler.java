@@ -270,7 +270,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       InputStream is = (fr).toCSV(true,false);
       ExportDataset job = new ExportDataset(null);
       ExportTask t = new ExportTask(is,path,frameName,force,job);
-      job.start(t, fr.anyVec().nChunks());
+      job.start(t, fr.anyVec().nChunks(), true);
       return job;
     }
 
