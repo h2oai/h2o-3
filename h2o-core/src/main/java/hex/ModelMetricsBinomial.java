@@ -23,6 +23,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return (ModelMetricsBinomial) mm;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" AUC: " + (float)_auc._auc + "\n");
+    sb.append(" logloss: " + (float)_logloss + "\n");
+    sb.append(" CM: " + cm().toASCII());
+    return sb.toString();
+  }
+
   public double logloss() { return _logloss; }
   @Override public AUC2 auc() { return _auc; }
   @Override public ConfusionMatrix cm() {
