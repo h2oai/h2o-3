@@ -461,13 +461,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _deleteProgressKey = true; //delete progress after the main model is done
       modifyParmsForCrossValidationMainModel(N);
 
-      trainModelImpl(-1, false); // builds the main model, returns immediately, job state is still RUNNING
-      block(); //wait for model completion - don't call done() yet, as we need to compute and stitch in the N-fold CV metrics first
+      trainModelImpl(-1, false).block(); // builds the main model and wait for completion
       Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done
 
       // Check that both the job and the model are not yet marked as done
       assert(_state == JobState.RUNNING);
-      assert(mainModel._output._status == JobState.RUNNING);
 
       // Compute and put the cross-validation metrics into the main model
       Log.info("Computing " + N + "-fold cross-validation metrics.");
