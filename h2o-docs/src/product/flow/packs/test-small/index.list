@@ -149,9 +149,6 @@ glm_logreg_cuseexpanded.flow
 glm_logreg_prostate_missing.flow
 glm_logreg_prostate_test.flow
 glm_logreg_prostate.flow
-glm_mllib_bench_bigcross_centers_5.flow
-glm_mllib_bench_bigcross_centers_10.flow
-glm_mllib_bench_bigcross_centers_15.flow
 glm_pca_test_USArrests_PCAscore.flow
 glm_pca_test_USArrests.flow
 glm_poisson_Goalies.flow
