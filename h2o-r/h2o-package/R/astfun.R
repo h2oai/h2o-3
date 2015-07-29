@@ -68,11 +68,12 @@
 #`
 #` This switchboard takes exactly ONE statement at a time.
 .stmnt.to.ast.switchboard <- function(stmnt) {
-  if (is.null(stmnt)) return("")
+  if( is.null(stmnt) ) return("")
 
   # convenience variable
   stmnt_list <- as.list(stmnt)
   s1 <- stmnt_list[[1L]]
+  if( missing(s1) ) return("")
 
   # check for `if`, `for`, `else`, `return`, `while` -- stop if `while`
   if (identical(quote(`if`),     s1)) return(.process.if.stmnt(stmnt))
@@ -137,15 +138,32 @@
         is.logical(s1))      # Got atomic logical
       return(s1)
 
-  # Got an Op
+  # Got an Op; function call of some sort
   if( length(stmnt) > 1L && (typeof(s1) == "builtin" || typeof(s1)=="symbol") ) {
+    # Convert all args to a list of Currents strings
+    args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard )
+
+    # H2O primitives we invoke directly
     fname <- as.character(substitute(s1))
-    if( fname %in% .h2o.primitives ) {
-      args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard )
+    if( fname %in% .h2o.primitives )
       return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
+
+    # Slice '[' needs a little work: row and col break out into 2 nested calls,
+    # and row/col numbers need conversion from 1-based to zero based.
+    if( fname=="[" ) {
+      if( length(args)==2 ) { "hex[qux]"
+        stop("hex[qux]")
+      } else if( length(args)==3 ) { "hex[row,col]"
+        res <- .row_col_adjust(args[[1L]],args[[3L]],"cols")
+        return(.row_col_adjust( res      ,args[[2L]],"rows"))
+      } else stop("Only 1 or 2 args allowed for slice")
     }
-    if( fname=="[" ) 
-      stop("[ unimpl")
+
+    # Sequence ':', turn into the syntax for a number-list
+    if( fname==":" ) {
+      stopifnot(length(args)==2)
+      return(paste0("[",args[1L],":",args[2L],"]"))
+    }
   }
 
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
@@ -157,4 +175,21 @@
   }
 
   stop("Don't know what to do with statement: ", paste(stmnt,collapse=" "))
+}
+
+# Subtract 1 from the text form of "idx" (zero based indexing),
+# then wrap "str" with a call from "op": '(op str idx)'
+# If "idx" is empty, skip the whole thing, as it defaults to "all"
+.row_col_adjust <- function(str,idx,op) {
+  if( idx=="" ) return(str)
+  # Raw number
+  nidx <- suppressWarnings(as.numeric(idx))
+  if( !is.na(nidx) ) return(paste0("(",op," ",str," ",nidx-1,")"))
+  # Numeric range [lo:hi], convert to [lo-1:(hi-1o)]
+  s2 <- unlist(strsplit(idx,"\\[|:|]"))
+  lo <- suppressWarnings(as.numeric(s2[2L]))
+  hi <- suppressWarnings(as.numeric(s2[3L]))
+  if( length(s2) == 3 && !is.na(lo) && !is.na(hi) )
+    return(paste0("(",op," ",str," [",lo-1,":",hi-lo+1,"] )"))
+  stop(idx)
 }

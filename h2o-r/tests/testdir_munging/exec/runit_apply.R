@@ -6,6 +6,7 @@ test.apply <- function() {
 
   Log.info("Perform apply on columns")
 
+  # Apply on some primitives
   kalls <- c("abs", "cos", "sin", "acos", "ceiling",
              "floor", "cosh", "exp", "log",
              "sqrt", "tan", "tanh")
@@ -21,14 +22,23 @@ test.apply <- function() {
   print(h2o.ls())
   print(hex)
 
+  # Apply on a complex anonymous function
   Log.info("Now try some misc. apply calls")
   print(apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/mean(x[1:20,])*x ) }))
 
   print(h2o.ls())
 
-
+  # Same thing, but from an R variable
   f <- function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/mean(x[1:20,])*x ) }
-  apply(hex, 2, f)
+  print(apply(hex, 2, f))
+  gc()
+  print(h2o.ls())
+
+  # Apply, with some R-defined user-defined functions
+  x <- function(x) { stop("shadowed function x, so never call me") }
+  sqr  <- function(x) { x*x }
+  cube <- function(x) { x*x*x }
+  print(apply( hex, 2, function(x) { sqr(x)+cube(x) })
   gc()
   print(h2o.ls())
 
