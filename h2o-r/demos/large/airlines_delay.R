@@ -72,7 +72,7 @@ scatter_plot(airlines.hex, "Distance", "TravelTime")
 #####################################################################################################################
 
 ## Create test/train split
-data.split <- h2o.splitFrame(data = data, ratios = 0.8)
+data.split <- h2o.splitFrame(data = airlines.hex, ratios = 0.8)
 data.train <- data.split[[1]]
 data.test <- data.split[[2]]
 
