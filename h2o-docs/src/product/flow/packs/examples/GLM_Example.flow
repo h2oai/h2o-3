@@ -39,7 +39,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-c4d924ae-49e2-484a-a0d1-0a5ff3b3fe99\",\"training_frame\":\"abalone1.hex\",\"ignored_columns\":[\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\"],\"score_each_iteration\":false,\"response_column\":\"C1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"nlambdas\":-1,\"standardize\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"link\":\"family_default\",\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":-1,\"lambda_min_ratio\":-1,\"max_active_predictors\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-c4d924ae-49e2-484a-a0d1-0a5ff3b3fe99\",\"training_frame\":\"abalone1.hex\",\"ignored_columns\":[\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\"],\"score_each_iteration\":false,\"response_column\":\"C9\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"nlambdas\":-1,\"standardize\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"max_iterations\":-1,\"beta_epsilon\":0.0001,\"link\":\"family_default\",\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":-1,\"lambda_min_ratio\":-1,\"max_active_predictors\":-1}"
     },
     {
       "type": "md",

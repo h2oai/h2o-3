@@ -1,6 +1,6 @@
 package hex.example;
 
-import hex.Distributions;
+import hex.Distribution;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
@@ -9,7 +9,6 @@ import hex.quantile.Quantile;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
-import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import java.io.File;
@@ -128,7 +127,7 @@ public class WorkFlowTest extends TestUtil {
       gbm_parms._nbins = 20;          // default
       
       // GBMModel.Parameters
-      gbm_parms._distribution = Distributions.Family.gaussian; // default
+      gbm_parms._distribution = Distribution.Family.gaussian; // default
       gbm_parms._learn_rate = 0.1f;   // default
 
       // Train model; block for results

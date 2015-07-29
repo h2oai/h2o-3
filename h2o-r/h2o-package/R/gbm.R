@@ -13,12 +13,13 @@
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param distribution A \code{character} string. The loss function to be implemented.
+#' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param learn_rate An \code{interger} from \code{0.0} to \code{1.0}
+#' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
 #' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
 #' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
@@ -33,7 +34,7 @@
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
@@ -56,6 +57,7 @@
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
+                    tweedie_power = 1.5,
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
@@ -69,7 +71,7 @@ h2o.gbm <- function(x, y, training_frame,
                     build_tree_one_node = FALSE,
                     nfolds = 0,
                     fold_column = NULL,
-                    fold_assignment = c("Random","Modulo"),
+                    fold_assignment = c("AUTO","Random","Modulo"),
                     keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
@@ -115,6 +117,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$model_id <- model_id
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))

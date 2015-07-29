@@ -47,8 +47,12 @@
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Uniform: -value ... value, Normal: stddev
-#' @param loss Loss function: Automatic, CrossEntropy (for classification only), MeanSquare, Absolute
-#'        (experimental) or Huber (experimental)
+#' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute"
+#'        (experimental) or "Huber" (experimental)
+#' @param distribution A \code{character} string. The distribution function of the response.
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
+#'        "laplace", "huber" or "gaussian"
+#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param score_interval Shortest time interval (in secs) between model scoring
 #' @param score_training_samples Number of training set samples for scoring (0 for all)
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all)
@@ -97,7 +101,7 @@
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -141,6 +145,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
                              loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),
+                             distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber"),
+                             tweedie_power = 1.5,
                              score_interval = 5,
                              score_training_samples,
                              score_validation_samples,
@@ -173,7 +179,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              weights_column = NULL,
                              nfolds = 0,
                              fold_column = NULL,
-                             fold_assignment = c("Random","Modulo"),
+                             fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE,
                              ...)
 {
@@ -262,6 +268,10 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$initial_weight_scale <- initial_weight_scale
   if(!missing(loss))
     parms$loss <- loss
+  if (!missing(distribution))
+    parms$distribution <- distribution
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
   if(!missing(score_interval))
     parms$score_interval <- score_interval
   if(!missing(score_training_samples))

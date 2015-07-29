@@ -99,6 +99,10 @@ final public class H2O {
             "    -ice_root <fileSystemPath>\n" +
             "          The directory where H2O spills temporary data to disk.\n" +
             "\n" +
+            "    -log_dir <fileSystemPath>\n" +
+            "          The directory where H2O writes logs to disk.\n" +
+            "          (This usually has a good default that you need not change.)\n" +
+            "\n" +
             "    -flow_dir <server side directory or hdfs directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
             defaultFlowDirMessage +
@@ -191,8 +195,14 @@ final public class H2O {
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
+    /** -log_dir=/path/to/dir; directory to save logs in */
+    public String log_dir;
+
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
+
+    /** -disable_web; disable web API port (used by Sparkling Water) */
+    public boolean disable_web = false;
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -369,9 +379,16 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.ice_root = args[i];
       }
+      else if (s.matches("log_dir")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.log_dir = args[i];
+      }
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
         ARGS.flow_dir = args[i];
+      }
+      else if (s.matches("disable_web")) {
+        ARGS.disable_web = true;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);

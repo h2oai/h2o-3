@@ -25,6 +25,7 @@ test <- function(h) {
 	#expect_equal( fit2$train.error[600], hh@model$training_metrics@metrics$MSE,tolerance=1e-6)
 	expect_equal(mean(pr), mean(ph[,1]),tolerance=1e-5 )
 	expect_equal(min(pr), min(ph[,1]) ,tolerance=1e-4)
+	expect_equal(fit2$train.error[length(fit2$train.error)], hh@model$training_metrics@metrics$mean_residual_deviance,tolerance=1e-4) #residual deviance
 	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-4)
 	
 	testEnd()

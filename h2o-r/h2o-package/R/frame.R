@@ -496,7 +496,7 @@ cut.H2OFrame <- h2o.cut
 #' \dontrun{
 #' h2o.init()
 #' hex <- as.h2o(iris)
-#' match(hex[,5], c("setosa", "versicola"))
+#' match(hex[,5], c("setosa", "versicola"))   # versipepsi
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
@@ -518,8 +518,11 @@ setMethod("%in%", signature("H2OFrame", "character"), function(x, table) any(mat
 setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) all(sapply(table,function(t) any(t==x))))
 
 #' Remove Rows With NAs
+#'
+#' @param object H2OFrame object
+#' @param ... Ignored
 #' @export
-na.omit.H2OFrame <- function(x) .h2o.nary_frame_op("na.omit", x)
+setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.omit", object) )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
