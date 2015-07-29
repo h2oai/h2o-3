@@ -9,37 +9,37 @@ Include desc. of function?
 transform, within, subset - not to be ported per Spencer in 1307
 
 
-|R | Python  | Notes | 
-|------------- |---------------| -------------|
-| `%/%`      |   | Use the `//` operator in Python |
+|R | Python  | Function/Returns | Notes | 
+|------------- |---------------| -------------|-----|
+| `%/%`      |  |  | Use the `//` operator in Python |
 | `%x%`      |        | Use `my_frame.mult(other_frame)`.|
-| `cummax` |         |            |
-| `cummin`| |
-| `cumprod` | | 
-| `cumsum` | | 
-| `transpose` | | 
-| `round` | | 
-| `signif` | | 
+| `cummax` | `cummax()` | Cumulative max over the column.        |            |
+| `cummin`| `cummin()` | Cumulative min over the column. 
+| `cumprod` | `cumprod()` | Cumulative product over the column. | 
+| `cumsum` | `cumsum()` | Cumulative sum over the column. | 
+| `transpose` | `transpose()` | Interchange rows and columns of the H2OFrame. 
+| `round` | `round(digits=0)` | The rounded values in the H2OFrame to the specified number of decimal digits. | 
+| `signif` | `signif(digist=6)` | The rounded values in the H2OFrame to the specified number of significant digits. | 
 | `range` | | 
-| `prod` | | 
+| `prod` | `prod(na_rm=False)`| The product of the column. 
 | `any` || Not supported in Rapids (?) 
-| `all` | | 
+| `all` |`all()` | True if every element is True in the column.
 | `%in%`| | 
-| `as.character` | | 
-| `as.numeric`| | 
-| `match`| | 
+| `as.character` |`ascharacter()` | A lazy Expr representing this vec converted to characters. | 
+| `as.numeric`| `asnumeric()` | A frame with factor columns converted to numbers (numeric columns untouched). | 
+| `match`| | Makes a vector of the positions of (first) matches of its first argument in its second. | 
 | `pop` | | Implemented? 
 | `push` | | Implemented? 
-| `table` | | 
-| `anyFactor` | | 
+| `table` | | 	A frame of the counts at each combination of factor levels. | 
+| `anyFactor` | | Whether or not the frame has any factor columns. 
 | `subset` | | Will not be ported
 | `transform`| | Will not be ported 
 | `within` | | Will not be ported
-| `scale` | | 
-| `setLevel`|| 
-| `rbind`| | 
-| `as.Date`| | 
-| `str`| | 
+| `scale` | | Centers and/or scales the columns of the H2OFrame. | 
+| `setLevel`|| A method to set all column values to one of the levels. | 
+| `rbind`| | Combines H2O Datasets by Rows; takes a sequence of H2O data sets and combines them by rows. :param data: an H2OFrame :return: self, with data appended (row-wise) | 
+| `as.Date`| | Return the column with all elements converted to millis since the epoch.
+| `str`| `structure()` | Similar to R’s str method: Compactly Display the Structure of this H2OFrame instance.
 | weights & biases in R | | format? 
 | scoreHistory accessor || 
 | multinomial model `hit_ratio_table` accessor | | 
