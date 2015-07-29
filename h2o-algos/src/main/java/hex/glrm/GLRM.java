@@ -567,7 +567,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
-  protected static final class Archetypes {
+  protected static final class Archetypes extends Iced<Archetypes> {
     double[][] _archetypes;
     boolean _transposed;    // Is _archetypes = Y'? Used during model building for convenience.
     final int[] _catOffsets;

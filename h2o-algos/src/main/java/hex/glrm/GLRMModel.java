@@ -309,7 +309,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _avg_change_obj;
 
     // Mapping from training data to lower dimensional k-space (Y')
-    public double[][] _archetypes;
+    public double[/*feature*/][/*k*/] _archetypes;
     public GLRM.Archetypes _archetypes_obj;   // Needed for indexing into Y for scoring
 
     // Final step size
@@ -421,17 +421,32 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   public static class ModelMetricsGLRM extends ModelMetricsUnsupervised {
-    public ModelMetricsGLRM(Model model, Frame frame) {
+    public long _miscls;
+
+    public ModelMetricsGLRM(Model model, Frame frame, long miscls) {
       super(model, frame, Double.NaN);
+      _miscls = miscls;
     }
 
     public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
+      public long _miscls;     // Number of misclassified categorical values
+
       public GLRMModelMetrics(int dims) {
         _work = new double[dims];
+        _miscls = 0;
       }
 
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) {
-        for(int i = 0; i < dataRow.length; i++) {
+        assert m instanceof GLRMModel;
+        GLRMModel gm = (GLRMModel)m;
+        assert gm._output._ncats + gm._output._nnums == dataRow.length;
+
+        for(int i = 0; i < gm._output._ncats; i++) {
+          if(Double.isNaN(dataRow[i])) continue;
+          if(dataRow[i] != preds[i]) _miscls++;
+        }
+
+        for(int i = gm._output._ncats; i < dataRow.length; i++) {
           if(Double.isNaN(dataRow[i])) continue;
           double diff = dataRow[i] - preds[i];
           _sumsqe += diff * diff;
@@ -439,9 +454,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         return preds;
       }
 
-      @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f) {
-        return m._output.addModelMetrics(new ModelMetricsGLRM(m, f));
+      @Override public void reduce(MetricBuilder mb) {
+        GLRMModelMetrics mm = (GLRMModelMetrics) mb;
+        super.reduce(mm);
+        _miscls += mm._miscls;
+      }
+
+      @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
+        return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, _miscls));
       }
     }
   }

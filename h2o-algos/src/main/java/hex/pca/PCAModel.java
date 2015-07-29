@@ -163,6 +163,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     final int nums = _output._nnums;
     bodySb.i().p("final int nstart = CATOFFS[CATOFFS.length-1];").nl();
     bodySb.i().p("for(int i = 0; i < ").p(_parms._k).p("; i++) {").nl();
+
     // Categorical columns
     bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
     bodySb.i(2).p("double d = data[PERMUTE[j]];").nl();
