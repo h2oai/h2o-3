@@ -215,7 +215,7 @@ public class Job<T extends Keyed> extends Keyed {
         }
       };
     fjtask.setCompleter(_barrier);
-    _start_time = System.currentTimeMillis();
+    if (work >= 0) _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
     // Save the full state of the job
     DKV.put(_key, this);
