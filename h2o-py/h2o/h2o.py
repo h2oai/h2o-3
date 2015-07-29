@@ -137,6 +137,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr._ncols = len(fr._col_names)
   fr._computed = True
   fr._id = id
+  fr._keep = True
   return fr
 
 def _quoted(key):
