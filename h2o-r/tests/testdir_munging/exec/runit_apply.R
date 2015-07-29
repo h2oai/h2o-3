@@ -42,6 +42,9 @@ test.apply <- function() {
   gc()
   print(h2o.ls())
 
+  zzz <- 2.5
+  print(apply( hex, 2, function(x) { zzz }))
+
   testEnd()
 }
 

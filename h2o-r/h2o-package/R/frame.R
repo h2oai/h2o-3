@@ -578,5 +578,5 @@ apply <- function(X, MARGIN, FUN, ...) {
   # environment (not the static environment the H2O wrapper itself is compiled
   # in).  Unknown variables in the function body will be looked up in the
   # dynamic scope.
-  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, sys.frames() ))
+  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, list(), sys.parent(1) ))
 }

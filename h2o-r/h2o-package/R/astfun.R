@@ -26,17 +26,19 @@
 #`
 #` The result is something like the following:
 #` {arg1 arg2 arg3 . body}
-.fun.to.ast <- function(fun,envs) {
+.fun.to.ast <- function(fun,oldformals,envnum) {
+  force(envnum)
   f <- formals(fun)
-  if( is.null(f) ) stop(paste0("Function '",fun,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
-  args <- paste0(names(formals(fun)), collapse=" ")
   b <- body(fun)
-  stmnts <- .process.body(b,envs)
-  paste0("{ ",args," . ",stmnts," }")
+  stmnts <- .process.body(b,c(names(f),oldformals),envnum)
+  paste0("{ ",paste0(names(f), collapse=" ")," . ",stmnts," }")
 }
 
-.process.body <- function(b,envs) {
+.process.body <- function(b,formalz,envs) {
   stmnts <- as.list(b)
+  if( length(stmnts) < 1 ) {
+    browser()
+  }
   tmp1 <- ""; tmp2 <- ""
   # Leading { means a list of statements, there is no trailing close-}
   if( identical(stmnts[[1L]], quote(`{`))) {
@@ -44,7 +46,7 @@
     tmp1 <- "(, "; tmp2 <- ")"  # Wrap result in a comma-operator
   }
   # return a list of ast_stmnts
-  paste0(tmp1,paste0(lapply(stmnts, .stmnt.to.ast.switchboard, envs),collapse=" "),tmp2)
+  paste0(tmp1,paste0(lapply(stmnts, .stmnt.to.ast.switchboard, formalz, envs),collapse=" "),tmp2)
 }
 
 
@@ -67,7 +69,7 @@
 #`  3. Function call / Operation
 #`
 #` This switchboard takes exactly ONE statement at a time.
-.stmnt.to.ast.switchboard <- function(stmnt,envs) {
+.stmnt.to.ast.switchboard <- function(stmnt,formalz, envs) {
   if( is.null(stmnt) ) return("")
 
   # convenience variable
@@ -88,7 +90,7 @@
   if(identical(quote(`->`), s1)) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
 
   # everything else is a function call or operation
-  .process.stmnt(stmnt,envs)
+  .process.stmnt(stmnt, formalz, envs)
 }
 
 
@@ -124,7 +126,7 @@
 #`      D. .h2o.nary_op: '"trunc"', '"log"'  (could be either unary_op or nary_op)
 #`
 #` Each of the above types of statements will handle their own arguments and return an appropriate AST
-.process.stmnt <- function(stmnt,envs) {
+.process.stmnt <- function(stmnt, formalz, envs) {
   # convenience variable
   stmnt_list <- as.list(stmnt)
   s1 <- stmnt_list[[1L]]
@@ -139,16 +141,16 @@
       return(s1)
 
   # Got an Op; function call of some sort
+  fname <- as.character(substitute(s1))
   if( length(stmnt) > 1L && (typeof(s1) == "builtin" || typeof(s1)=="symbol") ) {
     # Convert all args to a list of Currents strings
-    args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard, envs )
+    args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard, formalz, envs )
 
     # H2O primitives we invoke directly
-    fname <- as.character(substitute(s1))
     if( fname %in% .h2o.primitives )
       return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
 
-    # Slice '[' needs a little work: row and col break out into 2 nested calls,
+    # Slice '[]' needs a little work: row and col break out into 2 nested calls,
     # and row/col numbers need conversion from 1-based to zero based.
     if( fname=="[" ) {
       if( length(args)==2 ) { "hex[qux]"
@@ -164,29 +166,27 @@
       stopifnot(length(args)==2)
       return(paste0("[",args[1L],":",args[2L],"]"))
     }
-
-    # Look up unknown symbols calls in the calling environment,
-    # and assume they are function calls
-    if( typeof(s1)=="symbol" ) {
-      # Full normal lookup, NA if symbol is undefined.  Search the passed in
-      # dynamic environment in reverse order.
-      for( i in rev(seq_along(envs)) ) {
-        sym = mget(fname,envir=envs[[i]],ifnotfound=NA)[[1L]]
-        if( typeof(sym) == "closure" )
-          return(paste0("(",.fun.to.ast(sym,envs)," ",paste0(args,collapse=" "),")"))
-      }
-      # If we get here, the lookup failed and it's an unknown variable name in
-      # the function body.  This is a classic R syntactic error, masked by R's
-      # lazy-evaluation semantics.  For H2O, this is an eager error.
-    }
   }
 
-  # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
-  # this `if` is just to make us all feel good... it doesn't do any interesting checking
-  if( length(stmnt) == 1L ) {
-    if (is.name(s1) && is.symbol(s1) && is.language(s1))
-      return(s1)
-    stop("return(.process.stmnt(s1))")
+  # Look up unknown symbols calls in the calling environment, and directly
+  # inline their current value
+  if( typeof(s1)=="symbol" ) {
+    # One of the declared formals?  Then will be in-scope in the called
+    # function, and can use it's textual name directly.
+    if( fname %in% formalz ) return(fname)
+    # Lookup the unknown symbol in the calling environment
+    sym = .lookup(fname,envs)
+    if( is.list(sym) ) { # Found something?
+      sym <- sym[[1L]]   # List-of-1 means: "found something" and nothing more.  Peel the list wrapper off.
+      if( typeof(sym) == "closure" )
+        return(paste0("(",.fun.to.ast(sym,formalz,envs)," ",paste0(args,collapse=" "),")"))
+      if( typeof(sym) == "double" )
+        return(as.character(sym))
+      stop(paste0("Found symbol ",fname," of type ",typeof(sym),", but do not know how to convert to a Currents expression"))
+    }
+    # If we get here, the lookup failed and it's an unknown variable name in
+    # the function body.  This is a classic R syntactic error, masked by R's
+    # lazy-evaluation semantics.  For H2O, this is an eager error.
   }
 
   stop("Don't know what to do with statement: ", paste(stmnt,collapse=" "))
@@ -207,4 +207,19 @@
   if( length(s2) == 3 && !is.na(lo) && !is.na(hi) )
     return(paste0("(",rowcol_op," ",frame," [",lo-1,":",hi-lo+1,"] )"))
   stop(idx)
+}
+
+# Lookup symbols found in a function body in the user's lexical scope, not in
+# the H2O wrapper scope.  Return FALSE if not found.  Return a list of the one
+# lookup result if found.
+.lookup <- function(sym,envnum) {
+  # Full normal lookup, NA if symbol is undefined.  Search the passed in
+  # dynamic environment in reverse order.
+  while( envnum >= 0 ) {
+    env = sys.frame(envnum)
+    if( exists(sym,envir=env,inherits=FALSE) ) return(list(get(sym,env)))
+    envnum = envnum-1
+  }
+  print(paste0("Lookup failed to find ",sym))
+  return(FALSE)
 }
