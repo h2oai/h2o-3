@@ -129,28 +129,32 @@
   s1 <- stmnt_list[[1L]]
 
   # is null
-  if (is.atomic(s1) && is.null(s1)) stop(return("()"))
+  if (is.atomic(s1) && is.null(s1)) return("()")
 
   if (is.atomic(s1))
     if (is.numeric(s1)   ||  # Got atomic numeric
         is.character(s1) ||  # Got atomic character
         is.logical(s1))      # Got atomic logical
-      stop(return(s1))
+      return(s1)
 
   # Got an Op
-  if( typeof(s1) == "builtin" || typeof(s1)=="symbol" ) {
+  if( length(stmnt) > 1L && (typeof(s1) == "builtin" || typeof(s1)=="symbol") ) {
     fname <- as.character(substitute(s1))
     if( fname %in% .h2o.primitives ) {
       args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard )
       return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
     }
+    if( fname=="[" ) 
+      stop("[ unimpl")
   }
 
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
   # this `if` is just to make us all feel good... it doesn't do any interesting checking
-  if (is.name(s1) && is.symbol(s1) && is.language(s1))
-    stop(return(s1))
+  if( length(stmnt) == 1L ) {
+    if (is.name(s1) && is.symbol(s1) && is.language(s1))
+      return(s1)
+    stop("return(.process.stmnt(s1))")
+  }
 
-  if( length(stmnt) == 1L ) stop(return(.process.stmnt(s1)))
-  stop("Don't know what to do with statement: ", stmnt)
+  stop("Don't know what to do with statement: ", paste(stmnt,collapse=" "))
 }

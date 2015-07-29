@@ -18,9 +18,9 @@ assign("IS_LOGGING",    FALSE, .pkg.env)
 assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #'
-#' Map of binary operators to their "AST" operator value.
+#' Map of operations known to H2O
 #'
-.h2o.primitives = c("*","+","/","-","abs","cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "sqrt", "tan", "tanh")
+.h2o.primitives = c("*","+","/","-","abs","cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "sqrt", "tan", "tanh", "mean")
 
 
 
