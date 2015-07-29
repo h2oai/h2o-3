@@ -216,6 +216,7 @@ The following is a list of R functions alongside the equivalent Python ones.
 |`h2o.anomaly`|`anomaly`| |
 
 **Other Methods**:
+
 |R             | Python        | Function Description     |
 |------------- |---------------| -------------|
 |`h2o.clusterInfo`|`h2o.cluster_info`| |
