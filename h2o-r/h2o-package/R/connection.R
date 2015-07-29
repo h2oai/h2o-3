@@ -8,7 +8,7 @@
 #'
 #' Once connected, the method checks to see if the local H2O R package version matches the version of H2O running on the server. If there is a mismatch and the user indicates she wishes to upgrade, it will remove the local H2O R package and download/install the H2O R package from the server.
 #'
-#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
+#' @param ip Object of class \code{character} representing the hostname or IP address of the server where H2O is running.
 #' @param port Object of class \code{numeric} representing the port number of the H2O server.
 #' @param startH2O (Optional) A \code{logical} value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if \code{ip = "localhost"} or \code{ip = "127.0.0.1"}.  If an existing connection is detected, R does not start H2O.
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.

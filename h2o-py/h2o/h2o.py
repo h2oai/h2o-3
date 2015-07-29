@@ -628,7 +628,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   """
   Initiate an H2O connection to the specified ip and port.
 
-  :param ip: An IP address, default is "localhost"
+  :param ip: A string representing the hostname or IP address of the server where H2O is running.
   :param port: A port, default is 54321
   :param size: THe expected number of h2o instances (ignored if start_h2o is True)
   :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
