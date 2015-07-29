@@ -150,7 +150,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Reconstruct the working tree state from the checkpoint
-      if( _parms._checkpoint ) {
+      if( _parms.hasCheckpoint() ) {
         Timer t = new Timer();
         new ResidualsCollector(_ncols, _nclass, numSpecialCols(),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
@@ -160,7 +160,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for( int tid=0; tid<_parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
-        if( tid!=0 || !_parms._checkpoint ) { // do not make initial scoring if model already exist
+        if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error

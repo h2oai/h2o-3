@@ -250,16 +250,37 @@ public class Job<T extends Keyed> extends Keyed {
    * @see DKV
    */
   public T get() {
-    assert _fjtask != null : "Cannot block on missing F/J task";
-    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    block();
     assert !isRunning() : "Job state should not be running, but it is " + _state;
     return _dest.get();
   }
 
+  /**
+   * Blocks for job completion, but do not return anything as the destination object might not yet be finished
+   */
+  public void block() {
+    assert _fjtask != null : "Cannot block on missing F/J task";
+    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+  }
+
   /** Marks job as finished and records job end time. */
   public void done() {
-    changeJobState(null, JobState.DONE);
+    done(false);
   }
+
+  /**
+   * Conditionally mark the job as finished and record job end time
+   * @param force If set to false, then ask canBeDone() whether to mark the job as finished
+   */
+  protected void done(boolean force) {
+    if (force || canBeDone()) changeJobState(null, JobState.DONE);
+  }
+
+  /**
+   * Allow ModelBuilders to override this to conditionally mark the job as finished
+   * @return whether or not the job should be marked as finished in done() or done(false)
+   */
+  protected boolean canBeDone() { return true; }
 
   /** Signal cancellation of this job.
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
