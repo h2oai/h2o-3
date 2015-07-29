@@ -19,7 +19,7 @@ def link_functions_tweedie_vpow(ip,port):
     r_null = [221051.88369951, 32296.29783702, 20229.47425307]
     for ridx, vpow in enumerate(vpower):
         print "Fit h2o.glm:"
-        h2ofit = h2o.glm(x=hdf[x], y=hdf[y], family="tweedie", link="tweedie", tweedie_variance_power=vpow,
+        h2ofit = h2o.glm(x=hdf[x], y=hdf[y], family="tweedie", link="tweedie", tweedie_variance_power=vpow, tweedie_link_power=1-vpow,
                          alpha=[0.5], Lambda=[0])
 
         print "Testing Tweedie variance power: {0}".format(vpow)

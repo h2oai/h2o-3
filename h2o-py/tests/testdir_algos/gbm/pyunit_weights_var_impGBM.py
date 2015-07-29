@@ -2,9 +2,8 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o
 import random
-import copy
 
-def weights_check(ip,port):
+def weights_var_imp(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
@@ -13,69 +12,75 @@ def weights_check(ip,port):
                                   y=data1["economy"],
                                   min_rows=5,
                                   ntrees=5,
-                                  max_depth=5)
-        gbm2_regression = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
+                                  max_depth=2)
+
+        gbm2_regression = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year"]],
                                   y=data2["economy"],
+                                  training_frame=data2,
                                   min_rows=5*min_rows_scale,
                                   weights_column="weights",
                                   ntrees=5,
-                                  max_depth=5)
+                                  max_depth=2)
+
         gbm1_binomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
                                 y=data1["economy_20mpg"],
                                 min_rows=5,
                                 distribution="bernoulli",
                                 ntrees=5,
-                                max_depth=5)
-        gbm2_binomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
+                                max_depth=2)
+
+        gbm2_binomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year"]],
                                 y=data2["economy_20mpg"],
+                                training_frame=data2,
                                 weights_column="weights",
                                 min_rows=5*min_rows_scale,
                                 distribution="bernoulli",
                                 ntrees=5,
-                                max_depth=5)
+                                max_depth=2)
+
         gbm1_multinomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
                                    y=data1["cylinders"],
                                    min_rows=5,
                                    distribution="multinomial",
                                    ntrees=5,
-                                   max_depth=5)
-        gbm2_multinomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
+                                   max_depth=2)
+
+        gbm2_multinomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year"]],
                                    y=data2["cylinders"],
+                                   training_frame=data2,
                                    weights_column="weights",
                                    min_rows=5*min_rows_scale,
                                    distribution="multinomial",
                                    ntrees=5,
-                                   max_depth=5)
+                                   max_depth=2)
 
-        reg1_mse = gbm1_regression.mse()
-        reg2_mse = gbm2_regression.mse()
-        bin1_auc = gbm1_binomial.auc()
-        bin2_auc = gbm2_binomial.auc()
-        mul1_mse = gbm1_multinomial.mse()
-        mul2_mse = gbm2_multinomial.mse()
+        reg1_vi = gbm1_regression.varimp(return_list=True)
+        reg2_vi = gbm2_regression.varimp(return_list=True)
+        bin1_vi = gbm1_binomial.varimp(return_list=True)
+        bin2_vi = gbm2_binomial.varimp(return_list=True)
+        mul1_vi = gbm1_multinomial.varimp(return_list=True)
+        mul2_vi = gbm2_multinomial.varimp(return_list=True)
 
-        print "MSE (regresson)   no weights vs. weights: {0}, {1}".format(reg1_mse, reg2_mse)
-        print "AUC (binomial)    no weights vs. weights: {0}, {1}".format(bin1_auc, bin2_auc)
-        print "MSE (multinomial) no weights vs. weights: {0}, {1}".format(mul1_mse, mul2_mse)
+        print "Varimp (regresson)   no weights vs. weights: {0}, {1}".format(reg1_vi, reg2_vi)
+        print "Varimp (binomial)    no weights vs. weights: {0}, {1}".format(bin1_vi, bin2_vi)
+        print "Varimp (multinomial) no weights vs. weights: {0}, {1}".format(mul1_vi, mul2_vi)
 
-        assert abs(reg1_mse - reg2_mse) < 1e-6 * reg1_mse, "Expected mse's to be the same, but got {0}, and {1}".format(reg1_mse, reg2_mse)
-        assert abs(bin1_auc - bin2_auc) < 1e-6 * bin1_auc, "Expected auc's to be the same, but got {0}, and {1}".format(bin1_auc, bin2_auc)
-        assert abs(mul1_mse - mul1_mse) < 1e-6 * mul1_mse, "Expected auc's to be the same, but got {0}, and {1}".format(mul1_mse, mul2_mse)
+        for rvi1, rvi2 in zip(reg1_vi, reg2_vi): assert rvi1 == rvi1, "Expected vi's (regression)  to be the same, but got {0}, and {1}".format(rvi1, rvi2)
+        for bvi1, bvi2 in zip(bin1_vi, bin2_vi): assert bvi1 == bvi1, "Expected vi's (binomial)    to be the same, but got {0}, and {1}".format(bvi1, bvi2)
+        for mvi1, mvi2 in zip(mul1_vi, mul2_vi): assert mvi1 == mvi1, "Expected vi's (multinomial) to be the same, but got {0}, and {1}".format(mvi1, mvi2)
 
     h2o_cars_data = h2o.import_frame(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     h2o_cars_data["economy_20mpg"] = h2o_cars_data["economy_20mpg"].asfactor()
     h2o_cars_data["cylinders"] = h2o_cars_data["cylinders"].asfactor()
 
     # uniform weights same as no weights
-    random.seed(222)
     weight = random.randint(1,10)
     uniform_weights = [[weight] for r in range(406)]
     h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)
     h2o_uniform_weights.setNames(["weights"])
     h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
 
-    print "Checking that using uniform weights is equivalent to no weights:"
-    print
+    print "\n\nChecking that using uniform weights is equivalent to no weights:"
     check_same(h2o_cars_data, h2o_data_uniform_weights, weight)
 
     # zero weights same as removed observations
@@ -85,8 +90,7 @@ def weights_check(ip,port):
     h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
     h2o_data_zeros_removed = h2o_cars_data[h2o_zero_weights["weights"] == 1]
 
-    print "Checking that using some zero weights is equivalent to removing those observations:"
-    print
+    print "\n\nChecking that using some zero weights is equivalent to removing those observations:"
     check_same(h2o_data_zeros_removed, h2o_data_zero_weights, 1)
 
     # doubled weights same as doubled observations
@@ -107,15 +111,8 @@ def weights_check(ip,port):
     h2o_data_doubled_weights["economy_20mpg"] = h2o_data_doubled_weights["economy_20mpg"].asfactor()
     h2o_data_doubled_weights["cylinders"] = h2o_data_doubled_weights["cylinders"].asfactor()
 
-    print "Checking that doubling some weights is equivalent to doubling those observations:"
-    print
+    print "\n\nChecking that doubling some weights is equivalent to doubling those observations:"
     check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
-    # TODO: random weights
-
-    # TODO: all zero weights???
-
-    # TODO: negative weights???
-
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_check)
+    h2o.run_test(sys.argv, weights_var_imp)

@@ -12,8 +12,6 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     # frame (default)
     levels = iris.levels()
     nlevels = iris.nlevels()
-    assert levels == None, "Expected levels to be None, but got {0}".format(levels)
-    assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     # frame (w/ index)
     levels = iris.levels(col=4)
@@ -57,8 +55,6 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     # frame (default)
     levels = iris.levels()
     nlevels = iris.nlevels()
-    assert levels == None, "Expected levels to be None, but got {0}".format(levels)
-    assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     # frame (w/ index)
     levels = iris.levels(col=4)
