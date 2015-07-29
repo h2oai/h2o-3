@@ -523,6 +523,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
         model._output._loading_key = _parms._loading_key;
+        model._output._archetypes_obj = yt;   // Need full object for scoring
         model._output._archetypes = yt._archetypes;   // TODO: Should I transpose to get Y?
         model._output._step_size = step;
         if (_parms._recover_svd) recoverSVD(model, xinfo);
@@ -568,7 +569,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   protected static final class Archetypes {
     double[][] _archetypes;
-    boolean _transposed;    // Is _archetypes = Y' (Y transpose)? Used during model building for convenience.
+    boolean _transposed;    // Is _archetypes = Y'? Used during model building for convenience.
     final int[] _catOffsets;
     final int[] _numLevels;
 
@@ -618,6 +619,22 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return col;
     }
 
+    // Inner product x * y_j where y_j is numeric column j of Y
+    protected final double lmulNumCol(double[] x, int j) {
+      assert x != null && x.length == rank() : "x must be of length " + rank();
+      int cidx = getNumCidx(j);
+
+      double prod = 0;
+      if (_transposed) {
+        for(int k = 0; k < rank(); k++)
+          prod += x[k] * _archetypes[cidx][k];
+      } else {
+        for (int k = 0; k < rank(); k++)
+          prod += x[k] * _archetypes[k][cidx];
+      }
+      return prod;
+    }
+
     protected final double getCat(int j, int level, int k) {
       int cidx = getCatCidx(j, level);
       return _transposed ? _archetypes[cidx][k] : _archetypes[k][cidx];
@@ -630,17 +647,41 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       double[][] block = new double[rank()][_numLevels[j]];
 
       if (_transposed) {
-        for (int k = 0; k < block.length; k++) {
-          for (int level = 0; level < block[0].length; level++)
-            block[k][level] = _archetypes[getCatCidx(j, level)][k];
+        for (int level = 0; level < _numLevels[j]; level++) {
+          int cidx = getCatCidx(j,level);
+          for (int k = 0; k < rank(); k++)
+            block[k][level] = _archetypes[cidx][k];
         }
       } else {
-        for (int k = 0; k < block.length; k++) {
-          for (int level = 0; level < block[0].length; level++)
-            block[k][level] = _archetypes[k][getCatCidx(j, level)];
+        for (int level = 0; level < _numLevels[j]; level++) {
+          int cidx = getCatCidx(j,level);
+          for (int k = 0; k < rank(); k++)
+            block[k][level] = _archetypes[k][cidx];
         }
       }
       return block;
+    }
+
+    // Vector-matrix product x * Y_j where Y_j is block of Y corresponding to categorical column j
+    protected final double[] lmulCatBlock(double[] x, int j) {
+      assert _numLevels[j] != 0 : "Number of levels in categorical column cannot be zero";
+      assert x != null && x.length == rank() : "x must be of length " + rank();
+      double[] prod = new double[_numLevels[j]];
+
+      if (_transposed) {
+        for (int level = 0; level < _numLevels[j]; level++) {
+          int cidx = getCatCidx(j,level);
+          for (int k = 0; k < rank(); k++)
+            prod[level] += x[k] * _archetypes[cidx][k];
+        }
+      } else {
+        for (int level = 0; level < _numLevels[j]; level++) {
+          int cidx = getCatCidx(j,level);
+          for (int k = 0; k < rank(); k++)
+            prod[level] += x[k] * _archetypes[k][cidx];
+        }
+      }
+      return prod;
     }
   }
 
@@ -772,7 +813,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for(int j = _ncats; j < _ncolA; j++) {
           int js = j - _ncats;
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          double xy = ArrayUtils.innerProduct(xnew, _yt.getNumCol(js));
+          double xy = _yt.lmulNumCol(xnew, js);
           _loss += _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
         }
         _loss *= cweight;

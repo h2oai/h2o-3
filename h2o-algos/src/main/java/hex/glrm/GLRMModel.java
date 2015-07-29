@@ -7,10 +7,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.RandomUtils;
-import water.util.TwoDimTable;
 
 import java.util.Random;
 
@@ -286,6 +283,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for categorical values {0,1,2,...}
+    // TODO: Is there a faster way to find the loss minimizer?
     public final int mimpute(double[] u) {
       switch(_multi_loss) {
         case Categorical:
@@ -312,6 +310,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Mapping from training data to lower dimensional k-space (Y')
     public double[][] _archetypes;
+    public GLRM.Archetypes _archetypes_obj;   // Needed for indexing into Y for scoring
 
     // Final step size
     public double _step_size;
@@ -388,29 +387,28 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
-    final int ncols = _output._names.length;
-    final int ncols_exp = _output._archetypes.length;
-    double[] xy = new double[ncols_exp];
+    for( int i=0; i<tmp.length; i++ )
+      tmp[i] = chks[i].atd(row_in_chunk);
+    impute_data(tmp, preds);
+    return preds;
+  }
 
-    for( int d=0; d<ncols_exp; d++) {
-      for (int k=0; k<tmp.length; k++) {
-        tmp[k] = chks[k].atd(row_in_chunk);
-        xy[d] += tmp[k] * _output._archetypes[d][k];
-      }
-    }
+  // Impute data based on domain of column
+  private double[] impute_data(double[] tmp, double[] preds) {
+    assert preds.length == _output._archetypes_obj.nfeatures();
 
-    // Impute data based on domain of column
     // Categorical columns
-    /* for (int d = 0; d < _output._ncats; d++) {
-      // TODO: Want to get block of xY for this categorical column
-      preds[d] = _parms.mimpute(xy[idx_ycat(d, level, _dinfo)]);
+    for (int d = 0; d < _output._ncats; d++) {
+      double[] xyblock = _output._archetypes_obj.lmulCatBlock(tmp,d);
+      preds[d] = _parms.mimpute(xyblock);
     }
 
     // Numeric columns
-    for (int d = _output._ncats; d < ncols; d++) {
+    for (int d = _output._ncats; d < preds.length; d++) {
       int ds = d - _output._ncats;
-      preds[d] = _parms.impute(xy[idx_ynum(ds,_dinfo)]);
-    } */
+      double xy = _output._archetypes_obj.lmulNumCol(tmp, ds);
+      preds[d] = _parms.impute(xy);
+    }
     return preds;
   }
 
