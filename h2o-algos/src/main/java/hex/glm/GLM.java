@@ -146,7 +146,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return res;
     }
   }
-  private transient ScoringHistory _sc = new ScoringHistory();
+  private transient ScoringHistory _sc;
 
   long _t0 = System.currentTimeMillis();
 
@@ -156,7 +156,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient GLMModel _model;
 
   @Override public void init(boolean expensive) {
-    if (_parms._nfolds != 0) error("_nfolds", "nfolds != 0 is not supported");
+    _sc = new ScoringHistory();
     _t0 = System.currentTimeMillis();
     super.init(expensive);
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
@@ -530,8 +530,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private static final long WORK_TOTAL = 1000000;
   @Override
-  public Job<GLMModel> trainModelImpl(long work) {
-    start(new GLMDriver(null), work);
+  public Job<GLMModel> trainModelImpl(long work, boolean restartTimer) {
+    start(new GLMDriver(null), work, restartTimer);
     return this;
   }
 
@@ -685,6 +685,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 
     private void doCleanup(){
+      updateModelOutput();
       try {
         _parms.read_unlock_frames(GLM.this);
       }
@@ -710,8 +711,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     @Override public void onCompletion(CountedCompleter cc) {
       _model.unlock(GLM.this._key);
-      doCleanup();
       done();
+      doCleanup();
     }
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       if(!_gotException.getAndSet(true)){
@@ -744,8 +745,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       }
       _parms.read_lock_frames(GLM.this);
-      if(_parms._nfolds != 0)
-        throw H2O.unimpl();
       //todo: fill in initialization for n-folds
       new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
     }
@@ -758,6 +757,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept ? 1 : 0); ++i)
           if (_tInfos[0]._beta[i] != 0) ++rank;
         Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + " has " + rank + " nonzeros, gradient err = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
+        Log.info(_model.toString());
         update(_tInfos[0]._workPerLambda, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter + ", got " + rank + "nonzeros");
         // launch next lambda
         ++_lambdaId;

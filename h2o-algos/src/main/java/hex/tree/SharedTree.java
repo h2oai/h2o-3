@@ -76,8 +76,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _vresponse_key = _vresponse._key;
     if(_response != null)
       _response_key = _response._key;
-    if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
-      error("_nclass", "Too many levels in response column!");
 
     if( _parms._min_rows < 0 )
       error("_min_rows", "Requested min_rows must be greater than 0");
@@ -213,6 +211,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( _model != null ) _model.unlock(_key);
         _parms.read_unlock_frames(SharedTree.this);
         if( _model==null ) Scope.exit();
@@ -430,7 +429,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
-      if (out._ntrees > 0) Log.info("Training " + out._scored_train[out._ntrees].toString());
 
       // Score again on validation data
       if( _parms._valid != null ) {
@@ -438,8 +436,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
-        if (out._ntrees > 0) Log.info("Validation " + out._scored_valid[out._ntrees].toString());
       }
+      Log.info(_model.toString());
 
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._model_summary = createModelSummaryTable(out);
@@ -571,7 +569,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, i);
       ScoreKeeper st = _output._scored_train[i];
       table.set(row, col++, st._mse);
-      if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._residual_deviance);
+      if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
       if (_output.isClassifier()) table.set(row, col++, st._classError);
@@ -579,7 +577,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (_valid != null) {
         st = _output._scored_valid[i];
         table.set(row, col++, st._mse);
-        if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._residual_deviance);
+        if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
         if (_output.isClassifier()) table.set(row, col++, st._classError);

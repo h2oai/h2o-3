@@ -1,9 +1,6 @@
 package hex.deeplearning;
 
-import hex.DataInfo;
-import hex.Distribution;
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
@@ -54,10 +51,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   /** Start the DeepLearning training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<DeepLearningModel> trainModelImpl(long work) {
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<DeepLearningModel> trainModelImpl(long work, boolean restartTimer) {
     // We look at _train before init(true) is called, so step around that here:
-    return start(new DeepLearningDriver(), work);
+    return start(new DeepLearningDriver(), work, restartTimer);
   }
 
   @Override
@@ -188,6 +186,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw t;
         }
       } finally {
+        updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
       }
@@ -520,6 +519,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         // If the number is close to a multiple of epochs, use that -> prettier scoring
         if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi = tspi - tspi % numRows;
         tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
+        if (H2O.CLOUD.size() == 1 || mp._single_node_mode) {
+          tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
+        }
         tspi = Math.max(1, tspi); //at least 1 point
 
         if (!mp._quiet_mode) {

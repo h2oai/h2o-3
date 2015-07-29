@@ -226,7 +226,7 @@ public /*abstract*/ class Grid<MP extends Model.Parameters, G extends Grid<MP, G
 
     GridSearch start() {
       Log.info("Starting gridsearch: _total_models="+_total_models);
-      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(_params); tryComplete(); } },_total_models);
+      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(_params); tryComplete(); } },_total_models, true);
       return this;
     }
 

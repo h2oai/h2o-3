@@ -142,7 +142,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P ignore) {
-    super(Key.<M>make("Failed"),"ModelBuilder constructor needs to be overridden.");
+    super(Key.<M>make("Failed"), "ModelBuilder constructor needs to be overridden.");
     throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
@@ -191,32 +191,56 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return modelBuilder;
   }
 
+  protected void updateModelOutput() {
+    // TODO: Remove this check
+    final ModelBuilder<M,P,O> j = DKV.getGet(_key);
+    assert(j._start_time == _start_time);
+    assert(j._end_time == _end_time);
+    assert(j._state == _state);
+
+    new TAtomic<M>() {
+      @Override
+      public M atomic(M old) {
+        if (old != null) {
+          old._output._status = _state;
+          old._output._start_time = _start_time;
+          old._output._end_time = _end_time;
+          old._output._run_time = _end_time - _start_time;
+        }
+        return old;
+      }
+    }.invoke(dest());
+  }
+
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
-//    init(false); //parameter sanity check (such as _fold_column, etc.)
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     }
-    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits()) :
+    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits(), true) :
             // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-            start(new H2O.H2OCountedCompleter(){
-              @Override protected void compute2() {
+            start(new H2O.H2OCountedCompleter() {
+              @Override
+              protected void compute2() {
                 computeCrossValidation();
                 tryComplete();
               }
-              @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+
+              @Override
+              public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                 failed(ex);
                 return true;
               }
-            }, (_parms._nfolds+1)*progressUnits());
+            }, (_parms._nfolds + 1) * progressUnits(), true);
   }
 
   /**
    * Model-specific implementation of model training
    * @param progressUnits Number of progress units (each advances the Job's progress bar by a bit)
+   * @param restartTimer
    * @return ModelBuilder job
    */
-  abstract public Job<M> trainModelImpl(long progressUnits);
+  abstract public Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
   abstract public long progressUnits();
 
   /**
@@ -258,6 +282,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           for (int i = 0; i < foldAssignment._len; ++i) {
             int fold;
             switch (foldAssignmentScheme) {
+              case AUTO:
               case Random:
                 fold = Math.abs(getRNG(foldAssignment.start() + actualSeed + i).nextInt()) % N;
                 break;
@@ -320,6 +345,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _deleteProgressKey = false; // keep the same progress bar for all N+1 jobs
 
     for (int i=0; i<N; ++i) {
+      if (isCancelledOrCrashed()) {
+        Log.warn("Cancelling all N-fold cross-validation jobs.");
+        break;
+      }
       Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
       final String identifier = origDest.toString() + "_cv_" + (i+1);
       final String weightName = "weights";
@@ -335,79 +364,88 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       modelKeys[i] = Key.make(identifier);
 
       // Build CV model - launch a separate Job
-      Model m;
+      Model m = null;
       {
-        ModelBuilder<M, P, O> cvModel = (ModelBuilder<M, P, O>) this.clone();
-        cvModel._dest = modelKeys[i];
-        cvModel._key = Key.make(_key.toString() + "_cv" + i);
-        cvModel._state = JobState.CREATED;
-        cvModel._description = identifier;
+        ModelBuilder<M, P, O> cvModel = null;
+        try {
+          cvModel = (ModelBuilder<M, P, O>) this.clone();
+          cvModel._dest = modelKeys[i];
+          cvModel._key = Key.make(_key.toString() + "_cv" + i);
+          cvModel._state = JobState.CREATED;
+          cvModel._description = identifier;
 
-        // Fix up some parameters
-        cvModel._parms = (P)_parms.clone();
-        cvModel._parms._weights_column = weightName;
-        cvModel._parms._train = cvTrain._key;
-        cvModel._parms._valid = cvVal._key;
-        cvModel.modifyParmsForCrossValidationSplits(i, N);
-
-        cvModel.trainModelImpl(-1);
-        m = cvModel.get();
-        cvModel.remove(); //keep the cv jobs around
+          // Fix up some parameters
+          cvModel._parms = (P) _parms.clone(); //NOTE: This is not a deep clone - we can only change simple top-level parameters here
+          cvModel._parms._weights_column = weightName;
+          cvModel._parms._train = cvTrain._key;
+          cvModel._parms._valid = cvVal._key;
+          cvModel._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+          cvModel.modifyParmsForCrossValidationSplits(i, N);
+          cvModel._start_time = System.currentTimeMillis();
+          cvModel.trainModelImpl(-1, true);
+          cvModel.get();
+          m = DKV.getGet(cvModel.dest());
+        } catch(Throwable t) {
+          throw t;
+        } finally {
+          if (cvModel != null) cvModel.remove();
+          DKV.remove(cvTrain._key);
+        }
       }
 
       // holdout scoring
       {
-        Frame adaptFr = new Frame(cvVal);
-        m.adaptTestForTrain(adaptFr, true, !isSupervised());
-        mb[i] = m.scoreMetrics(adaptFr);
+        Frame adaptFr = null;
+        try {
+          if (!isCancelledOrCrashed()) {
+            adaptFr = new Frame(cvVal);
+            m.adaptTestForTrain(adaptFr, true, !isSupervised());
+            mb[i] = m.scoreMetrics(adaptFr);
 
-        if (_parms._keep_cross_validation_predictions) {
-          String predName = "prediction_" + modelKeys[i].toString();
-          predictionKeys[i] = Key.make(predName);
-          m.predictScoreImpl(cvVal, adaptFr, predName);
-        }
-        if (!_parms._keep_cross_validation_splits) {
+            if (_parms._keep_cross_validation_predictions) {
+              String predName = "prediction_" + modelKeys[i].toString();
+              predictionKeys[i] = Key.make(predName);
+              m.predictScoreImpl(cvVal, adaptFr, predName);
+            }
+          }
+        } finally {
           weights[2 * i].remove();
           weights[2 * i + 1].remove();
-          DKV.remove(cvTrain._key);
-          DKV.remove(cvVal._key);
           if (origWeightsName == null) origWeight.remove();
+          if (adaptFr != null) {
+            Model.cleanup_adapt(adaptFr, cvVal);
+            DKV.remove(adaptFr._key);
+          }
+          DKV.remove(cvVal._key);
         }
-        Model.cleanup_adapt(adaptFr, cvVal);
-        DKV.remove(adaptFr._key);
       }
     }
 
-    Log.info("Building main model.");
-    _state = JobState.CREATED;
-    _deleteProgressKey = true; //delete progress after the main model is done
-    modifyParmsForCrossValidationMainModel(N);
+    if (!isCancelledOrCrashed()) {
+      Log.info("Building main model.");
+      _state = JobState.CREATED;
+      _deleteProgressKey = true; //delete progress after the main model is done
+      modifyParmsForCrossValidationMainModel(N);
 
-    Job<M> main = trainModelImpl(-1);
-    Model mainModel = main.get();
+      Job<M> main = trainModelImpl(-1, false);
+      main.get(); //block
+      Model mainModel = DKV.getGet(dest());
 
-//    new TAtomic<JobList>() {
-//      @Override public JobList atomic(JobList old) {
-//        if( old == null ) old = new JobList();
-//        Key[] jobs = old._jobs;
-//        old._jobs = Arrays.copyOf(jobs, jobs.length - 1);
-//        return old;
-//      }
-//    }.invoke(LIST);
-
-    Log.info("Computing " + N + "-fold cross-validation metrics.");
-    mainModel._output._cross_validation_models = new Key[N];
-    mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? new Key[N] : null;
-    for (int i=0; i<N; ++i) {
-      if (i>0) mb[0].reduce(mb[i]);
-      mainModel._output._cross_validation_models[i] = modelKeys[i];
-      if (_parms._keep_cross_validation_predictions)
-        mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
+      Log.info("Computing " + N + "-fold cross-validation metrics.");
+      mainModel._output._cross_validation_models = new Key[N];
+      mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? new Key[N] : null;
+      for (int i = 0; i < N; ++i) {
+        if (i > 0) mb[0].reduce(mb[i]);
+        mainModel._output._cross_validation_models[i] = modelKeys[i];
+        if (_parms._keep_cross_validation_predictions)
+          mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
+      }
+      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
+      mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
+      DKV.put(mainModel);
+      Log.info(mainModel._output._cross_validation_metrics.toString());
     }
-    mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
-    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
-    DKV.put(mainModel);
-    return main;
+    return this;
   }
   /**
    * Override with model-specific checks / modifications to _parms for N-fold cross-validation splits.
@@ -642,15 +680,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } else {
         hide("_nfolds", "nfolds is ignored when a fold column is specified.");
       }
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+        error("_fold_assignment", "Fold assignment is not allowed in conjunction with a fold column.");
+      }
     }
     if (_parms._nfolds > 1) {
       hide("_fold_column", "Fold column is ignored when nfolds > 1.");
     }
     // hide cross-validation parameters unless cross-val is enabled
     if (_parms._nfolds ==0 && _parms._fold_column == null) {
-      hide("_keep_cross_validation_splits", "Only for cross-validation.");
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+        error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
+      }
     }
     if (_parms._distribution != Distribution.Family.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");
@@ -736,6 +779,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _response = null;
       _vresponse = null;
       _nclass = 1;
+    }
+
+    if( _nclass > Model.Parameters.MAX_SUPPORTED_LEVELS ) {
+      error("_nclass", "Too many levels in response column: " + _nclass + ", maximum supported number of classes is " + Model.Parameters.MAX_SUPPORTED_LEVELS + ".");
     }
 
     // Build the validation set to be compatible with the training set.

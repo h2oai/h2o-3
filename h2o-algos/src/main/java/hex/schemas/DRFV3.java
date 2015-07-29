@@ -12,7 +12,6 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 				"training_frame",
 				"validation_frame",
         "nfolds",
-        "keep_cross_validation_splits",
         "keep_cross_validation_predictions",
         "fold_assignment",
         "fold_column",

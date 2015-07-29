@@ -185,12 +185,13 @@ public class Job<T extends Keyed> extends Keyed {
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
    *  @param work Units of work to be completed
-   *  @return this job in {@link JobState#RUNNING} state
+   *  @param restartTimer
+   * @return this job in {@link JobState#RUNNING} state
    *
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
+  public Job<T> start(final H2OCountedCompleter fjtask, long work, boolean restartTimer) {
     if (work >= 0)
       DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
@@ -215,7 +216,7 @@ public class Job<T extends Keyed> extends Keyed {
         }
       };
     fjtask.setCompleter(_barrier);
-    _start_time = System.currentTimeMillis();
+    if (restartTimer) _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
     // Save the full state of the job
     DKV.put(_key, this);

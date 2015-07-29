@@ -64,8 +64,13 @@ class H2OConnection(object):
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
     __H2OCONN__ = self
     jar_path = None
-    if os.path.exists(os.path.join(sys.prefix, "h2o_jar/h2o.jar")): jar_path = os.path.join(sys.prefix, "h2o_jar", "h2o.jar")
-    else:                                                           jar_path = os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar")
+    jarpaths = [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
+                os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
+                os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
+                ]
+    if os.path.exists(jarpaths[0]):   jar_path = jarpaths[0]
+    elif os.path.exists(jarpaths[1]): jar_path = jarpaths[1]
+    else:                             jar_path = jarpaths[2]
     if start_h2o:
       if not ice_root:
         ice_root = tempfile.mkdtemp()
@@ -87,7 +92,10 @@ class H2OConnection(object):
           cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path)
         else:
           print "No jar file found. Could not start local instance."
-          print "No h2o jar found at: " + jar_path
+          print "Jar Paths searched: "
+          for jp in jarpaths:
+            print "\t" + jp
+          print
           raise
     __H2OCONN__._cld = cld
 
