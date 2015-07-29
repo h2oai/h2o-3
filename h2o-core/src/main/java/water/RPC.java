@@ -525,8 +525,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         ab.drainClose();
       }
       ++old._ackResendCnt;
-      if(old._ackResendCnt % 10 == 0)
-        Log.err("Possibly broken network, can not send ack through, got " + old._ackResendCnt + " resends.");
+      if(old._ackResendCnt % 10 == 0) {
+        Log.err("Possibly broken network, can not send ack through, got " + old._ackResendCnt + " resends. Restaring the small-tcp thread");
+        old._client.restartSmallTCP();
+      }
       old.resend_ack();
     }
     ab.close();
