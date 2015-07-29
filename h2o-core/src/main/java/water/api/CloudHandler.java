@@ -16,13 +16,6 @@ class CloudHandler extends Handler {
     cloud.version = H2O.ABV.projectVersion();
 
     cloud.node_idx = H2O.SELF.index();
-    if (cloud.node_idx < 0) {
-      // This is very special.  This can happen in sparkling water (i.e. client mode).
-      // The client has a negative array index.  In that case, force to 0.
-      // Real worker nodes have indexes 0 or greater.
-      cloud.node_idx = 0;
-    }
-
     cloud.cloud_name = H2O.ARGS.name;
     cloud.is_client  = H2O.ARGS.client;
     cloud.cloud_size = H2O.CLOUD.size();
