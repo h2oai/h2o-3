@@ -14,6 +14,7 @@ test.gbm.bin.accessors <- function(conn) {
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
   pros.gbm <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train)
   pros.gbm.valid <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test)
+  pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds=2)
 
   Log.info("MSE...")
   mse.basic <- h2o.mse(pros.gbm)
@@ -24,6 +25,10 @@ test.gbm.bin.accessors <- function(conn) {
   print(mse.valid.T)
   print( paste0( "Expect Equal: ", mse.basic, " == ", mse.valid.F) )
   expect_true(mse.basic== mse.valid.F) # basic should equal valid with valid = FALSE
+  mse.valid.xval.T <- h2o.mse(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(mse.valid.xval.T)==3)
+  expect_true(mse.valid.xval.T["train"]==mse.basic)
+  expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
   Log.info("R^2...")
   r2.basic <- h2o.r2(pros.gbm)
@@ -34,6 +39,10 @@ test.gbm.bin.accessors <- function(conn) {
   print(r2.valid.T)
   print( paste0( "Expect Equal: ", r2.basic, " == ", r2.valid.F) )
   expect_true(r2.basic==r2.valid.F) # basic should equal valid with valid = FALSE
+  r2.valid.xval.T <- h2o.r2(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(r2.valid.xval.T)==3)
+  expect_true(r2.valid.xval.T["train"]==r2.basic)
+  expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
 
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(pros.gbm)
@@ -44,6 +53,10 @@ test.gbm.bin.accessors <- function(conn) {
   print(ll.valid.T)
   print( paste0( "Expect Equal: ", ll.basic, " == ", ll.valid.F) )
   expect_equal(ll.basic, ll.valid.F) # basic should equal valid with valid = FALSE
+  logloss.valid.xval.T <- h2o.logloss(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(logloss.valid.xval.T)==3)
+  expect_true(logloss.valid.xval.T["train"]==ll.basic)
+  expect_true(logloss.valid.xval.T["valid"]==ll.valid.T)
 
   Log.info("AUC...")
   auc.basic <- h2o.auc(pros.gbm)
@@ -54,6 +67,10 @@ test.gbm.bin.accessors <- function(conn) {
   print(auc.valid.T)
   print( paste0( "Expect Equal: ", auc.basic, " == ", auc.valid.F) )
   expect_equal(auc.basic, auc.valid.F) # basic should equal valid with valid = FALSE
+  auc.valid.xval.T <- h2o.auc(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(auc.valid.xval.T)==3)
+  expect_true(auc.valid.xval.T["train"]==auc.basic)
+  expect_true(auc.valid.xval.T["valid"]==auc.valid.T)
 
   Log.info("Gini...")
   gini.basic <- h2o.giniCoef(pros.gbm)
@@ -64,6 +81,10 @@ test.gbm.bin.accessors <- function(conn) {
   print(gini.valid.T)
   print( paste0( "Expect Equal: ", gini.basic, " == ", gini.valid.F) )
   expect_equal(gini.basic, gini.valid.F) # basic should equal valid with valid = FALSE
+  giniCoef.valid.xval.T <- h2o.giniCoef(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(giniCoef.valid.xval.T)==3)
+  expect_true(giniCoef.valid.xval.T["train"]==gini.basic)
+  expect_true(giniCoef.valid.xval.T["valid"]==gini.valid.T)
 
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.gbm))

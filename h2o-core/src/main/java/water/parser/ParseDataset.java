@@ -804,31 +804,30 @@ public final class ParseDataset extends Job<Frame> {
   // ------------------------------------------------------------------------
   // Log information about the dataset we just parsed.
   private static void logParseResults(ParseDataset job, Frame fr) {
-    try {
-      long numRows = fr.anyVec().length();
-      Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
-      // get all rollups started in parallell, otherwise this takes ages!
-      Futures fs = new Futures();
-      Vec[] vecArr = fr.vecs();
-      for(Vec v:vecArr)  v.startRollupStats(fs);
-      fs.blockForPending();
+    long numRows = fr.anyVec().length();
+    Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
+    // get all rollups started in parallell, otherwise this takes ages!
+    Futures fs = new Futures();
+    Vec[] vecArr = fr.vecs();
+    for(Vec v:vecArr)  v.startRollupStats(fs);
+    fs.blockForPending();
 
-      int namelen = 0;
-      for (String s : fr.names()) namelen = Math.max(namelen, s.length());
-      String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
-      Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "numLevels"));
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    int namelen = 0;
+    for (String s : fr.names()) namelen = Math.max(namelen, s.length());
+    String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
+    Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "numLevels"));
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-      for( int i = 0; i < vecArr.length; i++ ) {
-        Vec v = vecArr[i];
-        boolean isCategorical = v.isEnum();
-        boolean isConstant = v.isConst();
-        String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
-        String typeStr;
-        String minStr;
-        String maxStr;
+    for( int i = 0; i < vecArr.length; i++ ) {
+      Vec v = vecArr[i];
+      boolean isCategorical = v.isEnum();
+      boolean isConstant = v.isConst();
+      String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
+      String typeStr;
+      String minStr;
+      String maxStr;
 
-        switch( v.get_type() ) {
+      switch( v.get_type() ) {
         case Vec.T_BAD:   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
@@ -838,45 +837,43 @@ public final class ParseDataset extends Job<Frame> {
         case Vec.T_TIME+1:
         case Vec.T_TIME+2: typeStr="time"    ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
         default: throw H2O.unimpl();
-        }
-
-        long numNAs = v.naCnt();
-        String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
-        String isConstantStr = isConstant ? "constant" : "";
-        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
-
-        boolean printLogSeparatorToStdout = false;
-        boolean printColumnToStdout;
-        {
-          // Print information to stdout for this many leading columns.
-          final int MAX_HEAD_TO_PRINT_ON_STDOUT = 10;
-
-          // Print information to stdout for this many trailing columns.
-          final int MAX_TAIL_TO_PRINT_ON_STDOUT = 10;
-
-          if (vecArr.length <= (MAX_HEAD_TO_PRINT_ON_STDOUT + MAX_TAIL_TO_PRINT_ON_STDOUT)) {
-            // For small numbers of columns, print them all.
-            printColumnToStdout = true;
-          } else if (i < MAX_HEAD_TO_PRINT_ON_STDOUT) {
-            printColumnToStdout = true;
-          } else if (i == MAX_HEAD_TO_PRINT_ON_STDOUT) {
-            printLogSeparatorToStdout = true;
-            printColumnToStdout = false;
-          } else if ((i + MAX_TAIL_TO_PRINT_ON_STDOUT) < vecArr.length) {
-            printColumnToStdout = false;
-          } else {
-            printColumnToStdout = true;
-          }
-        }
-
-        if (printLogSeparatorToStdout)
-          Log.info("Additional column information only sent to log file...");
-
-        String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
-        Log.info(s,printColumnToStdout);
       }
-      Log.info(FrameUtils.chunkSummary(fr).toString());
+
+      long numNAs = v.naCnt();
+      String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
+      String isConstantStr = isConstant ? "constant" : "";
+      String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
+
+      boolean printLogSeparatorToStdout = false;
+      boolean printColumnToStdout;
+      {
+        // Print information to stdout for this many leading columns.
+        final int MAX_HEAD_TO_PRINT_ON_STDOUT = 10;
+
+        // Print information to stdout for this many trailing columns.
+        final int MAX_TAIL_TO_PRINT_ON_STDOUT = 10;
+
+        if (vecArr.length <= (MAX_HEAD_TO_PRINT_ON_STDOUT + MAX_TAIL_TO_PRINT_ON_STDOUT)) {
+          // For small numbers of columns, print them all.
+          printColumnToStdout = true;
+        } else if (i < MAX_HEAD_TO_PRINT_ON_STDOUT) {
+          printColumnToStdout = true;
+        } else if (i == MAX_HEAD_TO_PRINT_ON_STDOUT) {
+          printLogSeparatorToStdout = true;
+          printColumnToStdout = false;
+        } else if ((i + MAX_TAIL_TO_PRINT_ON_STDOUT) < vecArr.length) {
+          printColumnToStdout = false;
+        } else {
+          printColumnToStdout = true;
+        }
+      }
+
+      if (printLogSeparatorToStdout)
+        Log.info("Additional column information only sent to log file...");
+
+      String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
+      Log.info(s,printColumnToStdout);
     }
-    catch(Exception ignore) {}   // Don't fail due to logging issues.  Just ignore them.
+    Log.info(FrameUtils.chunkSummary(fr).toString());
   }
 }

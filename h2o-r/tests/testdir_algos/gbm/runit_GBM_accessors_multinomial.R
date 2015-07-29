@@ -8,6 +8,7 @@ test.gbm.mult.accessors <- function(conn) {
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train)
   iris.gbm.valid <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test)
+  iris.gbm.valid.xval <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test, nfolds=2)
 
   Log.info("MSE...")
   mse.basic <- h2o.mse(iris.gbm)
@@ -17,6 +18,10 @@ test.gbm.mult.accessors <- function(conn) {
   mse.valid.T <- h2o.mse(iris.gbm.valid,valid = TRUE)
   print(mse.valid.T)
   expect_equal(mse.basic, mse.valid.F) # basic should equal valid with valid = FALSE
+  mse.valid.xval.T <- h2o.mse(iris.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(mse.valid.xval.T)==3)
+  expect_true(mse.valid.xval.T["train"]==mse.basic)
+  expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
   Log.info("R^2...")
   r2.basic <- h2o.r2(iris.gbm)
@@ -26,6 +31,10 @@ test.gbm.mult.accessors <- function(conn) {
   r2.valid.T <- h2o.r2(iris.gbm.valid,valid = TRUE)
   print(r2.valid.T)
   expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
+  r2.valid.xval.T <- h2o.r2(iris.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(r2.valid.xval.T)==3)
+  expect_true(r2.valid.xval.T["train"]==r2.basic)
+  expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
 
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(iris.gbm)
@@ -35,6 +44,10 @@ test.gbm.mult.accessors <- function(conn) {
   ll.valid.T <- h2o.logloss(iris.gbm.valid, valid = TRUE)
   print(ll.valid.T)
   expect_equal(ll.basic, ll.valid.F) # basic should equal valid with valid = FALSE
+  logloss.valid.xval.T <- h2o.logloss(iris.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(logloss.valid.xval.T)==3)
+  expect_true(logloss.valid.xval.T["train"]==ll.basic)
+  expect_true(logloss.valid.xval.T["valid"]==ll.valid.T)
 
   Log.info("Hit Ratio...")
   hrt.basic <- h2o.hit_ratio_table(iris.gbm)
@@ -44,6 +57,10 @@ test.gbm.mult.accessors <- function(conn) {
   hrt.valid.T <- h2o.hit_ratio_table(iris.gbm.valid,valid = TRUE)
   print(hrt.valid.T)
   expect_equal(hrt.basic, hrt.valid.F) # basic should equal valid with valid = FALSE
+  hit_ratio_table.valid.xval.T <- h2o.hit_ratio_table(iris.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
+  expect_true(length(hit_ratio_table.valid.xval.T)==3)
+  expect_equal(hit_ratio_table.valid.xval.T[["train"]],hrt.basic)
+  expect_equal(hit_ratio_table.valid.xval.T[["valid"]],hrt.valid.T)
 
   Log.info("Variable Importance...")
   print(h2o.varimp(iris.gbm))

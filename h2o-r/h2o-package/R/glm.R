@@ -46,7 +46,7 @@
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
@@ -109,7 +109,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_min_ratio = -1.0,
                     nfolds = 0,
                     fold_column = NULL,
-                    fold_assignment = c("Random","Modulo"),
+                    fold_assignment = c("AUTO","Random","Modulo"),
                     keep_cross_validation_predictions = FALSE,
                     beta_constraints = NULL,
                     offset_column = NULL,

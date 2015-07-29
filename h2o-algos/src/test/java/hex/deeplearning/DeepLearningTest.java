@@ -1,6 +1,10 @@
 package hex.deeplearning;
 
 
+import hex.Distribution;
+import static hex.Distribution.Family.*;
+import hex.ModelMetricsAutoEncoder;
+import hex.ModelMetricsRegression;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
@@ -281,17 +285,17 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void testCreditProstateRegressionTanh() throws Throwable {
     basicDLTest_Regression(
-        "./smalldata/logreg/prostate.csv", "prostateRegressionTanh.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            fr.remove("ID").remove();
-            return fr.find("AGE");
-          }
-        },
-        1,
-        43.23511220404915,
-        DeepLearningParameters.Activation.Tanh);
+            "./smalldata/logreg/prostate.csv", "prostateRegressionTanh.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                fr.remove("ID").remove();
+                return fr.find("AGE");
+              }
+            },
+            1,
+            43.23511220404915,
+            DeepLearningParameters.Activation.Tanh);
 
   }
 
@@ -401,21 +405,21 @@ public class DeepLearningTest extends TestUtil {
   @Ignore //PUBDEV-1001
   @Test public void testCzechboard() throws Throwable {
     basicDLTest_Classification(
-        "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            Vec resp = fr.remove("C2");
-            fr.add("C2", resp.toEnum());
-            resp.remove();
-            return fr.find("C3");
-          }
-        },
-        1,
-        ard(ard(1, 44999),
-            ard(0, 45000)),
-        s("0", "1"),
-        DeepLearningParameters.Activation.Rectifier);
+            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                Vec resp = fr.remove("C2");
+                fr.add("C2", resp.toEnum());
+                resp.remove();
+                return fr.find("C3");
+              }
+            },
+            1,
+            ard(ard(1, 44999),
+                    ard(0, 45000)),
+            s("0", "1"),
+            DeepLearningParameters.Activation.Rectifier);
   }
 
 
@@ -857,5 +861,147 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  // just a simple sanity check - not a golden test
+  @Test
+  public void testLossFunctions() {
+    Frame tfr = null, vfr = null;
+    DeepLearningModel dl = null;
+
+    for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
+            DeepLearningParameters.Loss.Automatic,
+            DeepLearningParameters.Loss.MeanSquare,
+            DeepLearningParameters.Loss.Huber,
+            DeepLearningParameters.Loss.Absolute,
+    }) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        for (String s : new String[]{
+                "Merit", "Class"
+        }) {
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        }
+        DKV.put(tfr);
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._epochs = 1;
+        parms._reproducible = true;
+        parms._hidden = new int[]{50,50};
+        parms._response_column = "Cost";
+        parms._seed = 0xdecaf;
+        parms._loss = loss;
+
+        // Build a first model; all remaining models should be equal
+        DeepLearning job = new DeepLearning(parms);
+        dl = job.trainModel().get();
+
+        ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
+
+        if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.MeanSquare)
+          Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
+        else
+          Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
+
+        job.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (vfr != null) vfr.remove();
+        if (dl != null) dl.delete();
+        Scope.exit();
+      }
+    }
+  }
+
+  @Test
+  public void testDistributions() {
+    Frame tfr = null, vfr = null;
+    DeepLearningModel dl = null;
+
+    for (Distribution.Family dist : new Distribution.Family[] {
+            AUTO,
+            gaussian,
+            poisson,
+            gamma,
+            tweedie,
+    }) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        for (String s : new String[]{
+                "Merit", "Class"
+        }) {
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        }
+        DKV.put(tfr);
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._epochs = 1;
+        parms._reproducible = true;
+        parms._hidden = new int[]{50,50};
+        parms._response_column = "Cost";
+        parms._seed = 0xdecaf;
+        parms._distribution = dist;
+
+        // Build a first model; all remaining models should be equal
+        DeepLearning job = new DeepLearning(parms);
+        dl = job.trainModel().get();
+
+        ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
+
+        if (dist == gaussian || dist == AUTO)
+          Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
+        else
+          Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
+
+        job.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (vfr != null) vfr.remove();
+        if (dl != null) dl.delete();
+        Scope.exit();
+      }
+    }
+  }
+
+  @Test
+  public void testAutoEncoder() {
+    Frame tfr = null, vfr = null;
+    DeepLearningModel dl = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+      for (String s : new String[]{
+              "Merit", "Class"
+      }) {
+        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+      }
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 100;
+      parms._reproducible = true;
+      parms._hidden = new int[]{5,5,5};
+      parms._response_column = "Cost";
+      parms._seed = 0xdecaf;
+      parms._autoencoder = true;
+      parms._input_dropout_ratio = 0.1;
+      parms._activation = DeepLearningParameters.Activation.Tanh;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      dl = job.trainModel().get();
+
+      ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
+      Assert.assertEquals(mm._MSE, 0.10820468552102394, 1e-8);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (dl != null) dl.delete();
+      Scope.exit();
+    }
+  }
 
 }

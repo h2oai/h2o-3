@@ -5,6 +5,7 @@ import hex.SplitFrame;
 import org.junit.*;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -468,4 +469,55 @@ public class KMeansTest extends TestUtil {
       }
     }
   }
+
+  double _ref_betweenss = 528.5603501427154;
+  double _ref_tot_withinss = 167.43963679143025;
+  double _ref_totss = 695.9999869341457;
+  double _ref_withinss[] = new double[]{ 67.82696780398858, 48.15831080234685, 43.36554094593457};
+  long _ref_size[] = new long[]{54, 50, 46};
+
+  @Test
+  public void testNfolds() {
+    Frame tfr = null, vfr = null;
+    KMeansModel kmeans = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      DKV.put(tfr);
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = tfr._key;
+      parms._seed = 0xdecaf;
+      parms._k = 3;
+      parms._nfolds = 3;
+
+      // Build a first model; all remaining models should be equal
+      KMeans job = new KMeans(parms);
+      kmeans = job.trainModel().get();
+
+      ModelMetricsClustering mm = (ModelMetricsClustering)kmeans._output._cross_validation_metrics;
+      assertEquals(_ref_betweenss, mm._betweenss, 1e-8);
+      assertEquals(_ref_tot_withinss, mm._tot_withinss, 1e-8);
+      assertEquals(_ref_totss, mm._totss, 1e-6);
+      for (int i=0; i<parms._k; ++i) {
+        Assert.assertTrue(
+                MathUtils.compare(
+                        ((ModelMetricsClustering) kmeans._output._training_metrics)._withinss[i],
+                        _ref_withinss[i],
+                        1e-6, 1e-6)
+        );
+        Assert.assertEquals(
+                ((ModelMetricsClustering) kmeans._output._training_metrics)._size[i],
+                _ref_size[i]
+        );
+      }
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (kmeans != null) kmeans.delete();
+      Scope.exit();
+    }
+  }
+
 }

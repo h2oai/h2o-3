@@ -1,6 +1,6 @@
 package hex.tree.drf;
 
-import hex.Distributions;
+import hex.Distribution;
 import hex.ModelCategory;
 import hex.schemas.DRFV3;
 import hex.tree.*;
@@ -69,8 +69,13 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols))
         error("_mtries","Computed mtries should be -1 or in interval <1,#cols> but it is " + _parms._mtries);
     }
-    if (_parms._distribution != Distributions.Family.AUTO)
-      error("_distribution", "Only AUTO distribution is implemented so far.");
+    if (_parms._distribution == Distribution.Family.AUTO) {
+      if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
+      if (_nclass >= 2) _parms._distribution = Distribution.Family.multinomial;
+    }
+    if (expensive) {
+      _initialPrediction = isClassifier() ? 0 : getInitialValue();
+    }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
     if (hasOffsetCol())
@@ -280,7 +285,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
-                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : responseMean());
+                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
               }
               continue;
             }

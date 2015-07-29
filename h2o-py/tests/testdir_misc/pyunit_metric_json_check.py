@@ -24,7 +24,8 @@ def metric_json_check(ip, port):
                                     u'predictions',
                                     u'model',
                                     u'duration_in_ms',
-                                    u'frame_checksum']
+                                    u'frame_checksum',
+                                    u'mean_residual_deviance']
     reg_metric_diff = list(set(reg_metric_json_keys_have) - set(reg_metric_json_keys_desired))
     assert not reg_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) regression " \
                                 "metric json. The difference is {2}".format(reg_metric_json_keys_have,
@@ -50,7 +51,8 @@ def metric_json_check(ip, port):
                                     u'model',
                                     u'duration_in_ms',
                                     u'frame_checksum',
-                                    u'residual_deviance']
+                                    u'residual_deviance',
+                                    u'mean_residual_deviance']
     reg_metric_diff = list(set(reg_metric_json_keys_have) - set(reg_metric_json_keys_desired))
     assert not reg_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) glm-regression " \
                                 "metric json. The difference is {2}".format(reg_metric_json_keys_have,

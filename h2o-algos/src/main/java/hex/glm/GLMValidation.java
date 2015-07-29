@@ -101,6 +101,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   }
 
   private void add2(double yreal, double ymodel, double weight, double offset) {
+    _wcount += weight;
     residual_deviance  += weight* _parms.deviance(yreal, ymodel);
     double ynull = offset == 0?_ymu: _parms.linkInv(offset + _ymuLink /* Note: _ymuLink in this case is expected to be link(c), where c is constant term of a model fitted with the given offset and no predictors */);
     null_deviance += weight* _parms.deviance(yreal,ynull);
@@ -121,6 +122,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     null_deviance += v.null_deviance;
     nobs += v.nobs;
     _aic2 += v._aic2;
+    _wcount += v._wcount;
   }
   public final double nullDeviance() { return null_deviance;}
   public final double residualDeviance() { return residual_deviance;}
@@ -175,7 +177,7 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     } else {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
-      metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
+      metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), residualDeviance()/_wcount, nullDeviance(), aic, nullDOF(), resDOF());
     }
     DKV.put(metrics._key,metrics);
     return gm._output.addModelMetrics(metrics);

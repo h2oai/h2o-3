@@ -31,5 +31,7 @@ def cumsumminprodmax(ip,port):
     assert cumprod1[8,0] == cumprod2[8,0] == 362880, "expected cumprod to be 362880, but got {0} and " \
                                                      "{1}".format(cumprod1[8,0], cumprod2[8,0])
 
+    h2o.remove(foo)
+
 if __name__ == "__main__":
     h2o.run_test(sys.argv, cumsumminprodmax)

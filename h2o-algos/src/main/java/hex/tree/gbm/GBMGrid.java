@@ -2,7 +2,6 @@ package hex.tree.gbm;
 
 import hex.*;
 import hex.tree.SharedTreeGrid;
-import hex.tree.SharedTreeModel;
 import water.DKV;
 import water.util.ArrayUtils;
 import water.H2O;
@@ -32,7 +31,7 @@ public class GBMGrid extends SharedTreeGrid<GBMModel.GBMParameters, GBMGrid> {
   @Override protected String modelName() { return MODEL_NAME; }
 
   private static final String[] HYPER_NAMES    = ArrayUtils.append(SharedTreeGrid.HYPER_NAMES   ,new String[] {    "_distribution"               , "_learn_rate"});
-  private static final double[] HYPER_DEFAULTS = ArrayUtils.append(SharedTreeGrid.HYPER_DEFAULTS,new double[] { Distributions.Family.AUTO.ordinal(),     0.1f     });
+  private static final double[] HYPER_DEFAULTS = ArrayUtils.append(SharedTreeGrid.HYPER_DEFAULTS,new double[] { Distribution.Family.AUTO.ordinal(),     0.1f     });
 
   @Override protected String[] hyperNames() { return HYPER_NAMES; }
 
@@ -50,7 +49,7 @@ public class GBMGrid extends SharedTreeGrid<GBMModel.GBMParameters, GBMGrid> {
   protected GBMModel.GBMParameters applyHypers(GBMModel.GBMParameters parms, double[] hypers) {
     GBMModel.GBMParameters p = super.applyHypers(parms, hypers);
     int slen = SharedTreeGrid.HYPER_NAMES.length;
-    p._distribution = Distributions.Family.values()[(int)hypers[slen+0]];
+    p._distribution = Distribution.Family.values()[(int)hypers[slen+0]];
     p._learn_rate =         (float)hypers[slen+1];
     return p;
   }

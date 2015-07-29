@@ -108,6 +108,13 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return preds;
   }
 
+  @Override
+  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
+    if (weight == 0) return data; //0 distance from itself - validation holdout points don't increase metrics
+    assert(weight == 1);
+    return score0(data, preds);
+  }
+
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
     preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains,_output._normSub,_output._normMul);

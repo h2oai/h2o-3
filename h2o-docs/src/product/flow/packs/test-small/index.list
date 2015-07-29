@@ -15,7 +15,6 @@ dl_glm_test_cancar_logIn.flow
 dl_iris.flow
 gbm_anomaly.flow
 gbm_chess.flow
-glm_gbm_test_30k_cattest.flow
 glm_gbm_test_alphabet_cattest.flow
 glm_gbm_test_bigcat_5000x2.flow
 glm_gbm_test_bostonhousing.flow
