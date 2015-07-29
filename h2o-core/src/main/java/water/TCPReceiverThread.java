@@ -142,10 +142,13 @@ public class TCPReceiverThread extends Thread {
           }
         }
       } catch (IOException ioe) {
-        if(!idle) {
+        if (!idle) {
           Log.err("Got IO Error when reading small messages over TCP");
           Log.err(ioe);
         }
+      } catch(Throwable t){
+        Log.err("unexpected error in UDP-TCP thread.");
+        Log.err(t);
       } finally {
         AutoBuffer.BBP_BIG.free(_bb);
         if(_chan != null && _chan.isOpen())
