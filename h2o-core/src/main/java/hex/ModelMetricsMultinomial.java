@@ -20,6 +20,21 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _logloss = logloss;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" logloss: " + (float)_logloss + "\n");
+    sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
+    if (cm() != null) {
+      if (cm().nclasses() <= 20)
+        sb.append(" CM: " + cm().toASCII());
+      else
+        sb.append(" CM: too large to print.\n");
+    }
+    return sb.toString();
+  }
+
   public double logloss() { return _logloss; }
   @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() { return _hit_ratios; }

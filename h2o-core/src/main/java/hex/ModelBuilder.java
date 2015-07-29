@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.api.ModelMetricsBase;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -416,6 +417,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train());
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       DKV.put(mainModel);
+      Log.info(mainModel._output._cross_validation_metrics.toString());
     }
     return this;
   }
@@ -651,6 +653,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_nfolds", "nfolds cannot be specified at the same time as a fold column.");
       } else {
         hide("_nfolds", "nfolds is ignored when a fold column is specified.");
+      }
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+        error("_fold_assignment", "Fold assignment is not allowed in conjunction with a fold column.");
       }
     }
     if (_parms._nfolds > 1) {
