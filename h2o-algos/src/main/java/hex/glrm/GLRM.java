@@ -599,8 +599,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // For j = 0 to number of categorical columns - 1, and level = 0 to number of levels in categorical column - 1
     public int getCatCidx(int j, int level) {
-      assert _numLevels[j] != 0 : "Domain of categorical column cannot be null";
-      assert !Double.isNaN(level) && level >= 0 && level < _numLevels[j];
+      assert _numLevels[j] != 0 : "Number of levels in categorical column cannot be zero";
+      assert !Double.isNaN(level) && level >= 0 && level < _numLevels[j] : "Got level = " + level + " when expected integer in [0," + _numLevels[j] + ")";
       return _catOffsets[j]+level;
     }
 
@@ -626,7 +626,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // Extract Y_j the k by d_j block of Y corresponding to categorical column j
     // Note: d_j = number of levels in categorical column j
     protected final double[][] getCatBlock(int j) {
-      assert _numLevels[j] != 0 : "Domain of categorical column cannot be null";
+      assert _numLevels[j] != 0 : "Number of levels in categorical column cannot be zero";
       double[][] block = new double[rank()][_numLevels[j]];
 
       if (_transposed) {
