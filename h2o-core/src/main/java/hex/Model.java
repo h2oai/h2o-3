@@ -290,10 +290,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
      *  (run-time, etc) but that has to wait until Job is split from
      *  ModelBuilder. */
-    public Job.JobState _state;
+    public Job.JobState _status;
     public long _start_time;
     public long _end_time;
-    public long _msec;
+    public long _run_time;
 
     /**
      * Training set metrics obtained during model training

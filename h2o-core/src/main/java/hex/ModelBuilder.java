@@ -202,10 +202,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       @Override
       public M atomic(M old) {
         if (old != null) {
-          old._output._state = _state;
+          old._output._status = _state;
           old._output._start_time = _start_time;
           old._output._end_time = _end_time;
-          old._output._msec = _end_time - _start_time;
+          old._output._run_time = _end_time - _start_time;
         }
         return old;
       }

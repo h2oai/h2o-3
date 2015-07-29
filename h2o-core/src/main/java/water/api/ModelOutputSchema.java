@@ -46,7 +46,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   ModelMetricsBase cross_validation_metrics;
 
   @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
-  public String state;
+  public String status;
 
   @API(help="Start time in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public long start_time;
@@ -55,7 +55,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public long end_time;
 
   @API(help="Runtime in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
-  public long msec;
+  public long run_time;
 
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
   public IcedHashMap.IcedHashMapStringString help;
