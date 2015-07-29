@@ -1,9 +1,12 @@
+## Set your working directory
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 ## Function for ploting the scoring history
 plot_scoring <- function(model) {
   sh <- h2o.scoreHistory(object = model)
   par(mfrow=c(1,2))
   
-  if(model@algorithm == "gbm"){
+  if(model@algorithm == "gbm" | model@algorithm == "drf"){
     min <- min(range(sh$training_MSE), range(sh$validation_MSE))
     max <- max(range(sh$training_MSE), range(sh$validation_MSE))
     plot(x = sh$number_of_trees, y = sh$validation_MSE, col = "orange", main = model@model_id, ylim = c(min,max))
@@ -26,8 +29,9 @@ library(h2o)
 conn <- h2o.init(nthreads = -1)
 
 print("Import approved and rejected loan requests from Lending Tree...")
-pathToLoanData <- "/Users/amy/Desktop/lending_club/loanStats/"
-pathToRejected <- "/Users/amy/Desktop/lending_club/declined_data/"
+locate <- h2o:::.h2o.locate
+pathToLoanData <- normalizePath(locate("loanStats"))
+pathToDeclinedData <- normalizePath(locate("declined_data"))
 loanStats     <- h2o.importFile(path = pathToLoanData, destination_frame = "LoanStats")
 rejectedStats <- h2o.importFile(path = pathToDeclinedData, destination_frame = "RejectedStats")
 
@@ -88,7 +92,7 @@ gbmBuild  <- end -start
 print(paste("Took", gbmBuild, units(gbmBuild), "to build a GBM Model with 100 trees and a AUC of :",
             gbm_model@model$validation_metrics@metrics$AUC , "on the validation set and",
             gbm_model@model$training_metrics@metrics$AUC, "on the training set."))
-gbm_score <- plot_scoring(model = gbm_limited)
+gbm_score <- plot_scoring(model = gbm_model)
 print("Number of trees that produced the best AUC value on the validations set : ")
 print(gbm_score[gbm_score$validation_auc == max(gbm_score$validation_auc), ])
 
@@ -112,7 +116,6 @@ printMoney <- function(x){
   x <- round(abs(x),2)
   format(x, digits=10, nsmall=2, decimal.mark=".", big.mark=",")
 }
-printMoney(sum_loss$sum_earned[1])
 sum_loss <- as.data.frame(h2o.group_by(data = loanStats_w_pred_bad, by = c("bad_loan", "predict"), sum("earned")))
 print(paste0("Total amount of loss that could have been prevented : $", printMoney(sum_loss$sum_earned[1]) , ""))
 print(paste0("Total amount of loss that still would've accrued : $", printMoney(sum_loss$sum_earned[2]) , ""))
