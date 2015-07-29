@@ -2685,6 +2685,7 @@ h2o.unique <- function(x) {
 #' Apply on H2O Datasets
 #'
 #' Method for apply on \linkS4class{H2OFrame} objects.
+#' Closures are not supported: an error message stating this fact will stop execution.
 #'
 #' @param X an \linkS4class{H2OFrame} object on which \code{apply} will operate.
 #' @param MARGIN the vector on which the function will be applied over, either
