@@ -65,6 +65,7 @@ abstract public class AST extends Iced {
     init(new ASTTan   ());
     init(new ASTTanh  ());
     init(new ASTTrunc ());
+    init(new ASTNrow  ());
 
     // Math binary ops
     init(new ASTAnd ());
@@ -93,6 +94,7 @@ abstract public class AST extends Iced {
     init(new ASTMax());
     init(new ASTMaxNA());
     init(new ASTMean());
+    init(new ASTMeanNA());
     init(new ASTMin());
     init(new ASTMinNA());
     init(new ASTSdev());
@@ -158,7 +160,7 @@ class ASTNum extends AST {
 class ASTStr extends AST {
   final ValStr _str;
   ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
-  @Override public String str() { return _str.toString(); }
+  @Override public String str() { return _str.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override Val exec(Env env) { return _str; }
   @Override int nargs() { return 1; }
 }

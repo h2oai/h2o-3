@@ -1,9 +1,10 @@
 package water.currents;
 
-import java.util.Arrays;
-
-import water.*;
+import water.H2O;
+import water.MRTask;
 import water.fvec.*;
+
+import java.util.Arrays;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {
@@ -38,9 +39,17 @@ class ASTColSlice extends ASTPrim {
 
     } else if( (asts[2] instanceof ASTStr) ) {
       int col = fr.find(asts[2].str());
-      if( col == -1 ) 
-        throw new IllegalArgumentException("No column named '"+asts[2].str()+"' in Frame");
+      if (col == -1)
+        throw new IllegalArgumentException("No column named '" + asts[2].str() + "' in Frame");
       fr2.add(fr.names()[col], fr.vecs()[col]);
+    } else if( (asts[2] instanceof ASTStrList) ) {
+      ASTStrList strs = (ASTStrList)asts[2];
+      for( String scol:strs._strs ) {
+        int col = fr.find(scol);
+        if (col == -1)
+          throw new IllegalArgumentException("No column named '" + scol + "' in Frame");
+        fr2.add(scol, fr.vecs()[col]);
+      }
     } else
       throw new IllegalArgumentException("Column slicing requires a number-list as the last argument, but found a "+asts[2].getClass());
     

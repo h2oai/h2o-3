@@ -1,9 +1,13 @@
 package water.currents;
 
-import java.util.Random;
 import water.H2O;
 import water.MRTask;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+
+import java.util.Random;
 
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument
@@ -51,7 +55,7 @@ class ASTTrunc extends ASTUniOp { String str() { return "trunc"; } double op(dou
 // Split out in it's own function, instead of Yet Another UniOp, because it
 // needs a "is.NA" check instead of just using the Double.isNaN hack... because
 // it works on UUID and String columns.
-class ASTIsNA  extends ASTPrim { 
+class ASTIsNA  extends ASTPrim {
   @Override String str() { return "is.na"; } 
   @Override int nargs() { return 1+1; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -85,5 +89,14 @@ class ASTRunif extends ASTPrim {
     long seed = (long)asts[2].exec(env).getNum();
     if( seed == -1 ) seed = new Random().nextLong();
     return new ValFrame(new Frame(new String[]{"rnd"}, new Vec[]{fr.anyVec().makeRand(seed)}));
+  }
+}
+
+class ASTNrow extends ASTPrim {
+  @Override int nargs() { return 1+1; }
+  @Override String str() { return "nrow"; }
+  @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    return new ValNum(fr.numRows());
   }
 }

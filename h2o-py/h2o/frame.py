@@ -58,7 +58,7 @@ class H2OFrame:
     fr._col_names = [c["label"] for c in res["columns"]]
     return fr
 
-  def __str__(self): return self._id
+  def __str__(self): return self.__repr__()
 
   def _import_parse(self,file_path):
     rawkey = h2o.import_file(file_path)
@@ -66,7 +66,7 @@ class H2OFrame:
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
-    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
+    self._nrows = int(ExprNode("nrow", self)._scalar())
     self._ncols = parse["number_columns"]
     self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
     self._keep = True
@@ -463,7 +463,7 @@ class H2OFrame:
   def __repr__(self):
     if sys.gettrace() is None:
       self.show()
-      return ""
+    return ""
 
   def as_date(self,format):
     """
@@ -619,8 +619,8 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
-    elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("[",self,item,None))
+    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
+    elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
@@ -632,12 +632,11 @@ class H2OFrame:
         allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
       if allrows and allcols: return self                              # fr[:,:]    -> all rows and columns.. return self
-      if allrows: return H2OFrame(expr=ExprNode("[",self,None,item[1]))  # fr[:,cols] -> really just a column slice
-      if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
+      if allrows: return H2OFrame(expr=ExprNode("cols",self,item[1]))  # fr[:,cols] -> really just a column slice
+      if allcols: return H2OFrame(expr=ExprNode("rows",self,item[0]))  # fr[rows,:] -> really just a row slices
 
-      if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)):
-        return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
-      return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
+      res = H2OFrame(expr=ExprNode("rows", ExprNode("cols",self,item[1]),item[0]))
+      return res._scalar() if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)) else res
 
   def __setitem__(self, b, c):
     """
@@ -807,30 +806,30 @@ class H2OFrame:
     return self
 
   # generic reducers (min, max, sum, var)
-  def min(self):
+  def min(self, na_rm=False):
     """
     :return: The minimum value of all frame entries
     """
-    return H2OFrame(expr=ExprNode("min", self))._scalar()
+    return H2OFrame(expr=ExprNode("minNA" if na_rm else "min", self))._scalar()
 
-  def max(self):
+  def max(self, na_rm=False):
     """
     :return: The maximum value of all frame entries
     """
-    return H2OFrame(expr=ExprNode("max", self))._scalar()
+    return H2OFrame(expr=ExprNode("maxNA" if na_rm else "max", self))._scalar()
 
-  def sum(self):
+  def sum(self, na_rm=False):
     """
     :return: The sum of all frame entries
     """
-    return H2OFrame(expr=ExprNode("sum", self))._scalar()
+    return H2OFrame(expr=ExprNode("sumNA" if na_rm else "sum", self))._scalar()
 
   def mean(self,na_rm=False):
     """
     :param na_rm: True or False to remove NAs from computation.
     :return: The mean of the column.
     """
-    return H2OFrame(expr=ExprNode("mean", self, 0, na_rm))._scalar()
+    return H2OFrame(expr=ExprNode("meanNA" if na_rm else "mean", self))._scalar()
 
   def median(self):
     """
@@ -838,13 +837,12 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("median", self))._scalar()
 
-  def var(self,y=None,na_rm=False,use="everything"):
+  def var(self,y=None,use="everything"):
     """
-    :param na_rm: True or False to remove NAs from computation.
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
-    return H2OFrame(expr=ExprNode("var", self,y,na_rm,use))
+    return H2OFrame(expr=ExprNode("var",self,y,use))
 
   def asfactor(self):
     """
@@ -1111,16 +1109,7 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
 
-
-  # flow-coding result methods
-  def _scalar(self):
-    res = self.as_data_frame(False)
-    if res[1] == []: return float("nan")
-    res = res[1][0]
-    if res == "TRUE": return True
-    if res == "FALSE":return False
-    try:    return float(res)
-    except: return res
+  def _scalar(self): return self._ast._scalar()
 
   def _frame(self):  # force an eval on the frame and return it
     self._eager()

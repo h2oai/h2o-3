@@ -16,9 +16,9 @@ class RapidsScalarV3 extends RapidsSchema<Iced,RapidsScalarV3> {
 }
 
 class RapidsStringV3 extends RapidsSchema<Iced,RapidsStringV3> {
-  @API(help="String result"          , direction=API.Direction.OUTPUT) String string;
+  @API(help="String result"          , direction=API.Direction.OUTPUT) String scalar;
   RapidsStringV3( ) { }
-  RapidsStringV3( String s ) { string = s; }
+  RapidsStringV3( String s ) { scalar = s; }
 }
 
 class RapidsFunctionV3 extends RapidsSchema<Iced,RapidsFunctionV3> {

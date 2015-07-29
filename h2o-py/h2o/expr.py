@@ -29,7 +29,7 @@ class ExprNode:
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, (unicode,str)):          return '"'+arg+'"'
-    elif isinstance(arg, slice):                  return "[{}:{}".format(0 if arg.start is None else arg.start,"NaN" if math.isnan(arg.stop) else arg.stop)
+    elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if math.isnan(arg.stop) else arg.stop)
     elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], (str,unicode)) else ("[" + " ".join([str(i) for i in arg])+"]")
     elif arg is None:                             return "()"
     raise ValueError("Unexpected arg type: " + str(type(arg)))
@@ -47,3 +47,11 @@ class ExprNode:
       else:                                                       sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb
+
+  # flow-coding result methods
+  def _scalar(self):
+    res = h2o.rapids(ExprNode._collapse_sb(self._eager()))["scalar"]
+    if res == "TRUE": return True
+    if res == "FALSE":return False
+    try:    return float(res)
+    except: return res

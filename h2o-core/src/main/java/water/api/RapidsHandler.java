@@ -3,6 +3,7 @@ package water.api;
 import water.*;
 import water.fvec.Frame;
 import water.currents.Val;
+import water.parser.ValueString;
 import water.util.Log;
 
 class RapidsHandler extends Handler {
@@ -30,6 +31,17 @@ class RapidsHandler extends Handler {
       Frame fr = val.getFrame();
       assert fr._key==null;     // Rapids always returns a key-less Frame
       if( rapids.id==null ) {
+        // allow for 1x1 frame with no ID to return THAT scalar
+        String s=null;
+        double d=Double.NaN;
+        if( fr.numCols() == 1 && fr.numRows() == 1 ) {
+          if (fr.anyVec().isNumeric())     d = fr.anyVec().at(0);
+          else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new ValueString(), 0).toString();
+          else if( fr.anyVec().isEnum() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
+          fr.delete();
+          if( s!=null ) return new RapidsStringV3(s);
+          else return new RapidsScalarV3(d);
+        }
         fr.delete();
         //throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
         return new RapidsScalarV3(Double.NaN);
