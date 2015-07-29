@@ -54,7 +54,7 @@
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
 #'
-#' @param data An \linkS3class{Frame} object
+#' @param data An \linkS4class{Frame} object
 #' @param key The hex key to be associated with the H2O parsed data object
 #'
 #' @export

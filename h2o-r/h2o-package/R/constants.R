@@ -20,135 +20,10 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #'
 #' Map of binary operators to their "AST" operator value.
 #'
-.op.map <- c("%*%" = "x",
-             '>'  = '>',
-             '>=' = '>=',
-             '<'  = '<',
-             '<=' = '<=',
-             '==' = '==',
-             '!=' = '!=',
-             '%%' = 'mod',
-             '**' = '^',
-             '!'  = '_',
-             '|'  = '|',
-             '&'  = '&',
-             "&&" = "&&",
-             '+'  = '+',
-             '-'  = '-',
-             '*'  = '*',
-             '/'  = '/',
-             '^'  = '^',
-             't'  = 't', 
-             "%/%"="intDiv")
+.h2o.primitives = c("*","+","/","-","abs","cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "sqrt", "tan", "tanh")
 
-.binary_op.map <- c("%*%" = "x",
-                    '>'  = '>',
-                    '>=' = '>=',
-                    '<'  = '<',
-                    '<=' = '<=',
-                    '==' = '==',
-                    '!=' = '!=',
-                    '%%' = '%',
-                    '**' = '^',
-                    '|'  = '|',
-                    '&'  = '&',
-                    "&&" = "&&",
-                    '+'  = '+',
-                    '-'  = '-',
-                    '*'  = '*',
-                    '/'  = '/',
-                    '^'  = '^',
-                    "%/%"="%/%")
 
-#'
-#' Map of unary operators to their "AST" operator value.
-#'
-.unary_op.map <- c('!' = '_',
-                   '$' = '[',
-                   '[' = '[',
-                   't' = 't')
 
-.slice.map <- c('$' = '$', '[' = '[')
-
-#'
-#' A list of prefix operations. 1:1 map for now, may add more to the map as needed.
-#'
-.prefix.map <-  c("abs"  = "abs",
-                  "sign" = "sign",
-                  "sqrt" = "sqrt",
-                  "ceiling" = "ceiling",
-                  "floor" = "floor",
-                  "trunc" = "trunc",
-                  "cummax" = "cummax",
-                  "cummin" = "cummin",
-                  "cumprod" = "cumprod",
-                  "cumsum" = "cumsum",
-                  "log" = "log",
-                  "log10" = "log10",
-                  "log2" = "log2",
-                  "log1p" = "log1p",
-                  "acos" = "acos",
-                  "acosh" = "acosh",
-                  "asin" = "asin",
-                  "asinh" = "asinh",
-                  "atan" = "atan",
-                  "atanh" = "atanh",
-                  "exp" = "exp",
-                  "expm1" = "expm1",
-                  "cos" = "cos",
-                  "cosh" = "cosh",
-                  "cospi" = "cospi",
-                  "sin" = "sin",
-                  "sinh" = "sinh",
-                  "sinpi" = "sinpi",
-                  "tan" = "tan",
-                  "tanh" = "tanh",
-                  "tanpi" = "tanpi",
-                  "gamma" = "gamma",
-                  "lgamma" = "lgamma",
-                  "digamma" = "digamma",
-                  "trigamma" = "trigamma",
-                  "round" = "round",
-                  "signif" = "signif",
-                  "max" = "max",
-                  "nrow"="nrow",
-                  "ncol"="ncol",
-                  "min" = "min",
-                  "range" = "range",
-                  "prod" = "prod",
-                  "sum" = "sum",
-                  "any" = "any",
-                  "all" = "all",
-                  "is.na" = "is.na",
-                  "trunc" = "trunc",
-                  "is.factor" = "is.factor",
-                  "h2o.which"     = "which")
-
-#'
-#' The n-ary args operations
-#'
-.nary_op.map <- c("round" = "round",
-                  "signif" = "signif",
-                  "max" = "max",
-                  "min" = "min",
-                  "range" = "range",
-                  "prod" = "prod",
-                  "sum" = "sum",
-                  "any" = "any",
-                  "all" = "all",
-                  "mean"  = "mean",
-                  "median" = "median",
-                  "var"   = "var",
-                  "log" = "log",
-                  "sd"    = "sd",
-                  "scale" = "scale",
-                  "tail" = "tail",
-                  "head" = "head",
-                  "match" = "match",
-                  "cut" = "cut",
-                  "table" = "table",
-                  "xorsum" = "xorsum",
-                  "trunc" = "trunc")
 
 .type.map <- rbind(data.frame(type = "logical",   scalar = TRUE,  row.names = "boolean",      stringsAsFactors = FALSE),
                    data.frame(type = "logical",   scalar = FALSE, row.names = "boolean[]",    stringsAsFactors = FALSE),
@@ -232,5 +107,3 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 # Export/Import Model Endpoints
 .h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
 .h2o.__LOAD_MODEL <- "Models.bin/"
-
-
