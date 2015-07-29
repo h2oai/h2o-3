@@ -17,7 +17,7 @@ import static water.serial.ModelSerializationTest.getTrees;
 
 public class DRFCheckpointTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   /** Test if reconstructed initial frame match the last iteration
    * of DRF model builder.
@@ -129,7 +129,6 @@ public class DRFCheckpointTest extends TestUtil {
           }
         }
       }
-
     } finally {
       if (f!=null) f.delete();
       if (model!=null) model.delete();
