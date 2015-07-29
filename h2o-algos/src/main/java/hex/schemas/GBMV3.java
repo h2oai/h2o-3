@@ -38,7 +38,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 				"build_tree_one_node",
         "learn_rate",
         "distribution",
-        "tweedie_power"
+        "tweedie_power",
+        "checkpoint"
     };
 
     // Input fields
