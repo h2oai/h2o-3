@@ -47,9 +47,16 @@
 is.Frame <- function(fr) class(fr)[1]=="Frame"
 #.isFr <- function(fr) is(fr,"Frame")
 
-# GC Finalizer - called when GC collects a Frame
-# Must be defined ahead of constructors
-.nodeFinalizer <- function(x) { .refdown(x,"GC_finalizer"); }
+# GC Finalizer - called when GC collects a Frame Must be defined ahead of
+# constructors.  refcnt's can be off - we don't catch pointer-destruction of
+# locals when a frame exits - so a Node can be dead and GC'd with positive
+# refncts.  
+.nodeFinalizer <- function(x) { 
+  if( is.null(x$nuked) ) { # Don't double-refdown children
+    lapply(x$children, function(child) .refdown(child,paste0(xsub,"child")) )
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", .id(x)), method = "DELETE")
+  }
+}
 
 # Ref-count up-count, only if a Frame.  Return x, for flow coding
 .refup <- function(x) {
