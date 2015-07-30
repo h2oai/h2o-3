@@ -519,7 +519,7 @@ The available options vary depending on the selected model. If an option is only
 **Advanced Options**
 
 
-- **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
+- **Checkpoint**: [DL](#DL) [DRF](#DRF) [GBM](#GBM) Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
 - **Use\_all\_factor\_levels**: ([DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
