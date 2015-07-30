@@ -454,7 +454,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+- **Distribution**: [(GBM)](#GBM), [DL](#DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -487,6 +487,8 @@ The available options vary depending on the selected model. If an option is only
 - **Tweedie_variance_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
 
 - **Tweedie_link_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
+
+- **Tweedie_power**: [DL](#DL), [GBM](#GBM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier. 
 
@@ -537,7 +539,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.  
 
-- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring.
+- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The value must be greater than 0 and less than 1. 
 
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
    >**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
@@ -621,7 +623,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
-- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. 
+- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity-based regularization optimization. For more information, refer to the following [link](http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf).  
 
 - **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. 
 
@@ -658,14 +660,47 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
  A summary of the model's parameters displays. To display more details, click the **Show All Parameters** button. 
  
-
 To delete a model, click the **Delete** button. 
 
-To generate a POJO that can use the model outside of H2O, click the **Download POJO** button. 
+To generate a Plain Old Java Object (POJO) that can use the model outside of H2O, click the **Download POJO** button. 
 
->**Note**: To make the POJO work in your Java application, you will also need the `h2o-genmodel.jar` file (`h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar`).
+>**Note**: A POJO can be run in standalone mode or it can be integrated into a platform, such as [Hadoop's Storm](https://github.com/h2oai/h2o-training/blob/master/tutorials/streaming/storm/README.md). To make the POJO work in your Java application, you will also need the `h2o-genmodel.jar` file (available in `h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar`).
 
 To learn how to make predictions, continue to the next section. 
+
+---
+
+###Interpreting Model Results
+
+**Scoring history**: [GBM](#GBM), [DL](#DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. 
+
+  ![Scoring History example](images/Flow_ScoringHistory.png)
+
+**Variable importances**: [GBM](#GBM), [DL](#DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. 
+
+  ![Variable Importances example](images/Flow_VariableImportances.png)
+
+**Confusion Matrix**: [DL](#DL) Table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. The actual results display in the columns and the predictions display in the rows; correct predictions are highlighted in yellow. In the example below, `0` was predicted correctly 902 times, while `8` was predicted correctly 822 times and `0` was predicted as `4` once.
+
+  ![Confusion Matrix example](images/Flow_ConfusionMatrix.png)
+
+**ROC Curve**: [DL](#DL), [GLM](#GLM) Graph representing the ratio of true positives to false positives. To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list: 
+- Max f1
+- Max f2
+- Max f0point5
+- Max accuracy
+- Max precision
+- Max absolute MCC
+- Max min per class accuracy
+
+The lower-left side of the graph represents less tolerance for false positives while the upper-right represents more tolerance for false positives. Ideally, a highly accurate ROC resembles the following example. 
+
+ ![ROC Curve example](images/Flow_ROC.png)
+
+
+
+
+
 
 ---
 
@@ -688,7 +723,10 @@ To view a prediction, click the **View** button to the right of the model name.
 
  ![Viewing Predictions](images/Flow_getPredict.png)
 
-You can also view predictions by clicking the drop-down **Score** menu and selecting **List All Predictions**. 
+You can also view predictions by clicking the drop-down **Score** menu and selecting **List All Predictions**.
+
+
+ 
 
 ---
 
