@@ -22,13 +22,6 @@ public class DeepLearningParameters extends Model.Parameters {
   }
 
   /**
-   * A model key associated with a previously trained Deep Learning
-   * model. This option allows users to build a new model as a
-   * continuation of a previously generated model.
-   */
-  public Key _checkpoint;
-
-  /**
    * If enabled, store the best model under the destination key of this model at the end of training.
    * Only applicable if training is not cancelled.
    */

@@ -24,7 +24,7 @@ public class CompressedTree extends Keyed {
   final int _nclass;            // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
   public CompressedTree( byte[] bits, int nclass, long seed, int tid, int cls ) {
-    super(Key.makeSystem("tree_"+tid+"_"+cls+"_"+Key.rand()));
+    super(makeTreeKey(tid, cls));
     _bits = bits; _nclass = nclass; _seed = seed; 
   }
 
@@ -106,5 +106,9 @@ public class CompressedTree extends Keyed {
       @Override protected void leaf( float pred ) { sb.i().p("return ").p(pred).nl(); }
     }.visit();
     return sb.toString();
+  }
+
+  public static Key<CompressedTree> makeTreeKey(int treeId, int clazz) {
+    return Key.makeSystem("tree_" + treeId + "_" + clazz + "_" + Key.rand());
   }
 }

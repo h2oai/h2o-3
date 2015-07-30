@@ -113,6 +113,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  avoid printing extremely large confusion matrices.  */
     public int _max_confusion_matrix_size = 20;
 
+    /**
+     * A model key associated with a previously trained Deep Learning
+     * model. This option allows users to build a new model as a
+     * continuation of a previously generated model.
+     */
+    public Key<? extends Model> _checkpoint;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
@@ -148,6 +155,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  will preserve the sparseness.  Otherwise, NaN is used.
      *  @return real-valued number (can be NaN)  */
     public double missingColumnsType() { return Double.NaN; }
+
+    public boolean hasCheckpoint() { return _checkpoint != null; }
 
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.

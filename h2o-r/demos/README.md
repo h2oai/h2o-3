@@ -15,6 +15,9 @@ To set up your R environment to run these examples the user will need to downloa
   
   * [`NYC Citibike Demand with Weather`](large/citibike_nyc.R) - Uses monthly bike ride data for the past two years to predict bike demand at each bike share station. Weather data is also incorporated to better predict bike usage.
   
+  * [`Predict Bad Lending Club Loans`](large/lending_club_bad_loans.R) - Uses [Lending Club data](https://www.lendingclub.com/info/download-data.action) to classify bad loans or loans where the user has been charged off or defaulted.
+
+  
   
 ### Corresponding Datasets
 
@@ -51,7 +54,8 @@ To set up your R environment to run these examples the user will need to downloa
     * [NYC Hourly Weather - 2013](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv)    
     * [NYC Hourly Weather - 2014](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv)
     * [NYC Hourly Weather - 2015](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2015.csv)
-
+    
+  *  **Lending Club Data** for [`Predict Bad Lending Club Loans`](large/lending_club_bad_loans.R) - Access the data on the [Lending Club site](Lending Club data](https://www.lendingclub.com/info/download-data.action) and to access the secure dataset used in this demo you'll need a Lending Club account.
 
 ###  Running Examples from Command Line
 
