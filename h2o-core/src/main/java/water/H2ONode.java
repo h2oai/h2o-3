@@ -219,13 +219,13 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
 
 
-  public synchronized void restartSmallTCP(){
-    if(_rawChannel == null) return;
-    try {
-      _rawChannel.close();;
-    } catch (IOException ioe) {}
-    _rawChannel = null;
-  }
+//  public synchronized void restartSmallTCP(){
+//    if(_rawChannel == null) return;
+//    try {
+//      _rawChannel.close();;
+//    } catch (IOException ioe) {}
+//    _rawChannel = null;
+//  }
   /**
    * Send small message as raw bytes via tcp
    * @param bb
