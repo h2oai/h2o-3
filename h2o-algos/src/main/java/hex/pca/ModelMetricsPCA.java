@@ -1,5 +1,8 @@
-package hex;
+package hex.pca;
 
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsUnsupervised;
 import water.fvec.Frame;
 
 public class ModelMetricsPCA extends ModelMetricsUnsupervised {

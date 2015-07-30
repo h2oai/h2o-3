@@ -106,8 +106,8 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -150,8 +150,8 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -207,8 +207,8 @@ public class GLRMTest extends TestUtil {
         // checkEigvec(eigvec, model._output._eigenvectors, 1e-4);
 
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -282,8 +282,8 @@ public class GLRMTest extends TestUtil {
           ev_map.put(missing_fraction, ev_err);
 
           score = model.score(train);
-          // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+          ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
         } catch (Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);
@@ -303,7 +303,7 @@ public class GLRMTest extends TestUtil {
         }
       }
     }
-    sb.append("Missing Fraction --> Avg SSE in Std Dev\n");
+    sb.append("\nMissing Fraction --> Avg SSE in Std Dev\n");
     for (String s : Arrays.toString(sd_map.entrySet().toArray()).split(",")) sb.append(s.replace("=", " --> ")).append("\n");
     sb.append("\n");
     sb.append("Missing Fraction --> Avg SSE in Eigenvectors\n");
@@ -345,8 +345,8 @@ public class GLRMTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -369,8 +369,8 @@ public class GLRMTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -393,8 +393,8 @@ public class GLRMTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -436,8 +436,8 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -485,8 +485,8 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         score = model.score(train);
-        // GLRMModel.ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-        // Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

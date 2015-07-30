@@ -6,7 +6,6 @@ import hex.DataInfo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.ModelMetricsPCA;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;

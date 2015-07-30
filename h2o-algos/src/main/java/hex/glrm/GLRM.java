@@ -1098,23 +1098,4 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
     }
   }
-
-  // Computes XY where X is n by k, Y is k by p, and k <= p
-  // The resulting matrix Z = XY will have dimensions n by p
-  private static class BMulTask extends FrameTask<BMulTask> {
-    double[][] _yt;   // _yt = Y' (transpose of Y)
-
-    BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
-      super(jobKey, dinfo);
-      _yt = yt;
-    }
-
-    @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
-      assert row.nBins + _dinfo._nums == _yt[0].length;
-      for(int p = 0; p < _yt.length; p++) {
-        double x = row.innerProduct(_yt[p]);
-        outputs[p].addNum(x);
-      }
-    }
-  }
 }

@@ -359,61 +359,88 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
-    Frame loadingFrm = DKV.get(_output._loading_key).get();
     final int ncols = _output._names.length;
-    for(int i = 0; i < ncols; i++)
-      loadingFrm.add(_output._names[_output._permutation[i]],loadingFrm.anyVec().makeZero());
+    assert ncols == adaptedFr.numCols();
 
-    // TODO: Calculate model metrics during scoring
-    new MRTask() {
-      @Override public void map( Chunk chks[] ) {
-        double tmp [] = new double[_parms._k];
-        double preds[] = new double[ncols];
-        for( int row = 0; row < chks[0]._len; row++ ) {
-          double p[] = impute_data(chks, row, tmp, preds);
-          for( int c=0; c<preds.length; c++ )
-            chks[_parms._k+c].set(row, p[c]);
-        }
-      }
-    }.doAll(loadingFrm);
+    // Need [A,X,P] where A = adaptedFr, X = loading frame, P = imputed frame
+    Frame fullFrm = new Frame(adaptedFr);
+    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    fullFrm.add(loadingFrm);
+    for(int i = 0; i < ncols; i++)
+      fullFrm.add(_output._names[_output._permutation[i]],fullFrm.anyVec().makeZero());
+    GLRMScore gs = new GLRMScore(null, ncols, _parms._k).doAll(fullFrm);
 
     // Return the imputed training frame
-    int x = _parms._k, y = loadingFrm.numCols();
-    Frame f = loadingFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
+    int x = ncols + _parms._k, y = fullFrm.numCols();
+    Frame f = fullFrm.extractFrame(x, y);  // this will call vec_impl() and we cannot call the delete() below just yet
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    ModelMetricsGLRM mm = new ModelMetricsGLRM(this, adaptedFr, Double.NaN, Double.NaN);  // TODO: Pass in final metrics
-    _output.addModelMetrics(mm);
+    // ModelMetricsGLRM mm = new ModelMetricsGLRM(this, adaptedFr, Double.NaN, Double.NaN);
+    // _output.addModelMetrics(mm);
+    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);
     return f;
   }
 
-  // TODO: Need to undo permutation
-  private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
-    for( int i=0; i<tmp.length; i++ )
-      tmp[i] = chks[i].atd(row_in_chunk);
-    impute_data(tmp, preds);
-    return preds;
-  }
+  private class GLRMScore extends MRTask<GLRMScore> {
+    final String[] _domain;
+    final int _ncolA;   // Number of cols in imputed data P (same as original)
+    final int _ncolX;   // Number of cols in X (rank k)
+    ModelMetrics.MetricBuilder _mb;
 
-  private double[] impute_data(double[] tmp, double[] preds) {
-    assert preds.length == _output._archetypes_obj.nfeatures();
-
-    // Categorical columns
-    for (int d = 0; d < _output._ncats; d++) {
-      double[] xyblock = _output._archetypes_obj.lmulCatBlock(tmp,d);
-      preds[d] = _parms.mimpute(xyblock);
+    GLRMScore( String[] domain, int ncolA, int ncolX ) {
+      _domain = domain; _ncolA = ncolA; _ncolX = ncolX;
     }
 
-    // Numeric columns
-    for (int d = _output._ncats; d < preds.length; d++) {
-      int ds = d - _output._ncats;
-      double xy = _output._archetypes_obj.lmulNumCol(tmp, ds);
-      preds[d] = _parms.impute(xy);
+    @Override public void map( Chunk chks[] ) {
+      float atmp [] = new float[_ncolA];
+      double xtmp [] = new double[_ncolX];
+      double preds[] = new double[_ncolA];
+      _mb = GLRMModel.this.makeMetricBuilder(null);
+
+      for( int row = 0; row < chks[0]._len; row++ ) {
+        double p[] = impute_data(chks, row, xtmp, preds);
+        compute_metrics(chks, row, atmp, p);
+        for( int c=0; c<preds.length; c++ )
+          chks[_ncolA+_ncolX+c].set(row, p[c]);
+      }
     }
 
-    // Undo permutation so columns ordered as in original frame
-    return preds;
+    @Override public void reduce( GLRMScore other ) { if(_mb != null) _mb.reduce(other._mb); }
+
+    @Override protected void postGlobal() { if(_mb != null) _mb.postGlobal(); }
+
+    private float[] compute_metrics(Chunk[] chks, int row_in_chunk, float[] tmp, double[] preds) {
+      for( int i=0; i<tmp.length; i++)
+        tmp[i] = (float)chks[i].atd(row_in_chunk);
+      _mb.perRow(preds, tmp, GLRMModel.this);
+      return tmp;
+    }
+
+    private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+      for( int i=0; i<tmp.length; i++ )
+        tmp[i] = chks[_ncolA+i].atd(row_in_chunk);
+      impute_data(tmp, preds);
+      return preds;   // TODO: Should I undo permutation of columns at end?
+    }
+
+    private double[] impute_data(double[] tmp, double[] preds) {
+      assert preds.length == _output._archetypes_obj.nfeatures();
+
+      // Categorical columns
+      for (int d = 0; d < _output._ncats; d++) {
+        double[] xyblock = _output._archetypes_obj.lmulCatBlock(tmp,d);
+        preds[d] = _parms.mimpute(xyblock);
+      }
+
+      // Numeric columns
+      for (int d = _output._ncats; d < preds.length; d++) {
+        int ds = d - _output._ncats;
+        double xy = _output._archetypes_obj.lmulNumCol(tmp, ds);
+        preds[d] = _parms.impute(xy);
+      }
+      return preds;
+    }
   }
 
   @Override protected double[] score0(double[] data, double[] preds) {
@@ -422,61 +449,5 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k);
-  }
-
-  public static class ModelMetricsGLRM extends ModelMetricsUnsupervised {
-    public double _numerr;
-    public double _caterr;
-
-    public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr) {
-      super(model, frame, Double.NaN);
-      _numerr = numerr;
-      _caterr = caterr;
-    }
-
-    public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
-      public double _miscls;     // Number of misclassified categorical values
-      public long _ncount;      // Number of observed numeric entries
-      public long _ccount;     // Number of observed categorical entries
-
-      public GLRMModelMetrics(int dims) {
-        _work = new double[dims];
-        _miscls = _ncount = _ccount = 0;
-      }
-
-      @Override public double[] perRow(double[] preds, float[] dataRow, Model m) {
-        assert m instanceof GLRMModel;
-        GLRMModel gm = (GLRMModel)m;
-        assert gm._output._ncats + gm._output._nnums == dataRow.length;
-
-        for(int i = 0; i < gm._output._ncats; i++) {
-          if(Double.isNaN(dataRow[i])) continue;
-          if(dataRow[i] != preds[i]) _miscls++;
-          _ccount++;
-        }
-
-        for(int i = gm._output._ncats; i < dataRow.length; i++) {
-          if(Double.isNaN(dataRow[i])) continue;
-          double diff = dataRow[i] - preds[i];
-          _sumsqe += diff * diff;
-          _ncount++;
-        }
-        return preds;
-      }
-
-      @Override public void reduce(MetricBuilder mb) {
-        GLRMModelMetrics mm = (GLRMModelMetrics) mb;
-        super.reduce(mm);
-        _miscls += mm._miscls;
-        _ncount += mm._ncount;
-        _ccount += mm._ccount;
-      }
-
-      @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
-        double numerr = _ncount > 0 ? _sumsqe / _ncount : Double.NaN;
-        double caterr = _ccount > 0 ? _miscls / _ccount : Double.NaN;
-        return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
-      }
-    }
   }
 }
