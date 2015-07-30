@@ -151,7 +151,6 @@ glm_logreg_prostate_test.flow
 glm_logreg_prostate.flow
 glm_pca_test_USArrests_PCAscore.flow
 glm_pca_test_USArrests.flow
-glm_poisson_Goalies.flow
 glm_prostate_prostate_complete-csv-zip.flow
 glm_prostate_prostate-csv-zip.flow
 glm_prostate_prostate.flow
