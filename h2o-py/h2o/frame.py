@@ -646,15 +646,17 @@ class H2OFrame:
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
     """
-    update_index=-1
-    if isinstance(b, (str,unicode)): update_index=self.col_names().index(b) if b in self.col_names() else self._ncols
-    elif isinstance(b, int): update_index=b
-    lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
-    rhs = c._frame() if isinstance(c,H2OFrame) else c
-    col_name = b if (update_index==self._ncols and isinstance(b, (str, unicode))) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
-    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
-    h2o.rapids(ExprNode._collapse_sb(sb))
-    self._update()
+    raise Exception("unimplemented")
+    # TODO: this just needs the new rapids syntax updates
+    # update_index=-1
+    # if isinstance(b, (str,unicode)): update_index=self.col_names().index(b) if b in self.col_names() else self._ncols
+    # elif isinstance(b, int): update_index=b
+    # lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
+    # rhs = c._frame() if isinstance(c,H2OFrame) else c
+    # col_name = b if (update_index==self._ncols and isinstance(b, (str, unicode))) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
+    # sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
+    # h2o.rapids(ExprNode._collapse_sb(sb))
+    # self._update()
 
   def __int__(self):   return int(self._scalar())
 
@@ -673,7 +675,7 @@ class H2OFrame:
     :return: Returns an H2OFrame
     """
     if isinstance(i, (unicode,str)): i = self._find_idx(i)
-    return H2OFrame(expr=ExprNode("[", self, None,-(i+1)))._frame()
+    return H2OFrame(expr=ExprNode("cols", self,-(i+1)))._frame()
 
   def __len__(self):
     """

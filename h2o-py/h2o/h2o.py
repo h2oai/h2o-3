@@ -369,6 +369,7 @@ def run_test(sys_args, test_to_run):
   # num_keys = store_size()
   test_to_run(ip, port)
   # if keys_leaked(num_keys): print "Leaked Keys!"
+  print ls()
 
 def ou():
   """
