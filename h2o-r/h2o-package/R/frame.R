@@ -154,6 +154,9 @@ Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
+Summary.Frame <- function(x,na.rm) if( na.rm ) stop("na.rm versions not impl") else .newExpr(.Generic,x)
+
+
 # Pick a name for this Node.  Just use the evironment's C pointer address, if
 # one's not provided
 .id <- function(x) {
@@ -357,12 +360,12 @@ str.Frame <- function(x, cols=FALSE, ...) {
     stop("`value` can only be an Frame object or a numeric or character vector")
 
   # Row arg is missing, means "all the rows"
-  if(allRow) row <- nrow(data)
-  rows <- .row.col.selector(row)
+  if(allRow) rows <- paste0("[0:",nrow(data),"]")
+  else       rows <- .row.col.selector(row)
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
-    idx <- ncol(data)
+    cols <- paste0("[0:",ncol(data),"]")
   } else {
     idx <- match(col, colnames(data))
     if( any(is.na(idx)) ) {
@@ -373,8 +376,8 @@ str.Frame <- function(x, cols=FALSE, ...) {
         idx <- ncol(data)+1
       }
     }
+    cols <- .row.col.selector(idx)
   }
-  cols <- .row.col.selector(idx)
 
   value <- if( is.Frame(value) )   value
            else if( is.na(value) ) "%NA"
@@ -482,6 +485,54 @@ as.data.frame.Frame <- function(x, ...) {
 
 #' @export
 as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Merge Operations: ifelse, cbind, rbind, merge
+#-----------------------------------------------------------------------------------------------------------------------
+
+#' H2O Apply Conditional Statement
+#'
+#' Applies conditional statements to numeric vectors in H2O parsed data objects when the data are
+#' numeric.
+#'
+#' Only numeric values can be tested, and only numeric results can be returned for either condition.
+#' Categorical data is not currently supported for this funciton and returned values cannot be
+#' categorical in nature.
+#'
+#' @param test A logical description of the condition to be met (>, <, =, etc...)
+#' @param yes The value to return if the condition is TRUE.
+#' @param no The value to return if the condition is FALSE.
+#' @return Returns a vector of new values matching the conditions stated in the ifelse call.
+#' @examples
+#' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(path = ausPath)
+#' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
+#' summary(australia.hex)
+#' @export
+h2o.ifelse <- function(test, yes, no) {
+  stop("h2o.ifelse unimpl")
+}
+
+ifelse <- function(test, yes, no) {
+  if( is.atomic(test) ) {
+    if (typeof(test) != "logical") 
+      storage.mode(test) <- "logical"
+    if (length(test) == 1 && is.null(attributes(test))) {
+      if (is.na(test)) 
+        return(NA)
+      else if (test) {
+        if( (length(yes) == 1 && is.null(attributes(yes))) || is.Frame(yes) )
+          return(yes)
+      } 
+      else if( (length(no) == 1 && is.null(attributes(no))) || is.Frame(no) )
+        return(no)
+    }
+  }
+
+  if( is.Frame(test) || is.Frame(yes) || is.Frame(no) ) h2o.ifelse(test,yes,no)
+  else base::ifelse(test,yes,no)
+}
 
 #' Produe a Vector of Random Uniform Numbers
 #'
