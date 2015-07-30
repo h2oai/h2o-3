@@ -31,8 +31,7 @@ The following changes represent features that have been added since the previous
 
 #####System
 
-- [GitHub](https://github.com/h2oai/h2o-3/commit/b7e94ccff6ec6921ffc0d16914b156b6afc15f6e): allow for String vec
-- [PUBDEV-1735](https://0xdata.atlassian.net/browse/PUBDEV-1735): Add 24-MAR-14 06.10.48.000000000 PM style date to autodetect
+- [PUBDEV-1735](https://0xdata.atlassian.net/browse/PUBDEV-1735): Add 24-MAR-14 06.10.48.000000000 PM style date to autodetected
 
 
 ####Enhancements
