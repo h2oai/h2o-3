@@ -32,8 +32,10 @@ dependencies {
   compile 'org.javassist:javassist:3.18.2-GA'
 
   // org.Reflections library 
-  //compile 'com.github.ronmamo:reflections:-SNAPSHOT'
-  compile "org.reflections:reflections:0.9.9"
+  // JitPack compiles this project using java 1.7 which is set as default JDK in reflections' pom.xml. We need this project compiled by java 1.5. That's why there is new fork of the reflections
+  // on Github with JDK version changed and JitPack compiles the dependency from there
+  //!! This should be replaced by regular maven dependency of reflections 0.9.11 or higher when it's available
+  compile 'com.github.MadMan0708:reflections:-SNAPSHOT'
 
   // Jets3t is required by S3N support
   compile 'net.java.dev.jets3t:jets3t:0.6.1'

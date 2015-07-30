@@ -134,8 +134,8 @@ The following is a list of R functions alongside the equivalent Python ones.
 |`digamma`|`digamma` | |
 |`trigamma`|`trigamma` | |
 |`!`|`not` | |
-|`is.na`|`isna` || 
-|`max`|`max` | |
+|`is.na`|`isna` |Returns a new boolean H2OVec.| 
+|`max`|`max` | Returns the maximum value of all frame entries.|
 |`min`|`min` | Returns the minimum value of all frame entries.|
 |`sum`|`sum` | Returns the sum of all frame entries. |
 |`as.factor`|`asfactor`| Returns a lazy Expr representing this vec converted to a factor. |
