@@ -22,7 +22,7 @@ test.checkpointing <- function(conn) {
     distribution <- "multinomial"
     cars[,response_col] <- as.factor(cars[response_col])
   } else {
-    distribution <- "regression"
+    distribution <- "gaussian"
     response_col <- "economy"
   }
 
