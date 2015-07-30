@@ -170,7 +170,6 @@ gbm_pca_test_AustraliaCoast.flow
 gbm_pca_test_decathlon.flow
 gbm_pca_test_fgl_tr.flow
 gbm_pca_test_iris_PCAscore.flow
-gbm_pca_test_poison.flow
 gbm_testng_airquality_train2.flow
 gbm_testng_airquality_validation1.flow
 gbm_testng_airquality_validation2.flow
