@@ -124,10 +124,37 @@ There aren't specific "best practices," as it depends on your data and the colum
 
 **What is your implementation of Deep Learning based on?**
 
-Our Deep Learning algorithm is based on the feedforward neural net. For more information, refer to our Data Science documentation or [Wikipedia](https://en.wikipedia.org/wiki/Feedforward_neural_network). 
+ Our Deep Learning algorithm is based on the feedforward neural net. For more information, refer to our Data Science documentation or [Wikipedia](https://en.wikipedia.org/wiki/Feedforward_neural_network). 
+
+---
+
+**How is deviance computed for a Deep Learning regression model?**
+
+For a Deep Learning regression model, deviance is computed as follows: 
+
+Loss = MeanSquare -> MSE==Deviance
+For Absolute/Laplace or Huber -> MSE != Deviance. 
+
+---
+
+**For my 0-tree GBM multinomial model, I got a different score depending on whether or not validation was enabled, even though my dataset was the same - why is that?**
+
+Different results may be generated because of the way H2O computes the initial MSE. 
+
+
+---
+
+**How does your Deep Learning Autoencoder work? Is it deep or shallow?**
+
+H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer.  The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers.  We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R). 
+
+
+
+
 ---
 
 <!---
+
 #commenting out as still in dev but wanted to save for later
 
 **Are there any H2O examples using text for classification?**
@@ -253,6 +280,19 @@ To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the co
 **How should I format my SVMLight data before importing?**
 
 The data must be formatted as a sorted list of unique integers, the column indices must be >= 1, and the columns must be in ascending order. 
+
+---
+
+
+**What date and time formats does H2O support?**
+
+H2O is set to auto-detect two major data/time formats. Because many data time formats are ambiguous (e.g. 01/02/03), general data time detection is not used.  
+
+The first format is for dates formatted as yyyy-MM-dd. Year is a four-digit number, the month is a two-digit number ranging from 1 to 12, and the day is a two-digit value ranging from 1 to 31. This format can also be followed by a space and then a time (specified below). 
+
+The second date format is for dates formatted as dd-MMM-yy. Here the day must be one or two digits with a value ranging from 1 to 31. The month must be either a three-letter abbreviation or the full month name but is not case sensitive. The year must be either two or four digits. In agreement with [POSIX](https://en.wikipedia.org/wiki/POSIX) standards, two-digit dates >= 69 are assumed to be in the 20th century (e.g. 1969) and the rest are part of the 21st century. This date format can be followed by either a space or colon character and then a time. The '-' between the values is optional. 
+
+Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value between 0-23 (for 24-hour time) or 1-12 (for a twelve-hour clock). mm is a two-digit minute value and must be a value between 0-59. ss is a two-digit second value and must be a value between 0-59. This format can be followed with either milliseconds, nanoseconds, and/or the cycle (i.e. AM/PM). If milliseconds are included, the format is HH:mm:ss:SSS. If nanoseconds are included, the format is HH:mm:ss:SSSnnnnnn. H2O only stores fractions of a second up to the millisecond, so accuracy may be lost. Nanosecond parsing is only included for convenience. Finally, a valid time can end with a space character and then either "AM" or "PM". For this format, the hours must range from 1 to 12. Within the time, the ':' character can be replaced with a '.' character.
 
 ---
 
@@ -403,6 +443,8 @@ This error message means that there is a space (or other unsupported character) 
 
 ---
 
+
+
 ##Hadoop
 
 <!---
@@ -465,8 +507,13 @@ Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test
 
 When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
 
-
 ---
+
+
+
+
+
+
 
 ##Java
 
@@ -501,6 +548,43 @@ This script connects to the server, gets all the metadata for the REST API schem
 
 
 ---
+
+**I keep getting a message that I need to install Java. I have the latest version of Java installed, but I am still getting this message. What should I do?**
+
+This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 
+
+If you are running OS X 10.7 or earlier, enter the following in Terminal: 
+`export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home`
+
+If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal: 
+
+```
+cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>setenv.JAVA_HOME</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>setenv</string>
+    <string>JAVA_HOME</string>
+    <string>/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceIPC</key>
+  <false/>
+</dict>
+</plist>
+EOF
+```
+
+
+---
+
 
 ##Python
 
@@ -749,6 +833,71 @@ library(h2o)
 localH2O = h2o.init(ip="sri.h2o.ai", port=54321, startH2O = F, strict_version_check=T)
 data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID",conn = localH2O)
 ``` 
+---
+
+**How do I remove rows containing NAs in an H2OFrame?**
+
+To remove NAs from rows:
+
+```
+  a   b    c    d    e
+1 0   NA   NA   NA   NA
+2 0   2    2    2    2
+3 0   NA   NA   NA   NA
+4 0   NA   NA   1    2
+5 0   NA   NA   NA   NA
+6 0   1    2    3    2
+```
+
+Removing rows 1, 3, 4, 5 to get:
+
+```
+  a   b    c    d    e
+2 0   2    2    2    2
+6 0   1    2    3    2
+```
+
+Use `na.omit(myFrame)`, where `myFrame` represents the name of the frame you are editing. 
+
+---
+
+**I installed H2O in R using OS X and updated all the dependencies, but the following error message displayed: `Error in .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, Unexpected CURL error: Empty reply from server` - what should I do?**
+
+
+This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 
+
+If you are running OS X 10.7 or earlier, enter the following in Terminal: 
+`export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home`
+
+If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal: 
+
+```
+cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>setenv.JAVA_HOME</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>setenv</string>
+    <string>JAVA_HOME</string>
+    <string>/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceIPC</key>
+  <false/>
+</dict>
+</plist>
+EOF
+```
+
+---
+
+
 
 ##Sparkling Water
 
@@ -909,6 +1058,12 @@ import org.apache.spark.h2o._
 val h2oContext = new H2OContext(sc)
 ```
 After setting up `H2OContext`, try to run Sparkling Water again. 
+
+---
+
+
+
+
 
 ---
 
