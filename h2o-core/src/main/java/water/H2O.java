@@ -150,7 +150,8 @@ final public class H2O {
   /**
    * A class containing all of the arguments for H2O.
    */
-  public static class OptArgs {
+  public static class
+    OptArgs {
     //-----------------------------------------------------------------------------------
     // Help and info
     //-----------------------------------------------------------------------------------
@@ -443,6 +444,8 @@ final public class H2O {
       } else if(s.matches("switch_tcp")) {
         i = s.incrementAndCheck(i, args);
         ARGS.switch_tcp = Integer.parseInt(args[i]);
+      } else if(s.matches("useUDP")) {
+          ARGS.useUDP = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }

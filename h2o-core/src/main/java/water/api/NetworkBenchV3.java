@@ -9,8 +9,8 @@ public class NetworkBenchV3 extends RequestSchema<NetworkBench, NetworkBenchV3> 
   @API(help="NetworkBenchResults", direction = API.Direction.OUTPUT)
   TwoDimTableV3 [] results;
 
+  @Override
   public NetworkBenchV3 fillFromImpl(NetworkBench impl) {
-    super.fillFromImpl(impl);
     if(impl._results != null) {
       results = new TwoDimTableV3[impl._results.length];
       for(int i = 0; i < results.length; ++i)
@@ -18,4 +18,5 @@ public class NetworkBenchV3 extends RequestSchema<NetworkBench, NetworkBenchV3> 
     }
     return this;
   }
+
 }
