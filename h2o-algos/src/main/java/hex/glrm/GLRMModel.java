@@ -364,6 +364,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     for(int i = 0; i < ncols; i++)
       loadingFrm.add(_output._names[_output._permutation[i]],loadingFrm.anyVec().makeZero());
 
+    // TODO: Calculate model metrics during scoring
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[_parms._k];
@@ -382,7 +383,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig);   // TODO: Model metrics aren't being calculated during scoring
+    ModelMetricsGLRM mm = new ModelMetricsGLRM(this, adaptedFr, Double.NaN, Double.NaN);  // TODO: Pass in final metrics
+    _output.addModelMetrics(mm);
     return f;
   }
 

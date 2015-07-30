@@ -528,9 +528,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._step_size = step;
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
-        // Optional: This computes XY, but do we need it?
-        // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(dinfo._adaptedFrame.numCols(), xinfo._adaptedFrame);
-        // tsk.outputFrame(_parms._destination_key, _train._names, null);
         model.update(self());
         done();
       } catch (Throwable t) {
