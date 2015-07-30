@@ -132,7 +132,6 @@ gbm_mllib_bench_bigcross_centers_5.flow
 gbm_mllib_bench_bigcross_centers_10.flow
 gbm_mllib_bench_bigcross_centers_15.flow
 gbm_mllib_bench_bigcross_centers_20.flow
-gbm_mllib_bench_bigcross_wcsse.flow
 gbm_pca_test_USArrests_PCAscore.flow
 gbm_pca_test_USArrests.flow
 gbm_poisson_Goalies.flow
