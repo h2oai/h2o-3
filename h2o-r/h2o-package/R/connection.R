@@ -8,7 +8,7 @@
 #'
 #' Once connected, the method checks to see if the local H2O R package version matches the version of H2O running on the server. If there is a mismatch and the user indicates she wishes to upgrade, it will remove the local H2O R package and download/install the H2O R package from the server.
 #'
-#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
+#' @param ip Object of class \code{character} representing the hostname or IP address of the server where H2O is running.
 #' @param port Object of class \code{numeric} representing the port number of the H2O server.
 #' @param startH2O (Optional) A \code{logical} value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if \code{ip = "localhost"} or \code{ip = "127.0.0.1"}.  If an existing connection is detected, R does not start H2O.
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.
@@ -31,7 +31,7 @@
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
 #' @seealso \href{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with the default settings.
 #' localH2O = h2o.init()
@@ -42,10 +42,6 @@
 #'
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with 5 gigabytes of memory.
-#' localH2O = h2o.init(max_mem_size = "5g")
-#'
-#' # Try to connect to a local H2O instance that is already running.
-#' # If not found, start a local H2O instance from R that uses 5 gigabytes of memory.
 #' localH2O = h2o.init(max_mem_size = "5g")
 #' }
 #' @export
@@ -257,7 +253,7 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 #'        and port of the server running H2O.
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' localH2O <- h2o.init()
 #' h2o.clusterStatus(localH2O)
 #' }
