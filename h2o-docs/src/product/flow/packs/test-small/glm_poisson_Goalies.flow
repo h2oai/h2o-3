@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/poisson/Goalies.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/poisson/Goalies.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/poisson/Goalies.csv\"]\n  destination_frame: \"Goalies1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 23\n  single_quotes: false\n  column_names: [\"playerID\",\"year\",\"stint\",\"tmID\",\"lgID\",\"GP\",\"Min\",\"W\",\"L\",\"T/OL\",\"ENG\",\"SHO\",\"GA\",\"SA\",\"PostGP\",\"PostMin\",\"PostW\",\"PostL\",\"PostT\",\"PostENG\",\"PostSHO\",\"PostGA\",\"PostSA\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"Goalies1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"Goalies1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"Goalies1.hex\", [0.25], [\"Goalies1_test\",\"Goalies1_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-bdcd5557-1c08-460e-b8a4-b053e8c6aa7a\",\"training_frame\":\"Goalies1_train\",\"validation_frame\":\"Goalies1_test\",\"ignore_const_cols\":true,\"response_column\":\"playerID\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-bdcd5557-1c08-460e-b8a4-b053e8c6aa7a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-bdcd5557-1c08-460e-b8a4-b053e8c6aa7a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-bdcd5557-1c08-460e-b8a4-b053e8c6aa7a\", frame: \"Goalies1_test\", predictions_frame: \"prediction-7d709470-da56-43cf-b7aa-82be90381d5f\""
+    }
+  ]
+}

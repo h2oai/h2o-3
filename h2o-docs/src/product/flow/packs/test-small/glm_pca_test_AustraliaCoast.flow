@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/pca_test/AustraliaCoast.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/pca_test/AustraliaCoast.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/pca_test/AustraliaCoast.csv\"]\n  destination_frame: \"AustraliaCoast2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 8\n  single_quotes: false\n  column_names: [\"premax\",\"salmax\",\"minairtemp\",\"maxairtemp\",\"maxsst\",\"maxsoilmoist\",\"Max_czcs\",\"runoffnew\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"AustraliaCoast2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"AustraliaCoast2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"AustraliaCoast2.hex\", [0.2], [\"AustraliaCoast_test.hex_0.20\",\"AustraliaCoast_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-031d7dda-673c-427c-a8c9-8478e41bd8b3\",\"training_frame\":\"AustraliaCoast_train.hex_0.80\",\"validation_frame\":\"AustraliaCoast_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"runoffnew\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-031d7dda-673c-427c-a8c9-8478e41bd8b3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-031d7dda-673c-427c-a8c9-8478e41bd8b3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-031d7dda-673c-427c-a8c9-8478e41bd8b3\", frame: \"AustraliaCoast_test.hex_0.20\", predictions_frame: \"prediction-b6806343-a130-4a9e-9701-1b300bd908f7\""
+    }
+  ]
+}

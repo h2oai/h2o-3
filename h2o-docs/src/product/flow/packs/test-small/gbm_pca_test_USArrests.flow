@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/pca_test/USArrests.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/pca_test/USArrests.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/pca_test/USArrests.csv\"]\n  destination_frame: \"USArrests2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_names: [\"Murder\",\"Assault\",\"UrbanPop\",\"Rape\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"USArrests2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"USArrests2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"USArrests2.hex\", [0.2], [\"USArrests_test.hex_0.20\",\"USArrests_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-c98f18e4-42ad-4ba5-8e0f-345d762b6563\",\"training_frame\":\"USArrests_train.hex_0.80\",\"validation_frame\":\"USArrests_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"Rape\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-4955706463319739000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-c98f18e4-42ad-4ba5-8e0f-345d762b6563\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c98f18e4-42ad-4ba5-8e0f-345d762b6563\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c98f18e4-42ad-4ba5-8e0f-345d762b6563\", frame: \"USArrests_test.hex_0.20\", predictions_frame: \"prediction-c5b4af13-37c6-40d8-b16c-7d0346cb5583\""
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/bigcat_5000x2.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/bigcat_5000x2.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/bigcat_5000x2.csv\"]\n  destination_frame: \"bigcat_5000x2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 2\n  single_quotes: false\n  column_names: [\"X\",\"y\"]\n  column_types: [\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"bigcat_5000x2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"bigcat_5000x2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"bigcat_5000x2.hex\", [0.2], [\"bigcat_5000x2_test.hex_0.20\",\"bigcat_5000x2_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-c56bdee6-2807-4e2d-89fd-e103692c6a54\",\"training_frame\":\"bigcat_5000x2_train.hex_0.80\",\"validation_frame\":\"bigcat_5000x2_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"y\",\"ntrees\":\"1\",\"max_depth\":\"1\",\"min_rows\":10,\"nbins\":\"100\",\"nbins_cats\":1024,\"seed\":3596832723531905000,\"learn_rate\":0.1,\"distribution\":\"bernoulli\",\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-c56bdee6-2807-4e2d-89fd-e103692c6a54\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c56bdee6-2807-4e2d-89fd-e103692c6a54\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-c56bdee6-2807-4e2d-89fd-e103692c6a54\", frame: \"bigcat_5000x2_test.hex_0.20\", predictions_frame: \"prediction-fbd2ab03-6e2d-4c83-b5df-73f6f355a2fd\""
+    }
+  ]
+}
