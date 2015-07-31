@@ -781,7 +781,7 @@ public final class ParseDataset extends Job<Frame> {
     try {
       long numRows = fr.anyVec().length();
       Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
-      // get all rollups started in parallell, otherwise this takes ages!
+      // get all rollups started in parallel, otherwise this takes ages!
       Futures fs = new Futures();
       Vec[] vecArr = fr.vecs();
       for(Vec v:vecArr)  v.startRollupStats(fs);
