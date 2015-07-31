@@ -519,7 +519,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for( int i=0; i<hs.length; i++ ) {
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
         DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
-        if( s == null ) continue;
+        if( s == null )
+          continue;
         if( s.se() < best.se() )
           best = s;
         if( s.se() <= 0 ) break; // No point in looking further!
