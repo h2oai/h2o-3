@@ -554,7 +554,7 @@ setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@mod
 #' @export
 setClass("H2OModelMetrics",
          representation(algorithm="character", on_train="logical", on_valid="logical", on_xval="logical", metrics="listOrNull"),
-         prototype(algorithm=NA_character_, on_train=FALSE, metrics=NULL),
+         prototype(algorithm=NA_character_, on_train=FALSE, on_valid=FALSE, on_xval=FALSE, metrics=NULL),
          contains="VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
