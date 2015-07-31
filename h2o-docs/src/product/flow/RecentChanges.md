@@ -2,11 +2,41 @@
 
 ##H2O
 
+###Simons (3.0.1.5) - 7/31/15
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Python
+
+- [PUBDEV-1765](https://0xdata.atlassian.net/browse/PUBDEV-1765): Improve python online documentation
+
+
+#####R
+
+- [PUBDEV-1744](https://0xdata.atlassian.net/browse/PUBDEV-1744): Improve help message of h2o.init function
+- [GitHub]
+
+#####System
+
+- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04):  Add -JJ command line argument to allow extra JVM to be passed.
+
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+#####Python
+
+- [PUBDEV-1779](https://0xdata.atlassian.net/browse/PUBDEV-1779): Fixes intermittent failure seen when Model Metrics were looked at too quickly after a cross validation run.
+
+
+---
+
 ###Simons (3.0.1.4) - 7/29/15
 
 ####New Features
-
-The following changes represent features that have been added since the previous release:
 
 #####Algorithms
 - [HEXDEV-220](https://0xdata.atlassian.net/browse/HEXDEV-220): Tweedie distribution for DL
@@ -14,7 +44,10 @@ The following changes represent features that have been added since the previous
 - [HEXDEV-221](https://0xdata.atlassian.net/browse/HEXDEV-221): Gamma distribution for DL
 - [PUBDEV-683](https://0xdata.atlassian.net/browse/PUBDEV-683): Enable nfolds for all algos (where reasonable) [GitHub](https://github.com/h2oai/h2o-3/commit/68d74cb438dd535acac18ce8233fdaa25882b6c5)
 - [PUBDEV-1791](https://0xdata.atlassian.net/browse/PUBDEV-1791): Add toString() for all models (especially model metrics) [GitHub](https://github.com/h2oai/h2o-3/commit/c253f5ff73b1828de026f69f6846e1b85087b056)
-- [GitHub](https://github.com/h2oai/h2o-3/commit/792a0789ef951bf0997251a05cb3dd8d5d92af9e): Enabling model checkpointing for DRF & GBM
+- [GitHub](https://github.com/h2oai/h2o-3/commit/792a0789ef951bf0997251a05cb3dd8d5d92af9e): Enabling model checkpointing for DRF
+- [GitHub](https://github.com/h2oai/h2o-3/commit/29b12729465cc4e0c71597616a748ad12ab1a099): Enable checkpointing for GBM.
+- [PUBDEV-1698](https://0xdata.atlassian.net/browse/PUBDEV-1698): fold assignment in N-fold cross-validation 
+
 
 ##### Python
 - [PUBDEV-386](https://0xdata.atlassian.net/browse/PUBDEV-386): Expose ParseSetup to user in Python
@@ -169,12 +202,12 @@ The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 
-- PUBDEV-1743: gbm poisson w weights: deviance off 
-- PUBDEV-1736: gbm poisson with offset: seems to be giving wrong leaf predictions
+- [PUBDEV-1743](https://0xdata.atlassian.net/browse/PUBDEV-1743): gbm poisson w weights: deviance off 
+- [PUBDEV-1736](https://0xdata.atlassian.net/browse/PUBDEV-1736): gbm poisson with offset: seems to be giving wrong leaf predictions
 
 #####Python
 
-- [PUBDEV-1731](https://0xdata.atlassian.net/browse/PUBDEV-1731): Python get_frame() results in deleting a frame created by Flow
+- [PUBDEV-1731](https://0xdata.atlassian.net/browse/PUBDEV-1731): Python `get_frame()` results in deleting a frame created by Flow
 - [HEXDEV-389](https://0xdata.atlassian.net/browse/HEXDEV-389): Split frame from python 
 - [HEXDEV-388](https://0xdata.atlassian.net/browse/HEXDEV-388): python client H2OFrame constructor puts the header into the data (as the first row)
 

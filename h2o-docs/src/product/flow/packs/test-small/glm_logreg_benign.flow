@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/benign.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/benign.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/benign.csv\"]\n  destination_frame: \"benign1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"STR\",\"OBS\",\"AGMT\",\"FNDX\",\"HIGD\",\"DEG\",\"CHK\",\"AGP1\",\"AGMN\",\"NLV\",\"LIV\",\"WT\",\"AGLP\",\"MST\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"benign1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"benign1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"benign1.hex\", [0.2], [\"benign1_test.hex_0.20\",\"benign1_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-382569bc-12ae-4c24-aae2-f81df22b4dfb\",\"training_frame\":\"benign1_train.hex_0.80\",\"validation_frame\":\"benign1_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"FNDX\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[0],\"lambda\":[0.00001],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-382569bc-12ae-4c24-aae2-f81df22b4dfb\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-382569bc-12ae-4c24-aae2-f81df22b4dfb\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-382569bc-12ae-4c24-aae2-f81df22b4dfb\", frame: \"benign1_test.hex_0.20\", predictions_frame: \"prediction-edf9d4eb-173c-4e03-8a16-4d448a5d90ca\""
+    }
+  ]
+}

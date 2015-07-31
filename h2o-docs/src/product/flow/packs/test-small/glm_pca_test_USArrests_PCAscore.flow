@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/pca_test/USArrests_PCAscore.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/pca_test/USArrests_PCAscore.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/pca_test/USArrests_PCAscore.csv\"]\n  destination_frame: \"USArrests_PCAscore2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_names: [\"PC1\",\"PC2\",\"PC3\",\"PC4\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"USArrests_PCAscore2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"USArrests_PCAscore2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"USArrests_PCAscore2.hex\", [0.2], [\"USArrests_PCAscore_test.hex_0.20\",\"USArrests_PCAscore_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-faf49417-450d-446a-b83d-e02ee5380ccc\",\"training_frame\":\"USArrests_PCAscore_train.hex_0.80\",\"validation_frame\":\"USArrests_PCAscore_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"PC4\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-faf49417-450d-446a-b83d-e02ee5380ccc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-faf49417-450d-446a-b83d-e02ee5380ccc\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-faf49417-450d-446a-b83d-e02ee5380ccc\", frame: \"USArrests_PCAscore_test.hex_0.20\", predictions_frame: \"prediction-f3388f2b-9f84-474a-92f7-3c420dd1287d\""
+    }
+  ]
+}

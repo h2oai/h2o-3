@@ -210,7 +210,10 @@ class H2OConnection(object):
     if mmax: vm_opts += ["-Xmx{}g".format(mmax)]
     if ea:   vm_opts += ["-ea"]
 
-    h2o_opts = ["-jar", jar_path,
+    h2o_opts = ["-verbose:gc",
+                "-XX:+PrintGCDetails",
+                "-XX:+PrintGCTimeStamps",
+                "-jar", jar_path,
                 "-name", "H2O_started_from_python",
                 "-ip", "127.0.0.1",
                 "-port", "54321",
