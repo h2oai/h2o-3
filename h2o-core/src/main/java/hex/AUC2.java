@@ -50,7 +50,7 @@ public class AUC2 extends Iced {
         final double recl = tpr   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return 1.0-(fn+fp)/(tp+fn+tn+fp); } },
+    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return (tn+tp)/(tp+fn+tn+fp); } },
     precision(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return tp/(tp+fp); } },
     absolute_MCC(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         double mcc = (tp*tn - fp*fn);

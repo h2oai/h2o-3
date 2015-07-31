@@ -20,7 +20,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####System
 
-- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04): Add -JJ option to add VM args.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04):  Add -JJ command line argument to allow extra JVM to be passed.
 
 
 ####Bug Fixes 
@@ -29,7 +29,7 @@ The following changes are to resolve incorrect software behavior:
 
 #####Python
 
-- [PUBDEV-1779](https://0xdata.atlassian.net/browse/PUBDEV-1779): Intermittent: `pyunit_cv_carsGBM.py` `pyunit_cv_carsGLM.py`
+- [PUBDEV-1779](https://0xdata.atlassian.net/browse/PUBDEV-1779): Fixes intermittent failure seen when Model Metrics were looked at too quickly after a cross validation run.
 
 
 ---

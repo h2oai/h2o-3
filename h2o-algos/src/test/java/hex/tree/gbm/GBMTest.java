@@ -55,9 +55,9 @@ public class GBMTest extends TestUtil {
       fr2 = gbm.score(fr);
       double sq_err = new CompErr().doAll(job.response(),fr2.vecs()[0])._sum;
       double mse = sq_err/fr2.numRows();
-      assertEquals(79152.26,mse,0.1);
-      assertEquals(79152.26,gbm._output._scored_train[1]._mse,0.1);
-      assertEquals(79152.26,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
+      assertEquals(79152.12337641386,mse,0.1);
+      assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
+      assertEquals(79152.12337641386,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();

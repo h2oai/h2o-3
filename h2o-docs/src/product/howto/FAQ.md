@@ -296,6 +296,14 @@ Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value betw
 
 ---
 
+**How does H2O handle name collisions/conflicts in the dataset?**
+
+If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
+
+
+
+---
+
 ##General
 
 **How do I score using an exported JSON model?**
@@ -443,7 +451,12 @@ This error message means that there is a space (or other unsupported character) 
 
 ---
 
+**How does `importFiles()` work in H2O?**
 
+`importFiles()` gets the basic information for the file and then returns a key representing that file. This key is used during parsing to read in the file and to save space so that the file isn't loaded every time; instead, it is loaded into H2O then referenced using the key. For files hosted online, H2O verifies the destination is valid, creates a vec that loads the file when necessary, and returns a key.
+
+
+---
 
 ##Hadoop
 
