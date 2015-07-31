@@ -79,6 +79,6 @@ public class SplitFrame extends Transformer<SplitFrame> {
       }
     };
 
-    return (SplitFrame) start(hcc, computedRatios.length + 1);
+    return (SplitFrame) start(hcc, computedRatios.length + 1, true);
   }
 }

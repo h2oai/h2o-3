@@ -34,7 +34,7 @@
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -62,7 +62,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -172,7 +172,7 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #'        from the H2O cluster when the R proxy object is garbage collected.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #'
@@ -272,7 +272,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' @return If path is "", then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h <- h2o.init(nthreads=-1)
 #' fr <- as.h2o(iris)

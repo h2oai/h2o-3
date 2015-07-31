@@ -19,7 +19,7 @@ public class LogsHandler extends Handler {
       log = null;
     }
 
-    @Override public void compute2() {
+    public void doIt() {
       String logPathFilename = "/undefined";        // Satisfy IDEA inspection.
       try {
         if (name == null || name.equals("default")) {
@@ -102,7 +102,10 @@ public class LogsHandler extends Handler {
       catch (Exception e) {
         throw new RuntimeException(e);
       }
+    }
 
+    @Override public void compute2() {
+      doIt();
       tryComplete();
     }
 
@@ -114,10 +117,7 @@ public class LogsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogsV3 fetch(int version, LogsV3 s) {
     int nodeidx = s.nodeidx;
-    if (nodeidx == -1) {
-      nodeidx = H2O.SELF.index();
-    }
-    if ((nodeidx < 0) || (nodeidx >= H2O.CLOUD.size())) {
+    if ((nodeidx < -1) || (nodeidx >= H2O.CLOUD.size())) {
       throw new IllegalArgumentException("node does not exist");
     }
 
@@ -128,12 +128,24 @@ public class LogsHandler extends Handler {
       }
     }
 
-    H2ONode node = H2O.CLOUD._memary[nodeidx];
     GetLogTask t = new GetLogTask();
     t.name = filename;
-    Log.trace("GetLogTask starting to node " + nodeidx + "...");
-    new RPC<>(node, t).call().get();
-    Log.trace("GetLogTask completed to node " + nodeidx);
+    if (nodeidx == -1) {
+      // Local node.
+      try {
+        t.doIt();
+      }
+      catch (Exception e) {
+        Log.err(e);
+      }
+    }
+    else {
+      // Remote node.
+      Log.trace("GetLogTask starting to node " + nodeidx + "...");
+      H2ONode node = H2O.CLOUD._memary[nodeidx];
+      new RPC<>(node, t).call().get();
+      Log.trace("GetLogTask completed to node " + nodeidx);
+    }
 
     if (! t.success) {
       throw new RuntimeException("GetLogTask failed");
