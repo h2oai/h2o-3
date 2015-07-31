@@ -226,7 +226,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // 4) Normalize output frame columns by singular values to get left singular vectors
         // TODO: Make sure model building consistent if algo cancelled midway
         model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
-        if(!_parms._only_v && _parms._keep_u) {
+
+        if(!_parms._only_v && !_parms._keep_u) {   // Delete U vecs if computed, but user does not want it returned
+          for(int i = 0; i < uvecs.length; i++) uvecs[i].remove();
+        } else if(!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
           u = new Frame(model._output._u_key, null, uvecs);
           DKV.put(u._key, u);
 

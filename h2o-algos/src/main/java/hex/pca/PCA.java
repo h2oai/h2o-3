@@ -247,7 +247,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
 
-          // Calculate standard deviation and projection as well
+          // Calculate standard deviation, but not projection
           parms._only_v = false;
           parms._keep_u = false;
 
