@@ -12,131 +12,48 @@
 #` simple R environment objects.
 #`
 #` Like AST Nodes in compilers all over, Frames build a simple DAG where the
-#` nodes contain an operator and some outgoing edges.  There's a refcnt, to
-#` count incoming edges and to control lifetimes.  Refcnts are raised when a
-#` pointer is made to a Frame via using it in an expression.  Refcnts are
-#` lowered when a Frame is overwritten via assignment, or GC reclaims it.  When
-#` the refcnt falls to zero, the backing temp on H2O can be removed.
+#` nodes contain an operator and some outgoing edges.  There is a GC finalizer
+#` to delete the server-side copy of a Frame
 #`
-#` Assignment is overloaded, to catch capturing of Frame pointers (causes a
-#` refcnt up) or destruction (overwrite) of Frame pointers (causes a refcnt
-#` down).  Top-level expressions can be made in the R REPL without assigning to
-#` any variable; these expressions exist with a refcnt of 0.  The next GC will
-#` reclaim them.  GC will also visit expressions that went dead previously,
-#` there is a 'nuked' flag to prevent double-deletion.
 #`
 #` Frame/AST Node/environment Fields
 #` E$op       <- Operation or opcode that produces this Frame, a string
-#` E$children <- A (possibly empty) list of dependent Nodes.  Removed for evaluated ops
-#` # Only one of the next two fields is present:
-#` # If the ID field is present the refcnt field is missing.  This Node is
-#` # user-managed, and will NOT be deleted by GC or refcnting.
-#` E$id       <- A user-specified name, used in the H2O cluster; the refcnt field is missing
-#` # If the REFCNT field is present, then the ID field is missing.  This Node
-#` # is client-managed, and will be deleted by GC or refcnt falling to zero.
-#` E$refcnt   <- A count of outstanding references; when it falls to zero the item is deleted.  The ID field is missing
-#` E$internal_id <- internal name, not user managed, not user visible
-#` E$nuked    <- This REFCNT'd Node has been deleted from H2O
+#` E$eval     <- A (possibly empty) list of dependent Nodes.  Set to an ID string for evaluated ops
+#` # If the ID field is present, this Node is user  -managed, and will NOT be deleted by GC.
+#` # If the ID field is missing, this Node is client-managed, and will     be deleted by GC.
+#` E$id       <- A user-specified name, used in the H2O cluster
 #` E$visit    <- A temporary field used to manage DAG visitation
 #` 
-#` # A number of fields represent cached queries of an evaluated frame
-#` E$data   <- an R dataframe holding the first N (typically 10) rows and all cols of the frame
+#` # A number of fields represent cached queries of an evaluated frame.
+#` E$data <- A cached result; can be a scalar, or a R dataframe result holding
+#`           the first N (typically 10) rows and all cols of the frame
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
 
 is.Frame <- function(fr) class(fr)[1]=="Frame"
 #.isFr <- function(fr) is(fr,"Frame")
 
-# GC Finalizer - called when GC collects a Frame Must be defined ahead of
-# constructors.  refcnt's can be off - we don't catch pointer-destruction of
-# locals when a frame exits - so a Node can be dead and GC'd with positive
-# refncts.  
-.nodeFinalizer <- function(x) { 
-  if( is.null(x$nuked) ) { # Don't double-refdown children
-    lapply(x$children, function(child) .refdown(child,paste0(xsub,"child")) )
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", .id(x)), method = "DELETE")
-  }
+# GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
+.nodeFinalizer <- function(x) {
+  if( !exists("id",envir=x) && is.character(x$eval) )
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x$eval), method = "DELETE")
 }
-
-# Ref-count up-count, only if a Frame.  Return x, for flow coding
-.refup <- function(x) {
-  if( is.Frame(x) && is.null(x$id) ) assign("refcnt",x$refcnt + 1,envir=x)
-  x
-}
-
-# Ref-count down-count.  If it goes to zero, recursively ref-down-count the
-# children, plus also remove the backing H2O store
-.refdown <- function(x,xsub) {
-  if( !is.Frame(x) ) return()
-  if( is.null(x$refcnt) ) return(); # Named, no refcnt, no GC
-  # Ok to be here once from GC, and once from killing last link calling
-  # .refdown - hence might be zero but never negative
-  stopifnot(x$refcnt >= 0 )
-  if( x$refcnt > 0 ) assign("refcnt",x$refcnt - 1,envir=x)
-  if( x$refcnt == 0 && is.null(x$nuked) ) {
-    lapply(x$children, function(child) .refdown(child,paste0(xsub,"child")) )
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", .id(x)), method = "DELETE")
-    assign("nuked",TRUE,envir=x)
-  }
-}
-
-#
-# Overload Assignment!
-#
-assign("<-", NULL )
-assign("<-", function(x,y) {
-  force(y)  # Do this eagerly, so it happens before we down refcnt on LHS
-  # If the NEW value is about to be a Frame, up the ref-cnt
-  if( is.Frame(y) ) .refup(y)
-  # Get a symbol for 'x'
-  assign("xsub",substitute(x))
-  # Evaluate complex LHS arguments, attempting to get an OLD value
-  assign("e", try(silent=TRUE,
-      if (is.symbol(xsub))
-          get(as.character(xsub), parent.frame(), inherits=FALSE)  # eval doesn't let us do inherits=FALSE for symbols
-      else
-          eval(xsub,parent.frame())
-  ))
-  # If the OLD value was a Frame, down the ref-cnt
-  if( is.Frame(e) ) .refdown(e,xsub);
-
-  # Dispatch to various assignment techniques
-  if( is.symbol(xsub) || (is.character(xsub) && length(xsub)==1) )
-    assign(as.character(xsub), y, envir=parent.frame())
-  else if (xsub[[1]]=="$") {
-    assign("lhs", eval(xsub[[2]], parent.frame(), parent.frame()))
-    if( typeof(lhs)=="list" )
-      `=`(lhs[[as.character(xsub[[3]])]],y)
-    else 
-      assign(as.character(xsub[[3]]), y, envir=eval(xsub[[2]], parent.frame(), parent.frame()))
-  } else
-    eval(as.call(list(.Primitive("<-"),xsub,y)), parent.frame())
-
-  #if (is.symbol(xsub))
-  #  assign(as.character(xsub), y, envir=parent.frame())
-  #else
-  #  eval(as.call(list(.Primitive("<-"),xsub,y)), parent.frame())
-
-  invisible(y)
-})
 
 # Make a raw named data frame.  The key will exist on the server, and will be
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
 .newFrame <- function(op,id) {
   stopifnot( is.character(id) )
-  assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
-  assign("op",op,node)
-  assign("id",id,node)
+  node <- structure(new.env(parent = emptyenv()), class="Frame")
+  node$op <- op
+  node$eval <- node$id <- id
   node
 }
 
 # A new lazy expression
 .newExpr <- function(op,...) {
-  assign("node", structure(new.env(parent = emptyenv()), class="Frame"))
-  assign("op",op,node)
-  assign("refcnt",0L,node)
-  assign("internal_id",.key.make("Op"),node)
-  assign("children", lapply(list(...), function(x) if( is.Frame(x)) .refup(x) else x), node)
+  node <- structure(new.env(parent = emptyenv()), class="Frame")
+  node$op <- op
+  node$eval <- list(...)
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
   node
 }
@@ -161,59 +78,73 @@ Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
-Summary.Frame <- function(x,na.rm) if( na.rm ) stop("na.rm versions not impl") else .newExpr(.Generic,x)
+Summary.Frame <- function(x,na.rm) {
+  if( na.rm ) stop("na.rm versions not impl") 
+  res <- .newExpr(.Generic,x)
+  # All is not lazy, but eagerly evaluates, in order to produce a primitive result
+  if( .Generic=="all" ) res <- as.logical(.fetch.data(res,1))
+  res
+}
 
 
-# Pick a name for this Node.  Just use the evironment's C pointer address, if
-# one's not provided
-.id <- function(x) {
-  if( is.null(x$id ) ) x$internal_id  
-  else                 x$id
+# True if this Node appears to be shared, and thus need a server-side temp
+#require(pryr)
+.shared <- function(x) {
+#  q <- .Call("named", x, PACKAGE="named")
+#  print(paste0("REF: ",q))
+#  q <- pryr:::named2(substitute(x),parent.frame())
+#  q <- refs(x)
+#  q>=1
+  return(FALSE)
 }
 
 # Internal recursive clear-visit-flag function, goes hand-n-hand with a
 # recursive visitor
 .clearvisit <- function(x) {
-  if( is.null(x$visit) ) return()
+  if( !is.null(x$visit) ) return()
   rm("visit",envir=x);
-  if( !is.null(x$children))
-    lapply(x$children, function(child) { if( is.environment(child) ) .clearvisit(child) } )
+  if( !is.null(x$eval) )
+    lapply(x$eval, function(child) { if( is.environment(child) ) .clearvisit(child) } )
 }
 
 # Internal recursive printer
-.pfr <- function(x) {
-  if( !is.null(x$visit) || is.null(x$children) ) return(.id(x))
-  x$visit <- TRUE
-  if( !is.null(x$refcnt) && x$refcnt > 1 ) { tmp1 <- paste0("(tmp= ",.id(x)," "); tmp2 <- ")" }
-  else { tmp1 <- tmp2 <- "" }
-  res <- ifelse( is.null(x$children), "EVALd",
-                 paste(sapply(x$children, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "))
-  paste0(tmp1,"(",x$op," ",res,")",tmp2)
-}
-
-# Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
-pfr <- function(x) { stopifnot(is.Frame(x)); print(.pfr(x)); .clearvisit(x); invisible() }
-
-.eval.impl <- function(x) {
-  if( is.null(x$children) ) return(.id(x))
-  res <- paste(sapply(x$children, function(child) { if( is.Frame(child) ) .eval.impl(child) else child }),collapse=" ")
-  rm("children",envir=x)     # Flag as executed
+.pfr <- function(x,e) {
+  if( !is.null(xid<-x$id   ) ) return(xid)
+  if( !is.null(xid<-x$visit) ) return(xid)
+  x$visit <- xid <- paste0("tmp",e$cnt)
+  e$cnt <- e$cnt+1
+  res <- ifelse( is.null(x$eval), "EVALd",
+                 paste(sapply(x$eval, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "))
   res <- paste0("(",x$op," ",res,")")
-  if( !is.null(x$refcnt) && x$refcnt > 1 )
-    res <- paste0("(tmp= ",.id(x)," ",res,")")
+  if( .shared(x) ) 
+    res<-paste0("(tmp= ",xid," ",res,")")
   res
 }
 
-# Evaluate this Frame on demand.  The children field is used as a flag to
+# Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
+pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(x),e); .clearvisit(x); invisible() }
+
+.eval.impl <- function(x) {
+  if( is.character(xchild<-x$eval) ) return(xchild)
+  res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child) else child }),collapse=" ")
+  res <- paste0("(",x$op," ",res,")")
+  x$eval <- xchild <- .key.make("RTMP") # Flag as code-emitted
+  if( .shared(x) ) 
+    res <- paste0("(tmp= ",xchild," ",res,")")
+  res
+}
+
+# Evaluate this Frame on demand.  The eval field is used as a flag to
 # signal that the node has already been executed.  
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
-  if( !is.null(x$children) ) {
+  if( !is.character(x$eval) ) {
     exec_str <- .eval.impl(x)
     print(paste0("EXPR: ",exec_str))
     # Execute the AST on H2O
-    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=.id(x), method = "POST")
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x$eval, method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
+    if( !is.null(res$scalar) ) x$data<-res$scalar
   }
   x
 }
@@ -256,13 +187,15 @@ print.Frame <- function(x) { cat(as.character(x)); invisible(x) }
 #' @param x An H2O Frame object
 #' @export
 as.character.Frame <- function(x) {
+  data <- .fetch.data(x,10L)
+  if( !is.data.frame(data) ) return(as.character(data))
   nr <- nrow(x)
   nc <- ncol(x)
   res <- paste0("Frame with ",
       nr, ifelse(nr == 1L, " row and ", " rows and "),
       nc, ifelse(nc == 1L, " column\n", " columns\n"), collapse="")
   if( nr > 10L ) res <- paste0(res,"\nFirst 10 rows:\n")
-  paste0(res,paste0(head(.fetch.data(x,10L), 10L),collapse="\n"),"\n")
+  paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
 }
 
 
@@ -283,7 +216,7 @@ str.Frame <- function(x, cols=FALSE, ...) {
   df <- head(.fetch.data(x,10L),10L)
 
   # header statement
-  cat("\nFrame '", .id(x), "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+  cat("\nFrame '", x$eval, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
   l <- list()
   for( i in 1:nc ) {
     cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
@@ -455,7 +388,7 @@ as.data.frame.Frame <- function(x, ...) {
 
   url <- paste0('http://', conn@ip, ':', conn@port,
                 '/3/DownloadDataset',
-                '?frame_id=', URLencode(.id(x)),
+                '?frame_id=', URLencode(x$eval),
                 '&hex_string=', as.numeric(use_hex_string))
 
   ttt <- getURL(url)

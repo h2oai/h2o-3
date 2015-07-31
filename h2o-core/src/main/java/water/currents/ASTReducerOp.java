@@ -90,13 +90,13 @@ class ASTMax  extends ASTRollupOp { String str() { return "max" ; } double op( d
 class ASTAll extends ASTPrim { 
   @Override String str() { return "all" ; }
   @Override int nargs() { return 1+1; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
-    if( val.isNum() ) return new ValNum(val.getNum() == 0 ? 0 : 1);
+    if( val.isNum() ) return new ValStr(val.getNum() == 0 ? "FALSE" : "TRUE");
     for( Vec vec : val.getFrame().vecs() )
       if( vec.min() != 1 || vec.max() != 1 )
-        return new ValNum(0);
-    return new ValNum(1);
+        return new ValStr("FALSE");
+    return new ValStr("TRUE");
   }
 }
 
