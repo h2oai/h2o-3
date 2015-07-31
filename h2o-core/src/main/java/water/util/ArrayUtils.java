@@ -292,7 +292,7 @@ public class ArrayUtils {
   }
   public static double[][] formGram(double[][] x) { return formGram(x, false); }
 
-  public static double[] permuteCols(double[] vec, int[] idx) {
+  public static double[] permute(double[] vec, int[] idx) {
     if(vec == null) return null;
     assert vec.length == idx.length : "Length of vector must match permutation vector length: Got " + vec.length + " != " + idx.length;
     double[] res = new double[vec.length];
@@ -310,6 +310,14 @@ public class ArrayUtils {
       for(int i = 0; i < ary.length; i++)
         res[i][j] = ary[i][idx[j]];
     }
+    return res;
+  }
+  public static double[][] permuteRows(double[][] ary, int[] idx) {
+    if(ary == null) return null;
+    assert ary.length == idx.length : "Number of rows must match permutation vector length: Got " + ary.length + " != " + idx.length;
+    double[][] res = new double[ary.length][ary[0].length];
+    for(int i = 0; i < ary.length; i++)
+      res[i] = permute(ary[i], idx);
     return res;
   }
 

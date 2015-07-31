@@ -392,7 +392,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Matrix x_r = new Matrix(xxchol.getL()).transpose();
       x_r = x_r.times(Math.sqrt(_train.numRows()));
 
-      QRDecomposition yt_qr = new QRDecomposition(new Matrix(model._output._archetypes));
+      Matrix yt = new Matrix(model._output._archetypes);
+      QRDecomposition yt_qr = new QRDecomposition(yt);
       Matrix yt_r = yt_qr.getR();   // S from QR decomposition of Y' = ZS
       Matrix rrmul = x_r.times(yt_r.transpose());
       SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
@@ -522,10 +523,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
-        model._output._loading_key = _parms._loading_key;
-        model._output._archetypes_obj = yt;   // Need full object for scoring
-        model._output._archetypes = yt._archetypes;   // TODO: Should I transpose to get Y?
         model._output._step_size = step;
+        model._output._loading_key = _parms._loading_key;
+        model._output._archetypes_full = yt;  // Need full archetypes object for scoring
+        model._output._archetypes = yt._archetypes;
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
         model.update(self());

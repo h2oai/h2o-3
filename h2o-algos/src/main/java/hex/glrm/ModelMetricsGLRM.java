@@ -36,7 +36,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       double[] sub = gm._output._normSub;
       double[] mul = gm._output._normMul;
 
-      // Permute cols so categorical before numeric cols since error metric different
+      // Permute cols so categorical before numeric since error metric different
       for (int i = 0; i < ncats; i++) {
         int idx = _permutation[i];
         if (Double.isNaN(dataRow[idx])) continue;

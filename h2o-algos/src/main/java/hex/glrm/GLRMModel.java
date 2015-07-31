@@ -310,7 +310,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Mapping from training data to lower dimensional k-space (Y')
     public double[/*feature*/][/*k*/] _archetypes;
-    public GLRM.Archetypes _archetypes_obj;   // Needed for indexing into Y for scoring
+    public GLRM.Archetypes _archetypes_full;   // Needed for indexing into Y' for scoring
 
     // Final step size
     public double _step_size;
@@ -369,7 +369,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame loadingFrm = DKV.get(_output._loading_key).get();
     fullFrm.add(loadingFrm);
     for(int i = 0; i < ncols; i++)
-      // fullFrm.add(_output._names[_output._permutation[i]],fullFrm.anyVec().makeZero());
       fullFrm.add(prefix+_output._names[i],fullFrm.anyVec().makeZero());
     GLRMScore gs = new GLRMScore(null, ncols, _parms._k).doAll(fullFrm);
 
@@ -426,18 +425,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     private double[] impute_data(double[] tmp, double[] preds) {
-      assert preds.length == _output._archetypes_obj.nfeatures();
+      assert preds.length == _output._archetypes_full.nfeatures();
 
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {
-        double[] xyblock = _output._archetypes_obj.lmulCatBlock(tmp,d);
+        double[] xyblock = _output._archetypes_full.lmulCatBlock(tmp,d);
         preds[_output._permutation[d]] = _parms.mimpute(xyblock);
       }
 
       // Numeric columns
       for (int d = _output._ncats; d < preds.length; d++) {
         int ds = d - _output._ncats;
-        double xy = _output._archetypes_obj.lmulNumCol(tmp, ds);
+        double xy = _output._archetypes_full.lmulNumCol(tmp, ds);
         preds[_output._permutation[d]] = _parms.impute(xy);
       }
       return preds;
