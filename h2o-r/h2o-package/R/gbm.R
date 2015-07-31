@@ -13,6 +13,7 @@
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
@@ -56,6 +57,7 @@
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
+                    checkpoint,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
                     tweedie_power = 1.5,
                     ntrees = 50,
@@ -115,6 +117,8 @@ h2o.gbm <- function(x, y, training_frame,
   parms$response_column <- args$y
   if (!missing(model_id))
     parms$model_id <- model_id
+  if(!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(tweedie_power))
