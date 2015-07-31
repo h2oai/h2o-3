@@ -165,7 +165,6 @@ h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll( new("H2OConnection", ip=myIP, port=myPort), timeout_secs=600)
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {

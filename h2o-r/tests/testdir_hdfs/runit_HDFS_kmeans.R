@@ -24,39 +24,42 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+check.kmeans <- function(conn) {
 
-#----------------------------------------------------------------------
-# Single file cases.
-#----------------------------------------------------------------------
+  #----------------------------------------------------------------------
+  # Single file cases.
+  #----------------------------------------------------------------------
 
-heading("Import iris_wheader.csv from HDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-iris.hex <- h2o.importFile(conn, url)
-n <- nrow(iris.hex)
-print(n)
-if (n != 150) {
-    stop("nrows is wrong")
+  heading("Import iris_wheader.csv from HDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
+  iris.hex <- h2o.importFile(conn, url)
+  n <- nrow(iris.hex)
+  print(n)
+  if (n != 150) {
+      stop("nrows is wrong")
+  }
+
+  heading("Running KMeans on iris")
+  iris.km <- h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
+  print(iris.km)
+
+
+
+  heading("Importing covtype.data from HDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_covtype_file)
+  covtype.hex <- h2o.importFile(conn, url)
+  n <- nrow(covtype.hex)
+  print(n)
+  if (n != 581012) {
+      stop("nrows is wrong")
+  }
+
+  heading("Running KMeans on covtype")
+  covtype.km <- h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
+  print(covtype.km)
+
+
+  testEnd()
 }
 
-heading("Running KMeans on iris")
-iris.km <- h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
-print(iris.km)
-
-
-
-heading("Importing covtype.data from HDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_covtype_file)
-covtype.hex <- h2o.importFile(conn, url)
-n <- nrow(covtype.hex)
-print(n)
-if (n != 581012) {
-    stop("nrows is wrong")
-}
-
-heading("Running KMeans on covtype")
-covtype.km <- h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
-print(covtype.km)
-
-
-PASS_BANNER()
+doTest("K-means", check.kmeans)
