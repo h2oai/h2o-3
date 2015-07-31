@@ -91,7 +91,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Logistic:
           return -a/(1+Math.exp(a*u));
         case Periodic:
-          return ((2*Math.PI)/_period) * Math.sin((a-u)*(2*Math.PI)/_period);
+          return ((2*Math.PI)/_period) * Math.sin((a - u) * (2 * Math.PI) / _period);
         default:
           throw new RuntimeException("Unknown loss function " + _loss);
       }
@@ -257,6 +257,31 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           for(int i = 0; i < u.length; i++)
             x[i] = Math.max(u[i] - t, 0);
           return x;
+        default:
+          throw new RuntimeException("Unknown regularization function " + regularization);
+      }
+    }
+
+    // Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization.
+    public final double[] project_x(double[] u, Random rand) { return project(u, _regularization_x, rand); }
+    public final double[] project_y(double[] u, Random rand) { return project(u, _regularization_y, rand); }
+    public final double[] project(double[] u, Regularizer regularization, Random rand) {
+      if(u == null) return u;
+
+      switch(regularization) {
+        // Domain is all real numbers
+        case L2:
+        case L1:
+          return u;
+        // Proximal operator of indicator function for a set C is (Euclidean) projection onto C
+        case NonNegative:
+        case OneSparse:
+        case UnitOneSparse:
+          return rproxgrad(u, 1, 1, regularization, rand);
+        case Simplex:
+          double reg = regularize(u, regularization);   // Check if inside simplex before projecting since algo is complicated
+          if (reg == 0) return u;
+          return rproxgrad(u, 1, 1, regularization, rand);
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }

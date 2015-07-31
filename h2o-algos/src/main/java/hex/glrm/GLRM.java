@@ -191,6 +191,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // tinfo = original training data A, dinfo = [A,X,W] where W is working copy of X (initialized here)
     private double[][] initialXY(DataInfo tinfo, DataInfo dinfo, long na_cnt) {
       double[][] centers, centers_exp = null;
+      Random rand = RandomUtils.getRNG(_parms._seed);
 
       if (null != _parms._user_points) { // User-specified starting points
         Vec[] centersVecs = _parms._user_points.get().vecs();
@@ -204,10 +205,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Permute cluster columns to align with dinfo and expand out categoricals
         centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-        centers_exp = expandCats(centers, tinfo);
+        return expandCats(centers, tinfo);
 
       } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
-        return ArrayUtils.gaussianArray(_parms._k, _ncolY);
+        centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
       } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y to be the right singular vectors
         PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
@@ -277,12 +278,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         error("_init", "Initialization method " + _parms._init + " is undefined");
 
       // If all centers are zero or any are NaN, initialize to standard normal random matrix
-      assert centers_exp != null && centers_exp[0].length == _ncolY;
+      assert centers_exp != null && centers_exp.length == _parms._k && centers_exp[0].length == _ncolY : "Y must have " + _parms._k + " rows and " + _ncolY + " columns";
       double frob = frobenius2(centers_exp);   // TODO: Don't need to calculate twice if k-means++
       if(frob == 0 || Double.isNaN(frob)) {
         warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead");
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
       }
+
+      // Project rows of Y into appropriate subspace for regularizer
+      for(int i = 0; i < _parms._k; i++)
+        centers_exp[i] = _parms.project_y(centers_exp[i], rand);
       return centers_exp;
     }
 
@@ -295,8 +300,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         @Override public void map( Chunk chks[] ) {
           double tmp [] = new double[_ncolA];
           double preds[] = new double[_ncolX];
+          Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+
           for(int row = 0; row < chks[0]._len; row++) {
             double p[] = model.score_indicator(chks, row, tmp, preds);
+            p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
             for(int c = 0; c < preds.length; c++) {
               chks[_ncolA+c].set(row, p[c]);
               chks[_ncolA+_ncolX+c].set(row, p[c]);
@@ -508,7 +516,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
           model._output._step_size = step;
           model.update(self()); // Update model in K/V store
-          update(1);          // One unit of work
+          update(1);            // One unit of work
         }
 
         // 4) Save solution to model output
