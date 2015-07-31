@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/pca_test/fgl_tr.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/pca_test/fgl_tr.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/pca_test/fgl_tr.csv\"]\n  destination_frame: \"fgl_tr2.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 10\n  single_quotes: false\n  column_names: [\"RI\",\"Na\",\"Mg\",\"Al\",\"Si\",\"K\",\"Ca\",\"Ba\",\"Fe\",\"type\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"fgl_tr2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"fgl_tr2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"fgl_tr2.hex\", [0.2], [\"fgl_tr_test.hex_0.20\",\"fgl_tr_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-24755d09-e952-4720-a32d-311780f4bfa1\",\"training_frame\":\"fgl_tr_train.hex_0.80\",\"validation_frame\":\"fgl_tr_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"type\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-24755d09-e952-4720-a32d-311780f4bfa1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-24755d09-e952-4720-a32d-311780f4bfa1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-24755d09-e952-4720-a32d-311780f4bfa1\", frame: \"fgl_tr_test.hex_0.20\", predictions_frame: \"prediction-5d63f941-2075-4257-9762-2b7d015b9977\""
+    }
+  ]
+}

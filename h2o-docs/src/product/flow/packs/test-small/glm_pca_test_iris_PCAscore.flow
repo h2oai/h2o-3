@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/pca_test/iris_PCAscore.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/pca_test/iris_PCAscore.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/pca_test/iris_PCAscore.csv\"]\n  destination_frame: \"iris_PCAscore.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 7\n  single_quotes: false\n  column_names: [\"PC1\",\"PC2\",\"PC3\",\"PC4\",\"PC5\",\"PC6\",\"PC7\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_PCAscore.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_PCAscore.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_PCAscore.hex\", [0.2], [\"iris_PCAscore_test.hex_0.20\",\"iris_PCAscore_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-bad2bd6c-c939-46d3-b536-fdd14289e5ca\",\"training_frame\":\"iris_PCAscore_train.hex_0.80\",\"validation_frame\":\"iris_PCAscore_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"PC7\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-bad2bd6c-c939-46d3-b536-fdd14289e5ca\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-bad2bd6c-c939-46d3-b536-fdd14289e5ca\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-bad2bd6c-c939-46d3-b536-fdd14289e5ca\", frame: \"iris_PCAscore_test.hex_0.20\", predictions_frame: \"prediction-ad0e0e72-fb7d-4307-a3be-50c48c0d1dbc\""
+    }
+  ]
+}
