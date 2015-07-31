@@ -361,13 +361,16 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     final int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
+    String prefix = "reconstr_";
 
     // Need [A,X,P] where A = adaptedFr, X = loading frame, P = imputed frame
+    // Note: A is adapted to original training frame, P has columns shuffled so cats come before nums!
     Frame fullFrm = new Frame(adaptedFr);
     Frame loadingFrm = DKV.get(_output._loading_key).get();
     fullFrm.add(loadingFrm);
     for(int i = 0; i < ncols; i++)
-      fullFrm.add(_output._names[_output._permutation[i]],fullFrm.anyVec().makeZero());
+      // fullFrm.add(_output._names[_output._permutation[i]],fullFrm.anyVec().makeZero());
+      fullFrm.add(prefix+_output._names[i],fullFrm.anyVec().makeZero());
     GLRMScore gs = new GLRMScore(null, ncols, _parms._k).doAll(fullFrm);
 
     // Return the imputed training frame
@@ -376,9 +379,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    // ModelMetricsGLRM mm = new ModelMetricsGLRM(this, adaptedFr, Double.NaN, Double.NaN);
-    // _output.addModelMetrics(mm);
-    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);
+    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
     return f;
   }
 
@@ -421,7 +422,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       for( int i=0; i<tmp.length; i++ )
         tmp[i] = chks[_ncolA+i].atd(row_in_chunk);
       impute_data(tmp, preds);
-      return preds;   // TODO: Should I undo permutation of columns at end?
+      return preds;
     }
 
     private double[] impute_data(double[] tmp, double[] preds) {
@@ -430,14 +431,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {
         double[] xyblock = _output._archetypes_obj.lmulCatBlock(tmp,d);
-        preds[d] = _parms.mimpute(xyblock);
+        preds[_output._permutation[d]] = _parms.mimpute(xyblock);
       }
 
       // Numeric columns
       for (int d = _output._ncats; d < preds.length; d++) {
         int ds = d - _output._ncats;
         double xy = _output._archetypes_obj.lmulNumCol(tmp, ds);
-        preds[d] = _parms.impute(xy);
+        preds[_output._permutation[d]] = _parms.impute(xy);
       }
       return preds;
     }
@@ -448,6 +449,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k);
+    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation);
   }
 }

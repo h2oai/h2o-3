@@ -19,10 +19,12 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     public double _miscls;     // Number of misclassified categorical values
     public long _ncount;      // Number of observed numeric entries
     public long _ccount;     // Number of observed categorical entries
+    public int[] _permutation;  // Permutation array for shuffling cols
 
-    public GLRMModelMetrics(int dims) {
+    public GLRMModelMetrics(int dims, int[] permutation) {
       _work = new double[dims];
       _miscls = _ncount = _ccount = 0;
+      _permutation = permutation;
     }
 
     @Override
@@ -34,19 +36,24 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       double[] sub = gm._output._normSub;
       double[] mul = gm._output._normMul;
 
+      // Permute cols so categorical before numeric cols since error metric different
       for (int i = 0; i < ncats; i++) {
-        if (Double.isNaN(dataRow[i])) continue;
-        if (dataRow[i] != preds[i]) _miscls++;
+        int idx = _permutation[i];
+        if (Double.isNaN(dataRow[idx])) continue;
+        if (dataRow[idx] != preds[idx]) _miscls++;
         _ccount++;
       }
 
+      int c = 0;
       for (int i = ncats; i < dataRow.length; i++) {
-        if (Double.isNaN(dataRow[i])) continue;
-        int idx = i - ncats;
-        double diff = (dataRow[i] - sub[idx]) * mul[idx] - preds[i];
+        int idx = _permutation[i];
+        if (Double.isNaN(dataRow[idx])) continue;
+        double diff = (dataRow[idx] - sub[c]) * mul[c] - preds[idx];
         _sumsqe += diff * diff;
         _ncount++;
+        c++;
       }
+      assert c == gm._output._nnums;
       return preds;
     }
 
@@ -61,9 +68,10 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f) {
-      double numerr = _ncount > 0 ? _sumsqe / _ncount : Double.NaN;
-      double caterr = _ccount > 0 ? _miscls / _ccount : Double.NaN;
-      return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
+      // double numerr = _ncount > 0 ? _sumsqe / _ncount : Double.NaN;
+      // double caterr = _ccount > 0 ? _miscls / _ccount : Double.NaN;
+      // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
+      return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls));
     }
   }
 }

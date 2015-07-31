@@ -436,6 +436,7 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         score = model.score(train);
+        System.out.println(score.toString());
         ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
         Log.info("Numeric (Squared) Error Rate = " + mm._numerr + "\tCategorical Misclassification Error Rate = " + mm._caterr);
       } catch (Throwable t) {
