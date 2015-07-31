@@ -53,9 +53,9 @@ public class h2odriver extends Configured implements Tool {
   static boolean beta = false;
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
-  static boolean enableVerboseGC = false;
-  static boolean enablePrintGCDetails = false;
-  static boolean enablePrintGCTimeStamps = false;
+  static boolean enableVerboseGC = true;
+  static boolean enablePrintGCDetails = true;
+  static boolean enablePrintGCTimeStamps = true;
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -642,6 +642,11 @@ public class h2odriver extends Configured implements Tool {
         enableVerboseGC = true;
         enablePrintGCDetails = true;
         enablePrintGCTimeStamps = true;
+      }
+      else if (s.equals("-nogc")) {
+        enableVerboseGC = false;
+        enablePrintGCDetails = false;
+        enablePrintGCTimeStamps = false;
       }
       else if (s.equals("-flow_dir")) {
         i++; if (i >= args.length) { usage(); }
