@@ -934,7 +934,8 @@ class TestRunner:
             if (root.endswith("Util")):
                 continue
 
-            for f in files:
+            # always do same order, for determinism when run on different machines
+            for f in sorted(files):
                 # Figure out if the current file under consideration is a test.
                 is_test = False
                 if (is_python_test_file(f)):
