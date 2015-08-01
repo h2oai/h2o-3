@@ -259,7 +259,7 @@ public class TwoDimTableTest extends TestUtil {
       table.set(i, 3, -234234);
     }
 
-    String ts = table.toString();
+    String ts = table.toString(1,false);
     assertTrue(ts.length() > 0);
     Log.info(ts);
 

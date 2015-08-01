@@ -241,7 +241,7 @@ public class TwoDimTable extends Iced {
    * @return String containing the ASCII version of the table
    */
   public String toString() {
-    return toString(2, false);
+    return toString(2, true);
   }
   /**
    * Print table to String, using user-given padding
@@ -252,7 +252,7 @@ public class TwoDimTable extends Iced {
     return toString(pad, true);
   }
 
-  private static int PRINTOUT_ROW_LIMIT = 10;
+  private static int PRINTOUT_ROW_LIMIT = 20;
   private boolean skip(int row) {
     assert(PRINTOUT_ROW_LIMIT % 2 == 0);
     if (getRowDim() <= PRINTOUT_ROW_LIMIT) return false;
@@ -266,7 +266,7 @@ public class TwoDimTable extends Iced {
    * @param full whether to print the full table (otherwise top 5 and bottom 5 rows only)
    * @return String containing the ASCII version of the table
    */
-  private String toString(final int pad, boolean full) {
+  public String toString(final int pad, boolean full) {
     if (pad < 0)
       throw new IllegalArgumentException("pad must be a non-negative integer");
 
