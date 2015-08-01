@@ -169,6 +169,8 @@ The following video provides step-by-step instructions on how to start H2O using
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-py/docs/index.html" target="_blank">Python docs</a>: This document represents the definitive guide to using Python with H2O. 
 
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md" target="_blank">Python Parity</a>: This document is is a list of Python capabilities that were previously available only through the H2O R interface but are now available in H2O using the Python interface. 
 ---
 
 <a name="R"></a>

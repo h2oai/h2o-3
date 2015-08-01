@@ -46,9 +46,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public DRFV3 schema() { return new DRFV3(); }
 
   /** Start the DRF training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work) {
-    return start(new DRFDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new DRFDriver(), work, restartTimer);
   }
 
 
@@ -129,8 +130,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
   // ----------------------
   private class DRFDriver extends Driver {
-    protected int _ntreesFromCheckpoint;
-
 
     // --- Private data handled only on master node
     // Classification or Regression:
@@ -170,6 +169,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
               ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
+      // How many trees was in already in provided checkpointed model
+      int ntreesFromCheckpoint = _parms.hasCheckpoint() ?
+              ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees : 0;
+
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,#cols> but it is " + _mtry);
       // Initialize TreeVotes for classification, MSE arrays for regression
       initTreeMeasurements();
@@ -179,7 +182,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       new SetWrkTask().doAll(_train);
       // If there was a check point recompute tree_<_> and oob columns based on predictions from previous trees
       // but only if OOB validation is requested.
-      if (_parms._checkpoint) {
+      if (_parms.hasCheckpoint()) {
         Timer t = new Timer();
         // Compute oob votes for each output level
         new OOBScorer(_ncols, _nclass, numSpecialCols(), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
@@ -190,14 +193,14 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Random rand = createRNG(_parms._seed);
       // To be deterministic get random numbers for previous trees and
       // put random generator to the same state
-      for (int i=0; i<_ntreesFromCheckpoint; i++) rand.nextLong();
+      for (int i = 0; i < ntreesFromCheckpoint; i++) rand.nextLong();
 
       int tid;
-      DTree[] ktrees = null;
+
       // Prepare tree statistics
       // Build trees until we hit the limit
-      for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
-        if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
+      for( tid=0; tid < _ntrees; tid++) { // Building tid-tree
+        if (tid!=0 || !_parms.hasCheckpoint()) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, true, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error

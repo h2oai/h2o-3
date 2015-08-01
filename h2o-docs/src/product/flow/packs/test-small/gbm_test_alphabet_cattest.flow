@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/alphabet_cattest.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/alphabet_cattest.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/alphabet_cattest.csv\"]\n  destination_frame: \"alphabet_cattest1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 2\n  single_quotes: false\n  column_names: [\"X\",\"y\"]\n  column_types: [\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"alphabet_cattest1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"alphabet_cattest1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"alphabet_cattest1.hex\", [0.2], [\"alphabet_cattest1_test.hex_0.20\",\"alphabet_cattest1_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-479d58f6-20a6-4386-a823-581245e7c281\",\"training_frame\":\"alphabet_cattest1_train.hex_0.80\",\"validation_frame\":\"alphabet_cattest1_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"y\",\"ntrees\":\"1\",\"max_depth\":\"1\",\"min_rows\":10,\"nbins\":\"100\",\"nbins_cats\":1024,\"seed\":-8777772057805802000,\"learn_rate\":0.1,\"distribution\":\"bernoulli\",\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-479d58f6-20a6-4386-a823-581245e7c281\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-479d58f6-20a6-4386-a823-581245e7c281\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-479d58f6-20a6-4386-a823-581245e7c281\", frame: \"alphabet_cattest1_test.hex_0.20\", predictions_frame: \"prediction-ab80f500-e5b8-4c3a-ba4b-0e3a97cb5bca\""
+    }
+  ]
+}

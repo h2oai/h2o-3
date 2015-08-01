@@ -263,11 +263,36 @@ public class ModelSerializationTest extends TestUtil {
   }
 
   public static void assertTreeEquals(String msg, CompressedTree[][] a, CompressedTree[][] b) {
+    assertTreeEquals(msg, a, b, false);
+  }
+
+  public static void assertTreeEquals(String msg, CompressedTree[][] a, CompressedTree[][] b, boolean ignoreKeyField) {
     Assert.assertEquals("Number of trees has to match", a.length, b.length);
     for (int i = 0; i < a.length ; i++) {
       Assert.assertEquals("Number of trees per tree has to match", a[i].length, b[i].length);
       for (int j = 0; j < a[i].length; j++) {
+        Key oldAKey = null;
+        Key oldBKey = null;
+
+        if (ignoreKeyField) {
+          if (a[i][j] != null) {
+            oldAKey = a[i][j]._key;
+            a[i][j]._key = null;
+          }
+          if (b[i][j] != null) {
+            oldBKey = b[i][j]._key;
+            b[i][j]._key = null;
+          }
+        }
         assertIcedBinaryEquals(msg, a[i][j], b[i][j]);
+        if (ignoreKeyField) {
+          if (a[i][j] != null) {
+            a[i][j]._key = oldAKey;
+          }
+          if (b[i][j] != null) {
+            b[i][j]._key = oldBKey;
+          }
+        }
       }
     }
   }

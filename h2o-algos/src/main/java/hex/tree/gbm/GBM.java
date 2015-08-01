@@ -37,9 +37,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override public GBMV3 schema() { return new GBMV3(); }
 
   /** Start the GBM training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<GBMModel> trainModelImpl(long work) {
-    return start(new GBMDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<GBMModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new GBMDriver(), work, restartTimer);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -149,17 +150,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Reconstruct the working tree state from the checkpoint
-      if( _parms._checkpoint ) {
+      if( _parms.hasCheckpoint() ) {
         Timer t = new Timer();
         new ResidualsCollector(_ncols, _nclass, numSpecialCols(),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
       }
 
       // Loop over the K trees
-      for( int tid=0; tid<_parms._ntrees; tid++) {
+      for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
-        if( tid!=0 || !_parms._checkpoint ) { // do not make initial scoring if model already exist
+        if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping )
             return;             // Stop when approaching round-off error
@@ -258,7 +259,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
           double f = tr.atd(row) + offset.atd(row);
-          double y = ys.at8(row);
+          double y = ys.atd(row);
           if( _parms._distribution == Distribution.Family.multinomial ) {
             double weight = hasWeightCol() ? chk_weight(chks).atd(row) : 1;
             double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
@@ -518,7 +519,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for( int i=0; i<hs.length; i++ ) {
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
         DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
-        if( s == null ) continue;
+        if( s == null )
+          continue;
         if( s.se() < best.se() )
           best = s;
         if( s.se() <= 0 ) break; // No point in looking further!

@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/demos/bank-additional-full.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/demos/bank-additional-full.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/demos/bank-additional-full.csv\"]\n  destination_frame: \"bank_additional_full.hex\"\n  parse_type: \"CSV\"\n  separator: 59\n  number_columns: 21\n  single_quotes: false\n  column_names: [\"age\",\"job\",\"marital\",\"education\",\"default\",\"housing\",\"loan\",\"contact\",\"month\",\"day_of_week\",\"duration\",\"campaign\",\"pdays\",\"previous\",\"poutcome\",\"emp.var.rate\",\"cons.price.idx\",\"cons.conf.idx\",\"euribor3m\",\"nr.employed\",\"y\"]\n  column_types: [\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 262144"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"bank_additional_full.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"bank_additional_full.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"bank_additional_full.hex\", [0.25], [\"bank_additional_full_test.hex_0.250\",\"bank_additional_full_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-d56078e0-9b98-47b2-9869-567a32b5b189\",\"training_frame\":\"bank_additional_full_train.hex_0.750\",\"validation_frame\":\"bank_additional_full_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"y\",\"ntrees\":\"100\",\"max_depth\":\"2\",\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":5479662827470268000,\"learn_rate\":\"0.01\",\"distribution\":\"bernoulli\",\"score_each_iteration\":false,\"balance_classes\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-d56078e0-9b98-47b2-9869-567a32b5b189\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-d56078e0-9b98-47b2-9869-567a32b5b189\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-d56078e0-9b98-47b2-9869-567a32b5b189\", frame: \"bank_additional_full_test.hex_0.250\", predictions_frame: \"prediction-722b0906-16b9-4210-a862-a6298a3aab87\""
+    }
+  ]
+}

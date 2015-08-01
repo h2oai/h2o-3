@@ -308,7 +308,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' @param ... Extra args passed in for use by other functions.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -382,7 +382,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -416,7 +416,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$AUC)
+        v <- c(v,model.parts$xm@metrics$AUC)
         v_names <- c(v_names,"xval")
       }
     }
@@ -462,7 +462,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$AIC)
+        v <- c(v,model.parts$xm@metrics$AIC)
         v_names <- c(v_names,"xval")
       }
     }
@@ -489,7 +489,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param \dots extra arguments to be passed if `object` is of type
 #'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -521,7 +521,7 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$r2)
+        v <- c(v,model.parts$xm@metrics$r2)
         v_names <- c(v_names,"xval")
       }
     }
@@ -548,7 +548,7 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param \dots extra arguments to be passed if `object` is of type
 #'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #'
 #' h <- h2o.init()
@@ -580,7 +580,7 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$mean_residual_deviance)
+        v <- c(v,model.parts$xm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
@@ -610,7 +610,7 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #'          threshold metrics.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -644,7 +644,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$Gini)
+        v <- c(v,model.parts$xm@metrics$Gini)
         v_names <- c(v_names,"xval")
       }
     }
@@ -703,7 +703,7 @@ h2o.coef_norm <- function(object) {
 #'          \code{\link{h2o.metric}} for the various threshold metrics. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -740,8 +740,8 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm$centroid_stats$within_cluster_sum_of_squares
-        else v <- c(v,model.parts$xm$MSE)
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$xm@metrics$MSE)
         v_names <- c(v_names,"xval")
       }
     }
@@ -789,7 +789,7 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$logloss)
+        v <- c(v,model.parts$xm@metrics$logloss)
         v_names <- c(v_names,"xval")
       }
     }
@@ -912,7 +912,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v[[length(v)+1]] <- model.parts$xm$hit_ratio_table
+        v[[length(v)+1]] <- model.parts$xm@metrics$hit_ratio_table
         v_names <- c(v_names,"xval")
       }
     }
@@ -947,7 +947,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -1169,7 +1169,7 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v <- c(v,model.parts$xm$tot_withinss)
+      v <- c(v,model.parts$xm@metrics$tot_withinss)
       v_names <- c(v_names,"xval")
     }
   }
@@ -1208,7 +1208,7 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v <- c(v,model.parts$xm$betweenss)
+      v <- c(v,model.parts$xm@metrics$betweenss)
       v_names <- c(v_names,"xval")
     }
   }
@@ -1247,7 +1247,7 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v <- c(v,model.parts$xm$totss)
+      v <- c(v,model.parts$xm@metrics$totss)
       v_names <- c(v_names,"xval")
     }
   }
@@ -1294,7 +1294,7 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v[[length(v)+1]] <- model.parts$xm$centroid_stats
+      v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats
       v_names <- c(v_names,"xval")
     }
   }
@@ -1333,7 +1333,7 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v[[length(v)+1]] <- model.parts$xm$centroid_stats$size
+      v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats$size
       v_names <- c(v_names,"xval")
     }
   }
@@ -1375,7 +1375,7 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$null_deviance)
+        v <- c(v,model.parts$xm@metrics$null_deviance)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1416,7 +1416,7 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$residual_deviance)
+        v <- c(v,model.parts$xm@metrics$residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1458,7 +1458,7 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$residual_degrees_of_freedom)
+        v <- c(v,model.parts$xm@metrics$residual_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1499,7 +1499,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$null_degrees_of_freedom)
+        v <- c(v,model.parts$xm@metrics$null_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1536,7 +1536,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -1718,9 +1718,9 @@ h2o.sdev <- function(object) {
   tm <- object@model$training_metrics
   vm <- object@model$validation_metrics
   xm <- object@model$cross_validation_metrics
-  if( !is.null(vm@metrics) && !is.null(xm) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=xm) )
-  if( is.null(vm@metrics) && !is.null(xm) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=xm) )
-  if( !is.null(vm@metrics) && is.null(xm) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=NULL) )
+  if( !is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=xm) )
+  if( is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=xm) )
+  if( !is.null(vm@metrics) && is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=NULL) )
   return( list(o=o,m=m,tm=tm,vm=NULL,xm=NULL) )
 }
 

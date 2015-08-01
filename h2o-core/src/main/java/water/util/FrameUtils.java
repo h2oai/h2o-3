@@ -190,7 +190,7 @@ public class FrameUtils {
         final Frame frame = DKV.getGet(_dataset);
         MissingInserterDriver mid = new MissingInserterDriver(frame);
         int work = frame.vecs()[0].nChunks();
-        start(mid, work);
+        start(mid, work, true);
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {

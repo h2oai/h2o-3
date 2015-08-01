@@ -78,7 +78,7 @@
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
 #'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
-#' \dontrun{
+#' \donttest{
 #'  # GLM variable importance
 #'  # Also see:
 #'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
