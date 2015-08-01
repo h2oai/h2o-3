@@ -450,7 +450,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     private double[] impute_data(double[] tmp, double[] preds) {
-      assert preds.length == _output._archetypes_full.nfeatures();
+      assert preds.length == _output._nnums + _output._ncats;
 
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {

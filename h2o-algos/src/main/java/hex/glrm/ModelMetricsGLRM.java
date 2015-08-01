@@ -47,7 +47,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       int c = 0;
       for (int i = ncats; i < dataRow.length; i++) {
         int idx = _permutation[i];
-        if (Double.isNaN(dataRow[idx])) continue;
+        if (Double.isNaN(dataRow[idx])) { c++; continue; }
         double diff = (dataRow[idx] - sub[c]) * mul[c] - preds[idx];
         _sumsqe += diff * diff;
         _ncount++;

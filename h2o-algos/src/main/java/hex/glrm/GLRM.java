@@ -606,7 +606,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _archetypes = y;
       _transposed = transposed;
       _catOffsets = catOffsets;
-      _numLevels = numLevels;
+      _numLevels = numLevels;   // TODO: Check sum(numLevels) + nnums == nfeatures()
     }
 
     public int rank() {
