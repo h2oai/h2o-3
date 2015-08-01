@@ -323,9 +323,17 @@ class ASTLOr extends ASTBinOp {
 }
 
 // IfElse.  Execute either 2nd or 3rd (but not both) according to 1st arg.
-// Neither if test is NaN.  Returns something of the same "shape" as the test -
-// scalar for scalar, frame for frame.  Elements of the result are picked from
-// either the true or false frame.
+// Neither if test is NaN.  Elements of the result are picked from either the
+// true or false frame.
+//
+// ifelse( NaN  , yes, no ) ==> NaN
+// ifelse( true , yes, no ) ==> yes; no is NOT evaluated
+// ifelse( false, yes, no ) ==> no; yes is NOT evaluated
+// ifelse( frame, yes, no ) ==> yes & no must be scalars, or same-shape arrays.  
+//    If frame is all zero, then treat as constant false
+//    If frame is all non-zero, then treat as constant true
+//    Elements are picked from yes & no according to frame elements being
+//    non-zero or zero (and NaN if frame is NaN).
 class ASTIfElse extends ASTPrim { 
   @Override int nargs() { return 1+3; } // test true false
   String str() { return "ifelse"; } 

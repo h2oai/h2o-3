@@ -27,20 +27,22 @@
   stopifnot( is.Frame(x) )
   stopifnot(!missing(N))
   .eval.frame(x)
-  if( is.null(x$data) || (is.Frame(x$data) && nrow(x$data) < N) ) {
+  if( is.null(x:data) || (is.Frame(x:data) && nrow(x:data) < N) ) {
     # TODO: extract N rows instead of the default 100
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x$eval))$frames[[1]]
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:eval))$frames[[1]]
     data    <- as.data.frame(lapply(res$columns, function(c) c$data ))
-    colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
-    for( i in 1:length(data) ) {  # Set factor levels
-      dom <- res$columns[[i]]$domain
-      if( !is.null(dom) )
-        data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
+    if( length(data) > 0 ) {
+      colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
+      for( i in 1:length(data) ) {  # Set factor levels
+        dom <- res$columns[[i]]$domain
+        if( !is.null(dom) )
+          data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
+      }
     }
     x$data <- data
     x$nrow <- res$rows
   }
-  x$data
+  x:data
 }
 
 #` Flush any cached data
@@ -60,9 +62,9 @@
 #' @export
 h2o.assign <- function(data, key) {
   .key.validate(key)
-  if( key == data$id ) stop("Destination key must differ from input frame ", key)
+  if( !is.null(data:id) && key == data:id ) stop("Destination key must differ from input frame ", key)
   # Eager evalute, copied from .eval.frame
-  exec_str <- .eval_impl(data);
+  exec_str <- .eval.impl(data);
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   .newFrame("h2o.assign",key)
@@ -84,8 +86,8 @@ h2o.rm <- function(ids,pattern="") {
     ids <- keys[grep(pattern, keys)]
   }
   if( is.Frame(ids) ) {
-    if( !is.null(ids$id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
-    ids <- ids$id;
+    if( !is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
+    ids <- ids:id;
   }
   if(!is.character(ids)) stop("`ids` must be of class character")
 

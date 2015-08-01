@@ -33,10 +33,21 @@
 is.Frame <- function(fr) class(fr)[1]=="Frame"
 #.isFr <- function(fr) is(fr,"Frame")
 
+# Horrible internal shortcut to get at our fields in Frame environments via
+# "frame:id".  Using "$" calls the overloaded dataframe column resolution - and
+# doesn't look for our internal fields.
+`:` <- function(x,y) {
+  if( !is.Frame(x) ) return(.Primitive(":")(x,y))
+  fld <- as.character(substitute(y))
+  if( exists(fld,x,inherits=FALSE) ) get(fld,envir=x, inherits=FALSE)
+  else NULL
+}
+
+
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
-  if( !exists("id",envir=x) && is.character(x$eval) )
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x$eval), method = "DELETE")
+  if( !exists("id",envir=x) && is.character(x:eval) )
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x:eval), method = "DELETE")
 }
 
 # Make a raw named data frame.  The key will exist on the server, and will be
@@ -45,15 +56,18 @@ is.Frame <- function(fr) class(fr)[1]=="Frame"
   stopifnot( is.character(id) )
   node <- structure(new.env(parent = emptyenv()), class="Frame")
   node$op <- op
-  node$eval <- node$id <- id
+  node$id   <- id
+  node$eval <- id
   node
 }
 
 # A new lazy expression
-.newExpr <- function(op,...) {
+.newExpr <- function(op,...) .newExprList(op,list(...))
+
+.newExprList <- function(op,li) {
   node <- structure(new.env(parent = emptyenv()), class="Frame")
   node$op <- op
-  node$eval <- list(...)
+  node$eval <- li
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
   node
 }
@@ -78,6 +92,10 @@ Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
+Math.Frame <- function(x,y) .newExpr(.Generic,x,y)
+
+Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
+
 Summary.Frame <- function(x,na.rm) {
   if( na.rm ) stop("na.rm versions not impl") 
   res <- .newExpr(.Generic,x)
@@ -101,21 +119,21 @@ Summary.Frame <- function(x,na.rm) {
 # Internal recursive clear-visit-flag function, goes hand-n-hand with a
 # recursive visitor
 .clearvisit <- function(x) {
-  if( !is.null(x$visit) ) return()
+  if( !is.null(x:visit) ) return()
   rm("visit",envir=x);
-  if( !is.null(x$eval) )
-    lapply(x$eval, function(child) { if( is.environment(child) ) .clearvisit(child) } )
+  if( !is.null(x:eval) )
+    lapply(x:eval, function(child) { if( is.environment(child) ) .clearvisit(child) } )
 }
 
 # Internal recursive printer
 .pfr <- function(x,e) {
-  if( !is.null(xid<-x$id   ) ) return(xid)
-  if( !is.null(xid<-x$visit) ) return(xid)
-  x$visit <- xid <- paste0("tmp",e$cnt)
-  e$cnt <- e$cnt+1
-  res <- ifelse( is.null(x$eval), "EVALd",
-                 paste(sapply(x$eval, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "))
-  res <- paste0("(",x$op," ",res,")")
+  if( !is.null(xid<- x:id  ) ) return(xid)
+  if( !is.null(xid<- x:visit) ) return(xid)
+  x$visit <- xid <- paste0("tmp",e:cnt)
+  e$cnt <- e:cnt+1
+  res <- ifelse( is.null(x:eval), "EVALd",
+                 paste(sapply(x:eval, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "))
+  res <- paste0("(",x:op," ",res,")")
   if( .shared(x) ) 
     res<-paste0("(tmp= ",xid," ",res,")")
   res
@@ -125,9 +143,9 @@ Summary.Frame <- function(x,na.rm) {
 pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(x),e); .clearvisit(x); invisible() }
 
 .eval.impl <- function(x) {
-  if( is.character(xchild<-x$eval) ) return(xchild)
+  if( is.character(xchild<-x:eval) ) return(xchild)
   res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child) else child }),collapse=" ")
-  res <- paste0("(",x$op," ",res,")")
+  res <- paste0("(",x:op," ",res,")")
   x$eval <- xchild <- .key.make("RTMP") # Flag as code-emitted
   if( .shared(x) ) 
     res <- paste0("(tmp= ",xchild," ",res,")")
@@ -138,11 +156,11 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(
 # signal that the node has already been executed.  
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
-  if( !is.character(x$eval) ) {
+  if( !is.character(x:eval) ) {
     exec_str <- .eval.impl(x)
     print(paste0("EXPR: ",exec_str))
     # Execute the AST on H2O
-    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x$eval, method = "POST")
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:eval, method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
     if( !is.null(res$scalar) ) x$data<-res$scalar
   }
@@ -160,7 +178,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
 #' @export
-dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x$nrow,ncol(data))) }
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(data))) }
 
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
@@ -170,7 +188,7 @@ head.Frame <- function(x,n=6L) {
   stopifnot(length(n) == 1L)
   n <- if (n < 0L) max(nrow(x) + n, 0L)
        else        min(n, nrow(x))
-  if( n > 0L && n <= 1000L ) { # Short version, just report the cached internal DF
+  if( n >= 0L && n <= 1000L ) { # Short version, just report the cached internal DF
     head(.fetch.data(x,n),n)
   } else # Long version, fetch all asked for "the hard way"
     x[seq_len(n),]
@@ -216,7 +234,7 @@ str.Frame <- function(x, cols=FALSE, ...) {
   df <- head(.fetch.data(x,10L),10L)
 
   # header statement
-  cat("\nFrame '", x$eval, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+  cat("\nFrame '", x:eval, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
   l <- list()
   for( i in 1:nc ) {
     cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
@@ -254,8 +272,7 @@ str.Frame <- function(x, cols=FALSE, ...) {
       print(col)
       stop("unimplemented1")
     } else if( is.character(col) ) { # Columns by name
-      print(col)
-      stop("unimplemented2")
+      col <- match(col,colnames(data))-1 # Match on name, then zero-based
     } else { # Generic R expression
       col <- .row.col.selector(col)
     }
@@ -263,15 +280,28 @@ str.Frame <- function(x, cols=FALSE, ...) {
   }
   # Have a row selector?
   if( !missing(row) ) {
-    if( is.Frame(row) ) { # Rows by boolean choice
-      print(row)
-      stop("unimplemented3")
-    } else { # Generic R expression
+    if( !is.Frame(row) )   # Generic R expression
       row <- .row.col.selector(row)
-    }
     data <- .newExpr("rows",data,row) # Row selector
   }
   data
+}
+
+#' @rdname Frame-Extract
+#' @export
+`$.Frame` <- function(x, name) { x[[name, exact = FALSE]] }
+
+#' @rdname Frame-Extract
+#' @export
+`[[.Frame` <- function(x, i, exact = TRUE) {
+  if( missing(i) )  return(x)
+  if( length(i) > 1L )  stop("`[[` can only select one column")
+  if( is.character(i)) {
+    if( exact )  i <-  match(i, colnames(x))
+    else         i <- pmatch(i, colnames(x))
+  }
+  if( is.na(i) ) NULL
+  else           x[,i]
 }
 
 
@@ -331,6 +361,140 @@ str.Frame <- function(x, cols=FALSE, ...) {
 # Set a column name.
 .setColName <- function(fr, idx, name) .newExpr("colnames=", fr, idx-1, name)
 
+#'
+#' Summarizes the columns of a H2O data frame.
+#'
+#' A method for the \code{\link{summary}} generic. Summarizes the columns of an H2O data frame or subset of
+#' columns and rows using vector notation (e.g. dataset[row, col])
+#'
+#' @name h2o.summary
+#' @param object An \linkS4class{Frame} object.
+#' @param factors The number of factors to return in the summary. Default is the top 6.
+#' @param ... Further arguments passed to or from other methods.
+#' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each
+#' numeric column, and the levels and category counts of the levels in each categorical column.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(path = prosPath)
+#' summary(prostate.hex)
+#' summary(prostate.hex$GLEASON)
+#' summary(prostate.hex[,4:6])
+NULL
+#' @rdname h2o.summary
+#' @export
+summary.Frame <- function(object, factors=6L, ...) {
+  SIG.DIGITS    <- 12L
+  FORMAT.DIGITS <- 4L
+  cnames <- colnames(object)
+  missing <- list()
+
+  # for each numeric column, collect [min,1Q,median,mean,3Q,max]
+  # for each categorical column, collect the first 6 domains
+  # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", object:eval, "/summary"), method = "GET")$frames[[1]]
+  col.sums <- fr.sum$columns
+  cols <- sapply(col.sums, function(col) {
+    col.sum <- col
+    col.type <- col.sum$type  # enum, string, int, real, time, uuid
+
+    # numeric column: [min,1Q,median,mean,3Q,max]
+    if( col.type %in% c("real", "int") ) {
+      cmin <- cmax <- cmean <- c1Q <- cmedian <- c3Q <- NaN                                              # all 6 values are NaN by default
+      if( !(is.null(col.sum$mins) || length(col.sum$mins) == 0L) ) cmin <- min(col.sum$mins,na.rm=TRUE)  # set the min
+      if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
+      if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
+
+      if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
+        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
+        cmedian <- col.sum$percentiles[6] # p=.5
+        c3Q     <- col.sum$percentiles[8] # p=.75
+      }
+
+      missing.count <- NULL
+      if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
+
+      params <- format(signif( as.numeric( c(cmin, c1Q, cmedian, cmean, c3Q, cmax) ), SIG.DIGITS), digits=FORMAT.DIGITS)   # do some formatting for pretty printing
+      result <- c(paste0("Min.   :", params[1L], "  "), paste0("1st Qu.:", params[2L], "  "),
+                  paste0("Median :", params[3L], "  "), paste0("Mean   :", params[4L], "  "),
+                  paste0("3rd Qu.:", params[5L], "  "), paste0("Max.   :", params[6L], "  "))
+
+      # return summary string for this column
+      if( is.null(missing.count) ) result <- result
+      else                         result <- c(result, paste0("NA's   :",missing.count,"  "))
+
+      result
+    } else if( col.type == "enum" ) {
+      domains <- col.sum$domain
+      domain.cnts <- col.sum$histogram_bins
+      if( length(domain.cnts) < length(domains) ) domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
+      missing.count <- 0L
+      if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
+      # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
+      df.domains <- data.frame(domain=domains,cnts=domain.cnts, stringsAsFactors=FALSE)
+      df.domains <- df.domains[with(df.domains, order(-cnts)),]  # sort in descending order
+
+      # TODO: check out that NA is valid domain level in enum column... get missing and NA together here, before subsetting
+      row.idx.NA <- which( df.domains[,1L] == "NA")
+      if( length(row.idx.NA) != 0 ) {
+        missing.count <- missing.count + df.domains[row.idx.NA,2L]  # combine the missing and NAs found here
+        df.domains <- df.domains[-row.idx.NA,]  # remove the NA level
+      }
+
+      factors <- min(factors, nrow(df.domains))
+      df.domains.subset <- df.domains[1L:factors,]      # subset to the top `factors` (default is 6)
+
+      # if there are any missing levels, plonk them down here now after we've subset.
+      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
+
+      # fish out the domains
+      domains <- as.character(df.domains.subset[,1L])
+
+      # fish out the counts
+      counts <- as.character(df.domains.subset[,2L])
+
+      # compute a width for the factor levels and also one for the counts
+      width <- c( max(nchar(domains),0L, na.rm = TRUE), max(nchar(counts),0L, na.rm = TRUE) )
+      # construct the result
+      paste0(domains,sapply(domains, function(x) {
+                      x <- max(0, nchar(x), na.rm = TRUE)
+                      ifelse(width[1L] == x, "", paste(rep(' ', width[1L] - x), collapse='')) }),":",
+                     sapply(counts,  function(y) {
+                      y <- max(0, nchar(y), na.rm = TRUE)
+                      ifelse(width[2L] == y, "", paste(rep(' ', width[2L] - y), collapse='')) }), counts, " ")
+
+    } else {
+      # types are time, uuid, string ... ignore for now?
+#      c(paste0(col.type, ": ignored"))
+      NULL
+    }
+  })
+  names(cols) <- cnames
+  result <- NULL
+  if( is.matrix(cols) && ncol(cols) == 1L ) {
+    result <- as.table(as.matrix(as.data.frame(cols, stringsAsFactors=FALSE)))
+  } else {
+    # need to normalize the result
+    max.len <- max(sapply(cols, function(col) { length(col) }))
+    # here's where normalization is done
+    if( is.matrix(cols) ) {
+      result <- as.table(cols)
+    } else {
+      cols <- data.frame( lapply(cols, function(col) {
+                  if( length(col) < max.len ) c(col, rep("", max.len-length(col)))  # pad out result with "" for the prettiest of pretty printing... my pretty... and your little dog TOO! MUAHAHHAHA
+                  else col                                                          # no padding necessary!
+                }), stringsAsFactors=FALSE)                                         # keep as strings...
+
+      result <- as.table(as.matrix(cols))
+    }
+  }
+  colnames(result) <- cnames
+  if( is.null(result) ) return(NULL)
+  rownames(result) <- rep("", nrow(result))
+  result
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
@@ -388,7 +552,7 @@ as.data.frame.Frame <- function(x, ...) {
 
   url <- paste0('http://', conn@ip, ':', conn@port,
                 '/3/DownloadDataset',
-                '?frame_id=', URLencode(x$eval),
+                '?frame_id=', URLencode(x:eval),
                 '&hex_string=', as.numeric(use_hex_string))
 
   ttt <- getURL(url)
@@ -424,7 +588,7 @@ as.data.frame.Frame <- function(x, ...) {
 }
 
 #' @export
-as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
+as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
@@ -450,23 +614,24 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
 #' summary(australia.hex)
 #' @export
-h2o.ifelse <- function(test, yes, no) {
-  stop("h2o.ifelse unimpl")
-}
+h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
 ifelse <- function(test, yes, no) {
   if( is.atomic(test) ) {
     if (typeof(test) != "logical") 
       storage.mode(test) <- "logical"
     if (length(test) == 1 && is.null(attributes(test))) {
-      if (is.na(test)) 
+      if (is.na(test)) {
         return(NA)
-      else if (test) {
-        if( (length(yes) == 1 && is.null(attributes(yes))) || is.Frame(yes) )
+      } else if (test) {
+        if( length(yes) == 1 && is.null(attributes(yes)) )
           return(yes)
-      } 
-      else if( (length(no) == 1 && is.null(attributes(no))) || is.Frame(no) )
-        return(no)
+        if( is.Frame(yes) ) return(yes[,1])
+      } else {
+        if( length(no) == 1 && is.null(attributes(no)) )
+          return(no)
+        if( is.Frame(no) ) return(no[,1])
+      }
     }
   }
 
@@ -474,12 +639,40 @@ ifelse <- function(test, yes, no) {
   else base::ifelse(test,yes,no)
 }
 
+#' Combine H2O Datasets by Columns
+#'
+#' Takes a sequence of H2O data sets and combines them by column
+#'
+#' @name h2o.cbind
+#' @param \dots A sequence of \linkS4class{Frame} arguments. All datasets must exist on the same H2O instance
+#'        (IP and port) and contain the same number of rows.
+#' @return An \linkS4class{Frame} object containing the combined \dots arguments column-wise.
+#' @seealso \code{\link[base]{cbind}} for the base \code{R} method.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.cbind <- h2o.cbind(prostate.hex, prostate.hex)
+#' head(prostate.cbind)
+#' @export
+h2o.cbind <- function(...) {
+  li <- list(unlist(list(...)))
+  use.args <- FALSE
+  if( length(li)==1 && is.list(li[[1]]) ) {
+    li <- li[[1]]
+    use.args <- TRUE
+  } else li <- list(...)
+  lapply(li, function(l) if( !is.Frame(l) ) stop("`h2o.cbind` accepts only of Frame objects"))
+  .newExprList("cbind",li)
+}
+
 #' Produe a Vector of Random Uniform Numbers
 #'
 #' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
 #' dataset.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An \linkS4class{Frame} object.
 #' @param seed A random seed used to generate draws from the uniform distribution.
 #' @return A vector of random, uniformly distributed numbers. The elements are between 0 and 1.
 #' @examples
