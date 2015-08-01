@@ -197,8 +197,9 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   MetricsClass <- paste0("H2O", model_category, "Metrics")
   # setup the metrics objects inside of model...
-  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
-  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
+  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
+  model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
