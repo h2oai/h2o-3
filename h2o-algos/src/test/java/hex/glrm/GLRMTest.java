@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 
 public class GLRMTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(2); }
 
   private static String colFormat(String[] cols, String format) {
     int[] idx = new int[cols.length];
@@ -221,6 +221,47 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       yinit.delete();
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) {
+        model._parms._loading_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
+  @Test public void testArrestsKMeans() throws InterruptedException, ExecutionException {
+    GLRMModel model = null;
+    Frame train = null, score = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._loss = GLRMParameters.Loss.Logistic;
+      parms._regularization_x = GLRMParameters.Regularizer.NonNegative;
+      parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
+      parms._gamma_x = parms._gamma_y = 0;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._init = GLRM.Initialization.PlusPlus;
+      parms._max_iterations = 1000;
+      parms._min_step_size = 1e-8;
+      parms._recover_svd = true;
+
+      GLRM job = new GLRM(parms);
+      try {
+        model = job.trainModel().get();
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) {
