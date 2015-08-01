@@ -193,7 +193,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
-      if (null != _parms._user_points) { // User-specified starting points
+      if (null != _parms._user_points) { // Set Y = user-specified starting points, X = standard normal matrix
         Vec[] centersVecs = _parms._user_points.get().vecs();
         centers = new double[_parms._k][_ncolA];
 
@@ -205,12 +205,15 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Permute cluster columns to align with dinfo and expand out categoricals
         centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-        return expandCats(centers, tinfo);
+        centers_exp = expandCats(centers, tinfo);
+        initialXGausProj(dinfo);
+        return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
-      } else if (_parms._init == Initialization.Random) {  // Generate array from standard normal distribution
+      } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+        initialXGausProj(dinfo);
 
-      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y to be the right singular vectors
+      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y = right singular vectors
         PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -241,8 +244,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
         // for(int i = 0; i < centers_exp.length; i++)
         //  ArrayUtils.mult(centers_exp[i], pca._output._std_deviation[i] * Math.sqrt(pca._output._nobs-1));
+        initialXGausProj(dinfo);  // TODO: We want X = UD when Y = V' from SVD A = UDV'
 
-      } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and use resulting cluster centers as initial Y
+      } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -277,7 +281,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       } else
         error("_init", "Initialization method " + _parms._init + " is undefined");
 
-      // If all centers are zero or any are NaN, initialize to standard normal random matrix
+      // If all centers are zero or any are NaN, initialize to standard Gaussian random matrix
       assert centers_exp != null && centers_exp.length == _parms._k && centers_exp[0].length == _ncolY : "Y must have " + _parms._k + " rows and " + _ncolY + " columns";
       double frob = frobenius2(centers_exp);   // TODO: Don't need to calculate twice if k-means++
       if(frob == 0 || Double.isNaN(frob)) {
@@ -289,6 +293,24 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       for(int i = 0; i < _parms._k; i++)
         centers_exp[i] = _parms.project_y(centers_exp[i], rand);
       return centers_exp;
+    }
+
+    // Set X to standard Gaussian random matrix projected into regularizer subspace
+    private void initialXGausProj(DataInfo dinfo) {
+      new MRTask() {
+        @Override public void map( Chunk chks[] ) {
+          Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+
+          for(int row = 0; row < chks[0]._len; row++) {
+            double[] xrow = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
+            xrow = _parms.project_x(xrow, rand);
+            for(int c = 0; c < xrow.length; c++) {
+              chks[_ncolA+c].set(row, xrow[c]);
+              chks[_ncolA+_ncolX+c].set(row, xrow[c]);
+            }
+          }
+        }
+      }.doAll(dinfo._adaptedFrame);
     }
 
     // Set X to matrix of indicator columns, e.g. k = 4, cluster = 3 -> [0, 0, 1, 0]
@@ -458,7 +480,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Vec[] vecs = new Vec[_ncolA + 2*_ncolX];
         for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
         for (int i = _ncolA; i < vecs.length; i++)
-          vecs[i] = _train.anyVec().makeGaus(_parms._seed);   // By default, initialize X to random Gaussian matrix
+          vecs[i] = _train.anyVec().makeZero();
         fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(dinfo._key, dinfo);
