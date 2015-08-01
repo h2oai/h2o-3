@@ -1381,7 +1381,7 @@ public class GBMTest extends TestUtil {
         parms._seed = 0xdecaf;
         parms._distribution = dist;
         parms._min_rows = 1;
-        parms._ntrees = 3;
+        parms._ntrees = 300;
         parms._learn_rate = 1e-3f;
 
         // Build a first model; all remaining models should be equal

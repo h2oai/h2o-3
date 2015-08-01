@@ -243,4 +243,28 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(json);
 
   }
+
+  @Test public void run8() {
+    TwoDimTable table = new TwoDimTable(
+            "Mixed", "description",
+            new String[1000],
+            new String[]{"C0", "C1", "C2", "C3"},
+            new String[]{"double", "float", "int", "long"},
+            new String[]{"%f", "%f", "%d", "%d"},
+            "");
+    for (int i=0; i<1000; ++i) {
+      table.set(i, 0, Double.NEGATIVE_INFINITY);
+      table.set(i, 1, Double.POSITIVE_INFINITY);
+      table.set(i, 2, i);
+      table.set(i, 3, -234234);
+    }
+
+    String ts = table.toString();
+    assertTrue(ts.length() > 0);
+    Log.info(ts);
+
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    Log.info(json);
+
+  }
 }
