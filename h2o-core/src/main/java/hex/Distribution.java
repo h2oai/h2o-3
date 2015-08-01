@@ -45,15 +45,15 @@ public class Distribution extends Iced {
   // helper - sanitized exponential function
   public static double exp(double x) {
     double val = Math.min(MAX, Math.exp(x));
-    if (val == MAX) Log.warn("Exp overflow: exp(" + x + ") truncated to " + MAX);
+//    if (val == MAX) Log.warn("Exp overflow: exp(" + x + ") truncated to " + MAX);
     return val;
   }
 
   // helper - sanitized log function
   public static double log(double x) {
     x = Math.max(0,x);
-    double val = x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
-    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
+    double val = x == 0 ? MIN_LOG : Math.log(x);
+//    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
     return val;
   }
 
@@ -70,7 +70,6 @@ public class Distribution extends Iced {
    * @return value of gradient
    */
   public double deviance(double w, double y, double f) {
-    f = link(f); //bring back f to link space
     switch (distribution) {
       case AUTO:
       case gaussian:
@@ -84,13 +83,15 @@ public class Distribution extends Iced {
       case laplace:
         return w*Math.abs(y-f);
       case bernoulli:
+        f = link(f); //bring back f to link space
         return -2 * w * (y * f - log(1 + exp(f)));
       case poisson:
-        return -2 * w * (y * f - exp(f));
+        return -2 * w * (y * log(f) - f);
       case gamma:
-        return 2 * w * (y * exp(-f) + f);
+        return 2 * w * (y * -f + log(f));
       case tweedie:
         assert (tweediePower > 1 && tweediePower < 2);
+        f = link(f); //bring back f to link space
         return 2 * w * (Math.pow(y, 2 - tweediePower) / ((1 - tweediePower) * (2 - tweediePower)) - y * exp(f * (1 - tweediePower)) / (1 - tweediePower) + exp(f * (2 - tweediePower)) / (2 - tweediePower));
       default:
         throw H2O.unimpl();
