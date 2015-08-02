@@ -22,7 +22,7 @@ A vector containing the names of the predictors in the model.
 The name of the response variable in the model.
 }
   \item{training_frame}{
-(Optional) An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 }
   \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
