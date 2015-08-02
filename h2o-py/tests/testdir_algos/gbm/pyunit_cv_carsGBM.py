@@ -32,17 +32,17 @@ def cv_carsGBM(ip,port):
     ## cross-validation
     # 1. check that cv metrics are the same over repeated "Modulo" runs
     nfolds = random.randint(3,10)
-    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Modulo")
-    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Modulo")
     h2o.check_models(gbm1, gbm2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
-    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Random")
-    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution,
+    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Random")
     try:
         h2o.check_models(gbm1, gbm2, True)
@@ -55,7 +55,7 @@ def cv_carsGBM(ip,port):
     fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow())])
     fold_assignments.setNames(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
-    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], training_frame=cars, distribution=distribution,
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], training_frame=cars, distribution=distribution, ntrees=5,
                   fold_column="fold_assignments", keep_cross_validation_predictions=True)
     num_cv_models = len(gbm._model_json['output']['cross_validation_models'])
     assert num_cv_models==num_folds, "Expected {0} cross-validation models, but got " \
@@ -81,35 +81,35 @@ def cv_carsGBM(ip,port):
     # manual_model1 = h2o.gbm(y=fold2[response_col],
     #                         x=fold2[predictors],
     #                         validation_y=fold1[response_col],
-    #                         validation_x=fold1[predictors],
+    #                         validation_x=fold1[predictors], ntrees=5,
     #                         distribution=distribution)
     # manual_model2 = h2o.gbm(y=fold1[response_col],
     #                         x=fold1[predictors],
     #                         validation_y=fold2[response_col],
-    #                         validation_x=fold2[predictors],
+    #                         validation_x=fold2[predictors], ntrees=5,
     #                         distribution=distribution)
 
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution,
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution, ntrees=5,
                   fold_assignment="Modulo")
 
     # 2. nfolds = 0
-    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=0, distribution=distribution)
+    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=0, distribution=distribution, ntrees=5)
     # check that this is equivalent to no nfolds
-    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution)
+    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution, ntrees=5)
     h2o.check_models(gbm1, gbm2)
 
     # 3. cross-validation and regular validation attempted
-    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col],
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col], ntrees=5,
                   validation_x=cars[predictors], distribution=distribution)
 
 
     ## error cases
     # 1. nfolds == 1 or < 0
     try:
-        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.sample([-1,1], 1)[0],
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.sample([-1,1], 1)[0], ntrees=5,
                       distribution=distribution)
         assert False, "Expected model-build to fail when nfolds is 1 or < 0"
     except EnvironmentError:
@@ -117,7 +117,7 @@ def cv_carsGBM(ip,port):
 
     # 2. more folds than observations
     try:
-        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution,
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution, ntrees=5,
                       fold_assignment="Modulo")
         assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
@@ -125,19 +125,19 @@ def cv_carsGBM(ip,port):
 
     # 3. fold_column and nfolds both specified
     try:
-        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=3, fold_column="fold_assignments",
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=3, fold_column="fold_assignments", ntrees=5,
                       distribution=distribution, training_frame=cars)
         assert False, "Expected model-build to fail when fold_column and nfolds both specified"
     except EnvironmentError:
         assert True
 
-    # # 4. fold_column and fold_assignment both specified
-    # try:
-    #     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], fold_assignment="Random", fold_column="fold_assignments",
-    #                   distribution=distribution, training_frame=cars)
-    #     assert False, "Expected model-build to fail when fold_column and fold_assignment both specified"
-    # except EnvironmentError:
-    #     assert True
+    # 4. fold_column and fold_assignment both specified
+    try:
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], fold_assignment="Random", fold_column="fold_assignments", ntrees=5,
+                      distribution=distribution, training_frame=cars)
+        assert False, "Expected model-build to fail when fold_column and fold_assignment both specified"
+    except EnvironmentError:
+        assert True
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, cv_carsGBM)

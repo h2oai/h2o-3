@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/synthetic_perfect_separation/unbalanced.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/synthetic_perfect_separation/unbalanced.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/synthetic_perfect_separation/unbalanced.csv\"]\n  destination_frame: \"unbalanced.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"y\",\"x1\",\"x2\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"unbalanced.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"unbalanced.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"unbalanced.hex\", [0.25], [\"unbalanced_test\",\"unbalanced_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-d644c26c-9488-4f65-ba76-d0dd64d50263\",\"training_frame\":\"unbalanced_train\",\"validation_frame\":\"unbalanced_test\",\"ignore_const_cols\":true,\"response_column\":\"y\",\"ntrees\":\"20\",\"max_depth\":5,\"min_rows\":\"25\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":1373603923644906500,\"learn_rate\":\"0.3\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-d644c26c-9488-4f65-ba76-d0dd64d50263\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-d644c26c-9488-4f65-ba76-d0dd64d50263\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-d644c26c-9488-4f65-ba76-d0dd64d50263\", frame: \"unbalanced_test\", predictions_frame: \"prediction-ccf3c2b0-5fae-4544-a993-c022812e9dab\""
+    }
+  ]
+}

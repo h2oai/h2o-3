@@ -53,9 +53,9 @@ public class h2odriver extends Configured implements Tool {
   static boolean beta = false;
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
-  static boolean enableVerboseGC = false;
-  static boolean enablePrintGCDetails = false;
-  static boolean enablePrintGCTimeStamps = false;
+  static boolean enableVerboseGC = true;
+  static boolean enablePrintGCDetails = true;
+  static boolean enablePrintGCTimeStamps = true;
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -65,6 +65,7 @@ public class h2odriver extends Configured implements Tool {
   static int debugPort = 5005;    // 5005 is the default from IDEA
   static String flowDir = null;
   static ArrayList<String> extraArguments = new ArrayList<String>();
+  static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
   static String jksPass = null;
   static boolean hashLogin = false;
@@ -642,6 +643,11 @@ public class h2odriver extends Configured implements Tool {
         enablePrintGCDetails = true;
         enablePrintGCTimeStamps = true;
       }
+      else if (s.equals("-nogc")) {
+        enableVerboseGC = false;
+        enablePrintGCDetails = false;
+        enablePrintGCTimeStamps = false;
+      }
       else if (s.equals("-flow_dir")) {
         i++; if (i >= args.length) { usage(); }
         flowDir = args[i];
@@ -649,6 +655,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-J")) {
         i++; if (i >= args.length) { usage(); }
         extraArguments.add(args[i]);
+      }
+      else if (s.equals("-JJ")) {
+        i++; if (i >= args.length) { usage(); }
+        extraJvmArguments.add(args[i]);
       }
       else if (s.equals("-jks")) {
         i++; if (i >= args.length) { usage(); }
@@ -966,19 +976,25 @@ public class h2odriver extends Configured implements Tool {
       conf.set("mapreduce.map.memory.mb", mapreduceMapMemoryMb);
 
       // MRv1 standard options, but also required for YARN.
-      String mapChildJavaOpts =
-              "-Xms" + mapperXmx
-              + " -Xmx" + mapperXmx
-              + (enableExceptions ? " -ea" : "")
-              + (enableVerboseGC ? " -verbose:gc" : "")
-              + (enablePrintGCDetails ? " -XX:+PrintGCDetails" : "")
-              + (enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : "")
-              + (enableVerboseClass ? " -verbose:class" : "")
-              + (enablePrintCompilation ? " -XX:+PrintCompilation" : "")
-              + (enableExcludeMethods ? " -XX:CompileCommand=exclude,water/fvec/NewChunk.append2slowd" : "")
-              + (enableLog4jDefaultInitOverride ? " -Dlog4j.defaultInitOverride=true" : "")
-              + (enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : "")
+      StringBuilder sb = new StringBuilder()
+              .append("-Xms").append(mapperXmx)
+              .append(" -Xmx").append(mapperXmx)
+              .append((enableExceptions ? " -ea" : ""))
+              .append((enableVerboseGC ? " -verbose:gc" : ""))
+              .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
+              .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
+              .append((enableVerboseClass ? " -verbose:class" : ""))
+              .append((enablePrintCompilation ? " -XX:+PrintCompilation" : ""))
+              .append((enableExcludeMethods ? " -XX:CompileCommand=exclude,water/fvec/NewChunk.append2slowd" : ""))
+              .append((enableLog4jDefaultInitOverride ? " -Dlog4j.defaultInitOverride=true" : ""))
+              .append((enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : ""))
               ;
+      for (String s : extraJvmArguments) {
+        sb.append(" ").append(s);
+      }
+
+      String mapChildJavaOpts = sb.toString();
+
       conf.set("mapreduce.map.java.opts", mapChildJavaOpts);
       if (! usingYarn()) {
         conf.set("mapred.child.java.opts", mapChildJavaOpts);

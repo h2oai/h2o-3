@@ -367,4 +367,15 @@ public class PojoUtils {
       } // need to recurse
     } // foreach exclude_paths
   }
+
+  public static boolean equals(Object a, Field fa, Object b, Field fb) {
+    try {
+      Object va = fa.get(a);
+      Object vb = fb.get(b);
+      return va == null ? vb == null : va.equals(vb);
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
 }

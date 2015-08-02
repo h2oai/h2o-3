@@ -75,6 +75,14 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT, level = API.Level.secondary)
   public boolean score_each_iteration;
 
+  /**
+   * A model key associated with a previously trained
+   * model. This option allows users to build a new model as a
+   * continuation of a previously generated model (e.g., by a grid search).
+   */
+  @API(help = "Model checkpoint to resume training with", level = API.Level.secondary, direction=API.Direction.INOUT)
+  public ModelKeyV3 checkpoint;
+
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];
     System.arraycopy(first, 0, appended, 0, first.length);

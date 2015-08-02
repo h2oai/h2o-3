@@ -1,5 +1,6 @@
 # Using H2O from R
-
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/h2o)](http://cran.r-project.org/web/packages/h2o)
+[![Downloads](http://cranlogs.r-pkg.org/badges/h2o)](http://cran.rstudio.com/package=h2o)
 
 ## Downloading
 

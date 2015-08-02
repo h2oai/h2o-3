@@ -42,6 +42,7 @@ class Check:
             r"^\* checking extension type \.\.\. Package",
             r"^\* this is package",
             r"^\* checking CRAN incoming feasibility \.\.\.",
+            r"^\*\* found \\donttest examples: .*",
             r"^Maintainer:",
             r"^New maintainer:",
             r"^\s*Tom Kraljevic",
