@@ -2,6 +2,7 @@ package water;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.Log;
 
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.DelayQueue;
 
@@ -19,7 +20,7 @@ public class UDPTimeOutThread extends Thread {
   // fail-out if the target has died.
 //  static DelayQueue<RPC> PENDING = new DelayQueue<>();
 
-  static NonBlockingHashMapLong<RPC> PENDING = new NonBlockingHashMapLong<>();
+//  static NonBlockingHashMapLong<RPC> PENDING = new NonBlockingHashMapLong<>();
 
   // The Run Method.
 
@@ -27,34 +28,26 @@ public class UDPTimeOutThread extends Thread {
   public void run() {
     Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
     while( true ) {
-      try {
-        long currentTime = System.currentTimeMillis();
-        int sentCntr = 0;
-        for(Entry<Long,RPC> e:PENDING.entrySet()) {
-          RPC t = e.getValue();
-          if( H2O.CLOUD.contains(t._target) ||
+      long currentTime = System.currentTimeMillis();
+      for(H2ONode n: H2O.CLOUD._memary) {
+        if (n == H2O.SELF) continue;
+        for (RPC t : n.tasks()) {
+          if (H2O.CLOUD.contains(t._target) ||
             // Also retry clients who do not appear to be shutdown
-            (t._target._heartbeat._client && t._retry <  HeartBeatThread.CLIENT_TIMEOUT) ) {
-            if (currentTime > (t._lastSent + t._retry) && !t.isDone() && !t._nack) {
+            (t._target._heartbeat._client && t._retry < HeartBeatThread.CLIENT_TIMEOUT)) {
+            if (currentTime > (t._started + t._retry) && !t.isDone() && !t._nack) {
               if (++t._resendsCnt % 10 == 0)
                 Log.warn("Got " + t._resendsCnt + " resends on task #" + t._tasknum + ", class = " + t._dt.getClass().getSimpleName());
               t.call();
-              if(sentCntr++ == 10000) {
-                sentCntr = 0;
-                Thread.sleep(1000);
-                currentTime = System.currentTimeMillis();
-              }
             }
           } else {                // Target is dead, nobody to retry to
             t.cancel(true);
           }
         }
-        Thread.sleep(1000);
-        // One-shot timeout effect.  Retries need to re-insert back in the queue
-      } catch( InterruptedException e ) {
-        // Interrupted while waiting for a packet?
-        // Blow it off and go wait again...
       }
+      long timeElapsed = System.currentTimeMillis() - currentTime;
+      if(timeElapsed < 1000)
+        try {Thread.sleep(1000-timeElapsed);} catch (InterruptedException e) {}
     }
   }
 }

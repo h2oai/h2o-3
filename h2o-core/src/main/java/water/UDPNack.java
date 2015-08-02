@@ -16,7 +16,6 @@ class UDPNack extends UDP {
     if( t != null ) {
       assert t._tasknum==tnum;
       t._nack = true;
-      UDPTimeOutThread.PENDING.remove(t._tasknum);
     }
     return ab;
   }

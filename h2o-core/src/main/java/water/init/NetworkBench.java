@@ -13,8 +13,10 @@ import java.util.Random;
  * Created by tomasnykodym on 7/28/15.
  */
 public class NetworkBench extends Iced {
-  public static int [] MSG_SZS = new int[]{1, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304};
-  public static int [] MSG_CNT = new int[]{50000, 25000, 12500, 6000, 781, 391, 195, 98, 49, 25};
+//  public static int [] MSG_SZS = new int[]{1, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304};
+  public static int [] MSG_SZS = new int[]{1};
+  public static int [] MSG_CNT = new int[]{500000};
+//  public static int [] MSG_CNT = new int[]{500000, 25000, 12500, 6000, 781, 391, 195, 98, 49, 25};
 
 
   public static class NetworkBenchResults {
@@ -56,14 +58,17 @@ public class NetworkBench extends Iced {
 
   public NetworkBenchResults [] _results;
   public NetworkBench doTest(){
+    long t1 = System.currentTimeMillis();
     H2O.submitTask(new H2OCountedCompleter() {
      @Override
      protected void compute2() {
        _results = new NetworkBenchResults[MSG_SZS.length];
        for(int i = 0; i < MSG_SZS.length; ++i) {
+         long t2 = System.currentTimeMillis();
          long [] mrts = new long[H2O.CLOUD.size()];
          Log.info("Network Bench, running All2All, message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
          long[][] all2all = new TestAll2All(MSG_SZS[i], MSG_CNT[i]).doAllNodes()._time;
+         Log.info("All2All test done in " + ((System.currentTimeMillis()-t2)*0.001) + "s");
          for(int j = 0; j < H2O.CLOUD.size(); ++j) {
            Log.info("Network Bench, running MRTask test at node " + j + ", message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
            mrts[j] = RPC.call(H2O.CLOUD._memary[j], new TestMRTasks(MSG_SZS[i],MSG_CNT[i])).get()._time;
@@ -78,6 +83,7 @@ public class NetworkBench extends Iced {
       System.out.println(r.to2dTable());
       System.out.println();
     }
+    Log.info("Newtork test done in " + ((System.currentTimeMillis()-t1)*0.001) + "s");
     return this;
   }
 

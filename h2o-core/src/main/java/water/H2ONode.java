@@ -1,6 +1,8 @@
 package water;
 
 import water.AutoBuffer.BBPool;
+import water.RPC.RPCCall;
+import water.UDP.udp;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.DocGen.HTML;
@@ -14,6 +16,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.DelayQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -226,6 +229,102 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 //    } catch (IOException ioe) {}
 //    _rawChannel = null;
 //  }
+
+  private static class UDPMessage implements Comparable<UDPMessage> {
+    int _priority;
+    public final byte [] _data;
+
+    public UDPMessage(byte [] data, int priority) {
+      _data = data;
+      _priority = priority;
+    }
+    @Override
+    public int compareTo(UDPMessage o) {
+      return _priority - o._priority;
+    }
+  }
+
+
+  private final PriorityBlockingQueue<UDPMessage> _msgQ = new PriorityBlockingQueue<>();
+
+  private class UDP_TCP_SendThread extends Thread {
+    private final ByteBuffer _bb;
+
+    public UDP_TCP_SendThread(){
+      super("UDP-TCP-SEND");
+      _bb = AutoBuffer.BBP_BIG.make();
+    }
+
+    void sendBuffer(){
+      int sleep = 0;
+      _bb.flip();
+      int sz = _bb.limit();
+      while (true) {
+        _bb.position(0);
+        _bb.limit(sz);
+        try {
+          if (_rawChannel == null || !_rawChannel.isOpen() || !_rawChannel.isConnected()) { // open the channel
+            // Must make a fresh socket
+            SocketChannel sock = SocketChannel.open();
+            sock.socket().setReuseAddress(true);
+            sock.socket().setSendBufferSize(AutoBuffer.BBP_SML.size());
+            InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort() + 1);
+            boolean res = sock.connect(isa);
+            boolean blocking = true;
+            sock.configureBlocking(blocking);
+            assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
+            _rawChannel = sock;
+          }
+          while (_bb.hasRemaining())
+            _rawChannel.write(_bb);
+          _bb.position(0);
+          _bb.limit(_bb.capacity());
+          return;
+        } catch(IOException ioe) {
+          Log.err(ioe);
+          if(_rawChannel != null)
+            try {_rawChannel.close();} catch (Throwable t) {}
+          _rawChannel = null;
+          Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
+          sleep = Math.min(5000,(sleep + 1) << 1);
+          try {Thread.sleep(sleep);} catch (InterruptedException e) {}
+        }
+      }
+    }
+
+    @Override public void run(){
+      try {
+        while (true) {
+          try {
+            UDPMessage m = _msgQ.take();
+            while (m != null) {
+              if (m._data.length > _bb.capacity())
+                throw new IllegalStateException("UDP message larger than the buffer");
+              if (_bb.remaining() < m._data.length)
+                sendBuffer();
+              _bb.put(m._data);
+              m = _msgQ.poll();
+            }
+            sendBuffer();
+          } catch (InterruptedException e) {
+          }
+        }
+      } catch(Throwable t) {
+        Log.err(t);
+        throw H2O.fail();
+      }
+    }
+  }
+
+  private UDP_TCP_SendThread _sendThread = null;
+  public void sendRaw(ByteBuffer bb, int priority) {
+    _msgQ.put(new UDPMessage(Arrays.copyOf(bb.array(),bb.limit()), -priority));
+    if(_sendThread == null) synchronized(this) {
+      if(_sendThread == null)
+        (_sendThread = new UDP_TCP_SendThread()).start();
+    }
+  }
+
   /**
    * Send small message as raw bytes via tcp
    * @param bb
@@ -385,10 +484,10 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // Recorded here, so if the client misses our ACK response we can resend the
   // same answer back.
   void record_task_answer( RPC.RPCCall rpcall ) {
-    assert rpcall._started == 0 || rpcall._dt.hasException();
+//    assert rpcall._started == 0 || rpcall._dt.hasException();
     rpcall._started = System.currentTimeMillis();
     rpcall._retry = RPC.RETRY_MS; // Start the timer on when to resend
-    AckAckTimeOutThread.PENDING.add(rpcall);
+//    AckAckTimeOutThread.PENDING.add(rpcall);
   }
   // Stop tracking a remote task, because we got an ACKACK.
   void remove_task_tracking( int task ) {
@@ -402,10 +501,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     DTask dt = rpc._dt;         // The existing DTask, if any
     if( dt != null && rpc.CAS_DT(dt,null) ) {
       assert rpc._computed : "Still not done #"+task+" "+dt.getClass()+" from "+rpc._client;
-      AckAckTimeOutThread.PENDING.remove(rpc);
       dt.onAckAck();            // One-time call on stop-tracking
     }
-
     // Roll-up as many done RPCs as we can, into the _removed_task_ids list
     while( true ) {
       int t = _removed_task_ids.get();   // Last already-removed ID
@@ -426,30 +523,43 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   static class AckAckTimeOutThread extends Thread {
     AckAckTimeOutThread() { super("ACKTimeout"); }
     // List of DTasks with results ready (and sent!), and awaiting an ACKACK.
-    static DelayQueue<RPC.RPCCall> PENDING = new DelayQueue<>();
     // Started by main() on a single thread, handle timing-out UDP packets
     @Override public void run() {
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
       while( true ) {
         RPC.RPCCall r;
-        try { r = PENDING.take(); }
-        // Interrupted while waiting for a packet?
-        // Blow it off and go wait again...
-        catch( InterruptedException e ) { continue; }
-        assert r._computed : "Found RPCCall not computed "+r._tsknum;
-        boolean forceTCP;
-        DTask dt = r._dt;
-        if(++r._ackResendCnt  % 10 == 0)
-          Log.warn("Got " + r._ackResendCnt + " resends on ack for task # " + r._tsknum + ", class = " + r._dt.getClass().getSimpleName());
-        // RPC from somebody who dropped out of cloud?
-        if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
-            // Timedout client?
-            (r._client._heartbeat._client && r._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
-          r._client.remove_task_tracking(r._tsknum);
-        } else if( r._dt != null ) { // Not yet seen the ACKACK?
-          r.resend_ack();            // Resend ACK, hoping for ACKACK
-          PENDING.add(r);            // And queue up to send again
+        long currenTime = System.currentTimeMillis();
+        for(H2ONode h2o:H2O.CLOUD._memary) {
+          if(h2o != H2O.SELF) {
+            for(RPCCall rpc:h2o._work.values()) {
+              if((rpc._started + rpc._retry) < currenTime) {
+                // RPC from somebody who dropped out of cloud?
+                if( (!H2O.CLOUD.contains(rpc._client) && !rpc._client._heartbeat._client) ||
+                  // Timedout client?
+                  (rpc._client._heartbeat._client && rpc._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
+                  rpc._client.remove_task_tracking(rpc._tsknum);
+                } else if(rpc._started + rpc._retry < currenTime) {
+                  if (rpc._computed) {
+                    if (rpc._computedAndReplied) {
+                      DTask dt = rpc._dt;
+                      if(dt != null) {
+                        if (++rpc._ackResendCnt % 5 == 0)
+                          Log.warn("Got " + rpc._ackResendCnt + " resends on ack for task # " + rpc._tsknum + ", class = " + dt.getClass().getSimpleName());
+                        rpc.resend_ack();
+                      }
+                    }
+                  } else if(rpc._nackResendCnt == 0) { // else send nack
+                    ++rpc._nackResendCnt;
+                    rpc.send_nack();
+                  }
+                }
+              }
+            }
+          }
         }
+        long timeElapsed = System.currentTimeMillis()-currenTime;
+        if(timeElapsed < 1000)
+          try {Thread.sleep(1000-timeElapsed);} catch (InterruptedException e) {}
       }
     }
   }
