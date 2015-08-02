@@ -45,7 +45,7 @@ public class Distribution extends Iced {
   // helper - sanitized exponential function
   public static double exp(double x) {
     double val = Math.min(MAX, Math.exp(x));
-    if (val == MAX) Log.warn("Exp overflow: exp(" + x + ") truncated to " + MAX);
+//    if (val == MAX) Log.warn("Exp overflow: exp(" + x + ") truncated to " + MAX);
     return val;
   }
 
@@ -53,7 +53,7 @@ public class Distribution extends Iced {
   public static double log(double x) {
     x = Math.max(0,x);
     double val = x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
-    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
+//    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
     return val;
   }
 
