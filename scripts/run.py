@@ -934,6 +934,20 @@ class TestRunner:
             if (root.endswith("Util")):
                 continue
 
+            # http://stackoverflow.com/questions/18282370/os-walk-iterates-in-what-order
+            # os.walk() yields in each step what it will do in the next steps. 
+            # You can in each step influence the order of the next steps by sorting the 
+            # lists the way you want them. Quoting the 2.7 manual:
+
+            # When topdown is True, the caller can modify the dirnames list in-place 
+            # (perhaps using del or slice assignment), and walk() will only recurse into the 
+            # subdirectories whose names remain in dirnames; this can be used to prune the search, 
+            # impose a specific order of visiting
+
+            # So sorting the dirNames will influence the order in which they will be visited:
+            # do an inplace sort of dirs. Could do an inplace sort of files too, but sorted() is fine next.
+            dirs.sort()
+
             # always do same order, for determinism when run on different machines
             for f in sorted(files):
                 # Figure out if the current file under consideration is a test.
