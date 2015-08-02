@@ -137,6 +137,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr._ncols = len(fr._col_names)
   fr._computed = True
   fr._id = id
+  fr._keep = True
   return fr
 
 def _quoted(key):
@@ -366,8 +367,11 @@ def run_test(sys_args, test_to_run):
   log_and_echo("")
   log_and_echo("------------------------------------------------------------")
   num_keys = store_size()
-  test_to_run(ip, port)
-  if keys_leaked(num_keys): print "Leaked Keys!"
+  try:
+    test_to_run(ip, port)
+  finally:
+    remove_all()
+    if keys_leaked(num_keys): print "Leaked Keys!"
 
 def ou():
   """
@@ -627,7 +631,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   """
   Initiate an H2O connection to the specified ip and port.
 
-  :param ip: An IP address, default is "localhost"
+  :param ip: A string representing the hostname or IP address of the server where H2O is running.
   :param port: A port, default is 54321
   :param size: THe expected number of h2o instances (ignored if start_h2o is True)
   :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
@@ -676,8 +680,98 @@ def shutdown(conn=None, prompt=True):
 
 def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
+  Build a supervised Deep Learning model
+  Performs Deep Learning neural networks on an H2OFrame
 
+  :param x: An H2OFrame containing the predictors in the model.
+  :param y: An H2OFrame of the response variable in the model.
+  :param training_frame: (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they
+  aren't already provided in x.
+  :param model_id: (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically
+  be generated.
+  :param overwrite_with_best_model: Logical. If True, overwrite the final model with the best model found during
+  training. Defaults to True.
+  :param validation_frame: (Optional) An H2OFrame object indicating the validation dataset used to construct the
+  confusion matrix. If left blank, this defaults to the training data when nfolds = 0
+  :param checkpoint: "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+  :param autoencoder: Enable auto-encoder for model building.
+  :param use_all_factor_levels: Logical. Use all factor levels of categorical variance. Otherwise the first factor
+  level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.
+  :param activation: A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout",
+  "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
+  :param hidden: Hidden layer sizes (e.g. c(100,100))
+  :param epochs: How many times the dataset should be iterated (streamed), can be fractional
+  :param train_samples_per_iteration: Number of training samples (globally) per MapReduce iteration. Special values
+  are: 0 one epoch; -1 all available data (e.g., replicated training data); or -2 auto-tuning (default)
+  :param seed: Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+  :param adaptive_rate: Logical. Adaptive learning rate (ADAELTA)
+  :param rho: Adaptive learning rate time decay factor (similarity to prior updates)
+  :param epsilon: Adaptive learning rate parameter, similar to learn rate annealing during initial training phase.
+  Typical values are between 1.0e-10 and 1.0e-4
+  :param rate: Learning rate (higher => less stable, lower => slower convergence)
+  :param rate_annealing: Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
+  :param rate_decay: Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
+  :param momentum_start: Initial momentum at the beginning of training (try 0.5)
+  :param momentum_ramp: Number of training samples for which momentum increases
+  :param momentum_stable: Final momentum after the amp is over (try 0.99)
+  :param nesterov_accelerated_gradient: Logical. Use Nesterov accelerated gradient (recommended)
+  :param input_dropout_ratio: A fraction of the features for each training row to be omitted from training in order
+  to improve generalization (dimension sampling).
+  :param hidden_dropout_ratios: Input layer dropout ratio (can improve generalization) specify one value per hidden
+  layer, defaults to 0.5
+  :param l1: L1 regularization (can add stability and improve generalization, causes many weights to become 0)
+  :param l2: L2 regularization (can add stability and improve generalization, causes many weights to be small)
+  :param max_w2: Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
+  :param initial_weight_distribution: Can be "Uniform", "UniformAdaptive", or "Normal"
+  :param initial_weight_scale: Uniform: -value ... value, Normal: stddev
+  :param loss: Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute"
+  (experimental) or "Huber" (experimental)
+  :param distribution: A character string. The distribution function of the response. Must be "AUTO", "bernoulli",
+  "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber" or "gaussian"
+  :param tweedie_power: Tweedie power (only for Tweedie distribution, must be between 1 and 2)
+  :param score_interval: Shortest time interval (in secs) between model scoring
+  :param score_training_samples: Number of training set samples for scoring (0 for all)
+  :param score_validation_samples: Number of validation set samples for scoring (0 for all)
+  :param score_duty_cycle: Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring)
+  :param classification_stop: Stopping criterion for classification error fraction on training data (-1 to disable)
+  :param regression_stop: Stopping criterion for regression error (MSE) on training data (-1 to disable)
+  :param quiet_mode: Enable quiet mode for less output to standard output
+  :param max_confusion_matrix_size: Max. size (number of classes) for confusion matrices to be shown
+  :param max_hit_ratio_k: Max number (top K) of predictions to use for hit ratio computation(for multi-class only, 0
+  to disable)
+  :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data)
+  :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
+  specified, sampling factors will be automatically computed to obtain class balance during training. Requires
+  balance_classes.
+  :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less
+  than 1.0)
+  :param score_validation_sampling: Method used to sample validation dataset for scoring
+  :param diagnostics: Enable diagnostics for hidden layers
+  :param variable_importances: Compute variable importances for input features (Gedeon method) - can be slow for large
+  networks)
+  :param fast_mode: Enable fast mode (minor approximations in back-propagation)
+  :param ignore_const_cols: Ignore constant columns (no information can be gained anyway)
+  :param force_load_balance: Force extra load balancing to increase training speed for small datasets (to keep all
+  cores busy)
+  :param replicate_training_data: Replicate the entire training dataset onto every node for faster training
+  :param single_node_mode: Run on a single node for fine-tuning of model parameters
+  :param shuffle_training_data: Enable shuffling of training data (recommended if training data is replicated and
+  train_samples_per_iteration is close to \eqn{numRows*numNodes
+  :param sparse: Sparse data handling (Experimental)
+  :param col_major: Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow
+  down backpropagation (Experimental)
+  :param average_activation: Average activation for sparse auto-encoder (Experimental)
+  :param sparsity_beta: Sparsity regularization (Experimental)
+  :param max_categorical_features: Max. number of categorical features, enforced via hashing Experimental)
+  :param reproducible: Force reproducibility on small data (will be slow - only uses 1 thread)
+  :param export_weights_and_biases: Whether to export Neural Network weights and biases to H2O Frames"
+  :param offset_column: Specify the offset column.
+  :param weights_column: Specify the weights column.
+  :param nfolds: (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  :param fold_column: (Optional) Column with cross-validation fold index assignment per observation
+  :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO",
+  "Random" or "Modulo"
+  :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :return: Return a new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
@@ -696,8 +790,43 @@ def autoencoder(x,**kwargs):
 
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Gradient Boosted Method model (kwargs are the same arguments that you can find in FLOW)
+  Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
+  The default distribution function will guess the model type based on the response column typerun properly the
+  response column must be an numeric for "gaussian" or an enum for "bernoulli" or "multinomial".
 
+  :param x: An H2OFrame containing the predictors in the model.
+  :param y: An H2OFrame of the response variable in the model.
+  :param training_frame: (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they
+  aren't already provided in x.
+  :param model_id: (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically
+  be generated.
+  :param distribution: A character string. The distribution function of the response. Must be "AUTO", "bernoulli",
+  "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+  :param tweedie_power: Tweedie power (only for Tweedie distribution, must be between 1 and 2)
+  :param ntrees: A nonnegative integer that determines the number of trees to grow.
+  :param max_depth: Maximum depth to grow the tree.
+  :param min_rows: Minimum number of rows to assign to teminal nodes.
+  :param learn_rate: An integer from 0.0 to 1.0
+  :param nbins: For numerical columns (real/int), build a histogram of this many bins, then split at the best point
+  :param nbins_cats: For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+  Higher values can lead to more overfitting.
+  :param validation_frame: An H2OFrame object indicating the validation dataset used to contruct the confusion matrix.
+  If left blank, this defaults to the training data when nfolds = 0
+  :param balance_classes: logical, indicates whether or not to balance training data class counts via
+  over/under-sampling (for imbalanced data)
+  :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less
+  than 1.0)
+  :param seed: Seed for random numbers (affects sampling when balance_classes=T)
+  :param build_tree_one_node: Run on one node only; no network overhead but fewer cpus used.  Suitable for small
+  datasets.
+  :param nfolds: (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  :param fold_column: (Optional) Column with cross-validation fold index assignment per observation
+  :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO",
+  "Random" or "Modulo"
+  :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
+  :param score_each_iteration: Attempts to score each tree.
+  :param offset_column: Specify the offset column.
+  :param weights_column: Specify the weights column.
   :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
@@ -705,16 +834,77 @@ def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
 
 def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW)
+  Build a Generalized Linear Model
+  Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
+  distribution.
 
-  :return: A new regression or binomial classifier.
+  :param x: An H2OFrame containing the predictors in the model.
+  :param y: An H2OFrame of the response variable in the model.
+  :param training_frame: (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they
+  aren't already provided in x.
+  :param model_id: (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically
+  be generated.
+  :param validation_frame: An H2OFrame object containing the variables in the model.
+  :param max_iterations: A non-negative integer specifying the maximum number of iterations.
+  :param beta_epsilon: A non-negative number specifying the magnitude of the maximum difference between the coefficient
+  estimates from successive iterations. Defines the convergence criterion for h2o.glm.
+  :param solver: A character string specifying the solver used: IRLSM (supports more features), L_BFGS (scales better
+  for datasets with many columns)
+  :param standardize: A logical value indicating whether the numeric predictors should be standardized to have a mean
+  of 0 and a variance of 1 prior to training the models.
+  :param family: A character string specifying the distribution of the model:  gaussian, binomial, poisson, gamma,
+  tweedie.
+  :param link: A character string specifying the link function. The default is the canonical link for the family.
+  The supported links for each of the family specifications are:
+          "gaussian": "identity", "log", "inverse"
+          "binomial": "logit", "log"
+          "poisson": "log", "identity"
+          "gamma": "inverse", "log", "identity"
+          "tweedie": "tweedie"
+  :param tweedie_variance_power: A numeric specifying the power for the variance function when family = "tweedie".
+  :param tweedie_link_power: A numeric specifying the power for the link function when family = "tweedie".
+  :param alpha: A numeric in [0, 1] specifying the elastic-net mixing parameter.
+  The elastic-net penalty is defined to be:
+  eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
+  making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
+  :param lambda: A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in
+  the objective function. When lambda = 0, no elastic-net penalty is applied and ordinary generalized linear
+  models are fit.
+  :param prior: (Optional) A numeric specifying the prior probability of class 1 in the response when family =
+  "binomial". The default prior is the observational frequency of class 1.
+  :param lambda_search: A logical value indicating whether to conduct a search over the space of lambda values starting
+  from the lambda max, given lambda is interpreted as lambda min.
+  :param nlambdas: The number of lambda values to use when lambda_search = TRUE.
+  :param lambda_min_ratio: Smallest value for lambda as a fraction of lambda.max. By default if the number of
+  observations is greater than the the number of variables then lambda_min_ratio = 0.0001; if the number of
+  observations is less than the number of variables then lambda_min_ratio = 0.01.
+  :param beta_constraints: A data.frame or H2OParsedData object with the columns ["names", "lower_bounds",
+  "upper_bounds", "beta_given"], where each row corresponds to a predictor in the GLM. "names" contains the predictor
+  names, "lower"/"upper_bounds", are the lower and upper bounds of beta, and "beta_given" is some supplied starting
+  values for the
+  :param offset_column: Specify the offset column.
+  :param weights_column: Specify the weights column.
+  :param nfolds: (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must
+  remain empty.
+  :param fold_column: (Optional) Column with cross-validation fold index assignment per observation
+  :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO",
+  "Random" or "Modulo"
+  :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
+  :param intercept: Logical, include constant term (intercept) in the model
+  :return: A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand (if
+  it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a H2ORegressionModel is
+  returned). The default print-out of the models is shown, but further GLM-specifc information can be queried out of
+  the object.
+  Upon completion of the GLM, the resulting object has coefficients, normalized coefficients, residual/null deviance,
+  aic, and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion
+  matrices.
   """
   kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
 
 def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW).
+  Build a Generalized Linear Model
   Note: this function is the same as glm(), but it doesn't block on model-build. Instead, it returns and H2OModelFuture
   object immediately. The model can be retrieved from the H2OModelFuture object with get_future_model().
 
@@ -726,17 +916,70 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
 
 def kmeans(x,validation_x=None,**kwargs):
   """
-  Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
+  Performs k-means clustering on an H2O dataset.
 
-  :return: A new clustering model
+  :param x: (Optional) A vector containing the data columns on which k-means operates.
+  :param k: The number of clusters. Must be between 1 and 1e7 inclusive. k may be omitted if the user specifies the
+  initial centers in the init parameter. If k is not omitted, in this case, then it should be equal to the number of
+  user-specified centers.
+  :param model_id: (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically
+  be generated.
+  :param max_iterations: The maximum number of iterations allowed. Must be between 0 and 1e6 inclusive.
+  :param standardize: Logical, indicates whether the data should be standardized before running k-means.
+  :param init: A character string that selects the initial set of k cluster centers. Possible values are "Random": for
+  random initialization, "PlusPlus": for k-means plus initialization, or "Furthest": for initialization at the furthest
+  point from each successive center. Additionally, the user may specify a the initial centers as a matrix, data.frame,
+  H2OFrame, or list of vectors. For matrices, data.frames, and H2OFrames, each row of the respective structure is an
+  initial center. For lists of vectors, each vector is an initial center.
+  :param seed: (Optional) Random seed used to initialize the cluster centroids.
+  :param nfolds: (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must
+  remain empty.
+  :param fold_column: (Optional) Column with cross-validation fold index assignment per observation
+  :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO",
+  "Random" or "Modulo"
+  :return: Returns an object of class H2OClusteringModel.
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Random Forest Model (kwargs are the same arguments that you can find in FLOW)
+  Build a Big Data Random Forest Model
+  Builds a Random Forest Model on an H2OFrame
 
+  :param x: An H2OFrame containing the predictors in the model.
+  :param y: An H2OFrame of the response variable in the model.
+  :param training_frame: (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they
+  aren't already provided in x.
+  :param model_id: (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically
+  be generated.
+  :param mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p
+  for classification, and p/3 for regression, where p is the number of predictors.
+  :param sample_rate: Sample rate, from 0 to 1.0.
+  :param build_tree_one_node: Run on one node only; no network overhead but fewer cpus used.  Suitable for small
+  datasets.
+  :param ntrees: A nonnegative integer that determines the number of trees to grow.
+  :param max_depth: Maximum depth to grow the tree.
+  :param min_rows: Minimum number of rows to assign to teminal nodes.
+  :param nbins: For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+  :param nbins_cats: For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+  Higher values can lead to more overfitting.
+  :param binomial_double_trees: For binary classification: Build 2x as many trees (one per class) - can lead to higher
+  accuracy.
+  :param validation_frame: An H2OFrame object containing the variables in the model.
+  :param balance_classes: logical, indicates whether or not to balance training data class counts via
+  over/under-sampling (for imbalanced data)
+  :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less
+  than 1.0)
+  :param seed: Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+  :param offset_column: Specify the offset column.
+  :param weights_column: Specify the weights column.
+  :param nfolds: (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must
+  remain empty.
+  :param fold_column: (Optional) Column with cross-validation fold index assignment per observation
+  :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO",
+  "Random" or "Modulo"
+  :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :return: A new classifier or regression model.
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
@@ -819,7 +1062,7 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
 
   :param id: A string indicating the destination key. If empty, this will be auto-generated by H2O.
   :param rows: The number of rows of data to generate.
-  :param cols: The number of columns of data to generate. Excludes the response column if has_response == True}.
+  :param cols: The number of columns of data to generate. Excludes the response column if has_response == True.
   :param randomize: A logical value indicating whether data values should be randomly generated. This must be TRUE if
   either categorical_fraction or integer_fraction is non-zero.
   :param value: If randomize == FALSE, then all real-valued entries will be set to this value.

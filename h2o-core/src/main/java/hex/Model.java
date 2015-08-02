@@ -113,6 +113,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  avoid printing extremely large confusion matrices.  */
     public int _max_confusion_matrix_size = 20;
 
+    /**
+     * A model key associated with a previously trained Deep Learning
+     * model. This option allows users to build a new model as a
+     * continuation of a previously generated model.
+     */
+    public Key<? extends Model> _checkpoint;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
@@ -148,6 +155,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  will preserve the sparseness.  Otherwise, NaN is used.
      *  @return real-valued number (can be NaN)  */
     public double missingColumnsType() { return Double.NaN; }
+
+    public boolean hasCheckpoint() { return _checkpoint != null; }
 
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
@@ -290,7 +299,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
      *  (run-time, etc) but that has to wait until Job is split from
      *  ModelBuilder. */
-    public Job.JobState _state;
+    public Job.JobState _status;
+    public long _start_time;
+    public long _end_time;
+    public long _run_time;
 
     /**
      * Training set metrics obtained during model training
@@ -389,14 +401,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               getModelCategory().ordinal();
     }
 
-    private void printTwoDimTables(StringBuilder sb, Object o) {
+    public void printTwoDimTables(StringBuilder sb, Object o) {
       for (Field f : Weaver.getWovenFields(o.getClass())) {
         Class<?> c = f.getType();
         if (c.isAssignableFrom(TwoDimTable.class)) {
           try {
             TwoDimTable t = (TwoDimTable) f.get(this);
             f.setAccessible(true);
-            if (t != null) sb.append(t.toString());
+            if (t != null) sb.append(t.toString(1,false /*don't print the full table if too long*/));
           } catch (IllegalAccessException e) {
             e.printStackTrace();
           }
@@ -406,6 +418,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
+      if (_training_metrics!=null) sb.append(_training_metrics.toString());
+      if (_validation_metrics!=null) sb.append(_validation_metrics.toString());
+      if (_cross_validation_metrics!=null) sb.append(_cross_validation_metrics.toString());
       printTwoDimTables(sb, this);
       return sb.toString();
     }
@@ -1051,6 +1066,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (m!=null) m.delete(); //delete all subparts
       }
     }
+  }
+
+  @Override public String toString() {
+    return _output.toString();
   }
 
 }

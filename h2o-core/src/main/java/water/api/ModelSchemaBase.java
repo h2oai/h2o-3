@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import water.Iced;
 import water.api.KeyV3.ModelKeyV3;
+import water.api.KeyV3.FrameKeyV3;
 
 /**
  * A Model schema contains all the pieces associated with a Model:
@@ -33,12 +34,23 @@ public class ModelSchemaBase<M extends Iced, S extends Schema<M, S>>
   @API(help="The pretty algo name for this Model (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
   public String algo_full_name;
 
+  @API(help="The response column name for this Model (if applicable). Is null otherwise.", direction=API.Direction.OUTPUT)
+  public String response_column_name;
+
+  @API(help="The Model\'s training frame key", direction=API.Direction.OUTPUT)
+  public FrameKeyV3 data_frame;
+
+  @API(help="Timestamp for when this model was completed", direction=API.Direction.OUTPUT)
+  public long timestamp;
+
   public ModelSchemaBase(Model m) {
 
     super();
     this.model_id = new ModelKeyV3(m._key);
     this.algo = ModelBuilder.getAlgo(m);
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
-    
+    this.data_frame = new FrameKeyV3(m._parms._train);
+    this.response_column_name = m._parms._response_column;
+    this.timestamp = m._output._end_time;
   }
 }

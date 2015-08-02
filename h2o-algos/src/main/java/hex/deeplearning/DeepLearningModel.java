@@ -667,7 +667,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
           // print the freshly scored model to ASCII
           if (keep_running && printme)
-            for (String s : toString().split("\n")) Log.info(s);
+            Log.info(toString());
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
       }
@@ -688,11 +688,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     return keep_running;
  }
-
-  @Override public String toString() {
-    return _output.toString();
-  }
-
   /** Make either a prediction or a reconstruction.
    * @param orig Test dataset
    * @param adaptedFr Test dataset, adapted to the model

@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/prostate.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/prostate.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/prostate.csv\"]\n  destination_frame: \"prostate1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"prostate1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"prostate1.hex\", [0.2], [\"prostate1_test.hex_0.20\",\"prostate1_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-fc369bb4-f5df-45bc-b70f-17e7dc4fb51c\",\"training_frame\":\"prostate1_train.hex_0.80\",\"validation_frame\":\"prostate1_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"GLEASON\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-3066459513079324000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-fc369bb4-f5df-45bc-b70f-17e7dc4fb51c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-fc369bb4-f5df-45bc-b70f-17e7dc4fb51c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-fc369bb4-f5df-45bc-b70f-17e7dc4fb51c\", frame: \"prostate1_test.hex_0.20\", predictions_frame: \"prediction-021851aa-6d85-43ab-b5d8-ab0e235fc150\""
+    }
+  ]
+}

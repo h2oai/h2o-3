@@ -364,6 +364,8 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(model.parts$tm) ) print(model.parts$tm)
   cat("\n")
   if( !is.null(model.parts$vm) ) print(model.parts$vm)
+  cat("\n")
+  if( !is.null(model.parts$xm) ) print(model.parts$xm)
 })
 
 #'
@@ -408,7 +410,8 @@ setMethod("summary", "H2OModel", function(object, ...) {
 
 .showMultiMetrics <- function(o, which="Training") {
   arg <- "train"
-  if( which == "Validation" ) arg <- "valid"
+  if( which == "Validation" ) { arg <- "valid"
+  } else if ( which == "Cross-Validation" ) { arg <- "xval" }
   tm <- o@metrics
   cat(which, "Set Metrics: \n")
   cat("=====================\n")
@@ -422,8 +425,8 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$null_deviance)                    )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
   if( !is.null(tm$AIC)                              )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
-  if( !is.null(tm$cm)                               )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
-  if( !is.null(tm$cm)                               )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
+  if( !is.null(tm$cm)                               )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n")); } }
+  if( !is.null(tm$cm)                               )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) } }
   if( !is.null(tm$hit_ratio_table)                  )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
   if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
@@ -550,8 +553,8 @@ setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@mod
 #' @aliases H2OModelMetrics
 #' @export
 setClass("H2OModelMetrics",
-         representation(algorithm="character", on_train="logical", metrics="listOrNull"),
-         prototype(algorithm=NA_character_, on_train=FALSE, metrics=NULL),
+         representation(algorithm="character", on_train="logical", on_valid="logical", on_xval="logical", metrics="listOrNull"),
+         prototype(algorithm=NA_character_, on_train=FALSE, on_valid=FALSE, on_xval=FALSE, metrics=NULL),
          contains="VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
@@ -560,7 +563,8 @@ setClass("H2OModelMetrics",
 setMethod("show", "H2OModelMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n", sep="")
     if( object@on_train ) cat("** Reported on training data. **\n")
-    else                  cat("** Reported on validation data. **\n")
+    if( object@on_valid ) cat("** Reported on validation data. **\n")
+    if( object@on_xval ) cat("** Reported on cross-validation data. **\n")
     if( !is.null(object@metrics$description) ) cat("Description: ", object@metrics$description, "\n\n", sep="")
     else                                       cat("\n")
 })
@@ -606,7 +610,8 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)  # call super
     if( object@on_train ) .showMultiMetrics(object, "Training")
-    else                  .showMultiMetrics(object, "Validation")
+    if( object@on_valid ) .showMultiMetrics(object, "Validation")
+    if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
@@ -618,6 +623,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   callNextMethod(object)
   cat("MSE:  ", object@metrics$MSE, "\n", sep="")
   cat("R2 :  ", h2o.r2(object), "\n", sep="")
+  cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
   null_dev <- h2o.null_deviance(object)
   res_dev  <- h2o.residual_deviance(object)
   null_dof <- h2o.null_dof(object)
@@ -657,7 +663,8 @@ setMethod("show", "H2OAutoEncoderMetrics", function(object) {
     callNextMethod(object)  # call super
     object@metrics$frame$name <- NULL
     if( object@on_train ) .showMultiMetrics(object, "Training")
-    else                  .showMultiMetrics(object, "Validation")
+    if( object@on_valid ) .showMultiMetrics(object, "Validation")
+    if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class

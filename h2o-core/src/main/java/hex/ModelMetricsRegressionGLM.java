@@ -21,7 +21,15 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression {
     _residualDegressOfFreedom = rDof;
   }
 
-  public String toString(){
-    return "DOF = " + _residualDegressOfFreedom + " (" + _nullDegressOfFreedom + "), dev = " + _resDev + " (" + _nullDev + ")";
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" null DOF: " + (float)_nullDegressOfFreedom + "\n");
+    sb.append(" residual DOF: " + (float)_residualDegressOfFreedom + "\n");
+    sb.append(" null deviance: " + (float)_nullDev + "\n");
+    sb.append(" residual deviance: " + (float)_resDev + "\n");
+    sb.append(" AIC: " + (float)_AIC + "\n");
+    return sb.toString();
   }
 }

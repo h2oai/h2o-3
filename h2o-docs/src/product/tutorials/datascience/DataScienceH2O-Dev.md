@@ -219,9 +219,9 @@ The GLM suite includes:
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
 
-- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
 - **Intercept**: To include a constant term in the model, check this checkbox. This option is selected by default. 
 
@@ -427,6 +427,8 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0. 
 
+- **Checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
+ 
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. 
@@ -441,9 +443,9 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
-- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
@@ -928,6 +930,8 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
 
+- **Tweedie_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
+
 - **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
 - **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
@@ -936,13 +940,15 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 
 - **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
+- **Checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
+
 - **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
 - **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
-- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
  
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
@@ -1117,6 +1123,10 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Loss**:  Select the loss function. The options are automatic, mean square, cross-entropy, Huber, or Absolute and the default value is automatic. 
 
+- **Distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+
+- **Tweedie_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
+
 - **Score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring.  
 
 - **Score\_training\_samples**: Specify the number of training set samples for scoring. To use all training samples, enter 0.  
@@ -1125,9 +1135,9 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
-- **Keep\_cross\_validation\_splits**: To keep the cross-validation frames, check this checkbox. 
+- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or Modulo. 
+- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
 
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
@@ -1169,7 +1179,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **Average_activation**: Specify the average activation for the sparse autoencoder.  
 
-- **Sparsity_beta**: Specify the sparsity regularization.   
+- **Sparsity_beta**: Specify the sparsity-based regularization optimization. For more information, refer to the following [link](http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf).  
+  
 
 - **Max\_categorical\_features**: Specify the maximum number of categorical features enforced via hashing.
 
@@ -1226,9 +1237,18 @@ To view the results, click the View button. The output for the Deep Learning mod
   
 - **What if there are a large number of categorical factor levels?**
 
-This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max_categorical_features` to use feature hashing to reduce the dimensionality.
+	This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max_categorical_features` to use feature hashing to reduce the dimensionality.
+
+- **How does your Deep Learning Autoencoder work? Is it deep or shallow?**
+
+	H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer.  The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers.  We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R). 
 
 ###Deep Learning Algorithm 
+
+To compute deviance for a Deep Learning regression model, the following formula is used: 
+
+Loss = MeanSquare -> MSE==Deviance
+For Absolute/Laplace or Huber -> MSE != Deviance
 
 For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](https://leanpub.com/deeplearning/read). 
 

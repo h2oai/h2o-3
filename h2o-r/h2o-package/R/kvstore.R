@@ -34,7 +34,7 @@
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -62,7 +62,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -172,7 +172,7 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #'        from the H2O cluster when the R proxy object is garbage collected.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #'
@@ -197,8 +197,9 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   MetricsClass <- paste0("H2O", model_category, "Metrics")
   # setup the metrics objects inside of model...
-  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
-  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
+  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
+  model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
@@ -272,7 +273,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' @return If path is "", then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' h <- h2o.init(nthreads=-1)
 #' fr <- as.h2o(iris)

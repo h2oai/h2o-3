@@ -19,8 +19,10 @@ class ConfusionMatrix(object):
     class_err_strings = [0] * nclass
     cell_values = [[0] * (1 + nclass)] * (1 + nclass)
     totals = [sum(c) for c in cm]
+    total_errs=0
     for i in range(nclass):
       class_errs[i] = sum([v[i] for v in cm[:i] + cm[(i + 1):]])
+      total_errs += class_errs[i]
       class_sums[i] = sum([v[i] for v in cm])  # row sums
       class_err_strings[i] = \
           " (" + str(class_errs[i]) + "/" + str(class_sums[i]) + ")"
@@ -31,10 +33,9 @@ class ConfusionMatrix(object):
     # tally up the totals
     class_errs += [sum(class_errs)]
     totals += [sum(class_sums)]
-    class_err_strings += [" (" + str(class_errs[-1]) + "/" + str(totals[-1]) + ")"]
+    class_err_strings += [" (" + str(total_errs) + "/" + str(totals[-1]) + ")"]
 
-    class_errs[i] = float("nan") if totals[-1] == 0 else round(float(class_errs[-1]) / float(totals[-1]), self.ROUND)
-    class_err_strings[-1] = class_err_strings[-1]
+    class_errs[-1] = float("nan") if totals[-1] == 0 else round(float(total_errs) / float(totals[-1]), self.ROUND)
 
     # do the last row of cell_values ... the "totals" row
     cell_values[-1] = totals[0:-1] + [str(class_errs[-1])] + [class_err_strings[-1]]

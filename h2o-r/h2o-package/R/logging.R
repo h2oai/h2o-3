@@ -47,7 +47,7 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
 #' @seealso \code{\link{h2o.stopLogging}, \link{h2o.clearLog},
 #'          \link{h2o.openLog}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O = h2o.init()
 #' h2o.startLogging()
@@ -76,7 +76,7 @@ h2o.startLogging <- function(file) {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.clearLog},
 #'          \link{h2o.openLog}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O = h2o.init()
 #' h2o.startLogging()
@@ -98,7 +98,7 @@ h2o.stopLogging <- function() {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
 #'          \link{h2o.openLog}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O = h2o.init()
 #' h2o.startLogging()
@@ -122,7 +122,7 @@ h2o.clearLog <- function() {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
 #'          \link{h2o.clearLog}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' localH2O = h2o.init()
 #'
 #' h2o.startLogging()

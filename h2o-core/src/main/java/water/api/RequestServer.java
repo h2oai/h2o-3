@@ -866,7 +866,7 @@ public class RequestServer extends NanoHTTPD {
     return "h2ologs_" + now;
   }
 
-  private byte[] zipLogs(byte[][] results, String topDir) throws IOException {
+  private byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
     int l = 0;
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (int i = 0; i<results.length;l+=results[i++].length);
@@ -884,12 +884,23 @@ public class RequestServer extends NanoHTTPD {
       for (int i =0; i<results.length; i++) {
         String filename =
                 topDir + File.separator +
-                        "node" + i +
-                        H2O.CLOUD._memary[i].toString().replace(':', '_').replace('/', '_') +
+                        "node" + i + "_" +
+                        H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
                         ".zip";
         ZipEntry ze = new ZipEntry(filename);
         zos.putNextEntry(ze);
         zos.write(results[i]);
+        zos.closeEntry();
+      }
+
+      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
+      if (clientResult != null) {
+        String filename =
+                topDir + File.separator +
+                        "driver.zip";
+        ZipEntry ze = new ZipEntry(filename);
+        zos.putNextEntry(ze);
+        zos.write(clientResult);
         zos.closeEntry();
       }
 
@@ -908,6 +919,7 @@ public class RequestServer extends NanoHTTPD {
 
     H2ONode[] members = H2O.CLOUD.members();
     byte[][] perNodeZipByteArray = new byte[members.length][];
+    byte[] clientNodeByteArray = null;
 
     for (int i = 0; i < members.length; i++) {
       byte[] bytes;
@@ -931,10 +943,26 @@ public class RequestServer extends NanoHTTPD {
       perNodeZipByteArray[i] = bytes;
     }
 
+    if (H2O.ARGS.client) {
+      byte[] bytes;
+
+      try {
+        GetLogsFromNode g = new GetLogsFromNode();
+        g.nodeidx = -1;
+        g.doIt();
+        bytes = g.bytes;
+      }
+      catch (Exception e) {
+        bytes = e.toString().getBytes();
+      }
+
+      clientNodeByteArray = bytes;
+    }
+
     String outputFileStem = getOutputLogStem();
     byte[] finalZipByteArray;
     try {
-      finalZipByteArray = zipLogs(perNodeZipByteArray, outputFileStem);
+      finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
       finalZipByteArray = e.toString().getBytes();
