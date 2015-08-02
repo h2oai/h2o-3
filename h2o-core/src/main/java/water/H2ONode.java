@@ -1,8 +1,6 @@
 package water;
 
-import water.AutoBuffer.BBPool;
 import water.RPC.RPCCall;
-import water.UDP.udp;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.DocGen.HTML;
@@ -15,7 +13,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
-import java.util.concurrent.DelayQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -219,33 +216,27 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   private SocketChannel _rawChannel;
 
+  public static class H2OSmallMessage implements Comparable<H2OSmallMessage> {
+    private int _priority;
+    final private byte [] _data;
 
-
-
-//  public synchronized void restartSmallTCP(){
-//    if(_rawChannel == null) return;
-//    try {
-//      _rawChannel.close();;
-//    } catch (IOException ioe) {}
-//    _rawChannel = null;
-//  }
-
-  private static class UDPMessage implements Comparable<UDPMessage> {
-    int _priority;
-    public final byte [] _data;
-
-    public UDPMessage(byte [] data, int priority) {
+    public H2OSmallMessage(byte[] data, int priority) {
       _data = data;
       _priority = priority;
     }
     @Override
-    public int compareTo(UDPMessage o) {
-      return _priority - o._priority;
+    public int compareTo(H2OSmallMessage o) {
+      return o._priority - _priority;
+    }
+
+    public void increasePriority() {++_priority;}
+    public static H2OSmallMessage make(ByteBuffer bb, int priority) {
+      return new H2OSmallMessage(Arrays.copyOf(bb.array(), bb.limit()),priority);
     }
   }
 
 
-  private final PriorityBlockingQueue<UDPMessage> _msgQ = new PriorityBlockingQueue<>();
+  private final PriorityBlockingQueue<H2OSmallMessage> _msgQ = new PriorityBlockingQueue<>();
 
   private class UDP_TCP_SendThread extends Thread {
     private final ByteBuffer _bb;
@@ -274,6 +265,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             sock.configureBlocking(blocking);
             assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
             _rawChannel = sock;
+            _rawChannel.setOption(StandardSocketOptions.TCP_NODELAY,true);
           }
           while (_bb.hasRemaining())
             _rawChannel.write(_bb);
@@ -296,7 +288,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
       try {
         while (true) {
           try {
-            UDPMessage m = _msgQ.take();
+            H2OSmallMessage m = _msgQ.take();
             while (m != null) {
               if (m._data.length > _bb.capacity())
                 throw new IllegalStateException("UDP message larger than the buffer");
@@ -317,53 +309,16 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   private UDP_TCP_SendThread _sendThread = null;
-  public void sendRaw(ByteBuffer bb, int priority) {
-    _msgQ.put(new UDPMessage(Arrays.copyOf(bb.array(),bb.limit()), -priority));
+
+  public void sendMessage(H2OSmallMessage msg) {
+    _msgQ.put(msg);
     if(_sendThread == null) synchronized(this) {
       if(_sendThread == null)
         (_sendThread = new UDP_TCP_SendThread()).start();
     }
   }
 
-  /**
-   * Send small message as raw bytes via tcp
-   * @param bb
-   */
-  public synchronized void sendRaw(ByteBuffer bb) {
-    int sleep = 0;
-    int sz = bb.limit();
-    while (true) {
-      bb.position(0);
-      bb.limit(sz);
-      assert bb.getShort(0) == sz-1:"unexpected size, got " + bb.getShort(0) + ", expected " + (sz-1);
-      assert (0xFF & bb.get(bb.getShort(0))) == 0xef:"sending message without the sentinel in the end?";
-      try {
-        if (_rawChannel == null || !_rawChannel.isOpen() || !_rawChannel.isConnected()) { // open the channel
-          // Must make a fresh socket
-            SocketChannel sock = SocketChannel.open();
-            sock.socket().setReuseAddress(true);
-            sock.socket().setSendBufferSize(AutoBuffer.BBP_SML.size());
-            InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort() + 1);
-            boolean res = sock.connect(isa);
-            boolean blocking = true;
-            sock.configureBlocking(blocking);
-            assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
-            _rawChannel = sock;
-        }
-        while (bb.hasRemaining())
-          _rawChannel.write(bb);
-        return;
-      } catch(IOException ioe) {
-        Log.err(ioe);
-        if(_rawChannel != null)
-          try {_rawChannel.close();} catch (Throwable t) {}
-        _rawChannel = null;
-        Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
-        sleep = Math.min(5000,(sleep + 1) << 1);
-        try {Thread.sleep(sleep);} catch (InterruptedException e) {}
-      }
-    }
-  }
+
   SocketChannel getTCPSocket() throws IOException {
     // Under lock, claim an existing open socket if possible
     synchronized(this) {

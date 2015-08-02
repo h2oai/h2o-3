@@ -1,5 +1,6 @@
 package water;
 
+import water.H2ONode.H2OSmallMessage;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -495,6 +496,14 @@ public /* final */ class AutoBuffer {
     _oldPrior = -1;
   }
 
+  private H2OSmallMessage _sentMsg;
+
+  public H2OSmallMessage takeSentMessage(){
+    H2OSmallMessage res = _sentMsg;
+    _sentMsg = null;
+    return res;
+  }
+
   // Send via UDP socket.  Unlike eg TCP sockets, we only need one for sending
   // so we keep a global one.  Also, we do not close it when done, and we do
   // not connect it up-front to a target - but send the entire packet right now.
@@ -513,7 +522,7 @@ public /* final */ class AutoBuffer {
       if(H2O.ARGS.useUDP)
         water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
       else
-        _h2o.sendRaw(_bb,priority);
+        _h2o.sendMessage(_sentMsg = H2OSmallMessage.make(_bb,_priority));
     }
     return 0;                   // Flow-coding
   }
