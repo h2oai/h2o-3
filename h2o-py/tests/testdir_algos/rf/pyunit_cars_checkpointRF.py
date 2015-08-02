@@ -105,5 +105,5 @@ def cars_checkpoint(ip,port):
         print "model2.r2", model2.r2, "model4.r2", model4.r2
         print "model3.r2", model2.r2, "model4.r2", model4.r2
 
-__name__ == "__main__":
+if __name__ == "__main__":
     h2o.run_test(sys.argv, cars_checkpoint)
