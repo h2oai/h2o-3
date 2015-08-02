@@ -2,8 +2,8 @@
 # Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning
 
 # TO DO: Normalize the ML "task" so that family and distribution args can be set...
-# Currently still using the family argument (backward compatibility to h2o-2)
-# however might just delete the family from the wrappers that don't use it (h2o.randomForest.wrapper)
+# Currently still using the family argument (backward compatibility with h2o-2)
+# however might just delete the family from the wrappers that don't use it such as `h2o.randomForest.wrapper`
 
 
 # h2o.glm.wrapper <- function(x, y, training_frame = training_frame, model_id = "", validation_frame = NULL, max_iterations = 50,
@@ -30,7 +30,7 @@
 # }
 
 
-# This is the hacked version for now
+# This is the hacked version for now which doesn't pass along all the args
 # Use this version until this is resolved: https://0xdata.atlassian.net/browse/PUBDEV-1558
 h2o.glm.wrapper <- function(x, y, training_frame = training_frame, model_id = "", validation_frame = NULL, max_iterations = 50,
                             beta_epsilon = 0, solver = c("IRLSM", "L_BFGS"), standardize = TRUE,
