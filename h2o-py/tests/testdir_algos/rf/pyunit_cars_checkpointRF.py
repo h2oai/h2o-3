@@ -71,22 +71,39 @@ def cars_checkpoint(ip,port):
 
     if problem == 0:
         assert isinstance(model2,type(model4))
+        print "model2.mse", model2.mse, "model4.mse", model4.mse
+        print "model3.mse", model2.mse, "model4.mse", model4.mse
         assert model2.mse(valid=True)==model4.mse(valid=True)
         assert model3.mse(valid=True)!=model4.mse(valid=True)
+
     elif problem == 1:
         assert isinstance(model2,type(model4))
+        print "model2.auc", model2.auc, "model4.auc", model4.auc
+        print "model3.auc", model2.auc, "model4.auc", model4.auc
         assert model2.auc(valid=True)==model4.auc(valid=True)
         assert model3.auc(valid=True)!=model4.auc(valid=True)
+
+        print "model2.logloss", model2.logloss, "model4.logloss", model4.logloss
+        print "model3.logloss", model2.logloss, "model4.logloss", model4.logloss
         assert model2.logloss(valid=True)==model4.logloss(valid=True)
         assert model3.logloss(valid=True)!=model4.logloss(valid=True)
+
+        print "model2.giniCoef", model2.giniCoef, "model4.giniCoef", model4.giniCoef
+        print "model3.giniCoef", model2.giniCoef, "model4.giniCoef", model4.giniCoef
         assert model2.giniCoef(valid=True)==model4.giniCoef(valid=True)
         assert model3.giniCoef(valid=True)!=model4.giniCoef(valid=True)
+
     else:
         assert isinstance(model2,type(model4))
         assert model2.mse(valid=True)==model4.mse(valid=True)
         assert model3.mse(valid=True)!=model4.mse(valid=True)
+        print "model2.mse", model2.mse, "model4.mse", model4.mse
+        print "model3.mse", model2.mse, "model4.mse", model4.mse
+
         assert model2.r2(valid=True)==model4.r2(valid=True)
         assert model3.r2(valid=True)!=model4.r2(valid=True)
+        print "model2.r2", model2.r2, "model4.r2", model4.r2
+        print "model3.r2", model2.r2, "model4.r2", model4.r2
 
-if __name__ == "__main__":
+__name__ == "__main__":
     h2o.run_test(sys.argv, cars_checkpoint)
