@@ -216,8 +216,9 @@ abstract class ASTBinOp extends ASTPrim {
 // ----------------------------------------------------------------------------
 // Expressions that auto-widen between NUM and FRM
 class ASTAnd  extends ASTBinOp { String str() { return "&" ; } double op( double l, double r ) { return ASTLAnd.and_op(l,r); } }
-class ASTDiv  extends ASTBinOp { String str() { return "/" ; } double op( double l, double r ) { return l/ r; } }
-class ASTMul  extends ASTBinOp { String str() { return "*" ; } double op( double l, double r ) { return l* r; } }
+class ASTDiv  extends ASTBinOp { String str() { return "/" ; } double op( double l, double r ) { return l/r;}}
+class ASTMod  extends ASTBinOp { String str() { return "mod";} double op( double l, double r ) { return l%r;}}
+class ASTMul  extends ASTBinOp { String str() { return "*" ; } double op( double l, double r ) { return l*r;}}
 class ASTOr   extends ASTBinOp { String str() { return "|" ; } double op( double l, double r ) { return ASTLOr . or_op(l,r); } }
 class ASTPlus extends ASTBinOp { String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
 class ASTPow  extends ASTBinOp { String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
@@ -333,7 +334,7 @@ class ASTLOr extends ASTBinOp {
 //    If frame is all non-zero, then treat as constant true
 //    Elements are picked from yes & no according to frame elements being
 //    non-zero or zero (and NaN if frame is NaN).
-class ASTIfElse extends ASTPrim { 
+class ASTIfElse extends ASTPrim {
   @Override int nargs() { return 1+3; } // test true false
   String str() { return "ifelse"; } 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
