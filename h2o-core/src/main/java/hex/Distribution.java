@@ -2,6 +2,7 @@ package hex;
 
 import water.H2O;
 import water.Iced;
+import water.util.Log;
 
 /**
  * Distribution functions to be used by ML Algos
@@ -35,28 +36,30 @@ public class Distribution extends Iced {
     assert(tweediePower >1 && tweediePower <2);
     this.tweediePower = tweediePower;
   }
-  static public double MAX_LOG = 19;
   static public double MIN_LOG = -19;
   static public double MAX = 1e19;
-  static public double MIN = 1e-19;
 
   public final Family distribution;
   public final double tweediePower; //tweedie power
 
   // helper - sanitized exponential function
   public static double exp(double x) {
-    return Math.max(MIN, Math.min(MAX, Math.exp(x)));
+    double val = Math.min(MAX, Math.exp(x));
+//    if (val == MAX) Log.warn("Exp overflow: exp(" + x + ") truncated to " + MAX);
+    return val;
   }
 
   // helper - sanitized log function
   public static double log(double x) {
     x = Math.max(0,x);
-    return x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.min(MAX_LOG, Math.log(x)));
+    double val = x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
+//    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
+    return val;
   }
 
   // helper - string version of sanititized exp(x)
   public static String expString(String x) {
-    return "Math.max(" + MIN + ", Math.min(" + MAX + ", Math.exp(" + x + ")))";
+    return "Math.min(" + MAX + ", Math.exp(" + x + "))";
   }
 
    /**

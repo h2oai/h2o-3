@@ -283,12 +283,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
-      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);
-      fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
-      fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
+      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors and actual response
+      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
+      fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
+      fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices
       if (idx_weight() >= 0)
-        fr2.add(fr._names[idx_weight()],vecs[idx_weight()]);
+        fr2.add(fr._names[idx_weight()],vecs[idx_weight()]); //observation weights
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar, _model._parms._distribution));
     }
@@ -476,27 +476,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
       }
-      Log.info(_model.toString());
-
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._model_summary = createModelSummaryTable(out);
         out._scoring_history = createScoringHistoryTable(out);
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
-        Log.info(out._model_summary.toString());
-        // For Debugging:
-//        Log.info(out._scoring_history.toString());
-//        Log.info(out._variable_importances.toString());
       }
-
-      ConfusionMatrix cm = mm.cm();
-      if( cm != null ) {
-        if( cm._cm.length <= _parms._max_confusion_matrix_size) {
-          Log.info(cm.toASCII());
-        } else {
-          Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
-                  + "): " + _nclass + " classes.");
-        }
+      if (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval) {
+        Log.info(_model.toString());
       }
       _timeLastScoreEnd = System.currentTimeMillis();
     }

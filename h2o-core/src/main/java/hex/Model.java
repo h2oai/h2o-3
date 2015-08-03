@@ -408,7 +408,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           try {
             TwoDimTable t = (TwoDimTable) f.get(this);
             f.setAccessible(true);
-            if (t != null) sb.append(t.toString());
+            if (t != null) sb.append(t.toString(1,false /*don't print the full table if too long*/));
           } catch (IllegalAccessException e) {
             e.printStackTrace();
           }

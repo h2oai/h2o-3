@@ -19,7 +19,7 @@
 #'        appears as line of the file.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @examples
-#'\dontrun{
+#'\donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
@@ -66,7 +66,7 @@ h2o.exportHDFS <- function(data,path,force=FALSE) { h2o.exportFile(data,path,for
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
@@ -118,7 +118,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' @param force logical, indicates how to deal with files that already exist.
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # library(h2o)
 #' # localH2O <- h2o.init()
 #' # prostate.hex <- h2o.importFile(localH2O, path = paste("https://raw.github.com",

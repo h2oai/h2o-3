@@ -12,6 +12,8 @@
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
@@ -26,7 +28,6 @@
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
@@ -47,6 +48,7 @@
 h2o.randomForest <- function( x, y, training_frame,
                              model_id,
                              validation_frame,
+                             checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
                              build_tree_one_node = FALSE,
@@ -103,6 +105,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$model_id <- model_id
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if(!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if(!missing(mtries))
     parms$mtries <- mtries
   if(!missing(sample_rate))

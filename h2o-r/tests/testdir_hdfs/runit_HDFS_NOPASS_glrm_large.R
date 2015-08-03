@@ -23,22 +23,25 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+check.hdfs_glrm <- function(conn) {
 
-#----------------------------------------------------------------------
-# Single file cases.
-#----------------------------------------------------------------------
+  #----------------------------------------------------------------------
+  # Single file cases.
+  #----------------------------------------------------------------------
 
-heading("Import BigCross.data from HDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
-cross.hex <- h2o.importFile(conn, url)
-n <- nrow(cross.hex)
-print(paste("Imported n =", n, "rows"))
+  heading("Import BigCross.data from HDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
+  cross.hex <- h2o.importFile(conn, url)
+  n <- nrow(cross.hex)
+  print(paste("Imported n =", n, "rows"))
 
-heading("Running GLRM on BigCross.data")
-cross.glrm = h2o.glrm(training_frame = cross.hex, k = 3, max_iterations = 20)
-print(cross.glrm)
-h2o.rm(cross.glrm@model$loading_key$name)   # Remove loading matrix to free memory
+  heading("Running GLRM on BigCross.data")
+  cross.glrm = h2o.glrm(training_frame = cross.hex, k = 3, max_iterations = 20)
+  print(cross.glrm)
+  h2o.rm(cross.glrm@model$loading_key$name)   # Remove loading matrix to free memory
 
-PASS_BANNER()
 
+  testEnd()
+}
+
+doTest("GLRM test", check.hdfs_glrm)

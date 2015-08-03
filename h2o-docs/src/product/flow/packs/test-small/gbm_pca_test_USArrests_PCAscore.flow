@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/pca_test/USArrests_PCAscore.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/pca_test/USArrests_PCAscore.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/pca_test/USArrests_PCAscore.csv\"]\n  destination_frame: \"USArrests_PCAscore1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_names: [\"PC1\",\"PC2\",\"PC3\",\"PC4\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"USArrests_PCAscore1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"USArrests_PCAscore1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"USArrests_PCAscore1.hex\", [0.2], [\"USArrests_PCAscore_test.hex_0.20\",\"USArrests_PCAscore_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-75b2880e-f685-43d1-87f0-eb3819091312\",\"training_frame\":\"USArrests_PCAscore_train.hex_0.80\",\"validation_frame\":\"USArrests_PCAscore_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"PC4\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1512728063421962500,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-75b2880e-f685-43d1-87f0-eb3819091312\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-75b2880e-f685-43d1-87f0-eb3819091312\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-75b2880e-f685-43d1-87f0-eb3819091312\", frame: \"USArrests_PCAscore_test.hex_0.20\", predictions_frame: \"prediction-968cd679-396c-45ba-9213-3bb1d9ac1b26\""
+    }
+  ]
+}

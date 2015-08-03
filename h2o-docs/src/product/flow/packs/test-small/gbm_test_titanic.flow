@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/titanic.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/titanic.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/titanic.csv\"]\n  destination_frame: \"titanic.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"pclass\",\"survived\",\"name\",\"sex\",\"age\",\"sibsp\",\"parch\",\"ticket\",\"fare\",\"cabin\",\"embarked\",\"boat\",\"body\",\"home.dest\"]\n  column_types: [\"Numeric\",\"Numeric\",\"String\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"titanic.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"titanic.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"titanic.hex\", [0.2], [\"titanic_test.hex_0.20\",\"titanic_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-56931711-ff09-48e7-837b-7c039631817f\",\"training_frame\":\"titanic_train.hex_0.80\",\"validation_frame\":\"titanic_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"survived\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":8620164841135047000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-56931711-ff09-48e7-837b-7c039631817f\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-56931711-ff09-48e7-837b-7c039631817f\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-56931711-ff09-48e7-837b-7c039631817f\", frame: \"titanic_test.hex_0.20\", predictions_frame: \"prediction-ab43599f-6d5c-4323-bc64-10d43b8448d5\""
+    }
+  ]
+}

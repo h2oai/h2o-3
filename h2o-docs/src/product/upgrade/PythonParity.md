@@ -1,6 +1,9 @@
 #R/Python Parity
 
 The following is a list of R functions alongside the equivalent Python ones. 
+Most methods in Python are member methods of the of the H2OFrame class. H2O does not override native Python `all` or `any` methods but these are included as member methods (e.g., `myFrame[0].any()` not `any(myFrame[0])`). 
+
+Similarly, model accessor methods are members of their respective classes. 
 
 **Note**: This is not a complete listing of the R or Python H2O API. Please refer to the [complete documentation](http://h2o-release.s3.amazonaws.com/h2o/master/3098/docs-website/h2o-py/docs/index.html). 
 
@@ -134,8 +137,8 @@ The following is a list of R functions alongside the equivalent Python ones.
 |`digamma`|`digamma` | |
 |`trigamma`|`trigamma` | |
 |`!`|`not` | |
-|`is.na`|`isna` || 
-|`max`|`max` | |
+|`is.na`|`isna` |Returns a new boolean H2OVec.| 
+|`max`|`max` | Returns the maximum value of all frame entries.|
 |`min`|`min` | Returns the minimum value of all frame entries.|
 |`sum`|`sum` | Returns the sum of all frame entries. |
 |`as.factor`|`asfactor`| Returns a lazy Expr representing this vec converted to a factor. |
