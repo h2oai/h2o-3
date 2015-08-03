@@ -119,21 +119,20 @@ abstract class ASTBinOp extends ASTPrim {
               // easily argue that should instead apply str_op to the Enum
               // string domain value - except that this whole operation only
               // makes sense for EQ/NE, and is much faster when just comparing
-              // doubles vs comparing strings.
+              // doubles vs comparing strings.  Note that if the string is not
+              // part of the Enum domain, the find op returns -1 which is never
+              // equal to any Enum dense integer (which are always 0+).
               final double d = (double)ArrayUtils.find(vec.domain(),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
-            } // mixing string and numeric; will be all NA below
+            } else { // mixing string and numeric
+              final double d = op(1,2); // false or true only
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(d);
+            }
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
-    // str_ops do not make sense on numerics
-    final Vec oldvecs[] = fr.vecs();
-    final Vec newvecs[] = res.vecs();
-    for( int i=0; i<oldvecs.length; i++ )
-      if( !oldvecs[i].isString() && // Must be String OR
-          !oldvecs[i].isEnum() )    // Enum
-        newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(res);
   }
 

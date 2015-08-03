@@ -88,7 +88,7 @@ NULL
 
 #' @rdname H2OS3GroupGeneric
 #' @export
-Ops.Frame <- function(x,y) .newExpr(.Generic,x,y)
+Ops.Frame <- function(x,y) .newExpr(.Generic,x,if( is.character(y) ) paste0('"',y,'"') else y)
 
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
@@ -96,11 +96,13 @@ Math.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
 Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 
-Summary.Frame <- function(x,na.rm) {
+Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl") 
-  res <- .newExpr(.Generic,x)
-  # All is not lazy, but eagerly evaluates, in order to produce a primitive result
-  if( .Generic=="all" ) res <- as.logical(.fetch.data(res,1))
+  res <- .newExprList(.Generic,list(x,...))
+  # Eager evaluation, to produce a scalar
+  res <- .fetch.data(res,1)
+  if( .Generic=="all" ) res <- as.logical(res)
+  stopifnot( !is.data.frame(res) )
   res
 }
 
@@ -143,7 +145,7 @@ Summary.Frame <- function(x,na.rm) {
 pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(x),e); .clearvisit(x); invisible() }
 
 .eval.impl <- function(x) {
-  if( is.character(xchild<-x:eval) ) return(xchild)
+  if( is.character(xchild<-x:eval) ) return(if(is.Frame(x:data) || is.null(x:data) ) xchild else x:data)
   res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child) else child }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
   x$eval <- xchild <- .key.make("RTMP") # Flag as code-emitted
@@ -259,7 +261,8 @@ str.Frame <- function(x, cols=FALSE, ...) {
 # Convert a row or column selector to zero-based numbering and return a string
 .row.col.selector <- function( sel ) {
   # number list for column selection; zero based
-  ifelse( is.numeric(sel), paste0('[',paste0(lapply(sel,function(x) x-1),collapse=" "),']'), as.character(sel) )
+  sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
+  ifelse( is.numeric(sel), paste0('[',paste0(sel2,collapse=" "),']'), as.character(sel) )
 }
 
 

@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 test.eq.frame <- function() {
- hex <- as.h2o( iris)
+  hex <- as.h2o( iris)
  
   Log.info("Expectation is a frame of booleans")
   
