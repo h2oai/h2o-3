@@ -833,9 +833,7 @@ public final class ParseDataset extends Job<Frame> {
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
         case Vec.T_ENUM:  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
-        case Vec.T_TIME:
-        case Vec.T_TIME+1:
-        case Vec.T_TIME+2: typeStr="time"    ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
+        case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
         default: throw H2O.unimpl();
       }
 
