@@ -132,7 +132,7 @@ class ASTCBind extends ASTPrim {
     for( int i=1; i<asts.length; i++ ) {
       switch( vals[i].type() ) {
       case Val.FRM:  
-        fr.add(vals[i].getFrame());
+        fr.add(fr.makeCompatible(vals[i].getFrame()));
         break;
       case Val.FUN:  throw H2O.unimpl();
       case Val.STR:  throw H2O.unimpl();
