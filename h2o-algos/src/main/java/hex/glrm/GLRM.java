@@ -206,12 +206,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Permute cluster columns to align with dinfo and expand out categoricals
         centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
         centers_exp = expandCats(centers, tinfo);
-        initialXGausProj(dfrm, _ncolA, _ncolX);
+        InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
+        xtsk.doAll(dfrm);
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
-        initialXGausProj(dfrm, _ncolA, _ncolX);
+        InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
+        xtsk.doAll(dfrm);
 
       } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y = right singular vectors
         PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
@@ -244,7 +246,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
         // for(int i = 0; i < centers_exp.length; i++)
         //  ArrayUtils.mult(centers_exp[i], pca._output._std_deviation[i] * Math.sqrt(pca._output._nobs-1));
-        initialXGausProj(dfrm, _ncolA, _ncolX);  // TODO: We want X = UD when Y = V' from SVD A = UDV'
+        InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);  // TODO: We want X = UD when Y = V' from SVD A = UDV'
+        xtsk.doAll(dfrm);
 
       } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -267,8 +270,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
-          if(frob != 0 && !Double.isNaN(frob) && na_cnt == 0 && !_parms.hasClosedForm())
-            initialXKmeans(dfrm, km, _ncolA, _ncolX);
+          if(frob != 0 && !Double.isNaN(frob) && na_cnt == 0 && !_parms.hasClosedForm()) {
+            // Frame pred = km.score(_parms.train());
+            Log.info("Initializing X to matrix of indicator columns corresponding to cluster assignments");
+            InitialXKMeans xtsk = new InitialXKMeans(_parms, km, _ncolA, _ncolX);
+            xtsk.doAll(dfrm);
+          }
         } finally {
           if (job != null) job.remove();
           if (km != null) km.remove();
@@ -293,47 +300,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       for(int i = 0; i < _parms._k; i++)
         centers_exp[i] = _parms.project_y(centers_exp[i], rand);
       return centers_exp;
-    }
-
-    // Set X to standard Gaussian random matrix projected into regularizer subspace
-    private void initialXGausProj(Frame fr, final int ncolA, final int ncolX) {
-      new MRTask() {
-        @Override public void map( Chunk chks[] ) {
-          Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
-
-          for(int row = 0; row < chks[0]._len; row++) {
-            double xrow[] = ArrayUtils.gaussianVector(ncolX, _parms._seed);
-            xrow = _parms.project_x(xrow, rand);
-            for(int c = 0; c < xrow.length; c++) {
-              chks[ncolA+c].set(row, xrow[c]);
-              chks[ncolA+ncolX+c].set(row, xrow[c]);
-            }
-          }
-        }
-      }.doAll(fr);
-    }
-
-    // Set X to matrix of indicator columns, e.g. k = 4, cluster = 3 -> [0, 0, 1, 0]
-    private void initialXKmeans(Frame fr, KMeansModel km, final int ncolA, final int ncolX) {
-      // Frame pred = km.score(_parms.train());
-      Log.info("Initializing X to matrix of indicator columns corresponding to cluster assignments");
-      final KMeansModel model = km;
-      new MRTask() {
-        @Override public void map( Chunk chks[] ) {
-          double tmp [] = new double[ncolA];
-          double preds[] = new double[ncolX];
-          Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
-
-          for(int row = 0; row < chks[0]._len; row++) {
-            double p[] = model.score_indicator(chks, row, tmp, preds);
-            p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
-            for(int c = 0; c < preds.length; c++) {
-              chks[ncolA+c].set(row, p[c]);
-              chks[ncolA+ncolX+c].set(row, p[c]);
-            }
-          }
-        }
-      }.doAll(fr);
     }
 
     // In case of L2 loss and regularization, initialize closed form X = AY'(YY' + \gamma)^(-1)
@@ -493,7 +459,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
-        ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, weightId, _parms._gamma_x != 0).doAll(dinfo._adaptedFrame);
+        boolean regX = _parms._regularization_x != GLRMParameters.Regularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
+        ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, weightId, regX).doAll(dinfo._adaptedFrame);
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt._archetypes);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
@@ -717,6 +684,62 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   protected static int idx_xnew(int c, int ncolA, int ncolX) { return ncolA+ncolX+c; }
   protected static Chunk chk_xold(Chunk chks[], int c, int ncolA) { return chks[ncolA+c]; }
   protected static Chunk chk_xnew(Chunk chks[], int c, int ncolA, int ncolX) { return chks[ncolA+ncolX+c]; }
+
+  // Initialize X to standard Gaussian random matrix projected into regularizer subspace
+  private static class InitialXProj extends MRTask<InitialXProj> {
+    GLRMParameters _parms;
+    final int _ncolA;         // Number of cols in training frame
+    final int _ncolX;         // Number of cols in X (k)
+
+    InitialXProj(GLRMParameters parms, int ncolA, int ncolX) {
+      _parms = parms;
+      _ncolA = ncolA;
+      _ncolX = ncolX;
+    }
+
+    @Override public void map( Chunk chks[] ) {
+      Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+
+      for(int row = 0; row < chks[0]._len; row++) {
+        double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
+        xrow = _parms.project_x(xrow, rand);
+        for(int c = 0; c < xrow.length; c++) {
+          chks[_ncolA+c].set(row, xrow[c]);
+          chks[_ncolA+_ncolX+c].set(row, xrow[c]);
+        }
+      }
+    }
+  }
+
+  // Initialize X to matrix of indicator columns for cluster assignments, e.g. k = 4, cluster = 3 -> [0, 0, 1, 0]
+  private static class InitialXKMeans extends MRTask<InitialXKMeans> {
+    GLRMParameters _parms;
+    KMeansModel _model;
+    final int _ncolA;         // Number of cols in training frame
+    final int _ncolX;         // Number of cols in X (k)
+
+    InitialXKMeans(GLRMParameters parms, KMeansModel model, int ncolA, int ncolX) {
+      _parms = parms;
+      _model = model;
+      _ncolA = ncolA;
+      _ncolX = ncolX;
+    }
+
+    @Override public void map( Chunk chks[] ) {
+      double tmp [] = new double[_ncolA];
+      double preds[] = new double[_ncolX];
+      Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+
+      for(int row = 0; row < chks[0]._len; row++) {
+        double p[] = _model.score_indicator(chks, row, tmp, preds);
+        p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
+        for(int c = 0; c < preds.length; c++) {
+          chks[_ncolA+c].set(row, p[c]);
+          chks[_ncolA+_ncolX+c].set(row, p[c]);
+        }
+      }
+    }
+  }
 
   private static class UpdateX extends MRTask<UpdateX> {
     // Input

@@ -51,10 +51,10 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Length of period (only used with periodic loss function)")
     public int period;
 
-    @API(help = "Regularization function for X matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
+    @API(help = "Regularization function for X matrix", values = { "None", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_x;
 
-    @API(help = "Regularization function for Y matrix", values = { "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
+    @API(help = "Regularization function for Y matrix", values = { "None", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_y;
 
     @API(help = "Regularization weight on X matrix")

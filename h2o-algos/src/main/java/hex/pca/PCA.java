@@ -281,8 +281,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._recover_svd = true;
 
           parms._loss = GLRMModel.GLRMParameters.Loss.L2;
-          parms._gamma_x = 0;
-          parms._gamma_y = 0;
+          parms._gamma_x = parms._gamma_y = 0;
+          parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.None;
+          parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.None;
           parms._init = GLRM.Initialization.PlusPlus;
 
           GLRMModel glrm = null;

@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 
 public class GLRMTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(2); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   private static String colFormat(String[] cols, String format) {
     int[] idx = new int[cols.length];
@@ -94,6 +94,8 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._gamma_x = parms._gamma_y = 0.5;
+      parms._regularization_x = GLRMParameters.Regularizer.L2;
+      parms._regularization_y = GLRMParameters.Regularizer.L2;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.User;
@@ -139,6 +141,8 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 10;
       parms._gamma_x = parms._gamma_y = 0.25;
+      parms._regularization_x = GLRMParameters.Regularizer.L2;
+      parms._regularization_y = GLRMParameters.Regularizer.L2;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._min_step_size = 1e-5;
@@ -190,7 +194,6 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._gamma_x = parms._gamma_y = 0;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       // parms._init = GLRM.Initialization.PlusPlus;
       parms._init = GLRM.Initialization.User;
@@ -230,7 +233,7 @@ public class GLRMTest extends TestUtil {
     }
   }
 
-  @Test public void testArrestsKMeans() throws InterruptedException, ExecutionException {
+  @Test public void testArrestsPlusPlus() throws InterruptedException, ExecutionException {
     GLRMModel model = null;
     Frame train = null, score = null;
     try {
@@ -241,7 +244,7 @@ public class GLRMTest extends TestUtil {
       parms._loss = GLRMParameters.Loss.Logistic;
       parms._regularization_x = GLRMParameters.Regularizer.NonNegative;
       parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
-      parms._gamma_x = parms._gamma_y = 0;
+      parms._gamma_x = parms._gamma_y = 1;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._max_iterations = 1000;
@@ -306,7 +309,8 @@ public class GLRMTest extends TestUtil {
         parms = new GLRMParameters();
         parms._train = train._key;
         parms._k = train.numCols();
-        parms._gamma_x = parms._gamma_y = 0;
+        parms._regularization_x = GLRMParameters.Regularizer.L2;
+        parms._regularization_y = GLRMParameters.Regularizer.L2;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
@@ -428,7 +432,31 @@ public class GLRMTest extends TestUtil {
       Log.info("\nQuadratic clustering (k-means)");
       parms._gamma_x = 1; parms._gamma_y = 0;
       parms._regularization_x = GLRMParameters.Regularizer.UnitOneSparse;
-      parms._regularization_y = GLRMParameters.Regularizer.L2;
+      parms._regularization_y = GLRMParameters.Regularizer.None;
+      try {
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+        Log.info("Archetypes (Y'):\n" + ArrayUtils.pprint(model._output._archetypes));
+        score = model.score(train);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+        if (score != null) score.delete();
+        if (model != null) {
+          model._parms._loading_key.get().delete();
+          model.delete();
+        }
+      }
+
+      Log.info("\nQuadratic mixture (soft k-means)");
+      parms._gamma_x = 1; parms._gamma_y = 0;
+      parms._regularization_x = GLRMParameters.Regularizer.UnitOneSparse;
+      parms._regularization_y = GLRMParameters.Regularizer.None;
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
@@ -466,7 +494,6 @@ public class GLRMTest extends TestUtil {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._gamma_x = parms._gamma_y = 0;
       parms._k = 4;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
@@ -515,8 +542,10 @@ public class GLRMTest extends TestUtil {
 
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._gamma_x = parms._gamma_y = 0.1;
       parms._k = 8;
+      parms._gamma_x = parms._gamma_y = 0.1;
+      parms._regularization_x = GLRMParameters.Regularizer.L2;
+      parms._regularization_y = GLRMParameters.Regularizer.L2;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_svd = false;

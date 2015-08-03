@@ -19,8 +19,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public Loss _loss = Loss.L2;                  // Loss function for numeric cols
     public MultiLoss _multi_loss = MultiLoss.Categorical;  // Loss function for categorical cols
     public int _period = 1;                       // Length of the period when _loss = Periodic
-    public Regularizer _regularization_x = Regularizer.L2;   // Regularization function for X matrix
-    public Regularizer _regularization_y = Regularizer.L2;   // Regularization function for Y matrix
+    public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
+    public Regularizer _regularization_y = Regularizer.None;   // Regularization function for Y matrix
     public double _gamma_x = 0;                   // Regularization weight on X matrix
     public double _gamma_y = 0;                   // Regularization weight on Y matrix
     public int _max_iterations = 1000;            // Max iterations
@@ -45,12 +45,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
     // Quadratic mixture: r_x = Simplex, r_y = 0 (\gamma_y = 0)
     public enum Regularizer {
-      L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
+      None, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
     public final boolean hasClosedForm() {
-      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
-              && (_gamma_y == 0 || _regularization_y == GLRMParameters.Regularizer.L2));
+      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.L2)
+              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.L2));
     }
 
     // L(u,a): Loss function
@@ -143,6 +143,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double ureg = 0;
 
       switch(regularization) {
+        case None:
+          return 0;
         case L2:
           for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
@@ -187,7 +189,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public final double regularize_x(double[][] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[][] u) { return regularize(u, _regularization_y); }
     public final double regularize(double[][] u, Regularizer regularization) {
-      if(u == null) return 0;
+      if(u == null || regularization == Regularizer.None) return 0;
 
       double ureg = 0;
       for(int i = 0; i < u.length; i++) {
@@ -207,6 +209,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double[] v = new double[u.length];
 
       switch(regularization) {
+        case None:
+          return u;
         case L2:
           for(int i = 0; i < u.length; i++)
             v[i] = u[i]/(1+2*alpha*gamma);
@@ -270,6 +274,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
       switch(regularization) {
         // Domain is all real numbers
+        case None:
         case L2:
         case L1:
           return u;
