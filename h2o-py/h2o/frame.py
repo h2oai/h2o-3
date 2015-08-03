@@ -385,7 +385,7 @@ class H2OFrame:
     old levels.
     :return: None
     """
-    h2o.rapids(ExprNode("setDomain", self, levels)._eager())
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("setDomain", self, levels)._eager()))
     self._update()
     return self
 
@@ -396,7 +396,7 @@ class H2OFrame:
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
-    h2o.rapids(ExprNode("colnames=", self, range(self.ncol()), names)._eager())
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol()), names)._eager()))
     self._update()
     return self
 
@@ -410,7 +410,7 @@ class H2OFrame:
     """
     if not isinstance(col, int) and self.ncol() > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol() == 1: col = 0
-    h2o.rapids(ExprNode("colnames=", self, col, name)._eager())
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()))
     self._update()
     return self
 
@@ -642,21 +642,30 @@ class H2OFrame:
     """
     Replace a column in an H2OFrame.
 
-    :param b: A 0-based index or a column name.
+    :param b: A 0-based index or a column name or tuple
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
     """
-    raise Exception("unimplemented")
-    # TODO: this just needs the new rapids syntax updates
-    # update_index=-1
-    # if isinstance(b, (str,unicode)): update_index=self.col_names().index(b) if b in self.col_names() else self._ncols
-    # elif isinstance(b, int): update_index=b
-    # lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
-    # rhs = c._frame() if isinstance(c,H2OFrame) else c
-    # col_name = b if (update_index==self._ncols and isinstance(b, (str, unicode))) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
-    # sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
-    # h2o.rapids(ExprNode._collapse_sb(sb))
-    # self._update()
+    # (= dst src col_expr row_expr)
+    update_index=-1
+    newcolname=None
+    if isinstance(b, (str,unicode)):
+      if b not in self.col_names():
+        newcolname=b
+        update_index=self._ncols
+      else:
+        update_index=self.col_names().index(b)
+    elif isinstance(b, int): update_index=b
+
+    col_expr = b[1] if isinstance(b,tuple) else update_index
+    if isinstance(col_expr, (str,unicode)): col_expr=self.col_names().index(col_expr)
+
+    row_expr = b[0] if isinstance(b,tuple) else b if isinstance(b, H2OFrame) else slice(0,self.nrow())
+    src = c._frame() if isinstance(c,H2OFrame) else c
+    expr = ExprNode("=", self, src, col_expr, row_expr)
+    h2o.rapids(ExprNode._collapse_sb(expr._eager()), self._id)
+    if newcolname is not None: self.setName(update_index, newcolname)
+    self._update()
 
   def __int__(self):   return int(self._scalar())
 

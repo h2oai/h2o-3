@@ -10,7 +10,7 @@ import java.util.HashMap;
  *
  * Subclasses define the program semantics
  */
-abstract public class AST extends Iced {
+abstract public class AST extends Iced<AST> {
   // Subclasses define their execution.  Constants like Numbers & Strings just
   // return a ValXXX.  Constant functions also just return a ValFun.
 
@@ -115,6 +115,7 @@ abstract public class AST extends Iced {
     init(new ASTWeek());
     init(new ASTYear());
     init(new ASTasDate());
+    init(new ASTMktime());
 
     // Complex Math
     init(new ASTImpute());

@@ -39,12 +39,11 @@ class RapidsHandler extends Handler {
           else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new ValueString(), 0).toString();
           else if( fr.anyVec().isEnum() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
           fr.delete();
-          if( s!=null ) return new RapidsStringV3(s);
-          else return new RapidsScalarV3(d);
+          return s!=null ? new RapidsStringV3(s) : new RapidsScalarV3(d);
+        } else {
+          fr.delete();
+          return new RapidsScalarV3(Double.NaN);
         }
-        fr.delete();
-        //throw new IllegalArgumentException("Missing the result key 'id' for the returned frame");
-        return new RapidsScalarV3(Double.NaN);
       }
       Key k = Key.make(rapids.id);
       // Smart delete any prior top-level result

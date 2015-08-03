@@ -147,7 +147,7 @@ def _quoted(key):
   return key
 
 def assign(data,id):
-  rapids(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager())
+  rapids(ExprNode._collapse_sb(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager()))
   data._id = id
   return data
 
@@ -952,7 +952,7 @@ def set_timezone(tz):
   :param tz: The desired timezone.
   :return: None
   """
-  rapids(ExprNode("setTimeZone", tz)._eager())
+  rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
 
 def get_timezone():
   """

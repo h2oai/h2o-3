@@ -1,9 +1,10 @@
 package water.currents;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import water.H2O;
 import water.util.SB;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /** A collection of base/stride/cnts.  Bases are monotonically increasing, and
  *  base+stride*cnt is always less than the next base.  This is a syntatic form
@@ -72,7 +73,7 @@ class ASTNumList extends AST {
   // A simple ASTNumList of 1 number
   ASTNumList( double d ) {
     _bases  = new double[]{d};
-    _strides= new double[]{0};
+    _strides= new double[]{1};
     _cnts   = new long  []{1};
   }
 

@@ -10,13 +10,14 @@ class ASTAssign extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
-    ASTNumList cols = check( dst.numCols(), asts[3] );
-    ASTNumList rows = check( dst.numRows(), asts[4] );
+    ASTNumList cols = check(dst.numCols(), asts[3]);
+    Iced rows = (asts[4] instanceof ASTNumList) ? check( dst.numRows(), asts[4] ) : stk.track(asts[4].exec(env)).getFrame();
 
     // Check for append; add a col of NAs if appending
-    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {
+    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
       dst = new Frame(dst._names.clone(),dst.vecs().clone());
       dst.add(Frame.defaultColName(dst.numCols()), dst.anyVec().makeCon(Double.NaN));
+      // DKV update on dst happens in RapidsHandler
     }
 
     // Slice out cols for mutation
@@ -44,7 +45,11 @@ class ASTAssign extends ASTPrim {
   }
 
   // Rectangular array copy from src into dst
-  private void assign_frame_frame(Frame dst, ASTNumList rows, Frame src) {
+  private void assign_frame_frame(Frame dst, Iced rowz, Frame src) {
+    if( rowz instanceof Frame ) {
+      throw H2O.unimpl();
+    }
+    ASTNumList rows = (ASTNumList)rowz;
     // Sanity check
     if( dst.numCols() != src.numCols() )
       throw new IllegalArgumentException("Source and destination frames must have the same count of columns");
@@ -93,9 +98,23 @@ class ASTAssign extends ASTPrim {
     throw H2O.unimpl();
   }
 
+  private void assign_frame_scalar(Frame dst, final Iced rowz, final double src) {
+    if( rowz instanceof Frame) {
+      new MRTask() {
+        @Override
+        public void map(Chunk[] cs) {
+          Chunk pc = cs[cs.length - 1];
+          for (int i = 0; i < pc._len; ++i) {
+            if (pc.at8(i) == 1)
+              for (int c = 0; c < cs.length - 1; ++c)
+                cs[c].set(i, src);
+          }
+        }
+      }.doAll(dst.add((Frame)rowz));
+      return;
+    }
 
-  private void assign_frame_scalar(Frame dst, final ASTNumList rows, final double src) {
-
+    final ASTNumList rows = (ASTNumList)rowz;
     // Handle fast small case
     Vec[] dvecs = dst.vecs();
     long nrows = rows.cnt();

@@ -80,11 +80,14 @@ public class Exec {
     case '[':  return isQuote(xpeek('[').skipWS()) ? new ASTStrList(this) : new ASTNumList(this);
     case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
     case '%':  _x++;             // Skip before ID, FALL THRU
+    case '-':
+      if( peekAhead()!=' ' ) return new ASTNum(this);
     default:  return new ASTId(this);
     }    
   }
 
   char peek() { return _x < _str.length() ? _str.charAt(_x) : ' '; } // peek ahead
+  char peekAhead() { return _x < _str.length()-1 ? _str.charAt(_x+1) : ' '; }
   // Peek, and throw if not found an expected character
   Exec xpeek(char c) {
     if( peek() != c )
