@@ -400,7 +400,7 @@ public class Vec extends Keyed<Vec> {
         }
       }
     }.doAllNodes();
-    DKV.put(v0._key,v0);        // Header last
+    DKV.put(v0._key, v0);        // Header last
     return v0;
   }
 
@@ -413,7 +413,7 @@ public class Vec extends Keyed<Vec> {
     for(double d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key,v,fs);
+    DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
   }

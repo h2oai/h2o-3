@@ -117,6 +117,7 @@ public class DataInfo extends Keyed {
     _offset = offset;
     _weights = weight;
     _fold = fold;
+    assert !(skipMissing && imputeMissing) : "skipMissing and imputeMissing cannot both be true";
     _skipMissing = skipMissing;
     _imputeMissing = imputeMissing;
     _predictor_transform = predictor_transform;

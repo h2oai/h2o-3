@@ -1,13 +1,13 @@
 package hex.glrm;
 
 import hex.*;
+import water.DKV;
 import water.H2O;
 import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.RandomUtils;
-import water.util.TwoDimTable;
 
 import java.util.Random;
 
@@ -19,8 +19,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public Loss _loss = Loss.L2;                  // Loss function for numeric cols
     public MultiLoss _multi_loss = MultiLoss.Categorical;  // Loss function for categorical cols
     public int _period = 1;                       // Length of the period when _loss = Periodic
-    public Regularizer _regularization_x = Regularizer.L2;   // Regularization function for X matrix
-    public Regularizer _regularization_y = Regularizer.L2;   // Regularization function for Y matrix
+    public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
+    public Regularizer _regularization_y = Regularizer.None;   // Regularization function for Y matrix
     public double _gamma_x = 0;                   // Regularization weight on X matrix
     public double _gamma_y = 0;                   // Regularization weight on Y matrix
     public int _max_iterations = 1000;            // Max iterations
@@ -45,12 +45,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
     // Quadratic mixture: r_x = Simplex, r_y = 0 (\gamma_y = 0)
     public enum Regularizer {
-      L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
+      None, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
     public final boolean hasClosedForm() {
-      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == GLRMParameters.Regularizer.L2)
-              && (_gamma_y == 0 || _regularization_y == GLRMParameters.Regularizer.L2));
+      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.L2)
+              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.L2));
     }
 
     // L(u,a): Loss function
@@ -67,7 +67,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Hinge:
           return Math.max(1-a*u,0);
         case Logistic:
-          return Math.log(1+Math.exp(-a*u));
+          return Math.log(1 + Math.exp(-a * u));
         case Periodic:
           return 1-Math.cos((a-u)*(2*Math.PI)/_period);
         default:
@@ -91,7 +91,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Logistic:
           return -a/(1+Math.exp(a*u));
         case Periodic:
-          return ((2*Math.PI)/_period) * Math.sin((a-u)*(2*Math.PI)/_period);
+          return ((2*Math.PI)/_period) * Math.sin((a - u) * (2 * Math.PI) / _period);
         default:
           throw new RuntimeException("Unknown loss function " + _loss);
       }
@@ -143,6 +143,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double ureg = 0;
 
       switch(regularization) {
+        case None:
+          return 0;
         case L2:
           for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
@@ -187,7 +189,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public final double regularize_x(double[][] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[][] u) { return regularize(u, _regularization_y); }
     public final double regularize(double[][] u, Regularizer regularization) {
-      if(u == null) return 0;
+      if(u == null || regularization == Regularizer.None) return 0;
 
       double ureg = 0;
       for(int i = 0; i < u.length; i++) {
@@ -207,6 +209,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double[] v = new double[u.length];
 
       switch(regularization) {
+        case None:
+          return u;
         case L2:
           for(int i = 0; i < u.length; i++)
             v[i] = u[i]/(1+2*alpha*gamma);
@@ -261,6 +265,67 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
     }
+
+    // Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization.
+    public final double[] project_x(double[] u, Random rand) { return project(u, _regularization_x, rand); }
+    public final double[] project_y(double[] u, Random rand) { return project(u, _regularization_y, rand); }
+    public final double[] project(double[] u, Regularizer regularization, Random rand) {
+      if(u == null) return u;
+
+      switch(regularization) {
+        // Domain is all real numbers
+        case None:
+        case L2:
+        case L1:
+          return u;
+        // Proximal operator of indicator function for a set C is (Euclidean) projection onto C
+        case NonNegative:
+        case OneSparse:
+        case UnitOneSparse:
+          return rproxgrad(u, 1, 1, regularization, rand);
+        case Simplex:
+          double reg = regularize(u, regularization);   // Check if inside simplex before projecting since algo is complicated
+          if (reg == 0) return u;
+          return rproxgrad(u, 1, 1, regularization, rand);
+        default:
+          throw new RuntimeException("Unknown regularization function " + regularization);
+      }
+    }
+
+    // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for real numeric values
+    public final double impute(double u) {
+      switch(_loss) {
+        case L2:
+        case L1:
+        case Huber:
+        case Periodic:
+          return u;
+        case Poisson:
+          return Math.exp(u)-1;
+        case Hinge:
+          return 1/u;
+        case Logistic:
+          if (u == 0) return 0;   // Any finite real number is minimizer if u = 0
+          return (u > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
+        default:
+          throw new RuntimeException("Unknown loss function " + _loss);
+      }
+    }
+
+    // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for categorical values {0,1,2,...}
+    // TODO: Is there a faster way to find the loss minimizer?
+    public final int mimpute(double[] u) {
+      switch(_multi_loss) {
+        case Categorical:
+        case Ordinal:
+          double[] cand = new double[u.length];
+          for (int a = 0; a < cand.length; a++)
+            cand[a] = mloss(u, a);
+          return ArrayUtils.minIndex(cand);
+        default:
+          throw new RuntimeException("Unknown multidimensional loss function " + _multi_loss);
+      }
+    }
   }
 
   public static class GLRMOutput extends Model.Output {
@@ -273,8 +338,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Average change in objective function this iteration
     public double _avg_change_obj;
 
-    // Mapping from training data to lower dimensional k-space (Y)
-    public double[][] _archetypes;
+    // Mapping from training data to lower dimensional k-space (Y')
+    public double[/*feature*/][/*k*/] _archetypes;
+    public GLRM.Archetypes _archetypes_full;   // Needed for indexing into Y' for scoring
 
     // Final step size
     public double _step_size;
@@ -319,34 +385,99 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
   }
 
-  public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
+  public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey, parms, output); }
 
-  // TODO: What should we do for scoring GLRM?
+  // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+    final int ncols = _output._names.length;
+    assert ncols == adaptedFr.numCols();
+    String prefix = "reconstr_";
+
+    // Need [A,X,P] where A = adaptedFr, X = loading frame, P = imputed frame
+    // Note: A is adapted to original training frame, P has columns shuffled so cats come before nums!
+    Frame fullFrm = new Frame(adaptedFr);
+    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    fullFrm.add(loadingFrm);
+    for(int i = 0; i < ncols; i++)
+      fullFrm.add(prefix+_output._names[i],fullFrm.anyVec().makeZero());
+    GLRMScore gs = new GLRMScore(null, ncols, _parms._k).doAll(fullFrm);
+
+    // Return the imputed training frame
+    int x = ncols + _parms._k, y = fullFrm.numCols();
+    Frame f = fullFrm.extractFrame(x, y);  // this will call vec_impl() and we cannot call the delete() below just yet
+
+    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    DKV.put(f);
+    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    return f;
+  }
+
+  private class GLRMScore extends MRTask<GLRMScore> {
+    final String[] _domain;
+    final int _ncolA;   // Number of cols in imputed data P (same as original)
+    final int _ncolX;   // Number of cols in X (rank k)
+    ModelMetrics.MetricBuilder _mb;
+
+    GLRMScore( String[] domain, int ncolA, int ncolX ) {
+      _domain = domain; _ncolA = ncolA; _ncolX = ncolX;
+    }
+
+    @Override public void map( Chunk chks[] ) {
+      float atmp [] = new float[_ncolA];
+      double xtmp [] = new double[_ncolX];
+      double preds[] = new double[_ncolA];
+      _mb = GLRMModel.this.makeMetricBuilder(null);
+
+      for( int row = 0; row < chks[0]._len; row++ ) {
+        double p[] = impute_data(chks, row, xtmp, preds);
+        compute_metrics(chks, row, atmp, p);
+        for( int c=0; c<preds.length; c++ )
+          chks[_ncolA+_ncolX+c].set(row, p[c]);
+      }
+    }
+
+    @Override public void reduce( GLRMScore other ) { if(_mb != null) _mb.reduce(other._mb); }
+
+    @Override protected void postGlobal() { if(_mb != null) _mb.postGlobal(); }
+
+    private float[] compute_metrics(Chunk[] chks, int row_in_chunk, float[] tmp, double[] preds) {
+      for( int i=0; i<tmp.length; i++)
+        tmp[i] = (float)chks[i].atd(row_in_chunk);
+      _mb.perRow(preds, tmp, GLRMModel.this);
+      return tmp;
+    }
+
+    private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+      for( int i=0; i<tmp.length; i++ )
+        tmp[i] = chks[_ncolA+i].atd(row_in_chunk);
+      impute_data(tmp, preds);
+      return preds;
+    }
+
+    private double[] impute_data(double[] tmp, double[] preds) {
+      assert preds.length == _output._nnums + _output._ncats;
+
+      // Categorical columns
+      for (int d = 0; d < _output._ncats; d++) {
+        double[] xyblock = _output._archetypes_full.lmulCatBlock(tmp,d);
+        preds[_output._permutation[d]] = _parms.mimpute(xyblock);
+      }
+
+      // Numeric columns
+      for (int d = _output._ncats; d < preds.length; d++) {
+        int ds = d - _output._ncats;
+        double xy = _output._archetypes_full.lmulNumCol(tmp, ds);
+        preds[_output._permutation[d]] = _parms.impute(xy);
+      }
+      return preds;
+    }
+  }
+
   @Override protected double[] score0(double[] data, double[] preds) {
     throw H2O.unimpl();
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k);
-  }
-
-  public static class ModelMetricsGLRM extends ModelMetricsUnsupervised {
-    public ModelMetricsGLRM(Model model, Frame frame) {
-      super(model, frame, Double.NaN);
-    }
-
-    // GLRM currently does not have any model metrics to compute during scoring
-    public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
-      public GLRMModelMetrics(int dims) {
-        _work = new double[dims];
-      }
-
-      @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
-
-      @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f) {
-        return m._output.addModelMetrics(new ModelMetricsGLRM(m, f));
-      }
-    }
+    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation);
   }
 }

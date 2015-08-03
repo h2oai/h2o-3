@@ -28,7 +28,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   public static class PCAOutput extends Model.Output {
-    // GLRM final value of L2 loss function
+    // GLRM final value of loss function
     public double _objective;
 
     // Principal components (eigenvectors)
@@ -63,9 +63,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
-
-    // Frame key for right singular vectors from SVD
-    public Key<Frame> _loading_key;
 
     public PCAOutput(PCA b) { super(b); }
 
@@ -163,6 +160,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     final int nums = _output._nnums;
     bodySb.i().p("final int nstart = CATOFFS[CATOFFS.length-1];").nl();
     bodySb.i().p("for(int i = 0; i < ").p(_parms._k).p("; i++) {").nl();
+
     // Categorical columns
     bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
     bodySb.i(2).p("double d = data[PERMUTE[j]];").nl();

@@ -1,5 +1,8 @@
-package hex;
+package hex.pca;
 
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsUnsupervised;
 import water.fvec.Frame;
 
 public class ModelMetricsPCA extends ModelMetricsUnsupervised {
@@ -14,7 +17,7 @@ public class ModelMetricsPCA extends ModelMetricsUnsupervised {
     }
 
     @Override
-    public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+    public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f) {

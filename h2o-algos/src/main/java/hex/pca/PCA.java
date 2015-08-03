@@ -6,7 +6,6 @@ import hex.DataInfo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.ModelMetricsPCA;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
@@ -216,8 +215,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.delete_and_lock(_key);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ true, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+          dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
+          System.out.println(dinfo._adaptedFrame.toString());
 
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
@@ -248,7 +248,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
 
-          // Calculate standard deviation and projection as well
+          // Calculate standard deviation, but not projection
           parms._only_v = false;
           parms._keep_u = false;
 
@@ -281,8 +281,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._recover_svd = true;
 
           parms._loss = GLRMModel.GLRMParameters.Loss.L2;
-          parms._gamma_x = 0;
-          parms._gamma_y = 0;
+          parms._gamma_x = parms._gamma_y = 0;
+          parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.None;
+          parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.None;
           parms._init = GLRM.Initialization.PlusPlus;
 
           GLRMModel glrm = null;
