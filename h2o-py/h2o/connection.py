@@ -225,7 +225,8 @@ class H2OConnection(object):
     cmd = [command] + vm_opts + h2o_opts
 
     cwd = os.path.abspath(os.getcwd())
-    self._child = subprocess.Popen(args=cmd, stdout=stdout, stderr=stderr, cwd=cwd)
+    self._child = subprocess.Popen(args=cmd, stdout=stdout, stderr=stderr, cwd=cwd, preexec_fn=os.setsid) if \
+      sys.platform != "win32" else subprocess.Popen(args=cmd, stdout=stdout, stderr=stderr, cwd=cwd)
     cld = self._connect(1, 30, True)
     return cld
 

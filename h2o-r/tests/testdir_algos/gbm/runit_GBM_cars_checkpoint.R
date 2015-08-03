@@ -16,11 +16,13 @@ test.checkpointing <- function(conn) {
   if ( problem == 1 ) {
     response_col <- "economy_20mpg"
     distribution <- "bernoulli"
-    cars[,response_col] <- as.factor(cars[response_col])
+    train[,response_col] <- as.factor(train[response_col])
+    valid[,response_col] <- as.factor(valid[response_col])
   } else if ( problem == 2 ) {
     response_col <- "cylinders"
     distribution <- "multinomial"
-    cars[,response_col] <- as.factor(cars[response_col])
+    train[,response_col] <- as.factor(train[response_col])
+    valid[,response_col] <- as.factor(valid[response_col])
   } else {
     distribution <- "gaussian"
     response_col <- "economy"
