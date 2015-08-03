@@ -198,7 +198,7 @@ function(testDesc, test) {
     conn <<- new("H2OConnection", ip=myIP, port=myPort)
     conn@mutable$session_id <- .init.session_id(conn)
     assign("conn", conn, globalenv())
-    tryCatch(test_that(testDesc, withWarnings(test(conn))), warning = function(w) WARN(w), error =function(e) FAIL(e))
+    tryCatch(test_that(testDesc, withWarnings(test(conn))), warning = function(w) WARN(w), error =function(e) FAIL(e), finally = h2o.removeAll(conn, timeout_secs=600))
     if (!PASSS) FAIL("Did not reach the end of test. Check Rsandbox/errors.log for warnings and errors.")
     PASS()
 }
