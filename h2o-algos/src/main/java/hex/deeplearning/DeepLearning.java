@@ -147,8 +147,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   @Override
-  public void modifyParmsForCrossValidationMainModel(int N) {
-    super.modifyParmsForCrossValidationMainModel(N);
+  public void modifyParmsForCrossValidationMainModel() {
+    super.modifyParmsForCrossValidationMainModel();
     if (_parms._overwrite_with_best_model) {
       warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
       _parms._overwrite_with_best_model = false;

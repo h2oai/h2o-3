@@ -459,7 +459,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
-      modifyParmsForCrossValidationMainModel(N);
+      modifyParmsForCrossValidationMainModel(); //tell the main model that it shouldn't stop early either
 
       trainModelImpl(-1, false).block(); // builds the main model and wait for completion
       Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done
@@ -504,7 +504,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
    * For example, the model might need to be told to not do early stopping.
    */
-  public void modifyParmsForCrossValidationMainModel(int N) {
+  public void modifyParmsForCrossValidationMainModel() {
+    assert(_parms._nfolds != 0 || _parms._fold_column != null);
   }
 
   boolean _deleteProgressKey = true;
