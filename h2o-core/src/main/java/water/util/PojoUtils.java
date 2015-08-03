@@ -1,15 +1,21 @@
 package water.util;
 
-import water.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.util.regex.Pattern;
+
+import water.DKV;
+import water.H2O;
+import water.Iced;
+import water.Key;
+import water.Keyed;
+import water.Value;
+import water.Weaver;
 import water.api.FrameV3;
 import water.api.KeyV3;
 import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
-
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.util.regex.Pattern;
 
 /**
  * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
@@ -78,12 +84,6 @@ public class PojoUtils {
     for (Field orig_field : orig_fields) {
       String origin_name = orig_field.getName();
 
-      if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
-        continue;
-
-      if (only_fields != null & ! ArrayUtils.contains(only_fields, origin_name))
-        continue;
-
       String dest_name = null;
       if (field_naming == FieldNaming.CONSISTENT) {
         dest_name = origin_name;
@@ -93,10 +93,10 @@ public class PojoUtils {
         dest_name = origin_name.substring(1);
       }
 
-      if (skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+      if (skip_fields != null && (ArrayUtils.contains(skip_fields, origin_name) || ArrayUtils.contains(skip_fields, dest_name)))
         continue;
 
-      if (only_fields != null & ! ArrayUtils.contains(only_fields, dest_name))
+      if (only_fields != null && ! (ArrayUtils.contains(only_fields, origin_name) || ArrayUtils.contains(only_fields, dest_name)))
         continue;
 
       try {
