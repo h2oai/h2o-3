@@ -362,9 +362,9 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
-    version = schema.__meta.schema_version;
-    name = schema.__meta.schema_name;
-    type = schema.__meta.schema_type;
+    version = schema.get__meta().getSchema_version();
+    name = schema.get__meta().getSchema_name();
+    type = schema.get__meta().getSchema_type();
 
     superclass = schema.getClass().getSuperclass().getSimpleName();
 
