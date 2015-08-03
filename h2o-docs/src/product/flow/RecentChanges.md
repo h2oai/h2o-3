@@ -34,16 +34,14 @@ The following changes are improvements to existing features (which includes chan
 #####Python
 
 - [PUBDEV-1765](https://0xdata.atlassian.net/browse/PUBDEV-1765): Improve python online documentation
-- [GitHub](https://github.com/h2oai/h2o-3/commit/dd15e2a7e92eff6a2f2cd7b4bd99df29dec937a3): need inplace sort of dirs also, to get full test list determinism
 
 #####R
 
 - [PUBDEV-1744](https://0xdata.atlassian.net/browse/PUBDEV-1744): Improve help message of h2o.init function
-- [GitHub]
 
 #####System
 
-- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04):  Add -JJ command line argument to allow extra JVM to be passed.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04):  Add -JJ command line argument to allow extra JVM arguments to be passed.
 
 
 ####Bug Fixes 
