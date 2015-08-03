@@ -1178,8 +1178,8 @@ public class Frame extends Lockable<Frame> {
 
   /** Return Frame 'f' if 'f' is compatible with 'this', else return a new
    *  Frame compatible with 'this' and a copy of 'f's data otherwise.  Note
-   *  that this can, in the worst case, copy all of {@code this}s' data.
-   *  @return This Frame's data in a Frame that is compatible with {@code f}. */
+   *  that this can, in the worst case, copy all of {@code f}s' data.
+   *  @return {@code f}'s data in a Frame that is compatible with {@code this}. */
   public Frame makeCompatible( Frame f) {
     // Small data frames are always "compatible"
     if (anyVec() == null)      // Or it is small
