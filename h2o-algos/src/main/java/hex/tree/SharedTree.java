@@ -476,27 +476,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
       }
-      Log.info(_model.toString());
-
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._model_summary = createModelSummaryTable(out);
         out._scoring_history = createScoringHistoryTable(out);
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
-        Log.info(out._model_summary.toString());
-        // For Debugging:
-//        Log.info(out._scoring_history.toString());
-//        Log.info(out._variable_importances.toString());
       }
-
-      ConfusionMatrix cm = mm.cm();
-      if( cm != null ) {
-        if( cm._cm.length <= _parms._max_confusion_matrix_size) {
-          Log.info(cm.toASCII());
-        } else {
-          Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
-                  + "): " + _nclass + " classes.");
-        }
+      if (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval) {
+        Log.info(_model.toString());
       }
       _timeLastScoreEnd = System.currentTimeMillis();
     }

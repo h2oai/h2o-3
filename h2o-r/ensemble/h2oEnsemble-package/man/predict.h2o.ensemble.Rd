@@ -29,7 +29,7 @@ A \code{\linkS4class{H2OParsedData}} object with the predicted values from each 
 }
 
 \author{
-Erin LeDell \email{ledell@berkeley.edu}
+Erin LeDell \email{erin@h2o.ai}
 }
 
 \seealso{

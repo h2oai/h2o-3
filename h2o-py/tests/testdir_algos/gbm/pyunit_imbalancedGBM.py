@@ -13,7 +13,7 @@ def imbalancedGBM(ip,port):
     hh_imbalanced_perf = hh_imbalanced.model_performance(covtype)
     hh_imbalanced_perf.show()
 
-    hh_balanced = h2o.gbm(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=True, nfolds=3, distribution="multinomial")
+    hh_balanced = h2o.gbm(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=True, seed=123, nfolds=3, distribution="multinomial")
     hh_balanced_perf = hh_balanced.model_performance(covtype)
     hh_balanced_perf.show()
 

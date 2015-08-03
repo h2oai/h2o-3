@@ -78,6 +78,10 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
 
+  ///////////////////////////////////
+  // TODO: make all of these protected!
+  ///////////////////////////////////
+
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */

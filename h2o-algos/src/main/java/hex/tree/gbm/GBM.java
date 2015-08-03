@@ -423,12 +423,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         assert(!Double.isNaN(g)) : "numeric overflow";
         if (_dist == Distribution.Family.poisson
                 || _dist == Distribution.Family.gamma
-                || _dist == Distribution.Family.tweedie
-                || _dist == Distribution.Family.gaussian)
+                || _dist == Distribution.Family.tweedie)
         {
           return new Distribution(_dist, _parms._tweedie_power).link(g);
         } else {
-          return g; //bernoulli/multinomial - leave alone //TODO: Check (bernoulli link won't be able to handle 0 or 1)
+          return g;
         }
       }
       GammaPass(DTree trees[], int leafs[], Distribution.Family distribution) { _leafs=leafs; _trees=trees; _dist = distribution; }
