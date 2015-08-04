@@ -96,8 +96,8 @@ public class TimeLine extends UDP {
     try {
       int lim = b._bb.limit();
       int pos = b._bb.position();
-      b._bb.limit(18);
-      long lo = b.get8(2), hi = b.get8(10);
+      b._bb.limit(16);
+      long lo = b.get8(0), hi = b.get8(8);
       final long ns = System.nanoTime();
       record2(b._h2o, ns, tcp, sr, drop, lo, hi);
       b._bb.limit(lim);

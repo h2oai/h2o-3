@@ -129,8 +129,7 @@ public /* final */ class AutoBuffer {
   // open a TCP socket and roll through writing to the target.  Smaller
   // requests will send via UDP.
   AutoBuffer( H2ONode h2o, int priority ) {
-    _bb = ByteBuffer.wrap(MemoryManager.malloc1(BBP_SML.size())).order(ByteOrder.nativeOrder());//BBP_SML.make();
-    _bb.position(2);            // first 2 bytes reserved for message size
+    _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());//BBP_SML.make();
     _chan = null;               // Channel made lazily only if we write alot
     _h2o = h2o;
     _read = false;              // Writing by default
@@ -167,7 +166,6 @@ public /* final */ class AutoBuffer {
   public AutoBuffer( H2ONode h2o, byte[] buf ) {
     _h2o = h2o;
     _bb = ByteBuffer.wrap(buf).order(ByteOrder.nativeOrder());
-    _bb.position(2);
     _chan = null;
     _read = true;
     _firstPage = true;
@@ -350,7 +348,7 @@ public /* final */ class AutoBuffer {
         // For small-packet write, send via UDP.  Since nothing is sent until
         // now, this close() call trivially orders - since the reader will not
         // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU) return udpSend(_priority);
+        if( _bb.position() < MTU) return udpSend();
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
@@ -498,23 +496,18 @@ public /* final */ class AutoBuffer {
 
   private H2OSmallMessage _sentMsg;
 
-  public H2OSmallMessage takeSentMessage(){
-    H2OSmallMessage res = _sentMsg;
-    _sentMsg = null;
-    return res;
-  }
+  // essentially extra return value made available for resend logic
+  public H2OSmallMessage takeSentMessage(){return _sentMsg;}
 
   // Send via UDP socket.  Unlike eg TCP sockets, we only need one for sending
   // so we keep a global one.  Also, we do not close it when done, and we do
   // not connect it up-front to a target - but send the entire packet right now.
-  private int udpSend(int priority) throws IOException {
+  private int udpSend() throws IOException {
     assert _chan == null;
     TimeLine.record_send(this,false);
     assert _size == 0;
     _size = _bb.position();
     assert _size < AutoBuffer.BBP_SML.size();
-    _bb.putShort(0,(short)_size);
-    _bb.put((byte)0xef);
     _bb.flip();                 // Flip for sending
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
       water.init.NetworkInit.multicast(_bb);
@@ -533,8 +526,6 @@ public /* final */ class AutoBuffer {
     _read = false;
     _priority = priority;
     _bb.clear();
-    if(_h2o != null) // network messages leave first to bytes empty to fill in message size
-      _bb.position(2);
     _firstPage = true;
     return this;
   }
@@ -543,8 +534,6 @@ public /* final */ class AutoBuffer {
     assert !_read;
     _read = true;
     _bb.flip();
-    if(_firstPage && _h2o != null) // network messages leave first to bytes empty to fill in message size
-      _bb.position(2);
     _firstPage = true;
     return this;
   }
@@ -607,10 +596,12 @@ public /* final */ class AutoBuffer {
   // If we are doing I/O, ship the bytes we have now and flip the ByteBuffer.
   private ByteBuffer sendPartial() {
     // Writing into an expanding byte[]?
-    if( _h2o==null && _chan == null ) {
+    if( (_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < MTU)) {
       // This is a byte[] backed buffer; expand the backing byte[].
       byte[] ary = _bb.array();
       int newlen = ary.length<<1; // New size is 2x old size
+      if(_h2o != null && newlen > MTU)
+        newlen = MTU;
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newlen),oldpos,newlen-oldpos)
         .order(ByteOrder.nativeOrder());
@@ -893,17 +884,17 @@ public /* final */ class AutoBuffer {
   // -----------------------------------------------
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
-  int  getCtrl( ) { return getSz(2+1).get(2+0)&0xFF; }
+  int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
   // Get the port in next 2 bytes
-  int  getPort( ) { return getSz(2+1+2).getChar(2+1); }
+  int  getPort( ) { return getSz(1+2).getChar(1); }
   // Get the task# in the next 4 bytes
-  int  getTask( ) { return getSz(2+1+2+4).getInt(2+1+2); }
+  int  getTask( ) { return getSz(1+2+4).getInt(1+2); }
   // Get the flag in the next 1 byte
-  int  getFlag( ) { return getSz(2+1+2+4+1).get(2+1+2+4); }
+  int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
 
   // Set the ctrl, port, task.  Ready to write more bytes afterwards
   AutoBuffer putUdp (UDP.udp type) {
-    assert _bb.position() == 2;
+    assert _bb.position() == 0;
     putSp(_bb.position()+1+2);
     _bb.put    ((byte)type.ordinal());
     _bb.putChar((char)H2O.H2O_PORT  ); // Outgoing port is always the sender's (me) port
@@ -914,7 +905,7 @@ public /* final */ class AutoBuffer {
     return putUdp(type).put4(tasknum);
   }
   AutoBuffer putTask(int ctrl, int tasknum) {
-    assert _bb.position() == 2;
+    assert _bb.position() == 0;
     putSp(_bb.position()+1+2+4);
     _bb.put((byte)ctrl).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;

@@ -7,8 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 
-import water.AutoBuffer.AutoBufferException;
 import water.util.Log;
 
 /**
@@ -55,7 +55,7 @@ public class TCPReceiverThread extends Thread {
         // Pass off the TCP connection to a separate reader thread
         if(_udpLike) {
           Log.info("starting new UDP-TCP receiver thread connected to " + sock.getRemoteAddress());
-          new TCP_UDP_ReaderThread(sock.socket().getInetAddress(), sock).start();
+          new UDP_TCP_ReaderThread(sock.socket().getInetAddress(), sock).start();
         } else new TCPReaderThread(sock,new AutoBuffer(sock)).start();
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
@@ -68,17 +68,18 @@ public class TCPReceiverThread extends Thread {
     }
   }
 
-  static class TCP_UDP_ReaderThread extends Thread {
+  static class UDP_TCP_ReaderThread extends Thread {
     private final SocketChannel _chan;
     private final ByteBuffer _bb;
     private final InetAddress _ia;
     private H2ONode _h2o;
 
-    public TCP_UDP_ReaderThread(InetAddress ia,SocketChannel chan) {
-      super("TCP-UDP");
+    public UDP_TCP_ReaderThread(InetAddress ia, SocketChannel chan) {
+      super("UDP-TCP");
       _ia = ia;
       _chan = chan;
-      _bb = ByteBuffer.allocateDirect(32*AutoBuffer.BBP_SML.size()).order(ByteOrder.nativeOrder());//AutoBuffer.BBP_BIG.make();
+      _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG.size()).order(ByteOrder.nativeOrder());
+//      _bb = ByteBuffer.wrap(new byte[AutoBuffer.BBP_BIG.size()]).order(ByteOrder.nativeOrder());
     }
 
     public String printBytes(ByteBuffer bb, int start, int sz) {
@@ -106,6 +107,7 @@ public class TCPReceiverThread extends Thread {
       }
       return sizeRead;
     }
+
     public void run(){
       int start = 0;
       boolean idle = true;
@@ -117,24 +119,33 @@ public class TCPReceiverThread extends Thread {
           if (start > _bb.position() - 2)
             read(start + 2 - _bb.position());
           idle = false;
-          int sz = _bb.getShort(start); // message size in bytes
+          int sz = (_bb.get(start+1) << 8) | _bb.get(start); // message size in bytes
           assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
           int rem = _bb.position() - start;
-          read(sz + 1 - rem);
-          if((0xFF & _bb.get(start + sz)) != 0xef)
+          read(sz + 2 + 1 - rem);
+          if((0xFF & _bb.get(start + 2 + sz)) != 0xef)
             H2O.fail("Missing expected sentinel (0xef==239) at the end of the message, likely out of sync, start = " + start + ", size = " + sz + ", bytes = " + printBytes(_bb,start,sz));
           // extract the bytes
-          byte[] ary = new byte[Math.max(sz, 18)];
-          for (int i = 0; i < sz; ++i)
-            ary[i] = _bb.get(start + i);
+          byte[] ary = MemoryManager.malloc1(Math.max(16,sz)); // fixme: 16 for timeline which always acesses first 16 bytes
+          if( _bb.hasArray()){
+            System.arraycopy(_bb.array(),start+2,ary,0,sz);
+          } else {
+            int pos = _bb.position();
+            int limit = _bb.limit();
+            _bb.position(start+2);
+            _bb.limit(start+2+sz);
+            _bb.get(ary,0,sz);
+            _bb.limit(limit);
+            _bb.position(pos);
+          }
           if (_h2o == null)
             _h2o = H2ONode.intern(_ia, new AutoBuffer(null, ary).getPort());
           AutoBuffer ab = new AutoBuffer(_h2o, ary);
           int ctrl = ab.getCtrl();
           TimeLine.record_recv(ab, false, 0);
           H2O.submitTask(new FJPacket(ab, ctrl));
-          start += sz + 1;
-          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
+          start += sz + 2 + 1;
+          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 2 + 1 + 16) { // + 2 bytes for size + 1 byte for 0xef sentinel
             _bb.limit(_bb.position());
             _bb.position(start);
             _bb.compact();
@@ -147,6 +158,7 @@ public class TCPReceiverThread extends Thread {
           Log.err(ioe);
         }
       } catch(Throwable t){
+        t.printStackTrace();
         Log.err("unexpected error in UDP-TCP thread.");
         Log.err(t);
       } finally {

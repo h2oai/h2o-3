@@ -231,7 +231,17 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
     public void increasePriority() {++_priority;}
     public static H2OSmallMessage make(ByteBuffer bb, int priority) {
-      return new H2OSmallMessage(Arrays.copyOf(bb.array(), bb.limit()),priority);
+      int sz = bb.limit();
+      assert sz == (0xFFFF & sz);
+      byte [] ary = MemoryManager.malloc1(bb.limit()+2+1);
+      ary[ary.length-1] = (byte)0xef; // eom marker
+      ary[0] = (byte)(sz & 0xFF);
+      ary[1] = (byte)((sz & 0xFF00) >> 8);
+      if(bb.hasArray())
+        System.arraycopy(bb.array(),0,ary,2,sz);
+      else  for(int i = 0; i < sz; ++i)
+          ary[i+2] = bb.get(i);
+      return new H2OSmallMessage(ary,priority);
     }
   }
 
@@ -258,7 +268,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             // Must make a fresh socket
             SocketChannel sock = SocketChannel.open();
             sock.socket().setReuseAddress(true);
-            sock.socket().setSendBufferSize(AutoBuffer.BBP_SML.size());
+            sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
             InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort() + 1);
             boolean res = sock.connect(isa);
             boolean blocking = true;
@@ -291,7 +301,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             H2OSmallMessage m = _msgQ.take();
             while (m != null) {
               if (m._data.length > _bb.capacity())
-                throw new IllegalStateException("UDP message larger than the buffer");
+                H2O.fail("Small message larger than the buffer");
               if (_bb.remaining() < m._data.length)
                 sendBuffer();
               _bb.put(m._data);
@@ -493,7 +503,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
                   // Timedout client?
                   (rpc._client._heartbeat._client && rpc._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
                   rpc._client.remove_task_tracking(rpc._tsknum);
-                } else if(rpc._started + rpc._retry < currenTime) {
+                } else  {
                   if (rpc._computed) {
                     if (rpc._computedAndReplied) {
                       DTask dt = rpc._dt;

@@ -14,8 +14,8 @@ import java.util.Random;
  */
 public class NetworkBench extends Iced {
 //  public static int [] MSG_SZS = new int[]{1, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304};
-  public static int [] MSG_SZS = new int[]{1};
-  public static int [] MSG_CNT = new int[]{500000};
+  public static int [] MSG_SZS = new int[]{1,1,1,1,1};
+  public static int [] MSG_CNT = new int[]{500000,500000,500000,500000,500000};
 //  public static int [] MSG_CNT = new int[]{500000, 25000, 12500, 6000, 781, 391, 195, 98, 49, 25};
 
 
@@ -69,10 +69,10 @@ public class NetworkBench extends Iced {
          Log.info("Network Bench, running All2All, message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
          long[][] all2all = new TestAll2All(MSG_SZS[i], MSG_CNT[i]).doAllNodes()._time;
          Log.info("All2All test done in " + ((System.currentTimeMillis()-t2)*0.001) + "s");
-         for(int j = 0; j < H2O.CLOUD.size(); ++j) {
-           Log.info("Network Bench, running MRTask test at node " + j + ", message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
-           mrts[j] = RPC.call(H2O.CLOUD._memary[j], new TestMRTasks(MSG_SZS[i],MSG_CNT[i])).get()._time;
-         }
+//         for(int j = 0; j < H2O.CLOUD.size(); ++j) {
+//           Log.info("Network Bench, running MRTask test at node " + j + ", message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
+//           mrts[j] = RPC.call(H2O.CLOUD._memary[j], new TestMRTasks(MSG_SZS[i],MSG_CNT[i])).get()._time;
+//         }
          _results[i] = new NetworkBenchResults(MSG_SZS[i],MSG_CNT[i],all2all,mrts);
        }
        tryComplete();
