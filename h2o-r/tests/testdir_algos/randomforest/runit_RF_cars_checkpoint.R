@@ -15,10 +15,12 @@ test.checkpointing <- function(conn) {
   predictors <- c("displacement","power","weight","acceleration","year")
   if ( problem == 1 ) {
     response_col <- "economy_20mpg"
-    cars[,response_col] <- as.factor(cars[response_col])
+    train[,response_col] <- as.factor(train[response_col])
+    valid[,response_col] <- as.factor(valid[response_col])
   } else if ( problem == 2 ) {
     response_col <- "cylinders"
-    cars[,response_col] <- as.factor(cars[response_col])
+    train[,response_col] <- as.factor(train[response_col])
+    valid[,response_col] <- as.factor(valid[response_col])
   } else {
     response_col = "economy"
   }

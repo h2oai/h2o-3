@@ -3,7 +3,7 @@ The H2O REST API allows you to access all the facilities of H2O from an external
 
 It is used by the Flow UI as well as both the R and Python bindings: everything that you can do with those clients can be done by using the REST API, including data import, model building and generating predictions.
 
-You can test and play with the REST API with your browser or using browser tools such as PostMan in Chrome, using curl, or using the language of your choice.  Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file, and are simple to generate for other langauges if desired.
+You can test and play with the REST API with your browser or using browser tools such as *Postman* in Chrome, using *curl*, or using the language of your choice.  Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file, and are simple to generate for other langauges if desired.
 
 ## Reference Documentation
 Reference documentation for the REST API is available within the help pane in Flow, as well as on the H2O.ai website, [http://docs.h2o.ai/](http://docs.h2o.ai/).  The reference documentation is all generated from the H2O server via the Metadata facilities described below so that it is always up to date.
@@ -42,13 +42,13 @@ As is standard for REST APIs, the HTTP verbs GET, HEAD, POST and DELETE are used
 
 **HEAD** requests return just the HTTP status for accessing the resource.
 
-**POST** requests create a new object within the H2O cluster.  Examples are importing or parsing a file into a Frame or training a new Model.  Some parameters may be given in the URL, but most are given using a request *schema*.  The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.
+**POST** requests create a new object within the H2O cluster.  Examples are importing or parsing a file into a Frame or training a new Model.  Some parameters may be given in the URL, but most are given using a request *schema*.  The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  More on this below in the **Formats** secion.
 
 A future version of H2O will move to using *application/json*.
 
 **DELETE** requests delete an object, generally from the distributed object store.
 
-**PUT**, intended for requiests which modify objects, is not yet used.
+**PUT**, intended for requests which modify objects, is not yet used.
 
 ## HTTP Status Codes
 H2O uses standard HTTP status codes for all it's responses.  See [Wikipedia](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for a reference on their meanings.
@@ -100,7 +100,7 @@ This example shows the *model_id* field returned by a model builder call:
             ],
             ...
 ### POST bodies
-The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  A future version of H2O will move to using *application/json*.  In the meantime, complex fields such as arrays are POSTed in the same format they would be in the JSON, for example an array of ints might be posted in a field as [1, 10, 100].  Note the array of strings for the *ignored_columns* parameter in this GLM model builder POST body:
+The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  A future version of H2O will move to using *application/json*.  In the meantime, complex fields such as arrays are POSTed in the same format they would be in the JSON.  For example an array of ints might be posted in a field as [1, 10, 100].  Note the array of strings for the *ignored_columns* parameter in this GLM model builder POST body:
 
     model_id=prostate_glm&training_frame=prostate.hex&nfolds=0&response_column=CAPSULE&ignored_columns=%5B%22%22%5D&ignore_const_cols=true&family=binomial&solver=AUTO&alpha=&lambda=&lambda_search=false&standardize=true&non_negative=false&score_each_iteration=false&max_iterations=-1&link=family_default&intercept=true&objective_epsilon=0.00001&beta_epsilon=0.0001&gradient_epsilon=0.0001&prior=-1&max_active_predictors=-1
 
@@ -109,7 +109,7 @@ The value is ["ID"], urlencoded as %5B%22ID%22%5D.
 ### Metadata
 The formats of all payloads (*schemas*) are available dynamically from the server using the */Metadata/schemas* endpoints. You can fetch additional metadata for model builder (model algorithm) parameters from the */ModelBulders* endpoints.  This metadata allows you to write a client which automatically adapts to new fields.  
 
-As an example, Flow has no hardwired knowledge of any of the model algos.  It discovers the list of algos and all their parameter information dynamically.  This means that if you extend H2O with new algorithms or new fields for the built-in algorithms Flow will Just Work (tm).
+As an example, Flow has no hardwired knowledge of any of the model algos.  It discovers the list of algos and all their parameter information dynamically.  This means that if you extend H2O with new algorithms or new fields for the built-in algorithms then Flow will Just Work (tm).
 
 Similarly, all the endpoints (URL patterns) are described dynamically by the */Metadata/endpoints* endpoints.
 
@@ -153,14 +153,14 @@ If you don't require that the server return certain fields you can use the *excl
 
 The *exclude_fields* parameter takes a comma-separated list of field names.  Nested field names are separated by slashes.
 
-As an example, one call of Flow to /Frames/{frame_id} uses:
+As an example, one call of Flow to /Frames/{frame_id} uses this query parameter:
 
     exclude_fields=frames/vec_ids,frames/columns/data,frames/columns/domain,frames/columns/histogram_bins,frames/columns/percentiles
 
 ## Example Endpoints
 This section lists a few endpoints to give you an idea of the functions that are available through the REST API.  The reference documentation contains the full list.
 
-Remember, Flow and the R and Python bindings access H2O only through the REST API, so if you find functionality in those clients you'll find it in th REST API as well.  The only caveat is data munging (e.g., slicing, creating new columns, etc).  That functionality is available through the /99/Rapids endpoint, which is under rapid change.  Contact us if you need to access those functions through the REST API.
+Remember, Flow and the R and Python bindings access H2O only through the REST API, so if you find functionality in those clients you'll find it in the REST API as well.  The only caveat is data munging (e.g., slicing, creating new columns, etc).  That functionality is available through the /99/Rapids endpoint, which is under rapid change (pun intended).  Contact us if you need to access those functions through the REST API.
 
 ### Loading and parsing data files
     GET /3/ImportFiles
