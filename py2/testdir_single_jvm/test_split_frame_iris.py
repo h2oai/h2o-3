@@ -45,8 +45,13 @@ class Basic(unittest.TestCase):
 
             fsResult = h2o.n0.split_frame(dataset=splitMe, ratios='[0.5]')
             fs = OutputObj(fsResult, 'split_frame')
-            model_key = fs.jobs[0].dest.name
-            = fs.jobs[0].dest.name
+            d = fs.jobs[0].destination_frames
+
+            # modelResult = h2o.n0.models(key=model_key)
+            # model = OutputObj(modelResult['models'][0]['output'], 'split_frame')
+            # print "model:", dump_json(model)
+            split_keys = [split.name for split in d]
+
 
             # modelResult = h2o.n0.models(key=model_key)
             # model = OutputObj(modelResult['models'][0]['output'], 'split_frame')
