@@ -13,7 +13,7 @@ def imbalanced(ip,port):
     imbalanced_perf = imbalanced.model_performance(covtype)
     imbalanced_perf.show()
 
-    balanced = h2o.random_forest(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=True, nfolds=3)
+    balanced = h2o.random_forest(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=True, seed=123, nfolds=3)
     balanced_perf = balanced.model_performance(covtype)
     balanced_perf.show()
 

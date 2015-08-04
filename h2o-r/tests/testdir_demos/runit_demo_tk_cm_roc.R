@@ -33,71 +33,74 @@ if (TRUE) {
 }
 
 h2o.startLogging()
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=T)
+check.demo_cm_roc <- function(conn) {
 
-#uploading data file to h2o
-air <- h2o.importFile(conn, filePath, "air")
+  #uploading data file to h2o
+  air <- h2o.importFile(conn, filePath, "air")
 
 
-#Constructing validation and train sets by sampling (20/80)
-#creating a column as tall as airlines(nrow(air))
-s <- h2o.runif(air)    # Useful when number of rows too large for R to handle
-air.train <- air[s <= 0.8,]
-air.valid <- air[s > 0.8,]
+  #Constructing validation and train sets by sampling (20/80)
+  #creating a column as tall as airlines(nrow(air))
+  s <- h2o.runif(air)    # Useful when number of rows too large for R to handle
+  air.train <- air[s <= 0.8,]
+  air.valid <- air[s > 0.8,]
 
-myX = c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", "fDayOfWeek" )
-myY="IsDepDelayed"
+  myX = c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", "fDayOfWeek" )
+  myY="IsDepDelayed"
 
-#gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, distribution = "multinomial", training_frame = air.train, ntrees = 10,
-                   max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
+  #gbm
+  air.gbm <- h2o.gbm(x = myX, y = myY, distribution = "multinomial", training_frame = air.train, ntrees = 10,
+                     max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
 
-print(air.gbm)
-print("Variable Importance")
-print(air.gbm@model$variable_importances)
+  print(air.gbm)
+  print("Variable Importance")
+  print(air.gbm@model$variable_importances)
 
-print("AUC: ")
-p <- h2o.performance(air.gbm, air.valid)
-print(p@metrics$AUC)
+  print("AUC: ")
+  p <- h2o.performance(air.gbm, air.valid)
+  print(p@metrics$AUC)
 
-#RF
-# air.rf <- h2o.randomForest(x=myX,y=myY,data=air.train,ntree=10,depth=20,seed=12,importance=T,validation=air.valid, type = "BigData")
-# print(air.rf)
+  #RF
+  # air.rf <- h2o.randomForest(x=myX,y=myY,data=air.train,ntree=10,depth=20,seed=12,importance=T,validation=air.valid, type = "BigData")
+  # print(air.rf)
 
-#uploading test file to h2o
-air.test <- h2o.importFile(conn,testFilePath,destination_frame="air.test")
+  #uploading test file to h2o
+  air.test <- h2o.importFile(conn,testFilePath,destination_frame="air.test")
 
-model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
+  model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
 
-#predicting on test file
-pred <- predict(model_object,air.test)
-head(pred)
+  #predicting on test file
+  pred <- predict(model_object,air.test)
+  head(pred)
 
-perf <- h2o.performance(model_object,air.test)
-#Building confusion matrix for test set
+  perf <- h2o.performance(model_object,air.test)
+  #Building confusion matrix for test set
 
-# FIXME - these require work
-h2o.confusionMatrix(perf)
-h2o.auc(perf)
-h2o.precision(perf)
-h2o.accuracy(perf)
+  # FIXME - these require work
+  h2o.confusionMatrix(perf)
+  h2o.auc(perf)
+  h2o.precision(perf)
+  h2o.accuracy(perf)
 
-#perf@metrics$AUC
+  #perf@metrics$AUC
 
-#Plot ROC for test set
-#FIXME
-plot(perf,type="roc")
+  #Plot ROC for test set
+  #FIXME
+  plot(perf,type="roc")
 
-PASS_BANNER()
 
-if (FALSE) {
-    h <- h2o.init(ip="mr-0xb1", port=60024)
-    df <-h2o.importFile(h, "/home/tomk/airlines_all.csv")
-    nrow(df)
-    ncol(df)
-    head(df)
-    myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "Month", "DayofMonth", "DayOfWeek")
-    myY <- "IsDepDelayed"
-    air.glm <- h2o.glm(x = myX, y = myY, training_frame = df, family = "binomial", nfolds = 10, alpha = 0.25, lambda = 0.001)
-    air.glm@model$confusion
+  if (FALSE) {
+      h <- h2o.init(ip="mr-0xb1", port=60024)
+      df <-h2o.importFile(h, "/home/tomk/airlines_all.csv")
+      nrow(df)
+      ncol(df)
+      head(df)
+      myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "Month", "DayofMonth", "DayOfWeek")
+      myY <- "IsDepDelayed"
+      air.glm <- h2o.glm(x = myX, y = myY, training_frame = df, family = "binomial", nfolds = 10, alpha = 0.25, lambda = 0.001)
+      air.glm@model$confusion
+  }
+  testEnd()
 }
+
+doTest("Airlines CM and ROC", check.demo_cm_roc)

@@ -408,7 +408,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           try {
             TwoDimTable t = (TwoDimTable) f.get(this);
             f.setAccessible(true);
-            if (t != null) sb.append(t.toString());
+            if (t != null) sb.append(t.toString(1,false /*don't print the full table if too long*/));
           } catch (IllegalAccessException e) {
             e.printStackTrace();
           }
@@ -525,6 +525,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
+      boolean isFold = fold != null && names[i].equals(fold);
 
       if(vec == null && isResponse && computeMetrics)
         throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
@@ -535,12 +536,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null) {
-        String str = "Validation set is missing training column "+names[i];
+        String str = null;
         if( expensive ) {
-          str = str + ": substituting in a column of NAs";
-          vec = test.anyVec().makeCon(missing);
+          if (isFold) {
+            str = "Validation set is missing fold column " + names[i] + ": substituting in a column of 0s";
+            vec = test.anyVec().makeCon(0);
+          } else {
+            str = "Validation set is missing training column " + names[i] + ": substituting in a column of NAs";
+            vec = test.anyVec().makeCon(missing);
+            convNaN++;
+          }
           vec.setDomain(domains[i]);
-          convNaN++;
         }
         msgs.add(str);
       }

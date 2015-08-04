@@ -37,7 +37,7 @@ An H2O model.
 }
 
 \author{
-Erin LeDell \email{ledell@berkeley.edu}
+Erin LeDell \email{erin@h2o.ai}
 }
 
 \seealso{

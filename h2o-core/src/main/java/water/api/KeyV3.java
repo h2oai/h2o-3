@@ -31,7 +31,9 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public String URL;
 
   public KeyV3() {
-    __meta.schema_type = "Key<" + getKeyedClassType() + ">";
+    // NOTE: this is a bit of a hack; without this we won't have the type parameter.
+    // We'll be able to remove this once we have proper typed Key subclasses, like FrameKey.
+    get__meta().setSchema_type("Key<" + getKeyedClassType() + ">");
   }
 
   // need versioned
