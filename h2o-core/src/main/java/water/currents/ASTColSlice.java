@@ -96,7 +96,7 @@ class ASTRowSlice extends ASTPrim {
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._d.getNum())};
       returningFrame = fr.deepSlice(rows,null);
-    } else if( (asts[2] instanceof ASTExec) ) {
+    } else if( (asts[2] instanceof ASTExec) || (asts[2] instanceof ASTId) ) {
       Frame predVec = stk.track(asts[2].exec(env)).getFrame();
       if( predVec.numCols() != 1 ) throw new IllegalArgumentException("Conditional Row Slicing Expression evaluated to " + predVec.numCols() + " columns.  Must be a boolean Vec.");
       returningFrame = fr.deepSlice(predVec,null);
