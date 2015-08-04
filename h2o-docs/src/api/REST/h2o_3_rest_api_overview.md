@@ -18,19 +18,24 @@ Reference documentation for the REST API is available in the Help sidebar in Flo
 ## Versioning and Stability
 Both the endpoints and the payloads for the REST API are versioned for stability; the current stable version for both is 3.  Versions will be supported for some time after a new major version is released to provide time to upgrade your clients.
 
-In general, you will want to write to a specific version, such as 3, and upgrade shortly after a new major version is released.  Once we release a new major version of the REST API most new features will be added only to the new version.
+In general you will want to write to a specific version, such as 3, and upgrade shortly after a new major version is released.  Once we release a new major version of the REST API most new features will be added only to the new version.
 
 ### Non-breaking changes
 
 We continue to add features to the APIs, but we only allow *non-breaking changes* in a published API such as version 3.  Breaking changes force a new major version number.
 
-A non-breaking change will not change the behavior of a well-written client; for example, adding a model parameter with a default value that maintains the old behavior if the parameter is omitted.  Another example is adding additional output fields to a response.  We test backward compatibility by running a full set of tests against each new release (including nightlies) using old releases of the Flow, R, and Python clients.
+A non-breaking change will not change the behavior of a well-written client.  Examples of non-breaking changes are:
+
+* adding additional output fields to a response  
+* adding a parameter with a default value that maintains the old behavior if the parameter is omitted
+
+We test backward compatibility by running a full set of tests against each new release (including nightlies) using old releases of the Flow, R, and Python clients.
 
 ### The EXPERIMENTAL version
 
 Features that are under development and are not yet stable use version 99, which indicates that they may change between releases.  Once those features become stable, we change the version from 99 to the current stable version.
 
-For request URLs, you may use EXPERIMENTAL as the version number to specify in your client code that you are making requests to the latest experimental version:
+For request URLs, you may use EXPERIMENTAL as the version number to make it clear in your client code that you are making requests to an experimental endpoint:
 
 `GET http://127.0.0.1:54321/EXPERIMENTAL/Sample`
 
@@ -55,7 +60,7 @@ As is standard for REST APIs, the HTTP verbs GET, HEAD, POST and DELETE are used
 
 - **DELETE** requests to delete an object, generally from the distributed object store.
 
-- **PUT** is used for requests that modify objects (not yet in use).
+- **PUT** is used for requests that modify objects; it is not used yet.
 
 ## HTTP Status Codes
 H2O uses standard HTTP status codes for all its responses.  Refer to [Wikipedia](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for more information on their meanings.
@@ -69,7 +74,7 @@ The status codes currently used by H2O are:
 * **500 Internal Server Error** (unanticipated failure occurred in the server)
 
 ## Formats
-The payloads for each endpoint are implemented as versioned *schemas*.  These schemas are self-describing form simplicity and ease of implementation, especially if you persist them for later.
+The payloads for each endpoint are implemented as versioned *schemas*.  These schemas are self-describing for simplicity and ease of implementation, especially if you persist them for later.
 
 ### Schemas
 
@@ -116,7 +121,7 @@ The value is ["ID"], urlencoded as %5B%22ID%22%5D.
 ### Metadata
 The formats of all payloads (*schemas*) are available dynamically from the server using the */Metadata/schemas* endpoints. You can fetch additional metadata for model builder (model algorithm) parameters from the */ModelBuilders* endpoints.  This metadata allows you to write a client that automatically adapts to new fields.  
 
-As an example, Flow has no hardwired knowledge of any of the model algos.  It discovers the list of algos and  their parameter information dynamically.  This means that if you extend H2O with new algorithms or new fields for the built-in algorithms, Flow will Just Work (tm).
+As an example, Flow has no hardwired knowledge of any of the model algos.  It discovers the list of algos and  their parameter information dynamically.  This means that if you extend H2O with new algorithms or new fields for the built-in algorithms Flow will Just Work (tm).
 
 Similarly, all the endpoints (URL patterns) are described dynamically by the */Metadata/endpoints* endpoints.
 
@@ -154,9 +159,9 @@ Here is the result of requesting a Frame that is not present in the server:
 H2O also supports "meta" query parameters to control the result payload.  Currently the only one is *exclude_fields*, but more will be supported in subsequent releases.
 
 ### exclude_fields
-The resulting payload of some calls can get quite large.  For example, a Frame or a Model built with a Frame that has 5,000 categorical columns may have a very large list of *domains*, or categorical levels.  
+The result payload of some calls can get quite large.  For example, a Frame or a Model built with a Frame that has 5,000 categorical columns may have a very large list of *domains*, or categorical levels.  
 
-If you don't require the server to return certain fields, you can use the *exclude_fields* query parameter to exclude them.  This reduces the size of the result, sometimes considerably, which speeds up JSON parsing in the client and reducing the chance of limited memory clients such as web browsers running out of memory while processing the result.
+If you don't require the server to return certain fields you can use the *exclude_fields* query parameter to exclude them.  This reduces the size of the result, sometimes considerably, which speeds up JSON parsing in the client and reduces the chance that limited memory clients such as web browsers will run out of memory while processing the result.
 
 The *exclude_fields* parameter accepts a comma-separated list of field names.  Nested field names are separated by slashes.
 
