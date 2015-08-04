@@ -3,7 +3,7 @@
 #' Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
 #'
 #' The default distribution function will guess the model type
-#' based on the response column typerun properly the response column must be an numeric for "gaussian" or an
+#' based on the response column type. In order to run properly, the response column must be an numeric for "gaussian" or an
 #' enum for "bernoulli" or "multinomial".
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GBM model.

@@ -39,7 +39,7 @@
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
-#'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds" are the lower
+#'        in the GLM. "names" contains the predictor names, "lower_bounds" and "upper_bounds" are the lower
 #'        and upper bounds of beta, and "beta_given" is some supplied starting values for beta.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
