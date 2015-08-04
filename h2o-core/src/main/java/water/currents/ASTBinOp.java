@@ -321,18 +321,20 @@ class ASTLOr extends ASTBinOp {
   } 
 }
 
-// IfElse.  Execute either 2nd or 3rd (but not both) according to 1st arg.
-// Neither if test is NaN.  Elements of the result are picked from either the
-// true or false frame.
+// IfElse.  
 //
-// ifelse( NaN  , yes, no ) ==> NaN
-// ifelse( true , yes, no ) ==> yes; no is NOT evaluated
-// ifelse( false, yes, no ) ==> no; yes is NOT evaluated
-// ifelse( frame, yes, no ) ==> yes & no must be scalars, or same-shape arrays.  
-//    If frame is all zero, then treat as constant false
-//    If frame is all non-zero, then treat as constant true
-//    Elements are picked from yes & no according to frame elements being
-//    non-zero or zero (and NaN if frame is NaN).
+// "NaNs poison".  If the test is a NaN, evaluate neither side and return a NaN
+//
+// "Frames poison".  If the test is a Frame, both sides are evaluated and
+// selected between according to the test.  The result is a Frame.  All Frames
+// must be compatible, and scalars and 1-column Frames are widened to match the
+// widest frame.  NaN test values produce NaN results.
+//
+// If the test is a scalar, then only the returned side is evaluated.  If both
+// sides are scalars or frames, then the evaluated result is returned.  The
+// unevaluated side is not checked for being a compatible frame.  It is an
+// error if one side is typed as a scalar and the other as a Frame.
+//
 class ASTIfElse extends ASTPrim { 
   @Override int nargs() { return 1+3; } // test true false
   String str() { return "ifelse"; } 

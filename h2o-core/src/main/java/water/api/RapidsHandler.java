@@ -23,6 +23,9 @@ class RapidsHandler extends Handler {
       throw e;
     }
 
+    if( val.type() != Val.FRM && rapids.id != null )
+      throw new IllegalArgumentException("Passed an ID but got a scalar result; IDs only allowed on Frame results");
+
     switch( val.type() ) {
     case Val.NUM:  return new RapidsScalarV3(val.getNum());
     case Val.STR:  return new RapidsStringV3(val.getStr());
@@ -30,21 +33,21 @@ class RapidsHandler extends Handler {
     case Val.FRM:
       Frame fr = val.getFrame();
       assert fr._key==null;     // Rapids always returns a key-less Frame
-      if( rapids.id==null ) {
-        // allow for 1x1 frame with no ID to return THAT scalar
-        String s=null;
-        double d=Double.NaN;
-        if( fr.numCols() == 1 && fr.numRows() == 1 ) {
-          if (fr.anyVec().isNumeric())     d = fr.anyVec().at(0);
-          else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new ValueString(), 0).toString();
-          else if( fr.anyVec().isEnum() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
-          fr.delete();
-          return s!=null ? new RapidsStringV3(s) : new RapidsScalarV3(d);
-        } else {
-          fr.delete();
-          return new RapidsScalarV3(Double.NaN);
-        }
-      }
+      //if( rapids.id==null ) {
+      //  // allow for 1x1 frame with no ID to return THAT scalar
+      //  String s=null;
+      //  double d=Double.NaN;
+      //  if( fr.numCols() == 1 && fr.numRows() == 1 ) {
+      //    if (fr.anyVec().isNumeric())     d = fr.anyVec().at(0);
+      //    else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new ValueString(), 0).toString();
+      //    else if( fr.anyVec().isEnum() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
+      //    fr.delete();
+      //    return s!=null ? new RapidsStringV3(s) : new RapidsScalarV3(d);
+      //  } else {
+      //    fr.delete();
+      //    return new RapidsScalarV3(Double.NaN);
+      //  }
+      //}
       Key k = Key.make(rapids.id);
       // Smart delete any prior top-level result
       Iced i = DKV.getGet(k);

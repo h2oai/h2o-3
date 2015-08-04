@@ -115,7 +115,7 @@ Summary.Frame <- function(x,...,na.rm) {
 #  q <- pryr:::named2(substitute(x),parent.frame())
 #  q <- refs(x)
 #  q>=1
-  return(FALSE)
+  return(TRUE)
 }
 
 # Internal recursive clear-visit-flag function, goes hand-n-hand with a
@@ -144,12 +144,12 @@ Summary.Frame <- function(x,...,na.rm) {
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
 pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(x),e); .clearvisit(x); invisible() }
 
-.eval.impl <- function(x) {
+.eval.impl <- function(x, toplevel) {
   if( is.character(xchild<-x:eval) ) return(if(is.Frame(x:data) || is.null(x:data) ) xchild else x:data)
-  res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child) else child }),collapse=" ")
+  res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child,F) else child }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
   x$eval <- xchild <- .key.make("RTMP") # Flag as code-emitted
-  if( .shared(x) ) 
+  if( .shared(x) && !toplevel) 
     res <- paste0("(tmp= ",xchild," ",res,")")
   res
 }
@@ -159,7 +159,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
   if( !is.character(x:eval) ) {
-    exec_str <- .eval.impl(x)
+    exec_str <- .eval.impl(x,TRUE)
     print(paste0("EXPR: ",exec_str))
     # Execute the AST on H2O
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:eval, method = "POST")
