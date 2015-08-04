@@ -1,29 +1,36 @@
 # H2O 3 REST API Overview
-The H2O REST API allows you to access all the facilities of H2O from an external program or script, via JSON over HTTP.  
+The H2O REST API allows you to access all the capabilities of H2O from an external program or script, via JSON over HTTP.  
 
-It is used by the Flow UI as well as both the R and Python bindings: everything that you can do with those clients can be done by using the REST API, including data import, model building and generating predictions.
+The REST API is used by the Flow UI, as well as both the R and Python bindings: everything that you can do with those clients can be done by using the REST API, including data import, model building and generating predictions.
 
-You can test and play with the REST API with your browser or using browser tools such as *Postman* in Chrome, using *curl*, or using the language of your choice.  Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file, and are simple to generate for other langauges if desired.
+You can test and try out the REST API:
+
+ - in your browser 
+ - using browser tools (such as *Postman* in Chrome)
+ - using *curl*
+ - using the language of your choice
+
+Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file and are simple to generate for other langauges if desired.
 
 ## Reference Documentation
-Reference documentation for the REST API is available within the help pane in Flow, as well as on the H2O.ai website, [http://docs.h2o.ai/](http://docs.h2o.ai/).  The reference documentation is all generated from the H2O server via the Metadata facilities described below so that it is always up to date.
+Reference documentation for the REST API is available in the Help sidebar in Flow, as well as on the H2O.ai website, [http://docs.h2o.ai/](http://docs.h2o.ai/).  The reference documentation is all generated from the H2O server via the Metadata facilities described below so  it is always up to date.
 
 ## Versioning and Stability
-Both the endpoints and the payloads for the REST API are versioned for stability; the current stable version for them is 3.  Versions will be supported for some time after a new major version is released to allow you time to upgrade your clients.
+Both the endpoints and the payloads for the REST API are versioned for stability; the current stable version for both is 3.  Versions will be supported for some time after a new major version is released to provide time to upgrade your clients.
 
-In general you will want to write to a specific version, such as 3, and upgrade shortly after a new major version is released.  Once we release a new major version of the REST API most new features will be added only to the new version.
+In general, you will want to write to a specific version, such as 3, and upgrade shortly after a new major version is released.  Once we release a new major version of the REST API most new features will be added only to the new version.
 
 ### Non-breaking changes
 
 We continue to add features to the APIs, but we only allow *non-breaking changes* in a published API such as version 3.  Breaking changes force a new major version number.
 
-A non-breaking change is one which will not change the behavior of a well-written client.  One example is adding a model parameter with a default value which maintains the old behavior if the parameter is omitted.  Another is adding additional output fields to a response.  We test backward compatibility by running a full set of tests against each new release (including nightlies) using old releases of the Flow, R and Python clients.
+A non-breaking change will not change the behavior of a well-written client; for example, adding a model parameter with a default value that maintains the old behavior if the parameter is omitted.  Another example is adding additional output fields to a response.  We test backward compatibility by running a full set of tests against each new release (including nightlies) using old releases of the Flow, R, and Python clients.
 
 ### The EXPERIMENTAL version
 
-Features which are under development and are not yet stable use version 99, indicating that they may change between releases.  Once those features become stable we change the version from 99 to the current stable version.
+Features that are under development and are not yet stable use version 99, which indicates that they may change between releases.  Once those features become stable, we change the version from 99 to the current stable version.
 
-For request URLs you may use EXPERIMENTAL as the version number to make it clear in your client code that you are making requests to a moving target:
+For request URLs, you may use EXPERIMENTAL as the version number to specify in your client code that you are making requests to the latest experimental version:
 
 `GET http://127.0.0.1:54321/EXPERIMENTAL/Sample`
 
@@ -33,25 +40,25 @@ Your H2O cluster is typically referenced by the host name and HTTP port of the f
 
 H2O REST API URIs begin with a version followed by a resource type, such as */3/Frames* or */3/Models* or */3/Cloud*.  Typically a GET to this kind of resource collection URI will return all the instances of the resource type.
 
-All endpoints that deal with a resource type will begin with the same prefix.  As an example, *GET /3/Frames* returns the list of all *Frames*, while *GET /3/Frames/my_frame* returns the *Frame*  named *my_frame*.
+All endpoints that deal with a resource type will begin with the same prefix.  As an example, *GET /3/Frames* returns the list of all *Frames*, while *GET /3/Frames/my\_frame* returns the *Frame*  named *my\_frame*.
 
 ## HTTP Verbs
 As is standard for REST APIs, the HTTP verbs GET, HEAD, POST and DELETE are used to interact with the resources in the server.
 
-**GET** requests fetch data and do not cause side effects.  All parameters for the request are contained within the URL, either within the path (e.g., /3/Frames/*my_frame_name*/*a_column_name*) or as query parameters (e.g., /3/Frames/my_frame_name*?row_offset=10000&row_count=1000*)
+- **GET** requests fetch data and do not cause side effects.  All parameters for the request are contained within the URL, either within the path (e.g., /3/Frames/*my\_frame\_name*/*a\_column\_name*) or as query parameters (e.g., /3/Frames/my\_frame\_name*?row_offset=10000&row_count=1000*)
 
-**HEAD** requests return just the HTTP status for accessing the resource.
+- **HEAD** requests return just the HTTP status for accessing the resource.
 
-**POST** requests create a new object within the H2O cluster.  Examples are importing or parsing a file into a Frame or training a new Model.  Some parameters may be given in the URL, but most are given using a request *schema*.  The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  More on this below in the **Formats** secion.
+- **POST** requests create a new object within the H2O cluster.  Examples are importing or parsing a file into a Frame or training a new Model.  Some parameters may be given in the URL, but most are given using a request *schema*.  The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  More on this below in the **Formats** secion.
 
-A future version of H2O will move to using *application/json*.
+  A future version of H2O will move to using *application/json*.
 
-**DELETE** requests delete an object, generally from the distributed object store.
+- **DELETE** requests to delete an object, generally from the distributed object store.
 
-**PUT**, intended for requests which modify objects, is not yet used.
+- **PUT** is used for requests that modify objects (not yet in use).
 
 ## HTTP Status Codes
-H2O uses standard HTTP status codes for all it's responses.  See [Wikipedia](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for a reference on their meanings.
+H2O uses standard HTTP status codes for all its responses.  Refer to [Wikipedia](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for more information on their meanings.
 
 The status codes currently used by H2O are:
 
@@ -62,7 +69,7 @@ The status codes currently used by H2O are:
 * **500 Internal Server Error** (unanticipated failure occurred in the server)
 
 ## Formats
-The payloads for each endpoint are implemented as versioned *schema*s.  These schemas are self-describing to make it simpler and more robust to consume them, especially if you persist them for later.
+The payloads for each endpoint are implemented as versioned *schemas*.  These schemas are self-describing form simplicity and ease of implementation, especially if you persist them for later.
 
 ### Schemas
 
@@ -100,23 +107,23 @@ This example shows the *model_id* field returned by a model builder call:
             ],
             ...
 ### POST bodies
-The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  A future version of H2O will move to using *application/json*.  In the meantime, complex fields such as arrays are POSTed in the same format they would be in the JSON.  For example an array of ints might be posted in a field as [1, 10, 100].  Note the array of strings for the *ignored_columns* parameter in this GLM model builder POST body:
+The fields of the request schema are sent in the POST body using *x-www-form-urlencoded* format, like an HTML form.  A future version of H2O will move to using *application/json*.  In the meantime, complex fields such as arrays are POSTed in the same format they would be in the JSON.  For example, an array of ints might be posted in a field as [1, 10, 100].  Note the array of strings for the *ignored_columns* parameter in this GLM model builder POST body:
 
     model_id=prostate_glm&training_frame=prostate.hex&nfolds=0&response_column=CAPSULE&ignored_columns=%5B%22%22%5D&ignore_const_cols=true&family=binomial&solver=AUTO&alpha=&lambda=&lambda_search=false&standardize=true&non_negative=false&score_each_iteration=false&max_iterations=-1&link=family_default&intercept=true&objective_epsilon=0.00001&beta_epsilon=0.0001&gradient_epsilon=0.0001&prior=-1&max_active_predictors=-1
 
 The value is ["ID"], urlencoded as %5B%22ID%22%5D.
 
 ### Metadata
-The formats of all payloads (*schemas*) are available dynamically from the server using the */Metadata/schemas* endpoints. You can fetch additional metadata for model builder (model algorithm) parameters from the */ModelBulders* endpoints.  This metadata allows you to write a client which automatically adapts to new fields.  
+The formats of all payloads (*schemas*) are available dynamically from the server using the */Metadata/schemas* endpoints. You can fetch additional metadata for model builder (model algorithm) parameters from the */ModelBuilders* endpoints.  This metadata allows you to write a client that automatically adapts to new fields.  
 
-As an example, Flow has no hardwired knowledge of any of the model algos.  It discovers the list of algos and all their parameter information dynamically.  This means that if you extend H2O with new algorithms or new fields for the built-in algorithms then Flow will Just Work (tm).
+As an example, Flow has no hardwired knowledge of any of the model algos.  It discovers the list of algos and  their parameter information dynamically.  This means that if you extend H2O with new algorithms or new fields for the built-in algorithms, Flow will Just Work (tm).
 
 Similarly, all the endpoints (URL patterns) are described dynamically by the */Metadata/endpoints* endpoints.
 
 ## Error Condition Payloads
-All errors return one of the non-2xx HTTP status codes mentioned above, and return standardized error payloads.  These contain an end-user-directed message, a developer-oriented message, the HTTP status, an optional dictionary of revelant values, and exception information if applicable.
+All errors return one of the non-2xx HTTP status codes mentioned above and return standardized error payloads.  These contain an end-user-directed message, a developer-oriented message, the HTTP status, an optional dictionary of revelant values, and exception information if applicable.
 
-Here is the result of requesting a Frame which is not present in the server: 
+Here is the result of requesting a Frame that is not present in the server: 
 
 `GET http://127.0.0.1:54321/3/Frames/missing_frame`
 
@@ -144,14 +151,14 @@ Here is the result of requesting a Frame which is not present in the server:
                     ...
 
 ## Control query parameters
-H2O also supports "meta" query parameters to control the result payload.  Currently the only one of these is *exclude_fields*, but more will be supported in subsequent releases.
+H2O also supports "meta" query parameters to control the result payload.  Currently the only one is *exclude_fields*, but more will be supported in subsequent releases.
 
 ### exclude_fields
-The result payload of some calls can get quite large.  For example, a Frame or a Model built with a Frame that has 5,000 categorical columns may have a very large list of *domains*, or categorical levels.  
+The resulting payload of some calls can get quite large.  For example, a Frame or a Model built with a Frame that has 5,000 categorical columns may have a very large list of *domains*, or categorical levels.  
 
-If you don't require that the server return certain fields you can use the *exclude_fields* query parameter to ask that they be excluded.  This reduces the size of the result, sometimes considerably, which speeds up JSON parsing in the client and can reduce the chance that limited memory clients such as web browsers run out of memory processing the result.
+If you don't require the server to return certain fields, you can use the *exclude_fields* query parameter to exclude them.  This reduces the size of the result, sometimes considerably, which speeds up JSON parsing in the client and reducing the chance of limited memory clients such as web browsers running out of memory while processing the result.
 
-The *exclude_fields* parameter takes a comma-separated list of field names.  Nested field names are separated by slashes.
+The *exclude_fields* parameter accepts a comma-separated list of field names.  Nested field names are separated by slashes.
 
 As an example, one call of Flow to /Frames/{frame_id} uses this query parameter:
 
@@ -160,7 +167,7 @@ As an example, one call of Flow to /Frames/{frame_id} uses this query parameter:
 ## Example Endpoints
 This section lists a few endpoints to give you an idea of the functions that are available through the REST API.  The reference documentation contains the full list.
 
-Remember, Flow and the R and Python bindings access H2O only through the REST API, so if you find functionality in those clients you'll find it in the REST API as well.  The only caveat is data munging (e.g., slicing, creating new columns, etc).  That functionality is available through the /99/Rapids endpoint, which is under rapid change (pun intended).  Contact us if you need to access those functions through the REST API.
+Remember, Flow and the R and Python bindings access H2O only through the REST API, so if you find functionality in those clients, you'll find it in the REST API as well.  The only caveat is data munging (e.g., slicing, creating new columns, etc); that functionality is available through the /99/Rapids endpoint, which is under rapid change (pun intended).  Contact us if you need to access those functions through the REST API.
 
 ### Loading and parsing data files
     GET /3/ImportFiles
