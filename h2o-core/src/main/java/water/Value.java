@@ -183,7 +183,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // and strictly set by the persistence layers (e.g. PersistIce.java).
   private volatile byte _persist; // 3 bits of backend flavor; 1 bit of disk/notdisk
   public  final static byte ICE = 1<<0; // ICE: distributed local disks
-  public  final static byte HDFS= 2<<0; // HDFS: backed by hadoop cluster
+  public  final static byte HDFS= 2<<0; // HDFS: backed by Hadoop cluster
   public  final static byte S3  = 3<<0; // Amazon S3
   public  final static byte NFS = 4<<0; // NFS: Standard file system
   public  final static byte TCP = 7<<0; // TCP: For profile purposes, not a storage system

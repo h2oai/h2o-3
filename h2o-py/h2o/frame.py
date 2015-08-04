@@ -652,7 +652,14 @@ class H2OFrame:
     update_index=-1
     if isinstance(b, (str,unicode)): update_index=self.col_names().index(b) if b in self.col_names() else self._ncols
     elif isinstance(b, int): update_index=b
-    lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
+
+    if isinstance(b, tuple):
+      bb = b[1]
+      if isinstance(bb, (str,unicode)): update_index=self.col_names().index(bb) if bb in self.col_names() else self._ncols
+      elif isinstance(bb, int): update_index=bb
+      lhs = ExprNode("[", self,b[0],b[1])
+    else:
+      lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
     rhs = c._frame() if isinstance(c,H2OFrame) else c
     col_name = b if (update_index==self._ncols and isinstance(b, (str, unicode))) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
     sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol() else ExprNode("=",lhs,rhs)._eager()
