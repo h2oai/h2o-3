@@ -400,7 +400,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     fullFrm.add(loadingFrm);
     for(int i = 0; i < ncols; i++)
       fullFrm.add(prefix+_output._names[i],fullFrm.anyVec().makeZero());
-    GLRMScore gs = new GLRMScore(null, ncols, _parms._k).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(null, ncols, _parms._k, true).doAll(fullFrm);
 
     // Return the imputed training frame
     int x = ncols + _parms._k, y = fullFrm.numCols();
@@ -414,12 +414,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   private class GLRMScore extends MRTask<GLRMScore> {
     final String[] _domain;
-    final int _ncolA;   // Number of cols in imputed data P (same as original)
+    final int _ncolA;   // Number of cols in original data A
     final int _ncolX;   // Number of cols in X (rank k)
+    final boolean _save_imputed;  // Save imputed data into new vecs?
     ModelMetrics.MetricBuilder _mb;
 
-    GLRMScore( String[] domain, int ncolA, int ncolX ) {
-      _domain = domain; _ncolA = ncolA; _ncolX = ncolX;
+    GLRMScore( String[] domain, int ncolA, int ncolX, boolean save_imputed ) {
+      _domain = domain; _ncolA = ncolA; _ncolX = ncolX; _save_imputed = save_imputed;
     }
 
     @Override public void map( Chunk chks[] ) {
@@ -428,11 +429,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double preds[] = new double[_ncolA];
       _mb = GLRMModel.this.makeMetricBuilder(null);
 
-      for( int row = 0; row < chks[0]._len; row++ ) {
-        double p[] = impute_data(chks, row, xtmp, preds);
-        compute_metrics(chks, row, atmp, p);
-        for( int c=0; c<preds.length; c++ )
-          chks[_ncolA+_ncolX+c].set(row, p[c]);
+      if (_save_imputed) {
+        for (int row = 0; row < chks[0]._len; row++) {
+          double p[] = impute_data(chks, row, xtmp, preds);
+          compute_metrics(chks, row, atmp, p);
+          for (int c = 0; c < preds.length; c++)
+            chks[_ncolA + _ncolX + c].set(row, p[c]);
+        }
+      } else {
+        for (int row = 0; row < chks[0]._len; row++) {
+          double p[] = impute_data(chks, row, xtmp, preds);
+          compute_metrics(chks, row, atmp, p);
+        }
       }
     }
 
@@ -475,6 +483,25 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   @Override protected double[] score0(double[] data, double[] preds) {
     throw H2O.unimpl();
+  }
+
+  public ModelMetricsGLRM scoreMetricsOnly(Frame frame) {
+    final int ncols = _output._names.length;
+
+    // Need [A,X] where A = adapted test frame, X = loading frame
+    // Note: A is adapted to original training frame
+    Frame adaptedFr = new Frame(frame);
+    adaptTestForTrain(adaptedFr, true, false);
+    assert ncols == adaptedFr.numCols();
+
+    // Append loading frame X for calculating XY
+    Frame fullFrm = new Frame(adaptedFr);
+    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    fullFrm.add(loadingFrm);
+
+    GLRMScore gs = new GLRMScore(null, ncols, _parms._k, false).doAll(fullFrm);
+    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    return (ModelMetricsGLRM) mm;
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {

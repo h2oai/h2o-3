@@ -12,6 +12,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.Exec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -26,9 +27,8 @@ public class SVDTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  @Test public void testArrestsSVD() throws InterruptedException, ExecutionException {
+  @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Expected right singular values and vectors
-    double[] sdev_expected = new double[] {202.723056, 27.832264, 6.523048, 2.581365};
     double[] d_expected = new double[] {1419.06139510, 194.82584611, 45.66133763, 18.06955662};
     double[][] v_expected = ard(ard(-0.04239181,  0.01616262, -0.06588426,  0.99679535),
                                 ard(-0.94395706,  0.32068580,  0.06655170, -0.04094568),
@@ -195,9 +195,58 @@ public class SVDTest extends TestUtil {
       } finally {
         if (train != null) train.delete();
         if (model != null) {
-          model._output._u_key.get().delete();
+          if(model._parms._keep_u)
+            model._output._u_key.get().delete();
           model.delete();
         }
+      }
+    }
+  }
+
+  @Test public void testIrisGram() throws InterruptedException, ExecutionException {
+    // Expected right singular values and vectors
+    double[] d_expected = new double[] {96.2090445, 19.0425654, 7.2250378, 3.1636131, 1.8816739, 1.1451307, 0.5820806};
+    double[][] v_expected = ard(ard(-0.03169051, -0.32305860,  0.185100382, -0.12336685, -0.14867156,  0.75932119, -0.496462912),
+                                ard(-0.04289677,  0.04037565, -0.780961964,  0.19727933,  0.07251338, -0.12216945, -0.572298338),
+                                ard(-0.05019689,  0.16836717,  0.551432201, -0.07122329,  0.08454116, -0.48327010, -0.647522462),
+                                ard(-0.74915107, -0.26629420, -0.101102186, -0.48920057,  0.32458460, -0.09176909,  0.067412858),
+                                ard(-0.37877011, -0.50636060,  0.142219195,  0.69081642, -0.26312992, -0.17811871,  0.041411296),
+                                ard(-0.51177078,  0.65945159, -0.005079934,  0.04881900, -0.52128288,  0.17038367,  0.006223427),
+                                ard(-0.16742875,  0.32166036,  0.145893901,  0.47102115,  0.72052968,  0.32523458,  0.020389463));
+
+    SVDModel model = null;
+    Frame train = null;
+    try {
+      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      parms._train = train._key;
+      parms._nv = 7;
+      parms._use_all_factor_levels = true;
+      parms._only_v = false;
+      parms._keep_u = true;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._svd_method = SVDParameters.Method.GramSVD;
+
+      SVD job = new SVD(parms);
+      try {
+        model = job.trainModel().get();
+        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch(Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (model != null) {
+        if(model._parms._keep_u)
+          model._output._u_key.get().delete();
+        model.delete();
       }
     }
   }

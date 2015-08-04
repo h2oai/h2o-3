@@ -224,7 +224,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._k = _parms._k;
         parms._max_iterations = _parms._max_iterations;
-        parms._transform = _parms._transform;
+        parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._seed = _parms._seed;
         parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
         parms._impute_missing = true;
@@ -234,20 +234,34 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         try {
           job = new PCA(parms);
           pca = job.trainModel().get();
+
+          // Ensure SVD centers align with adapted training frame cols
+          assert pca._output._permutation.length == tinfo._permutation.length;
+          for(int i = 0; i < tinfo._permutation.length; i++)
+            assert pca._output._permutation[i] == tinfo._permutation[i];
+          centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
+
+          // Set X and Y appropriately given D and V' from SVD of A = UDV'
+          // a) Set Y = D^(1/2)V'S where S = diag(\sigma) = std dev of training cols
+          double nmult = Math.sqrt(pca._output._nobs-1);
+          double[] dsqrt = new double[_parms._k];
+          for(int i = 0; i < _parms._k; i++) {
+            dsqrt[i] = Math.sqrt(pca._output._std_deviation[i] * nmult);
+            ArrayUtils.mult(centers_exp[i], dsqrt[i] / pca._output._normMul[i]);  // When transform = STANDARDIZE, normMul_j = 1/\sigma_j
+          }
+
+          // b) Set X = UD^(1/2) = AVD^(-1/2)
+          // double[][] umul = ArrayUtils.transpose(pca._output._eigenvectors_raw);
+          // for(int i = 0; i < _parms._k; i++)
+          //   ArrayUtils.mult(umul[i], 1.0 / dsqrt[i]);
+          // InitialXSVD xtsk = new InitialXSVD(self(), tinfo, umul).doAll(_parms._k, tinfo._adaptedFrame);
+          // Frame xinit = xtsk.outputFrame();
+          InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);  // TODO: We want X = UD^(1/2) when Y = D^(1/2)V'S from SVD A = UDV'
+          xtsk.doAll(dfrm);
         } finally {
           if (job != null) job.remove();
           if (pca != null) pca.remove();
         }
-
-        // Ensure SVD centers align with adapted training frame cols
-        assert pca._output._permutation.length == tinfo._permutation.length;
-        for(int i = 0; i < tinfo._permutation.length; i++)
-          assert pca._output._permutation[i] == tinfo._permutation[i];
-        centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
-        // for(int i = 0; i < centers_exp.length; i++)
-        //  ArrayUtils.mult(centers_exp[i], pca._output._std_deviation[i] * Math.sqrt(pca._output._nobs-1));
-        InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);  // TODO: We want X = UD when Y = V' from SVD A = UDV'
-        xtsk.doAll(dfrm);
 
       } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -524,6 +538,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._archetypes = yt._archetypes;
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
+        // Impute and compute error metrics on training/validation frame
+        model._output._training_metrics = model.scoreMetricsOnly(_parms.train());
+        if (_valid != null)
+          model._output._validation_metrics = model.scoreMetricsOnly(_parms.valid());
         model.update(self());
         done();
       } catch (Throwable t) {

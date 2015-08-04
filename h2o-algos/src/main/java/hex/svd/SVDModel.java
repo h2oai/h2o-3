@@ -12,6 +12,7 @@ import water.util.SB;
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
+    public Method _svd_method = Method.Power;   // Method for computing PCA
     public int _nv = 1;    // Number of right singular vectors to calculate
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
@@ -20,6 +21,11 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public String _u_name;
     public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
     public boolean _use_all_factor_levels = true;   // When expanding categoricals, should first level be dropped?
+    public boolean _impute_missing = false;   // Should missing numeric values be imputed with the column mean?
+
+    public enum Method {
+      GramSVD, Power
+    }
   }
 
   public static class SVDOutput extends Model.Output {
