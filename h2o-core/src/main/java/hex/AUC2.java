@@ -118,9 +118,10 @@ public class AUC2 extends Iced {
    *  large nBins can be very slow. */
   AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
 
-  public AUC2( AUCBuilder bldr ) { 
+  public AUC2( AUCBuilder bldr ) {
     // Copy result arrays into base object, shrinking to match actual bins
     _nBins = bldr._n;
+    assert _nBins >= 1 : "Must have >= 1 bins for AUC calculation, but got " + _nBins;
     _ths = Arrays.copyOf(bldr._ths,_nBins);
     _tps = Arrays.copyOf(bldr._tps,_nBins);
     _fps = Arrays.copyOf(bldr._fps,_nBins);
