@@ -118,7 +118,7 @@ public class RequestServer extends NanoHTTPD {
     // REST only, no html:
 
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",
-            "Return information about this H2O.");
+            "Return information about this H2O cluster.");
 
     register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,MetadataHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
