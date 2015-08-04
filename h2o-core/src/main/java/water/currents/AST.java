@@ -46,6 +46,7 @@ abstract public class AST extends Iced<AST> {
     // Constants
     init(new ASTNum(0) {public String str() { return "FALSE"; } } );
     init(new ASTNum(1) {public String str() { return "TRUE" ; } } );
+    init(new ASTNum(Double.NaN) { public String str() { return "NaN";} } );
 
     // Math unary ops
     init(new ASTACos  ());
@@ -70,6 +71,7 @@ abstract public class AST extends Iced<AST> {
     // Math binary ops
     init(new ASTAnd ());
     init(new ASTDiv ());
+    init(new ASTMod ());
     init(new ASTMul ());
     init(new ASTOr  ());
     init(new ASTPlus());
@@ -144,6 +146,9 @@ abstract public class AST extends Iced<AST> {
 
     // Model Calls
     init(new ASTQtile());
+
+    // Cut
+    init(new ASTCut());
   }
 }
 

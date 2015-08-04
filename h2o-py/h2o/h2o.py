@@ -129,7 +129,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   :param first_line_is_header: -1,0,1 if the first line is to be used as the header
   :return: An H2OFrame object
   """
-  id = setup["destination_frame"]
+  id = setup["destination_frame"] if id is None else id
   fr = H2OFrame()
   parsed = parse(setup, id, first_line_is_header)
   fr._nrows = parsed['rows']
@@ -188,7 +188,7 @@ def get_model(model_id):
   """
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
   model_type = model_json["output"]["model_category"]
-  if model_type=="Binomial":      return H2OBinomialModel(model_id, model_json)
+  if   model_type=="Binomial":    return H2OBinomialModel(model_id, model_json)
   elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
   elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
   elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
@@ -369,7 +369,6 @@ def run_test(sys_args, test_to_run):
   # num_keys = store_size()
   test_to_run(ip, port)
   # if keys_leaked(num_keys): print "Leaked Keys!"
-  print ls()
 
 def ou():
   """

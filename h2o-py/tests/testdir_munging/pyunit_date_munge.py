@@ -14,7 +14,7 @@ def refine_date_col(data, col, pattern):
   # Create weekend and season cols
   # Spring = Mar, Apr, May. Summer = Jun, Jul, Aug. Autumn = Sep, Oct. Winter = Nov, Dec, Jan, Feb.
   # data["Weekend"] = [1 if x in ("Sun", "Sat") else 0 for x in data["WeekDay"]]
-  data["Weekend"] = h2o.ifelse(data["WeekDay"] == "Sun" | data["WeekDay"] == "Sat", 1, 0)[0]
+  data["Weekend"] = h2o.ifelse( (data["WeekDay"] == "Sun") | (data["WeekDay"] == "Sat"), 1, 0)[0]  # parens matter here!
   data["Season"]  = data["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
 
 
@@ -26,6 +26,7 @@ def date_munge(ip,port):
   refine_date_col(crimes, "Date", "%m/%d/%Y %I:%M:%S %p")
   crimes = crimes.drop("Date")
   crimes.describe()
+  crimes.show()
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, date_munge)

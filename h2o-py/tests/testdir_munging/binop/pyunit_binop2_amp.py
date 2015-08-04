@@ -104,4 +104,3 @@ def binop_amp(ip,port):
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, binop_amp)
-

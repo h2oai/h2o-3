@@ -29,7 +29,7 @@ class ExprNode:
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, (unicode,str)):          return '"'+arg+'"'
-    elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if math.isnan(arg.stop) else arg.stop)
+    elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if math.isnan(arg.stop) else (arg.stop) if arg.start is None else (arg.stop-arg.start) )
     elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], (str,unicode)) else ("[" + " ".join([str(i) for i in arg])+"]")
     elif arg is None:                             return "()"
     raise ValueError("Unexpected arg type: " + str(type(arg)))
