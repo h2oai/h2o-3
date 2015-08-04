@@ -4696,6 +4696,7 @@ class ASTAsNumeric extends ASTUniPrefixOp {
 }
 
 class ASTFactor extends ASTUniPrefixOp {
+  private static int LEVELSCAP = 50000000;
   ASTFactor() { super(new String[]{"", "ary"});}
   @Override String opStr() { return "as.factor"; }
   @Override ASTOp make() {return new ASTFactor();}
@@ -4703,13 +4704,54 @@ class ASTFactor extends ASTUniPrefixOp {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
+
+    if( v0.isString() ) {
+      // rollup a String column into an enum; no cap on number of unique levels
+      StringCollectDomain t = new StringCollectDomain().doAll(ary.anyVec());
+      if( t.size() > LEVELSCAP ) throw new IllegalArgumentException("More than" + LEVELSCAP + " unique levels found. Too many levels.");
+      final String[] dom = t.domain();
+      String[][] doms = new String[1][];
+      doms[0]=dom;
+      Vec v1 = new MRTask() {
+        @Override public void map(Chunk oc, NewChunk nc) {
+          ValueString v = new ValueString();
+          for (int i = 0; i < oc._len; ++i)
+            nc.addNum(Arrays.binarySearch(dom, oc.atStr(v, i).toString()), 0);
+        }
+      }.doAll(1,v0).outputFrame(ary._names,doms).anyVec();
+      env.pushAry(new Frame(ary._names, new Vec[]{v1}));
+      return;
+    }
     if( v0.isEnum() ) {
       env.pushAry(ary);
       return;
     }
-    Vec v1 = v0.toEnum();
-    Frame fr = new Frame(ary._names, new Vec[]{v1});
-    env.pushAry(fr);
+    env.pushAry(new Frame(ary._names, new Vec[]{v0.toEnum()}));
+  }
+
+  private static class StringCollectDomain extends MRTask<StringCollectDomain> {
+    private IcedHashMap<String,String> _dom;
+    @Override public void setupLocal() { _dom = new IcedHashMap();}
+    @Override public void map(Chunk c) {
+      ValueString v = new ValueString();
+      for( int i=0;i<c._len;++i) _dom.putIfAbsent(c.atStr(v, i).toString(),"");
+    }
+    @Override public void reduce(StringCollectDomain t) {
+      if( _dom!=t._dom ) {
+        IcedHashMap<String,String> l = _dom;
+        IcedHashMap<String,String> r = t._dom;
+        if( l.size() > r.size() ) { l=r; r=_dom; } // smaller on the left
+        for( String s: l.keySet() ) r.putIfAbsent(s,"");
+        _dom=r;
+        t._dom=null;
+      }
+    }
+    private String[] domain() {
+      String[] d=_dom.keySet().toArray(new String[size()]);
+      Arrays.sort(d);
+      return d;
+    }
+    private int size() { return _dom.size(); }
   }
 }
 
