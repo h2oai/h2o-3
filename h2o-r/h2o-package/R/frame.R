@@ -145,7 +145,7 @@ Summary.Frame <- function(x,...,na.rm) {
 pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(x),e); .clearvisit(x); invisible() }
 
 .eval.impl <- function(x, toplevel) {
-  if( is.character(xchild<-x:eval) ) return(if(is.Frame(x:data) || is.null(x:data) ) xchild else x:data)
+  if( is.character(xchild<-x:eval) ) return( if(is.data.frame(x:data) || is.null(x:data) ) xchild else x:data )
   res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child,F) else child }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
   x$eval <- xchild <- .key.make("RTMP") # Flag as code-emitted
