@@ -1796,6 +1796,10 @@ abstract class ASTReducerOp extends ASTOp {
         if( E._env.tryLookup((ASTId)a) ) break;
         else dblarys.add(a);
       } else if( a instanceof ASTAssign || a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
+      else if( a instanceof ASTList ) {
+        if( a instanceof ASTLongList ) for(long l: ((ASTLongList)a)._l) dblarys.add(new ASTNum(l));
+        else for( double d: ((ASTDoubleList)a)._d) dblarys.add(new ASTNum(d));
+      }
       else break;
     } while( !E.isEnd() );
 
