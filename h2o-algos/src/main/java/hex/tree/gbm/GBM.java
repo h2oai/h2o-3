@@ -295,22 +295,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk tr = chk_tree(chks, 0); // Prior tree sums
         Chunk nids = chk_nids(chks, 0);
-        IcedLong nidx = new IcedLong(0);
         for( int row = 0; row < tr._len; row++) {
           if( ys.isNA(row) ) continue;
           double f = tr.atd(row) + offset.atd(row);
-          nidx._val = nids.at8(row);
+          IcedLong nidx = new IcedLong(nids.at8(row));
           IcedDouble mins = minValues.get(nidx);
           double oldMin = mins == null ? Double.MAX_VALUE : mins._val;
-          IcedDouble ff = new IcedDouble(f);
           if (f < oldMin) {
+            IcedDouble ff = new IcedDouble(f);
             if (mins == null) minValues.put(nidx, ff);
             else minValues.replace(nidx, ff);
           }
           IcedDouble maxs = maxValues.get(nidx);
           double oldMax = maxs == null ? -Double.MAX_VALUE : maxs._val;
           if (f > oldMax) {
-            if (maxs == null) maxValues.put(nidx, ff);
+            IcedDouble ff = new IcedDouble(f);
+            if (maxs == null)  maxValues.put(nidx, ff);
             else maxValues.replace(nidx, ff);
           }
         }
@@ -321,23 +321,30 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (Map.Entry<IcedLong,IcedDouble> e : mrt.minValues.entrySet()) {
           IcedDouble x = minValues.get(e.getKey());
           if (x != null) {
-            x._val=Math.min(e.getValue()._val, x._val);
+            x._val= Math.min(e.getValue()._val, x._val);
+            minValues.replace(e.getKey(), x);
           } else {
-            minValues.put(e.getKey(), e.getValue());
+            assert(minValues.get(e.getKey()) == null);
+            minValues.putIfAbsent(e.getKey(), e.getValue());
           }
         }
         for (Map.Entry<IcedLong,IcedDouble> e : mrt.maxValues.entrySet()) {
           IcedDouble x = maxValues.get(e.getKey());
           if (x != null) {
-            x._val=Math.max(e.getValue()._val, x._val);
+            x._val= Math.max(e.getValue()._val, x._val);
+            maxValues.replace(e.getKey(), x);
           } else {
-            maxValues.put(e.getKey(), e.getValue());
+            assert(maxValues.get(e.getKey()) == null);
+            maxValues.putIfAbsent(e.getKey(), e.getValue());
           }
         }
         mrt.minValues = null;
         mrt.maxValues = null;
       }
     }
+
+    final static private double MIN_LOG_TRUNC = -19;
+    final static private double MAX_LOG_TRUNC = 19;
 
     private void truncatePreds(DTree[] ktrees, int[] leafs,   final IcedHashMap<IcedLong, IcedDouble> minValues,
                                final IcedHashMap<IcedLong, IcedDouble> maxValues) {
@@ -349,13 +356,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int i = 0; i < tree._len - leafs[0]; i++) {
         final LeafNode node = ((LeafNode) tree.node(leafs[0] + i));
         nidx._val = node.nid();
-        double nodeMax = maxValues.get(nidx)._val;
-        if (nodeMax + node._pred > Distribution.MAX_LOG) {
-          node._pred = (float)(Distribution.MAX_LOG - nodeMax);
+        IcedDouble nodeMax = maxValues.get(nidx);
+        if (nodeMax != null) {
+          if (nodeMax._val + node._pred > MAX_LOG_TRUNC) {
+            node._pred = (float) (MAX_LOG_TRUNC - nodeMax._val);
+          }
         }
-        double nodeMin = minValues.get(nidx)._val;
-        if (nodeMin + node._pred < Distribution.MIN_LOG) {
-          node._pred = (float)(Distribution.MIN_LOG - nodeMin);
+        IcedDouble nodeMin = minValues.get(nidx);
+        if (nodeMin != null) {
+          if (nodeMin._val + node._pred < MIN_LOG_TRUNC) {
+            node._pred = (float) (MIN_LOG_TRUNC - nodeMin._val);
+          }
         }
       }
     }
@@ -385,6 +396,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               _parms._distribution == Distribution.Family.poisson ||
               _parms._distribution == Distribution.Family.tweedie ) {
         ComputeMinMax minMax = new ComputeMinMax().doAll(_train);
+        assert(minMax.minValues.size() == minMax.maxValues.size());
+        Log.info("Number of leaf nodes: " + minMax.minValues.size());
+        Log.info("Min: " + java.util.Arrays.deepToString(minMax.minValues.entrySet().toArray()));
+        Log.info("Max: " + java.util.Arrays.deepToString(minMax.maxValues.entrySet().toArray()));
         truncatePreds(ktrees, leafs, minMax.minValues, minMax.maxValues);
       }
 

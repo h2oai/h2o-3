@@ -37,7 +37,6 @@ public class Distribution extends Iced {
     this.tweediePower = tweediePower;
   }
   static public double MIN_LOG = -6;
-  static public double MAX_LOG = 19;
   static public double MAX = Math.exp(19);
 
   public final Family distribution;
