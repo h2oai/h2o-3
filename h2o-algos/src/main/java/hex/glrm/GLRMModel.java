@@ -7,6 +7,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import java.util.Random;
@@ -398,8 +399,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame fullFrm = new Frame(adaptedFr);
     Frame loadingFrm = DKV.get(_output._loading_key).get();
     fullFrm.add(loadingFrm);
-    for(int i = 0; i < ncols; i++)
-      fullFrm.add(prefix+_output._names[i],fullFrm.anyVec().makeZero());
+    String[][] adaptedDomme = adaptedFr.domains();
+    for(int i = 0; i < ncols; i++) {
+      Vec v = fullFrm.anyVec().makeZero();
+      v.setDomain(adaptedDomme[i]);
+      fullFrm.add(prefix + _output._names[i], v);
+    }
     GLRMScore gs = new GLRMScore(null, ncols, _parms._k, true).doAll(fullFrm);
 
     // Return the imputed training frame
