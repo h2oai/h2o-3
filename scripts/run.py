@@ -48,6 +48,14 @@ def is_python_file(file_name):
 
     return False
 
+def is_ipython_notebook(file_name):
+    """
+    Return True if file_name matches a regexp for a ipython notebook.  False otherwise.
+    """
+    if re.match("^.*\.ipynb$", file_name):
+        return True
+
+    return False
 
 def is_javascript_test_file(file_name):
     """
@@ -536,7 +544,7 @@ class Test:
         """
         return -9999999
 
-    def __init__(self, test_dir, test_short_dir, test_name, output_dir):
+    def __init__(self, test_dir, test_short_dir, test_name, output_dir, ipynb_runner_dir):
         """
         Create a Test.
 
@@ -544,6 +552,7 @@ class Test:
         @param test_short_dir: Path from h2o/R/tests to the test directory.
         @param test_name: Test filename with the directory removed.
         @param output_dir: The directory where we can create an output file for this process.
+        @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
         @return: The test object.
         """
         self.test_dir = test_dir
@@ -551,6 +560,7 @@ class Test:
         self.test_name = test_name
         self.output_dir = output_dir
         self.output_file_name = ""
+        self.notebook_runner = os.path.join(ipynb_runner_dir, "notebook_runner.py")
 
         self.cancelled = False
         self.terminated = False
@@ -586,6 +596,13 @@ class Test:
                    self.test_name,
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
+        elif (is_ipython_notebook(self.test_name)):
+            cmd = ["python",
+                   self.notebook_runner,
+                   "--usecloud",
+                   self.ip + ":" + str(self.port),
+                   "--ipynb",
+                   self.test_name]
         elif (is_runit_test_file(self.test_name)):
             cmd = ["R",
                    "-f",
@@ -780,7 +797,7 @@ class TestRunner:
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
-                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir):
+                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir, ipynb_runner_dir):
         """
         Create a runner.
 
@@ -801,9 +818,11 @@ class TestRunner:
         @param path_to_whl: NA
         @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
         @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
+        @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
+        self.ipynb_runner_dir = ipynb_runner_dir
 
         self.use_cloud = use_cloud
         self.use_cloud2 = use_cloud2
@@ -954,6 +973,8 @@ class TestRunner:
                 is_test = False
                 if (is_python_test_file(f)):
                     is_test = True
+                if (is_ipython_notebook(f)):
+                    is_test = True
                 if (is_runit_test_file(f)):
                     is_test = True
                 if (not is_test):
@@ -1027,7 +1048,7 @@ class TestRunner:
 
         test_short_dir = self._calc_test_short_dir(test_path)
 
-        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir)
+        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.ipynb_runner_dir)
         self.tests.append(test)
         self.tests_not_started.append(test)
 
@@ -1898,6 +1919,9 @@ def main(argv):
 
     g_script_name = os.path.basename(argv[0])
 
+    # Calculate the ipynb_runner_dir
+    ipynb_runner_dir = os.path.dirname(os.path.realpath(argv[0]))
+
     # Calculate test_root_dir.
     test_root_dir = os.path.realpath(os.getcwd())
 
@@ -1943,7 +1967,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir)
+                          testreport_dir, ipynb_runner_dir)
 
     # Build test list.
     if (g_test_to_run is not None):
@@ -1953,6 +1977,8 @@ def main(argv):
     else:
         # Test group can be None or not.
         g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge,  g_nopass)
+
+    for t in [t.test_name for t in g_runner.tests]: print t
 
     # If no run is specified, then do an early exit here.
     if (g_no_run):
