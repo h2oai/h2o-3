@@ -1210,9 +1210,15 @@ public class Frame extends Lockable<Frame> {
     return f2;
   }
 
-  private boolean isLastRowOfCurrentChunk(int chunkIdx, long row) {
+  private boolean isLastRowOfCurrentNonEmptyChunk(int chunkIdx, long row) {
     long lastRowOfCurrentChunk = anyVec().get_espc()[chunkIdx + 1] - 1;
+
+    // Assert chunk is non-empty.
+    assert anyVec().get_espc()[chunkIdx + 1] > anyVec().get_espc()[chunkIdx];
+
+    // Assert row numbering sanity.
     assert row <= lastRowOfCurrentChunk;
+
     return row >= lastRowOfCurrentChunk;
   }
 
@@ -1255,48 +1261,63 @@ public class Frame extends Lockable<Frame> {
       _line = sb.toString().getBytes();
     }
 
-    @Override public int available() throws IOException {
-      if(_position == _line.length) {
-        if(_row == numRows())
-          return 0;
-        StringBuilder sb = new StringBuilder();
-        Vec vs[] = vecs();
-        for( int i = 0; i < vs.length; i++ ) {
-          if(i > 0) sb.append(',');
-          if(!vs[i].isNA(_row)) {
-            if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
-            else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
-            else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-            else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
-            else {
-              double d = vs[i].at(_row);
-              // R 3.1 unfortunately changed the behavior of read.csv().
-              // (Really type.convert()).
-              //
-              // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
-              //
-              // See these discussions:
-              //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
-              //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
-              //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-              String s = _hex_string ? Double.toHexString(d) : Double.toString(d);
-              sb.append(s);
-            }
+    byte[] getBytesForRow() {
+      StringBuilder sb = new StringBuilder();
+      Vec vs[] = vecs();
+      for( int i = 0; i < vs.length; i++ ) {
+        if(i > 0) sb.append(',');
+        if(!vs[i].isNA(_row)) {
+          if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
+          else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
+          else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
+          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
+          else {
+            double d = vs[i].at(_row);
+            // R 3.1 unfortunately changed the behavior of read.csv().
+            // (Really type.convert()).
+            //
+            // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
+            //
+            // See these discussions:
+            //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
+            //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
+            //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
+            String s = _hex_string ? Double.toHexString(d) : Double.toString(d);
+            sb.append(s);
           }
         }
-        sb.append('\n');
-        _line = sb.toString().getBytes();
-        _position = 0;
-
-        // Flush the chunk if we're done with it.
-        if (isLastRowOfCurrentChunk(_curChkIdx, _row)) {
-          for (Vec v : vs)
-            hintFlushRemoteChunk(v, _curChkIdx);
-          _curChkIdx++;
-        }
-        _row++;
       }
-      return _line.length - _position;
+      sb.append('\n');
+      return sb.toString().getBytes();
+    }
+
+    @Override public int available() throws IOException {
+      // Case 1:  There is more data left to read from the current line.
+      if (_position != _line.length) {
+        return _line.length - _position;
+      }
+
+      // Case 2:  Out of data.
+      if (_row == numRows()) {
+        return 0;
+      }
+
+      // Case 3:  Return data for the current row.
+      //          Note this will fast-forward past empty chunks.
+      _curChkIdx = anyVec().elem2ChunkIdx(_row);
+      _line = getBytesForRow();
+      _position = 0;
+
+      // Flush non-empty remote chunk if we're done with it.
+      if (isLastRowOfCurrentNonEmptyChunk(_curChkIdx, _row)) {
+        for (Vec v : vecs()) {
+          hintFlushRemoteChunk(v, _curChkIdx);
+        }
+      }
+
+      _row++;
+
+      return _line.length;
     }
 
     @Override public void close() throws IOException {

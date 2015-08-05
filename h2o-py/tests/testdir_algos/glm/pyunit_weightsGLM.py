@@ -27,17 +27,6 @@ def weights_check(ip,port):
     data = [["ab"[random.randint(0,1)] if c==0 else random.gauss(0,1) for c in range(20)] for r in range(100)]
     h2o_data = h2o.H2OFrame(python_obj=data)
 
-    # uniform weights same as no weights
-    weight = random.uniform(.1,100)
-    uniform_weights = [[weight] for r in range(100)]
-    h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)
-    h2o_uniform_weights.setNames(["weights"])
-    h2o_data_uniform_weights = h2o_data.cbind(h2o_uniform_weights)
-
-    print "Checking that using uniform weights is equivalent to no weights:"
-    print
-    check_same(h2o_data, h2o_data_uniform_weights)
-
     # zero weights same as removed observations
     zero_weights = [[0] if random.randint(0,1) else [1] for r in range(100)]
     h2o_zero_weights = h2o.H2OFrame(python_obj=zero_weights)
