@@ -32,9 +32,7 @@ test.h2o.cbind <- function() {
   # h2o.cbind unequal rows fails
   expect_that(head(h2o.cbind(hdf, otherhdf)), throws_error())
   
-  ##### BROKEN #####
   # h2o.cbind a df to a slice
-  # Note: Not working because hdf is VA and hdf[,1] is FV
   expect_that( dim(h2o.cbind(hdf, hdf[,1])), equals(c(12,5)) )
 
   testEnd()

@@ -161,17 +161,14 @@ abstract class ASTBinOp extends ASTPrim {
               final double d = (double)ArrayUtils.find(vec.domain(),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(d,chk.atd(i)));
-            } // mixing string and numeric; will be all NA below
+            } else { // mixing string and numeric
+              final double d = op(1,2); // false or true only
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(d);
+            }
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
-    // str_ops do not make sense on numerics
-    final Vec oldvecs[] = fr.vecs();
-    final Vec newvecs[] = res.vecs();
-    for( int i=0; i<oldvecs.length; i++ )
-      if( !oldvecs[i].isString() && // Must be String OR
-          !oldvecs[i].isEnum() )    // Enum
-        newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(res);
   }
 

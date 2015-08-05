@@ -114,6 +114,7 @@ class ASTNumList extends AST {
   double min() { return _bases[0]; }
   long cnt() { return water.util.ArrayUtils.sum(_cnts); }
   boolean isDense() { return _cnts.length==1 && _bases[0]==0 && _strides[0]==1; }
+  boolean isEmpty() { return _bases.length==0; }
 
 
   // check if n is in this list of numbers

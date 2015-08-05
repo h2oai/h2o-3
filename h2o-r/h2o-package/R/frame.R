@@ -43,6 +43,8 @@ is.Frame <- function(fr) class(fr)[1]=="Frame"
   else NULL
 }
 
+.set <- function(x,name,value) assign(name,value,pos=x)
+
 
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
@@ -55,9 +57,9 @@ is.Frame <- function(fr) class(fr)[1]=="Frame"
 .newFrame <- function(op,id) {
   stopifnot( is.character(id) )
   node <- structure(new.env(parent = emptyenv()), class="Frame")
-  node$op <- op
-  node$id   <- id
-  node$eval <- id
+  .set(node,"op",op)
+  .set(node,"id",id)
+  .set(node,"eval",id)
   node
 }
 
@@ -66,8 +68,8 @@ is.Frame <- function(fr) class(fr)[1]=="Frame"
 
 .newExprList <- function(op,li) {
   node <- structure(new.env(parent = emptyenv()), class="Frame")
-  node$op <- op
-  node$eval <- li
+  .set(node,"op",op)
+  .set(node,"eval",li)
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
   node
 }
@@ -88,7 +90,10 @@ NULL
 
 #' @rdname H2OS3GroupGeneric
 #' @export
-Ops.Frame <- function(x,y) .newExpr(.Generic,x,if( is.character(y) ) paste0('"',y,'"') else y)
+Ops.Frame <- function(x,y) 
+  .newExpr(.Generic,
+           if( is.character(x) ) paste0('"',x,'"') else x,
+           if( is.character(y) ) paste0('"',y,'"') else y)
 
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
@@ -131,8 +136,8 @@ Summary.Frame <- function(x,...,na.rm) {
 .pfr <- function(x,e) {
   if( !is.null(xid<- x:id  ) ) return(xid)
   if( !is.null(xid<- x:visit) ) return(xid)
-  x$visit <- xid <- paste0("tmp",e:cnt)
-  e$cnt <- e:cnt+1
+  .set(x,"visit", xid <- paste0("tmp",e:cnt))
+  .set(e,"cnt", e:cnt+1)
   res <- ifelse( is.null(x:eval), "EVALd",
                  paste(sapply(x:eval, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "))
   res <- paste0("(",x:op," ",res,")")
@@ -142,13 +147,13 @@ Summary.Frame <- function(x,...,na.rm) {
 }
 
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
-pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(x),e); .clearvisit(x); invisible() }
+pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),e); .clearvisit(x); invisible() }
 
 .eval.impl <- function(x, toplevel) {
   if( is.character(xchild<-x:eval) ) return( if(is.data.frame(x:data) || is.null(x:data) ) xchild else x:data )
   res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child,F) else child }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
-  x$eval <- xchild <- .key.make("RTMP") # Flag as code-emitted
+  .set(x,"eval", xchild <- .key.make("RTMP")) # Flag as code-emitted
   if( .shared(x) && !toplevel) 
     res <- paste0("(tmp= ",xchild," ",res,")")
   res
@@ -164,7 +169,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); e$cnt<-0; print(.pfr(
     # Execute the AST on H2O
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:eval, method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-    if( !is.null(res$scalar) ) x$data<-res$scalar
+    if( !is.null(res$scalar) ) .set(x,"data",res$scalar)
   }
   x
 }
@@ -185,7 +190,23 @@ dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(dat
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
-#` First N rows of Frame
+#'
+#' Return the Head or Tail of an H2O Dataset.
+#'
+#' Returns the first or last rows of an H2O parsed data object.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
+#' @param ... Further arguments passed to or from other methods.
+#' @return A data frame containing the first or last n rows of an \linkS4class{H2OFrame} object.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' head(australia.hex, 10)
+#' tail(australia.hex, 10)
+#' @export
 head.Frame <- function(x,n=6L) { 
   stopifnot(length(n) == 1L)
   n <- if (n < 0L) max(nrow(x) + n, 0L)
@@ -194,6 +215,18 @@ head.Frame <- function(x,n=6L) {
     head(.fetch.data(x,n),n)
   } else # Long version, fetch all asked for "the hard way"
     x[seq_len(n),]
+}
+
+#' @rdname h2o.head
+#' @export
+tail.Frame <- function(x,n=6L) { 
+  endidx <- nrow(x)
+  n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
+  if( n==0L ) head(x,n=0L)
+  else {
+    startidx <- max(1L, endidx - n + 1)
+    x[startidx:endidx,]
+  }
 }
 
 #' Print An H2O Frame
@@ -311,7 +344,8 @@ str.Frame <- function(x, cols=FALSE, ...) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
 #-----------------------------------------------------------------------------------------------------------------------
-#` Overload dataframe slice assignment; build a lazy eval slice
+#' @rdname Frame-Extract
+#' @export
 `[<-.Frame` <- function(data,row,col,...,value) {
   stopifnot( is.Frame(data) )
   allRow <- missing(row)
@@ -342,27 +376,31 @@ str.Frame <- function(x, cols=FALSE, ...) {
   } else {
     idx <- match(col, colnames(data))
     if( any(is.na(idx)) ) {
-      if( is.numeric(col) ) {
-        idx <- col
-      } else {
-        name <- col
-        idx <- ncol(data)+1
-      }
-    }
+      idx <- if( is.numeric(col) ) col else ncol(data)+1
+      if( !is.numeric(col) ) name <- col
+    } else name <- col
     cols <- .row.col.selector(idx)
   }
 
-  value <- if( is.Frame(value) )   value
-           else if( is.na(value) ) "%NA"
-           else                    force(value)
+  if( !is.Frame(value) && is.na(value) ) value <- "%NA"
   res <- .newExpr("=", data, value, cols, rows)
   # Set col name and return updated frame
-  if( !is.na(name) ) res <- .setColName(res,idx,name)
+  if( !is.na(name) )  res <- .newExpr("colnames=", res, idx-1, paste0('"',name,'"'))
   res
 }
 
-# Set a column name.
-.setColName <- function(fr, idx, name) .newExpr("colnames=", fr, idx-1, name)
+#' @rdname Frame-Extract
+#' @export
+`$<-.Frame` <- function(data, name, value) {
+  `[<-.Frame`(data,row=name,value=value) # col is missing on purpose
+}
+
+#' @rdname Frame-Extract
+#' @export
+`[[<-.Frame` <- function(data,name,value) {
+  if( !is.Frame(value )) stop("Can only append a Frame to a Frame")
+  `[<-`(data, row=name,value=value)
+}
 
 #'
 #' Summarizes the columns of a H2O data frame.

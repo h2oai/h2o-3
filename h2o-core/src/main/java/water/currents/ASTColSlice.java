@@ -69,6 +69,7 @@ class ASTRowSlice extends ASTPrim {
       final ASTNumList nums = (ASTNumList)asts[2];
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+          if( nums.isEmpty() ) return;
           long start = cs[0].start();
           long end   = start + cs[0]._len;
           double min = nums.min(), max = nums.max()-1; // exclusive max to inclusive max when stride == 1
