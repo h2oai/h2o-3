@@ -195,6 +195,7 @@ dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 #'
 #' Returns the first or last rows of an H2O parsed data object.
 #'
+#' @name h2o.head
 #' @param x An \linkS4class{H2OFrame} object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #' @param ... Further arguments passed to or from other methods.
@@ -207,7 +208,7 @@ dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 #' head(australia.hex, 10)
 #' tail(australia.hex, 10)
 #' @export
-head.Frame <- function(x,n=6L) { 
+head.Frame <- function(x,n=6L) {
   stopifnot(length(n) == 1L)
   n <- if (n < 0L) max(nrow(x) + n, 0L)
        else        min(n, nrow(x))
@@ -219,7 +220,7 @@ head.Frame <- function(x,n=6L) {
 
 #' @rdname h2o.head
 #' @export
-tail.Frame <- function(x,n=6L) { 
+tail.Frame <- function(x,n=6L) {
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if( n==0L ) head(x,n=0L)
@@ -299,7 +300,23 @@ str.Frame <- function(x, cols=FALSE, ...) {
 }
 
 
-#` Overload dataframe slice; build a lazy eval slice
+#' Extract or Replace Parts of an Frame Object
+#'
+#' Operators to extract or replace parts of Frame objects.
+#'
+#' @name Frame-Extract
+#' @param x object from which to extract element(s) or in which to replace element(s).
+#' @param row,col indices specifying elements to extract or replace. Indices are numeric or
+#'        character vectors or empty (missing) or will be matched to the names.
+#' @param name a literal character string or a name (possibly backtick quoted).
+#' @param exact controls possible partial matching of \code{[[} when extracting
+#'              a character
+#' @param value an array-like H2O object similar to \code{x}.
+NULL
+
+#' @aliases [,Frame-method
+#' @rdname Frame-Extract
+#' @export
 `[.Frame` <- function(data,row,col) {
   stopifnot( is.Frame(data) )
   # Have a column selector?
@@ -423,6 +440,7 @@ str.Frame <- function(x, cols=FALSE, ...) {
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
 NULL
+
 #' @rdname h2o.summary
 #' @export
 summary.Frame <- function(object, factors=6L, ...) {
@@ -556,14 +574,15 @@ summary.Frame <- function(object, factors=6L, ...) {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-#h2o.mean <- function(x, ...) {
+h2o.mean <- function(x, ...) {
+  stop("unimpl")
 #  if(ncol(x) != 1L) stop("can only compute the mean of a single column")
 #  .h2o.nary_scalar_op("mean"  , x)
-#}
+}
 
 #' @rdname h2o.mean
 #' @export
-#setMethod("mean", "H2OFrame", h2o.mean)
+setMethod("mean", "Frame", h2o.mean)
 
 #
 #" Mode of a enum or int column.
@@ -871,7 +890,6 @@ h2o.runif <- function(x, seed = -1) {
 #' iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 #' summary(apply(iris.hex, 2, sum))
 #' @export
-
 apply <- function(X, MARGIN, FUN, ...) {
   if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))
 
