@@ -96,11 +96,11 @@ checkSummary <- function(object, expected, tolerance = 1e-6) {
   })
 }
 
+NUM <- function(x) { x[,sapply(x, is.numeric)] }
+FAC <- function(x) { x[,sapply(x, is.factor)]  }
+FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}
+
 genDummyCols <- function(df, use_all_factor_levels = TRUE) {  
-  NUM <- function(x) { x[,sapply(x, is.numeric)] }
-  FAC <- function(x) { x[,sapply(x, is.factor)]  }
-  FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}
-  
   df_fac <- data.frame(FAC(df))
   if(ncol(df_fac) == 0) {
     DF <- data.frame(NUM(df))
