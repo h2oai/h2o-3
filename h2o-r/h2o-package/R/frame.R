@@ -510,12 +510,12 @@ setMethod("match", "H2OFrame", h2o.match)
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", signature("H2OFrame", "character"), function(x, table) any(match(x, table, nomatch = 0)))
+setMethod("%in%", signature("H2OFrame", "character"), function(x, table) h2o.match(x, table, nomatch = 0))
 
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) all(sapply(table,function(t) any(t==x))))
+setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) h2o.match(x, table, nomatch=0))
 
 #' Remove Rows With NAs
 #'
