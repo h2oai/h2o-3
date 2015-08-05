@@ -30,6 +30,7 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 				"max_depth",
 				"min_rows",
 				"nbins",
+        "nbins_top_level",
 				"nbins_cats",
 				"r2_stopping",
 				"seed",
