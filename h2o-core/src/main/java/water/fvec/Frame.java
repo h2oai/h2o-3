@@ -1119,6 +1119,7 @@ public class Frame extends Lockable<Frame> {
           for(int row=0;row<cs[0]._len;++row) {
             if( cs[col].isNA(row) ) ncs[col].addNA();
             else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
+            else if( cs[col] instanceof StrWrappedVec.StrWrappedChunk) ncs[col].addStr(cs[col], row);
             else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
             else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
             else ncs[col].addNum(cs[col].atd(row));
