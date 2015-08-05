@@ -308,7 +308,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             else minValues.replace(nidx, ff);
           }
           IcedDouble maxs = maxValues.get(nidx);
-          double oldMax = maxs == null ? Double.MIN_VALUE : maxs._val;
+          double oldMax = maxs == null ? -Double.MAX_VALUE : maxs._val;
           if (f > oldMax) {
             if (maxs == null) maxValues.put(nidx, ff);
             else maxValues.replace(nidx, ff);
