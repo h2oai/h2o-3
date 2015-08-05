@@ -14,13 +14,17 @@ import water.UDP.udp;
 class FJPacket extends H2OCountedCompleter {
   final AutoBuffer _ab;
   final int _ctrl;              // 1st byte of packet
-  FJPacket( AutoBuffer ab, int ctrl ) { _ab = ab; _ctrl = ctrl; }
+  FJPacket( AutoBuffer ab, int ctrl ) { _ab = ab; _ctrl = ctrl;
+    assert 0 < _ctrl && _ctrl < udp.UDPS.length;
+    assert udp.UDPS[_ctrl]._udp != null:"missing udp " + _ctrl;
+  }
 
   @Override protected void compute2() {
     _ab.getPort(); // skip past the port
-    if( _ctrl <= UDP.udp.nack.ordinal() )
-      UDP.udp.UDPS[_ctrl]._udp.call(_ab).close();
-    else
+    if( _ctrl <= UDP.udp.nack.ordinal() ) {
+      AutoBuffer ab = UDP.udp.UDPS[_ctrl]._udp.call(_ab);
+      if(ab != null && !ab.isClosed()) ab.close();
+    } else
       RPC.remote_exec(_ab);
     tryComplete();
   }

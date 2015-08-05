@@ -118,7 +118,7 @@ public /* final */ class AutoBuffer {
     // Read Inet from socket, port from the stream, figure out H2ONode
     _h2o = H2ONode.intern(sock.socket().getInetAddress(), getPort());
     _firstPage = true;          // Yes, must reset this.
-    assert _h2o != null && _h2o != H2O.SELF:"h2o = " + _h2o + " SELF = " + H2O.SELF;
+//    assert _h2o != null && _h2o != H2O.SELF:"h2o = " + _h2o + " SELF = " + H2O.SELF;
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
   }
@@ -510,7 +510,7 @@ public /* final */ class AutoBuffer {
     assert _size < AutoBuffer.BBP_SML.size();
     _bb.flip();                 // Flip for sending
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
-      water.init.NetworkInit.multicast(_bb);
+      water.init.NetworkInit.multicast(_bb, _priority);
     } else {                    // Else single-cast send
       if(H2O.ARGS.useUDP)
         water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);

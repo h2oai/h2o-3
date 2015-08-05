@@ -1,6 +1,7 @@
 package water;
 
 import water.RPC.RPCCall;
+import water.UDP.udp;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.DocGen.HTML;
@@ -242,6 +243,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         System.arraycopy(bb.array(),0,ary,2,sz);
       else  for(int i = 0; i < sz; ++i)
           ary[i+2] = bb.get(i);
+      assert 0 < ary[2] && ary[2] < udp.UDPS.length; // valid ctrl byte
+      assert udp.UDPS[ary[2]]._udp != null:"missing udp " + ary[2];
       assert (0xFF & ary[ary.length-1]) == 0xef;
       assert (((0xFF & ary[0]) | ((0xFF & ary[1]) << 8)) + 3) == ary.length;
       return new H2OSmallMessage(ary,priority);
@@ -263,6 +266,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
       int sleep = 0;
       _bb.flip();
       int sz = _bb.limit();
+      int retries = 0;
       while (true) {
         _bb.position(0);
         _bb.limit(sz);
@@ -273,18 +277,27 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             sock.socket().setReuseAddress(true);
             sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
             InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
-            boolean res = sock.connect(isa);
+
+            boolean res = false;
+            try{
+              res = sock.connect(isa);
+            } catch(IOException ioe) {
+              if(!Paxos._cloudLocked && retries++ < 300) { // cloud not yet up => other node is most likely starting
+                try {Thread.sleep(100);} catch (InterruptedException e) {}
+                continue;
+              } else throw ioe;
+            }
             boolean blocking = true;
             sock.configureBlocking(blocking);
             assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
             _rawChannel = sock;
-            _rawChannel.setOption(StandardSocketOptions.TCP_NODELAY,true);
+            _rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
             ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            bb.put((byte)1);
+            bb.put((byte) 1);
             bb.putChar((char) H2O.H2O_PORT);
-            bb.put((byte)0xef);
+            bb.put((byte) 0xef);
             bb.flip();
-            while(bb.hasRemaining())
+            while (bb.hasRemaining())
               _rawChannel.write(bb);
           }
           while (_bb.hasRemaining())

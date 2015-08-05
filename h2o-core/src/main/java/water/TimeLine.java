@@ -229,18 +229,9 @@ public class TimeLine extends UDP {
             SNAPSHOT[i] = a;
         TimeLine.class.notify();
       }
-      return null; // No I/O needed for my own snapshot
-    }
-    // Send timeline to remote
-    while( true ) {
-      AutoBuffer tab = new AutoBuffer(ab._h2o,udp.timeline._prior);
-      try {
-        tab.putUdp(UDP.udp.timeline).putA8(a).close();
-        return null;
-      } catch( AutoBuffer.AutoBufferException tue ) {
-        tab.close();
-      }
-    }
+    } else // Send timeline to remote
+      new AutoBuffer(ab._h2o,udp.timeline._prior).putUdp(UDP.udp.timeline).putA8(a).close();
+    return null;
   }
 
   // Receive a remote timeline

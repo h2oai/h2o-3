@@ -128,8 +128,7 @@ public class TCPReceiverThread extends Thread {
       try {
         while (true) {
           idle = true;
-          if (_h2o != null)
-            _h2o._last_heard_from = System.currentTimeMillis();
+          _h2o._last_heard_from = System.currentTimeMillis();
           if (start > _bb.position() - 2)
             read(start + 2 - _bb.position());
           idle = false;
