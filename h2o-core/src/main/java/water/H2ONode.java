@@ -218,6 +218,10 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   private SocketChannel _rawChannel;
 
+  /**
+   * Wrapper around raw bytes representing a small message and its priority.
+   *
+   */
   public static class H2OSmallMessage implements Comparable<H2OSmallMessage> {
     private int _priority;
     final private byte [] _data;
@@ -232,9 +236,21 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
 
     public void increasePriority() {++_priority;}
+
+    /**
+     * Make new H2OSmall message from this byte buffer.
+     * Extracts bytes between position and limit, adds 2B size in the beginning and 1B EOM marker at the end.*
+     *
+     * Currently size must be <= max small message size (Autobuffer.BBP_SML.size()).
+     *
+     * @param bb
+     * @param priority
+     * @return
+     */
     public static H2OSmallMessage make(ByteBuffer bb, int priority) {
       int sz = bb.limit();
       assert sz == (0xFFFF & sz);
+      assert sz <= AutoBuffer.BBP_SML.size();
       byte [] ary = MemoryManager.malloc1(sz+2+1);
       ary[ary.length-1] = (byte)0xef; // eom marker
       ary[0] = (byte)(sz & 0xFF);
@@ -254,11 +270,15 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   private final PriorityBlockingQueue<H2OSmallMessage> _msgQ = new PriorityBlockingQueue<>();
 
+  /**
+   * Private thread serving (actually ships the bytes over) small msg Q.
+   * Buffers the small messages together and sends the bytes over via TCP channel.
+   */
   private class UDP_TCP_SendThread extends Thread {
     private final ByteBuffer _bb;
 
     public UDP_TCP_SendThread(){
-      super("UDP-TCP-SEND");
+      super("UDP-TCP-SEND-" + H2ONode.this);
       _bb = AutoBuffer.BBP_BIG.make();
     }
 
@@ -277,7 +297,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             sock.socket().setReuseAddress(true);
             sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
             InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
-
             boolean res = false;
             try{
               res = sock.connect(isa);
@@ -343,6 +362,12 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   private UDP_TCP_SendThread _sendThread = null;
 
+  /**
+   * Send small message to this node.
+   * Passes the message on to a private msg q, prioritized by the message priority.
+   * MSG queue is served by sender thread, message are continuously extracted, buffered toghether and sent over TCP channel.
+   * @param msg
+   */
   public void sendMessage(H2OSmallMessage msg) {
     _msgQ.put(msg);
     if(_sendThread == null) synchronized(this) {
