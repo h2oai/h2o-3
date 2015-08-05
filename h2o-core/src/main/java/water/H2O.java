@@ -53,7 +53,7 @@ final public class H2O {
   public static void printHelp() {
     String defaultFlowDirMessage;
     if (DEFAULT_FLOW_DIR() == null) {
-      // If you start h2o on hadoop, you must set -flow_dir.
+      // If you start h2o on Hadoop, you must set -flow_dir.
       // H2O doesn't know how to guess a good one.
       // user.home doesn't make sense.
       defaultFlowDirMessage =
@@ -104,7 +104,7 @@ final public class H2O {
             "          The directory where H2O writes logs to disk.\n" +
             "          (This usually has a good default that you need not change.)\n" +
             "\n" +
-            "    -flow_dir <server side directory or hdfs directory>\n" +
+            "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
             defaultFlowDirMessage +
             "\n" +
@@ -212,18 +212,16 @@ final public class H2O {
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
-    public int switch_tcp = 100;
-
-    /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
 
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
-    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for hadoop */
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
-    /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
+    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
     public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
@@ -361,10 +359,6 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.port = s.parseInt(args[i]);
       }
-      else if (s.matches("switch_tcp")) {
-        i = s.incrementAndCheck(i, args);
-        ARGS.switch_tcp = s.parseInt(args[i]);
-      }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
         ARGS.baseport = s.parseInt(args[i]);
@@ -441,9 +435,6 @@ final public class H2O {
       }
       else if (s.matches("experimental")) {
         ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
-      } else if(s.matches("switch_tcp")) {
-        i = s.incrementAndCheck(i, args);
-        ARGS.switch_tcp = Integer.parseInt(args[i]);
       } else if(s.matches("useUDP")) {
           ARGS.useUDP = true;
       } else {
@@ -473,7 +464,7 @@ final public class H2O {
   /**
    * Tell the embedding software that this H2O instance belongs to
    * a cloud of a certain size.
-   * This may be nonblocking.
+   * This may be non-blocking.
    *
    * @param ip IP address this H2O can be reached at.
    * @param port Port this H2O can be reached at (for REST API and browser).
@@ -1009,7 +1000,7 @@ final public class H2O {
     // The serialization flavor / delegate.  Lazily set on first use.
     private transient short _ice_id;
 
-    /** Find the serializatoin delegate for a subclass of this class */
+    /** Find the serialization delegate for a subclass of this class */
     protected Icer<T> icer() {
       int id = _ice_id;
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
@@ -1207,7 +1198,7 @@ final public class H2O {
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
-    // down. Started soon, so we can start parsing multicast UDP packets
+    // down. Started soon, so we can start parsing multi-cast UDP packets
     new MultiReceiverThread().start();
 
     // Start the Persistent meta-data cleaner thread, which updates the K/V
@@ -1217,7 +1208,7 @@ final public class H2O {
     Cleaner.THE_CLEANER.start();
 
     // Start a UDP timeout worker thread. This guy only handles requests for
-    // which we have not recieved a timely response and probably need to
+    // which we have not received a timely response and probably need to
     // arrange for a re-send to cover a dropped UDP packet.
     new UDPTimeOutThread().start();
     new H2ONode.AckAckTimeOutThread().start();

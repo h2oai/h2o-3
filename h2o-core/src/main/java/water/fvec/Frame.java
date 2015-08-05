@@ -1028,9 +1028,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
-      case Vec.T_TIME+1:
-      case Vec.T_TIME+2:
-        coltypes[i] = "string"; 
+        coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
@@ -1211,6 +1209,23 @@ public class Frame extends Lockable<Frame> {
     return f2;
   }
 
+  private boolean isLastRowOfCurrentChunk(int chunkIdx, long row) {
+    long lastRowOfCurrentChunk = anyVec().get_espc()[chunkIdx + 1] - 1;
+    assert row <= lastRowOfCurrentChunk;
+    return row >= lastRowOfCurrentChunk;
+  }
+
+  /**
+   * Flush a chunk if it's not homed here.
+   * Do this to avoid filling up memory when streaming a large dataset.
+   */
+  private void hintFlushRemoteChunk(Vec v, int cidx) {
+    Key k = v.chunkKey(cidx);
+    if( ! k.home() ) {
+      H2O.raw_remove(k);
+    }
+  }
+
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
    *  @return An InputStream containing this Frame as a CSV */
@@ -1222,7 +1237,7 @@ public class Frame extends Lockable<Frame> {
     private final boolean _hex_string;
     byte[] _line;
     int _position;
-    public int _curChkIdx;
+    public volatile int _curChkIdx;
     long _row;
 
     CSVStream(boolean headers, boolean hex_string) {
@@ -1246,7 +1261,6 @@ public class Frame extends Lockable<Frame> {
         StringBuilder sb = new StringBuilder();
         Vec vs[] = vecs();
         for( int i = 0; i < vs.length; i++ ) {
-          _curChkIdx = vs[0].elem2ChunkIdx(_row);
           if(i > 0) sb.append(',');
           if(!vs[i].isNA(_row)) {
             if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
@@ -1272,6 +1286,13 @@ public class Frame extends Lockable<Frame> {
         sb.append('\n');
         _line = sb.toString().getBytes();
         _position = 0;
+
+        // Flush the chunk if we're done with it.
+        if (isLastRowOfCurrentChunk(_curChkIdx, _row)) {
+          for (Vec v : vs)
+            hintFlushRemoteChunk(v, _curChkIdx);
+          _curChkIdx++;
+        }
         _row++;
       }
       return _line.length - _position;

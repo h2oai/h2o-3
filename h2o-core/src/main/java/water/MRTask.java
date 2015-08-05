@@ -10,7 +10,7 @@ import water.fvec.Vec.VectorGroup;
  * Map/Reduce style distributed computation.
  * <p>
  * MRTask provides several <code>map</code> and <code>reduce</code> methods that can be
- * overriden to specify a computation. Several instances of this class will be
+ * overridden to specify a computation. Several instances of this class will be
  * created to distribute the computation over F/J threads and machines.  Non-transient
  * fields are copied and serialized to instances created for map invocations. Reduce
  * methods can store their results in fields. Results are serialized and reduced all the
@@ -736,7 +736,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     int nhi = _nhi;             // Save before copyOver crushes them
     if( _res == null ) _nhi=-1; // Flag for no local results *at all*
     else if( _res != this ) {   // There is a local result, and its not self
-      _res._profile = _profile; // Use my profile (not childs)
+      _res._profile = _profile; // Use my profile (not child's)
       copyOver(_res);           // So copy into self
     }
     closeLocal();          // User's node-local cleanup

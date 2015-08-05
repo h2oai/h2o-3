@@ -459,12 +459,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
-      modifyParmsForCrossValidationMainModel(N);
-
+      modifyParmsForCrossValidationMainModel(N); //tell the main model that it shouldn't stop early either
       trainModelImpl(-1, false).block(); // builds the main model and wait for completion
       Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done
 
-      // Check that both the job and the model are not yet marked as done
+      // Check that both the job and the model are not yet marked as done (canBeDone() looks at whether N-fold CV is done)
       assert(_state == JobState.RUNNING);
 
       // Compute and put the cross-validation metrics into the main model
@@ -503,8 +502,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /**
    * Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
    * For example, the model might need to be told to not do early stopping.
+   * @param N Total number of cross-validation folds
    */
   public void modifyParmsForCrossValidationMainModel(int N) {
+
   }
 
   boolean _deleteProgressKey = true;
@@ -545,8 +546,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
   protected transient Vec _offset; // Handy offset column
-  protected transient Vec _weights;
-  protected transient Vec _fold;
+  protected transient Vec _weights; // observation weight column
+  protected transient Vec _fold; // fold id column
 
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
