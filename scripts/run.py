@@ -1978,8 +1978,6 @@ def main(argv):
         # Test group can be None or not.
         g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge,  g_nopass)
 
-    for t in [t.test_name for t in g_runner.tests]: print t
-
     # If no run is specified, then do an early exit here.
     if (g_no_run):
         sys.exit(0)
