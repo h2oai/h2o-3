@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
 import hex.Distributions.Family;
@@ -28,11 +29,14 @@ public class GBMBasic extends TestNGUtil {
 		/**
 		 * The first row of data is used to testing.
 		 */
-		final int firstRow = 5;
+		final int firstRow = 4;
 		final String testcaseFilePath = "h2o-testng/src/test/resources/gbmCases.csv";
+		final String negTestcaseFilePath = "h2o-testng/src/test/resources/gbmNegCases.csv";
 
 		Object[][] data = null;
 		List<String> lines = null;
+		List<String> negLines = null;
+		List<String> allLines = new ArrayList<String>();
 
 		try {
 			// read data from file
@@ -41,15 +45,29 @@ public class GBMBasic extends TestNGUtil {
 		catch (Exception ignore) {
 			System.out.println("Cannot open file: " + testcaseFilePath);
 			ignore.printStackTrace();
-			return null;
 		}
 
-		// remove headers
-		lines.removeAll(lines.subList(0, firstRow));
+		try {
+			// read data from negative file
+			negLines = Files
+					.readAllLines(find_test_file_static(negTestcaseFilePath).toPath(), Charset.defaultCharset());
+		}
+		catch (Exception ignore) {
+			System.out.println("Cannot open file: " + negTestcaseFilePath);
+			ignore.printStackTrace();
+		}
 
-		data = new Object[lines.size()][8];
+		// remove headers and compile all lines
+		if (lines != null) {
+			allLines.addAll(lines.subList(firstRow, lines.size()));
+		}
+		if (negLines != null) {
+			allLines.addAll(negLines.subList(firstRow, negLines.size()));
+		}
+
+		data = new Object[allLines.size()][8];
 		int r = 0;
-		for (String line : lines) {
+		for (String line : allLines) {
 			String[] variables = line.trim().split(",", -1);
 
 			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
@@ -126,20 +144,31 @@ public class GBMBasic extends TestNGUtil {
 		try {
 			Scope.enter();
 
-			// Build a first model; all remaining models should be equal
+			System.out.println("Build model ");
 			job = new GBM(parameter);
+			System.out.println("Train model");
 			gbmModel = job.trainModel().get();
 
+			System.out.println("Predict testcase " + testcase_id);
 			score = gbmModel.score(trainFrame);
-			// Assert.assertTrue(model.testJavaScoring(score, trainFrame, 1e-15));
-			System.out.println("Test is passed.");
+			
+			System.out.println("Validate testcase " + testcase_id);
+			//Assert.assertTrue(gbmModel.testJavaScoring(score, trainFrame, 1e-15));
+			
+			if(FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)){
+				Assert.fail("It is negative testcase");
+			}
+			else{
+				System.out.println("Testcase is passed.");
+			}
 		}
-		catch (IllegalArgumentException ex) {
-			// can't predict testcase
-			System.out.println("Test is failed. It can't predict");
+		catch (Exception ex) {
+			System.out.println("Testcase is failed.");
 			ex.printStackTrace();
 			
-			Assert.fail("Test is failed. It can't predict", ex);
+			if(!FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)){
+				Assert.fail("Testcase is failed",ex);
+			}
 		}
 		finally {
 			if (trainFrame != null) {
@@ -279,14 +308,14 @@ public class GBMBasic extends TestNGUtil {
 		new Param("_build_tree_one_node", "boolean"),
 		new Param("_class_sampling_factors", "float[]"),
 		
-		new Param("_response_column", "String"),
+		new Param("_response_column", "String", true, true),
 	}; 
 	
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
 			"0",
-			"1",
 			"test_description",
 			"testcase_id",
+			FunctionUtils.testcase_type,
 
 			// GBM Parameters
 			"regression",

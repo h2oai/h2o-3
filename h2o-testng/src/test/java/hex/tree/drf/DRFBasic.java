@@ -1,5 +1,6 @@
 package hex.tree.drf;
 
+import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
 import hex.Distributions.Family;
@@ -27,11 +28,14 @@ public class DRFBasic extends TestNGUtil {
 		/**
 		 * The first row of data is used to testing.
 		 */
-		final int firstRow = 5;
+		final int firstRow = 4;
 		final String testcaseFilePath = "h2o-testng/src/test/resources/drfCases.csv";
+		final String negTestcaseFilePath = "h2o-testng/src/test/resources/drfNegCases.csv";
 
 		Object[][] data = null;
 		List<String> lines = null;
+		List<String> negLines = null;
+		List<String> allLines = new ArrayList<String>();
 
 		try {
 			// read data from file
@@ -40,15 +44,29 @@ public class DRFBasic extends TestNGUtil {
 		catch (Exception ignore) {
 			System.out.println("Cannot open file: " + testcaseFilePath);
 			ignore.printStackTrace();
-			return null;
 		}
 
-		// remove headers
-		lines.removeAll(lines.subList(0, firstRow));
+		try {
+			// read data from negative file
+			negLines = Files
+					.readAllLines(find_test_file_static(negTestcaseFilePath).toPath(), Charset.defaultCharset());
+		}
+		catch (Exception ignore) {
+			System.out.println("Cannot open file: " + negTestcaseFilePath);
+			ignore.printStackTrace();
+		}
 
-		data = new Object[lines.size()][8];
+		// remove headers and compile all lines
+		if (lines != null) {
+			allLines.addAll(lines.subList(firstRow, lines.size()));
+		}
+		if (negLines != null) {
+			allLines.addAll(negLines.subList(firstRow, negLines.size()));
+		}
+
+		data = new Object[allLines.size()][8];
 		int r = 0;
-		for (String line : lines) {
+		for (String line : allLines) {
 			String[] variables = line.trim().split(",", -1);
 
 			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
@@ -91,13 +109,6 @@ public class DRFBasic extends TestNGUtil {
 						validate_dataset_id, validate_dataset_filename, rawInput);
 
 				_basic(testcase_id, test_description, DRFParameter, rawInput);
-			}
-		}
-		catch (Exception ex) {
-			System.out.println("Testcase is failed");
-			ex.printStackTrace();
-			if(!isNegativeTestcase(rawInput)){
-				Assert.fail("Testcase is failed",ex);
 			}
 		}
 		finally {
@@ -146,22 +157,27 @@ public class DRFBasic extends TestNGUtil {
 			System.out.println("Predict testcase " + testcase_id);
 			score = drfModel.score(trainFrame);
 
-			System.out.println("Predict success.");
-			System.out.println("Testcase is passed.");
+			System.out.println("Validate testcase " + testcase_id);
+			//Assert.assertTrue(drfModel.testJavaScoring(score, trainFrame, 1e-15));
+			
+			if(FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)){
+				Assert.fail("It is negative testcase");
+			}
+			else{
+				System.out.println("Testcase is passed.");
+			}
 		}
 		catch (IllegalArgumentException ex) {
-			// can't predict testcase
-			System.out.println("Cannot predit testcase " + testcase_id);
 			System.out.println("Testcase is failed");
 			ex.printStackTrace();
-			if(!isNegativeTestcase(rawInput)){
+			if(!FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)){
 				Assert.fail("Testcase is failed",ex);
 			}
 		}
 		catch(Exception ex){
 			System.out.println("Testcase is failed");
 			ex.printStackTrace();
-			if(!isNegativeTestcase(rawInput)){
+			if(!FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)){
 				Assert.fail("Testcase is failed",ex);
 			}
 		}
@@ -312,17 +328,6 @@ public class DRFBasic extends TestNGUtil {
 		return drfParams;
 	}
 	
-	private boolean isNegativeTestcase(String[] input) {
-
-		final String negative = "negative";
-
-		if (negative.equals(input[tcHeaders.indexOf("testcase_type")].trim())) {
-			return true;
-		}
-
-		return false;
-	}
-
 	private static Param[] params = new Param[] {
 		
 		new Param("_distribution", "Family", false, false),
@@ -350,10 +355,9 @@ public class DRFBasic extends TestNGUtil {
 	
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
 			"0",
-			"1",
 			"test_description",
 			"testcase_id",
-			"testcase_type",
+			FunctionUtils.testcase_type,
 			
 			// DRF Parameters
 			"regression",
