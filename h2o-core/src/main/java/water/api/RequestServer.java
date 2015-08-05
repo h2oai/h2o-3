@@ -58,6 +58,7 @@ public class RequestServer extends NanoHTTPD {
   public static final int H2O_REST_API_VERSION = 3;
 
   static public RequestServer SERVER;
+  private RequestServer() {}
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
@@ -100,7 +101,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Admin
     addToNavbar(register("/3/Cloud",      "GET", CloudHandler.class,  "status", "Determine the status of the nodes in the H2O cloud."), "/Cloud", "Cloud", "Admin");
-    register("/3/Cloud",                  "HEAD",CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
+    register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", "Determine the status of the nodes in the H2O cloud.");
     addToNavbar(register("/3/Jobs"       ,"GET", JobsHandler.class,   "list",   "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
     addToNavbar(register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
@@ -117,7 +118,7 @@ public class RequestServer extends NanoHTTPD {
     // REST only, no html:
 
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",
-            "Return information about this H2O.");
+            "Return information about this H2O cluster.");
 
     register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,MetadataHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
@@ -144,8 +145,12 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
+
+    // TODO: add a DEPRECATED flag, and make this next one DEPRECATED
     register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
+    register("/3/Frames/(?<frameid>.*)/export" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id"},
+        "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"frame_id", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"frame_id", "column"},
@@ -166,7 +171,7 @@ public class RequestServer extends NanoHTTPD {
       "Delete all Frames from the H2O distributed K/V store.");
     register("/3/Models/(?<modelid>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"model_id"},
       "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<modelid>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
+    register("/3/Models/(?<modelid>.*?)(\\.java)?"                  ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"model_id"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
       "Return all Models from the H2O distributed K/V store.");
@@ -185,6 +190,8 @@ public class RequestServer extends NanoHTTPD {
       "Set Model Builders visibility level.");
     register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
       "Get Model Builders visibility level.");
+    register("/3/ModelBuilders/(?<algo>.*)/model_id"             ,"POST"  ,ModelBuildersHandler.class, "calcModelId",                 new String[] {"algo"},
+      "Return a new unique model_id for the specified algorithm.");
     register("/3/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
       "Return the Model Builder metadata for the specified algorithm.");
     register("/3/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
@@ -250,6 +257,7 @@ public class RequestServer extends NanoHTTPD {
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/99/Rapids/isEval"                                   ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", new String[] { "key"}, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
@@ -431,42 +439,19 @@ public class RequestServer extends NanoHTTPD {
     return lookup(http_method, uri);
   }
 
-
-  // Keep spinning until we get to launch the NanoHTTPD.  Launched in a
-  // seperate thread (I'm guessing here) so the startup process does not hang
-  // if the various web-port accesses causes Nano to hang on startup.
-  public static Runnable start() {
+  public static void finalizeRegistration() {
     Schema.registerAllSchemasIfNecessary();
-    Runnable run=new Runnable() {
-        @Override public void run()  {
-          while( true ) {
-            try {
-              // Try to get the NanoHTTP daemon started
-              synchronized(this) {
-                SERVER = new RequestServer(water.init.NetworkInit._apiSocket);
-                notifyAll();
-              }
-              break;
-            } catch( Exception ioe ) {
-              Log.err("Launching NanoHTTP server got ",ioe);
-              try { Thread.sleep(1000); } catch( InterruptedException ignore ) { } // prevent denial-of-service
-            }
-          }
-        }
-      };
-    new Thread(run, "Request Server launcher").start();
-    return run;
+
+    // Need a stub RequestServer to handle calls to serve() from Jetty.
+    // But no threads are started here anymore.
+    SERVER = new RequestServer();
+
+    H2O.getJetty().acceptRequests();
   }
 
   public static void alwaysLogRequest(String uri, String method, Properties parms) {
-    String log = String.format("%-4s %s", method, uri);
-    for( Object arg : parms.keySet() ) {
-      String value = parms.getProperty((String) arg);
-      if( value != null && value.length() != 0 )
-        log += " " + arg + "=" + value;
-    }
-
-    Log.httpd(log);
+    // This is never called anymore.
+    throw H2O.fail();
   }
 
     // Log all requests except the overly common ones
@@ -565,8 +550,6 @@ public class RequestServer extends NanoHTTPD {
       versioned_path = "/" + version + path;
     }
 
-    alwaysLogRequest(uri, method, parms);
-
     // Load resources, or dispatch on handled requests
     try {
       boolean logged;
@@ -653,7 +636,7 @@ public class RequestServer extends NanoHTTPD {
       else if (e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
 
-      Log.warn("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
       return wrap(new H2OErrorV3().fillFromImpl(error), type);
@@ -713,7 +696,9 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
       ModelSchema ms = (ModelSchema)mb.models[0];
-      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+      Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+      //r.addHeader("Content-Disposition", "attachment; filename=\"" + ms.model_id.key().toString() + ".java\"");
+      return r;
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
@@ -884,7 +869,7 @@ public class RequestServer extends NanoHTTPD {
     return "h2ologs_" + now;
   }
 
-  private byte[] zipLogs(byte[][] results, String topDir) throws IOException {
+  private byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
     int l = 0;
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (int i = 0; i<results.length;l+=results[i++].length);
@@ -902,12 +887,23 @@ public class RequestServer extends NanoHTTPD {
       for (int i =0; i<results.length; i++) {
         String filename =
                 topDir + File.separator +
-                        "node" + i +
-                        H2O.CLOUD._memary[i].toString().replace(':', '_').replace('/', '_') +
+                        "node" + i + "_" +
+                        H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
                         ".zip";
         ZipEntry ze = new ZipEntry(filename);
         zos.putNextEntry(ze);
         zos.write(results[i]);
+        zos.closeEntry();
+      }
+
+      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
+      if (clientResult != null) {
+        String filename =
+                topDir + File.separator +
+                        "driver.zip";
+        ZipEntry ze = new ZipEntry(filename);
+        zos.putNextEntry(ze);
+        zos.write(clientResult);
         zos.closeEntry();
       }
 
@@ -926,6 +922,7 @@ public class RequestServer extends NanoHTTPD {
 
     H2ONode[] members = H2O.CLOUD.members();
     byte[][] perNodeZipByteArray = new byte[members.length][];
+    byte[] clientNodeByteArray = null;
 
     for (int i = 0; i < members.length; i++) {
       byte[] bytes;
@@ -949,10 +946,26 @@ public class RequestServer extends NanoHTTPD {
       perNodeZipByteArray[i] = bytes;
     }
 
+    if (H2O.ARGS.client) {
+      byte[] bytes;
+
+      try {
+        GetLogsFromNode g = new GetLogsFromNode();
+        g.nodeidx = -1;
+        g.doIt();
+        bytes = g.bytes;
+      }
+      catch (Exception e) {
+        bytes = e.toString().getBytes();
+      }
+
+      clientNodeByteArray = bytes;
+    }
+
     String outputFileStem = getOutputLogStem();
     byte[] finalZipByteArray;
     try {
-      finalZipByteArray = zipLogs(perNodeZipByteArray, outputFileStem);
+      finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
       finalZipByteArray = e.toString().getBytes();

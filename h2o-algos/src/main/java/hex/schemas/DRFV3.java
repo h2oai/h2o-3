@@ -7,10 +7,37 @@ import water.api.API;
 public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 
   public static final class DRFParametersV3 extends SharedTreeV3.SharedTreeParametersV3<DRFParameters, DRFParametersV3> {
-    static public String[] own_fields = new String[] {
+    static public String[] fields = new String[] {
+				"model_id",
+				"training_frame",
+				"validation_frame",
+        "nfolds",
+        "keep_cross_validation_predictions",
+        "fold_assignment",
+        "fold_column",
+				"response_column",
+				"ignored_columns",
+				"ignore_const_cols",
+				"score_each_iteration",
+				"offset_column",
+				"weights_column",
+				"balance_classes",
+				"class_sampling_factors",
+				"max_after_balance_size",
+				"max_confusion_matrix_size",
+				"max_hit_ratio_k",
+				"ntrees",
+				"max_depth",
+				"min_rows",
+				"nbins",
+				"nbins_cats",
+				"r2_stopping",
+				"seed",
+				"build_tree_one_node",
         "mtries",
         "sample_rate",
-        "binomial_double_trees"
+        "binomial_double_trees",
+        "checkpoint"
     };
 
     // Input fields

@@ -35,19 +35,19 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
   /** Split ratios - resulting number of split is ratios.length+1 */
   final double[] ratios;
   /** Destination keys for each output frame split. */
-  final Key[]   destKeys;
+  final Key<Frame>[]   destKeys;
   /** Optional job key */
-  final Key     jobKey;
+  final Key<Job>     jobKey;
 
   /** Output frames for each output split part */
   private Frame[] splits;
   /** Temporary variable holding exceptions of workers */
   private Throwable[] workersExceptions;
 
-  public FrameSplitter(Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
+  public FrameSplitter(Frame dataset, double[] ratios, Key<Frame>[] destKeys, Key<Job> jobKey) {
     this(null, dataset, ratios,destKeys,jobKey);
   }
-  public FrameSplitter(H2OCountedCompleter cc, Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
+  public FrameSplitter(H2OCountedCompleter cc, Frame dataset, double[] ratios, Key<Frame>[] destKeys, Key<Job> jobKey) {
     super(cc);
     assert ratios.length > 0 : "No ratio specified!";
     assert ratios.length < 100 : "Too many frame splits demanded!";

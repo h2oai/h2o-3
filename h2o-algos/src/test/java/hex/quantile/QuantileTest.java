@@ -1,6 +1,7 @@
 package hex.quantile;
 
 import org.junit.*;
+import water.Job;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -22,7 +23,7 @@ public class QuantileTest extends TestUtil {
       parms._train = fr._key;
       //parms._max_iterations = 10;
 
-      Quantile job = new Quantile(parms).trainModel();
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
       kmm = job.get();
       job.remove();
 
@@ -43,7 +44,7 @@ public class QuantileTest extends TestUtil {
       QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
       parms._train = fr._key;
 
-      Quantile job = new Quantile(parms).trainModel();
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
       kmm = job.get();
       job.remove();
 
@@ -61,7 +62,7 @@ public class QuantileTest extends TestUtil {
       fr = frame(d);
       QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
       parms._train = fr._key;
-      Quantile job = new Quantile(parms).trainModel();
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
       kmm = job.get();
       job.remove();
       Assert.assertTrue(kmm._output._quantiles[0][5]==d[3][0]);

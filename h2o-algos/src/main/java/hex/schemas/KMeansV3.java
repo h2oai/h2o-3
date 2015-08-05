@@ -9,7 +9,24 @@ import water.api.KeyV3;
 public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMeansV3.KMeansParametersV3> {
 
   public static final class KMeansParametersV3 extends ClusteringModelParametersSchema<KMeansParameters, KMeansParametersV3> {
-    static public String[] own_fields = new String[] { "user_points", "max_iterations", "standardize", "seed", "init" };
+    static public String[] fields = new String[] {
+				"model_id",
+				"training_frame",
+				"validation_frame",
+        "nfolds",
+        "keep_cross_validation_predictions",
+        "fold_assignment",
+        "fold_column",
+				"ignored_columns",
+				"ignore_const_cols",
+				"score_each_iteration",
+				"k",
+				"user_points",
+				"max_iterations",
+				"standardize",
+				"seed",
+				"init"
+		};
 
     // Input fields
     @API(help = "User-specified points", required = false)

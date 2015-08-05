@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.Distribution;
 import water.MRTask;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.C0DChunk;
@@ -40,8 +41,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
   final boolean _subset;      // True if working a subset of cols
+  final Distribution.Family _family;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset, Distribution.Family family) {
     super(cc);
     _k    = k;
     _ncols= ncols;
@@ -52,6 +54,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _hcs  = hcs;
     _subset = subset;
     _modifiesInputs = true;
+    _family = family;
   }
 
   /** Marker for already decided row. */
@@ -85,7 +88,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override public void map( Chunk[] chks ) {
-    final Chunk wrks = chks[_ncols+2];
+    final Chunk wrks = chks[_ncols+2]; //fitting target (same as response for DRF, residual for GBM)
     final Chunk nids = chks[_ncols+3];
     final Chunk weight = chks.length >= _ncols+5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
 
@@ -108,7 +111,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
     // Merge histograms
-    if( sbh._hcs == _hcs ) return; // Local histograms all shared; free to merge
+    if( sbh._hcs == _hcs )
+      return; // Local histograms all shared; free to merge
     // Distributed histograms need a little work
     for( int i=0; i<_hcs.length; i++ ) {
       DHistogram hs1[] = _hcs[i], hs2[] = sbh._hcs[i];
@@ -174,13 +178,20 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-  // All rows, all cols, accumulate histograms.  This is the hot hot inner
-  // loop of GBM, so we do some non-standard optimizations.  The rows in this
-  // chunk are spread out amongst a modest set of NodeIDs/splits.  Normally
-  // we would visit the rows in row-order, but this visits the NIDs in random
-  // order.  The hot-part of this code updates the histograms racily (via
-  // atomic updates) - once-per-row.  This optimized version updates the
-  // histograms once-per-NID, but requires pre-sorting the rows by NID.
+  /**
+   * All rows, all cols, accumulate histograms.  This is the hot hot inner
+   * loop of GBM, so we do some non-standard optimizations.  The rows in this
+   * chunk are spread out amongst a modest set of NodeIDs/splits.  Normally
+   * we would visit the rows in row-order, but this visits the NIDs in random
+   * order.  The hot-part of this code updates the histograms racily (via
+   * atomic updates) - once-per-row.  This optimized version updates the
+   * histograms once-per-NID, but requires pre-sorting the rows by NID.
+   *
+   * @param chks predictors, actual response (ignored)
+   * @param wrks predicted response
+   * @param weight observation weights
+   * @param nnids node ids
+   */
   private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
@@ -237,7 +248,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data < min ) min = col_data;
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
-          double resp = wrks.atd(row);
+          double resp = wrks.atd(row); // fitting target (residual)
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
           ssqs[b] += w*resp*resp;

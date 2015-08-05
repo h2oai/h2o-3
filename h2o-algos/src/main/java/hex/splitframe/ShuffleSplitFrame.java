@@ -15,7 +15,7 @@ import water.parser.ValueString;
  */
 public class ShuffleSplitFrame {
 
-  public static Frame[] shuffleSplitFrame( Frame fr, Key[] keys, final double ratios[], final long seed ) {
+  public static Frame[] shuffleSplitFrame( Frame fr, Key<Frame>[] keys, final double ratios[], final long seed ) {
     // Sanity check the ratios
     assert keys.length == ratios.length;
     double sum = ratios[0];
@@ -51,11 +51,7 @@ public class ShuffleSplitFrame {
                 ncs[x + j].addNum(cs[j].atd(i));
                 break;
               default:
-                if (colType > Vec.T_TIME && colType <= Vec.T_TIMELAST)
-                  ncs[x + j].addNum(cs[j].atd(i));
-                else
                   throw new IllegalArgumentException("Unsupported vector type: " + colType);
-                break;
             }
           }
         }

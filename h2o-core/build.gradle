@@ -12,6 +12,8 @@ dependencies {
   compile "org.apache.commons:commons-math3:3.3"
   compile "org.apache.directory.studio:org.apache.commons.lang:2.6"
   compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
+  compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
+  compile "org.eclipse.jetty:jetty-server:8.1.17.v20150415"
   // For Java6 we need named groups in regexp to have nice user API
   compile "com.github.tony19:named-regexp:0.2.3"
 
@@ -29,7 +31,11 @@ dependencies {
   compile 'commons-collections:commons-collections:3.0'
   compile 'org.javassist:javassist:3.18.2-GA'
 
-  compile "org.reflections:reflections:0.9.9"
+  // org.Reflections library 
+  // JitPack compiles this project using java 1.7 which is set as default JDK in reflections' pom.xml. We need this project compiled by java 1.5. That's why there is new fork of the reflections
+  // on Github with JDK version changed and JitPack compiles the dependency from there
+  //!! This should be replaced by regular maven dependency of reflections 0.9.11 or higher when it's available
+  compile 'com.github.MadMan0708:reflections:-SNAPSHOT'
 
   // Jets3t is required by S3N support
   compile 'net.java.dev.jets3t:jets3t:0.6.1'

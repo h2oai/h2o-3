@@ -3,7 +3,10 @@ package hex.kmeans;
 import hex.ClusteringModel;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
+import water.DKV;
 import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SB;
@@ -17,6 +20,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
     public Key<Frame> _user_points;
+    public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
+                                              // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
@@ -56,6 +61,58 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     assert domain == null;
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_parms._k);
+  }
+
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+    if (!_parms._pred_indicator) {
+      return super.predictScoreImpl(orig, adaptedFr, destination_key);
+    } else {
+      final int len = _parms._k;
+      String prefix = "cluster_";
+      Frame adaptFrm = new Frame(adaptedFr);
+      for(int c = 0; c < len; c++)
+        adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.anyVec().makeZero());
+      new MRTask() {
+        @Override public void map( Chunk chks[] ) {
+          double tmp [] = new double[_output._names.length];
+          double preds[] = new double[len];
+          for(int row = 0; row < chks[0]._len; row++) {
+            double p[] = score_indicator(chks, row, tmp, preds);
+            for(int c = 0; c < preds.length; c++)
+              chks[_output._names.length + c].set(row, p[c]);
+          }
+        }
+      }.doAll(adaptFrm);
+
+      // Return the predicted columns
+      int x = _output._names.length, y = adaptFrm.numCols();
+      Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
+
+      f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+      DKV.put(f);
+      makeMetricBuilder(null).makeModelMetrics(this, orig);
+      return f;
+    }
+  }
+
+  public double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+    assert _parms._pred_indicator;
+    assert tmp.length == _output._names.length && preds.length == _parms._k;
+    for(int i = 0; i < tmp.length; i++)
+      tmp[i] = chks[i].atd(row_in_chunk);
+
+    double[] clus = new double[1];
+    score0(tmp, clus);   // this saves cluster number into clus[0]
+    assert clus[0] >= 0 && clus[0] < preds.length;
+    preds[(int)clus[0]] = 1;
+    return preds;
+  }
+
+  @Override
+  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
+    if (weight == 0) return data; //0 distance from itself - validation holdout points don't increase metrics
+    assert(weight == 1);
+    return score0(data, preds);
   }
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {

@@ -9,18 +9,53 @@
 
 - Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
 
-- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in Terminal. 
-- Confirm ports 54321 and 54322 are available for both TCP and UDP.
-- Confirm your firewall is not preventing the nodes from locating each other.
-- Confirm the nodes are not using different versions of H2O.
+- Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in your shell (OSX or Linux). 
+- Confirm ports 54321 and 54322 are available for both TCP and UDP. Launch Telnet (for Windows users) or Terminal (for OS X users), then type `telnet localhost 54321`, `telnet localhost 54322`
+- Confirm your firewall is not preventing the nodes from locating each other. If you can't launch H2O, we recommend temporarily disabling any firewalls until you can confirm they are not preventing H2O from launching. 
+- Confirm the nodes are not using different versions of H2O. If the H2O initialization is not successful, look at the output in the shell - if you see `Attempting to join /localhost:54321 with an H2O version mismatch (md5 differs)`, update H2O on all the nodes to the same version.
+- Confirm that there is space in the `/tmp` directory. 
+	- Windows: In Command Prompt, enter `TEMP` and `%TEMP%` and delete files as needed, or use Disk Cleanup. 
+	- OS X: In Terminal, enter `open $TMPDIR` and delete the folder with your username. 
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
-- Confirm that the nodes are not on different networks.
+- Confirm that there are no spaces in the file path name used to launch H2O. 
+- Confirm that the nodes are not on different networks by confirming that the IP addresses of the nodes are the same in the output: 
+ ```
+ INFO: Listening for HTTP and REST traffic on  IP_Address/
+06-18 10:54:21.586 192.168.1.70:54323    25638  main      
+INFO: H2O cloud name: 'H2O_User' on IP_Address, discovery address /Discovery_Address
+INFO: Cloud of size 1 formed [IP_Address]
+```
 - Check if the nodes have different interfaces; if so, use the -network option to define the network (for example, `-network 127.0.0.1`). To use a network range, use a comma to separate the IP addresses (for example, `-network 123.45.67.0/22,123.45.68.0/24`).
 - Force the bind address using `-ip`:`java -jar h2o.jar -ip <IP_Address> -port <PortNumber>`.
 - (Hadoop only) Try launching H2O with a longer timeout: `hadoop jar h2odriver.jar -timeout 1800`
 - (Hadoop only) Try to launch H2O using more memory: `hadoop jar h2odriver.jar -mapperXmx 10g`. The cluster’s memory capacity is the sum of all H2O nodes in the cluster. 
 - (Linux only) Check if you have SELINUX or IPTABLES enabled; if so, disable them.
 - (EC2 only) Check the configuration for the EC2 security group.
+
+---
+
+**The following error message displayed when I tried to launch H2O - what should I do?**
+
+```
+Exception in thread "main" java.lang.UnsupportedClassVersionError: water/H2OApp
+: Unsupported major.minor version 51.0
+        at java.lang.ClassLoader.defineClass1(Native Method)
+        at java.lang.ClassLoader.defineClassCond(Unknown Source)
+        at java.lang.ClassLoader.defineClass(Unknown Source)
+        at java.security.SecureClassLoader.defineClass(Unknown Source)
+        at java.net.URLClassLoader.defineClass(Unknown Source)
+        at java.net.URLClassLoader.access$000(Unknown Source)
+        at java.net.URLClassLoader$1.run(Unknown Source)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at java.net.URLClassLoader.findClass(Unknown Source)
+        at java.lang.ClassLoader.loadClass(Unknown Source)
+        at sun.misc.Launcher$AppClassLoader.loadClass(Unknown Source)
+        at java.lang.ClassLoader.loadClass(Unknown Source)
+Could not find the main class: water.H2OApp. Program will exit.
+```
+This error output indicates that your Java version is not supported. Upgrade to [Java 7 (JVM)](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [later](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html) and H2O should launch successfully. 
+
+---
 
 
 
@@ -80,7 +115,46 @@ Word2Vec, along with other natural language processing (NLP) algos, are currentl
 
 ---
 
+**What are the "best practices" for preparing data for a K-Means model?**
+
+There aren't specific "best practices," as it depends on your data and the column types. However, removing outliers and transforming any categorical columns to have the same weight as the numeric columns will help, especially if you're standardizing your data. 
+
+
+---
+
+**What is your implementation of Deep Learning based on?**
+
+ Our Deep Learning algorithm is based on the feedforward neural net. For more information, refer to our Data Science documentation or [Wikipedia](https://en.wikipedia.org/wiki/Feedforward_neural_network). 
+
+---
+
+**How is deviance computed for a Deep Learning regression model?**
+
+For a Deep Learning regression model, deviance is computed as follows: 
+
+Loss = MeanSquare -> MSE==Deviance
+For Absolute/Laplace or Huber -> MSE != Deviance. 
+
+---
+
+**For my 0-tree GBM multinomial model, I got a different score depending on whether or not validation was enabled, even though my dataset was the same - why is that?**
+
+Different results may be generated because of the way H2O computes the initial MSE. 
+
+
+---
+
+**How does your Deep Learning Autoencoder work? Is it deep or shallow?**
+
+H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer.  The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers.  We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R). 
+
+
+
+
+---
+
 <!---
+
 #commenting out as still in dev but wanted to save for later
 
 **Are there any H2O examples using text for classification?**
@@ -206,6 +280,27 @@ To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the co
 **How should I format my SVMLight data before importing?**
 
 The data must be formatted as a sorted list of unique integers, the column indices must be >= 1, and the columns must be in ascending order. 
+
+---
+
+
+**What date and time formats does H2O support?**
+
+H2O is set to auto-detect two major data/time formats. Because many data time formats are ambiguous (e.g. 01/02/03), general data time detection is not used.  
+
+The first format is for dates formatted as yyyy-MM-dd. Year is a four-digit number, the month is a two-digit number ranging from 1 to 12, and the day is a two-digit value ranging from 1 to 31. This format can also be followed by a space and then a time (specified below). 
+
+The second date format is for dates formatted as dd-MMM-yy. Here the day must be one or two digits with a value ranging from 1 to 31. The month must be either a three-letter abbreviation or the full month name but is not case sensitive. The year must be either two or four digits. In agreement with [POSIX](https://en.wikipedia.org/wiki/POSIX) standards, two-digit dates >= 69 are assumed to be in the 20th century (e.g. 1969) and the rest are part of the 21st century. This date format can be followed by either a space or colon character and then a time. The '-' between the values is optional. 
+
+Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value between 0-23 (for 24-hour time) or 1-12 (for a twelve-hour clock). mm is a two-digit minute value and must be a value between 0-59. ss is a two-digit second value and must be a value between 0-59. This format can be followed with either milliseconds, nanoseconds, and/or the cycle (i.e. AM/PM). If milliseconds are included, the format is HH:mm:ss:SSS. If nanoseconds are included, the format is HH:mm:ss:SSSnnnnnn. H2O only stores fractions of a second up to the millisecond, so accuracy may be lost. Nanosecond parsing is only included for convenience. Finally, a valid time can end with a space character and then either "AM" or "PM". For this format, the hours must range from 1 to 12. Within the time, the ':' character can be replaced with a '.' character.
+
+---
+
+**How does H2O handle name collisions/conflicts in the dataset?**
+
+If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
+
+
 
 ---
 
@@ -340,6 +435,29 @@ For more information on how H2O works with Excel, refer to this [page](http://le
 
 ---
 
+**I received the following error message when launching H2O - how do I resolve the error?**
+
+```
+Invalid flow_dir illegal character at index 12...
+```
+
+This error message means that there is a space (or other unsupported character) in your H2O directory. To resolve this error: 
+
+- Create a new folder without unsupported characters to use as the H2O directory (for example, `C:\h2o`). 
+
+  or 
+  
+- Specify a different save directory using the `-flow_dir` parameter when launching H2O: `java -jar h2o.jar -flow_dir test`
+
+---
+
+**How does `importFiles()` work in H2O?**
+
+`importFiles()` gets the basic information for the file and then returns a key representing that file. This key is used during parsing to read in the file and to save space so that the file isn't loaded every time; instead, it is loaded into H2O then referenced using the key. For files hosted online, H2O verifies the destination is valid, creates a vec that loads the file when necessary, and returns a key.
+
+
+---
+
 ##Hadoop
 
 <!---
@@ -402,8 +520,13 @@ Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test
 
 When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
 
-
 ---
+
+
+
+
+
+
 
 ##Java
 
@@ -438,6 +561,43 @@ This script connects to the server, gets all the metadata for the REST API schem
 
 
 ---
+
+**I keep getting a message that I need to install Java. I have the latest version of Java installed, but I am still getting this message. What should I do?**
+
+This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 
+
+If you are running OS X 10.7 or earlier, enter the following in Terminal: 
+`export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home`
+
+If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal: 
+
+```
+cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>setenv.JAVA_HOME</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>setenv</string>
+    <string>JAVA_HOME</string>
+    <string>/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceIPC</key>
+  <false/>
+</dict>
+</plist>
+EOF
+```
+
+
+---
+
 
 ##Python
 
@@ -526,7 +686,19 @@ After completing this procedure, go to Python and use `h2o.init()` to start H2O 
 >
 >If you download the jar and the H2O package, `h2o.init()` will work like R >and you don't have to start the jar yourself.
 
+---
 
+**How should I specify the datatype during import in Python?**
+
+Refer to the following example: 
+
+```
+fraw = h2o.import_file("smalldata/logreg/prostate.csv") 
+fsetup = h2o.parse_setup(fraw) 
+fsetup["column_types"][1] = "Enum" # change second column "CAPSULE" to categorical 
+fr = h2o.parse_raw(fsetup) 
+fr.describe()
+```
 
 
 ---
@@ -624,8 +796,120 @@ Not all shim outputs are fully supported, please see ?h2o.shim for more informat
 
 Remove the `h2o.shim(enable=TRUE)` line and try running the code again. Note that the `h2o.shim` is only a way to notify users of previous versions of H2O about changes to the H2O R package - it will not revise your code, but provides suggested replacements for deprecated commands and parameters. 
 
+---
+
+**How do I extract the model weights from a model I've creating using H2O in R? I've enabled `extract_model_weights_and_biases`, but the output refers to a file I can't open in R.**
+
+For an example of how to extract weights and biases from a model, refer to the following repo location on [GitHub](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_weights_and_biases.R). 
 
 ---
+
+**I'm using CentOS and I want to run H2O in R - are there any dependencies I need to install?**
+
+Yes, make sure to install `libcurl`, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize. 
+
+---
+
+**How do I change variable/header names on an H2O frame in R?**
+
+There are two ways to change header names. To specify the headers during parsing, import the headers in R and then specify the header as the column name when the actual data frame is imported: 
+
+```
+header <- h2o.importFile(path = pathToHeader)
+data   <- h2o.importFile(path = pathToData, col.names = header)
+data
+```
+
+You can also use the `names()` function: 
+```
+header <- c("user", "specified", "column", "names")
+data   <- h2o.importFile(path = pathToData)
+names(data) <- header
+```
+
+To replace specific column names, you can also use a `sub/gsub` in R: 
+
+```
+header <- c("user", "specified", "column", "names")
+## I want to replace "user" column with "computer"
+data   <- h2o.importFile(path = pathToData)
+names(data) <- sub(pattern = "user", replacement = "computer", x = names(header))
+```
+---
+
+**My R terminal crashed - how can I re-access my H2O frame?**
+
+Launch H2O and use your web browser to access the web UI, Flow, at `localhost:54321`. Click the **Data** menu, then click **List All Frames**. Copy the frame ID, then run `h2o.ls()` in R to list all the frames, or use the frame ID in the following code (replacing `YOUR_FRAME_ID` with the frame ID): 
+
+```
+library(h2o)
+localH2O = h2o.init(ip="sri.h2o.ai", port=54321, startH2O = F, strict_version_check=T)
+data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID",conn = localH2O)
+``` 
+---
+
+**How do I remove rows containing NAs in an H2OFrame?**
+
+To remove NAs from rows:
+
+```
+  a   b    c    d    e
+1 0   NA   NA   NA   NA
+2 0   2    2    2    2
+3 0   NA   NA   NA   NA
+4 0   NA   NA   1    2
+5 0   NA   NA   NA   NA
+6 0   1    2    3    2
+```
+
+Removing rows 1, 3, 4, 5 to get:
+
+```
+  a   b    c    d    e
+2 0   2    2    2    2
+6 0   1    2    3    2
+```
+
+Use `na.omit(myFrame)`, where `myFrame` represents the name of the frame you are editing. 
+
+---
+
+**I installed H2O in R using OS X and updated all the dependencies, but the following error message displayed: `Error in .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, Unexpected CURL error: Empty reply from server` - what should I do?**
+
+
+This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 
+
+If you are running OS X 10.7 or earlier, enter the following in Terminal: 
+`export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home`
+
+If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal: 
+
+```
+cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>setenv.JAVA_HOME</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>setenv</string>
+    <string>JAVA_HOME</string>
+    <string>/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceIPC</key>
+  <false/>
+</dict>
+</plist>
+EOF
+```
+
+---
+
 
 
 ##Sparkling Water
@@ -691,6 +975,120 @@ The version of H2O embedded in Sparkling Water is the same as the standalone ver
 
 ---
 
+**How do I use Sparkling Water from the Spark shell?**
+
+There are two methods: 
+
+- Use `$SPARK_HOME/bin/spark-shell --packages ai.h2o:sparkling-water-core_2.10:1.3.3`
+
+  or 
+  
+- `bin/sparkling-shell`
+
+The software distribution provides example scripts in the `examples/scripts` directory: 
+
+`bin/sparkling-shell -i examples/scripts/chicagoCrimeSmallShell.script.scala`
+
+For either method, initialize H2O as shown in the following example: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc).start()
+```
+
+After successfully launching H2O, the following output displays: 
+
+```
+Sparkling Water Context:
+ * number of executors: 3
+ * list of used executors:
+  (executorId, host, port)
+  ------------------------
+  (1,Michals-MBP.0xdata.loc,54325)
+  (0,Michals-MBP.0xdata.loc,54321)
+  (2,Michals-MBP.0xdata.loc,54323)
+  ------------------------
+
+  Open H2O Flow in browser: http://172.16.2.223:54327 (CMD + click in Mac OSX)
+  
+```
+
+---
+
+**How do I use H2O with Spark Submit?**
+
+Spark Submit is for submitting self-contained applications. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/quick-start.html#self-contained-applications). 
+
+First, initialize H2O: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc).start()
+```
+
+The Sparkling Water distribution provides several examples of self-contained applications built with Sparkling Water. To run the examples: 
+
+`bin/run-example.sh ChicagoCrimeAppSmall`
+
+The "magic" behind `run-example.sh` is a regular Spark Submit: 
+
+`$SPARK_HOME/bin/spark-submit ChicagoCrimeAppSmall --packages ai.h2o:sparkling-water-core_2.10:1.3.3 --packages ai.h2o:sparkling-water-examples_2.10:1.3.3`
+
+---
+
+**How do I use Sparkling Water with Databricks cloud?**
+
+Sparkling Water compatibility with Databricks cloud is still in development. 
+
+
+
+---
+
+**How do I develop applications with Sparkling Water?**
+
+For a regular Spark application (a self-contained application as described in the [Spark documentation](https://spark.apache.org/docs/latest/quick-start.html#self-contained-applications)), the app needs to initialize `H2OServices` via `H2OContext`: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc).start()
+```
+
+For more information, refer to the [Sparkling Water development documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md). 
+
+---
+
+**How do I connect to Sparkling Water from R or Python?**
+
+After starting `H2OServices` by starting `H2OContext`, point your client to the IP address and port number specified in `H2OContext`. 
+
+---
+**I'm getting a `java.lang.ArrayIndexOutOfBoundsException` when I try to run Sparkling Water - what do I need to do to resolve this error?**
+
+This error message displays if you have not set up the `H2OContext` before running Sparkling Water. To set up the `H2OContext`: 
+
+```
+import org.apache.spark.h2o._
+val h2oContext = new H2OContext(sc)
+```
+After setting up `H2OContext`, try to run Sparkling Water again. 
+
+---
+
+
+
+
+
+---
+
+##Tableau
+
+**Where can I learn more about running H2O with Tableau?**
+
+For more information about using H2O with Tableau, refer to [this link](http://learn.h2o.ai/content/demos/integration_with_tableau_and_excel.html) and our [demo](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_demos/runit_demo_tableau.R) in our GitHub repository. Other demos are available [here](https://s3-us-west-1.amazonaws.com/testing-amy/Demo_Template_9.0Windows.twb) and [here](https://github.com/h2oai/h2o/blob/master/tableau/meta_data/airlines_meta.csv). 
+
+---
+
+
 ##Tunneling between servers with H2O
 
 To tunnel between servers (for example, due to firewalls): 
@@ -743,4 +1141,5 @@ on 192.168.1.173:55599
 
     
 ---
+
 

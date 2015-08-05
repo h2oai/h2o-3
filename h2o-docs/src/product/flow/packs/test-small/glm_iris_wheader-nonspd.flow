@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_wheader.nonspd.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_wheader.nonspd.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_wheader.nonspd.csv\"]\n  destination_frame: \"iris_wheader_nonspd.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\",\"a\",\"b\",\"c\",\"class_REC\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_wheader_nonspd.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_wheader_nonspd.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_wheader_nonspd.hex\", [0.25], [\"iris_wheader_nonspd_test\",\"iris_wheader_nonspd_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-e1d96153-ab24-4930-a34c-dcb5daeb787d\",\"training_frame\":\"iris_wheader_nonspd_train\",\"validation_frame\":\"iris_wheader_nonspd_test\",\"ignore_const_cols\":true,\"response_column\":\"sepal_len\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-e1d96153-ab24-4930-a34c-dcb5daeb787d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-e1d96153-ab24-4930-a34c-dcb5daeb787d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-e1d96153-ab24-4930-a34c-dcb5daeb787d\", frame: \"iris_wheader_nonspd_test\", predictions_frame: \"prediction-ec0add26-8a45-4b5a-8783-159c6b91f444\""
+    }
+  ]
+}

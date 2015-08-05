@@ -13,7 +13,7 @@ test {
     def multipleNode = rootProject.hasProperty("testNGMultiNode")
     enabled = singleNode || multipleNode
 
-    if(multipleNode) { jvmArgs('-ea','-Xmx10g','-Xms10g') }
+    if (multipleNode) { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
 
     useTestNG{
         if (singleNode) { suites("src/test/resources/singleNode.xml") }

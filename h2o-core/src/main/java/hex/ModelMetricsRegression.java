@@ -5,8 +5,10 @@ import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
-  public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma) {
+  public final double _mean_residual_deviance;
+  public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma, double meanResidualDeviance) {
     super(model, frame, mse, null, sigma);
+    _mean_residual_deviance = meanResidualDeviance;
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
@@ -19,8 +21,16 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     return (ModelMetricsRegression) mm;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" mean residual deviance: " + (float)_mean_residual_deviance + "\n");
+    return sb.toString();
+  }
 
-  public static class MetricBuilderRegression extends MetricBuilderSupervised {
+  public static class MetricBuilderRegression<T extends MetricBuilderRegression<T>> extends MetricBuilderSupervised<T> {
+    double _sumdeviance;
     public MetricBuilderRegression() {
       super(1,null); //this will make _work = new float[2];
     }
@@ -35,6 +45,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double err = yact[0] - ds[0]; // Error: distance from the actual
       _sumsqe += w*err*err;       // Squared error
       assert !Double.isNaN(_sumsqe);
+      if (m!=null) _sumdeviance += m.deviance(w, yact[0], ds[0]);
       _count++;
       _wcount += w;
       _wY += w*yact[0];
@@ -42,10 +53,16 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       return ds;                // Flow coding
     }
 
+    @Override public void reduce( T mb ) {
+      super.reduce(mb);
+      _sumdeviance += mb._sumdeviance;
+    }
+
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f) {
       double mse = _sumsqe / _wcount;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma()));
+      double meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma(), meanResDeviance));
     }
 
     public String toString() {return " mse = " + _sumsqe / _wcount;}

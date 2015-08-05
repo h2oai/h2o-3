@@ -81,7 +81,7 @@ public class PojoUtils {
       if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
         continue;
 
-      if (only_fields != null & !ArrayUtils.contains(only_fields, origin_name))
+      if (only_fields != null & ! ArrayUtils.contains(only_fields, origin_name))
         continue;
 
       String dest_name = null;
@@ -93,10 +93,10 @@ public class PojoUtils {
         dest_name = origin_name.substring(1);
       }
 
-      if ( skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+      if (skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
         continue;
 
-      if (only_fields != null & !ArrayUtils.contains(only_fields, dest_name))
+      if (only_fields != null & ! ArrayUtils.contains(only_fields, dest_name))
         continue;
 
       try {
@@ -366,5 +366,16 @@ public class PojoUtils {
         }
       } // need to recurse
     } // foreach exclude_paths
+  }
+
+  public static boolean equals(Object a, Field fa, Object b, Field fb) {
+    try {
+      Object va = fa.get(a);
+      Object vb = fb.get(b);
+      return va == null ? vb == null : va.equals(vb);
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+      return false;
+    }
   }
 }

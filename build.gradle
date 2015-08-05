@@ -130,7 +130,10 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-
+        // JitPack builds GitHub projects on demand and publishes ready-to-use packages. It's here until there is official release of Reflections library
+        maven {
+           url "https://jitpack.io"
+        }
         // mavenLocal()
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
@@ -160,6 +163,9 @@ subprojects {
         // Include Findbugs only if the property is specified
         if (applyFindbugsPlugin) {
             apply from: "$rootDir/gradle/findbugs.gradle"
+        }
+        if (project.hasProperty("doCheckStyle")) {
+            apply from: "$rootDir/gradle/checkstyle.gradle"
         }
     }
 
@@ -223,10 +229,15 @@ task buildH2oDevDist(type: Exec) {
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
+    def java6home = System.getenv("JAVA_6_HOME")
+
     environment['PROJECT_VERSION'] = projectVersion
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
+    if (java6home != null) {
+      environment['JAVA_6_HOME'] = java6home
+    }
     commandLine './make-dist.sh'
 }
 

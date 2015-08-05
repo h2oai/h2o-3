@@ -34,7 +34,7 @@ class Check:
         allowed_regex_list = [
             r"^\* using log directory",
             r"^\* using R version",
-            r"^\* using R version",
+            r"^\* using R Under development",
             r"^\* using platform",
             r"^\* using session charset",
             r"^\* using option .*",
@@ -42,6 +42,7 @@ class Check:
             r"^\* checking extension type \.\.\. Package",
             r"^\* this is package",
             r"^\* checking CRAN incoming feasibility \.\.\.",
+            r"^\*\* found \\donttest examples: .*",
             r"^Maintainer:",
             r"^New maintainer:",
             r"^\s*Tom Kraljevic",
@@ -76,7 +77,8 @@ class Check:
 
             r"^Package has FOSS license, installs .class/.jar but has no 'java' directory.",
             r"^\* DONE",
-
+            
+            r"^The Date field is over a month old.*",
             r"^Checking URLs requires 'libcurl' support in the R build",
         ]
 

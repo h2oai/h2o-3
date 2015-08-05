@@ -25,7 +25,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   }
   @Override public double var (int b) {
     double n = _bins[b];
-    if( n==0 ) return 0;
+    if( n<=1  ) return 0;
     return (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1);
   }
 
@@ -103,23 +103,29 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       double m0 = sums0[b-1],  m1 = sums[b-1];
       double s0 = ssqs0[b-1],  s1 = ssqs[b-1];
       double k0 = ns0  [b-1],  k1 = bins[b-1];
-      if( k0==0 && k1==0 ) continue;
+      if( k0==0 && k1==0 )
+        continue;
       sums0[b] = m0+m1;
       ssqs0[b] = s0+s1;
       ns0  [b] = k0+k1;
     }
     double tot = ns0[nbins];
     // Is any split possible with at least min_obs?
-    if( tot < 2*min_rows ) return null;
+    if( tot < 2*min_rows )
+      return null;
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
     double var = ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins];
-    if( var == 0 ) { assert isConstantResponse(); return null; }
+    if( var == 0 ) {
+      assert isConstantResponse();
+      return null;
+    }
     // If variance is really small, then the predictions (which are all at
     // single-precision resolution), will be all the same and the tree split
     // will be in vain.
-    if( ((float)var) == 0f ) return null; 
+    if( ((float)var) == 0f )
+      return null;
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double sums1[] = MemoryManager.malloc8d(nbins+1);
@@ -129,7 +135,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       double m0 = sums1[b+1], m1 = sums[b];
       double s0 = ssqs1[b+1], s1 = ssqs[b];
       double k0 = ns1  [b+1], k1 = bins[b];
-      if( k0==0 && k1==0 ) continue;
+      if( k0==0 && k1==0 )
+        continue;
       sums1[b] = m0+m1;
       ssqs1[b] = s0+s1;
       ns1  [b] = k0+k1;
@@ -174,7 +181,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       for( int b=1; b<=nbins-1; b++ ) {
         if( bins[b] < min_rows ) continue; // Ignore too small splits
         double N = ns0[b] + ns1[b+1];
-        if( N < min_rows ) continue; // Ignore too small splits
+        if( N < min_rows )
+          continue; // Ignore too small splits
         double sums2 = sums0[b  ]+sums1[b+1];
         double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
         double si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'

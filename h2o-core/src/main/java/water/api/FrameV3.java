@@ -225,7 +225,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
 
     row_count = (int)Math.min(row_count, row_offset + f.numRows());
-    column_count = Math.min(column_count, column_offset + f.numCols());
+    column_count = (int) Math.min(column_count, column_offset + f.numCols());
 
     this.frame_id = new FrameKeyV3(f._key);
     this.checksum = f.checksum();

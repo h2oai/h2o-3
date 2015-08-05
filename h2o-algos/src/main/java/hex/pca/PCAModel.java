@@ -6,7 +6,6 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.JCodeGen;
 import water.util.SB;
 import water.util.TwoDimTable;
@@ -16,13 +15,11 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public static class PCAParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
     public Method _pca_method = Method.GramSVD;   // Method for computing PCA
-    public int _k = 1;                // Number of principal components
+    public int _k = 1;                     // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
-    // public Key<Frame> _loading_key;
-    public String _loading_name;
-    public boolean _keep_loading = true;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
+    public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
 
     public enum Method {
       GramSVD, Power, GLRM
@@ -30,6 +27,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   public static class PCAOutput extends Model.Output {
+    // GLRM final value of L2 loss function
+    public double _objective;
+
     // Principal components (eigenvectors)
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;
@@ -39,11 +39,14 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     // Importance of principal components
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
-    public TwoDimTable _pc_importance;
+    public TwoDimTable _importance;
 
     // Number of categorical and numeric columns
     public int _ncats;
     public int _nnums;
+
+    // Number of good rows in training frame (not skipped)
+    public long _nobs;
 
     // Total column variance for expanded and transformed data
     public double _total_variance;
@@ -83,7 +86,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   @Override
-  protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._k; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
@@ -119,8 +122,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       preds[i] = 0;
       for (int j = 0; j < _output._ncats; j++) {
         double tmp = data[_output._permutation[j]];
-        int last_cat = _output._catOffsets[j+1]-_output._catOffsets[j]-1;   // Missing categorical values are mapped to extra (last) factor
-        int level = Double.isNaN(tmp) ? last_cat : (int)tmp - (_parms._use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
+        if (Double.isNaN(tmp)) continue;    // Missing categorical values are skipped
+        int last_cat = _output._catOffsets[j+1]-_output._catOffsets[j]-1;
+        int level = (int)tmp - (_parms._use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
         if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
         preds[i] += _output._eigenvectors_raw[_output._catOffsets[j]+level][i];
       }
@@ -133,15 +137,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       }
     }
     return preds;
-  }
-
-  @Override
-  public Frame score(Frame fr, String destination_key) {
-    Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true, false);   // Adapt
-    Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
-    cleanup_adapt( adaptFr, fr );
-    return output;
   }
 
   @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
@@ -170,8 +165,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Categorical columns
     bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
     bodySb.i(2).p("double d = data[PERMUTE[j]];").nl();
+    bodySb.i(2).p("if(Double.isNaN(d)) continue;").nl();
     bodySb.i(2).p("int last = CATOFFS[j+1]-CATOFFS[j]-1;").nl();
-    bodySb.i(2).p("int c = Double.isNaN(d) ? last : (int)d").p(_parms._use_all_factor_levels ? ";":"-1;").nl();
+    bodySb.i(2).p("int c = (int)d").p(_parms._use_all_factor_levels ? ";":"-1;").nl();
     bodySb.i(2).p("if(c < 0 || c > last) continue;").nl();
     bodySb.i(2).p("preds[i] += EIGVECS[CATOFFS[j]+c][i];").nl();
     bodySb.i(1).p("}").nl();

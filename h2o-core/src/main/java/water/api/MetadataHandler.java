@@ -85,7 +85,7 @@ public class MetadataHandler extends Handler {
 
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.schema(docs.schemaname)));
+    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(docs.schemaname)));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -100,7 +100,7 @@ public class MetadataHandler extends Handler {
     int i = 0;
     for (Class<? extends Schema> schema_class : ss.values()) {
       // No hardwired version! YAY!  FINALLY!
-      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.schema(schema_class)));
+      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(schema_class)));
     }
     return docs;
   }

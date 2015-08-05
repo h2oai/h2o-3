@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/iris/iris_wheader_65_rows.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/iris/iris_wheader_65_rows.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/iris/iris_wheader_65_rows.csv\"]\n  destination_frame: \"iris_wheader_65_rows.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_wheader_65_rows.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_wheader_65_rows.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_wheader_65_rows.hex\", [0.2], [\"iris_wheader_65_rows.hex_0.20\",\"iris_wheader_65_rows.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"deeplearning\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-d744b153-da99-4f4a-b924-5b4cb433d4de\",\"training_frame\":\"iris_wheader_65_rows.hex_0.80\",\"validation_frame\":\"iris_wheader_65_rows.hex_0.20\",\"ignore_const_cols\":true,\"response_column\":\"class\",\"activation\":\"Tanh\",\"hidden\":[50,50],\"epochs\":\"0.1\",\"variable_importances\":false,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":-7859984311369674000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-d744b153-da99-4f4a-b924-5b4cb433d4de\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-d744b153-da99-4f4a-b924-5b4cb433d4de\""
+    },
+    
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-d744b153-da99-4f4a-b924-5b4cb433d4de\", frame: \"iris_wheader_65_rows.hex_0.20\", predictions_frame: \"prediction-8318230e-de16-4ddd-ba12-28f107864c27\""
+    }
+  ]
+}

@@ -26,8 +26,13 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   public ModelBuilderSchema schema() { return new GrepV3(); }
 
-  @Override public Grep trainModel() {
-    return (Grep)start(new GrepDriver(), _parms.train().numRows());
+  @Override public Grep trainModelImpl(long work, boolean restartTimer) {
+    return (Grep)start(new GrepDriver(), work, restartTimer);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms.train().numRows();
   }
 
   @Override public ModelCategory[] can_build() {
@@ -97,6 +102,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Grep.this);
         Scope.exit(model == null ? null : model._key);

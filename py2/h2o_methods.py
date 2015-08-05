@@ -280,6 +280,9 @@ def split_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
     time.sleep(2)
     result = self.poll_job(job_key)
     verboseprint("split_frame result:", dump_json(result))
+    for d in result["jobs"][0]["destination_frames"]:
+        print d["name"]
+
     return result
 
 #******************************************************************************************8
@@ -333,7 +336,7 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     }
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
-    result = self.do_json_request('3/Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
+    result = self.do_json_request('99/Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
 
     verboseprint("rapids result:", dump_json(result))
 

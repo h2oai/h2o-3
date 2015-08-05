@@ -8,22 +8,26 @@ import water.api.ModelParametersSchema;
 
 public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,NaiveBayesV3.NaiveBayesParametersV3> {
   public static final class NaiveBayesParametersV3 extends ModelParametersSchema<NaiveBayesParameters, NaiveBayesParametersV3> {
-    static public String[] own_fields = new String[]{
-      "response_column",
-      "balance_classes",
-      "class_sampling_factors",
-      "max_after_balance_size",
-      "max_confusion_matrix_size",
-      "max_hit_ratio_k",
-      "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob", "compute_metrics"};
-
-    // supervised Schema
-
-    // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
-    // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
-    // column names are related to training_frame.
-    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 response_column;
+    static public String[] fields = new String[]{
+				"model_id",
+				"training_frame",
+				"validation_frame",
+				"response_column",
+				"ignored_columns",
+				"ignore_const_cols",
+				"score_each_iteration",
+				"balance_classes",
+				"class_sampling_factors",
+				"max_after_balance_size",
+				"max_confusion_matrix_size",
+				"max_hit_ratio_k",
+				"laplace",
+				"min_sdev",
+				"eps_sdev",
+				"min_prob",
+				"eps_prob",
+				"compute_metrics"
+		};
 
   /*Imbalanced Classes*/
     /**

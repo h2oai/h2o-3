@@ -14,6 +14,21 @@ public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLear
     @API(help="Frame keys for bias vectors", level = API.Level.expert)
     KeyV3.FrameKeyV3[] biases;
 
+    @API(help="Normalization/Standardization multipliers for numeric predictors", direction=API.Direction.OUTPUT, level = API.Level.expert)
+    double[] normmul;
+
+    @API(help="Normalization/Standardization offsets for numeric predictors", direction=API.Direction.OUTPUT, level = API.Level.expert)
+    double[] normsub;
+
+    @API(help="Normalization/Standardization multipliers for numeric response", direction=API.Direction.OUTPUT, level = API.Level.expert)
+    double[] normrespmul;
+
+    @API(help="Normalization/Standardization offsets for numeric response", direction=API.Direction.OUTPUT, level = API.Level.expert)
+    double[] normrespsub;
+
+    @API(help="Categorical offsets for one-hot encoding", direction=API.Direction.OUTPUT, level = API.Level.expert)
+    int[] catoffsets;
+
     @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableBase variable_importances;
   }
@@ -28,6 +43,6 @@ public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLear
   // Version&Schema-specific filling into the impl
   @Override public DeepLearningModel createImpl() {
     DeepLearningParameters parms = parameters.createImpl();
-    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningModelOutput(null), null, null);
+    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningModelOutput(null), null, null, 0);
   }
 }

@@ -1,22 +1,19 @@
 package hex.tree.drf;
 
-import hex.genmodel.GenModel;
 import hex.tree.SharedTreeModel;
 import water.Key;
-import water.fvec.Chunk;
 import water.util.MathUtils;
 import water.util.SB;
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
-    int _mtries = -1;
-    float _sample_rate = 0.632f;
+    public int _mtries = -1;
+    public float _sample_rate = 0.632f;
     public boolean _binomial_double_trees = false;
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
-      _ntrees = 50;
       _max_depth = 20;
       _min_rows = 1;
     }
@@ -36,22 +33,19 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[], double preds[], double weight, double offset) {
     super.score0(data, preds, weight, offset);
-    int N = _parms._ntrees;
+    int N = _output._ntrees;
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
-      preds[0] /= N;
-      return preds;
-    }
-    else { // classification
+      if (N>=1) preds[0] /= N;
+    } else { // classification
       if (_output.nclasses() == 2 && binomialOpt()) {
-        preds[1] /= N; //average probability
+        if (N>=1) {
+          preds[1] /= N; //average probability
+        }
         preds[2] = 1. - preds[1];
       } else {
         double sum = MathUtils.sum(preds);
         if (sum > 0) MathUtils.div(preds, sum);
       }
-      if (_parms._balance_classes)
-        GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, defaultThreshold());
     }
     return preds;
   }

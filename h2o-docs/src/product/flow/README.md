@@ -405,6 +405,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 <a name="DL"></a>
 - **Deep Learning**: Create a Deep Learning model.
 
+
 The available options vary depending on the selected model. If an option is only available for a specific model type, the model type is listed. If no model type is specified, the option is applicable to all model types. 
 
 - **Model_ID**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates an ID containing the model type (for example, `gbm-6f6bdc8b-ccbc-474a-b590-4579eea44596`). 
@@ -413,10 +414,13 @@ The available options vary depending on the selected model. If an option is only
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
+- **Nfolds**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) Specify the number of folds for cross-validation. 
+
+- **Fold_column**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) Select the column that contains the cross-validation fold index assignment per observation. 
+
 - **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **User_points**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
->**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
+- **User_points**: [(K-Means](#Kmeans) For K-Means, specify the number of initial cluster centers.  
 
 - **Transform**: [(PCA)](#PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale.  
 
@@ -442,19 +446,21 @@ The available options vary depending on the selected model. If an option is only
 
 - **Build\_tree\_one\_node**: [(DRF](#DRF), [GBM)](#GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
-- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is enabled by default. 
+- **Binomial\_double\_trees**: [(DRF)](#DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
+
+- **Keep\_cross\_validation\_splits**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) To keep the cross-validation frames, check this checkbox. 
+
+- **Fold_assignment**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF) (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are Random or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: [(GBM)](#GBM) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian.
+- **Distribution**: [(GBM)](#GBM), [DL](#DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
 - **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
 - **Score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM), [GLM](#GLM)) To score during each iteration of the model training, check this checkbox. 
 
 - **K**: [(K-Means](#Kmeans), [PCA)](#PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
-
-- **Gamma**: [(PCA)](#PCA) Specify the regularization weight for PCA. 
 
 - **Max_iterations**: [(K-Means](#Kmeans), [PCA](#PCA), [GLM)](#GLM) Specify the number of training iterations. 
  
@@ -466,15 +472,23 @@ The available options vary depending on the selected model. If an option is only
 
 - **Gradient_epsilon**: [(GLM)](#GLM) (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
-- **Init**: [(K-Means](#Kmeans), [PCA)](#PCA) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. For PCA, the options are PlusPlus, User, or None. 
+- **Init**: [(K-Means](#Kmeans) Select the initialization mode. For K-Means, the options are Furthest, PlusPlus, Random, or User. 
 
   >**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
-- **Offset_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
+- **Offset_column**: [(GLM)](#GLM),[(DRF)](#DRF), [(GBM)](#GBM)  Select a column to use as the offset. 
+	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
 - **Weights_column**: [(GLM)](#GLM),[(DL)](#DL),[(DRF)](#DRF), [(GBM)](#GBM) Select a column to use for the observation weights. 
+	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
+- **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+
+- **Tweedie_variance_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
+
+- **Tweedie_link_power**: [(GLM)](#GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
+
+- **Tweedie_power**: [DL](#DL), [GBM](#GBM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier. 
 
@@ -505,7 +519,7 @@ The available options vary depending on the selected model. If an option is only
 **Advanced Options**
 
 
-- **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
+- **Checkpoint**: [DL](#DL) [DRF](#DRF) [GBM](#GBM) Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
 - **Use\_all\_factor\_levels**: ([DL](#DL)) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
@@ -525,7 +539,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.  
 
-- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring.
+- **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The value must be greater than 0 and less than 1. 
 
 - **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
    >**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
@@ -536,7 +550,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max\_hit\_ratio\_k**: ([DRF](#DRF), [Naïve Bayes](#NB)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
+- **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
 - **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2.  
 
@@ -586,6 +600,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
+- **PCA_method**: [(PCA)](#PCA) Select the algorithm to use for computing the principal components: 
+	- *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
+	- *Power*: Computes the SVD using the power iteration method
+	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
+
 - **Force\_load\_balance**: [(DL)](#DL) Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
 - **Single\_node\_mode**: [(DL)](#DL) Check this checkbox to force H2O to run on a single node for fine-tuning of model parameters. This option is not selected by default. 
@@ -604,7 +623,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
-- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. 
+- **Sparsity_beta**: [(DL)](#DL) Specify the sparsity-based regularization optimization. For more information, refer to the following [link](http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf).  
 
 - **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. 
 
@@ -641,12 +660,47 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
  A summary of the model's parameters displays. To display more details, click the **Show All Parameters** button. 
  
-
 To delete a model, click the **Delete** button. 
 
-To generate a POJO to be able to use the model outside of H2O, click the **Download POJO** button. 
+To generate a Plain Old Java Object (POJO) that can use the model outside of H2O, click the **Download POJO** button. 
+
+>**Note**: A POJO can be run in standalone mode or it can be integrated into a platform, such as [Hadoop's Storm](https://github.com/h2oai/h2o-training/blob/master/tutorials/streaming/storm/README.md). To make the POJO work in your Java application, you will also need the `h2o-genmodel.jar` file (available in `h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar`).
 
 To learn how to make predictions, continue to the next section. 
+
+---
+
+###Interpreting Model Results
+
+**Scoring history**: [GBM](#GBM), [DL](#DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. 
+
+  ![Scoring History example](images/Flow_ScoringHistory.png)
+
+**Variable importances**: [GBM](#GBM), [DL](#DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. 
+
+  ![Variable Importances example](images/Flow_VariableImportances.png)
+
+**Confusion Matrix**: [DL](#DL) Table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. The actual results display in the columns and the predictions display in the rows; correct predictions are highlighted in yellow. In the example below, `0` was predicted correctly 902 times, while `8` was predicted correctly 822 times and `0` was predicted as `4` once.
+
+  ![Confusion Matrix example](images/Flow_ConfusionMatrix.png)
+
+**ROC Curve**: [DL](#DL), [GLM](#GLM) Graph representing the ratio of true positives to false positives. To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list: 
+- Max f1
+- Max f2
+- Max f0point5
+- Max accuracy
+- Max precision
+- Max absolute MCC
+- Max min per class accuracy
+
+The lower-left side of the graph represents less tolerance for false positives while the upper-right represents more tolerance for false positives. Ideally, a highly accurate ROC resembles the following example. 
+
+ ![ROC Curve example](images/Flow_ROC.png)
+
+
+
+
+
 
 ---
 
@@ -669,7 +723,10 @@ To view a prediction, click the **View** button to the right of the model name.
 
  ![Viewing Predictions](images/Flow_getPredict.png)
 
-You can also view predictions by clicking the drop-down **Score** menu and selecting **List All Predictions**. 
+You can also view predictions by clicking the drop-down **Score** menu and selecting **List All Predictions**.
+
+
+ 
 
 ---
 
@@ -1030,6 +1087,3 @@ You can also email your question to [h2ostream@googlegroups.com](mailto:h2ostrea
 ## Shutting Down H2O
 
 To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
-
-
-d

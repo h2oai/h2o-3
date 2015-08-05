@@ -61,7 +61,7 @@ class Basic(unittest.TestCase):
             'overwrite_with_best_model': None, # boolean true
             'expert_mode': None, # boolean false
             'autoencoder': None, # boolean false
-            'use_all_factor_levels': None, # boolean true
+            # 'use_all_factor_levels': None, # boolean true
             # [u'Tanh', u'TanhWithDropout', u'Rectifier', u'RectifierWithDropout', u'Maxout', u'MaxoutWithDropout']
             'activation': 'Tanh', # enum Rectifier 
             'hidden': '[100,100,100]', # int[] [200, 200]
@@ -114,7 +114,7 @@ class Basic(unittest.TestCase):
             'average_activation': None, # double 0.0
             'sparsity_beta': None, # double 0.0
         }
-        expectedErr = 0.31 ## expected validation error for the above model
+        expectedErr = 0.20 ## expected validation error for the above model
         relTol = 0.20 ## 15% rel. error tolerance due to Hogwild!
 
         timeoutSecs = 300
@@ -145,12 +145,14 @@ class Basic(unittest.TestCase):
 
         ## h2o_cmd.runStoreView()
 
-        actualErr = model['errors']['valid_err']
-        print "expected classification error: " + format(expectedErr)
-        print "actual   classification error: " + format(actualErr)
+        # FIX! should be the scored error
+        print "model", dump_json(model)
+        actualErr = model['validation_metrics']['MSE']
+        print "expected error: " + format(expectedErr)
+        print "actual   error: " + format(actualErr)
 
         if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
-            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
+            raise Exception("error of %s is not within %s %% relative error of %s" %
                             (actualErr, float(relTol)*100, expectedErr))
 
 if __name__ == '__main__':

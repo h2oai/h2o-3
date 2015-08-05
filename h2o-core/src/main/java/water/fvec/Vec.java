@@ -185,7 +185,6 @@ public class Vec extends Keyed<Vec> {
   public static final byte T_NUM  =  3; // Numeric, but not enum or time
   public static final byte T_ENUM =  4; // Integer, with a enum/factor String mapping
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
-  public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
@@ -215,7 +214,7 @@ public class Vec extends Keyed<Vec> {
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is a time column.  */
-  public final boolean isTime   (){ return _type>=T_TIME && _type<T_TIMELAST; }
+  public final boolean isTime   (){ return _type==T_TIME; }
 //  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
   /** Time formatting string.
    *  @return Time formatting string */
@@ -238,7 +237,7 @@ public class Vec extends Keyed<Vec> {
     super(key);
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
-    assert T_BAD <= type && type < T_TIMELAST; // Note that T_BAD is allowed for all-NA Vecs
+    assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
     _type = type;
     _espc = espc;
     _domain = domain;
@@ -266,7 +265,7 @@ public class Vec extends Keyed<Vec> {
   private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
-  public boolean checkCompatible( Vec v ) {
+  boolean checkCompatible( Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (_espc == v._espc || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e5);
@@ -285,12 +284,6 @@ public class Vec extends Keyed<Vec> {
   public boolean isBinary(){
     RollupStats rs = rollupStats();
     return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
-  }
-
-  public void copyMeta( Vec src, Futures fs ) {
-    _domain = src._domain;
-    _type = src._type;
-    DKV.put(this,fs);
   }
   
   // ======= Create zero/constant Vecs ======
@@ -361,13 +354,17 @@ public class Vec extends Keyed<Vec> {
    *  one, and initialized to zero, with the given enum domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
-  /** A new vector which is a copy of {@code this} one.
-   *  @return a copy of the vector.  */
-  public Vec makeCopy() { return makeCopy(domain()); }
-
-  /** A new vector which is a copy of {@code this} one.
-   *  @return a copy of the vector.  */
-  public Vec makeCopy(String[] domain){ return makeCopy(domain,_type); }
+  /**
+   * A new vector which is a copy of {@code this} one.
+   * @return a copy of the vector.
+   */
+  public Vec makeCopy(String[] domain){
+    Vec v = doCopy();
+    v._domain = domain;
+    v._type = _type;
+    DKV.put(v._key, v);
+    return v;
+  }
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
@@ -377,11 +374,15 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  public Vec doCopy() {
+  private Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
-        Chunk c2 = c.deepCopy();
+        Chunk c2 = (Chunk)c.clone();
+        c2._vec=null;
+        c2._start=-1;
+        c2._cidx=-1;
+        c2._mem = c2._mem.clone();
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
@@ -416,13 +417,13 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
-  public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
+  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
     Vec v = new Vec(vecKey,espc, domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
-    for(long d:vals)
+    for(double d:vals)
       nc.addNum(d);
     nc.close(fs);
     DKV.put(v._key,v,fs);
@@ -518,6 +519,19 @@ public class Vec extends Keyed<Vec> {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
+  /** Make a new vector initialized to increasing integers, starting with `min`.
+   *  @return A new vector initialized to increasing integers, starting with `min`.
+   */
+  public static Vec makeSeq(final long min, long len, boolean redistribute) {
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs)
+          for (int r = 0; r < c._len; r++)
+            c.set(r, r + min + c._start);
+      }
+    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
+  }
+
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
    *  @return A new vector initialized to increasing integers mod {@code repeat}.
    */
@@ -531,7 +545,7 @@ public class Vec extends Keyed<Vec> {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
-  /** Make a new vector initialized random numbers with the given seed */
+  /** Make a new vector initialized to random numbers with the given seed */
   public Vec makeRand( final long seed ) {
     Vec randVec = makeZero();
     new MRTask() {
@@ -542,6 +556,19 @@ public class Vec extends Keyed<Vec> {
       }
     }.doAll(randVec);
     return randVec;
+  }
+
+  /** Make a new vector initialized to Gaussian random numbers with the given seed */
+  public Vec makeGaus( final long seed ) {
+    Vec gausVec = makeZero();
+    new MRTask() {
+      @Override public void map(Chunk c){
+        Random rng = RandomUtils.getRNG(seed * (c.cidx() + 1));
+        for(int i = 0; i < c._len; ++i)
+          c.set(i, rng.nextGaussian());
+      }
+    }.doAll(gausVec);
+    return gausVec;
   }
 
   // ======= Rollup Stats ======
@@ -726,7 +753,7 @@ public class Vec extends Keyed<Vec> {
    *  on every Chunk index on the same node will probably trigger an OOM!  */
   public Value chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
-    assert checkMissing(cidx,val);
+    assert checkMissing(cidx,val) : "Missing chunk " + chunkKey(cidx);
     return val;
   }
 
@@ -761,7 +788,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
-    return (Key<Vec>)Key.make(bits);
+    return Key.make(bits);
   }
 
   /** Make a Vector-group key.  */
@@ -1189,7 +1216,7 @@ public class Vec extends Keyed<Vec> {
     private final int _s;
     private boolean[] _u;
     private long[] _d;
-    public CollectDomainFast(int s) { _s=s; }
+    CollectDomainFast(int s) { _s=s; }
     @Override protected void setupLocal() { _u=MemoryManager.mallocZ(_s+1); }
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
@@ -1279,7 +1306,7 @@ public class Vec extends Keyed<Vec> {
       byte [] bits = _key._kb.clone();
       bits[0] = Key.VEC;
       UnsafeUtils.set4(bits,2,vecId);//
-      return (Key<Vec>)Key.make(bits);
+      return Key.make(bits);
     }
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */

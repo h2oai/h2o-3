@@ -68,7 +68,9 @@ public class DataInfo extends Keyed {
   public boolean _intercept = true;
   public final boolean _offset;
   public final boolean _weights;
-  public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
+  public final boolean _fold;
+  public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
+  public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
   public final boolean _skipMissing;
@@ -77,7 +79,7 @@ public class DataInfo extends Keyed {
 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
-  private DataInfo() {super(null);_catLvls = null; _skipMissing = true; _valid = false; _offset = false; _weights = false; }
+  private DataInfo() {super(null);_catLvls = null; _skipMissing = true; _valid = false; _offset = false; _weights = false; _fold = false; }
 
   public DataInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
@@ -93,6 +95,7 @@ public class DataInfo extends Keyed {
   private DataInfo(int nums) {
     _offset = false;
     _weights = false;
+    _fold = false;
     _nums = nums;
     _catOffsets = new int[]{0};
     _predictor_transform = TransformType.NONE;
@@ -103,13 +106,14 @@ public class DataInfo extends Keyed {
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset) {
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
     super(selfKey);
     _valid = false;
     assert predictor_transform != null;
     assert  response_transform != null;
     _offset = offset;
     _weights = weight;
+    _fold = fold;
     _skipMissing = skipMissing;
     _predictor_transform = predictor_transform;
     _response_transform = response_transform;
@@ -121,7 +125,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0);
+    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0);
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
@@ -158,7 +162,7 @@ public class DataInfo extends Keyed {
       tvecs2[i+_cats] = train.vec(nums[i]);
       _permutation[i+_cats] = nums[i];
     }
-    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0); i < names.length; ++i) {
+    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }
@@ -172,13 +176,13 @@ public class DataInfo extends Keyed {
       setResponseTransform(response_transform);
   }
 
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset, boolean intercept) {
-    this(selfKey, train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, missingBucket, weight, offset);
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean intercept) {
+    this(selfKey, train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, missingBucket, weight, offset, fold);
     _intercept = intercept;
   }
 
   public DataInfo validDinfo(Frame valid) {
-    DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false, _weights,_offset);
+    DataInfo res = new DataInfo(Key.make(),_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,false, _weights,_offset, _fold);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
@@ -202,10 +206,11 @@ public class DataInfo extends Keyed {
   }
 
   // private constructor called by filterExpandedColumns
-  private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean weight, boolean offset){
+  private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean weight, boolean offset, boolean fold){
     super(selfKey);
     _offset = offset;
     _weights = weight;
+    _fold = fold;
     _valid = false;
     assert predictor_transform != null;
     assert  response_transform != null;
@@ -224,7 +229,7 @@ public class DataInfo extends Keyed {
     _catOffsets[_catOffsets.length-1] = s;
     _responses = responses;
     _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0);
+    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
     _useAllFactorLevels = true;
     setPredictorTransform(predictor_transform);
     setResponseTransform(response_transform);
@@ -273,7 +278,7 @@ public class DataInfo extends Keyed {
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
     assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
-    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _weights, _offset);
+    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _weights, _offset, _fold);
     // do not put activeData into K/V - active data is recreated on each node based on active columns
     dinfo._activeCols = cols;
     return dinfo;
@@ -284,7 +289,7 @@ public class DataInfo extends Keyed {
       if(sigmas.length != _normMul.length)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
       for(int i = 0; i < sigmas.length; ++i)
-        _normMul[i] = 1.0/sigmas[i];
+        _normMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
     }
     if(_predictor_transform.isMeanAdjusted()) {
       if(sigmas.length != _normMul.length)

@@ -36,7 +36,7 @@
       }
       a:hover {
         text-decoration: underline;
-      } 
+      }
       h2 {
         font-style: normal;
         font-variant: normal;
@@ -166,13 +166,17 @@
     <script>
       //
       // Google Analytics
-      //
+      // test
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
       ga('create', 'UA-29263631-3');
+      ga('create', 'UA-64842905-1', 'auto', {'name': 'newTracker'}, {'allowLinker': true });
+      ga('newTracker.require', 'linker');
+      ga('linker:autoLink', ['h2o.ai','leadpages.co', 'amazonaws.com','0xdata.com']);
+
       ga('send', 'pageview', { 'title': 'H2O Downloads for SUBST_PROJECT_VERSION' });
       <!-- GA sending events -->
       function trackLink(id, category, action) {
@@ -381,8 +385,8 @@
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.3.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.4.2.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.2.zip<br/> 
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip<br/> 
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.2.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
             </p>
             <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>

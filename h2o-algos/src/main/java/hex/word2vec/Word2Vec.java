@@ -29,8 +29,17 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
 
   public ModelBuilderSchema schema() { return new Word2VecV3(); }
 
-  /** Start the KMeans training Job on an F/J thread. */
-  @Override public Job<Word2VecModel> trainModel() { return start(new Word2VecDriver(), _parms._epochs); }
+  /** Start the KMeans training Job on an F/J thread.
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new Word2VecDriver(), work, restartTimer);
+  }
+
+  @Override
+  public long progressUnits() {
+    return _parms._epochs;
+  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -99,6 +108,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Word2Vec.this);
       }

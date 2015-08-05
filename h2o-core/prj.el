@@ -10,6 +10,6 @@
  '(jde-compile-option-directory "./build/classes/main")
  '(jde-run-option-classpath (quote ("./build/classes/main" "./build/classes/test" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.15.jar")))
  '(jde-compile-option-sourcepath (quote ("./src/main" "./src/test")))
- '(jde-run-option-application-args (quote ("water.currents.CurrentsTest")))
+ '(jde-run-option-application-args (quote ("hex.AUCTest")))
  '(jde-compile-option-classpath (quote ("./build/classes/main" "./build/classes/test" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.15.jar")))
  '(jde-sourcepath (quote ("./src/main" "./src/test"))))

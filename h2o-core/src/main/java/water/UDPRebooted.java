@@ -45,7 +45,7 @@ class UDPRebooted extends UDP {
       Log.info("Orderly shutdown command from "+killer);
       H2O.exit(0);
       return;
-    case oom:      m = "Out of Memory and no swap space left";                                                   break;
+    case oom:      m = "Out of Memory, Heap Space exceeded, increase Heap Size,";                                break;
     case error:    m = "Error leading to a cloud kill";                                                          break;
     case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
     case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
@@ -64,7 +64,7 @@ class UDPRebooted extends UDP {
   // Try to gracefully close/shutdown all i/o channels.
   private static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
-    try { NetworkInit._apiSocket.close(); } catch( IOException ignore ) { }
+    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
     try { TCPReceiverThread.SOCK.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();

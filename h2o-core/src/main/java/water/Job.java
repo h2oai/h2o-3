@@ -1,7 +1,9 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.Log;
 
 import java.io.PrintWriter;
@@ -19,6 +21,62 @@ import java.util.Arrays;
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
   public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  /** A list of field validation issues. */
+  public ValidationMessage[] _messages = new ValidationMessage[0];
+  private int _error_count = -1; // -1 ==> init not run yet, for those Jobs that have an init, like ModelBuilder. Note, this counts ONLY errors, not WARNs and etc.
+
+  /**
+   * init(expensive) is called inside a DTask, not from the http request thread.  If we add validation messages to the
+   * Job we want to update it in the DKV so the client can see them when polling and later on
+   * after the Job completes.
+   * <p>
+   * NOTE: this should only be called when no other threads are updating the job, for example from init() or after the
+   * DTask is stopped and is getting cleaned up.
+   */
+  public void updateValidationMessages() {
+    // Atomically update the validation messages in the Job in the DKV.
+
+    // In some cases we haven't stored to the DKV yet:
+    new TAtomic<Job>() {
+      @Override public Job atomic(Job old) {
+        if( old == null ) throw new H2OKeyNotFoundArgumentException((Key)null);
+
+        old._messages = _messages;
+        return old;
+      }
+    }.invoke(_key);
+    }
+
+  public int error_count() { return (_error_count > 0 ? _error_count : 0); }
+  public int error_count_or_uninitialized() { return _error_count; }
+
+  public void hide (String field_name, String message) { message(ValidationMessage.MessageType.HIDE , field_name, message); }
+
+  public void info (String field_name, String message) { message(ValidationMessage.MessageType.INFO , field_name, message); }
+
+  public void warn (String field_name, String message) { message(ValidationMessage.MessageType.WARN , field_name, message); }
+
+  public void error(String field_name, String message) { message(ValidationMessage.MessageType.ERROR, field_name, message); _error_count++; }
+
+  public void clearValidationErrors() {
+    _messages = new ValidationMessage[0];
+    _error_count = 0;
+  }
+
+  public void message(ValidationMessage.MessageType message_type, String field_name, String message) {
+    _messages = Arrays.copyOf(_messages, _messages.length + 1);
+    _messages[_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
+  }
+
+  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
+  public String validationErrors() {
+    StringBuilder sb = new StringBuilder();
+    for( ValidationMessage vm : _messages )
+      if( vm.message_type == ValidationMessage.MessageType.ERROR )
+        sb.append(vm.toString()).append("\n");
+    return sb.toString();
+  }
+
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
@@ -51,7 +109,7 @@ public class Job<T extends Keyed> extends Keyed {
   transient H2OCountedCompleter _barrier;// Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
-  public final Key<T> _dest;   // Key for result
+  public Key<T> _dest;   // Key for result
   /** Since _dest is public final, not sure why we have a getter but some
    *  people like 'em. */
   public final Key<T> dest() { return _dest; }
@@ -127,14 +185,15 @@ public class Job<T extends Keyed> extends Keyed {
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
    *  @param work Units of work to be completed
-   *  @return this job in {@link JobState#RUNNING} state
+   *  @param restartTimer
+   * @return this job in {@link JobState#RUNNING} state
    *
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
-    // FIXME: Do not override shared progress key
-    DKV.put(_progressKey = createProgressKey(), new Progress(work));
+  public Job<T> start(final H2OCountedCompleter fjtask, long work, boolean restartTimer) {
+    if (work >= 0)
+      DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
@@ -157,7 +216,7 @@ public class Job<T extends Keyed> extends Keyed {
         }
       };
     fjtask.setCompleter(_barrier);
-    _start_time = System.currentTimeMillis();
+    if (restartTimer) _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
     // Save the full state of the job
     DKV.put(_key, this);
@@ -191,16 +250,37 @@ public class Job<T extends Keyed> extends Keyed {
    * @see DKV
    */
   public T get() {
-    assert _fjtask != null : "Cannot block on missing F/J task";
-    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    block();
     assert !isRunning() : "Job state should not be running, but it is " + _state;
     return _dest.get();
   }
 
+  /**
+   * Blocks for job completion, but do not return anything as the destination object might not yet be finished
+   */
+  public void block() {
+    assert _fjtask != null : "Cannot block on missing F/J task";
+    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+  }
+
   /** Marks job as finished and records job end time. */
   public void done() {
-    changeJobState(null, JobState.DONE);
+    done(false);
   }
+
+  /**
+   * Conditionally mark the job as finished and record job end time
+   * @param force If set to false, then ask canBeDone() whether to mark the job as finished
+   */
+  protected void done(boolean force) {
+    if (force || canBeDone()) changeJobState(null, JobState.DONE);
+  }
+
+  /**
+   * Allow ModelBuilders to override this to conditionally mark the job as finished
+   * @return whether or not the job should be marked as finished in done() or done(false)
+   */
+  protected boolean canBeDone() { return true; }
 
   /** Signal cancellation of this job.
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
@@ -241,12 +321,10 @@ public class Job<T extends Keyed> extends Keyed {
         old._finalProgress = finalProgress;
         return old;
       }
-      // Run the onCancelled code synchronously, right now
-      @Override public void onSuccess( Job old ) { if( isCancelledOrCrashed() ) onCancelled(); }
     }.invoke(_key);
     // Also immediately update immediately a possibly cached local POJO (might
     // be shared with the DKV cached job, might not).
-    if( this != DKV.getGet(_key) ) { 
+    if( this != DKV.getGet(_key) ) {
       _exception = msg;
       _state = resultingState;
       _end_time = done;
@@ -257,15 +335,11 @@ public class Job<T extends Keyed> extends Keyed {
       DKV.remove(_progressKey);
   }
 
-  /**
-   * Callback which is called after job cancellation (by user, by exception).
-   */
-  protected void onCancelled() {
-  }
-
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
-  public float progress() { return isStopped() ? _finalProgress : progress_impl(); }
+  public float progress() {
+    return isStopped() ? _finalProgress : progress_impl();
+  }
   // Read racy progress in a non-racy way: read the DKV exactly once,
   // null-checking as we go.  Handles the case where the Job is being removed
   // exactly when we are reading progress e.g. for the GUI.
@@ -287,7 +361,7 @@ public class Job<T extends Keyed> extends Keyed {
     return p==null ? "" : p.progress_msg();
   }
 
-  protected Key _progressKey; //Key to store the Progress object under
+  protected Key<Progress> _progressKey; //Key to store the Progress object under
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
   /** Report new work done for this job */
@@ -299,7 +373,12 @@ public class Job<T extends Keyed> extends Keyed {
   /**
    * Helper class to store the job progress in the DKV
    */
-  public static class Progress extends Iced { // TODO: shouldn't this be a Keyed? And keys for it be Key<Progress> ?
+  public static class Progress extends Keyed<Progress> {
+    @Override
+    protected long checksum_impl() {
+      return 2134340823432L*_work + 9023742947234L*_worked+(long)(12343242340234L*_fraction_done)+_progress_msg.hashCode();
+    }
+
     // Progress methodology 1:  Specify total work up front and periodically tell when new units of work complete.
     private final long _work;
     private long _worked;
@@ -349,4 +428,36 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Default checksum; not really used by Jobs.  */
   @Override protected long checksum_impl() { throw H2O.fail("Job checksum does not exist by definition"); }
+
+  /** The result of an abnormal Model.Parameter check.  Contains a
+   *  level, a field name, and a message.
+   *
+   *  Can be an ERROR, meaning the parameters can't be used as-is,
+   *  a HIDE, which means the specified field should be hidden given
+   *  the values of other fields, or a WARN or INFO for informative
+   *  messages to the user.
+   */
+  public static final class ValidationMessage extends Iced {
+    public enum MessageType { HIDE, INFO, WARN, ERROR }
+    final ModelBuilder.ValidationMessage.MessageType message_type;
+    final String field_name;
+    final String message;
+
+    public ValidationMessage(ModelBuilder.ValidationMessage.MessageType message_type, String field_name, String message) {
+      this.message_type = message_type;
+      this.field_name = field_name;
+      this.message = message;
+      switch (message_type) {
+        case INFO: Log.info(field_name + ": " + message); break;
+        case WARN: Log.warn(field_name + ": " + message); break;
+        case ERROR: Log.err(field_name + ": " + message); break;
+      }
+    }
+
+    public MessageType getMessageType() {
+      return message_type;
+    }
+
+    @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
+  }
 }

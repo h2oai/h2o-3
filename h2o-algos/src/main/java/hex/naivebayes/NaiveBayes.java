@@ -3,7 +3,8 @@ package hex.naivebayes;
 import hex.*;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
-import jsr166y.CountedCompleter;
+import hex.naivebayes.NaiveBayesModel.NaiveBayesOutput;
+import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -17,7 +18,6 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Naive Bayes
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author anqi_fu
  *
  */
-public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
+public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameters,NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
     return new NaiveBayesV3();
@@ -37,8 +37,13 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
   public boolean isSupervised(){return true;}
 
   @Override
-  public Job<NaiveBayesModel> trainModel() {
-    return start(new NaiveBayesDriver(), 6);
+  public Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new NaiveBayesDriver(), work, restartTimer);
+  }
+
+  @Override
+  public long progressUnits() {
+    return 6;
   }
 
   @Override
@@ -203,10 +208,10 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
         init(true);   // Initialize parameters
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
-        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false);
 
         // The model to be built
-        model = new NaiveBayesModel(dest(), _parms, new NaiveBayesModel.NaiveBayesOutput(NaiveBayes.this));
+        model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
         model.delete_and_lock(_key);
         _train.read_lock(_key);
 
@@ -226,6 +231,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
           throw t;
         }
       } finally {
+        updateModelOutput();
         _train.unlock(_key);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
@@ -235,7 +241,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesModel.Nai
     }
   }
 
-  private TwoDimTable createModelSummaryTable(NaiveBayesModel.NaiveBayesOutput output) {
+  private TwoDimTable createModelSummaryTable(NaiveBayesOutput output) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();

@@ -43,6 +43,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._seed = 1234;
       parms._only_v = false;
+      parms._transform = DataInfo.TransformType.NONE;
 
       SVD job = new SVD(parms);
       try {
@@ -83,6 +84,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._seed = 1234;
       parms._only_v = true;
+      parms._transform = DataInfo.TransformType.NONE;
 
       SVD job = new SVD(parms);
       try {
@@ -122,6 +124,7 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._only_v = false;
       parms._keep_u = false;
+      parms._transform = DataInfo.TransformType.NONE;
 
       try {
         job = new SVD(parms);
@@ -219,6 +222,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 7;
       parms._use_all_factor_levels = true;
       parms._only_v = false;
+      parms._transform = DataInfo.TransformType.NONE;
 
       SVD job = new SVD(parms);
       try {
@@ -254,7 +258,7 @@ public class SVDTest extends TestUtil {
 
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      SplitFrame sf = new SplitFrame(Key.make());
+      SplitFrame sf = new SplitFrame();
       sf.dataset = fr;
       sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};

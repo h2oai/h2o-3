@@ -20,34 +20,16 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] own_fields = new String[] { "model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols", "score_each_iteration" };
 
-  /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
-  private transient String[] __fields_cache = null;
-
-  public String[] fields() {
-    if (null == __fields_cache) {
-      __fields_cache = new String[0];
-      Class<? extends ModelParametersSchema> this_clz = this.getClass();
-
-      try {
-        for (Class<? extends ModelParametersSchema> clz = this_clz; ; clz = (Class<? extends ModelParametersSchema>) clz.getSuperclass()) {
-          String[] fields = (String[]) clz.getField("own_fields").get(clz);
-
-          String[] tmp = new String[fields.length + __fields_cache.length];
-          System.arraycopy(fields, 0, tmp, 0, fields.length);
-          System.arraycopy(__fields_cache, 0, tmp, fields.length, __fields_cache.length);
-          __fields_cache = tmp;
-
-          if (clz == ModelParametersSchema.class) break;
-        }
-      }
-      catch (Exception e) {
-        throw H2O.fail("Caught exception appending the schema field list for: " + this);
-      }
-    }
-    return __fields_cache;
-  }
+		public String[] fields() {
+				Class<? extends ModelParametersSchema> this_clz = this.getClass();
+				try {
+				    return (String[]) this_clz.getField("fields").get(this_clz);
+				}
+				catch (Exception e) {
+						throw H2O.fail("Caught exception from accessing the schema field list for: " + this);
+				}
+		}
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
@@ -63,6 +45,27 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Validation frame", direction=API.Direction.INOUT)
   public FrameKeyV3 validation_frame;
 
+  @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
+  public int nfolds;
+
+  @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
+  public boolean keep_cross_validation_predictions;
+
+  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 response_column;
+
+  @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 weights_column;
+
+  @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 offset_column;
+
+  @API(help = "Column with cross-validation fold index assignment per observation", is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT)
+  public FrameV3.ColSpecifierV3 fold_column;
+
+  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"AUTO", "Random", "Modulo"}, level = API.Level.expert, direction=API.Direction.INOUT)
+  public Model.Parameters.FoldAssignmentScheme fold_assignment;
+
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
@@ -71,6 +74,14 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
   @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT, level = API.Level.secondary)
   public boolean score_each_iteration;
+
+  /**
+   * A model key associated with a previously trained
+   * model. This option allows users to build a new model as a
+   * continuation of a previously generated model (e.g., by a grid search).
+   */
+  @API(help = "Model checkpoint to resume training with", level = API.Level.secondary, direction=API.Direction.INOUT)
+  public ModelKeyV3 checkpoint;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];
@@ -102,8 +113,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : Key.make(this.training_frame.name));
-    impl._valid = (null == this.validation_frame ? null : Key.make(this.validation_frame.name));
+    impl._train = (null == this.training_frame ? null : Key.<Frame>make(this.training_frame.name));
+    impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
 
     return impl;
   }

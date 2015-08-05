@@ -206,7 +206,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     rowHeaders[row++] = "min";
     rowHeaders[row++] = "max";
     rowHeaders[row++] = "stddev";
-    rowHeaders[row  ] = "total";
+    rowHeaders[row++] = "total";
     final String[] colHeaders = new String[]{"Size", "Number of Rows", "Number of Chunks per Column", "Number of Chunks"};
     final String[] colTypes = new String[]{"string", "float", "float", "float"};
     final String[] colFormats = new String[]{"%s", "%f", "%f", "%f"};
@@ -244,7 +244,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     table.set(row, 0, display(total_chunk_byte_size));
     table.set(row, 1, total_row_count);
     table.set(row, 2, total_chunk_count_per_col);
-    table.set(row, 3, _fr.numCols()*total_chunk_count_per_col);
+    table.set(row++, 3, _fr.numCols()*total_chunk_count_per_col);
 
     return table;
   }

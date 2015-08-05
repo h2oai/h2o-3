@@ -6,18 +6,14 @@ import water.api.*;
 public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAParameters, PCAV3.PCAParametersV3, PCAModel.PCAOutput, PCAModelV3.PCAModelOutputV3> {
   public static final class PCAModelOutputV3 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV3> {
     // Output fields; input fields are in the parameters list
-    // TODO: This field is redundant. Remove in next API change.
-    @API(help = "Standard deviations")
-    public double[] std_deviation;
-
-    @API(help = "Importance of each principal component")
-    public TwoDimTableBase pc_importance;
+    @API(help = "Standard deviation and importance of each principal component")
+    public TwoDimTableBase importance;
 
     @API(help = "Principal components matrix")
     public TwoDimTableBase eigenvectors;
 
-    @API(help = "Frame key for loading matrix (Power method only)")
-    public KeyV3.FrameKeyV3 loading_key;
+    @API(help = "GLRM final value of L2 loss function")
+    public double objective;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

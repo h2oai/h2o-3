@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/poisson_tst1.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/poisson_tst1.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/poisson_tst1.csv\"]\n  destination_frame: \"poisson_tst1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_names: [\"id\",\"num_awards\",\"prog\",\"math\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"poisson_tst1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"poisson_tst1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"poisson_tst1.hex\", [0.25], [\"poisson_tst1_test\",\"poisson_tst1_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-37ad73b3-4164-4a2a-80fd-3c1e6bc946a5\",\"training_frame\":\"poisson_tst1_train\",\"validation_frame\":\"poisson_tst1_test\",\"ignore_const_cols\":true,\"response_column\":\"id\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-37ad73b3-4164-4a2a-80fd-3c1e6bc946a5\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-37ad73b3-4164-4a2a-80fd-3c1e6bc946a5\""
+    },
+   
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-37ad73b3-4164-4a2a-80fd-3c1e6bc946a5\", frame: \"poisson_tst1_test\", predictions_frame: \"prediction-74caa06e-da2c-48a8-81e2-d437d7040035\""
+    }
+  ]
+}

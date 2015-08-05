@@ -1,8 +1,6 @@
 package hex.deeplearning;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
@@ -52,13 +50,20 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
-  /** Start the DeepLearning training Job on an F/J thread. */
-  @Override public Job<DeepLearningModel> trainModel() {
+  /** Start the DeepLearning training Job on an F/J thread.
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<DeepLearningModel> trainModelImpl(long work, boolean restartTimer) {
     // We look at _train before init(true) is called, so step around that here:
+    return start(new DeepLearningDriver(), work, restartTimer);
+  }
+
+  @Override
+  public long progressUnits() {
     long work = 1;
     if (null != _train)
       work = (long)(_parms._epochs * _train.numRows());
-    return start(new DeepLearningDriver(), work);
+    return Math.max(1, work);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -82,6 +87,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
    * @return
    */
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms) {
+    double x = 0.782347234;
+    boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
     return new DataInfo(
             Key.make(), //dest key
             train,
@@ -89,11 +96,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
+            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
-            parms._offset_column != null
+            parms._offset_column != null,
+            parms._fold_column != null
       );
   }
 
@@ -128,6 +136,25 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     }
   }
 
+  @Override
+  public void modifyParmsForCrossValidationSplits(int i, int N) {
+    super.modifyParmsForCrossValidationSplits(i, N);
+    if (_parms._overwrite_with_best_model) {
+      warn("_overwrite_with_best_model",
+              "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");
+      _parms._overwrite_with_best_model = false;
+    }
+  }
+
+  @Override
+  public void modifyParmsForCrossValidationMainModel(int N) {
+    super.modifyParmsForCrossValidationMainModel(N);
+    if (_parms._overwrite_with_best_model) {
+      warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
+      _parms._overwrite_with_best_model = false;
+    }
+  }
+
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
@@ -159,6 +186,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw t;
         }
       } finally {
+        updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
       }
@@ -174,7 +202,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       Scope.enter();
       DeepLearningModel cp = null;
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid);
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         cp.model_info().initializeMembers();
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -213,12 +241,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           assert (actualNewP != previous.model_info().get_params());
           assert (actualNewP != newP);
           assert (actualNewP != oldP);
-          DeepLearningParameters.Sanity.update(actualNewP, newP, isClassifier());
+          DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
 
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
-          if (actualNewP.getNumFolds() != 0) {
+          if (actualNewP._nfolds != 0) {
             Log.info("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
 
             H2O.unimpl("writing to n_folds field needs to be uncommented");
@@ -357,7 +385,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
 
         // replace the model with the best model so far (if it's better)
-        if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
+        if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode) {
@@ -447,66 +475,70 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       } else if (tspi == -2) {
         // automatic tuning based on CPU speed, network speed and model size
 
-      // measure cpu speed
-      double total_gflops = 0;
-      for (H2ONode h2o : H2O.CLOUD._memary) {
-        HeartBeat hb = h2o._heartbeat;
-        total_gflops += hb._gflops;
-      }
-      if (mp._single_node_mode) total_gflops /= H2O.CLOUD.size();
-      if (total_gflops == 0) {
-        total_gflops = Linpack.run(H2O.SELF._heartbeat._cpus_allowed) * (mp._single_node_mode ? 1 : H2O.CLOUD.size());
-      }
+        // measure cpu speed
+        double total_gflops = 0;
+        for (H2ONode h2o : H2O.CLOUD._memary) {
+          HeartBeat hb = h2o._heartbeat;
+          total_gflops += hb._gflops;
+        }
+        if (mp._single_node_mode) total_gflops /= H2O.CLOUD.size();
+        if (total_gflops == 0) {
+          total_gflops = Linpack.run(H2O.SELF._heartbeat._cpus_allowed) * (mp._single_node_mode ? 1 : H2O.CLOUD.size());
+        }
 
-      final long model_size = model.model_info().size();
-      int[] msg_sizes = new int[]{ (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
-      double[] microseconds_collective = new double[msg_sizes.length];
-      NetworkTest.NetworkTester nt = new NetworkTest.NetworkTester(msg_sizes,null,microseconds_collective,model_size>1e6 ? 1 : 5 /*repeats*/,false,true /*only collectives*/);
-      nt.compute2();
+        final long model_size = model.model_info().size();
+        int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
+        double[] microseconds_collective = new double[msg_sizes.length];
+        NetworkTest.NetworkTester nt = new NetworkTest.NetworkTester(msg_sizes,null,microseconds_collective,model_size>1e6 ? 1 : 5 /*repeats*/,false,true /*only collectives*/);
+        nt.compute2();
 
-      //length of the network traffic queue based on log-tree rollup (2 log(nodes))
-      int network_queue_length = mp._single_node_mode || H2O.CLOUD.size() == 1? 1 : 2*(int)Math.floor(Math.log(H2O.CLOUD.size())/Math.log(2));
+        //length of the network traffic queue based on log-tree rollup (2 log(nodes))
+        int network_queue_length = mp._single_node_mode || H2O.CLOUD.size() == 1? 1 : 2*(int)Math.floor(Math.log(H2O.CLOUD.size())/Math.log(2));
 
-      // heuristics
-      double flops_overhead_per_row = 30;
-      if (mp._activation == DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningParameters.Activation.MaxoutWithDropout) {
-        flops_overhead_per_row *= 8;
-      } else if (mp._activation == DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningParameters.Activation.TanhWithDropout) {
-        flops_overhead_per_row *= 5;
-      }
+        // heuristics
+        double flops_overhead_per_row = 30;
+        if (mp._activation == DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningParameters.Activation.MaxoutWithDropout) {
+          flops_overhead_per_row *= 8;
+        } else if (mp._activation == DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningParameters.Activation.TanhWithDropout) {
+          flops_overhead_per_row *= 5;
+        }
 
-      // target fraction of comm vs cpu time: 5%
-      double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : 0.05; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
+        // target fraction of comm vs cpu time: 5%
+        double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : mp._target_ratio_comm_to_comp; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
 
-      // estimate the time for communication (network) and training (compute)
-      model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[0];
-      double time_per_row_us  = flops_overhead_per_row * model_size / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
+        // estimate the time for communication (network) and training (compute)
+        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[1];
+        double time_per_row_us  = flops_overhead_per_row * model_size / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
 
-      // compute the optimal number of training rows per iteration
-      // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
-      tspi = (long)((model.time_for_communication_us / fraction - model.time_for_communication_us)/ time_per_row_us);
+        // compute the optimal number of training rows per iteration
+        // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
+        tspi = (long)((model.time_for_communication_us / fraction - model.time_for_communication_us)/ time_per_row_us);
 
-      tspi = Math.min(tspi, (mp._single_node_mode ? 1 : H2O.CLOUD.size()) * numRows * 10); //not more than 10x of what train_samples_per_iteration=-1 would do
+        tspi = Math.min(tspi, (mp._single_node_mode ? 1 : H2O.CLOUD.size()) * numRows * 10); //not more than 10x of what train_samples_per_iteration=-1 would do
 
-      // If the number is close to a multiple of epochs, use that -> prettier scoring
-      if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi = tspi - tspi % numRows;
-      tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
-      tspi = Math.max(1, tspi); //at least 1 point
+        // If the number is close to a multiple of epochs, use that -> prettier scoring
+        if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi = tspi - tspi % numRows;
+        tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
+        if (H2O.CLOUD.size() == 1 || mp._single_node_mode) {
+          tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
+        }
+        tspi = Math.max(1, tspi); //at least 1 point
 
-      if (!mp._quiet_mode) {
-        Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
-        Log.info("Estimated compute power : " + (int)total_gflops + " GFlops");
-        Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
-        Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
-        Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");
-        Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to auto-tuned value: " + tspi);
-      }
+        if (!mp._quiet_mode) {
+          Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
+          Log.info("Estimated compute power : " + (int)total_gflops + " GFlops");
+          Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
+          Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
+          Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");
+          Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to auto-tuned value: " + tspi);
+        }
 
       } else {
         // limit user-given value to number of epochs desired
-        tspi = Math.min(tspi, (long)(mp._epochs * numRows));
+        tspi = Math.max(1, Math.min(tspi, (long) (mp._epochs * numRows)));
       }
       assert(tspi != 0 && tspi != -1 && tspi != -2 && tspi >= 1);
+      model.tspiGuess = tspi;
       return tspi;
     }
 

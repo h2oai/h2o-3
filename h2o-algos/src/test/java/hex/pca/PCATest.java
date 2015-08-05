@@ -10,6 +10,7 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import java.util.concurrent.ExecutionException;
 
@@ -70,11 +71,7 @@ public class PCATest extends TestUtil {
           t.printStackTrace();
           throw new RuntimeException(t);
         } finally {
-          if( model != null ) {
-            if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-              model._output._loading_key.get().delete();
-            model.delete();
-          }
+          if( model != null ) model.delete();
         }
       }
     } finally {
@@ -126,11 +123,7 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -182,11 +175,7 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -198,7 +187,7 @@ public class PCATest extends TestUtil {
 
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      SplitFrame sf = new SplitFrame(Key.make());
+      SplitFrame sf = new SplitFrame();
       sf.dataset = fr;
       sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
@@ -234,11 +223,7 @@ public class PCATest extends TestUtil {
       if( fr2 != null ) fr2.delete();
       if( tr  != null ) tr .delete();
       if( te  != null ) te .delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -247,8 +232,8 @@ public class PCATest extends TestUtil {
     double[][] xgram = ard(ard(17, 22, 27), ard(22, 29, 36), ard(27, 36, 45));  // X'X
     double[][] xtgram = ard(ard(14, 32), ard(32, 77));    // (X')'X' = XX'
 
-    double[][] xgram_glrm = PCA.formGram(x, false);
-    double[][] xtgram_glrm = PCA.formGram(x, true);
+    double[][] xgram_glrm = ArrayUtils.formGram(x, false);
+    double[][] xtgram_glrm = ArrayUtils.formGram(x, true);
     Assert.assertArrayEquals(xgram, xgram_glrm);
     Assert.assertArrayEquals(xtgram, xtgram_glrm);
   }

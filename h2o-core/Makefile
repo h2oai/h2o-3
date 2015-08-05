@@ -12,7 +12,7 @@ classes = $(main_classes) $(test_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
 libs = $(wildcard ../lib/*jar)
-jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-genmodel/build/libs/h2o-genmodel.jar
+jars = $(subst $(space),$(SEP),$(libs))
 
 # Fun Args to javac.  Mostly limit to java7 source definitions, and fairly
 # agressive lint warnings.

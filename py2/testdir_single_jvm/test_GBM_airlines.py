@@ -10,7 +10,7 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init(1, use_hdfs=True, hdfs_version='cdh5', hdfs_name_node='172.16.2.180', java_heap_GB=14)
+        h2o.init(1, use_hdfs=True, hdfs_version='cdh4', hdfs_name_node='172.16.2.176', java_heap_GB=14)
 
 
     @classmethod
@@ -19,7 +19,8 @@ class Basic(unittest.TestCase):
 
     def test_GBM_airlines(self):
         files = [
-                 ('datasets', 'airlines_all.csv', 'airlines_all.hex', 1800, 'IsDepDelayed')
+                 ('datasets', 'airlines_all.05p.csv', 'airlines_all.05p.hex', 1800, 'IsDepDelayed'),
+                 # ('datasets', 'airlines_all.csv', 'airlines_all.hex', 1800, 'IsDepDelayed')
                 ]
 
         for importFolderPath, csvFilename, trainKey, timeoutSecs, response in files:
@@ -43,7 +44,7 @@ class Basic(unittest.TestCase):
 
             parameters = {
                 'validation_frame': trainKey,
-                'ignored_columns': '[CRSDepTime,CRSArrTime,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed]',
+                # 'ignored_columns': '[CRSDepTime,CRSArrTime,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed]',
                 'response_column': response,
                 # 'balance_classes':
                 # 'max_after_balance_size':
@@ -52,7 +53,7 @@ class Basic(unittest.TestCase):
                 'min_rows': 3,
                 'nbins': 40,
                 'learn_rate': 0.2,
-                'loss': 'multinomial',
+                # 'loss': 'multinomial',
                 # FIX! doesn't like it?
                 # 'loss': 'Bernoulli',
                 # FIX..no variable importance for GBM yet?
@@ -73,7 +74,7 @@ class Basic(unittest.TestCase):
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
-            print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
+            # print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mmResultShort = mmResult['model_metrics'][0]

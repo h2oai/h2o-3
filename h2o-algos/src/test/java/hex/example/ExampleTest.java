@@ -2,6 +2,7 @@ package hex.example;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Job;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -22,7 +23,7 @@ public class ExampleTest extends TestUtil {
       parms._max_iterations = 10;
       parms._response_column = "class";
 
-      Example job = new Example(parms).trainModel();
+      Job<ExampleModel> job = new Example(parms).trainModel();
       emm = job.get();
       job.remove();
 

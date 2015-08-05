@@ -6,7 +6,6 @@ import water.Futures;
 import water.Iced;
 import water.exceptions.H2OParseException;
 import water.fvec.AppendableVec;
-import water.fvec.C16Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -53,7 +52,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         AppendableVec [] v = _vecs;
         _vecs = dout._vecs;
         for(int i = 1; i < _vecs.length; ++i)
-          _vecs[i]._espc = _vecs[0]._espc;
+          _vecs[i]._tmp_espc = _vecs[0]._tmp_espc;
         dout._vecs = v;
       }
       for(int i = 0; i < dout._vecs.length; ++i) {
@@ -80,6 +79,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return  new FVecParseWriter(_vg, _cidx+1, _enums, _ctypes, _chunkSize, _vecs);
   }
 
+  /* never called
   private Vec [] closeVecs(){
     Futures fs = new Futures();
     _closedVecs = true;
@@ -99,7 +99,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     _vecs = null;  // Free for GC
     fs.blockForPending();
     return res;
-  }
+  } */
 
   @Override public void newLine() {
     if(_col >= 0){
@@ -136,10 +136,8 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         long l = ParseTime.attemptTimeParse(str);
         if( l == Long.MIN_VALUE ) addInvalidCol(colIdx);
         else {
-          int timePat = ParseTime.decodePat(l); // Get time pattern
-          l = ParseTime.decodeTime(l);           // Get time
           addNumCol(colIdx, l, 0);               // Record time in msec
-          _nvs[_col]._timCnt[timePat]++; // Count histo of time parse patterns
+          _nvs[_col]._timCnt++; // Count histo of time parse patterns
         }
       } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
         long[] uuid = ParseUUID.attemptUUIDParse(str);
@@ -153,7 +151,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;
           _nvs[colIdx].addEnum(id);
         } else { // maxed out enum map
-          throw new H2OParseException("Exceeded enumeration limit.  Consider reparsing this column as a string.");
+          throw new H2OParseException("Exceeded enumeration limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
         }
       }
     }

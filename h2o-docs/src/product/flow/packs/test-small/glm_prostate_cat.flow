@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles ['../smalldata/glm_test/prostate_cat_test.csv']"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/prostate_cat_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/prostate_cat_test.csv\"]\n  destination_frame: \"prostate_cat_test2.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate_cat_test2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "importFiles ['../smalldata/glm_test/prostate_cat_train.csv']"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/prostate_cat_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/prostate_cat_train.csv\"]\n  destination_frame: \"prostate_cat_train2.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate_cat_train2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"prostate_cat_train2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-0febc694-373e-4e32-98c4-52757f02e07d\",\"training_frame\":\"prostate_cat_train2.hex\",\"validation_frame\":\"prostate_cat_test2.hex\",\"ignore_const_cols\":true,\"response_column\":\"CAPSULE\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-0febc694-373e-4e32-98c4-52757f02e07d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-0febc694-373e-4e32-98c4-52757f02e07d\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-0febc694-373e-4e32-98c4-52757f02e07d\", frame: \"prostate_cat_test2.hex\", predictions_frame: \"prediction-f66e59b6-4e8a-41ee-aee4-fb2c4f5e701c\""
+    }
+  ]
+}

@@ -44,8 +44,7 @@ JUNIT_TESTS_BIG="hex.word2vec.Word2VecTest"
 
 # Runner
 # Default JUnit runner is org.junit.runner.JUnitCore
-#JUNIT_RUNNER="water.junit.H2OTestRunner"
-JUNIT_RUNNER=org.junit.runner.JUnitCore
+JUNIT_RUNNER="water.junit.H2OTestRunner"
 
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"

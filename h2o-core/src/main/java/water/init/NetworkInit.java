@@ -2,6 +2,7 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
+import water.JettyHTTPD;
 import water.TCPReceiverThread;
 import water.util.Log;
 
@@ -316,6 +317,11 @@ public class NetworkInit {
     // Assign initial ports
     H2O.API_PORT = H2O.ARGS.port == 0 ? H2O.ARGS.baseport : H2O.ARGS.port;
 
+    // Late instantiation of Jetty object, if needed.
+    if (H2O.getJetty() == null) {
+      H2O.setJetty(new JettyHTTPD());
+    }
+
     while (true) {
       H2O.H2O_PORT = H2O.API_PORT+1;
       try {
@@ -342,9 +348,13 @@ public class NetworkInit {
         TCPReceiverThread.SOCK = ServerSocketChannel.open();
         TCPReceiverThread.SOCK.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
         TCPReceiverThread.SOCK.socket().bind(isa);
-        
+
+        _apiSocket.close();
+        if (! H2O.ARGS.disable_web) {
+          H2O.getJetty().start(H2O.ARGS.ip, H2O.API_PORT);
+        }
         break;
-      } catch (IOException e) {
+      } catch (Exception e) {
         if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
         if( TCPReceiverThread.SOCK != null ) try { TCPReceiverThread.SOCK.close(); } catch( IOException ie ) { }
@@ -360,7 +370,8 @@ public class NetworkInit {
       H2O.API_PORT += 2;
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
-    Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http://", H2O.getIpPortString() + "/");
+    Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
+             "Listening for HTTP and REST traffic on " + H2O.getJetty().getScheme() + "://", H2O.getIpPortString() + "/");
     try { Log.debug("Interface MTU: ",  (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
     } catch (SocketException se) { Log.debug("No MTU due to SocketException. "+se.toString()); }
 

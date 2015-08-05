@@ -7,9 +7,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
+import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.*;
@@ -219,42 +219,13 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public Iterator<T> iterator() {return _g.iterator(); }
   }
 
-  // custom serializer for <Group,Int> pairs
-  public static class IcedHM<G extends Iced,S extends String> extends Iced {
-    private NonBlockingHashMap<G,String> _m; // the nbhm to (de)ser
-    IcedHM() { _m = new NonBlockingHashMap<>(); }
-    String putIfAbsent(G k, S v) { return _m.putIfAbsent(k,v);}
-    void put(G g, S i) { _m.put(g,i);}
-    void putAll(IcedHM<G,S> m) {_m.putAll(m._m);}
-    Set<G> keySet() { return _m.keySet(); }
-    int size() { return _m.size(); }
-    String get(G g) { return _m.get(g); }
-    G getk(G g) { return _m.getk(g); }
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      if( _m==null || _m.size()==0 ) return ab.put4(0);
-      else {
-        ab.put4(_m.size());
-        for(G g:_m.keySet()) { ab.put(g); ab.putStr(_m.get(g)); }
-      }
-      return ab;
-    }
-    @Override public IcedHM read_impl(AutoBuffer ab) {
-      int mLen;
-      if( (mLen=ab.get4())!=0 ) {
-        _m = new NonBlockingHashMap<>();
-        for( int i=0;i<mLen;++i ) _m.put((G)ab.get(), ab.getStr());
-      }
-      return this;
-    }
-  }
-
   public static class GBTask extends MRTask<GBTask> {
-    IcedHM<G,String> _g;  // lol GString
+    IcedHashMap<G,String> _g;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new IcedHM<>(); }
     @Override public void map(Chunk[] c) {
+      _g = new IcedHashMap<>();
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
       G g = new G(_gbCols.length,_agg.length,naMethods);
@@ -265,11 +236,7 @@ import java.util.concurrent.atomic.AtomicInteger;
         if( g_old==null ) {  // won the race w/ this group
           gOld=g;
           g=new G(_gbCols.length,_agg.length,naMethods); // need entirely new G
-        } else {
-          gOld=_g.getk(g);
-          if( gOld==null )   // FIXME: Why is gOld null!?
-            while( gOld==null ) gOld=_g.getk(g);
-        }
+        } else gOld=_g.getk(g);
         // cas in COUNT
         long r=gOld._N;
         while(!G.CAS_N(gOld, r, r + 1))
@@ -279,8 +246,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        IcedHM<G,String> l = _g;
-        IcedHM<G,String> r = t._g;
+        IcedHashMap<G,String> l = _g;
+        IcedHashMap<G,String> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
         // loop over the smaller set of grps
         for( G rg:r.keySet() ) {
@@ -315,13 +282,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         if( (type=agg[i]._type) == AGG.T_N ) continue; //immediate short circuit if COUNT
 
-        // Do NA handling here for AGG.T_IG and AGG.T_RM
         if( c!= null )
           if( !agg[i].isAll() && c[col].isNA(chkRow) )
             continue;
 
         // build up a long[] of vals, to handle the case when c is and isn't null.
-        // c is null in the reduce  of the MRTask
         long bits=-1;
         if( c!=null ) {
           if( c[col].isNA(chkRow) ) continue;
@@ -335,12 +300,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         switch( type ) {  // ordered by "popularity"
           case AGG.T_AVG: /* fall through */
-          case AGG.T_SUM: setSum(  g,c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits,i);   break;
+          case AGG.T_SUM: setSum(g, c == null ? Double.doubleToRawLongBits(that._sum[i]) : bits, i);   break;
           case AGG.T_MIN: setMin(  g,c==null ? Double.doubleToRawLongBits(that._min[i]) : bits,i);   break;
           case AGG.T_MAX: setMax(  g,c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
-          case AGG.T_VAR: /* fall through */
-          case AGG.T_SD:
-          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i);   break;
+          case AGG.T_VAR:
+          case AGG.T_SD:  setSum(g, c == null ? Double.doubleToRawLongBits(that._sum[i]) : bits, i); /* fall through */
+          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i, c==null);   break;
           case AGG.T_F:   setFirst(g,c==null ? that._f[i] : chkRow+rowOffset,i);   break;
           case AGG.T_L:   setLast(g, c == null ? that._l[i] : chkRow + rowOffset, i);   break;
           default:
@@ -378,11 +343,16 @@ import java.util.concurrent.atomic.AtomicInteger;
       while(!G.CAS_sum(g,G.doubleRawIdx(c),Double.doubleToRawLongBits(o),Double.doubleToRawLongBits(o+v)))
         o=g._sum[c];
     }
-    private static void setSS(G g, long vv, int c) {
+    private static void setSS(G g, long vv, int c, boolean isReduce) {
       double v = Double.longBitsToDouble(vv);
       double o = g._ss[c];
-      while(!G.CAS_ss(g, G.doubleRawIdx(c), Double.doubleToRawLongBits(o), Double.doubleToRawLongBits(o + v * v)))
-        o=g._ss[c];
+      if( isReduce ) {
+        while(!G.CAS_ss(g,G.doubleRawIdx(c), Double.doubleToRawLongBits(o), Double.doubleToRawLongBits(o+v)))
+          o = g._ss[c];
+      } else {
+        while (!G.CAS_ss(g, G.doubleRawIdx(c), Double.doubleToRawLongBits(o), Double.doubleToRawLongBits(o + v * v)))
+          o = g._ss[c];
+      }
     }
     private static void setNA(G g, long n, int c) {
       long o = g._NA[c];
@@ -489,10 +459,11 @@ import java.util.concurrent.atomic.AtomicInteger;
     // compare 2 groups
     // iterate down _ds, stop when _ds[i] > that._ds[i], or _ds[i] < that._ds[i]
     // order by various columns specified by _orderByCols
+    // NaN is treated as least
     @Override public int compareTo(G g) {
       for(int i:_orderByCols)
-        if( _ds[i] < g._ds[i] ) return -1;
-        else if( _ds[i] > g._ds[i] ) return 1;
+        if(      Double.isNaN(_ds[i])   || _ds[i] < g._ds[i] ) return -1;
+        else if( Double.isNaN(g._ds[i]) || _ds[i] > g._ds[i] ) return 1;
       return 0;
     }
 

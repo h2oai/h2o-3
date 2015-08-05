@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "cells": [
+  
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/glm_test/adult.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/glm_test/adult.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/glm_test/adult.gz\"]\n  destination_frame: \"adult.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 15\n  single_quotes: false\n  column_types: [\"Numeric\",\"Enum\",\"Numeric\",\"Enum\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 262144"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"adult.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"adult.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"adult.hex\", [0.25], [\"adult_test\",\"adult_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"adult.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-d1f3a41f-5f6a-495f-84d1-7fc34f252833\",\"training_frame\":\"adult_train\",\"validation_frame\":\"adult_test\",\"ignore_const_cols\":true,\"response_column\":\"C15\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[1],\"lambda\":[],\"lambda_search\":true,\"nlambdas\":-1,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"lambda_min_ratio\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-d1f3a41f-5f6a-495f-84d1-7fc34f252833\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-d1f3a41f-5f6a-495f-84d1-7fc34f252833\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-d1f3a41f-5f6a-495f-84d1-7fc34f252833\", frame: \"adult_train\", predictions_frame: \"prediction-7f1825b0-ab3e-4837-85f4-f5f566b42bb9\""
+    }
+  ]
+}

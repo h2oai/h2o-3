@@ -41,6 +41,8 @@ public class DeepLearningModelInfo extends Iced {
   private Storage.DenseColMatrix[] dense_col_ada_dx_g;
   private Storage.DenseVector[] biases_ada_dx_g;
 
+  private boolean[] _saw_missing_cats;  // whether missing value was encountered for each categorical predictor - needed for varimp
+
   // compute model size (number of model parameters required for making predictions)
   // momenta are not counted here, but they are needed for model building
   public long size() {
@@ -49,6 +51,20 @@ public class DeepLearningModelInfo extends Iced {
     for (Storage.Matrix w : dense_col_weights) if (w != null) siz += w.size();
     for (Storage.Vector b : biases) siz += b.size();
     return siz;
+  }
+
+  /**
+   * Check whether a missing value was found for every categorical predictor
+   * @param cats
+   */
+  void checkMissingCats(int[] cats)  {
+    if (cats == null) return;
+    if (_saw_missing_cats == null) return;
+    for (int i=0; i<cats.length; ++i) {
+      assert(data_info._catMissing[i] == 1); //have a missing bucket for each categorical
+      if (_saw_missing_cats[i]) continue;
+      _saw_missing_cats[i] = (cats[i] == data_info._catOffsets[i+1]-1);
+    }
   }
 
   // accessors to (shared) weights and biases - those will be updated racily (c.f. Hogwild!)
@@ -144,20 +160,23 @@ public class DeepLearningModelInfo extends Iced {
    * Main constructor
    * @param params Model parameters
    * @param dinfo Data Info
-   * @param classification Whether we do classification or not
+   * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    * @param train User-given training data frame, prepared by AdaptTestTrain
    * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
-  public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo, boolean classification, Frame train, Frame valid) {
-    _classification = classification;
+  public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
+    _classification = nClasses > 1;
     _train = train;
     _valid = valid;
     data_info = dinfo;
     parameters = (DeepLearningParameters) params.clone(); //make a copy, don't change model's parameters
-    DeepLearningParameters.Sanity.modifyParms(parameters, parameters, _classification); //sanitize the model_info's parameters
+    DeepLearningParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
 
     final int num_input = dinfo.fullN();
     final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
+    if (!get_params()._autoencoder) assert(num_output == nClasses);
+
+    _saw_missing_cats = dinfo._cats > 0 ? new boolean[data_info._cats] : null;
     assert (num_input > 0);
     assert (num_output > 0);
     if (has_momenta() && adaDelta())
@@ -295,7 +314,7 @@ public class DeepLearningModelInfo extends Iced {
             (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
                     (get_params()._autoencoder ? "auto-encoder" :
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
-                    + ", " + get_params()._loss.toString() + " loss, "
+                    + ", " + get_params()._distribution + " distribution, " + get_params()._loss + " loss, "
                     + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size) + ", "
                     + String.format("%,d", get_processed_global()) + " training samples",
             new String[neurons.length],
@@ -565,6 +584,14 @@ public class DeepLearningModelInfo extends Iced {
 
     //normalize importances such that max(vi) = 1
     ArrayUtils.div(vi, ArrayUtils.maxValue(vi));
+
+    // zero out missing categorical variables if they were never seen
+    if (_saw_missing_cats != null) {
+      for (int i = 0; i < _saw_missing_cats.length; ++i) {
+        assert (data_info._catMissing[i] == 1); //have a missing bucket for each categorical
+        if (!_saw_missing_cats[i]) vi[data_info._catOffsets[i + 1] - 1] = 0;
+      }
+    }
     return vi;
   }
 

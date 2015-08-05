@@ -16,12 +16,23 @@ import water.api.ModelParametersSchema;
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
-    static public String[] own_fields = new String[]{
+    static public String[] fields = new String[]{
+            "model_id",
+            "training_frame",
+            "validation_frame",
+            "nfolds",
+            "keep_cross_validation_predictions",
+            "fold_assignment",
+            "fold_column",
             "response_column",
+            "ignored_columns",
+            "ignore_const_cols",
+            "score_each_iteration",
             "offset_column",
             "weights_column",
             "family",
             "tweedie_variance_power",
+            "tweedie_link_power",
             "solver",
             "alpha",
             "lambda",
@@ -39,24 +50,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_min_ratio",
             "beta_constraints",
             "max_active_predictors",
-      // dead unused args forced here by backwards compatibility, remove in V4
-      "balance_classes",
-      "class_sampling_factors",
-      "max_after_balance_size",
-      "max_confusion_matrix_size",
-      "max_hit_ratio_k",
+            // dead unused args forced here by backwards compatibility, remove in V4
+            "balance_classes",
+            "class_sampling_factors",
+            "max_after_balance_size",
+            "max_confusion_matrix_size",
+            "max_hit_ratio_k",
     };
-
-    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 response_column;
-
-    // todo move this up in the hierarchy when there is weights support?
-    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 weights_column;
-
-    // todo move this up in the hierarchy when there is offset support?
-    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 offset_column;
 
     // Input fields
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
@@ -65,6 +65,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Tweedie variance power", level = Level.critical)
     public double tweedie_variance_power;
+
+    @API(help = "Tweedie link power", level = Level.critical)
+    public double tweedie_link_power;
 
     @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
     public Solver solver;

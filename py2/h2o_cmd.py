@@ -7,6 +7,9 @@ from h2o_test import OutputObj
 
 #************************************************************************
 def runStoreView(node=None, **kwargs):
+    print "FIX! disabling runStoreView for now"
+    return {}
+
     if not node: node = h2o_nodes.nodes[0]
 
     print "\nStoreView:"

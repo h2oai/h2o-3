@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/cuseexpanded.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/cuseexpanded.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/cuseexpanded.csv\"]\n  destination_frame: \"cuseexpanded.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 16\n  single_quotes: false\n  column_names: [\"Age\",\"AgeA\",\"AgeB\",\"AgeC\",\"AgeD\",\"Ed\",\"LowEd\",\"HighEd\",\"Wantsmore\",\"MoreYes\",\"MoreNo\",\"CountNotusing\",\"Using\",\"Percentuse\",\"UsingMultiClass\",\"UsingBinom\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"cuseexpanded.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"cuseexpanded.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"cuseexpanded.hex\", [0.2], [\"cuseexpanded.hex_0.20\",\"cuseexpanded.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-fb302644-2da7-46f9-95fa-a4a38b3dfffd\",\"training_frame\":\"cuseexpanded.hex_0.80\",\"validation_frame\":\"cuseexpanded.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"Using\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0],\"lambda\":[0],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-fb302644-2da7-46f9-95fa-a4a38b3dfffd\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-fb302644-2da7-46f9-95fa-a4a38b3dfffd\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-fb302644-2da7-46f9-95fa-a4a38b3dfffd\", frame: \"cuseexpanded.hex_0.20\", predictions_frame: \"prediction-b695f927-9d25-48ed-b2ed-83049093221d\""
+    }
+  ]
+}

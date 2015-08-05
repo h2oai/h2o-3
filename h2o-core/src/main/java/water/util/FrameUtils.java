@@ -190,7 +190,7 @@ public class FrameUtils {
         final Frame frame = DKV.getGet(_dataset);
         MissingInserterDriver mid = new MissingInserterDriver(frame);
         int work = frame.vecs()[0].nChunks();
-        start(mid, work);
+        start(mid, work, true);
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
@@ -223,15 +223,6 @@ public class FrameUtils {
     public  double weightedMean() {
       return _wsum == 0 ? 0 : _wresponse / _wsum;
     }
-    @Override public void map(Chunk response, Chunk weight) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
-        if (w == 0) continue;
-        _wresponse += w*response.atd(i);
-        _wsum += w;
-      }
-    }
     @Override public void map(Chunk response, Chunk weight, Chunk offset) {
       for (int i=0;i<response._len;++i) {
         if (response.isNA(i)) continue;
@@ -246,4 +237,5 @@ public class FrameUtils {
       _wsum += mrt._wsum;
     }
   }
+
 }

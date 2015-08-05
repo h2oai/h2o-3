@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/gbm_test/czechboard_300x300.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/gbm_test/czechboard_300x300.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/gbm_test/czechboard_300x300.csv\"]\n  destination_frame: \"czechboard_300x300.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 3\n  single_quotes: false\n  column_names: [\"C1\",\"C2\",\"C3\"]\n  column_types: [\"Enum\",\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 65536"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"czechboard_300x300.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"czechboard_300x300.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"czechboard_300x300.hex\", [0.2], [\"czechboard_300x300_test.hex_0.20\",\"czechboard_300x300_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-7991873b-b4fe-4097-882c-2e2435ea193a\",\"training_frame\":\"czechboard_300x300_train.hex_0.80\",\"validation_frame\":\"czechboard_300x300_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C3\",\"ntrees\":\"100\",\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-8941061042796807000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-7991873b-b4fe-4097-882c-2e2435ea193a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-7991873b-b4fe-4097-882c-2e2435ea193a\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-7991873b-b4fe-4097-882c-2e2435ea193a\", frame: \"czechboard_300x300_test.hex_0.20\", predictions_frame: \"prediction-a90cd5c6-df95-409c-84d7-5568ff7bbbaa\""
+    }
+  ]
+}
