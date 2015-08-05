@@ -3,7 +3,6 @@ package water.fvec;
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.Categorical;
-import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.*;
 
@@ -285,6 +284,12 @@ public class Vec extends Keyed<Vec> {
     RollupStats rs = rollupStats();
     return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
   }
+
+  public void copyMeta( Vec src, Futures fs ) {
+    _domain = src._domain;
+    _type = src._type;
+    DKV.put(this,fs);
+  }
   
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
@@ -336,7 +341,7 @@ public class Vec extends Keyed<Vec> {
       H2O.submitTask(rb);
       rb.join();
       Keyed.remove(v0._key);
-      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(null); // this is gross.
+      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(); // this is gross.
       Keyed.remove(newKey);
     }
     return v0;
@@ -354,17 +359,13 @@ public class Vec extends Keyed<Vec> {
    *  one, and initialized to zero, with the given enum domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
-  /**
-   * A new vector which is a copy of {@code this} one.
-   * @return a copy of the vector.
-   */
-  public Vec makeCopy(String[] domain){
-    Vec v = doCopy();
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
-    return v;
-  }
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy() { return makeCopy(domain()); }
+
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy(String[] domain){ return makeCopy(domain,_type); }
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
@@ -374,15 +375,11 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  private Vec doCopy() {
+  public Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
-        Chunk c2 = (Chunk)c.clone();
-        c2._vec=null;
-        c2._start=-1;
-        c2._cidx=-1;
-        c2._mem = c2._mem.clone();
+        Chunk c2 = c.deepCopy();
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
@@ -417,13 +414,13 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
-  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
+  public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
     Vec v = new Vec(vecKey,espc, domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
-    for(double d:vals)
+    for(long d:vals)
       nc.addNum(d);
     nc.close(fs);
     DKV.put(v._key,v,fs);
@@ -788,7 +785,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
-    return Key.make(bits);
+    return (Key<Vec>)Key.make(bits);
   }
 
   /** Make a Vector-group key.  */
@@ -1306,7 +1303,7 @@ public class Vec extends Keyed<Vec> {
       byte [] bits = _key._kb.clone();
       bits[0] = Key.VEC;
       UnsafeUtils.set4(bits,2,vecId);//
-      return Key.make(bits);
+      return (Key<Vec>)Key.make(bits);
     }
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */

@@ -82,9 +82,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    * @return null if the Key is not mapped, or an instance of {@link Keyed} */
   public final T get() {
     Value val = DKV.get(this);
-    return val == null ? null : (T)val.get(); 
+    return val == null ? null : (T)val.get();
   }
- 
+
   // *Desired* distribution function on keys & replication factor. Replica #0
   // is the master, replica #1, 2, 3, etc represent additional desired
   // replication nodes. Note that this function is just the distribution
@@ -95,7 +95,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     int hsz = H2O.CLOUD.size();
 
     if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
-  
+
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
       assert _kb[0] != Key.CHK;
@@ -106,7 +106,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       // Else homed to a node which is no longer in the cloud!
       // Fall back to the normal home mode
     }
-  
+
     // Distribution of Fluid Vectors is a special case.
     // Fluid Vectors are grouped into vector groups, each of which must have
     // the same distribution of chunks so that MRTask run over group of
@@ -140,7 +140,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       int nidx = (cidx-((1<<z)-1)*hsz)>>z;
       return ((nidx+repl)&0x7FFFFFFF) % hsz;
     }
-  
+
     // Easy Cheesy Stupid:
     return ((_hash+repl)&0x7FFFFFFF) % hsz;
   }
@@ -154,7 +154,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // context of a specific Cloud*, since a re-read may be for another Cloud.
   private transient volatile long _cache;
   private static final AtomicLongFieldUpdater<Key> _cacheUpdater =
-    AtomicLongFieldUpdater.newUpdater(Key.class, "_cache");
+          AtomicLongFieldUpdater.newUpdater(Key.class, "_cache");
 
 
   // Accessors and updaters for the Cloud-specific cached stuff.
@@ -176,11 +176,11 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   private static long build_cache( int cidx, int home, int replica, int desired ) {
     return // Build the new cache word
-        ((long)(cidx &0xFF)<< 0) |
-        ((long)(home &0xFFFF)<< 8) |
-        ((long)(replica&0xFF)<<24) |
-        ((long)(desired&0xFF)<<32) |
-        ((long)(0 )<<40);
+            ((long)(cidx &0xFF)<< 0) |
+                    ((long)(home &0xFFFF)<< 8) |
+                    ((long)(replica&0xFF)<<24) |
+                    ((long)(desired&0xFF)<<32) |
+                    ((long)(0 )<<40);
   }
 
   int home ( H2O cloud ) { return home (cloud_info(cloud)); }
@@ -259,7 +259,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
-  static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
+  static Key make(byte[] kb, byte rf) {
     if( rf == -1 ) throw new IllegalArgumentException();
     Key key = new Key(kb);
     Key key2 = H2O.getk(key); // Get the interned version, if any
@@ -283,27 +283,25 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   /** Factory making a Key from a byte[]
-   *  @return Desired Key */ 
-  public static <P extends Keyed> Key<P> make(byte[] kb) { return make(kb, DEFAULT_DESIRED_REPLICA_FACTOR); }
+   *  @return Desired Key */
+  public static Key make(byte[] kb) { return make(kb,DEFAULT_DESIRED_REPLICA_FACTOR); }
   /** Factory making a Key from a String
-   *  @return Desired Key */ 
-  public static <P extends Keyed> Key<P> make(String s) { return make(decodeKeyName(s));}
-  public static <P extends Keyed> Key<P> makeSystem(String s) {
-    return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY, false);
-  }
+   *  @return Desired Key */
+  public static Key make(String s) { return make(decodeKeyName(s));}
+  public static Key makeSystem(String s) { return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false);}
 
   /**
    * Make a random key, homed to a given node.
    * @param node a node at which the new key is homed.
    * @return the new key
    */
-  public static <P extends Keyed> Key<P> make(H2ONode node) {
+  public static Key make(H2ONode node) {
     return make(decodeKeyName(rand()),DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false,node);
   }
-  static <P extends Keyed> Key<P> make(String s, byte rf) { return make(decodeKeyName(s), rf);}
+  static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
   /** Factory making a random Key
-   *  @return Desired Key */ 
-  public static <P extends Keyed> Key<P> make() { return make(rand()); }
+   *  @return Desired Key */
+  public static Key make() { return make(rand()); }
 
   /** Factory making a homed system Key.  Requires the initial system byte but
    *  then allows a String for the remaining bytes.  Requires a list of exactly
@@ -312,7 +310,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  substituted.  The rf parameter and passing more than 1 H2ONode are both
    *  depreciated.
    *  @return the desired Key   */
-  public static <P extends Keyed> Key<P> make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
+  public static Key make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
     return make(decodeKeyName(s),rf,systemType,hint,replicas);
   }
   /** Factory making a homed system Key.  Requires the initial system byte and
@@ -322,13 +320,13 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  substituted.  The rf parameter and passing more than 1 H2ONode are both
    *  depreciated.
    *  @return the desired Key   */
-  public static <P extends Keyed> Key<P> make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
+  public static Key make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
     return make(rand(),rf,systemType,hint,replicas);
   }
 
 
   // Make a Key which is homed to specific nodes.
-  static <P extends Keyed> Key<P> make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
+  static Key make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
     // no more than 3 replicas allowed to be stored in the key
     assert 0 <=replicas.length && replicas.length<=3;
     assert systemType<32; // only system keys allowed
@@ -362,7 +360,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
-  public static <P extends Keyed> Key<P> makeUserHidden(final Key<P> orig) {
+  public static Key makeUserHidden(final Key orig) {
     if (!orig.user_allowed()) return orig; //already hidden
     byte[] kb = orig._kb.clone();
     kb[0] = Key.HIDDEN_USER_KEY;

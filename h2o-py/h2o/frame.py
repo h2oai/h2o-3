@@ -396,7 +396,7 @@ class H2OFrame:
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol()), names)._eager()))
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol()), names)._eager()),id=self._id)
     self._update()
     return self
 
@@ -410,7 +410,7 @@ class H2OFrame:
     """
     if not isinstance(col, int) and self.ncol() > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol() == 1: col = 0
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()))
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()),id=self._id)
     self._update()
     return self
 
