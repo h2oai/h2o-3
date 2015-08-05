@@ -145,7 +145,9 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
+
+    // TODO: add a DEPRECATED flag, and make this next one DEPRECATED
+    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<frameid>.*)/export" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id"},
         "Export a Frame to the given path with optional overwrite.");
