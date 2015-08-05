@@ -243,8 +243,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             assert svd._output._permutation[i] == tinfo._permutation[i];
           centers_exp = ArrayUtils.transpose(svd._output._v);
 
-          // Set X and Y appropriately given D and V' from SVD of A = UDV'
-          // a) Set Y = D^(1/2)V'S where S = diag(\sigma) = std dev of training cols
+          // Set X and Y appropriately given SVD of A = UDV'
+          // a) Set Y = D^(1/2)V'S
           final double[] dsqrt = new double[_parms._k];
           for(int i = 0; i < _parms._k; i++) {
             dsqrt[i] = Math.sqrt(svd._output._d[i]);
@@ -850,7 +850,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-          // double[] xy = new double[_dinfo._catLvls[j].length];
           double[] xy = new double[_yt._numLevels[j]];
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++) {
