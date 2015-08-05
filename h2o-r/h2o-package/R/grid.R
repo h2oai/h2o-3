@@ -51,7 +51,7 @@ h2o.grid <- function(algorithm,
 #'
 #' @param grid_id  ID of existing grid object to fetch
 #' @examples
-#' librar(h2o)
+#' library(h2o)
 #' localH2O <- h2o.init()
 #' grid <- h2o.getGrid("GBM_grid_num42")
 #' @export
