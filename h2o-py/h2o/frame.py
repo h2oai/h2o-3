@@ -66,7 +66,7 @@ class H2OFrame:
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
-    self._nrows = int(ExprNode("nrow", self)._scalar())
+    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     self._ncols = parse["number_columns"]
     self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
     self._keep = True
@@ -1120,7 +1120,12 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
 
-  def _scalar(self): return self._ast._scalar()
+  def _scalar(self):
+    res = h2o.rapids(ExprNode._collapse_sb(self._ast._eager()))["scalar"]
+    if res == "TRUE": return True
+    if res == "FALSE":return False
+    try:    return float(res)
+    except: return res
 
   def _frame(self):  # force an eval on the frame and return it
     self._eager()

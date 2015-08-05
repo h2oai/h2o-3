@@ -47,11 +47,3 @@ class ExprNode:
       else:                                                       sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb
-
-  # flow-coding result methods
-  def _scalar(self):
-    res = h2o.rapids(ExprNode._collapse_sb(self._eager()))["scalar"]
-    if res == "TRUE": return True
-    if res == "FALSE":return False
-    try:    return float(res)
-    except: return res
