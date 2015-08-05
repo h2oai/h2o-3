@@ -21,8 +21,8 @@ import water.util.Log;
 
 public class TCPReceiverThread extends Thread {
   private ServerSocketChannel SOCK;
-  private final boolean _udpLike; // true if this channel is for small async udp-like messages
-  public TCPReceiverThread(ServerSocketChannel sock, boolean udpLike) { super("TCP-Accept"); SOCK = sock; _udpLike = udpLike; }
+
+  public TCPReceiverThread(ServerSocketChannel sock) { super("TCP-Accept"); SOCK = sock;  }
 
   // The Run Method.
   // Started by main() on a single thread, this code manages reading TCP requests
@@ -45,21 +45,36 @@ public class TCPReceiverThread extends Thread {
         // ---
         // More common-case setup of a ServerSocket
         if( SOCK == null ) {
-          assert !_udpLike;
           SOCK = ServerSocketChannel.open();
           SOCK.socket().setReceiveBufferSize(AutoBuffer.BBP_BIG.size());
           SOCK.socket().bind(H2O.SELF._key);
         }
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
+        ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+        bb.limit(bb.capacity());
+        bb.position(0);
+        while(bb.hasRemaining()) // read first 8 bytes
+          sock.read(bb);
+        bb.flip();
+        int chanType = bb.get(); // 1 - small , 2 - big
+        int port = bb.getChar();
+        int sentinel = (0xFF) & bb.get();
+        if(sentinel != 0xef)
+          throw H2O.fail("missing eom sentinel when opening new tcp channel");
+        // todo compare against current cloud, refuse the con if no match
+        H2ONode h2o = H2ONode.intern(sock.socket().getInetAddress(),port);
         // Pass off the TCP connection to a separate reader thread
-        if(_udpLike) {
+        if(chanType == 1) {
           Log.info("starting new UDP-TCP receiver thread connected to " + sock.getRemoteAddress());
-          new UDP_TCP_ReaderThread(sock.socket().getInetAddress(), sock).start();
-        } else new TCPReaderThread(sock,new AutoBuffer(sock)).start();
+          new UDP_TCP_ReaderThread(h2o, sock).start();
+        } else if(chanType == 2)
+          new TCPReaderThread(sock,new AutoBuffer(sock)).start();
+        else throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small and 2 - Big");
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
       } catch( Exception e ) {
+        e.printStackTrace();
         // On any error from anybody, close all sockets & re-open
         Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
         saw_error = true;
@@ -71,12 +86,11 @@ public class TCPReceiverThread extends Thread {
   static class UDP_TCP_ReaderThread extends Thread {
     private final SocketChannel _chan;
     private final ByteBuffer _bb;
-    private final InetAddress _ia;
-    private H2ONode _h2o;
+    private final H2ONode _h2o;
 
-    public UDP_TCP_ReaderThread(InetAddress ia, SocketChannel chan) {
+    public UDP_TCP_ReaderThread(H2ONode h2o, SocketChannel chan) {
       super("UDP-TCP");
-      _ia = ia;
+      _h2o = h2o;
       _chan = chan;
       _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG.size()).order(ByteOrder.nativeOrder());
 //      _bb = ByteBuffer.wrap(new byte[AutoBuffer.BBP_BIG.size()]).order(ByteOrder.nativeOrder());
@@ -119,33 +133,27 @@ public class TCPReceiverThread extends Thread {
           if (start > _bb.position() - 2)
             read(start + 2 - _bb.position());
           idle = false;
-          int sz = (_bb.get(start+1) << 8) | _bb.get(start); // message size in bytes
+          int sz = ((0xFF & _bb.get(start+1)) << 8) | (0xFF & _bb.get(start)); // message size in bytes
           assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
-          int rem = _bb.position() - start;
-          read(sz + 2 + 1 - rem);
-          if((0xFF & _bb.get(start + 2 + sz)) != 0xef)
-            H2O.fail("Missing expected sentinel (0xef==239) at the end of the message, likely out of sync, start = " + start + ", size = " + sz + ", bytes = " + printBytes(_bb,start,sz));
+          read(start + 2 + sz + 1 - _bb.position());
+          if ((0xFF & _bb.get(start + 2 + sz)) != 0xef)
+            H2O.fail("Missing expected sentinel (0xef==239) at the end of the message from " + _h2o + ", likely out of sync, start = " + start + ", size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, start, sz));
           // extract the bytes
-          byte[] ary = MemoryManager.malloc1(Math.max(16,sz)); // fixme: 16 for timeline which always acesses first 16 bytes
+          byte[] ary = MemoryManager.malloc1(Math.max(16,sz)); // fixme: 16 for timeline which always accesses first 16 bytes
           if( _bb.hasArray()){
             System.arraycopy(_bb.array(),start+2,ary,0,sz);
           } else {
             int pos = _bb.position();
-            int limit = _bb.limit();
             _bb.position(start+2);
-            _bb.limit(start+2+sz);
             _bb.get(ary,0,sz);
-            _bb.limit(limit);
             _bb.position(pos);
           }
-          if (_h2o == null)
-            _h2o = H2ONode.intern(_ia, new AutoBuffer(null, ary).getPort());
           AutoBuffer ab = new AutoBuffer(_h2o, ary);
           int ctrl = ab.getCtrl();
           TimeLine.record_recv(ab, false, 0);
           H2O.submitTask(new FJPacket(ab, ctrl));
           start += sz + 2 + 1;
-          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 2 + 1 + 16) { // + 2 bytes for size + 1 byte for 0xef sentinel
+          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 2 + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
             _bb.limit(_bb.position());
             _bb.position(start);
             _bb.compact();
@@ -187,8 +195,6 @@ public class TCPReceiverThread extends Thread {
           TimeLine.record_recv(_ab, true, 0);
           // Hand off the TCP connection to the proper handler
           int ctrl = _ab.getCtrl();
-          int sz = _ab._bb.getShort(0);
-          assert sz == 0:"message size must be set to 0 for large tcp transfers";
           int x = ctrl;
           if( ctrl < 0 || ctrl >= UDP.udp.UDPS.length ) x = 0;
           switch( UDP.udp.UDPS[x] ) {

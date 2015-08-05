@@ -377,7 +377,7 @@ public class NetworkInit {
               ", " + (H2O.ARGS.port+1) +
               " are not available, change -port PORT and try again.");
       }
-      H2O.API_PORT += 4;
+      H2O.API_PORT += 2;
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +

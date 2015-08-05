@@ -248,10 +248,12 @@ public class TimeLine extends UDP {
     ab.getPort();
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
-    if( idx >= 0 && idx < SNAPSHOT.length )
+    if (idx >= 0 && idx < SNAPSHOT.length)
       SNAPSHOT[idx] = snap;     // Ignore out-of-cloud timelines
     ab.close();
-    synchronized(TimeLine.class) {  TimeLine.class.notify();  }
+    synchronized (TimeLine.class) {
+      TimeLine.class.notify();
+    }
   }
 
   String print16( AutoBuffer ab ) { return ""; } // no extra info in a timeline packet

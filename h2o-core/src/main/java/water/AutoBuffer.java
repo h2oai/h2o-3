@@ -98,7 +98,6 @@ public /* final */ class AutoBuffer {
     }
     _size = _bb.position();
     _bb.flip();                 // Set limit=amount read, and position==0
-
     if( addr == null ) throw new RuntimeException("Unhandled socket type: " + sad);
     // Read Inet from socket, port from the stream, figure out H2ONode
     _h2o = H2ONode.intern(addr, getPort());
@@ -304,7 +303,8 @@ public /* final */ class AutoBuffer {
       }
     }
     static int FREE( ByteBuffer bb ) {
-      (bb.capacity()==BBP_BIG._size ? BBP_BIG : BBP_SML).free(bb);
+      if(bb.isDirect())
+        (bb.capacity()==BBP_BIG._size ? BBP_BIG : BBP_SML).free(bb);
       return 0;                 // Flow coding
     }
   }
@@ -588,8 +588,9 @@ public /* final */ class AutoBuffer {
   /** Put as needed to keep from overflowing the ByteBuffer. */
   private ByteBuffer putSp( int sz ) {
     assert !_read;
-    if( sz <= _bb.remaining()-1 ) return _bb; // leave one byte in the end for the sentinel marker
-    return sendPartial();
+    while(sz > _bb.remaining())
+      sendPartial();
+    return _bb;
   }
   // Do something with partial results, because the ByteBuffer is full.
   // If we are byte[] backed, double the backing array size.
@@ -609,10 +610,9 @@ public /* final */ class AutoBuffer {
     }
     // Doing I/O with the full ByteBuffer - ship partial results
     _size += _bb.position();
-    if( _chan == null ) {
-      _bb.putShort(0,(short)0); // don't know what the full message size is, set size to 0
+    if( _chan == null )
       TimeLine.record_send(this, true);
-    }
+
     _bb.flip(); // Prep for writing.
     try {
       if( _chan == null )
@@ -634,7 +634,11 @@ public /* final */ class AutoBuffer {
       // declare (and then ignore) this exception.
       throw new AutoBufferException(e);
     }
-    if( _bb.capacity() < BBP_BIG._size ) { BBP_SML.free(_bb); _bb = BBP_BIG.make(); }
+    if( _bb.capacity() < BBP_BIG._size ) {
+      if(_bb.isDirect())
+        BBP_SML.free(_bb);
+      _bb = BBP_BIG.make();
+    }
     _firstPage = false;
     _bb.clear();
     return _bb;
@@ -1195,7 +1199,6 @@ public /* final */ class AutoBuffer {
   public AutoBuffer putA8( long[] ary ) {
     //_arys++;
     if( ary == null ) return putInt(-1);
-
     // Trim leading & trailing zeros.  Pass along the length of leading &
     // trailing zero sections, and the non-zero section in the middle.
     int x=0; for( ; x<ary.length; x++ ) if( ary[x  ]!=0 ) break;

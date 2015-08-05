@@ -10,6 +10,7 @@ import water.util.UnsafeUtils;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
@@ -233,7 +234,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     public static H2OSmallMessage make(ByteBuffer bb, int priority) {
       int sz = bb.limit();
       assert sz == (0xFFFF & sz);
-      byte [] ary = MemoryManager.malloc1(bb.limit()+2+1);
+      byte [] ary = MemoryManager.malloc1(sz+2+1);
       ary[ary.length-1] = (byte)0xef; // eom marker
       ary[0] = (byte)(sz & 0xFF);
       ary[1] = (byte)((sz & 0xFF00) >> 8);
@@ -241,6 +242,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         System.arraycopy(bb.array(),0,ary,2,sz);
       else  for(int i = 0; i < sz; ++i)
           ary[i+2] = bb.get(i);
+      assert (0xFF & ary[ary.length-1]) == 0xef;
+      assert (((0xFF & ary[0]) | ((0xFF & ary[1]) << 8)) + 3) == ary.length;
       return new H2OSmallMessage(ary,priority);
     }
   }
@@ -269,13 +272,20 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             SocketChannel sock = SocketChannel.open();
             sock.socket().setReuseAddress(true);
             sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
-            InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort() + 1);
+            InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
             boolean res = sock.connect(isa);
             boolean blocking = true;
             sock.configureBlocking(blocking);
             assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
             _rawChannel = sock;
             _rawChannel.setOption(StandardSocketOptions.TCP_NODELAY,true);
+            ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+            bb.put((byte)1);
+            bb.putChar((char) H2O.H2O_PORT);
+            bb.put((byte)0xef);
+            bb.flip();
+            while(bb.hasRemaining())
+              _rawChannel.write(bb);
           }
           while (_bb.hasRemaining())
             _rawChannel.write(_bb);
@@ -350,6 +360,13 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     sock2.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
     boolean res = sock2.connect( _key );
     assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
+    ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+    bb.put((byte)2);
+    bb.putChar((char)H2O.H2O_PORT);
+    bb.put((byte)0xef);
+    bb.flip();
+    while(bb.hasRemaining())
+      sock2.write(bb);
     TCPS.incrementAndGet();     // Cluster-wide counting
     return sock2;
   }
