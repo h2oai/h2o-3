@@ -118,7 +118,7 @@ public class RequestServer extends NanoHTTPD {
     // REST only, no html:
 
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",
-            "Return information about this H2O.");
+            "Return information about this H2O cluster.");
 
     register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,MetadataHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
@@ -145,8 +145,12 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
+
+    // TODO: add a DEPRECATED flag, and make this next one DEPRECATED
+    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
+    register("/3/Frames/(?<frameid>.*)/export" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id"},
+        "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"frame_id", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"frame_id", "column"},

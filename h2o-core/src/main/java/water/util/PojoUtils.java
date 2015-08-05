@@ -81,7 +81,7 @@ public class PojoUtils {
       if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
         continue;
 
-      if (only_fields != null & !ArrayUtils.contains(only_fields, origin_name))
+      if (only_fields != null & ! ArrayUtils.contains(only_fields, origin_name))
         continue;
 
       String dest_name = null;
@@ -93,10 +93,10 @@ public class PojoUtils {
         dest_name = origin_name.substring(1);
       }
 
-      if ( skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+      if (skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
         continue;
 
-      if (only_fields != null & !ArrayUtils.contains(only_fields, dest_name))
+      if (only_fields != null & ! ArrayUtils.contains(only_fields, dest_name))
         continue;
 
       try {
