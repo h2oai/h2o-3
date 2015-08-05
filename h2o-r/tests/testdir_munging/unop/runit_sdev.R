@@ -17,7 +17,7 @@ test.sdev <- function() {
   for(i in 1:4) {
     iris_Rsd <- sd(iris.dat[,i])
     iris_H2Osd <- sd(iris.hex[,i])
-    Log.info(paste("Column", i, ":", "sd in R:", iris_Rsd, "\tsd in H2O:", iris_H2Osd))
+    Log.info(paste("Column", i, ": sd in R:", iris_Rsd, "\tsd in H2O:", iris_H2Osd))
     expect_equal(iris_Rsd, iris_H2Osd)
   }
   

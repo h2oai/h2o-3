@@ -537,6 +537,108 @@ summary.Frame <- function(object, factors=6L, ...) {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Summary Statistics Operations
+#-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' Mean of a column
+#'
+#' Obtain the mean of a column of a parsed H2O data object.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param trim The fraction (0 to 0.5) of observations to trim from each end of \code{x} before the mean is computed.
+#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @seealso \code{\link[base]{mean}} for the base R implementation.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' mean(prostate.hex$AGE)
+#' @export
+#h2o.mean <- function(x, ...) {
+#  if(ncol(x) != 1L) stop("can only compute the mean of a single column")
+#  .h2o.nary_scalar_op("mean"  , x)
+#}
+
+#' @rdname h2o.mean
+#' @export
+#setMethod("mean", "H2OFrame", h2o.mean)
+
+#
+#" Mode of a enum or int column.
+#" Returns single string or int value or an array of strings and int that are tied.
+# TODO: figure out funcionality/use for documentation
+# h2o.mode <-
+# function(x) {
+#  if(!is(x, "H2OFrame")) || nrow(x) > 1L) stop('`x` must be a H2OFrame object')
+# tabularx = invisible(table(x))
+#  maxCount = max(tabularx$Count)
+#  modes = tabularx$row.names[tabularx$Count == maxCount]
+#  return(unlist(as.list(as.matrix(modes))))
+#}
+
+#'
+#' Variance of a column.
+#'
+#' Obtain the variance of a column of a parsed H2O data object.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param y \code{NULL} (default) or a column of an \linkS4class{H2OFrame} object. The default is equivalent to y = x (but more efficient).
+#' @param na.rm \code{logical}. Should missing values be removed?
+#' @param use An optional character string to be used in the presence of missing values. This must be one of the following strings. "everything", "all.obs", or "complete.obs".
+#' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' var(prostate.hex$AGE)
+#' @export
+h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
+  if( na.rm ) stop("na.rm versions not impl") 
+  if( is.null(y) ) y <- x
+  if(!missing(use)) {
+    if (use %in% c("pairwise.complete.obs", "na.or.complete"))
+      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
+  } else
+    use <- "everything"
+  .newExpr("var",x,y,use)
+}
+
+#' @rdname h2o.var
+#' @export
+var <- function(x, y = NULL, na.rm = FALSE, use)  {
+  if( is.Frame(x) ) h2o.var(x,y,na.rm,use)
+  else stats::var(x,y,na.rm,use)
+}
+
+#'
+#' Standard Deviation of a column of data.
+#'
+#' Obtain the standard deviation of a column of data.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param na.rm \code{logical}. Should missing values be removed?
+#' @seealso \code{\link{h2o.var}} for variance, and \code{\link[stats]{sd}} for the base R implementation.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' sd(prostate.hex$AGE)
+#' @export
+h2o.sd <- function(x, na.rm = FALSE) {
+  if( na.rm ) stop("na.rm versions not impl") 
+  .newExpr("sd",x)
+}
+
+#' @rdname h2o.sd
+#' @export
+sd <- function(x, na.rm=FALSE) {
+  if( is.Frame(x) ) h2o.sd(x)
+  else stats::sd(x,na.rm)
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -630,6 +732,16 @@ as.data.frame.Frame <- function(x, ...) {
 
 #' @export
 as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
+
+#` 
+as.double.Frame <- function(x) {
+  res <- .fetch.data(x,1)
+  if( is.data.frame(res) ) {
+    if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
+    res <- res[1,1]
+  } 
+  .Primitive("as.double")(res)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
