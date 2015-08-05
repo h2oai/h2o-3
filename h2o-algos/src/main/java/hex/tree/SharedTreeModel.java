@@ -75,7 +75,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   @Override
   public double deviance(double w, double y, double f) {
-    return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
+    double val = new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
+    if (Math.abs(val) > 10000)
+      Log.warn("large deviance: " + val);
+    return val;
   }
 
   final public VarImp varImp() { return _output._varimp; }

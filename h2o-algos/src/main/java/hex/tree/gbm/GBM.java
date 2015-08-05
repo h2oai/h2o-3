@@ -124,7 +124,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     default:
       error("_distribution","Invalid distribution: " + _parms._distribution);
     }
-    
+
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
   }
@@ -175,7 +175,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // ESL2, page 387, Step 2b ii, iii, iv
         Timer kb_timer = new Timer();
 
-        buildNextKTrees(cpr.minValues, cpr.maxValues);
+        buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         GBM.this.update(1);
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
@@ -251,41 +251,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // --------------------------------------------------------------------------
     // Compute Residuals
     class ComputePredAndRes extends MRTask<ComputePredAndRes> {
-      public IcedHashMap<IcedLong,IcedDouble> minValues;
-      public IcedHashMap<IcedLong,IcedDouble> maxValues;
       @Override public void map( Chunk chks[] ) {
-        minValues = new IcedHashMap<>();
-        maxValues = new IcedHashMap<>();
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk tr = chk_tree(chks, 0); // Prior tree sums
         Chunk wk = chk_work(chks, 0); // Place to store residuals
-        boolean computeMinMax = ( _parms._distribution == Distribution.Family.poisson
-                || _parms._distribution == Distribution.Family.gamma
-                || _parms._distribution == Distribution.Family.tweedie);
-        Chunk nids = computeMinMax ? chk_nids(chks, 0) : null; // NID
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
         Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
-        IcedLong nidx = new IcedLong(0);
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
           double f = tr.atd(row) + offset.atd(row);
-          if (computeMinMax) {
-            nidx._val = nids.at8(row);
-            IcedDouble mins = minValues.get(nidx);
-            double oldMin = mins == null ? Double.MAX_VALUE : mins._val;
-            IcedDouble ff = new IcedDouble(f);
-            if (f < oldMin) {
-              if (mins == null) minValues.put(nidx, ff);
-              else minValues.replace(nidx, ff);
-            }
-            IcedDouble maxs = maxValues.get(nidx);
-            double oldMax = maxs == null ? Double.MIN_VALUE : maxs._val;
-            if (f > oldMax) {
-              if (maxs == null) maxValues.put(nidx, ff);
-              else maxValues.replace(nidx, ff);
-            }
-          }
           double y = ys.atd(row);
           if( _parms._distribution == Distribution.Family.multinomial ) {
             double weight = hasWeightCol() ? chk_weight(chks).atd(row) : 1;
@@ -308,11 +283,55 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }
       }
+    }
+
+    class ComputeMinMax extends MRTask<ComputeMinMax> {
+      public IcedHashMap<IcedLong,IcedDouble> minValues;
+      public IcedHashMap<IcedLong,IcedDouble> maxValues;
+      @Override public void map( Chunk chks[] ) {
+        minValues = new IcedHashMap<>();
+        maxValues = new IcedHashMap<>();
+        Chunk ys = chk_resp(chks);
+        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
+        Chunk tr = chk_tree(chks, 0); // Prior tree sums
+        Chunk nids = chk_nids(chks, 0);
+        IcedLong nidx = new IcedLong(0);
+        for( int row = 0; row < tr._len; row++) {
+          if( ys.isNA(row) ) continue;
+          double f = tr.atd(row) + offset.atd(row);
+          nidx._val = nids.at8(row);
+          IcedDouble mins = minValues.get(nidx);
+          double oldMin = mins == null ? Double.MAX_VALUE : mins._val;
+          IcedDouble ff = new IcedDouble(f);
+          if (f < oldMin) {
+            if (mins == null) minValues.put(nidx, ff);
+            else minValues.replace(nidx, ff);
+          }
+          IcedDouble maxs = maxValues.get(nidx);
+          double oldMax = maxs == null ? Double.MIN_VALUE : maxs._val;
+          if (f > oldMax) {
+            if (maxs == null) maxValues.put(nidx, ff);
+            else maxValues.replace(nidx, ff);
+          }
+        }
+      }
 
       @Override
-      public void reduce(ComputePredAndRes mrt) {
-        if (mrt.minValues == null || minValues == null) return;
-        if (mrt.maxValues == null || maxValues == null) return;
+      public void reduce(ComputeMinMax mrt) {
+        if (mrt.minValues == minValues) return;
+        if (mrt.minValues == null && minValues == null) return;
+        if (mrt.maxValues == null && maxValues == null) return;
+        if (mrt.minValues == null && minValues != null) return;
+        if (mrt.maxValues == null && maxValues != null) return;
+        if (mrt.minValues != null && minValues == null) {
+          minValues = mrt.minValues;
+          return;
+        }
+        if (mrt.maxValues != null && maxValues == null) {
+          maxValues = mrt.maxValues;
+          return;
+        }
+
         for (Map.Entry<IcedLong,IcedDouble> e : mrt.minValues.entrySet()) {
           IcedDouble x = minValues.get(e.getKey());
           if (x != null) {
@@ -332,17 +351,44 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
+    private void truncatePreds(DTree[] ktrees, int[] leafs,   final IcedHashMap<IcedLong, IcedDouble> minValues,
+                               final IcedHashMap<IcedLong, IcedDouble> maxValues) {
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = ktrees[k];
+        if (tree == null) continue;
+        IcedLong nidx = new IcedLong(0);
+        for (int i = 0; i < tree._len - leafs[k]; i++) {
+          LeafNode node = ((LeafNode) tree.node(leafs[k] + i));
+          double pred = node._pred;
+
+          // special case for overflows
+          if (minValues != null && maxValues != null) {
+            nidx._val = node.nid();
+            if (minValues.get(nidx) != null && maxValues.get(nidx) != null) {
+              double min = minValues.get(nidx)._val;
+              if (min + pred < Distribution.MIN_LOG) {
+                pred = Distribution.MIN_LOG - min;
+                ((LeafNode) tree.node(leafs[k] + i))._pred = (float)pred;
+              }
+              double max = maxValues.get(nidx)._val;
+              if (max + pred > Distribution.MAX_LOG) {
+                pred = Distribution.MAX_LOG - max;
+                ((LeafNode) tree.node(leafs[k] + i))._pred = (float)pred;
+              }
+            }
+          }
+        }
+      }
+    }
+
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
-    private void buildNextKTrees(
-            final IcedHashMap<IcedLong,IcedDouble> minValues,
-            final IcedHashMap<IcedLong,IcedDouble> maxValues
-    ) {
+    private void buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
-      
+
       // Define a "working set" of leaf splits, from here to tree._len
       int[] leafs = new int[_nclass];
 
@@ -355,7 +401,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      fitBestConstants(ktrees, leafs, new GammaPass(ktrees, leafs, _parms._distribution, minValues, maxValues).doAll(_train));
+      fitBestConstants(ktrees, leafs, new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train));
+      if (_parms._distribution == Distribution.Family.gamma ||
+              _parms._distribution == Distribution.Family.poisson ||
+              _parms._distribution == Distribution.Family.tweedie ) {
+        ComputeMinMax minMax = new ComputeMinMax().doAll(_train);
+        truncatePreds(ktrees, leafs,minMax.minValues, minMax.maxValues);
+      }
 
       // ----
       // ESL2, page 387.  Step 2b iv.  Cache the sum of all the trees, plus the
@@ -460,8 +512,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       final Distribution.Family _dist;
       private double _num[/*tree/klass*/][/*tree-relative node-id*/];
       private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
-      final IcedHashMap<IcedLong,IcedDouble> _minValues;
-      final IcedHashMap<IcedLong,IcedDouble> _maxValues;
 
       double gamma(int tree, int nid) {
         double g = _denom[tree][nid] == 0 ? 0 : _num[tree][nid]/ _denom[tree][nid];
@@ -471,23 +521,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                 || _dist == Distribution.Family.gamma
                 || _dist == Distribution.Family.tweedie)
         {
-          double gamma = new Distribution(_dist, _parms._tweedie_power).link(g);
-
-          // special case for overflows
-          if (_minValues != null && _maxValues != null) {
-            IcedLong nidx = new IcedLong(nid);
-            if (_minValues.get(nidx) != null && _maxValues.get(nidx) != null) {
-              double min = _minValues.get(nidx)._val;
-              if (min + gamma < Distribution.MIN_LOG) {
-                gamma = Distribution.MIN_LOG - min;
-              }
-              double max = _maxValues.get(nidx)._val;
-              if (max + gamma > Distribution.MAX_LOG) {
-                gamma = Distribution.MAX_LOG - max;
-              }
-            }
-          }
-          return gamma;
+          return new Distribution(_dist, _parms._tweedie_power).link(g);
         } else {
           return g;
         }
@@ -495,15 +529,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       GammaPass(DTree trees[],
                 int leafs[],
-                Distribution.Family distribution,
-                final IcedHashMap<IcedLong,IcedDouble> minValues,
-                final IcedHashMap<IcedLong,IcedDouble> maxValues
+                Distribution.Family distribution
       ) {
         _leafs=leafs;
         _trees=trees;
         _dist = distribution;
-        _minValues = minValues;
-        _maxValues = maxValues;
       }
       @Override public void map( Chunk[] chks ) {
         _denom = new double[_nclass][];
@@ -595,7 +625,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override protected DecidedNode makeDecided( UndecidedNode udn, DHistogram hs[] ) {
     return new GBMDecidedNode(udn,hs);
   }
-  
+
   // ---
   // GBM DTree decision node: same as the normal DecidedNode, but
   // specifies a decision algorithm given complete histograms on all
@@ -605,7 +635,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override public UndecidedNode makeUndecidedNode(DHistogram[] hs ) {
       return new GBMUndecidedNode(_tree,_nid,hs);
     }
-  
+
     // Find the column with the best split (lowest score).  Unlike RF, GBM
     // scores on all columns and selects splits on all columns.
     @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
@@ -623,7 +653,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return best;
     }
   }
-  
+
   // ---
   // GBM DTree undecided node: same as the normal UndecidedNode, but specifies
   // a list of columns to score on now, and then decide over later.
@@ -634,7 +664,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // In GBM, we use all columns (as opposed to RF, which uses a random subset).
     @Override public int[] scoreCols( DHistogram[] hs ) { return null; }
   }
-  
+
   // ---
   static class GBMLeafNode extends LeafNode {
     GBMLeafNode( DTree tree, int pid ) { super(tree,pid); }

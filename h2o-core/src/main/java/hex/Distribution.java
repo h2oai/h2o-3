@@ -36,9 +36,9 @@ public class Distribution extends Iced {
     assert(tweediePower >1 && tweediePower <2);
     this.tweediePower = tweediePower;
   }
-  static public double MIN_LOG = -19;
+  static public double MIN_LOG = -6;
   static public double MAX_LOG = 19;
-  static public double MAX = 1e19;
+  static public double MAX = Math.exp(19);
 
   public final Family distribution;
   public final double tweediePower; //tweedie power
