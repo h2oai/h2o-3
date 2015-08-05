@@ -189,7 +189,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Output right singular vectors V
           double[][] v = svdJ.getV().getArray();
-          assert v.length == _ncolExp;
+          assert v.length == _ncolExp && dinfo._adaptedFrame.numColsExp(_parms._use_all_factor_levels, false) == _ncolExp;
           model._output._v = new double[_ncolExp][_parms._nv];  // Only want rank = nv decomposition
           for(int i = 0; i < v.length; i++)
             System.arraycopy(v[i], 0, model._output._v[i], 0, _parms._nv);
@@ -388,7 +388,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
-      assert row.nBins + _dinfo._nums == _yt[0].length;
       for(int p = 0; p < _yt.length; p++) {
         double x = row.innerProduct(_yt[p]);
         outputs[p].addNum(x);

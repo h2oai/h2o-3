@@ -6,15 +6,15 @@ import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
 import hex.*;
+import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.pca.PCA;
-import hex.pca.PCAModel;
 import hex.schemas.GLRMV99;
-import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
+import hex.svd.SVD;
+import hex.svd.SVDModel;
 
 import water.*;
 import water.fvec.*;
@@ -216,51 +216,54 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         xtsk.doAll(dfrm);
 
       } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y = right singular vectors
-        PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+        SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
-        parms._k = _parms._k;
+        parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
-        parms._transform = DataInfo.TransformType.STANDARDIZE;
+        parms._transform = _parms._transform;
+        parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
         parms._seed = _parms._seed;
-        parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
+        parms._only_v = false;
+        parms._keep_u = true;
         parms._impute_missing = true;
 
-        PCAModel pca = null;
-        PCA job = null;
+        SVDModel svd = null;
+        SVD job = null;
         try {
-          job = new PCA(parms);
-          pca = job.trainModel().get();
+          job = new SVD(parms);
+          svd = job.trainModel().get();
 
           // Ensure SVD centers align with adapted training frame cols
-          assert pca._output._permutation.length == tinfo._permutation.length;
+          assert svd._output._permutation.length == tinfo._permutation.length;
           for(int i = 0; i < tinfo._permutation.length; i++)
-            assert pca._output._permutation[i] == tinfo._permutation[i];
-          centers_exp = ArrayUtils.transpose(pca._output._eigenvectors_raw);
+            assert svd._output._permutation[i] == tinfo._permutation[i];
+          centers_exp = ArrayUtils.transpose(svd._output._v);
 
           // Set X and Y appropriately given D and V' from SVD of A = UDV'
           // a) Set Y = D^(1/2)V'S where S = diag(\sigma) = std dev of training cols
-          double nmult = Math.sqrt(pca._output._nobs-1);
-          double[] dsqrt = new double[_parms._k];
+          final double[] dsqrt = new double[_parms._k];
           for(int i = 0; i < _parms._k; i++) {
-            dsqrt[i] = Math.sqrt(pca._output._std_deviation[i] * nmult);
-            ArrayUtils.mult(centers_exp[i], dsqrt[i] / pca._output._normMul[i]);  // When transform = STANDARDIZE, normMul_j = 1/\sigma_j
+            dsqrt[i] = Math.sqrt(svd._output._d[i]);
+            ArrayUtils.mult(centers_exp[i], dsqrt[i]);  // This gives one row of D^(1/2)V'
           }
 
           // b) Set X = UD^(1/2) = AVD^(-1/2)
-          // double[][] umul = ArrayUtils.transpose(pca._output._eigenvectors_raw);
-          // for(int i = 0; i < _parms._k; i++)
-          //   ArrayUtils.mult(umul[i], 1.0 / dsqrt[i]);
-          // InitialXSVD xtsk = new InitialXSVD(self(), tinfo, umul).doAll(_parms._k, tinfo._adaptedFrame);
-          // Frame xinit = xtsk.outputFrame();
-          InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);  // TODO: We want X = UD^(1/2) when Y = D^(1/2)V'S from SVD A = UDV'
-          xtsk.doAll(dfrm);
+          Frame uFrm = DKV.get(svd._output._u_key).get();
+          assert uFrm.numCols() == _parms._k;
+          Frame fullFrm = (new Frame(uFrm)).add(dfrm);  // Jam matrices together into frame [U,A,X,W]
+          InitialXSVD xtsk = new InitialXSVD(dsqrt, _parms._k, _ncolA, _ncolX);
+          xtsk.doAll(fullFrm);
         } finally {
           if (job != null) job.remove();
-          if (pca != null) pca.remove();
+          if (svd != null) {
+            if(svd._parms._keep_u)
+              svd._output._u_key.get().delete();
+            svd.remove();
+          }
         }
 
       } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
@@ -724,6 +727,32 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
           chks[_ncolA+_ncolX+c].set(row, xrow[c]);
+        }
+      }
+    }
+  }
+
+  // Initialize X = UD, where U is n by k and D is a diagonal k by k matrix
+  private static class InitialXSVD extends MRTask<InitialXSVD> {
+    final double[] _diag;   // Diagonal of D
+    final int _ncolU;       // Number of cols in U (k)
+    final int _offX;        // Column offset to X matrix
+    final int _offW;        // Column offset to W matrix
+
+    InitialXSVD(double[] diag, int ncolU, int ncolA, int ncolX) {
+      assert diag != null && diag.length == ncolU;
+      _diag = diag;
+      _ncolU = ncolU;
+      _offX = ncolU + ncolA;
+      _offW = _offX + ncolX;
+    }
+
+    @Override public void map(Chunk chks[]) {
+      for(int row = 0; row < chks[0]._len; row++) {
+        for(int c = 0; c < _ncolU; c++) {
+          double ud = chks[c].atd(row) * _diag[c];
+          chks[_offX+c].set(row, ud);
+          chks[_offW+c].set(row, ud);
         }
       }
     }

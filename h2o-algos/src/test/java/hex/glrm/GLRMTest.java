@@ -495,6 +495,7 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
+      parms._loss = GLRMParameters.Loss.L1;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = true;
