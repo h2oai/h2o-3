@@ -670,6 +670,18 @@ setMethod("show", "H2OAutoEncoderMetrics", function(object) {
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+#' @export
+setMethod("show", "H2ODimReductionMetrics", function(object) {
+  if( !is.null(object@metrics) ) {
+    callNextMethod(object)
+    m <- object@metrics
+    if( object@algorithm == "glrm" ) {
+      cat("Sum of Squared Error (Numeric): ", m$numerr)
+      cat("\nMisclassification Error (Categorical): ", m$caterr)
+    }
+  } else print(NULL)
+})
 
 #' H2O Future Model
 #'
