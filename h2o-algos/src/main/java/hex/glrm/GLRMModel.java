@@ -32,6 +32,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _loading_key;               // Key to save X matrix
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
+    public boolean _verbose = true;               // Log when objective increases each iteration?
 
     public enum Loss {
       L2, L1, Huber, Poisson, Hinge, Logistic, Periodic

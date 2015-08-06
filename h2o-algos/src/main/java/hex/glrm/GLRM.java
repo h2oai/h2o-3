@@ -516,7 +516,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             step = step / Math.max(1.5, -steps_in_row);
             steps_in_row = Math.min(0, steps_in_row-1);
             overwriteX = false;
-            Log.info("Iteration " + model._output._iterations + ": Objective increased to " + obj_new + "; reducing step size to " + step);
+            if(_parms._verbose) Log.info("Iteration " + model._output._iterations + ": Objective increased to " + obj_new + "; reducing step size to " + step);
           }
           model._output._step_size = step;
           model.update(self()); // Update model in K/V store
