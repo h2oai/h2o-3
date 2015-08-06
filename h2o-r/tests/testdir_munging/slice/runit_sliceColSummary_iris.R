@@ -21,7 +21,7 @@ test.slice.colSummary <- function() {
   
   sepalLength <- iris.hex[,1]
   Log.info("Summary on the first column:\n")
-  expect_that(sepalLength, is_a("H2OFrame"))
+  expect_that(sepalLength, is_a("Frame"))
  
   print(summary(sepalLength))
   Log.info("try mean")
@@ -31,7 +31,7 @@ test.slice.colSummary <- function() {
   expect_that(m, equals(mean(iris$Sepal.Length)))
   Log.info("Try mean, min, max, sd, and compare to actual:\n")
   stats_ <- list("mean"=mean(sepalLength), "min"=min(sepalLength), "max"=max(sepalLength), "sd"=sd(sepalLength))
-  stats <- list("mean"=mean(iris[,1]), "min"=min(iris[,1]), "max"=max(iris[,1]), "sd"=sd(iris[,1]))
+  stats  <- list("mean"=mean(iris[,1]), "min"=min(iris[,1]), "max"=max(iris[,1]), "sd"=sd(iris[,1]))
   
   Log.info("Actual mean, min, max, sd:\n")
   Log.info(stats)

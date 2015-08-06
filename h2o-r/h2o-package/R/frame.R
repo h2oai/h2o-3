@@ -102,10 +102,10 @@ Math.Frame <- function(x,y) .newExpr(.Generic,x,y)
 Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 
 Summary.Frame <- function(x,...,na.rm) {
-  if( na.rm ) stop("na.rm versions not impl") 
-  res <- .newExprList(.Generic,list(x,...))
-  if( .Generic=="all" ) res <- as.logical(res)
-  res
+  if( na.rm ) stop("na.rm versions not impl")
+  # Eagerly evaluation, to produce a scalar
+  res <- .eval.frame(.newExprList(.Generic,list(x,...))):data
+  if( .Generic=="all" ) as.logical(res) else res
 }
 
 
@@ -235,23 +235,6 @@ tail.Frame <- function(x,n=6L) {
 #' @param x An H2O Frame object
 #' @export
 print.Frame <- function(x) { cat(as.character(x)); invisible(x) }
-
-#' Convert an H2O Frame to a String
-#'
-#' @param x An H2O Frame object
-#' @export
-as.character.Frame <- function(x) {
-  data <- .fetch.data(x,10L)
-  if( !is.data.frame(data) ) return(as.character(data))
-  nr <- nrow(x)
-  nc <- ncol(x)
-  res <- paste0("Frame with ",
-      nr, ifelse(nr == 1L, " row and ", " rows and "),
-      nc, ifelse(nc == 1L, " column\n", " columns\n"), collapse="")
-  if( nr > 10L ) res <- paste0(res,"\nFirst 10 rows:\n")
-  paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
-}
-
 
 #' Display the structure of an H2O Frame object
 #'
@@ -574,15 +557,14 @@ summary.Frame <- function(object, factors=6L, ...) {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-h2o.mean <- function(x, ...) {
-  stop("unimpl")
-#  if(ncol(x) != 1L) stop("can only compute the mean of a single column")
-#  .h2o.nary_scalar_op("mean"  , x)
-}
+h2o.mean <- function(x, ...) .eval.frame(.newExpr("mean",x)):data
 
 #' @rdname h2o.mean
 #' @export
-setMethod("mean", "Frame", h2o.mean)
+mean.Frame <- function(x, ...) {
+  if( is.Frame(x) ) h2o.mean(x,...)
+  else base::mean(x,...)
+}
 
 #
 #" Mode of a enum or int column.
@@ -621,7 +603,7 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
       stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   } else
     use <- "everything"
-  .newExpr("var",x,y,use)
+  .eval.frame(.newExpr("var",x,y,use)):data
 }
 
 #' @rdname h2o.var
@@ -647,7 +629,7 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
   if( na.rm ) stop("na.rm versions not impl") 
-  .newExpr("sd",x)
+  .eval.frame(.newExpr("sd",x)):data
 }
 
 #' @rdname h2o.sd
@@ -781,6 +763,41 @@ as.integer <- function(x) {
   }
   .Primitive("as.integer")(x)
 }
+
+#' Convert H2O Data to Factors
+#'
+#' Convert a column into a factor column.
+#' @param x a column from an \linkS4class{H2OFrame} data set.
+#' @seealso \code{\link{is.factor}}.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
+#' summary(prostate.hex)
+#' @export
+as.factor <- function(x) {
+  if( is.Frame(x) ) .newExpr("as.factor",x)
+  else base::as.factor(x)
+}
+
+
+#' Convert an H2O Frame to a String
+#'
+#' @param x An H2O Frame object
+#' @export
+as.character.Frame <- function(x) {
+  data <- .fetch.data(x,10L)
+  if( !is.data.frame(data) ) return(as.character(data))
+  nr <- nrow(x)
+  nc <- ncol(x)
+  res <- paste0("Frame with ",
+      nr, ifelse(nr == 1L, " row and ", " rows and "),
+      nc, ifelse(nc == 1L, " column\n", " columns\n"), collapse="")
+  if( nr > 10L ) res <- paste0(res,"\nFirst 10 rows:\n")
+  paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
+}
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge

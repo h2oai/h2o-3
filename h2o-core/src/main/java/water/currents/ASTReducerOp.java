@@ -131,7 +131,7 @@ class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double 
 class ASTMeanNA extends ASTPrim {
   @Override int nargs() { return 1+1; }
   @Override String str() { return "meanNA"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
       throw new IllegalArgumentException("mean only works on a single numeric column");
@@ -142,7 +142,7 @@ class ASTMeanNA extends ASTPrim {
 class ASTMean extends ASTPrim {
   @Override String str() { return "mean"; }
   @Override int nargs() { return 1+1; }
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() !=1 || !fr.anyVec().isNumeric() )
       throw new IllegalArgumentException("mean only works on a single numeric column");
@@ -154,7 +154,7 @@ class ASTMean extends ASTPrim {
 class ASTSdev extends ASTPrim { 
   @Override int nargs() { return 1+1; }
   @Override String str() { return "sd"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
       throw new IllegalArgumentException("sd only works on a single numeric column");
