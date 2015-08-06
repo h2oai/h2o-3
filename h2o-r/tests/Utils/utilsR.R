@@ -149,3 +149,22 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
   }
   genDummyCols(df.clone, use_all_factor_levels)
 }
+
+#' Constructs a named list of gridable parameters and their respective values, which will eventually be passed to
+#' h2o.grid as the hyper_params argument. The  grid parameters, and their associated values, are randomly selected.
+#' @param algo A string {"gbm", "rf", "dl", "km", "glm"}
+#' @param ncols Used for mtries selection
+#' @return A named list of gridable parameters and their respective values
+makeRandomGridSpace <- function(algo,ncols=NULL) {
+  grid_space <- list()
+  if ( algo == "gbm" ) {
+    if ( sample(0:1,1) ) { grid_space$ntrees <- sample(1:5, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$max_depth <- sample(1:5, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$min_rows <- sample(1:10, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$nbins <- sample(2:20, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$nbins_cats <- sample(2:1024, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$learn_rate <- runif(sample(2:3,1)) }
+    grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'),1)
+  }
+  grid_space
+}
