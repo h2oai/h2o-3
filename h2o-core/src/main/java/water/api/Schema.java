@@ -482,6 +482,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    */
   public S fillFromParms(Properties parms) {
     // Get passed-in fields, assign into Schema
+    Class thisSchemaClass = this.getClass();
 
     Map<String, Field> fields = new HashMap<>();
     Field current = null; // declare here so we can print in catch{}
@@ -526,42 +527,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                   "Attempting to set output field: " + key + " for class: " + this.getClass().toString(),
                   "Attempting to set output field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was annotated as API.Direction.OUTPUT)");
         }
-
-        // Primitive parse by field type
-        Object parse_result = parse(key, parms.getProperty(key),f.getType(), api.required());
-        if (parse_result != null && f.getType().isArray() && parse_result.getClass().isArray() && (f.getType().getComponentType() != parse_result.getClass().getComponentType())) {
-          // We have to conform an array of primitives.  There's got to be a better way. . .
-          if (parse_result.getClass().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
-            int[] from = (int[])parse_result;
-            Integer[] copy = new Integer[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else if (parse_result.getClass().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
-            Integer[] from = (Integer[])parse_result;
-            int[] copy = new int[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else if (parse_result.getClass().getComponentType() == Double.class && f.getType().getComponentType() == double.class) {
-            Double[] from = (Double[])parse_result;
-            double[] copy = new double[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else if (parse_result.getClass().getComponentType() == Float.class && f.getType().getComponentType() == float.class) {
-            Float[] from = (Float[])parse_result;
-            float[] copy = new float[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else {
-            throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
-          }
-        } else {
-          f.set(this, parse_result);
-        }
-    } catch( ArrayIndexOutOfBoundsException aioobe ) {
+        // Parse value and set the field
+        setField(this, f, key, parms.getProperty(key), api.required(), thisSchemaClass);
+      } catch( ArrayIndexOutOfBoundsException aioobe ) {
         // Come here if missing annotation
         throw H2O.fail("Broken internal schema; missing API annotation for field: " + key);
       } catch( IllegalAccessException iae ) {
@@ -594,11 +562,58 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         throw H2O.fail("Missing annotation for API field: " + f.getName());
       }
     }
-    return (S)this;
+    return (S) this;
+  }
+
+  /**
+   * Safe method to set the field on given schema object
+   * @param o  schema object to modify
+   * @param f  field to modify
+   * @param key  name of field to modify
+   * @param value  string-based representation of value to set
+   * @param required  is field required by API
+   * @param thisSchemaClass  class of schema handling this (can be null)
+   * @throws IllegalAccessException
+   */
+  public static <T extends Schema>  void setField(T o, Field f, String key, String value, boolean required, Class thisSchemaClass) throws IllegalAccessException {
+    // Primitive parse by field type
+    Object parse_result = parse(key, value, f.getType(), required, thisSchemaClass);
+    if (parse_result != null && f.getType().isArray() && parse_result.getClass().isArray() && (f.getType().getComponentType() != parse_result.getClass().getComponentType())) {
+      // We have to conform an array of primitives.  There's got to be a better way. . .
+      if (parse_result.getClass().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
+        int[] from = (int[])parse_result;
+        Integer[] copy = new Integer[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
+        Integer[] from = (Integer[])parse_result;
+        int[] copy = new int[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Double.class && f.getType().getComponentType() == double.class) {
+        Double[] from = (Double[])parse_result;
+        double[] copy = new double[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Float.class && f.getType().getComponentType() == float.class) {
+        Float[] from = (Float[])parse_result;
+        float[] copy = new float[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else {
+        throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
+      }
+    } else {
+      f.set(o, parse_result);
+    }
   }
 
   // URL parameter parse
-  private <E> Object parse( String field_name, String s, Class fclz, boolean required ) {
+  static <E> Object parse(String field_name, String s, Class fclz, boolean required, Class schemaClass) {
     try {
       if (fclz.equals(String.class)) return s; // Strings already the right primitive type
       if (fclz.equals(int.class)) return parseInteger(s, int.class);
@@ -609,7 +624,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if (fclz.equals(double.class)) return Double.valueOf(s);
       if (fclz.equals(float.class)) return Float.valueOf(s);
     } catch (NumberFormatException ne) {
-      String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
+      String msg = "Illegal argument for field: " + field_name + " of schema: " +  schemaClass.getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
       throw new H2OIllegalArgumentException(msg);
     }
     if (fclz.isArray()) {      // An array?
@@ -645,8 +660,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           if ("null".equals(stripped)) {
             a[i] = null;
           } else if (!stripped.startsWith("\"") || !stripped.endsWith("\"")) {
-            String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
-
+            String msg = "Illegal argument for field: " + field_name + " of schema: " + schemaClass.getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
             IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             values.put("function", fclz.getSimpleName() + ".fillFromParms()");
             values.put("argument", field_name);
@@ -656,9 +670,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           }
 
           stripped = stripped.substring(1, stripped.length() - 1);
-          a[i] = (E) parse(field_name, stripped, afclz, required);
+          a[i] = (E) parse(field_name, stripped, afclz, required, schemaClass);
         } else {
-          a[i] = (E) parse(field_name, splits[i].trim(), afclz, required);
+          a[i] = (E) parse(field_name, splits[i].trim(), afclz, required, schemaClass);
         }
       }
       return a;
@@ -735,7 +749,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *    be stored into return_type without overflow.
    *  - Throws an IllegalAgumentException if return_type is not an integer data type.
    **/
-  private <T> T parseInteger(String s, Class<T> return_type) {
+  static private <T> T parseInteger(String s, Class<T> return_type) {
     try {
       java.math.BigDecimal num = new java.math.BigDecimal(s);
       T result = (T) num.getClass().getDeclaredMethod(return_type.getSimpleName() + "ValueExact", new Class[0]).invoke(num);
@@ -749,11 +763,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
   
-  private int read( String s, int x, char c, Class fclz ) {
+  static private int read( String s, int x, char c, Class fclz ) {
     if( peek(s,x,c) ) return x+1;
     throw new IllegalArgumentException("Expected '"+c+"' while reading a "+fclz.getSimpleName()+", but found "+s);
   }
-  private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
+  static private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
   // Splits on commas, but ignores commas in double quotes.  Required
   // since using a regex blow the stack on long column counts

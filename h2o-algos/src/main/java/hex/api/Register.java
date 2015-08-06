@@ -59,6 +59,7 @@ public class Register extends AbstractRegister {
     H2O.registerPOST("/99/Grid/gbm", GBMGridSearchHandler.class, "train",                                                              "Run grid search for GBM model.");
     H2O.registerPOST("/99/Grid/drf", DRFGridSearchHandler.class, "train",                                                              "Run grid search for DRF model.");
     H2O.registerPOST("/99/Grid/kmeans", KMeansGridSearchHandler.class, "train",                                                        "Run grid search for KMeans model.");
+    H2O.registerPOST("/99/Grid/deeplearning", DeepLearningGridSearchHandler.class, "train",                                            "Run grid search for DeepLearning model.");
 
     // ModelBuilder.registerModelBuilder("word2vec", Word2Vec.class);
     // H2O.registerPOST("/3/ModelBuilders/word2vec", Word2VecBuilderHandler.class, "train",                                              "Train a Word2Vec model on the specified Frame.");

@@ -34,7 +34,7 @@ public final class SchemaMetadata extends Iced {
     /**
      * Field name in the POJO.    Set through reflection.
      */
-    String name;
+    public String name;
 
     /**
      * Type for this field.  Set through reflection.
@@ -80,6 +80,11 @@ public final class SchemaMetadata extends Iced {
      * Is this field an input, output or inout?  Set from the @API annotation.
      */
     API.Direction direction;
+
+    /**
+     * Is this field gridable?  Set from the @API annotation.
+     */
+    public boolean is_gridable;
 
     // The following are markers for *input* fields.
 
@@ -193,6 +198,7 @@ public final class SchemaMetadata extends Iced {
           this.required = annotation.required();
           this.level = annotation.level();
           this.direction = annotation.direction();
+          this.is_gridable = annotation.gridable();
           this.values = annotation.values();
           this.json = annotation.json();
           this.is_member_of_frames = annotation.is_member_of_frames();
@@ -367,15 +373,27 @@ public final class SchemaMetadata extends Iced {
     type = schema.get__meta().getSchema_type();
 
     superclass = schema.getClass().getSuperclass().getSimpleName();
+    // Get metadata of all annotated fields
+    fields = getFieldMetadata(schema);
+    // Also generates markdown
+    markdown = schema.markdown(this, null).toString();
+  }
 
-    fields = new ArrayList<>();
+  /**
+   * Returns metadata of all annotated fields.
+   *
+   * @param schema a schema instance
+   * @return list of field metadata
+   */
+  public static List<FieldMetadata> getFieldMetadata(Schema schema) {
+    List<FieldMetadata> fields = new ArrayList<>();
     // Fields up to but not including Schema
     for (Field field : Weaver.getWovenFields(schema.getClass())) {
       FieldMetadata fmd = FieldMetadata.createIfApiAnnotation(schema, field);
       if (null != fmd) // skip transient or other non-annotated fields
         fields.add(fmd);  // NOTE: we include non-JSON fields here; remove them later if we don't want them
     }
-    this.markdown = schema.markdown(this, null).toString();
+    return fields;
   }
 
   public static SchemaMetadata createSchemaMetadata(String classname) throws IllegalArgumentException {
