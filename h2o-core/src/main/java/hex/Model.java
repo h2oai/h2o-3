@@ -906,6 +906,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // sb.p("//     java -cp h2o-genmodel.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
+    if (_parms._offset_column != null) {
+      sb.nl();
+      sb.nl();
+      sb.p("//").nl();
+      sb.p("// NOTE:  Java model export does not support offset_column.").nl();
+      sb.p("//").nl();
+      Log.warn("Java model export does not support offset_column.");
+    }
     if (preview && toJavaCheckTooBig()) {
       sb.nl();
       sb.nl();
