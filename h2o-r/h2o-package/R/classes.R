@@ -718,8 +718,20 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
     }
   }
 }
-
+#' H2O Grid
+#'
+#' A class to contain the information about grid results
+#' @slot conn an \linkS4class{H2OConnection}
+#' @slot grid_id the final identifier of grid
+#' @slot model_ids  list of model IDs which are included in the grid object
+#' @seealso \linkS4class{H2OModel} for the final model types.
+#' @aliases H2OGrid
+#' @export
 setClass("H2OGrid", representation(conn="H2OConnection", grid_id="character", model_ids="list"))
+
+#' @rdname H2OGrid-class
+#' @param object an \code{H2OGrid} object.
+#' @export
 setMethod("show", "H2OGrid", function(object) {
   cat("H2O Grid Details\n")
   cat("================\n\n")
