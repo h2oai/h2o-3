@@ -325,12 +325,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     final static private double MIN_LOG_TRUNC = -19;
     final static private double MAX_LOG_TRUNC = 19;
 
-    private void truncatePreds(DTree[] ktrees, int[] leafs, Distribution.Family dist,
-                               float[] minValues,
-                               float[] maxValues) {
-        Log.info("Number of leaf nodes: " + minValues.length);
-        Log.info("Min: " + java.util.Arrays.toString(minValues));
-        Log.info("Max: " + java.util.Arrays.toString(maxValues));
+    private void truncatePreds(DTree[] ktrees, int[] leafs, Distribution.Family dist, ComputeMinMax minMax) {
+//        Log.info("Number of leaf nodes: " + minValues.length);
+//        Log.info("Min: " + java.util.Arrays.toString(minValues));
+//        Log.info("Max: " + java.util.Arrays.toString(maxValues));
       assert(_nclass == 1);
       final DTree tree = ktrees[0];
       assert (tree != null);
@@ -338,8 +336,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int i = 0; i < tree._len - leafs[0]; i++) {
         final LeafNode node = ((LeafNode) tree.node(leafs[0] + i));
         int nidx = node.nid();
-        float nodeMin = minValues[nidx-leafs[0]];
-        float nodeMax = maxValues[nidx-leafs[0]];
+        float nodeMin = minMax._mins[nidx-leafs[0]];
+        float nodeMax = minMax._maxs[nidx-leafs[0]];
 //        Log.info("Node: " + nidx + " min/max: " + nodeMin + "/" + nodeMax);
 
         // https://github.com/cran/gbm/blob/master/src/poisson.cpp
@@ -355,14 +353,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (dist == Distribution.Family.gamma || dist == Distribution.Family.tweedie) //only for gamma/tweedie
           val += nodeMax;
         if (val > MAX_LOG_TRUNC) {
-          Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax));
+//          Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax));
           node._pred = (float) (MAX_LOG_TRUNC - nodeMax);
         }
         val = node._pred;
         if (dist == Distribution.Family.gamma || dist == Distribution.Family.tweedie) //only for gamma/tweedie
           val += nodeMin;
         if (val < MIN_LOG_TRUNC) {
-          Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin));
+//          Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin));
           node._pred = (float) (MIN_LOG_TRUNC - nodeMin);
         }
         if (node._pred < MIN_LOG_TRUNC && node._pred > MAX_LOG_TRUNC) {
@@ -393,16 +391,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
       GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
-//      for(int i = 0; i < gp._num.length; i++ )
-//        assert(ArrayUtils.minValue(gp._num[i]) > 0);
       fitBestConstants(ktrees, leafs, gp);
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == Distribution.Family.gamma ||
               _parms._distribution == Distribution.Family.poisson ||
               _parms._distribution == Distribution.Family.tweedie) {
-        ComputeMinMax minMax = new ComputeMinMax(leafs[0],ktrees[0].len()).doAll(_train);
-        truncatePreds(ktrees, leafs, _parms._distribution, minMax._mins, minMax._maxs);
+        truncatePreds(ktrees, leafs, _parms._distribution, new ComputeMinMax(leafs[0],ktrees[0].len()).doAll(_train));
       }
 
       // ----
