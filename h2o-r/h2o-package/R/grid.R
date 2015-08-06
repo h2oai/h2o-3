@@ -9,7 +9,7 @@
 #' library(h2o) 
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' grid <- h2o.grid("gbm", x=c(1:4), y = 5, training_frame=hex, hyper_params=list("_ntrees"=c(1,10,30)))
+#' grid <- h2o.grid("gbm", x=c(1:4), y = 5, training_frame=hex, hyper_params=list(ntrees=c(1,2,3)))
 #' @export
 h2o.grid <- function(algorithm,
                      grid_id,
@@ -50,12 +50,15 @@ h2o.grid <- function(algorithm,
 #' Get a grid object from H2O distributed K/V store.
 #'
 #' @param grid_id  ID of existing grid object to fetch
+#' @param conn  H2O connection
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
-#' grid <- h2o.getGrid("GBM_grid_num42")
+#' iris.hex <- as.h2o(iris)
+#' h2o.grid("gbm", grid_id="gbm_grid", x=c(1:4), y = 5, training_frame=hex, hyper_params=list("_ntrees"=c(1,2,3)))
+#' grid <- h2o.getGrid("gbm_grid")
 #' @export
-h2o.getGrid <- function(grid_id, conn = h2o.getConnection(), linkToGC = FALSE) {
+h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
   json <- .h2o.__remoteSend(conn, method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id))
 
   class <- "H2OGrid"

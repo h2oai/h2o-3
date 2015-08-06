@@ -158,12 +158,10 @@ public class DRFGridTest extends TestUtil {
     Grid grid = null;
     DRFModel drfRebuilt = null;
     Frame fr = null;
-    Vec old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.remove("name").remove();
-      old = fr.remove("economy (mpg)");
-
+      Vec old = fr.remove("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column
       DKV.put(fr);
 
@@ -171,7 +169,8 @@ public class DRFGridTest extends TestUtil {
       HashMap<String, Object[]> hyperParms = new HashMap<>();
 
       // Construct random grid search space
-      Random rng = new Random();
+      long seed = System.nanoTime();
+      Random rng = new Random(seed);
 
       Integer ntreesDim = rng.nextInt(4) + 1;
       Integer maxDepthDim = rng.nextInt(4) + 1;
@@ -223,7 +222,7 @@ public class DRFGridTest extends TestUtil {
                       0.72f, 0.73f, 0.74f, 0.75f, 0.76f, 0.77f, 0.78f, 0.79f, 0.8f, 0.81f, 0.82f,
                       0.83f, 0.84f, 0.85f, 0.86f,
                       0.87f, 0.88f, 0.89f, 0.9f, 0.91f, 0.92f, 0.93f, 0.94f, 0.95f, 0.96f, 0.97f,
-                      0.98f, 0.99f, 1.0f};
+                      0.98f, 0.99f};
       ArrayList<Float> sampleRateList = new ArrayList<Float>(Arrays.asList(sampleRateArr));
       Collections.shuffle(sampleRateList);
       Float[] sampleRateSpace = new Float[sampleRateDim];
@@ -244,6 +243,7 @@ public class DRFGridTest extends TestUtil {
       GridSearch gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
       grid = (Grid) gs.get();
 
+      System.out.println("Test seed: " + seed);
       System.out.println("ntrees search space: " + Arrays.toString(ntreesSpace));
       System.out.println("max_depth search space: " + Arrays.toString(maxDepthSpace));
       System.out.println("mtries search space: " + Arrays.toString(mtriesSpace));
@@ -253,7 +253,8 @@ public class DRFGridTest extends TestUtil {
       Model[] ms = grid.getModels();
       Integer numModels = ms.length;
       System.out.println("Grid consists of " + numModels + " models");
-      assertTrue(numModels == ntreesDim * maxDepthDim * sampleRateDim * mtriesDim);
+      assertTrue("Number of models should match hyper space size",
+                 numModels == ntreesDim * maxDepthDim * sampleRateDim * mtriesDim);
 
       // Pick a random model from the grid
       HashMap<String, Object[]> randomHyperParms = new HashMap<>();
@@ -295,9 +296,6 @@ public class DRFGridTest extends TestUtil {
       //assertEquals(fromGridMSE, rebuiltMSE);
 
     } finally {
-      if (old != null) {
-        old.remove();
-      }
       if (fr != null) {
         fr.remove();
       }
