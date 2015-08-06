@@ -8,10 +8,6 @@
 
 The following changes represent features that have been added since the previous release:
 
-#####API
-
-- [GitHub](https://github.com/h2oai/h2o-3/commit/b19955a58522d595bd490714d0a2d5e2de22fe05): Grid search API
-
 
 #####Web UI
 
