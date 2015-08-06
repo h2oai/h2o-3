@@ -19,6 +19,7 @@ from frame import H2OFrame, _py_tmp_key
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
 
+__PROGRESS_BAR__ = True
 
 def import_file(path):
   """
@@ -378,6 +379,14 @@ def ou():
   """
   from inspect import stack
   return stack()[2][1]
+
+def no_progress():
+  global __PROGRESS_BAR__
+  __PROGRESS_BAR__=False
+
+def do_progress():
+  global __PROGRESS_BAR__
+  __PROGRESS_BAR__=True
 
 def log_and_echo(message):
   """

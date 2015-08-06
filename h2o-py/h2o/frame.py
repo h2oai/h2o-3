@@ -619,7 +619,10 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
+    if isinstance(item, (int,str,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
+    elif isinstance(item, slice):
+      item = slice(1,min(self.ncol(),item.stop))
+      return H2OFrame(expr=ExprNode("cols",self,item))
     elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
     elif isinstance(item, tuple):
       rows = item[0]
@@ -660,12 +663,16 @@ class H2OFrame:
     col_expr = b[1] if isinstance(b,tuple) else update_index
     if isinstance(col_expr, (str,unicode)): col_expr=self.col_names().index(col_expr)
 
+    if isinstance(col_expr, slice):
+      if col_expr.start is None and col_expr.stop is None:
+        col_expr = slice(0,self.ncol())
+
     row_expr = b[0] if isinstance(b,tuple) else b if isinstance(b, H2OFrame) else slice(0,self.nrow())
     src = c._frame() if isinstance(c,H2OFrame) else c
     expr = ExprNode("=", self, src, col_expr, row_expr)
     h2o.rapids(ExprNode._collapse_sb(expr._eager()), self._id)
-    if newcolname is not None: self.setName(update_index, newcolname)
     self._update()
+    if newcolname is not None: self.setName(update_index, newcolname)
 
   def __int__(self):   return int(self._scalar())
 
@@ -709,7 +716,7 @@ class H2OFrame:
     :param data: H2OFrame or H2OVec to cbind to self
     :return: void
     """
-    return H2OFrame(expr=ExprNode("cbind", False, self, data))
+    return H2OFrame(expr=ExprNode("cbind", self, data))
 
   def rbind(self, data):
     """
@@ -859,7 +866,7 @@ class H2OFrame:
     """
     :return: A lazy Expr representing this vec converted to a factor
     """
-    return H2OFrame(expr=ExprNode("as.factor",self))
+    return H2OFrame(expr=ExprNode("as.factor",self))._frame()
 
   def isfactor(self):
     """

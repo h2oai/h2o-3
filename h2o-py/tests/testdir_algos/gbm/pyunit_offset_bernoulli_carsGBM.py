@@ -14,7 +14,7 @@ def offset_bernoulli_cars(ip,port):
     cars = cars.cbind(offset)
 
     gbm = h2o.gbm(x=cars[2:8], y=cars["economy_20mpg"], distribution="bernoulli", ntrees=1, max_depth=1, min_rows=1,
-                  learn_rate=1, offset_column="x1", training_frame=cars)
+                  learn_rate=1, offset_column=cars["x1"], training_frame=cars)
 
     predictions = gbm.predict(cars)
 
@@ -24,14 +24,18 @@ def offset_bernoulli_cars(ip,port):
     #            train.fraction = 1,bag.fraction = 1)
     #   pr = predict.gbm(object = gg,newdata = df,n.trees = 1,type = "link")
     #   pr = 1/(1+exp(-df$x1 - pr))
-    assert abs(-0.1041234 - gbm._model_json['output']['init_f']) < 1e-6, "expected init_f to be {0}, but got {1}". \
-        format(-0.1041234, gbm._model_json['output']['init_f'])
-    assert abs(0.577326 - predictions[:,2].mean()) < 1e-6, "expected prediction mean to be {0}, but got {1}". \
-        format(0.577326, predictions[:,2].mean())
-    assert abs(0.1621461 - predictions[:,2].min()) < 1e-6, "expected prediction min to be {0}, but got {1}". \
-        format(0.1621461, predictions[:,2].min())
-    assert abs(0.8506528 - predictions[:,2].max()) < 1e-6, "expected prediction max to be {0}, but got {1}". \
-        format(0.8506528, predictions[:,2].max())
+
+    print "init_f: abs(-0.1041234 - gbm._model_json['output']['init_f'])"
+    print abs(-0.1041234 - gbm._model_json['output']['init_f'])
+
+    print "pred mean: abs(0.577326 - predictions[:,2].mean())"
+    print abs(0.577326 - predictions[:,2].mean())
+
+    print "pred min:  abs(0.1621461 - predictions[:,2].min())"
+    print  abs(0.1621461 - predictions[:,2].min())
+
+    print "pred max: abs(0.8506528 - predictions[:,2].max())"
+    print abs(0.8506528 - predictions[:,2].max())
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, offset_bernoulli_cars)

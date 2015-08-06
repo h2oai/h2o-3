@@ -11,13 +11,13 @@ from model.model_future import H2OModelFuture
 # Response variable model building
 def supervised_model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   # Sanity check data frames
-  if not y:
+  if y is None:
     if algo_url=="deeplearning":
       if "autoencoder" in kwargs and kwargs["autoencoder"]:
         pass  # all good
     else:
       raise ValueError("Missing response training a supervised model")
-  elif y:
+  elif y is not None:
     if algo_url=="deeplearning":
       if "autoencoder" in kwargs and kwargs["autoencoder"]:
         raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
@@ -32,40 +32,19 @@ def unsupervised_model_build(x,validation_x,algo_url,kwargs):
 
 # Sanity check features and response variable.
 def _check_frame(x,y,response):
+  x._eager(); y._eager(); response._eager()
   if not isinstance(x,H2OFrame):
     if not isinstance(x,list): raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
   if y is not None and not isinstance(y,H2OFrame): raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))
   if y is not None: x[response._col_names[0]] = y
   return x
 
-def _add_col_to_x_and_validation_x(col_name,x,validation_x,kwargs,xval=False):
-  """
-  Add column to x/validation_x, if it isn't already there. Grabs the column from the training_frame or
-  validation_frame parameters.
+def _add_extra_col(x, column): return _check_frame(x,column,column)
 
-  :param col_name: the name of the column to add
-  :param xval: if True, don't add folds_column to validation_x
-  :return: x and validation_x, with the respective columns added
-  """
-  # training_frame
-  if col_name not in x._col_names and not col_name is None:
-    if "training_frame" not in kwargs.keys(): raise ValueError("must specify `training_frame` argument if `" +
-                                                               col_name + "`not part of `x`")
-    if not col_name in kwargs["training_frame"].col_names():
-      raise ValueError("`" + col_name + "` wasn't found in the training_frame. Only these columns were found: "
-                                        "{0}".format(kwargs["training_frame"].col_names()))
-    x[col_name] = kwargs["training_frame"][col_name]
-
-  # validation_frame
-  if validation_x is not None and not xval:
-    if col_name not in validation_x._col_names and not col_name is None:
-      if "validation_frame" not in kwargs.keys(): raise ValueError("must specify `validation_frame` argument if "
-                                                                   "`" + col_name + "` not part of `validation_x`")
-      if not col_name in kwargs["validation_frame"].col_names():
-        raise ValueError("`" + col_name + "` wasn't found in the validation_frame. Only these columns were found: "
-                                          "{0}".format(kwargs["validation_frame"].col_names()))
-      validation_x[col_name] = kwargs["validation_frame"][col_name]
-
+def _check_extra_col(x,validation_x,colname,kwargs):
+  x=_add_extra_col(x, kwargs[colname])
+  if validation_x is not None: validation_x = _add_extra_col(validation_x,kwargs[colname])
+  kwargs[colname] = kwargs[colname]._col_names[0]
   return x, validation_x
 
 # Build an H2O model
@@ -74,16 +53,17 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   if algo_url == "autoencoder":
     if "autoencoder" in kwargs.keys():
       if kwargs["autoencoder"]:
-        if y:
+        if y is not None:
           raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
         algo_url="deeplearning"
-  if not x:  raise ValueError("Missing features")
+  if x is None:  raise ValueError("Missing features")
+
   x = _check_frame(x,y,y)
   if validation_x is not None: validation_x = _check_frame(validation_x,validation_y,y)
 
-  if "weights_column" in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["weights_column"],x, validation_x, kwargs)
-  if "offset_column"  in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["offset_column"], x, validation_x, kwargs)
-  if "fold_column"   in kwargs.keys(): x, validation_x = _add_col_to_x_and_validation_x(kwargs["fold_column"],    x, validation_x, kwargs, xval=True)
+  if "weights_column" in kwargs.keys(): x,validation_x = _check_extra_col(x,validation_x,"weights_column",kwargs)
+  if "offset_column" in kwargs.keys():  x,validation_x = _check_extra_col(x,validation_x,"offset_column", kwargs)
+  if "fold_column"   in kwargs.keys():  x,validation_x = _check_extra_col(x,validation_x,"fold_column",   kwargs)
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
