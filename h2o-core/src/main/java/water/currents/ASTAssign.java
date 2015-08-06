@@ -168,11 +168,7 @@ class ASTTmpAssign extends ASTPrim {
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     String id = ((ASTId)asts[1])._id;
     Frame src = stk.track(asts[2].exec(env)).getFrame();
-    Frame dst = src.deepCopy(id);
-    Futures fs = new Futures();
-    if( DKV.DputIfMatch(dst._key,new Value(dst._key,dst),null,fs)!=null )
-      throw new IllegalArgumentException("Tmp keys are final; key "+id+" attempted to be reassigned");
-    fs.blockForPending();
+    Frame dst = src.deepCopy(id);  // Stomp temp down
     return env.addGlobals(dst);
   }
 }

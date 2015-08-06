@@ -104,10 +104,7 @@ Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl") 
   res <- .newExprList(.Generic,list(x,...))
-  # Eager evaluation, to produce a scalar
-  res <- .fetch.data(res,1)
   if( .Generic=="all" ) res <- as.logical(res)
-  stopifnot( !is.data.frame(res) )
   res
 }
 
@@ -189,6 +186,9 @@ dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(dat
 
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
+
+#` Length - number of columns
+length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
 
 #'
 #' Return the Head or Tail of an H2O Dataset.
@@ -754,12 +754,32 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
 #` 
 as.double.Frame <- function(x) {
-  res <- .fetch.data(x,1)
+  res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
     res <- res[1,1]
   } 
   .Primitive("as.double")(res)
+}
+
+as.logical.Frame <- function(x) {
+  res <- .fetch.data(x,1) # Force evaluation
+  if( is.data.frame(res) ) {
+    if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
+    res <- res[1,1]
+  } 
+  .Primitive("as.logical")(res)
+}
+
+as.integer <- function(x) {
+  if( is.Frame(x) ) {
+    x <- .fetch.data(x,1) # Force evaluation
+    if( is.data.frame(x) ) {
+      if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
+      x <- x[1,1]
+    } 
+  }
+  .Primitive("as.integer")(x)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
