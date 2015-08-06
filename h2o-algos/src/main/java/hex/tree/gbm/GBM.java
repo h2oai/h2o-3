@@ -14,6 +14,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.util.Arrays;
 import java.util.Map;
 
 /** Gradient Boosted Trees
@@ -286,60 +287,38 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     class ComputeMinMax extends MRTask<ComputeMinMax> {
-      public IcedHashMap<IcedLong,IcedDouble> minValues;
-      public IcedHashMap<IcedLong,IcedDouble> maxValues;
+      public ComputeMinMax(int start, int end) {
+        _start = start;
+        _end = end;
+      }
+      int _start;
+      int _end;
+      float[] _mins;
+      float[] _maxs;
       @Override public void map( Chunk chks[] ) {
-        minValues = new IcedHashMap<>();
-        maxValues = new IcedHashMap<>();
+        int _len = _end-_start;
+        _mins = new float[_len];
+        _maxs = new float[_len];
+        Arrays.fill(_mins, Float.MAX_VALUE);
+        Arrays.fill(_maxs, -Float.MAX_VALUE);
+
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
         Chunk preds = chk_tree(chks, 0); // Prior tree sums
         Chunk nids = chk_nids(chks, 0);
         for( int row = 0; row < preds._len; row++) {
           if( ys.isNA(row) ) continue;
-          double f = preds.atd(row) + offset.atd(row);
-          IcedLong nidx = new IcedLong(nids.at8(row));
-          IcedDouble mins = minValues.get(nidx);
-          double oldMin = mins == null ? Double.MAX_VALUE : mins._val;
-          if (f < oldMin) {
-            IcedDouble ff = new IcedDouble(f);
-            if (mins == null) minValues.put(nidx, ff);
-            else minValues.replace(nidx, ff);
-          }
-          IcedDouble maxs = maxValues.get(nidx);
-          double oldMax = maxs == null ? -Double.MAX_VALUE : maxs._val;
-          if (f > oldMax) {
-            IcedDouble ff = new IcedDouble(f);
-            if (maxs == null) maxValues.put(nidx, ff);
-            else maxValues.replace(nidx, ff);
-          }
+          float f = (float)(preds.atd(row) + offset.atd(row));
+          int nidx = (int)nids.at8(row);
+          _mins[nidx-_start] = Math.min(_mins[nidx-_start], f);
+          _maxs[nidx-_start] = Math.max(_maxs[nidx-_start], f);
         }
       }
 
       @Override
       public void reduce(ComputeMinMax mrt) {
-        for (Map.Entry<IcedLong,IcedDouble> e : mrt.minValues.entrySet()) {
-          IcedDouble x = minValues.get(e.getKey());
-          if (x != null) {
-            x._val= Math.min(e.getValue()._val, x._val);
-            minValues.replace(e.getKey(), x);
-          } else {
-            assert(minValues.get(e.getKey()) == null);
-            minValues.putIfAbsent(e.getKey(), e.getValue());
-          }
-        }
-        for (Map.Entry<IcedLong,IcedDouble> e : mrt.maxValues.entrySet()) {
-          IcedDouble x = maxValues.get(e.getKey());
-          if (x != null) {
-            x._val= Math.max(e.getValue()._val, x._val);
-            maxValues.replace(e.getKey(), x);
-          } else {
-            assert(maxValues.get(e.getKey()) == null);
-            maxValues.putIfAbsent(e.getKey(), e.getValue());
-          }
-        }
-        mrt.minValues = null;
-        mrt.maxValues = null;
+        ArrayUtils.reduceMin(_mins, mrt._mins);
+        ArrayUtils.reduceMax(_maxs, mrt._maxs);
       }
     }
 
@@ -347,17 +326,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     final static private double MAX_LOG_TRUNC = 19;
 
     private void truncatePreds(DTree[] ktrees, int[] leafs, Distribution.Family dist,
-                               final IcedHashMap<IcedLong, IcedDouble> minValues,
-                               final IcedHashMap<IcedLong, IcedDouble> maxValues) {
+                               float[] minValues,
+                               float[] maxValues) {
+        Log.info("Number of leaf nodes: " + minValues.length);
+        Log.info("Min: " + java.util.Arrays.toString(minValues));
+        Log.info("Max: " + java.util.Arrays.toString(maxValues));
       assert(_nclass == 1);
       final DTree tree = ktrees[0];
       assert (tree != null);
-      IcedLong nidx = new IcedLong(0);
       //loop over leaf nodes only
       for (int i = 0; i < tree._len - leafs[0]; i++) {
         final LeafNode node = ((LeafNode) tree.node(leafs[0] + i));
-        nidx._val = node.nid();
-        IcedDouble nodeMax = maxValues.get(nidx);
+        int nidx = node.nid();
+        float nodeMin = minValues[nidx-leafs[0]];
+        float nodeMax = maxValues[nidx-leafs[0]];
+//        Log.info("Node: " + nidx + " min/max: " + nodeMin + "/" + nodeMax);
 
         // https://github.com/cran/gbm/blob/master/src/poisson.cpp
         // https://github.com/harrysouthworth/gbm/blob/master/src/poisson.cpp
@@ -368,24 +351,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
         // https://github.com/harrysouthworth/gbm/blob/master/src/tweedie.cpp
         // https://github.com/gbm-developers/gbm/blob/master/src/tweedie.cpp
-        if (nodeMax != null) {
-          double val = node._pred;
-          if (dist != Distribution.Family.poisson) //only for gamma/tweedie
-            val += nodeMax._val;
-          if (val > MAX_LOG_TRUNC) {
-            Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax._val));
-            node._pred = (float) (MAX_LOG_TRUNC - nodeMax._val);
-          }
+        double val = node._pred;
+        if (dist == Distribution.Family.gamma || dist == Distribution.Family.tweedie) //only for gamma/tweedie
+          val += nodeMax;
+        if (val > MAX_LOG_TRUNC) {
+          Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax));
+          node._pred = (float) (MAX_LOG_TRUNC - nodeMax);
         }
-        IcedDouble nodeMin = minValues.get(nidx);
-        if (nodeMin != null) {
-          double val = node._pred;
-          if (dist != Distribution.Family.poisson) //only for gamma/tweedie
-            val += nodeMin._val;
-          if (val < MIN_LOG_TRUNC) {
-            Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin._val));
-            node._pred = (float) (MIN_LOG_TRUNC - nodeMin._val);
-          }
+        val = node._pred;
+        if (dist == Distribution.Family.gamma || dist == Distribution.Family.tweedie) //only for gamma/tweedie
+          val += nodeMin;
+        if (val < MIN_LOG_TRUNC) {
+          Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin));
+          node._pred = (float) (MIN_LOG_TRUNC - nodeMin);
         }
         if (node._pred < MIN_LOG_TRUNC && node._pred > MAX_LOG_TRUNC) {
           Log.warn("Terminal node prediction outside of allowed interval in log-space: "
@@ -423,12 +401,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (_parms._distribution == Distribution.Family.gamma ||
               _parms._distribution == Distribution.Family.poisson ||
               _parms._distribution == Distribution.Family.tweedie) {
-        ComputeMinMax minMax = new ComputeMinMax().doAll(_train);
-        assert(minMax.minValues.size() == minMax.maxValues.size());
-//        Log.info("Number of leaf nodes: " + minMax.minValues.size());
-//        Log.info("Min: " + java.util.Arrays.deepToString(minMax.minValues.entrySet().toArray()));
-//        Log.info("Max: " + java.util.Arrays.deepToString(minMax.maxValues.entrySet().toArray()));
-        truncatePreds(ktrees, leafs, _parms._distribution, minMax.minValues, minMax.maxValues);
+        ComputeMinMax minMax = new ComputeMinMax(leafs[0],ktrees[0].len()).doAll(_train);
+        truncatePreds(ktrees, leafs, _parms._distribution, minMax._mins, minMax._maxs);
       }
 
       // ----
@@ -626,7 +600,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final DTree tree = _ktrees[k];
           if( tree == null ) continue;
           final Chunk nids = chk_nids(chks,k);
-          final Chunk ct   = chk_tree(chks,k);
+          final Chunk ct   = chk_tree(chks, k);
           for( int row=0; row<nids._len; row++ ) {
             int nid = (int)nids.at8(row);
             if( nid < 0 ) continue;

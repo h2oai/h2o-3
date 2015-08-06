@@ -53,8 +53,7 @@ public class Distribution extends Iced {
   public static double log(double x) {
     x = Math.max(0,x);
     double val = x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
-    if (val == MIN_LOG)
-      Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
+//    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
     return val;
   }
 

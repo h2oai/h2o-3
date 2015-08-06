@@ -34,7 +34,16 @@ public class ArrayUtils {
     for (double d: from) result += d;
     return result;
   }
-
+  public static float[] reduceMin(float[] a, float[] b) {
+    for (int i=0; i<a.length; ++i)
+      a[i] = Math.min(a[i], b[i]);
+    return a;
+  }
+  public static float[] reduceMax(float[] a, float[] b) {
+    for (int i=0; i<a.length; ++i)
+      a[i] = Math.max(a[i], b[i]);
+    return a;
+  }
   public static double innerProduct(double [] x, double [] y){
     double result = 0;
     for (int i = 0; i < x.length; i++)
