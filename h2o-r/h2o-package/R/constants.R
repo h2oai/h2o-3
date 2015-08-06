@@ -236,4 +236,12 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
 .h2o.__LOAD_MODEL <- "Models.bin/"
 
-
+# Grid search 
+.h2o.__GRID <- function(algo) paste0("Grid/", algo)
+.h2o.__GRIDS <- function(model) {
+    if (missing(model)) {
+        "/Grids"
+    } else {
+        paste0("Grids/", model)
+    }
+}

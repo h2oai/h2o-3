@@ -1,13 +1,36 @@
 package hex;
 
-import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
-import water.*;
-import water.fvec.*;
-import water.util.*;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
+import hex.genmodel.GenModel;
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.Lockable;
+import water.MRTask;
+import water.MemoryManager;
+import water.Weaver;
+import water.fvec.C0DChunk;
+import water.fvec.Chunk;
+import water.fvec.EnumWrappedVec;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.SB;
+import water.util.TwoDimTable;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -51,6 +74,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  process, and are considered "first class citizens" by the front-end - the
    *  front-end will cache Parameters (in the browser, in JavaScript, on disk)
    *  and rebuild Parameter instances from those caches.
+   *
+   *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
+   *  them!
    */
   public abstract static class Parameters extends Iced {
     /** Maximal number of supported levels in response. */
@@ -157,6 +183,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double missingColumnsType() { return Double.NaN; }
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
+
+    // FIXME: this is really horrible hack, Model.Parameters has method checksum_impl,
+    // but not checksum, the API is totally random :(
+    public long checksum() {
+      return checksum_impl();
+    }
 
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.

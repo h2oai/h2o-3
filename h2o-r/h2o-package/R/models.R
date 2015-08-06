@@ -95,72 +95,14 @@
   cf_matrix
 }
 
-
-
-
 .h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-  .key.validate(params$key)
+  .key.validate(params$key_value)
   #---------- Force evaluate temporary ASTs ----------#
-  ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.getModelParameters(algo = algo)
 
   params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
-  error <- lapply(ALL_PARAMS, function(i) {
-    e <- ""
-    if (i$required && !(i$name %in% names(params)))
-      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
-    else if (i$name %in% names(params)) {
-      # changing Java types to R types
-      mapping <- .type.map[i$type,]
-      type    <- mapping[1L, 1L]
-      scalar  <- mapping[1L, 2L]
-      if (is.na(type))
-        stop("Cannot find type ", i$type, " in .type.map")
-      if (scalar) { # scalar == TRUE
-        if (type == "H2OModel")
-            type <-  "character"
-        if (!inherits(params[[i$name]], type))
-          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
-        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
-          e <- paste0("\"", i$name,"\" must be in")
-          for (fact in i$values)
-            e <- paste0(e, " \"", fact, "\",")
-          e <- paste(e, "but got", params[[i$name]])
-        }
-        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
-          params[[i$name]] <<- "Infinity"
-        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
-          params[[i$name]] <<- "-Infinity"
-      } else {      # scalar == FALSE
-        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
-        if (length(k) > 0)
-          for (n in k)
-            if (params[[i$name]][n] == Inf)
-              params[[i$name]][n] <<- "Infinity"
-            else
-              params[[i$name]][n] <<- "-Infinity"
-        if (!inherits(params[[i$name]], type))
-          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
-        else if (type == "character")
-          params[[i$name]] <<- .collapse.char(params[[i$name]])
-        else
-          params[[i$name]] <<- .collapse(params[[i$name]])
-      }
-    }
-    e
-  })
-
-  if(any(nzchar(error)))
-    stop(error)
-
-  #---------- Create parameter list to pass ----------#
-  param_values <- lapply(params, function(i) {
-    if(is(i, "H2OFrame"))
-      i@frame_id
-    else
-      i
-  })
-
+  param_values <- .h2o.checkModelParameters(algo = algorithm, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
@@ -210,6 +152,89 @@
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
   h2o.getModel(object@model_id, object@conn)
+}
+
+.h2o.prepareModelParameters <- function(algo, params) {
+  if (!inherits(params$training_frame, "H2OFrame")) {
+   tryCatch(params$training_frame <- h2o.getFrame(params$training_frame),
+            error = function(err) {
+              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
+            })
+  }
+  if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
+  if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
+  args <- .verify_dataxy(params$training_frame, x, y)
+  if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+  if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+  params$ignored_columns <- args$x_ignore
+  params$response_column <- args$y
+
+  params
+}
+
+.h2o.getModelParameters <- function(conn = h2o.getConnection(), algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  allParameters <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
+  allParameters
+}
+
+.h2o.checkModelParameters <- function(algo, allParams, params) {
+  error <- lapply(allParams, function(i) {
+    e <- ""
+    if (i$required && !(i$name %in% names(params)))
+      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
+    else if (i$name %in% names(params)) {
+      # changing Java types to R types
+      mapping <- .type.map[i$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
+      if (is.na(type))
+        stop("Cannot find type ", i$type, " in .type.map")
+      if (scalar) { # scalar == TRUE
+        if (type == "H2OModel")
+            type <-  "character"
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
+          e <- paste0("\"", i$name,"\" must be in")
+          for (fact in i$values)
+            e <- paste0(e, " \"", fact, "\",")
+          e <- paste(e, "but got", params[[i$name]])
+        }
+        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
+          params[[i$name]] <<- "Infinity"
+        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
+          params[[i$name]] <<- "-Infinity"
+      } else {      # scalar == FALSE
+        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (params[[i$name]][n] == Inf)
+              params[[i$name]][n] <<- "Infinity"
+            else
+              params[[i$name]][n] <<- "-Infinity"
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if (type == "character")
+          params[[i$name]] <<- .collapse.char(params[[i$name]])
+        else
+          params[[i$name]] <<- .collapse(params[[i$name]])
+      }
+    }
+    e
+  })
+
+  if(any(nzchar(error)))
+    stop(error)
+  
+  #---------- Create parameter list to pass ----------#
+  param_values <- lapply(params, function(i) {
+    if(is(i, "H2OFrame"))
+      i@frame_id
+    else
+      i
+  })
+
+  param_values
 }
 
 #' Predict on an H2O Model

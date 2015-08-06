@@ -368,7 +368,8 @@ def run_test(sys_args, test_to_run):
   log_and_echo("------------------------------------------------------------")
   num_keys = store_size()
   try:
-    test_to_run(ip, port)
+    if len(sys_args) > 3 and sys_args[3] == "--ipynb": ipy_notebook_exec(sys_args[4],save_and_norun=False)
+    else: test_to_run(ip, port)
   finally:
     remove_all()
     if keys_leaked(num_keys): print "Leaked Keys!"

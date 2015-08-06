@@ -246,8 +246,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param restartTimer
    * @return ModelBuilder job
    */
-  abstract public Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
-  abstract public long progressUnits();
+  abstract protected Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
+  abstract protected long progressUnits();
 
   /**
    * Override the Job's behavior here
