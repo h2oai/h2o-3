@@ -475,7 +475,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   xx <- x
   if( !is.null(formats) ) {  # might be NULL if resulted from slicing H2OTable (no need for full blown slice method on H2OTable... allow to be data frame at that point)
     for (j in seq_along(x)) {
-      if( formats[j] == "%d" ) formats[j] <- "%f"
+#      if( formats[j] == "%d" ) formats[j] <- "%f"
       xx[[j]] <- .format.helper(x[[j]], formats[j])
     }
   }
