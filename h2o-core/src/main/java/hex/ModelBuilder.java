@@ -869,15 +869,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void checkDistributions() {
     if (_parms._distribution == Distribution.Family.poisson) {
       if (_response.min() < 0)
-        error("_response", "Response must be positive for Poisson distribution.");
+        error("_response", "Response must be non-negative for Poisson distribution.");
     } else if (_parms._distribution == Distribution.Family.gamma) {
-      if (_response.min() <= 0)
-        error("_response", "Response must be positive for Gamma distribution. Use Tweedie or Poisson.");
+      if (_response.min() < 0)
+        error("_response", "Response must be non-negative for Gamma distribution.");
     } else if (_parms._distribution == Distribution.Family.tweedie) {
       if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
       if (_response.min() < 0)
-        error("_response", "Response cannot be negative for Tweedie distribution.");
+        error("_response", "Response must be non-negative for Tweedie distribution.");
     }
   }
 
