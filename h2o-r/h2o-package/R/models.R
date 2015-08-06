@@ -102,7 +102,7 @@
 
   params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
-  param_values <- .h2o.checkModelParameters(algo = algorithm, allParams = ALL_PARAMS, params = params)
+  param_values <- .h2o.checkModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
