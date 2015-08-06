@@ -1,11 +1,12 @@
 package water.util;
 
-import water.MemoryManager;
-
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Random;
+
+import water.MemoryManager;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -947,5 +948,25 @@ public class ArrayUtils {
       j += arr[i].length;
     }
     return result;
+  }
+
+  public static Object[][] zip(Object[] a, Object[] b) {
+    if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lenghts!");
+    Object[][] result = new Object[a.length][2];
+    for (int i = 0; i < a.length; i++) {
+      result[i][0] = a[i];
+      result[i][1] = b[i];
+    }
+
+    return result;
+  }
+
+  public static <K, V> int crossProductSize(Map<K, V[]> hyperSpace) {
+    int size = 1;
+    for (Map.Entry<K,V[]> entry : hyperSpace.entrySet()) {
+      V[] value = entry.getValue();
+      size *= value != null ? value.length : 1;
+    }
+    return size;
   }
 }

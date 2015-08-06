@@ -186,6 +186,13 @@ public class RequestServer extends NanoHTTPD {
     register("/99/Models.bin/(?<modelid>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel",                            new String[] {"model_id"},
             "Export given model.");
 
+    register("/99/Grids/(?<gridid>.*)"                              ,"GET"   ,GridsHandler.class, "fetch",                                  new String[] {"grid_id"},
+            "Return the specified grid search result.");
+
+    register("/99/Grids"                                            ,"GET"   ,GridsHandler.class, "list",
+            "Return all grids from H2O distributed K/V store.");
+
+
     register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility",
       "Set Model Builders visibility level.");
     register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility",
