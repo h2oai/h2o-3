@@ -4,7 +4,7 @@ A job can be polled for completion and reports the progress so far if it is stil
 """
 
 from connection import H2OConnection
-from h2o import __PROGRESS_BAR__
+import h2o
 import time
 import sys
 
@@ -64,7 +64,7 @@ class H2OJob(object):
     if progress == 1:
       self._100_percent = True
 
-    if __PROGRESS_BAR__ or self._100_percent:
+    if h2o.__PROGRESS_BAR__ or self._100_percent:
       p = int(self._progress_bar_width * progress)
       sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
                        ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))
