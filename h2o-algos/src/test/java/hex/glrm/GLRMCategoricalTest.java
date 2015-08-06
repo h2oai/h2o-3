@@ -146,7 +146,7 @@ public class GLRMCategoricalTest extends TestUtil {
     }
   }
 
-  @Test public void testLossRegularizer() throws InterruptedException, ExecutionException {
+  @Test public void testLosses() throws InterruptedException, ExecutionException {
     long seed = 0xDECAF;
     Random rng = new Random(seed);
     Frame train = null, score = null;

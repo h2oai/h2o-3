@@ -1,22 +1,22 @@
 # Misclassification error on categorical columns
-compareCats <- function(predH2O, predR) {
-  expect_equal(dim(predH2O), dim(predR))
-  predH2O <- data.frame(predH2O)
-  predR <- data.frame(predR)
-  if(ncol(predH2O) == 0 || nrow(predH2O) == 0) return(0)
+compareCats <- function(pred, actual) {
+  expect_equal(dim(pred), dim(actual))
+  pred.df <- data.frame(pred)
+  actual.df <- data.frame(actual)
+  if(ncol(pred.df) == 0 || nrow(pred.df) == 0) return(0)
   
   misclass <- 0
-  for(i in 1:ncol(predH2O)) {
-    if(length(levels(predH2O[,i])) != length(levels(predR[,i]))) {
-      if(all(levels(predH2O[,i]) %in% levels(predR[,i])))
-        levels(predH2O[,i]) <- levels(predR[,i])
-      else if(all(levels(predR[,i]) %in% levels(predH2O[,i])))
-        levels(predR[,i]) <- levels(predH2O[,i])
+  for(i in 1:ncol(pred.df)) {
+    if(length(levels(pred.df[,i])) != length(levels(actual.df[,i]))) {
+      if(all(levels(pred.df[,i]) %in% levels(actual.df[,i])))
+        levels(pred.df[,i]) <- levels(actual.df[,i])
+      else if(all(levels(actual.df[,i]) %in% levels(pred.df[,i])))
+        levels(actual.df[,i]) <- levels(pred.df[,i])
       else
         stop("Levels are mismatched! H2O levels: ", paste(levels(predH2O[,i]), collapse = ", "), "\tR levels: ", paste(levels(predR[,i]), collapse = ", "))
     }
-    isMissing <- sapply(predH2O[,i], is.na)
-    misclass <- misclass + sum(predH2O[!isMissing,i] != predR[!isMissing,i])
+    isMissing <- sapply(actual.df[,i], is.na)
+    misclass <- misclass + sum(pred.df[!isMissing,i] != actual.df[!isMissing,i])
   }
   misclass
 }
