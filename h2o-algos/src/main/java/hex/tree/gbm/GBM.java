@@ -254,13 +254,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk tr = chk_tree(chks, 0); // Prior tree sums
+        Chunk preds = chk_tree(chks, 0); // Prior tree sums
         Chunk wk = chk_work(chks, 0); // Place to store residuals
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
         Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
-          double f = tr.atd(row) + offset.atd(row);
+          double f = preds.atd(row) + offset.atd(row);
           double y = ys.atd(row);
           if( _parms._distribution == Distribution.Family.multinomial ) {
             double weight = hasWeightCol() ? chk_weight(chks).atd(row) : 1;
@@ -293,11 +293,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         maxValues = new IcedHashMap<>();
         Chunk ys = chk_resp(chks);
         Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk tr = chk_tree(chks, 0); // Prior tree sums
+        Chunk preds = chk_tree(chks, 0); // Prior tree sums
         Chunk nids = chk_nids(chks, 0);
-        for( int row = 0; row < tr._len; row++) {
+        for( int row = 0; row < preds._len; row++) {
           if( ys.isNA(row) ) continue;
-          double f = tr.atd(row) + offset.atd(row);
+          double f = preds.atd(row) + offset.atd(row);
           IcedLong nidx = new IcedLong(nids.at8(row));
           IcedDouble mins = minValues.get(nidx);
           double oldMin = mins == null ? Double.MAX_VALUE : mins._val;
