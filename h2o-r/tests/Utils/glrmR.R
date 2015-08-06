@@ -3,6 +3,7 @@ compareCats <- function(predH2O, predR) {
   expect_equal(dim(predH2O), dim(predR))
   predH2O <- data.frame(predH2O)
   predR <- data.frame(predR)
+  if(ncol(predH2O) == 0 || nrow(predH2O) == 0) return(0)
   
   misclass <- 0
   for(i in 1:ncol(predH2O)) {
@@ -38,19 +39,41 @@ transformData <- function(df, transform = "NONE") {
   return(df_trans)
 }
 
-checkGLRMPredErr <- function(fitH2O, fitR, testH2O, testR, tolerance = 1e-6) {
+checkError <- function(dataR, imputeR, metricsH2O, transform = "NONE", tolerance = 1e-6) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
   
-  Log.info("Impute XY and check error metrics")
-  pred <- predict(fitH2O, testH2O)
-  pred.df <- as.data.frame(pred)
-  Log.info("GLRM Imputation:"); print(head(pred))
+  # Transform data in R to match what H2O processed and compute errors
+  dataR_trans <- transformData(dataR, transform = transform)
+  numerrR <- sum((NUM(dataR_trans) - NUM(imputeR))^2, na.rm = TRUE)
+  caterrR <- compareCats(FAC(imputeR), FAC(dataR_trans))
   
-  testR_trans <- transformData(testR, transform = fitH2O@parameters$transform)
-  numerrR <- sum((NUM(testR_trans) - NUM(pred.df))^2, na.rm = TRUE)
-  caterrR <- compareCats(FAC(pred.df), FAC(testR_trans))
-  expect_equal(fitH2O@model$training_metrics@metrics$numerr, numerrR, tolerance = tolerance)
-  expect_equal(fitH2O@model$training_metrics@metrics$caterr, caterrR)
+  # Compare with H2O's generated training and validation metrics
+  expect_equal(metricsH2O$numerr, numerrR, tolerance = tolerance)
+  expect_equal(metricsH2O$caterr, caterrR)
+}
+
+checkTrainErr <- function(fitH2O, trainR, imputeR, tolerance = 1e-6) {
+  checkError(trainR, imputeR, fitH2O@model$training_metrics@metrics, fitH2O@parameters$transform, tolerance)
+}
+
+checkValidErr <- function(fitH2O, testR, imputeR, tolerance = 1e-6) {
+  checkError(testR, imputeR, fitH2O@model$validation_metrics@metrics, fitH2O@parameters$transform, tolerance)
+}
+
+checkGLRMPredErr <- function(fitH2O, trainH2O, validH2O = NULL, tolerance = 1e-6) {
+  Log.info("Impute original data from XY decomposition")
+  pred <- predict(fitH2O, trainH2O)   # TODO: Don't need trainH2O for pure imputation
+  print(head(pred))
+  print(fitH2O)
+  
+  Log.info("Check training and validation error metrics")
+  pred.df <- as.data.frame(pred)
+  trainR <- as.data.frame(trainH2O)
+  checkTrainErr(fitH2O, trainR, pred.df, tolerance)
+  if(!is.null(validH2O) && !is.null(fitH2O@model$validation_metrics)) {
+    validR <- as.data.frame(validH2O)
+    checkValidErr(fitH2O, validR, pred.df, tolerance)
+  }
   return(pred)
 }

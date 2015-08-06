@@ -10,10 +10,11 @@ test.glrm.benign <- function(conn) {
   rank <- seq(from = 8, to = 14, by = 2)
   for( i in rank ) {
     Log.info(paste("H2O GLRM with rank", i, "decomposition:\n"))
-    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = i, init = "PlusPlus", recover_svd = TRUE)
+    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = i, init = "SVD", recover_svd = TRUE)
     Log.info(paste("Iterations:", benign.glrm@model$iterations, "\tFinal Objective:", benign.glrm@model$objective))    
     Log.info(paste("Singular values:", paste(benign.glrm@model$singular_vals, collapse = " ")))
     Log.info("Eigenvectors:"); print(benign.glrm@model$eigenvectors)
+    checkGLRMPredErr(benign.glrm, benign.hex, tolerance = 1e-6)
     h2o.rm(benign.glrm@model$loading_key$name)   # Remove loading matrix to free memory
   }
   testEnd()
