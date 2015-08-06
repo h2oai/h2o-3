@@ -6,9 +6,10 @@ A job can be polled for completion and reports the progress so far if it is stil
 from connection import H2OConnection
 import time
 import sys
+import h2o
 
 
-class H2OJob(object):
+class H2OJob:
   """
   A class representing an H2O Job.
   """
@@ -62,7 +63,9 @@ class H2OJob(object):
     progress = min(self.progress, 1)
     if progress == 1:
       self._100_percent = True
-    p = int(self._progress_bar_width * progress)
-    sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
-                     ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))
-    sys.stdout.flush()
+
+    if h2o.__PROGRESS_BAR__ or self._100_percent:
+      p = int(self._progress_bar_width * progress)
+      sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
+                       ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))
+      sys.stdout.flush()

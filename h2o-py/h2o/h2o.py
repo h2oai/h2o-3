@@ -20,6 +20,9 @@ from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMul
 import h2o_model_builder
 
 
+__PROGRESS_BAR__ = True  # display & update progress bar while polling
+
+
 def import_file(path):
   """
   Import a single file or collection of files.
@@ -382,6 +385,14 @@ def ou():
   """
   from inspect import stack
   return stack()[2][1]
+
+def no_progress():
+  global __PROGRESS_BAR__
+  __PROGRESS_BAR__=False
+
+def do_progress():
+  global __PROGRESS_BAR__
+  __PROGRESS_BAR__=True
 
 def log_and_echo(message):
   """

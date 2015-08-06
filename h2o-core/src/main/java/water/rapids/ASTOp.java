@@ -3777,6 +3777,7 @@ class ASTRunif extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
+    if( !env.isAry() ) throw new IllegalArgumentException("Frame not found: " + env.pop().value());
     Vec rnd = env.popAry().anyVec().makeRand(seed);
     Frame f = new Frame(new String[]{"rnd"}, new Vec[]{rnd});
     env.pushAry(f);

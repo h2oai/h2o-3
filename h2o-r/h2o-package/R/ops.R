@@ -63,11 +63,17 @@
 NULL
 #' @rdname H2OS4groupGeneric
 #' @export
-setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,0,e2))
+setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) {
+  if( .Generic=="-" ) .h2o.binary_frame_op("*",-1,e2)   # -fr  => -1*fr
+  else                .h2o.binary_row_op(.Generic,0,e2)
+})
 
 #' @rdname H2OS4groupGeneric
 #' @export
-setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,0))
+setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) {
+  if( .Generic=="-" ) .h2o.binary_frame_op("*",e1,-1)    # -fr => -1*fr
+  else                .h2o.binary_row_op(.Generic,e1,0)
+})
 
 #' @rdname H2OS4groupGeneric
 #' @export
