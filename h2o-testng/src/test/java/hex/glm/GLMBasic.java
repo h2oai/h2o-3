@@ -1,5 +1,7 @@
 package hex.glm;
 
+import h2o.testng.utils.Dataset;
+import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
 import hex.glm.GLMModel.GLMParameters;
@@ -30,6 +32,8 @@ import water.parser.ParseDataset;
 
 public class GLMBasic extends TestNGUtil {
 
+	private static HashMap<String, Dataset> dataSetCharacteristic;
+	
 	// below are single param which can set automatically to a GLM Object
 	private static Param[] params = new Param[] {
 		
@@ -140,6 +144,8 @@ public class GLMBasic extends TestNGUtil {
 		Object[][] data = null;
 		List<String> lines = null;
 
+		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
+
 		try {
 			// read data from file
 			lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
@@ -164,9 +170,9 @@ public class GLMBasic extends TestNGUtil {
 			data[r][1] = variables[tcHeaders.indexOf("test_description")];
 			data[r][2] = variables[tcHeaders.indexOf("dataset_directory")];
 			data[r][3] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][4] = variables[tcHeaders.indexOf("train_dataset_filename")];
-			data[r][5] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][6] = variables[tcHeaders.indexOf("validate_dataset_filename")];
+			data[r][4] = variables[tcHeaders.indexOf("validate_dataset_id")];
+			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
+			data[r][6] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
 			data[r][7] = variables;
 
 			r++;
@@ -174,34 +180,32 @@ public class GLMBasic extends TestNGUtil {
 
 		return data;
 	}
-	
+
 	@Test(dataProvider = "glmCases")
-	public void basic(String testcaseId, String testDescription, String datasetDirectory,
-					  String trainDatasetId, String trainDatasetFilename, String validateDatasetId, String validateDatasetFilename,
-					  String[] rawInput) {
+	public void basic(String testcaseId, String testDescription, String datasetDirectory, String trainDatasetId,
+			String validateDatasetId, Dataset trainDataset, Dataset validateDataset, String[] rawInput) {
+
 		GLMParameters glmParams = null;
-		
+
 		redirectStandardStreams();
 
 		System.out.println("");
-		System.out.println(String.format("Datasets: \n" +
+		System.out.println(String.format(
+				"Datasets: \n" +
 				"Train Dataset ID:      %s\n" +
-				"Train Dataset File:    %s\n" +
-				"Validate Dataset ID:   %s\n" +
-				"Validate Dataset File: %s\n",
-				trainDatasetId, trainDatasetFilename, validateDatasetId, validateDatasetFilename));
+				"Validate Dataset ID:   %s\n", 
+				trainDatasetId,	validateDatasetId));
 		System.out.println("");
 
 		try {
-			String validateMessage = validate(rawInput);
+			String validateMessage = validate(trainDatasetId, trainDataset, rawInput);
 
 			if (validateMessage != null) {
 				System.out.println(validateMessage);
 				Assert.fail(String.format(validateMessage));
 			}
 			else {
-				glmParams = toGLMParameters(datasetDirectory, trainDatasetId, trainDatasetFilename, validateDatasetId,
-						validateDatasetFilename, rawInput);
+				glmParams = toGLMParameters(trainDatasetId, validateDatasetId, trainDataset, validateDataset, rawInput);
 
 				_basic(testcaseId, glmParams, rawInput);
 			}
@@ -221,12 +225,12 @@ public class GLMBasic extends TestNGUtil {
 	}
 
 	private void _basic(String testcaseId, GLMParameters glmParams, String[] rawInput) {
-		
+
 		System.out.println(String.format("Testcase: %s", testcaseId));
-//		System.out.println(String.format("Description: %s", testDescription));
+		// System.out.println(String.format("Description: %s", testDescription));
 		System.out.println("GLM Params:");
-		for (Param p: params) {
-				p.print(glmParams);
+		for (Param p : params) {
+			p.print(glmParams);
 		}
 
 		Frame trainFrame = null;
@@ -253,7 +257,7 @@ public class GLMBasic extends TestNGUtil {
 
 			System.out.println("Build model");
 			job = new GLM(modelKey, "basic glm test", glmParams);
-			
+
 			System.out.println("Train model");
 			model = job.trainModel().get();
 
@@ -261,14 +265,14 @@ public class GLMBasic extends TestNGUtil {
 
 			System.out.println("Predict testcase " + testcaseId);
 			score = model.score(trainFrame);
-			
+
 			System.out.println("Predict success.");
 			System.out.println("Testcase is passed.");
 		}
 		catch (IllegalArgumentException ex) {
 			// can't predict testcase
 			ex.printStackTrace();
-			Assert.fail("Test is failed. It can't predict",ex);
+			Assert.fail("Test is failed. It can't predict", ex);
 		}
 		finally {
 			if (trainFrame != null) {
@@ -289,45 +293,45 @@ public class GLMBasic extends TestNGUtil {
 	}
 
 	private static void printRawInput(String[] rawInput) {
+
 		System.out.println("RAW INPUTS:");
 		for (int i = 0; i < tcHeaders.size(); i++) {
 			System.out.println(String.format("  %s: %s", tcHeaders.get(i), rawInput[i]));
 		}
 	}
 
-	private static String validate(String[] rawInput) {
+	private static String validate(String train_dataset_id, Dataset train_dataset, String[] rawInput) {
 
 		System.out.println("Validate Parameters object with testcase: " + rawInput[tcHeaders.indexOf("testcase_id")]);
 		printRawInput(rawInput);
 
 		String result = null;
 
-		String dataset_directory = rawInput[tcHeaders.indexOf("dataset_directory")].trim();
-		String train_dataset_id = rawInput[tcHeaders.indexOf("train_dataset_id")].trim();
-		String train_dataset_filename = rawInput[tcHeaders.indexOf("train_dataset_filename")].trim();
-
-		if (StringUtils.isEmpty(dataset_directory)) {
-			result = "Dataset directory is empty";
-		}
-		else if (StringUtils.isEmpty(train_dataset_id) || StringUtils.isEmpty(train_dataset_filename)) {
+		if (StringUtils.isEmpty(train_dataset_id)) {
 			result = "Dataset files is empty";
 		}
-		else{
+		else if (train_dataset == null) {
+			result = "Dataset characteristic file is empty";
+		}
+		else if (!train_dataset.isAvailabel()) {
+			result = "Dataset characteristic is not available";
+		}
+		else {
 			result = Param.validateAutoSetParams(params, rawInput, tcHeaders);
 		}
 
-		if(result != null){
+		if (result != null) {
 			result = "[INVALID] " + result;
 		}
-		
+
 		return result;
 	}
 
-	private static GLMParameters toGLMParameters(String datasetDirectory, String trainDatasetId,  String trainDatasetFilename,
-			String validateDatasetId, String validateDatasetFilename, String[] rawInput) {
+	private static GLMParameters toGLMParameters(String trainDatasetId, String validateDatasetId, Dataset trainDataset,
+			Dataset validateDataset, String[] rawInput) {
 
 		System.out.println("Create GLMParameter object");
-		
+
 		GLMParameters glmParams = new GLMParameters();
 
 		Family f = (Family) familyOptionsParams.getValue(rawInput, tcHeaders);
@@ -352,21 +356,14 @@ public class GLMBasic extends TestNGUtil {
 		Frame trainFrame = null;
 		Frame validateFrame = null;
 
-		if ("bigdata".equals(datasetDirectory)) {
-			datasetDirectory = "bigdata/laptop/testng/";
-		}
-		else {
-			datasetDirectory = "smalldata/testng/";
-		}
-		
 		try {
 
-			System.out.println("Create train frame: " + trainDatasetFilename);
-			trainFrame = Param.createFrame(datasetDirectory + trainDatasetFilename, trainDatasetId);
+			System.out.println("Create train frame: " + trainDatasetId);
+			trainFrame = trainDataset.getFrame();
 
-			if (StringUtils.isNotEmpty(validateDatasetFilename)) {
-				System.out.println("Create validate frame: " + validateDatasetFilename);
-				validateFrame = Param.createFrame(datasetDirectory + validateDatasetFilename, validateDatasetId);
+			if (StringUtils.isNotEmpty(validateDatasetId) && validateDataset != null && validateDataset.isAvailabel()) {
+				System.out.println("Create validate frame: " + validateDatasetId);
+				validateFrame = validateDataset.getFrame();
 			}
 		}
 		catch (Exception e) {
@@ -396,22 +393,25 @@ public class GLMBasic extends TestNGUtil {
 			// Here's an example of how to make the beta constraints frame.
 			// First, represent the beta constraints frame as a string, for example:
 
-			//"names, lower_bounds, upper_bounds\n"+
-			//"AGE, -.5, .5\n"+
-			//"RACE, -.5, .5\n"+
-			//"GLEASON, -.5, .5"
+			// "names, lower_bounds, upper_bounds\n"+
+			// "AGE, -.5, .5\n"+
+			// "RACE, -.5, .5\n"+
+			// "GLEASON, -.5, .5"
 			String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
 			List<String> predictorNames = Arrays.asList(trainFrame._names);
-			//predictorNames.remove(glmParams._response_column); // remove the response column name. we only want predictors
-			for(String name : predictorNames){
+			// predictorNames.remove(glmParams._response_column); // remove the response column name. we only want
+			// predictors
+			for (String name : predictorNames) {
 				if (!name.equals(glmParams._response_column)) {
-					if(trainFrame.vec(name).isEnum()){ // need coefficient names for each level of a categorical column
-						for(String level : trainFrame.vec(name).domain()){
-							betaConstraintsString += String.format("%s.%s,%s,%s\n", name,level,lowerBound,upperBound);
+					if (trainFrame.vec(name).isEnum()) { // need coefficient names for each level of a categorical
+															// column
+						for (String level : trainFrame.vec(name).domain()) {
+							betaConstraintsString += String
+									.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
 						}
 					}
 					else { // numeric columns only need one coefficient name
-						betaConstraintsString += String.format("%s,%s,%s\n", name,lowerBound,upperBound);
+						betaConstraintsString += String.format("%s,%s,%s\n", name, lowerBound, upperBound);
 					}
 				}
 			}
@@ -420,7 +420,7 @@ public class GLMBasic extends TestNGUtil {
 			betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 			glmParams._beta_constraints = betaConstraints._key;
 		}
-		
+
 		return glmParams;
 	}
 }
