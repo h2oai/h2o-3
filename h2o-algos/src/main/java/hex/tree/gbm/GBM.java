@@ -310,7 +310,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           double oldMax = maxs == null ? -Double.MAX_VALUE : maxs._val;
           if (f > oldMax) {
             IcedDouble ff = new IcedDouble(f);
-            if (maxs == null)  maxValues.put(nidx, ff);
+            if (maxs == null) maxValues.put(nidx, ff);
             else maxValues.replace(nidx, ff);
           }
         }
@@ -346,7 +346,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     final static private double MIN_LOG_TRUNC = -19;
     final static private double MAX_LOG_TRUNC = 19;
 
-    private void truncatePreds(DTree[] ktrees, int[] leafs,   final IcedHashMap<IcedLong, IcedDouble> minValues,
+    private void truncatePreds(DTree[] ktrees, int[] leafs, Distribution.Family dist,
+                               final IcedHashMap<IcedLong, IcedDouble> minValues,
                                final IcedHashMap<IcedLong, IcedDouble> maxValues) {
       assert(_nclass == 1);
       final DTree tree = ktrees[0];
@@ -357,16 +358,38 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final LeafNode node = ((LeafNode) tree.node(leafs[0] + i));
         nidx._val = node.nid();
         IcedDouble nodeMax = maxValues.get(nidx);
+
+        // https://github.com/cran/gbm/blob/master/src/poisson.cpp
+        // https://github.com/harrysouthworth/gbm/blob/master/src/poisson.cpp
+        // https://github.com/gbm-developers/gbm/blob/master/src/poisson.cpp
+
+        // https://github.com/harrysouthworth/gbm/blob/master/src/gamma.cpp
+        // https://github.com/gbm-developers/gbm/blob/master/src/gamma.cpp
+
+        // https://github.com/harrysouthworth/gbm/blob/master/src/tweedie.cpp
+        // https://github.com/gbm-developers/gbm/blob/master/src/tweedie.cpp
         if (nodeMax != null) {
-          if (nodeMax._val + node._pred > MAX_LOG_TRUNC) {
+          double val = node._pred;
+          if (dist != Distribution.Family.poisson) //only for gamma/tweedie
+            val += nodeMax._val;
+          if (val > MAX_LOG_TRUNC) {
+            Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax._val));
             node._pred = (float) (MAX_LOG_TRUNC - nodeMax._val);
           }
         }
         IcedDouble nodeMin = minValues.get(nidx);
         if (nodeMin != null) {
-          if (nodeMin._val + node._pred < MIN_LOG_TRUNC) {
+          double val = node._pred;
+          if (dist != Distribution.Family.poisson) //only for gamma/tweedie
+            val += nodeMin._val;
+          if (val < MIN_LOG_TRUNC) {
+            Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin._val));
             node._pred = (float) (MIN_LOG_TRUNC - nodeMin._val);
           }
+        }
+        if (node._pred < MIN_LOG_TRUNC && node._pred > MAX_LOG_TRUNC) {
+          Log.warn("Terminal node prediction outside of allowed interval in log-space: "
+                  + node._pred + " (should be in " + MIN_LOG_TRUNC + "..." + MAX_LOG_TRUNC + ").");
         }
       }
     }
@@ -391,16 +414,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      fitBestConstants(ktrees, leafs, new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train));
+      GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
+//      for(int i = 0; i < gp._num.length; i++ )
+//        assert(ArrayUtils.minValue(gp._num[i]) > 0);
+      fitBestConstants(ktrees, leafs, gp);
+
+      // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == Distribution.Family.gamma ||
               _parms._distribution == Distribution.Family.poisson ||
-              _parms._distribution == Distribution.Family.tweedie ) {
+              _parms._distribution == Distribution.Family.tweedie) {
         ComputeMinMax minMax = new ComputeMinMax().doAll(_train);
         assert(minMax.minValues.size() == minMax.maxValues.size());
-        Log.info("Number of leaf nodes: " + minMax.minValues.size());
-        Log.info("Min: " + java.util.Arrays.deepToString(minMax.minValues.entrySet().toArray()));
-        Log.info("Max: " + java.util.Arrays.deepToString(minMax.maxValues.entrySet().toArray()));
-        truncatePreds(ktrees, leafs, minMax.minValues, minMax.maxValues);
+//        Log.info("Number of leaf nodes: " + minMax.minValues.size());
+//        Log.info("Min: " + java.util.Arrays.deepToString(minMax.minValues.entrySet().toArray()));
+//        Log.info("Max: " + java.util.Arrays.deepToString(minMax.maxValues.entrySet().toArray()));
+        truncatePreds(ktrees, leafs, _parms._distribution, minMax.minValues, minMax.maxValues);
       }
 
       // ----
@@ -508,7 +536,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
 
       double gamma(int tree, int nid) {
-        double g = _denom[tree][nid] == 0 ? 0 : _num[tree][nid]/ _denom[tree][nid];
+        if (_denom[tree][nid] == 0) return 0;
+        double g = _num[tree][nid]/ _denom[tree][nid];
         assert(!Double.isInfinite(g)) : "numeric overflow";
         assert(!Double.isNaN(g)) : "numeric overflow";
         if (_dist == Distribution.Family.poisson

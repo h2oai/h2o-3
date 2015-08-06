@@ -36,7 +36,7 @@ public class Distribution extends Iced {
     assert(tweediePower >1 && tweediePower <2);
     this.tweediePower = tweediePower;
   }
-  static public double MIN_LOG = -6;
+  static public double MIN_LOG = -19;
   static public double MAX = Math.exp(19);
 
   public final Family distribution;
@@ -53,7 +53,8 @@ public class Distribution extends Iced {
   public static double log(double x) {
     x = Math.max(0,x);
     double val = x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
-//    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
+    if (val == MIN_LOG)
+      Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
     return val;
   }
 
