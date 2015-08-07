@@ -451,6 +451,8 @@ Distributed Random Forest (DRF) is a powerful classification tool. When given a 
 
 - **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
+- **Nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
+
 
 ###Interpreting a DRF Model
 
@@ -953,6 +955,8 @@ Gradient Boosted Regression and Gradient Boosted Classification are forward lear
 - **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
 - **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
+
+- **Nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
 
 
 ###Interpreting a GBM Model

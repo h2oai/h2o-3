@@ -168,12 +168,12 @@ public class JettyHTTPD {
   protected void startHttp() throws Exception {
     _server = new Server();
 
-    QueuedThreadPool p = new QueuedThreadPool();
-    p.setName("jetty-h2o");
-    p.setMinThreads(3);
-    p.setMaxThreads(50);
-    p.setMaxIdleTimeMs(3000);
-    _server.setThreadPool(p);
+//    QueuedThreadPool p = new QueuedThreadPool();
+//    p.setName("jetty-h2o");
+//    p.setMinThreads(3);
+//    p.setMaxThreads(50);
+//    p.setMaxIdleTimeMs(3000);
+//    _server.setThreadPool(p);
 
     Connector connector=new SocketConnector();
     if (_ip != null) {

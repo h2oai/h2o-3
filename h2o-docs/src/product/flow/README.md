@@ -635,6 +635,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max\_after\_balance\_size**: [(DRF](#DRF), [GBM](#GBM), [DL)](#DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
+- **Nbins\_top\_level**: [DRF](#DRF),[GBM](#GBM) (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
+
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  

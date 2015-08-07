@@ -117,7 +117,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   @Override
   public float[] predict(double[] data, float[] preds, int maxIters) {
-    throw new UnsupportedOperationException("Unsupported operation - uses score0 method!");
+    throw new UnsupportedOperationException("Unsupported operation - use score0 method!");
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
