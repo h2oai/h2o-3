@@ -387,10 +387,21 @@ def ou():
   return stack()[2][1]
 
 def no_progress():
+  """
+  Disable the progress bar from flushing to stdout. The completed progress bar is printed
+  when a job is complete so as to demarcate a log file.
+
+  :return: None
+  """
   global __PROGRESS_BAR__
   __PROGRESS_BAR__=False
 
 def do_progress():
+  """
+  Enable the progress bar. (Progress bar is enabled by default).
+
+  :return: None
+  """
   global __PROGRESS_BAR__
   __PROGRESS_BAR__=True
 
