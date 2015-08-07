@@ -1,12 +1,12 @@
 package water.currents;
 
+import water.Futures;
 import water.H2O;
+import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -98,5 +98,97 @@ class ASTNrow extends ASTPrim {
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     return new ValNum(fr.numRows());
+  }
+}
+
+
+class ASTNLevels extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (nlevels x)
+  @Override String str() { return "nlevels"; }
+  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[] ) {
+    int nlevels;
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if (fr.numCols() == 1) {
+      Vec v = fr.anyVec();
+      nlevels = v.isEnum()?v.domain().length:0;
+      return new ValNum(nlevels);
+    } else throw new IllegalArgumentException("nlevels applies to a single column. Got: " + fr.numCols());
+  }
+}
+
+class ASTLevels extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (levels x)
+  @Override String str() { return "levels"; }
+  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+    Futures fs = new Futures();
+    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());
+    Vec[] vecs = new Vec[keys.length];
+
+    // compute the longest vec... that's the one with the most domain levels
+    int max=0;
+    for(int i=0;i<f.numCols();++i )
+      if( f.vec(i).isEnum() )
+        if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
+
+    for( int i=0;i<f.numCols();++i ) {
+      AppendableVec v = new AppendableVec(keys[i]);
+      NewChunk nc = new NewChunk(v,0);
+      String[] dom = f.vec(i).domain();
+      int numToPad = dom==null?max:max-dom.length;
+      if( dom != null )
+        for(int j=0;j<dom.length;++j) nc.addNum(j);
+      for(int j=0;j<numToPad;++j)     nc.addNA();
+      nc.close(0,fs);
+      vecs[i] = v.close(fs);
+      vecs[i].setDomain(dom);
+    }
+    fs.blockForPending();
+    Frame fr2 = new Frame(vecs);
+    return new ValFrame(fr2);
+  }
+}
+
+class ASTSetLevel extends ASTPrim {
+  @Override int nargs() { return 1+2; } // (setLevel x level)
+  @Override String str() { return "setLevel"; }
+  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
+    String[] doms = fr.anyVec().domain().clone();
+    if( doms == null )
+      throw new IllegalArgumentException("Cannot set the level on a non-factor column!");
+
+    String lvl = asts[2].exec(env).getStr();
+
+    final int idx = Arrays.asList(doms).indexOf(lvl);
+    if (idx == -1) throw new IllegalArgumentException("Did not find level `" + lvl + "` in the column.");
+
+
+    // COW semantics
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i=0;i<c._len;++i)
+          nc.addNum(idx);
+      }
+    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    return new ValFrame(fr2);
+  }
+}
+
+
+class ASTSetDomain extends ASTPrim {
+  @Override int nargs() { return 1+2;} // (setDomain x [list of strings])
+  @Override String str() { return "setDomain"; }
+  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
+    Vec v = f.anyVec().makeCopy();
+    if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
+    String[] domains = ((ASTStrList)asts[2])._strs;
+    if( domains!=null && domains.length != v.domain().length)
+      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + domains.length);
+    v.setDomain(domains);
+    return new ValFrame(new Frame(v));
   }
 }

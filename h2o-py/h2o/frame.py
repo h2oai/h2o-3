@@ -350,7 +350,7 @@ class H2OFrame:
       lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
       levels=[level for l in lol for level in l] if self.ncol()==1 else lol
     elif col is not None:
-      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("[", self, None,col)))._frame(),False)[1:]
+      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("cols", self, col)))._frame(),False)[1:]
       levels=[level for l in lol for level in l]
     else:                             levels=None
     return None if levels is None or levels==[] else levels
@@ -365,31 +365,29 @@ class H2OFrame:
     nlevels = self.levels(col=col)
     return len(nlevels) if nlevels else 0
 
-  def setLevel(self, level):
+  def set_level(self, level):
     """
     A method to set all column values to one of the levels.
 
     :param level: The level at which the column will be set (a string)
     :return: An H2OFrame with all entries set to the desired level
     """
-    return H2OFrame(expr=ExprNode("setLevel", self, level))._frame()
+    return H2OFrame(expr=ExprNode("setLevel", self, level))
 
-  def setLevels(self, levels):
+  def set_levels(self, levels):
     """
-    Works on a single categorical vector. New domains must be aligned with the old domains. This call has SIDE
-    EFFECTS and mutates the column in place (does not make a copy).
+    Works on a single categorical vector. New domains must be aligned with the old domains.
+    This call has copy-on-write semantics.
 
     :param level: The level at which the column will be set (a string)
     :param x: A single categorical column.
     :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
     old levels.
-    :return: None
+    :return: A new column with the domains.
     """
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("setDomain", self, levels)._eager()))
-    self._update()
-    return self
+    return H2OFrame(expr=ExprNode("setDomain",self,levels))
 
-  def setNames(self,names):
+  def set_names(self,names):
     """
     Change the column names to `names`.
 
@@ -400,7 +398,7 @@ class H2OFrame:
     self._update()
     return self
 
-  def setName(self,col=None,name=None):
+  def set_name(self,col=None,name=None):
     """
     Set the name of the column at the specified index.
 
@@ -502,19 +500,19 @@ class H2OFrame:
     """
     :return: The product of the column.
     """
-    return H2OFrame(expr=ExprNode("prod",self,na_rm))._scalar()
+    return H2OFrame(expr=ExprNode("prod.na" if na_rm else "prod",self))._scalar()
 
   def any(self,na_rm=False):
     """
     :return: True if any element is True in the column.
     """
-    return H2OFrame(expr=ExprNode("any",self,na_rm))._scalar()
+    return H2OFrame(expr=ExprNode("any.na" if na_rm else "any",self))._scalar()
 
   def all(self):
     """
     :return: True if every element is True in the column.
     """
-    return H2OFrame(expr=ExprNode("all",self,False))._scalar()
+    return H2OFrame(expr=ExprNode("all",self))._scalar()
 
   def isnumeric(self):
     """
@@ -678,7 +676,7 @@ class H2OFrame:
     expr = ExprNode("=", self, src, col_expr, row_expr)
     h2o.rapids(ExprNode._collapse_sb(expr._eager()), self._id)
     self._update()
-    if newcolname is not None: self.setName(update_index, newcolname)
+    if newcolname is not None: self.set_name(update_index, newcolname)
 
   def __int__(self):   return int(self._scalar())
 
@@ -931,7 +929,7 @@ class H2OFrame:
     densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow())]
     densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
-    densities_frame.setNames(["density"])
+    densities_frame.set_names(["density"])
     frame = frame.cbind(densities_frame)
 
     if plot:

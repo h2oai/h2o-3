@@ -10,6 +10,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 /** Subclasses take a Frame and produces a scalar.  NAs -> NAs */
 abstract class ASTReducerOp extends ASTPrim {
@@ -174,6 +175,63 @@ class ASTAll extends ASTPrim {
   }
 }
 
+class ASTAny extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (any x)
+  @Override String str() { return "any"; }
+  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    boolean any;
+    Val val = stk.track(asts[1].exec(env));
+    if( val.isNum() ) any = val.getNum()!=0;
+    else {
+      Frame fr = val.getFrame();
+      for(int i=0;i<fr.numCols();i++) {
+        Vec v = fr.vec(i);
+        if( !v.isInt() ) throw new IllegalArgumentException("all columns must be a columns of 1s and 0s.");
+        if( v.isConst() )
+          if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
+          else
+          if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
+        if( v.naCnt() > 0 ) return new ValStr("TRUE");
+      }
+      any = new AnyTask().doAll(fr).any;
+    }
+    return new ValStr(any?"TRUE":"FALSE");
+  }
+
+  private static class AnyTask extends MRTask<AnyTask> {
+    private boolean any=false;
+    @Override public void map(Chunk[] c) {
+      int j=0;
+      for (Chunk aC : c) {
+        for( j=0; j<c[0]._len;++j ) {
+          if( !any ) {
+            if(aC.isNA(j)) {
+              any = false;
+              break;
+            }
+            any |= aC.atd(j) == 1;
+          } else break;
+        }
+        if( j!=c[0]._len) break;
+      }
+    }
+    @Override public void reduce(AnyTask t) { any &= t.any; }
+  }
+}
+
+class ASTAnyNA extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (any.na x)
+  @Override String str() { return "any.na"; }
+  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String res = "FALSE";
+    for (int i = 0; i < fr.vecs().length; ++i)
+      if (fr.vecs()[i].naCnt() > 0) { res = "TRUE"; break; }
+    return new ValStr(res);
+  }
+}
+
+
 // ----------------------------------------------------------------------------
 /** Subclasses take a Frame and produces a scalar.  NAs are dropped */
 //abstract class ASTNARedOp extends ASTReducerOp {
@@ -233,5 +291,271 @@ class ASTSdev extends ASTPrim {
     if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
       throw new IllegalArgumentException("sd only works on a single numeric column");
     return new ValNum(fr.anyVec().sigma());
+  }
+}
+
+
+class ASTProd extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (prod x)
+  @Override String str(){ return "prod";}
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    double prod=new RedProd().doAll(fr)._d;
+    return new ValNum(prod);
+  }
+
+  private static class RedProd extends MRTask<RedProd> {
+    double _d;
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+        double prod=1.;
+        for (int r = 0; r < rows; r++)
+          prod *= C.atd(r);
+        _d = prod;
+        if( Double.isNaN(prod) ) break;
+      }
+    }
+    @Override public void reduce( RedProd s ) { _d += s._d; }
+  }
+}
+
+class ASTProdNA extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (prod x)
+  @Override String str(){ return "prod.na";}
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    double prod=new RedProd().doAll(fr)._d;
+    return new ValNum(prod);
+  }
+
+  private static class RedProd extends MRTask<RedProd> {
+    double _d;
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+        double prod=1.;
+        for (int r = 0; r < rows; r++) {
+          if( C.isNA(r) ) continue;
+          prod *= C.atd(r);
+        }
+        _d = prod;
+        if( Double.isNaN(prod) ) break;
+      }
+    }
+    @Override public void reduce( RedProd s ) { _d += s._d; }
+  }
+}
+
+class ASTCumSum extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (cumsum x)
+  @Override String str() { return "cumsum"; }
+
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
+    // per chunk cum-sum
+    CumSumTask t = new CumSumTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkSums = t._chkSums;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        double d=c.cidx()==0?0:chkSums[c.cidx()-1];
+        for(int i=0;i<c._len;++i)
+          c.set(i, c.atd(i)+d);
+      }
+    }.doAll(cumuVec);
+    return new ValFrame(new Frame(cumuVec));
+  }
+
+  private class CumSumTask extends MRTask<CumSumTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkSums;
+
+    CumSumTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkSums = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double sum=0;
+      for(int i=0;i<c._len;++i) {
+        sum += c.isNA(i) ? Double.NaN : c.atd(i);
+        if( Double.isNaN(sum) ) nc.addNA();
+        else                    nc.addNum(sum);
+      }
+      _chkSums[c.cidx()] = sum;
+    }
+    @Override public void reduce(CumSumTask t) { if( _chkSums != t._chkSums ) ArrayUtils.add(_chkSums, t._chkSums); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkSums.length;++i) _chkSums[i] += _chkSums[i-1];
+    }
+  }
+}
+
+class ASTCumProd extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (cumprod x)
+  @Override String str() { return "cumprod"; }
+
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
+    // per chunk cum-prod
+    CumProdTask t = new CumProdTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkProds = t._chkProds;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        if( c.cidx()!=0 ) {
+          double d=chkProds[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, c.atd(i)*d);
+        }
+      }
+    }.doAll(cumuVec);
+    return new ValFrame(new Frame(cumuVec));
+  }
+
+  private class CumProdTask extends MRTask<CumProdTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkProds;
+
+    CumProdTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkProds = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double prod=1;
+      for(int i=0;i<c._len;++i) {
+        prod *= c.isNA(i) ? Double.NaN : c.atd(i);
+        if( Double.isNaN(prod) ) nc.addNA();
+        else                    nc.addNum(prod);
+      }
+      _chkProds[c.cidx()] = prod;
+    }
+    @Override public void reduce(CumProdTask t) { if( _chkProds != t._chkProds ) ArrayUtils.add(_chkProds, t._chkProds); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkProds.length;++i) _chkProds[i] *= _chkProds[i-1];
+    }
+  }
+}
+
+class ASTCumMin extends ASTPrim {
+  @Override int nargs() { return 1+1; }
+  @Override String str() { return "cummin"; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
+    // per chunk cum-min
+    CumMinTask t = new CumMinTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkMins = t._chkMins;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        if( c.cidx()!=0 ) {
+          double d=chkMins[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, Math.min(c.atd(i), d));
+        }
+      }
+    }.doAll(cumuVec);
+    return new ValFrame(new Frame(cumuVec));
+  }
+
+  private class CumMinTask extends MRTask<CumMinTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkMins;
+
+    CumMinTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkMins = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double min=Double.MAX_VALUE;
+      for(int i=0;i<c._len;++i) {
+        min = c.isNA(i) ? Double.NaN : Math.min(min, c.atd(i));
+        if( Double.isNaN(min) ) nc.addNA();
+        else                    nc.addNum(min);
+      }
+      _chkMins[c.cidx()] = min;
+    }
+    @Override public void reduce(CumMinTask t) { if( _chkMins != t._chkMins ) ArrayUtils.add(_chkMins, t._chkMins); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkMins.length;++i)
+        _chkMins[i] = _chkMins[i-1] < _chkMins[i] ? _chkMins[i-1] : _chkMins[i];
+    }
+  }
+}
+
+class ASTCumMax extends ASTPrim {
+  @Override int nargs() { return 1+1; } //(cummax x)
+  @Override String str() { return "cummax"; }
+
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
+    // per chunk cum-min
+    CumMaxTask t = new CumMaxTask(f.anyVec().nChunks());
+    t.doAll(1, f.anyVec());
+    final double[] chkMaxs = t._chkMaxs;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        if( c.cidx()!=0 ) {
+          double d=chkMaxs[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, Math.min(c.atd(i), d));
+        }
+      }
+    }.doAll(cumuVec);
+    return new ValFrame(new Frame(cumuVec));
+  }
+
+  private class CumMaxTask extends MRTask<CumMaxTask> {
+    //IN
+    final int _nchks;
+
+    //OUT
+    double[] _chkMaxs;
+
+    CumMaxTask(int nchks) { _nchks = nchks; }
+    @Override public void setupLocal() { _chkMaxs = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double max=-Double.MAX_VALUE;
+      for(int i=0;i<c._len;++i) {
+        max = c.isNA(i) ? Double.NaN : Math.max(max, c.atd(i));
+        if( Double.isNaN(max) ) nc.addNA();
+        else                    nc.addNum(max);
+      }
+      _chkMaxs[c.cidx()] = max;
+    }
+    @Override public void reduce(CumMaxTask t) { if( _chkMaxs != t._chkMaxs ) ArrayUtils.add(_chkMaxs, t._chkMaxs); }
+    @Override public void postGlobal() {
+      // cumsum the _chunk_sums array
+      for(int i=1;i<_chkMaxs.length;++i)
+        _chkMaxs[i] = _chkMaxs[i-1] > _chkMaxs[i] ? _chkMaxs[i-1] : _chkMaxs[i];
+    }
   }
 }

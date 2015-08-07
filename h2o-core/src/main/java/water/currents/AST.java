@@ -67,6 +67,12 @@ abstract public class AST extends Iced<AST> {
     init(new ASTTanh  ());
     init(new ASTTrunc ());
     init(new ASTNrow  ());
+    init(new ASTNLevels());
+    init(new ASTLevels());
+
+    // Factor Level Setting
+    init(new ASTSetLevel());
+    init(new ASTSetDomain());
 
     // Math binary ops
     init(new ASTAnd ());
@@ -92,6 +98,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTIfElse());
 
     // Reducers
+    init(new ASTAny());
+    init(new ASTAnyNA());
     init(new ASTAll());
     init(new ASTMax());
     init(new ASTMaxNA());
@@ -102,6 +110,13 @@ abstract public class AST extends Iced<AST> {
     init(new ASTSdev());
     init(new ASTSum());
     init(new ASTSumNA());
+    init(new ASTMedian());
+    init(new ASTProd());
+    init(new ASTProdNA());
+    init(new ASTCumSum());
+    init(new ASTCumProd());
+    init(new ASTCumMax());
+    init(new ASTCumMin());
 
     // Time
     init(new ASTDay());
