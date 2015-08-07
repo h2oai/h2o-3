@@ -237,7 +237,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
       if( !isRunning() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
-      if( model._output._iterations > _parms._max_iterations) return true;
+      if( model._output._iterations >= _parms._max_iterations) return true;
 
       // Compute average change in standardized cluster centers
       if( oldCenters==null ) return false; // No prior iteration, not stopping
@@ -284,7 +284,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // ---
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or average_change < TOLERANCE
-        model._output._iterations = 1;  // Loop ends only when iterations > max_iterations with strict inequality
+        model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
         while( !isDone(model,centers,oldCenters) ) {
           Lloyds task = new Lloyds(centers,means,mults,_isCats, _parms._k, hasWeightCol()).doAll(vecs);
           // Pick the max categorical level for cluster center

@@ -58,7 +58,7 @@ public class KMeansRandomTest extends TestUtil {
                   for (int j = 0; j < parms._k; j++)
                     Assert.assertTrue(m._output._size[j] != 0);
 
-                  Assert.assertTrue(m._output._iterations <= max_iter+1);    // Matches R's kmeans behavior, e.g. iter.max = 1, then iters = 2
+                  Assert.assertTrue(m._output._iterations <= max_iter);
                   for (double d : m._output._withinss) Assert.assertFalse(Double.isNaN(d));
                   Assert.assertFalse(Double.isNaN(m._output._tot_withinss));
                   for (long o : m._output._size) Assert.assertTrue(o > 0); //have at least one point per centroid
