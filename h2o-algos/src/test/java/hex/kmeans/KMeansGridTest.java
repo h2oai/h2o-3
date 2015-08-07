@@ -36,7 +36,7 @@ public class KMeansGridTest extends TestUtil {
 
   @Test
   public void testIrisGrid() {
-    Grid grid = null;
+    Grid<KMeansModel.KMeansParameters> grid = null;
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
@@ -45,9 +45,9 @@ public class KMeansGridTest extends TestUtil {
       HashMap<String, Object[]> hyperParms = new HashMap<>();
 
       // Search over this range of K's
-      hyperParms.put("_k", new Integer[]{1, 2, 3, 4, 5,
-                                         6}); // Note that k==0 is illegal, and k==1 is trivial
-
+      Integer[] legalKOpts = new Integer[]{1, 2, 3, 4, 5};
+      Integer[] illegalKOpts = new Integer[]{0};
+      hyperParms.put("_k", ArrayUtils.join(legalKOpts, illegalKOpts));
       // Search over this range of the init enum
       hyperParms.put("_init", new KMeans.Initialization[]{
           KMeans.Initialization.Random,
@@ -66,10 +66,10 @@ public class KMeansGridTest extends TestUtil {
       params._train = fr._key;
       // Fire off a grid search and get result
       GridSearch gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
-      grid = (Grid) gs.get();
+      grid = (Grid<KMeansModel.KMeansParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
-                          grid.getModelKeys().length);
+                          grid.getModelCount() + grid.getFailureCount());
       //
       // Make sure that names of used parameters match
       //
@@ -90,9 +90,19 @@ public class KMeansGridTest extends TestUtil {
             ArrayUtils.zip(grid.getHyperNames(), grid.getHyperValues(kmm._parms))));
         GridTestUtils.extractParams(usedModelParams, kmm._parms, hyperParamNames);
       }
+      hyperParms.put("_k", legalKOpts);
       GridTestUtils.assertParamsEqual("Grid models parameters have to cover specified hyper space",
                                       hyperParms,
                                       usedModelParams);
+      // Verify model failure
+      Map<String, Set<Object>> failedHyperParams = GridTestUtils.initMap(hyperParamNames);;
+      for (Model.Parameters failedParams : grid.getFailedParameters()) {
+        GridTestUtils.extractParams(failedHyperParams, (KMeansModel.KMeansParameters) failedParams, hyperParamNames);
+      }
+      hyperParms.put("_k", illegalKOpts);
+      GridTestUtils.assertParamsEqual("Failed model parameters have to correspond to specified hyper space",
+                                      hyperParms,
+                                      failedHyperParams);
     } finally {
       if (fr != null) {
         fr.remove();
