@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def get_model_test(ip,port):
-    # Connect to h2o
+    
     
 
     prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))

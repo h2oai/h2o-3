@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def shuffling_large(ip,port):
-    # Connect to h2o
+    
     
 
     print("Reading in Arcene training data for binomial modeling.")

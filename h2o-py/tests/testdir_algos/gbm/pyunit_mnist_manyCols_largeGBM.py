@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def mnist_manyCols_largeGBM(ip,port):
-    # Connect to h2o
+    
     
 
     #Log.info("Importing mnist train data...\n")

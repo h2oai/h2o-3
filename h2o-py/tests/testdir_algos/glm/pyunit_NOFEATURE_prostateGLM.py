@@ -6,7 +6,7 @@ import statsmodels.api as sm
 
 def prostate(ip,port):
 
-  # Connect to h2o
+  
   
 
   # Log.info("Importing prostate.csv data...\n")

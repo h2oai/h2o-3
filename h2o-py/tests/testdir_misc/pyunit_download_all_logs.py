@@ -4,7 +4,7 @@ import h2o
 import random
 
 def download_all_logs(ip,port):
-    # Connect to h2o
+    
     
 
     # default

@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def col_names_check(ip,port):
-    # Connect to h2o
+    
     
 
     iris_wheader = h2o.import_frame(h2o.locate("smalldata/iris/iris_wheader.csv"))

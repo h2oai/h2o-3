@@ -4,7 +4,7 @@ import h2o
 
 
 def expr_show(ip,port):
-    # Connect to h2o
+    
     
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))

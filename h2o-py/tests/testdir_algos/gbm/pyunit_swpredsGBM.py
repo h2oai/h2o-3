@@ -7,7 +7,7 @@ def swpredsGBM(ip,port):
   # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
 
-  # Connect to h2o
+  
   
   
   #Log.info("Importing swpreds_1000x3.csv data...\n")

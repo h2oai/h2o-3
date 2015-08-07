@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def grid_airlinesGBM(ip,port):
-    # Connect to h2o
+    
     
 
     air =  h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))

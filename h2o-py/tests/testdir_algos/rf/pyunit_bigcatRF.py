@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def bigcatRF(ip,port):
-    # Connect to h2o
+    
     
 
     # Training set has 100 categories from cat001 to cat100

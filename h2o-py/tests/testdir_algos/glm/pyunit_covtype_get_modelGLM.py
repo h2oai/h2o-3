@@ -4,7 +4,7 @@ import h2o
 import random
 
 def covtype_get_model(ip,port):
-    # Connect to h2o
+    
     
 
     #Log.info("Importing covtype.20k.data...\n")

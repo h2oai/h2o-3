@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def link_functions_tweedie_basic(ip,port):
-    # Connect to h2o
+    
     
 
     print "Read in prostate data."

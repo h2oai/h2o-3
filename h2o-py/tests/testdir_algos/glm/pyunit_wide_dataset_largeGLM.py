@@ -4,7 +4,7 @@ import h2o
 import numpy as np
 
 def wide_dataset_large(ip,port):
-    # Connect to h2o
+    
     
 
     print("Reading in Arcene training data for binomial modeling.")

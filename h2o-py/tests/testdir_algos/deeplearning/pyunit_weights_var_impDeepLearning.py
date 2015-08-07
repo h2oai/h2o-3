@@ -5,7 +5,7 @@ import random
 import copy
 
 def weights_vi(ip,port):
-    # Connect to h2o
+    
     
     random.seed(1234)
 

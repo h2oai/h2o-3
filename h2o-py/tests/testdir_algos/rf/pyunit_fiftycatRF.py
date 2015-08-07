@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def fiftycatRF(ip,port):
-    # Connect to h2o
+    
     
 
     # Training set has only 45 categories cat1 through cat45

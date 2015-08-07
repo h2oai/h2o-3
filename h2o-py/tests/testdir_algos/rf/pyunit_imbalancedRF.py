@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def imbalanced(ip,port):
-    # Connect to h2o
+    
     
 
     covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))

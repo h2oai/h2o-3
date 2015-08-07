@@ -4,7 +4,7 @@ import h2o
 import random
 
 def get_set_list_timezones(ip,port):
-    # Connect to h2o
+    
     
 
     origTZ = h2o.get_timezone()

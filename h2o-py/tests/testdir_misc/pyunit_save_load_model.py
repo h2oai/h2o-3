@@ -4,7 +4,7 @@ import h2o
 from h2o.model.binomial import H2OBinomialModel
 
 def save_load_model(ip,port):
-    # Connect to h2o
+    
     
 
     prostate = h2o.import_frame(h2o.locate("smalldata/prostate/prostate.csv"))

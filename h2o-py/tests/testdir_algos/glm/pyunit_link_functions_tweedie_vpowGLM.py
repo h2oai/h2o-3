@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def link_functions_tweedie_vpow(ip,port):
-    # Connect to h2o
+    
     
 
     # Load example data from HDtweedie, y = aggregate claim loss

@@ -7,7 +7,7 @@ import math
 import scipy.special
 
 def expr_math_ops(ip,port):
-    # Connect to h2o
+    
     
 
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]

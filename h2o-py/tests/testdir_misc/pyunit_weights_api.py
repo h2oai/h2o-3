@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def weights_api(ip,port):
-    # Connect to h2o
+    
     
 
     h2o_iris_data = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))

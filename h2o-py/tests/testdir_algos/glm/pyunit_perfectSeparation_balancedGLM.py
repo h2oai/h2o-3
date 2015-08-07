@@ -4,7 +4,7 @@ import h2o
 
 def perfectSeparation_balanced(ip,port):
 
-    # Connect to h2o
+    
     
 
     print("Read in synthetic balanced dataset")

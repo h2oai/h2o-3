@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def perfectSeparation_unbalanced(ip,port):
-    # Connect to h2o
+    
     
 
     print("Read in synthetic unbalanced dataset")

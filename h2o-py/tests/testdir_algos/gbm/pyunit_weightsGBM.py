@@ -5,7 +5,7 @@ import random
 import copy
 
 def weights_check(ip,port):
-    # Connect to h2o
+    
     
 
     def check_same(data1, data2, min_rows_scale):

@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def screeplot_test(ip,port):
-    # Connect to h2o
+    
     
     kwargs = {}
     kwargs['server'] = True

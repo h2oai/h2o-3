@@ -4,7 +4,7 @@ import h2o
 
 
 def bmp_unicode_chars(ip,port):
-    # Connect to h2o
+    
     
 
     # get all h2o-supported utf-8 characters (the basic multilingual plane, minus some control characters)

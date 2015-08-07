@@ -4,7 +4,7 @@ import h2o
 import random
 
 def grid_lambda_search(ip,port):
-  # Connect to h2o
+  
   
 
   # Log.info("Importing prostate.csv data...\n")

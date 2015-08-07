@@ -7,7 +7,7 @@ from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
 def bernoulliGBM(ip,port):
-  # Connect to h2o
+  
   
 
   #Log.info("Importing prostate.csv data...\n")

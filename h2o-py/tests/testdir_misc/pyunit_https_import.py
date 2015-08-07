@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def https_import(ip,port):
-    # Connect to h2o
+    
     
 
     url = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"

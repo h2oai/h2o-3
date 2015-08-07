@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def grid_wineGBM(ip,port):
-    # Connect to h2o
+    
     
 
     wine = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/wine.data"))

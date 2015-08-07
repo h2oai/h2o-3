@@ -6,7 +6,7 @@ import zipfile
 import statsmodels.api as sm
 
 def link_functions_gamma(ip,port):
-	# Connect to h2o
+	
 	
 
 	print("Read in prostate data.")

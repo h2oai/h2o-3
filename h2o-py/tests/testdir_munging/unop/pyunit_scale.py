@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def center_scale(ip,port):
-    # Connect to h2o
+    
     
 
     iris =  h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))[0:4]

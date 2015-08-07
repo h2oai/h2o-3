@@ -4,7 +4,7 @@ import h2o
 import random
 
 def pub_444_spaces_in_filenames(ip,port):
-    # Connect to h2o
+    
     
 
     # tempdir = "smalldata/jira/"

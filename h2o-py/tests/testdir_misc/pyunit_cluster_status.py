@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def cluster_status_test(ip,port):
-    # Connect to h2o
+    
     
 
     h2o.cluster_status()

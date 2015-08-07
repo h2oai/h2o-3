@@ -10,7 +10,7 @@ def smallcatGBM(ip,port):
   # Categories A, C, E, G, ... are perfect predictors of y = 1
   # Categories B, D, F, H, ... are perfect predictors of y = 0
 
-  # Connect to h2o
+  
   
 
   #Log.info("Importing alphabet_cattest.csv data...\n")

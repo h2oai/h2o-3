@@ -7,7 +7,7 @@ import statsmodels.api as sm
 
 
 def link_functions_binomial(ip,port):
-  # Connect to h2o
+  
   
 
   print("Read in prostate data.")

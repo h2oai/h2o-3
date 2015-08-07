@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def framesliceGBM(ip,port):
-  # Connect to h2o
+  
   
 
   #Log.info("Importing prostate data...\n")

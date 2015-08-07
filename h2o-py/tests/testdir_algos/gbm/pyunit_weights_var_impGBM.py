@@ -4,7 +4,7 @@ import h2o
 import random
 
 def weights_var_imp(ip,port):
-    # Connect to h2o
+    
     
 
     def check_same(data1, data2, min_rows_scale):

@@ -7,7 +7,7 @@ from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
 def ecologyGBM(ip,port):
-    # Connect to h2o
+    
     
 
     #Log.info("Importing ecology_model.csv data...\n")

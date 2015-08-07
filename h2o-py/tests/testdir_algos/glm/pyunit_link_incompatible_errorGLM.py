@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def link_incompatible_error(ip,port):
-    # Connect to h2o
+    
     
 
 

@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def benign(ip,port):
-    # Connect to h2o
+    
     
 
     training_data = h2o.import_frame(h2o.locate("smalldata/logreg/benign.csv"))

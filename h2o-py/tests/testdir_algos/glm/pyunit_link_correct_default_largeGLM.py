@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def link_correct_default(ip,port):
-	# Connect to h2o
+	
 	
 
 	print("Reading in original prostate data.")

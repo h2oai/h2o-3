@@ -4,7 +4,7 @@ import h2o
 import random
 
 def getLambdaModel(ip,port):
-	# Connect to h2o
+	
 	
 
 	print("Read data")

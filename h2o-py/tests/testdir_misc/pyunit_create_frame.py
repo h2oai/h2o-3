@@ -4,7 +4,7 @@ import h2o
 import random
 
 def create_frame_test(ip,port):
-    # Connect to h2o
+    
     
 
     # REALLY basic test TODO: add more checks

@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def asfactor_basic(ip,port):
-  # Connect to h2o
+  
   
 
   #Log.info("Printing out the head of the cars datasets")

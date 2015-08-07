@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def bigcatGBM(ip,port):
-  # Connect to h2o
+  
   
   
   #Log.info("Importing bigcat_5000x2.csv data...\n")

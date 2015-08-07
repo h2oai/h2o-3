@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def frame_as_list(ip,port):
-  # Connect to h2o
+  
   
 
   prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))

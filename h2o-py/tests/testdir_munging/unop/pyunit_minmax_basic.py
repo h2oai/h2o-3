@@ -4,7 +4,7 @@ import h2o
 import numpy as np
 
 def minmax_basic(ip,port):
-    # Connect to h2o
+    
     
 
     print "Uploading iris data..."

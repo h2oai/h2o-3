@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def cupMediumGBM(ip,port):
-  # Connect to h2o
+  
   
 
   train = h2o.import_frame(path=h2o.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))

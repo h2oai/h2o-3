@@ -4,7 +4,7 @@ import h2o
 
 def czechboardRF(ip,port):
 
-    # Connect to h2o
+    
     
 
     # Training set has checkerboard pattern

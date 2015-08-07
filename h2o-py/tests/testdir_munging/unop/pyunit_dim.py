@@ -11,7 +11,7 @@ import h2o
 import numpy as np
 
 def dim_checks(ip,port):
-  # Connect to h2o
+  
   
 
   # Log.info("Uploading logreg/princeton/cuse.dat")

@@ -4,7 +4,7 @@ import h2o
 import random
 
 def random_attack(ip,port):
-    # Connect to h2o
+    
     
 
     def attack(train, x):
