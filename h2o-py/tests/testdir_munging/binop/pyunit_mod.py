@@ -4,7 +4,7 @@ import h2o
 
 def frame_as_list(ip,port):
   # Connect to h2o
-  h2o.init(ip,port)
+  
 
   prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
 

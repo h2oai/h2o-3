@@ -4,7 +4,7 @@ import h2o
 
 def shuffling_large(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     print("Reading in Arcene training data for binomial modeling.")
     train_data = h2o.upload_file(path=h2o.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))

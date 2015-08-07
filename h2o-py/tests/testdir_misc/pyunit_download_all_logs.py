@@ -5,7 +5,7 @@ import random
 
 def download_all_logs(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     # default
     log_location = h2o.download_all_logs()

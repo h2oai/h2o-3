@@ -4,7 +4,7 @@ import h2o
 
 def hist_test(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     kwargs = {}
     kwargs['server'] = True

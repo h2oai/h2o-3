@@ -5,7 +5,7 @@ import random
 
 def test_get_future_model(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     covtype=h2o.upload_file(h2o.locate("smalldata/covtype/covtype.altered.gz"))
 

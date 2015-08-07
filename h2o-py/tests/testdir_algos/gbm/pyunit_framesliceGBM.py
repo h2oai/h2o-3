@@ -4,7 +4,7 @@ import h2o
 
 def framesliceGBM(ip,port):
   # Connect to h2o
-  h2o.init(ip,port)
+  
 
   #Log.info("Importing prostate data...\n")
   prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))

@@ -12,7 +12,7 @@ import numpy as np
 
 def dim_checks(ip,port):
   # Connect to h2o
-  h2o.init(ip,port)
+  
 
   # Log.info("Uploading logreg/princeton/cuse.dat")
   h2o_data = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))

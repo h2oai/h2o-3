@@ -6,7 +6,7 @@ import random
 
 def expr_reducers(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
     h2o_data_1 = h2o.H2OFrame(python_obj=data)

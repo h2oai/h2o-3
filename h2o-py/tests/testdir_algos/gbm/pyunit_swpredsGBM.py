@@ -8,7 +8,7 @@ def swpredsGBM(ip,port):
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
 
   # Connect to h2o
-  h2o.init(ip,port)
+  
   
   #Log.info("Importing swpreds_1000x3.csv data...\n")
   swpreds = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/swpreds_1000x3.csv"))

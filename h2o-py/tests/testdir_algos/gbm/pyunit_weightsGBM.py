@@ -6,7 +6,7 @@ import copy
 
 def weights_check(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     def check_same(data1, data2, min_rows_scale):
         gbm1_regression = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],

@@ -4,7 +4,7 @@ import h2o
 
 def bigcatRF(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     # Training set has 100 categories from cat001 to cat100
     # Categories cat001, cat003, ... are perfect predictors of y = 1

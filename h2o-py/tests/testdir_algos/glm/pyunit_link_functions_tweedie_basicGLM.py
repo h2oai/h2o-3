@@ -4,7 +4,7 @@ import h2o
 
 def link_functions_tweedie_basic(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     print "Read in prostate data."
     hdf = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))

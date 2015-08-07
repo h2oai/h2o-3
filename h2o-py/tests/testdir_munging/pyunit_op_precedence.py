@@ -6,7 +6,7 @@ import numpy as np
 
 def op_precedence(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     a = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]
     b = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]

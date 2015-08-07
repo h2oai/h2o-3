@@ -4,7 +4,7 @@ import h2o
 
 def spaces_in_column_names(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     train_data = h2o.upload_file(path=h2o.locate("smalldata/jira/spaces_in_column_names.csv"))
     train_data.show()

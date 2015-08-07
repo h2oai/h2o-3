@@ -4,7 +4,7 @@ import h2o
 
 def space_headers(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     f = h2o.import_frame(path=h2o.locate("smalldata/jira/citibike_head.csv"))
 

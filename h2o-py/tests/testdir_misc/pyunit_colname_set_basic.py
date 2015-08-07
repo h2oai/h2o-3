@@ -4,7 +4,7 @@ import h2o
 
 def colname_set_basic(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     print "Uploading iris data..."
 

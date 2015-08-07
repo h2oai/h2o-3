@@ -4,7 +4,7 @@ import h2o
 
 def hit_ratio_test(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
     air_valid = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))

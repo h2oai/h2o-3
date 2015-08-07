@@ -4,7 +4,7 @@ import h2o
 
 def imbalancedGBM(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
     covtype[54] = covtype[54].asfactor()

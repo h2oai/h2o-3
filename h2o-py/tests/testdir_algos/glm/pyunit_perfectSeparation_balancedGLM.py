@@ -5,7 +5,7 @@ import h2o
 def perfectSeparation_balanced(ip,port):
 
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     print("Read in synthetic balanced dataset")
     data = h2o.import_frame(path=h2o.locate("smalldata/synthetic_perfect_separation/balanced.csv"))

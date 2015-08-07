@@ -4,7 +4,7 @@ import h2o
 
 def link_correct_default(ip,port):
 	# Connect to h2o
-	h2o.init(ip,port)
+	
 
 	print("Reading in original prostate data.")
 	h2o_data = h2o.upload_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))

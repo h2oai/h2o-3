@@ -6,7 +6,7 @@ import copy
 
 def weights_vi(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
     random.seed(1234)
 
     ###### create synthetic dataset1 with 3 predictors: p1 predicts response ~90% of the time, p2 ~70%, p3 ~50%

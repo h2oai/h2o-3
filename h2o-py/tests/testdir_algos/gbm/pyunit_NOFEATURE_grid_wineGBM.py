@@ -4,7 +4,7 @@ import h2o
 
 def grid_wineGBM(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     wine = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/wine.data"))
     #wine.summary()

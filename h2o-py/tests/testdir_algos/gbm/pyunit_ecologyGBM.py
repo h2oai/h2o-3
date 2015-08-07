@@ -8,7 +8,7 @@ from sklearn.metrics import roc_auc_score
 
 def ecologyGBM(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     #Log.info("Importing ecology_model.csv data...\n")
     ecology_train = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))

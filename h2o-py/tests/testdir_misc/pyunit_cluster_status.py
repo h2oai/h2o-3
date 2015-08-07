@@ -4,7 +4,7 @@ import h2o
 
 def cluster_status_test(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     h2o.cluster_status()
 

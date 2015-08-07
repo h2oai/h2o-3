@@ -4,7 +4,7 @@ import h2o
 
 def col_names_check(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     iris_wheader = h2o.import_frame(h2o.locate("smalldata/iris/iris_wheader.csv"))
     assert iris_wheader.col_names() == ["sepal_len","sepal_wid","petal_len","petal_wid","class"], \

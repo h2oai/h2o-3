@@ -11,7 +11,7 @@ import numpy as np
 
 def var_test(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     iris_np = np.genfromtxt(h2o.locate("smalldata/iris/iris_wheader.csv"),

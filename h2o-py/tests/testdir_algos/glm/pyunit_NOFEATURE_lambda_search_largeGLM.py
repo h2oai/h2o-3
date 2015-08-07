@@ -5,7 +5,7 @@ import random
 
 def lambda_search(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     #Log.info("Importing prostate.csv data...\n")
     prostate = h2o.import_frame(h2o.locate("smalldata/logreg/prostate.csv"))

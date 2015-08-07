@@ -5,7 +5,7 @@ import random
 
 def pub_444_spaces_in_filenames(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     # tempdir = "smalldata/jira/"
     # if was okay to write to smalldata, it's okay to write to the current directory

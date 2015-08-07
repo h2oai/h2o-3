@@ -4,7 +4,7 @@ import h2o
 
 def varimp_test(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
     train = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
 
     # Run GBM

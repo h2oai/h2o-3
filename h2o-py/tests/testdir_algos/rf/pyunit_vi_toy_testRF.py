@@ -4,7 +4,7 @@ import h2o
 
 def vi_toy_test(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     toy_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/toy_data_RF.csv"))
     #toy_data.summary()

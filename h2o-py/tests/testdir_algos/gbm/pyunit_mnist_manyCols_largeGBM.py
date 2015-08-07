@@ -4,7 +4,7 @@ import h2o
 
 def mnist_manyCols_largeGBM(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     #Log.info("Importing mnist train data...\n")
     train = h2o.import_frame(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))

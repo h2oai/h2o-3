@@ -5,7 +5,7 @@ import numpy as np
 
 def wide_dataset_large(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     print("Reading in Arcene training data for binomial modeling.")
     trainDataResponse = np.genfromtxt(h2o.locate("smalldata/arcene/arcene_train_labels.labels"), delimiter=' ')

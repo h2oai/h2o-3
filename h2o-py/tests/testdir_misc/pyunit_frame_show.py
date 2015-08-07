@@ -4,7 +4,7 @@ import h2o
 
 def frame_show(ip,port):
     # Connect to h2o
-    h2o.init(ip,port)
+    
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
