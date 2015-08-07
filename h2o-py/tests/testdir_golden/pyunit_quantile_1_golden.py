@@ -70,4 +70,3 @@ def quantile_1_golden(ip, port):
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, quantile_1_golden)
-

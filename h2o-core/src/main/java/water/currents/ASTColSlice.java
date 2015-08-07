@@ -107,6 +107,19 @@ class ASTRowSlice extends ASTPrim {
   }
 }
 
+class ASTFlatten extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (flatten fr)
+  @Override String str() { return "flatten"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols()==1 && fr.numRows()==1 ) {
+      if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
+      return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
+    }
+    throw new IllegalArgumentException("May only flatten 1x1 Frames to scalars.");
+  }
+}
+
 /** cbind: bind columns together into a new frame */
 class ASTCBind extends ASTPrim {
   @Override int nargs() { return -1; } // variable number of args

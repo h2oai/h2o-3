@@ -111,4 +111,9 @@ class ASTVariance extends ASTPrim {
     @Override public void reduce( CoVarTask cvt ) { ArrayUtils.add(_covs,cvt._covs); }
   }
 
+  static double getVar(Vec v) {
+    double m = v.mean();
+    CoVarTask t = new CoVarTask(m,new double[]{m}).doAll(new Frame(v, v));
+    return t._covs[0] / (v.length() - 1);
+  }
 }

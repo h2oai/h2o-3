@@ -23,7 +23,7 @@ def weights_and_biases(ip, port):
 
     w1c = weights1.ncol()
     w1r = weights1.nrow()
-    assert w1c == 52, "wrong dimensionality! expected {0}, but got {1}.".format(52, w1c)
+    assert w1c == 51, "wrong dimensionality! expected {0}, but got {1}.".format(51, w1c)
     assert w1r == 17, "wrong dimensionality! expected {0}, but got {1}.".format(17, w1r)
 
     w2c = weights2.ncol()

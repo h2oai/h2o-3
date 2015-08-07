@@ -108,6 +108,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTDay());
     init(new ASTDayOfWeek());
     init(new ASTHour());
+    init(new ASTGetTimeZone());
     init(new ASTListTimeZones());
     init(new ASTMillis());
     init(new ASTMinute());
@@ -123,6 +124,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTImpute());
     init(new ASTTable());
     init(new ASTVariance());
+    init(new ASTHist());
 
     // Generic data mungers
     init(new ASTAsFactor());
@@ -135,6 +137,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTMerge());
     init(new ASTRBind());
     init(new ASTRowSlice());
+    init(new ASTFlatten());
     init(new ASTRunif());
     init(new ASTTmpAssign());
 

@@ -238,11 +238,11 @@ class H2OFrame:
     self._eager()
     return self._col_names
 
-  def sd(self, na_rm=False):
+  def sd(self):
     """
     :return: Standard deviation of the H2OVec elements.
     """
-    return H2OFrame(expr=ExprNode("sd", self,na_rm))._scalar()
+    return H2OFrame(expr=ExprNode("sd", self))._scalar()
 
   def names(self):
     """
@@ -600,6 +600,9 @@ class H2OFrame:
     self._eager()
     return self._find_idx(name)
 
+  def flatten(self):
+    return H2OFrame(expr=ExprNode("flatten",self))._scalar()
+
   def __getitem__(self, item):
     """
     Frame slicing.
@@ -621,7 +624,7 @@ class H2OFrame:
     """
     if isinstance(item, (int,str,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
     elif isinstance(item, slice):
-      item = slice(1,min(self.ncol(),item.stop))
+      item = slice(item.start,min(self.ncol(),item.stop))
       return H2OFrame(expr=ExprNode("cols",self,item))
     elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
     elif isinstance(item, tuple):
@@ -639,7 +642,7 @@ class H2OFrame:
       if allcols: return H2OFrame(expr=ExprNode("rows",self,item[0]))  # fr[rows,:] -> really just a row slices
 
       res = H2OFrame(expr=ExprNode("rows", ExprNode("cols",self,item[1]),item[0]))
-      return res._scalar() if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)) else res
+      return res.flatten() if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)) else res
 
   def __setitem__(self, b, c):
     """
@@ -663,12 +666,15 @@ class H2OFrame:
     col_expr = b[1] if isinstance(b,tuple) else update_index
     if isinstance(col_expr, (str,unicode)): col_expr=self.col_names().index(col_expr)
 
+    if col_expr == -1:   # no columns given, just have row_expr => select all columns...
+      col_expr=slice(0,self.ncol())
+
     if isinstance(col_expr, slice):
       if col_expr.start is None and col_expr.stop is None:
         col_expr = slice(0,self.ncol())
 
     row_expr = b[0] if isinstance(b,tuple) else b if isinstance(b, H2OFrame) else slice(0,self.nrow())
-    src = c._frame() if isinstance(c,H2OFrame) else c
+    src = c._frame() if isinstance(c,H2OFrame) else float("nan") if c is None else c
     expr = ExprNode("=", self, src, col_expr, row_expr)
     h2o.rapids(ExprNode._collapse_sb(expr._eager()), self._id)
     self._update()
@@ -921,8 +927,8 @@ class H2OFrame:
     """
     frame = H2OFrame(expr=ExprNode("hist", self, breaks))._frame()
 
-    total = frame["counts"].sum()
-    densities = [(frame["counts"][i,:]/total)._scalar()*(1/(frame["breaks"][i,:]._scalar()-frame["breaks"][i-1,:]._scalar())) for i in range(1,frame["counts"].nrow())]
+    total = frame["counts"].sum(True)
+    densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow())]
     densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.setNames(["density"])
@@ -938,7 +944,7 @@ class H2OFrame:
         print "matplotlib is required to make the histogram plot. Set `plot` to False, if a plot is not desired."
         return
 
-      lower = float(frame["breaks"][0,:])
+      lower = float(frame[0,"breaks"])
       clist = h2o.as_list(frame["counts"], use_pandas=False)
       clist.pop(0)
       clist.pop(0)
@@ -1127,6 +1133,9 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
 
+
+
+  # convenience methods for eagering sclars, frames, and deflating 1x1 frames to scalars
   def _scalar(self):
     res = h2o.rapids(ExprNode._collapse_sb(self._ast._eager()))["scalar"]
     if res == "TRUE": return True
@@ -1138,7 +1147,9 @@ class H2OFrame:
     self._eager()
     return self
 
-  ##### DO NOT ADD METHODS BELOW THIS LINE (pretty please) #####
+  ##### WARNING: MAGIC REF COUNTING CODE BELOW.
+  #####          CHANGE AT YOUR OWN RISK.
+  ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
   def _eager(self, pytmp=True):
     if not self._computed:
       # top-level call to execute all subparts of self._ast
@@ -1176,15 +1187,13 @@ class H2OFrame:
     self._col_names = [c["label"] for c in res["columns"]]
     self._computed=True
     self._ast=None
-  #### DO NOT ADD METHODS HERE!!! ####
+  #### DO NOT ADD ANY MEMBER METHODS HERE ####
+
+
 
 # private static methods
-
 def _py_tmp_key(): return unicode("py" + str(uuid.uuid4()))
-
 def _gen_header(cols): return ["C" + str(c) for c in range(1, cols + 1, 1)]
-
-
 def _check_lists_of_lists(python_obj):
   # all items in the list must be a list too
   lol_all = all(isinstance(l, (tuple, list)) for l in python_obj)
@@ -1196,8 +1205,6 @@ def _check_lists_of_lists(python_obj):
   for l in python_obj:
     if any(isinstance(ll, (tuple, list)) for ll in l):
       raise ValueError("`python_obj` is not a list of flat lists!")
-
-
 def _handle_python_lists(python_obj):
   cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
   lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
@@ -1212,7 +1219,6 @@ def _handle_python_lists(python_obj):
   # shape up the data for csv.DictWriter
   data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
   return header, data_to_write
-
 def _is_list(l)    : return isinstance(l, (tuple, list))
 def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(str,unicode)) for i in l])
 def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int  )) for i in l])

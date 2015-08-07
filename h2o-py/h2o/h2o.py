@@ -148,8 +148,10 @@ def _quoted(key):
   return key
 
 def assign(data,id):
-  rapids(ExprNode._collapse_sb(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager()))
+  if data._computed:
+    rapids(data._id,id)
   data._id = id
+  data._keep=True  # named things are always safe
   return data
 
 def which(condition):

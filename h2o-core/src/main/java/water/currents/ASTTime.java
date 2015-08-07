@@ -14,6 +14,15 @@ import water.parser.ValueString;
 
 import java.util.Set;
 
+
+class ASTGetTimeZone extends ASTPrim {
+  @Override int nargs() { return 1; } // (getTimeZone)
+  @Override String str() { return "getTimeZone"; }
+  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    return new ValStr(ParseTime.getTimezone().toString());
+  }
+}
+
 class ASTListTimeZones extends ASTPrim {
   @Override int nargs() { return 1; } // (listTimeZones)
   @Override public String str() { return "listTimeZones"; }
@@ -22,6 +31,7 @@ class ASTListTimeZones extends ASTPrim {
     double ds[] = new double[domain.length];
     for( int i=0; i<domain.length; i++ ) ds[i] = i;
     Vec vec = Vec.makeVec(ds,Vec.VectorGroup.VG_LEN1.addVec());
+    vec.setDomain(domain);
     return new ValFrame(new Frame(new String[]{"Timezones"}, new Vec[]{vec}));
   }
 }

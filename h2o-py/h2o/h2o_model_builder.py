@@ -32,7 +32,9 @@ def unsupervised_model_build(x,validation_x,algo_url,kwargs):
 
 # Sanity check features and response variable.
 def _check_frame(x,y,response):
-  x._eager(); y._eager(); response._eager()
+  x                                ._eager()
+  if y is not None:        y       ._eager()
+  if response is not None: response._eager()
   if not isinstance(x,H2OFrame):
     if not isinstance(x,list): raise ValueError("`x` must be an H2OFrame or a list. Got: " + str(type(x)))
   if y is not None and not isinstance(y,H2OFrame): raise ValueError("`y` must be an H2OFrame. Got: " + str(type(y)))

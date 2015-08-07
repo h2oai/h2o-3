@@ -17,10 +17,8 @@ def prostateGBM(ip,port):
   train = df.drop("ID")
 
   # For VOL & GLEASON, a zero really means "missing"
-  vol = train['VOL']
-  vol[vol == 0] = None
-  gle = train['GLEASON']
-  gle[gle == 0] = None
+  train[train["VOL"]==0,"VOL"]         = float("nan")
+  train[train["GLEASON"]==0,"GLEASON"] = float("nan")
 
   # Convert CAPSULE to a logical factor
   train['CAPSULE'] = train['CAPSULE'].asfactor()
