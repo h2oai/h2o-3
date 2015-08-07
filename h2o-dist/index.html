@@ -597,7 +597,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 cd h2o-SUBST_PROJECT_VERSION-*<br/>
                 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName<br/>
             </p>
-            <p>3. Point your browser to one of the H2O nodes (i.e. "H2O node ... reports H2O cluster size" in the output below):</p>
+            <p>3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
             <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='to_copy5'>
               <span class="octicon octicon-clippy"></span>
             </button>
@@ -607,11 +607,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 [Possible callback IP address: 127.0.0.1]<br/>
                 ...<br/>
                 Waiting for H2O cluster to come up...<br/>
-                H2O node 172.16.2.184:54321 requested flatfile<br/>
+                H2O node 172.16.2.188:54321 requested flatfile<br/>
                 Sending flatfiles to nodes...<br/>
-                &nbsp;[Sending flatfile to node 172.16.2.184:54321]<br/>
-                <em>H2O node 172.16.2.184:54321 reports H2O cluster size 1 </em><br/>
+                    [Sending flatfile to node 172.16.2.188:54321]<br/>
+                H2O node 172.16.2.188:54321 reports H2O cluster size 1<br/>
                 H2O cluster (1 nodes) is up<br/>
+                (Note: Use the -disown option to exit the driver after cluster formation)<br/>
+                <br/>
+                <em>Open H2O Flow in your web browser: http://172.16.2.188:54321</em><br/>
+                <br/>
+                (Press Ctrl-C to kill the cluster)<br/>
                 Blocking until the H2O cluster shuts down...<br/>
             </p>
           </div>
