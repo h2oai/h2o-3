@@ -132,6 +132,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           // Initialize first cluster center to random row
           randomRow(vecs, rand, centers[0], means, mults);
 
+          model._output._iterations = 0;
           while (model._output._iterations < 5) {
             // Sum squares distances to cluster center
             SumSqr sqr = new SumSqr(centers, means, mults, _isCats).doAll(vecs);
@@ -151,7 +152,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand, _parms._k, _parms._init, _isCats);
-          model._output._iterations = -1; // Reset iteration count
+          model._output._iterations = 0; // Reset iteration count
         }
       }
       return centers;
@@ -236,7 +237,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
       if( !isRunning() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
-      if( model._output._iterations > _parms._max_iterations) return true;
+      if( model._output._iterations >= _parms._max_iterations) return true;
 
       // Compute average change in standardized cluster centers
       if( oldCenters==null ) return false; // No prior iteration, not stopping
@@ -283,6 +284,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // ---
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or average_change < TOLERANCE
+        model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
         while( !isDone(model,centers,oldCenters) ) {
           Lloyds task = new Lloyds(centers,means,mults,_isCats, _parms._k, hasWeightCol()).doAll(vecs);
           // Pick the max categorical level for cluster center
