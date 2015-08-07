@@ -61,7 +61,6 @@ h2o.randomForest <- function( x, y, training_frame,
   # Pass over ellipse parameters and deprecated parameters
   do_future <- FALSE
   if (length(list(...)) > 0) {
-#    browser()
     dots <- list(...) #.model.ellipses( list(...))
     if( !is.null(dots$future) ) do_future <- TRUE
   }
@@ -120,5 +119,5 @@ h2o.randomForest <- function( x, y, training_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
 
-  .h2o.modelJob('drf', parms)
+  .h2o.modelJob('drf', parms, do_future)
 }
