@@ -23,7 +23,9 @@ test.summary.numeric <- function() {
   Log.info("summary(tail(arrests.hex))\n")
 
   print(summary(tail(arrests.hex)))
-  checkSummary(summary(tail(arrests.hex)), summary_2)
+  # large tolerance because median uses the rollup summary stats, which give
+  # quantiles accurate to 1 part in 1000 only.
+  checkSummary(summary(tail(arrests.hex)), summary_2, tolerance = 2e-3)
 
   testEnd()
 }
