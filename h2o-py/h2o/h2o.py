@@ -511,13 +511,14 @@ def frames():
   """
   return H2OConnection.get_json("Frames")
 
-def download_pojo(model,path=""):
+def download_pojo(model,path="", get_jar=True):
   """
   Download the POJO for this model to the directory specified by path (no trailing slash!).
   If path is "", then dump to screen.
 
   :param model: Retrieve this model's scoring POJO.
   :param path:  An absolute path to the directory where POJO should be saved.
+  :param get_jar: Retrieve the h2o genmodel jar also.
   :return: None
   """
   java = H2OConnection.get( "Models.java/"+model._id )
@@ -526,6 +527,13 @@ def download_pojo(model,path=""):
   else:
     with open(file_path, 'w') as f:
       f.write(java.text)
+  if get_jar and path!="":
+    url = H2OConnection.make_url("h2o-genmodel.jar")
+    filename = path + "/" + "h2o-genmodel.jar"
+    response = urllib2.urlopen(url)
+    with open(filename, "w") as f:
+      f.write(response.read())
+
 
 
 def download_csv(data, filename):
@@ -544,8 +552,6 @@ def download_csv(data, filename):
   with open(filename, 'w') as f:
     response = urllib2.urlopen(url)
     f.write(response.read())
-    f.close()
-
 
 def download_all_logs(dirname=".",filename=None):
   """
