@@ -3,10 +3,10 @@ The H2O REST API allows you to access all the capabilities of H2O from an extern
 
 The REST API is used by the Flow UI, as well as both the R and Python bindings: everything that you can do with those clients can be done by using the REST API, including data import, model building and generating predictions.
 
-You can test and try out the REST API:
+You can call the REST API:
 
- - in your browser 
- - using browser tools (such as *Postman* in Chrome)
+ - from your browser 
+ - using browser tools such as *Postman* in Chrome
  - using *curl*
  - using the language of your choice
 
@@ -50,7 +50,7 @@ All endpoints that deal with a resource type will begin with the same prefix.  A
 ## HTTP Verbs
 As is standard for REST APIs, the HTTP verbs GET, HEAD, POST and DELETE are used to interact with the resources in the server.
 
-- **GET** requests fetch data and do not cause side effects.  All parameters for the request are contained within the URL, either within the path (e.g., /3/Frames/*my\_frame\_name*/*a\_column\_name*) or as query parameters (e.g., /3/Frames/my\_frame\_name*?row_offset=10000&row_count=1000*)
+- **GET** requests fetch data and do not cause side effects.  All parameters for the request are contained within the URL, either within the path (e.g., /3/Frames/*my\_frame\_name*/*a\_column\_name*) or as query parameters (e.g., /3/Frames/my\_frame\_name*?row\_offset=10000&row\_count=1000*)
 
 - **HEAD** requests return just the HTTP status for accessing the resource.
 
@@ -58,7 +58,7 @@ As is standard for REST APIs, the HTTP verbs GET, HEAD, POST and DELETE are used
 
   A future version of H2O will move to using *application/json*.
 
-- **DELETE** requests to delete an object, generally from the distributed object store.
+- **DELETE** requests delete an object, generally from the distributed object store.
 
 - **PUT** is used for requests that modify objects; it is not used yet.
 
@@ -78,7 +78,7 @@ The payloads for each endpoint are implemented as versioned *schemas*.  These sc
 
 ### Schemas
 
-Schemas specify all the relevant properties of each field of an input or response including name, type, default value, help string, direction (*in, out* or *inout*), whether or not input fields are required and how important they are to specify, allowed values for enumerated fields, and so on.  Schemas fields can be simple values or nested schemas, or arrays or dictionaries (maps) of these.
+Schemas specify all the relevant properties of each field of an input or response including name, type, default value, help string, direction (*in, out* or *inout*), whether or not input fields are required and how important they are to specify, allowed values for enumerated fields, and so on.  Schema fields can be simple values or nested schemas, or arrays or dictionaries (maps) of these.
 
 This example shows the *model_id* field returned by a model builder call:
 
@@ -264,7 +264,616 @@ Remember, Flow and the R and Python bindings access H2O only through the REST AP
 
     POST /3/Jobs/(?.*)/cancel
     Cancel a running job.
+    
+### Persistence
 
-## Example Requests
-f00
+    POST /3/Frames/(?.*)/export
+    Export a Frame to the given path with optional overwrite.
+    
+    POST /99/Models.bin/(?.*)
+    Import given binary model into H2O.
+
+    GET /99/Models.bin/(?.*)
+    Export given model.
+
+## GBM_Example.flow
+
+### GBM_Example.flow, Step 1: Import
+In Flow:
+
+```coffeescript
+importFiles ["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]
+```
+    
+In curl:
+
+```bash
+curl -X GET http://127.0.0.1:54321/3/ImportFiles?path=http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz
+```
+
+Result JSON:
+
+```
+{
+    "__meta": {
+        "schema_name": "ImportFilesV3",
+        "schema_type": "Iced",
+        "schema_version": 3
+    },
+    "_exclude_fields": "",
+    "dels": [],
+    "destination_frames": [
+        "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"
+    ],
+    "fails": [],
+    "files": [
+        "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"
+    ],
+    "path": "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"
+}
+
+```
+
+### GBM_Example.flow, Step 2: ParseSetup
+
+In Flow:
+
+```coffeescript
+setupParse paths: ["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]
+```
+
+In curl:
+
+```bash
+curl -X POST http://127.0.0.1:54321/3/ParseSetup --data 'source_frames=["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]'
+```
+
+
+### GBM_Example.flow, Step 2 Result
+
+```javascript
+{
+  "__meta": {
+    "schema_version": 3,
+    "schema_name": "ParseSetupV3",
+    "schema_type": "ParseSetup"
+  },
+  "_exclude_fields": "",
+  "source_frames": [
+    {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "FrameKeyV3",
+        "schema_type": "Key<Frame>"
+      },
+      "name": "http:\/\/s3.amazonaws.com\/h2o-public-test-data\/smalldata\/flow_examples\/arrhythmia.csv.gz",
+      "type": "Key<Frame>",
+      "URL": "\/3\/Frames\/http:\/\/s3.amazonaws.com\/h2o-public-test-data\/smalldata\/flow_examples\/arrhythmia.csv.gz"
+    }
+  ],
+  "parse_type": "CSV",
+  "separator": 44,
+  "single_quotes": false,
+  "check_header": -1,
+  "column_names": null,
+  "column_types": [
+    "Numeric",
+    ...
+  ],
+  "na_strings": null,
+  "column_name_filter": null,
+  "column_offset": 0,
+  "column_count": 0,
+  "destination_frame": "arrhythmia.hex",
+  "header_lines": 0,
+  "number_columns": 280,
+  "data": [
+    [
+      "75",
+      "0",
+      "190",
+      ...
+   ]
+   ...
+  ],
+  "chunk_size": 4194304,
+  "total_filtered_column_count": 280
+}
+```
+
+### GBM_Example.flow, Step 3: Parse
+
+In Flow:
+
+```coffeescript
+parseFiles
+  paths: ["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]
+  destination_frame: "arrhythmia.hex"
+  parse_type: "CSV"
+  separator: 44
+  number_columns: 280
+  single_quotes: false
+  column_names: null
+  column_types: ["Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric"]
+  delete_on_done: true
+  check_header: -1
+  chunk_size: 4194304
+```
+
+In curl:
+
+```bash
+curl -X POST http://127.0.0.1:54321/3/Parse --data 'destination_frame=arrhythmia.hex&source_frames=["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]&parse_type=CSV&separator=44&number_columns=280&single_quotes=false&column_names=&column_types=["Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric"]&check_header=-1&delete_on_done=true&chunk_size=4194304'
+
+```
+
+
+### GBM_Example.flow, Step 3 Result
+
+```javascript
+{
+  "__meta": {
+    "schema_version": 3,
+    "schema_name": "ParseV3",
+    "schema_type": "Iced"
+  },
+  "_exclude_fields": "",
+  "destination_frame": {
+    "__meta": {
+      "schema_version": 3,
+      "schema_name": "FrameKeyV3",
+      "schema_type": "Key<Frame>"
+    },
+    "name": "arrhythmia.hex",
+    "type": "Key<Frame>",
+    "URL": "\/3\/Frames\/arrhythmia.hex"
+  },
+  "source_frames": [
+    {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "FrameKeyV3",
+        "schema_type": "Key<Frame>"
+      },
+      "name": "http:\/\/s3.amazonaws.com\/h2o-public-test-data\/smalldata\/flow_examples\/arrhythmia.csv.gz",
+      "type": "Key<Frame>",
+      "URL": "\/3\/Frames\/http:\/\/s3.amazonaws.com\/h2o-public-test-data\/smalldata\/flow_examples\/arrhythmia.csv.gz"
+    }
+  ],
+  "parse_type": "CSV",
+  "separator": 44,
+  "single_quotes": false,
+  "check_header": -1,
+  "number_columns": 280,
+  "column_names": null,
+  "column_types": [
+    "Numeric",
+    "Numeric",
+...
+    "Numeric",
+    "Numeric",
+    "Numeric"
+  ],
+  "domains": null,
+  "na_strings": null,
+  "chunk_size": 4194304,
+  "delete_on_done": true,
+  "blocking": false,
+  "remove_frame": false,
+  "job": {
+    "__meta": {
+      "schema_version": 3,
+      "schema_name": "JobV3",
+      "schema_type": "Job"
+    },
+    "key": {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "JobKeyV3",
+        "schema_type": "Key<Job>"
+      },
+      "name": "$03010a010a7f32d4ffffffff$_b98fc5bba38d21ea53da2a0834c44f7a",
+      "type": "Key<Job>",
+      "URL": "\/3\/Jobs\/$03010a010a7f32d4ffffffff$_b98fc5bba38d21ea53da2a0834c44f7a"
+    },
+    "description": "Parse",
+    "status": "RUNNING",
+    "progress": 0,
+    "progress_msg": "Ingesting files.",
+    "start_time": 1438888896402,
+    "msec": 65,
+    "dest": {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "FrameKeyV3",
+        "schema_type": "Key<Frame>"
+      },
+      "name": "arrhythmia.hex",
+      "type": "Key<Frame>",
+      "URL": "\/3\/Frames\/arrhythmia.hex"
+    },
+    "exception": null,
+    "messages": [
+      
+    ],
+    "error_count": 0
+  },
+  "rows": 0,
+  "vec_ids": null
+}
+
+```
+
+### GBM_Example.flow, Step 4: Poll for job completion
+
+Flow polls for Job completion automagically:
+
+
+![inline fill](parse_job_polling.png)
+
+
+In curl:
+
+```bash
+curl -X GET 'http://127.0.0.1:54321/3/Jobs/%2403010a010a7f32d4ffffffff%24_b98fc5bba38d21ea53da2a0834c44f7a'
+```
+
+### GBM_Example.flow, Step 4: Result
+
+```javascript
+{
+  "__meta": {
+    "schema_version": 3,
+    "schema_name": "JobsV3",
+    "schema_type": "Iced"
+  },
+  "_exclude_fields": "",
+  "job_id": {
+    "URL": "\/3\/Jobs\/$03010a010a7f32d4ffffffff$_b98fc5bba38d21ea53da2a0834c44f7a"
+  },
+  "jobs": [
+    {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "JobV3",
+        "schema_type": "Job"
+      },
+      "key": {
+        "__meta": {
+          "schema_version": 3,
+          "schema_name": "JobKeyV3",
+          "schema_type": "Key<Job>"
+        },
+        "name": "$03010a010a7f32d4ffffffff$_b98fc5bba38d21ea53da2a0834c44f7a",
+        "type": "Key<Job>",
+        "URL": "\/3\/Jobs\/$03010a010a7f32d4ffffffff$_b98fc5bba38d21ea53da2a0834c44f7a"
+      },
+      "description": "Parse",
+      "status": "RUNNING",
+      "progress": 1,
+      "progress_msg": "Ingesting files.",
+      "start_time": 1438888896402,
+      "msec": 267,
+      "dest": {
+        "__meta": {
+          "schema_version": 3,
+          "schema_name": "FrameKeyV3",
+          "schema_type": "Key<Frame>"
+        },
+        "name": "arrhythmia.hex",
+        "type": "Key<Frame>",
+        "URL": "\/3\/Frames\/arrhythmia.hex"
+      },
+      "exception": null,
+      "messages": [
+        
+      ],
+      "error_count": 0
+    }
+  ]
+}
+```
+
+### GBM_Example.flow, Step 5: Train the Model
+
+In Flow:
+
+```coffeescript
+buildModel 'gbm', {"model_id":"gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1","training_frame":"arrhythmia.hex","score_each_iteration":false,"response_column":"C1","ntrees":"20","max_depth":5,"min_rows":"25","nbins":20,"learn_rate":"0.3","distribution":"AUTO","balance_classes":false,"max_confusion_matrix_size":20,"max_hit_ratio_k":10,"class_sampling_factors":[],"max_after_balance_size":5,"seed":0}
+```
+
+In curl:
+
+```bash
+curl -X POST http://127.0.0.1:54321/3/ModelBuilders/gbm --data 'model_id=gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1&training_frame=arrhythmia.hex&score_each_iteration=false&response_column=C1&ntrees=20&max_depth=5&min_rows=25&nbins=20&learn_rate=0.3&distribution=AUTO&balance_classes=false&max_confusion_matrix_size=20&max_hit_ratio_k=10&class_sampling_factors=&max_after_balance_size=5&seed=0'
+```
+
+### GBM_Example.flow, Step 5: Result
+
+```javascript
+{
+  "__meta": {
+    "schema_version": 3,
+    "schema_name": "GBMV3",
+    "schema_type": "GBM"
+  },
+  "_exclude_fields": "",
+  "job": {
+    "__meta": {
+      "schema_version": 3,
+      "schema_name": "JobV3",
+      "schema_type": "Job"
+    },
+    "key": {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "JobKeyV3",
+        "schema_type": "Key<Job>"
+      },
+      "name": "$03010a010a7f32d4ffffffff$_881e60f52af792b71d20540604b742dd",
+      "type": "Key<Job>",
+      "URL": "\/3\/Jobs\/$03010a010a7f32d4ffffffff$_881e60f52af792b71d20540604b742dd"
+    },
+    "description": "GBM",
+    "status": "RUNNING",
+    "progress": 0,
+    "progress_msg": "Running...",
+    "start_time": 1438888898858,
+    "msec": 185,
+    "dest": {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "ModelKeyV3",
+        "schema_type": "Key<Model>"
+      },
+      "name": "gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1",
+      "type": "Key<Model>",
+      "URL": "\/3\/Models\/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1"
+    },
+    "exception": null,
+    "messages": [
+      
+    ],
+    "error_count": 0
+  },
+  "algo": "gbm",
+  "algo_full_name": "Gradient Boosting Machine",
+  "can_build": [
+    "Regression",
+    "Binomial",
+    "Multinomial"
+  ],
+  "visibility": "Stable",
+  "messages": [
+    
+  ],
+  "error_count": 0,
+  "parameters": [
+    {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "ModelParameterSchemaV3",
+        "schema_type": "Iced"
+      },
+      "name": "model_id",
+      "label": "model_id",
+      "help": "Destination id for this model; auto-generated if not specified",
+      "required": false,
+      "type": "Key<Model>",
+      "default_value": null,
+      "actual_value": {
+        "__meta": {
+          "schema_version": 3,
+          "schema_name": "ModelKeyV3",
+          "schema_type": "Key<Model>"
+        },
+        "name": "gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1",
+        "type": "Key<Model>",
+        "URL": "\/3\/Models\/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1"
+      },
+      "level": "critical",
+      "values": [
+        
+      ],
+      "is_member_of_frames": [
+        
+      ],
+      "is_mutually_exclusive_with": [
+        
+      ]
+    }, ...
+  ]
+}
+```
+
+### GBM_Example.flow, Step 6: Poll for job completion
+
+Same as for Parse
+
+### GBM_Example.flow, Step 7: View the Model
+
+In Flow:
+
+```coffeescript
+getModel "gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1"
+```
+
+In curl:
+
+```bash
+curl -X GET 'http://127.0.0.1:54321/3/Models/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1'
+```
+
+### GBM_Example.flow, Step 7: Result
+
+```javascript
+{
+  "models": [
+    {
+      "model_id": {
+        "URL": "\/3\/Models\/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1"
+      },
+      "algo": "gbm",
+      "algo_full_name": "Gradient Boosting Machine",
+      "parameters": [
+	  ...
+      ],
+      "output": {
+        "__meta": {
+          "schema_name": "GBMModelOutputV3",
+        },
+        "model_category": "Regression",
+	  ...
+        "scoring_history": {
+	    ...
+        },
+        "training_metrics": {
+          "model_category": "Regression",
+          "MSE": 31.32188458883,
+          "r2": 0.88422887487626,
+          "mean_residual_deviance": 31.32188458883
+        },
+        "status": "DONE",
+        "run_time": 3211,
+     },
+    }
+  ],
+}
+
+```
+
+### GBM_Example.flow, Step 8: Predictions
+
+In Flow:
+
+```coffeescript
+predict model: "gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1", frame: "arrhythmia.hex", predictions_frame: "prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db"
+```
+
+In curl:
+
+```bash
+curl -X POST 'http://127.0.0.1:54321/3/Predictions/models/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1/frames/arrhythmia.hex' --data 'predictions_frame=prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db'
+```
+
+### GBM_Example.flow, Step 8: Result
+
+```javascript
+{
+  "__meta": {
+    "schema_version": 3,
+    "schema_name": "ModelMetricsListSchemaV3",
+    "schema_type": "ModelMetricsList"
+  },
+  "predictions_frame": {
+    "__meta": {
+      "schema_version": 3,
+      "schema_name": "FrameKeyV3",
+      "schema_type": "Key<Frame>"
+    },
+    "name": "prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db",
+    "type": "Key<Frame>",
+    "URL": "\/3\/Frames\/prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db"
+  },
+  "model_metrics": [
+    {
+      "__meta": {
+        "schema_version": 3,
+        "schema_name": "ModelMetricsRegressionV3",
+        "schema_type": "ModelMetricsRegression"
+      },
+      "model": {
+        "__meta": {
+          "schema_version": 3,
+          "schema_name": "ModelKeyV3",
+          "schema_type": "Key<Model>"
+        },
+        "name": "gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1",
+        "type": "Key<Model>",
+        "URL": "\/3\/Models\/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1"
+      },
+      "model_checksum": 7.1488755500207e+18,
+      "frame": {
+        "__meta": {
+          "schema_version": 3,
+          "schema_name": "FrameKeyV3",
+          "schema_type": "Key<Frame>"
+        },
+        "name": "arrhythmia.hex",
+        "type": "Key<Frame>",
+        "URL": "\/3\/Frames\/arrhythmia.hex"
+      },
+      "frame_checksum": -1.6112849483913e+17,
+      "model_category": "Regression",
+      "scoring_time": 1438888905373,
+      "predictions": {
+        "__meta": {
+          "schema_version": 3,
+          "schema_name": "FrameV3",
+          "schema_type": "Frame"
+        },
+        "frame_id": {
+          "__meta": {
+            "schema_version": 3,
+            "schema_name": "FrameKeyV3",
+            "schema_type": "Key<Frame>"
+          },
+          "name": "prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db",
+          "type": "Key<Frame>",
+          "URL": "\/3\/Frames\/prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db"
+        },
+        "byte_size": 3684,
+        "is_text": false,
+        "row_offset": 0,
+        "row_count": 100,
+        "column_offset": 0,
+        "column_count": 1,
+        "total_column_count": 1,
+        "checksum": 3.1483215706755e+18,
+        "rows": 452,
+        "columns": [
+          {
+            "__meta": {
+              "schema_version": 3,
+              "schema_name": "ColV3",
+              "schema_type": "Vec"
+            },
+            "label": "predict",
+            "missing_count": 0,
+            "zero_count": 0,
+            "positive_infinity_count": 0,
+            "negative_infinity_count": 0,
+            "mins": null,
+            "maxs": null,
+            "mean": 0,
+            "sigma": 0,
+            "type": "real",
+            "domain": null,
+            "domain_cardinality": 0,
+            "data": [
+              27.761375975688,
+              55.923557338198,
+              28.388683621664,
+              35.275735166748,
+              53.253980894466,
+              41.531820529033
+            ],
+          }
+        ],
+      "MSE": 31.321880321916,
+      "r2": 0.88422889064751,
+      "mean_residual_deviance": 31.321880321916
+    }
+  ]
+}
+
+```
+
+# Documentation
+ - this document:
+ https://github.com/h2oai/h2o-3/blob/master/
+ h2o-docs/src/api/REST/h2o\_3\_rest\_api\_overview.md
+ - reference in the Help sidebar in Flow
+ - reference on the H2O.ai website, [http://docs.h2o.ai/](http://docs.h2o.ai/)
+ - reference doc is generated via the */Metadata* endpoints, so it's always current
 

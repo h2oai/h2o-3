@@ -807,6 +807,44 @@ final public class H2O {
    */
   public static H2OFailException fail(String msg) { return H2O.fail(msg, null); }
 
+  /**
+   * Return an error message with an accompanying URL to help the user get more detailed information.
+   *
+   * @param number H2O tech note number.
+   * @param message Message to present to the user.
+   * @return A longer message including a URL.
+   */
+  public static String technote(int number, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n")
+            .append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number));
+
+    return sb.toString();
+  }
+
+  /**
+   * Return an error message with an accompanying list of URLs to help the user get more detailed information.
+   *
+   * @param numbers H2O tech note numbers.
+   * @param message Message to present to the user.
+   * @return A longer message including a list of URLs.
+   */
+  public static String technote(int[] numbers, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n");
+
+    for (int number : numbers) {
+      sb.append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number)).append("\n");
+    }
+
+    return sb.toString();
+  }
 
 
   // --------------------------------------------------------------------------

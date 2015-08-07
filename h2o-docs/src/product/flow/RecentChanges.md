@@ -2,7 +2,7 @@
 
 ##H2O
 
-###Simons (3.0.1.5) - 8/5/15
+###Simons (3.0.1.5) - 8/6/15
 
 ####New Features
 
@@ -26,6 +26,8 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/610e3fb8c3df087c9f21b19a33e97d53f0829e6e): Only call the limited printout for TwoDimTables during Model.toString () that prints all TwoDimTables of the model._output.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/0898eff8d2c7a01f29a23754eab2b0d954480faf): Only print up to 10 rows of TwoDimTables in ASCII logs (first/last 5).
 - [GitHub](https://github.com/h2oai/h2o-3/commit/77e62aa916c11f57aa66cec12ccb707d946f76a3): Remove some overflow/underflow checks: Let exp(x) be small and log(x) be large.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/1e0945ea13bc18f2d5dcd8fee270e52be2bb250b): Add `nbins_top_level` parameter to DRF/GBM. Not yet in R.
+
 
 #####API
 
@@ -39,6 +41,8 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/b53a2e564e0b85d6fb2da54a5ff232e20829a967): adjust to split frame jobs result
 - [GitHub](https://github.com/h2oai/h2o-3/commit/05516cb5a2297a25125e80603c55e97fc2e5b92b): allow for update thingy to be a tuple (so rows and columns)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8ebfd7c7ec6ff56732af96ffdb0b90908c9c0f01): when starting h2o jvm with h2o.init(), give h2o child process different id than parent, so it doesn't get killed on Ctrl-C
+- [GitHub](https://github.com/h2oai/h2o-3/commit/71b6ea7fa61b0fe9962b6a5536e13e661ed5e656): add option to turn off progress bar print out
+
 
 #####R
 
@@ -55,6 +59,7 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/7b5258f0cfc71310d3105cc1a1bb80952632a073): Add parameterized route for frame export
 - [GitHub](https://github.com/h2oai/h2o-3/commit/13709afc274ce0ed7796d63f57dbb2e658b56669): allow string vecs to be toEnum'd (with a sensible cap)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/a9ad86bd76a20953005d7eb1981c46849e1a5ad4): allow lists of numbers in reducer ops
+- [GitHub](https://github.com/h2oai/h2o-3/commit/5d4eb4d3c96161c92dc5aa4ce84f91a636739778): Add warning message during POJO export if `offset_column` is specified (is not supported)
 
 ####Bug Fixes 
 
@@ -71,7 +76,8 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1756](https://0xdata.atlassian.net/browse/PUBDEV-1756): DL : Math correctness for Poisson with Offsets/Weights
 - [PUBDEV-1651](https://0xdata.atlassian.net/browse/PUBDEV-1651): null/residual deviances don't match for various weights cases
 - [PUBDEV-1757](https://0xdata.atlassian.net/browse/PUBDEV-1757): DL : Math correctness for Gamma with Offsets/Weights
-
+- [PUBDEV-1680](https://0xdata.atlassian.net/browse/PUBDEV-1680): gbm gamma: seeing train set mse incs after sometime
+- [PUBDEV-1724](https://0xdata.atlassian.net/browse/PUBDEV-1724): gbm w tweedie: weird validation error behavior 
 
 #####Python
 
@@ -79,7 +85,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1409](https://0xdata.atlassian.net/browse/PUBDEV-1409): h2o python h2o.locate() should stop and return "Not found" rather than passing path=None to h2o? causes confusion h2o message  [GitHub](https://github.com/h2oai/h2o-3/commit/c8bdebc4caf0153a721f68963642e0ce92c311ab)
 - [PUBDEV-1630](https://0xdata.atlassian.net/browse/PUBDEV-1630): GBM getting intermittent assertion error on iris scoring in `pyunit_weights_api.py`
 - [PUBDEV-1770](https://0xdata.atlassian.net/browse/PUBDEV-1770): sigterm caught by python is killing h2o [GitHub](https://github.com/h2oai/h2o-3/commit/f123741c5455fa7e21d6675789fb93ed796f617b)
-
+- [PUBDEV-1409](https://0xdata.atlassian.net/browse/PUBDEV-1409): h2o python h2o.locate() should stop and return "Not found" rather than passing path=None to h2o? causes confusion h2o message
 
 
 #####R
@@ -87,7 +93,8 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1830](https://0xdata.atlassian.net/browse/PUBDEV-1830): h2o.glm throws an error when `fold_column` and `validation_frame` are both specified
 - [PUBDEV-1660](https://0xdata.atlassian.net/browse/PUBDEV-1660): h2oR: when try to get a slice from pca eigenvectors get some formatting error [GitHub](https://github.com/h2oai/h2o-3/commit/8380c9697cb057f2437c8f14deea3a702f810805)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/bce4e036ad52d3a4dd75960653f016dc6c076622): fix broken %in% in R
-
+- [PUBDEV-1831](https://0xdata.atlassian.net/browse/PUBDEV-1831): Cross-validation metrics are not displayed in R (and Python?)
+- [PUBDEV-1840](https://0xdata.atlassian.net/browse/PUBDEV-1840): Autoencoder model doesn't display properly in R (training metrics)
 
 #####System
 
