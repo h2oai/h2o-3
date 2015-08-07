@@ -61,6 +61,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
+  parms$training_frame <- training_frame
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(laplace))
