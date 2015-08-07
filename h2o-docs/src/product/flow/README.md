@@ -826,7 +826,7 @@ Select the type of plot (point, path, or rect) from the drop-down **Type** menu,
 
 Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
 
- ![Flow - Plotting Frames](images/Flow_Plot.png)
+ ![Flow - Plotting Frames](images/Flow_plot.png)
 
 >**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any `min`, `max`, or `mean` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O. 
 
