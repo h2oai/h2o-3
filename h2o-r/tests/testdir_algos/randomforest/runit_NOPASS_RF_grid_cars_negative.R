@@ -24,6 +24,12 @@ check.drf.grid.cars.negative <- function(conn) {
   if        ( problem == 1 ) { response_col <- "economy_20mpg"
   } else if ( problem == 2 ) { response_col <- "cylinders"
   } else                     { response_col <- "economy" }
+
+  if ( problem == 1 || problem == 2 ) {
+    Log.info("Converting the response column to a factor...")
+    train[,response_col] <- as.factor(train[,response_col])
+    if ( validation_scheme == 3 ) { valid[,response_col] <- as.factor(valid[,response_col]) } }
+
   Log.info(paste0("Predictors: ", paste(predictors, collapse=',')))
   Log.info(paste0("Response: ", response_col))
 
