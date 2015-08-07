@@ -383,16 +383,14 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
-  /** Number of categorical levels for enum columns; zero for non-enum columns.
+  /** Number of categorical levels for enum columns; -1 for non-enum columns.
    * @return the number of levels for enum columns */
-  public int[] numLevels() {
+  public int[] cardinality() {
     Vec[] vecs = vecs();
-    int[] nl = new int[vecs.length];
-    for( int i=0; i<vecs.length; i++ ) {
-      String[] dm = vecs[i].domain();
-      nl[i] = dm == null ? 0 : dm.length;
-    }
-    return nl;
+    int[] card = new int[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      card[i] = vecs[i].cardinality();
+    return card;
   }
 
   /** All the column means.

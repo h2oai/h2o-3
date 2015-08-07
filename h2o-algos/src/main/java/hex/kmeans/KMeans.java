@@ -211,7 +211,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model._output._totss = model._output._tot_withinss;
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults, _parms.train().domains()).doAll(vecs);
+        TotSS totss = new TotSS(means,mults, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
         model._output._totss = totss._tss;
       }
       model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
@@ -459,31 +459,36 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // IN
     final double[] _means, _mults;
     final String[][] _isCats;
+    final int[] _card;
 
     // OUT
     double _tss;
+    double[] _gc; // Grand center (mean of every column)
 
-    TotSS(double[] means, double[] mults, String[][] isCats) {
+    TotSS(double[] means, double[] mults, String[][] isCats, int[] card) {
       _means = means;
       _mults = mults;
       _tss = 0;
       _isCats = isCats;
+      _card = card;
+
+      if(mults!=null) {
+        _gc = new double[means.length];
+        for(int i=0; i<means.length; i++) {
+          if(isCats[i] != null)
+            _gc[i] = Math.min(Math.round(means[i]), _card[i]-1);  // TODO: Should set to majority class of column
+        }
+      } else
+        _gc = Arrays.copyOf(means, means.length);
     }
 
     @Override public void map(Chunk[] cs) {
-      // de-standardize the cluster means
-      double[] means = Arrays.copyOf(_means, _means.length);
-
-      if (_mults!=null)
-        for (int i=0; i<means.length; ++i)
-          means[i] = (means[i] - _means[i])/_mults[i];
-
       for( int row = 0; row < cs[0]._len; row++ ) {
         double[] values = new double[cs.length];
         // fetch the data - using consistent NA and categorical data handling (same as for training)
         data(values, cs, row, _means, _mults);
         // compute the distance from the (standardized) cluster centroids
-        _tss += hex.genmodel.GenModel.KMeans_distance(means, values, _isCats, null, null);
+        _tss += hex.genmodel.GenModel.KMeans_distance(_gc, values, _isCats, null, null);
       }
     }
 
