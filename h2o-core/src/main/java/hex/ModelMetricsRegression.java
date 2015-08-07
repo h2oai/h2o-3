@@ -3,6 +3,7 @@ package hex;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public final double _mean_residual_deviance;

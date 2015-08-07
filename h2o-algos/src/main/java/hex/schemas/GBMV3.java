@@ -32,6 +32,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 				"max_depth",
 				"min_rows",
 				"nbins",
+        "nbins_top_level",
 				"nbins_cats",
 				"r2_stopping",
 				"seed",
