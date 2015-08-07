@@ -132,6 +132,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           // Initialize first cluster center to random row
           randomRow(vecs, rand, centers[0], means, mults);
 
+          model._output._iterations = 0;
           while (model._output._iterations < 5) {
             // Sum squares distances to cluster center
             SumSqr sqr = new SumSqr(centers, means, mults, _isCats).doAll(vecs);
@@ -151,7 +152,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand, _parms._k, _parms._init, _isCats);
-          model._output._iterations = -1; // Reset iteration count
+          model._output._iterations = 0; // Reset iteration count
         }
       }
       return centers;
