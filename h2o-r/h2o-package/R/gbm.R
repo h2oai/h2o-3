@@ -76,7 +76,6 @@ h2o.gbm <- function(x, y, training_frame,
   # Pass over ellipse parameters
   do_future <- FALSE
   if (length(list(...)) > 0) {
-#    browser()
     dots <- list(...) #.model.ellipses( list(...))
     if( !is.null(dots$future) ) do_future <- TRUE
   }

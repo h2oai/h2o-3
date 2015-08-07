@@ -30,7 +30,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   public enum Initialization {
     Random, PlusPlus, Furthest, User

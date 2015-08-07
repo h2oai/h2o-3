@@ -260,8 +260,8 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
   fnum_id <- h2o.cbind(fnum_id, data)
 
   xval <- lapply(1:nfolds, function(i) {
-      params$training_frame <- data[fnum_id$object != i, ]
-      params$validation_frame <- data[fnum_id$object != i, ]
+      params$training_frame   <- data[fnum_id[,1] != i, ]
+      params$validation_frame <- data[fnum_id[,1] == i, ]
       fold <- do.call(model.type, c(params))
       output[(i+1), "fold_num"] <<- i - 1
       output[(i+1), "model_key"] <<- fold@model_id
@@ -299,7 +299,7 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
 h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
-  if( !is.Frame(data) ) stop("`data` must be an Frame object")
+  if( !is.null(data) && !is.Frame(data) ) stop("`data` must be an Frame object")
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame

@@ -195,6 +195,9 @@ dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(dat
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
+#` Column names of an H2O Frame
+names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
+
 #` Length - number of columns
 length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
 
@@ -410,6 +413,9 @@ NULL
   `[<-`(data, row=name,value=value)
 }
 
+`names<-.Frame` <- function(x, value) {
+  .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), paste0('[',paste0('"',value,'"',collapse=" "),']'))
+}
 
 
 #'
@@ -1050,4 +1056,38 @@ apply <- function(X, MARGIN, FUN, ...) {
   # in).  Unknown variables in the function body will be looked up in the
   # dynamic scope.
   .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, list(), sys.parent(1) ))
+}
+
+#' Inserting Missing Values to an H2O DataFrame
+#'
+#' *This is primarily used for testing*. Randomly replaces a user-specified fraction of
+#' entries in a H2O dataset with missing values.
+#'
+#' @param data An \linkS4class{H2OFrame} object representing the dataset.
+#' @param fraction A number between 0 and 1 indicating the fraction of entries
+#'        to replace with missing.
+#' @param seed A random number used to select which entries to replace with
+#'        missing values. Default of \code{seed = -1} will automatically
+#'        generate a seed in H2O.
+#' @section WARNING: This will modify the original dataset. Unless this is intended,
+#' this function should only be called on a subset of the original.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex <- h2o.importFile(localH2O, path = irisPath)
+#' summary(iris.hex)
+#' irismiss.hex <- h2o.insertMissingValues(iris.hex, fraction = 0.25)
+#' head(irismiss.hex)
+#' summary(irismiss.hex)
+#' @export
+h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
+  parms = list()
+  parms$dataset <- .eval.frame(data):eval # Eager force evaluation
+  parms$fraction <- fraction
+  if( !missing(seed) )
+    parms$seed <- seed
+  json <- .h2o.__remoteSend(method = "POST", page = 'MissingInserter', .params = parms)
+  .h2o.__waitOnJob(json$key$name)
+  data
 }
