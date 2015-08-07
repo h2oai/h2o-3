@@ -88,6 +88,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
+        if (glm.nFoldCV())
+          glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
         if(_nlambdas == -1)
           _nlambdas = 100;
         else

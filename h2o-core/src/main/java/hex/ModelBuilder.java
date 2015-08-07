@@ -223,7 +223,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     }
-    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits(), true) :
+    return !nFoldCV() ? trainModelImpl(progressUnits(), true) :
             // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
             start(new H2O.H2OCountedCompleter() {
               @Override
@@ -250,6 +250,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract protected long progressUnits();
 
   /**
+   * Whether the Job is done after building the model itself, or whether there's extra work to be done
    * Override the Job's behavior here
    * N-fold CV jobs should not mark the job as finished, we do this explicitly in computeCrossValidation
    *
@@ -257,7 +258,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   @Override
   protected boolean canBeDone() {
-    return (_parms._fold_column == null && _parms._nfolds == 0);
+    return !nFoldCV();
   }
 
   /**
@@ -514,6 +515,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return _deleteProgressKey;
   }
 
+  /**
+   * Whether n-fold cross-validation is done
+   * @return
+   */
+  public boolean nFoldCV() {
+    return _parms._fold_column != null || _parms._nfolds != 0;
+  }
+
   /** List containing the categories of models that this builder can
    *  build.  Each ModelBuilder must have one of these. */
   abstract public ModelCategory[] can_build();
@@ -732,7 +741,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_fold_column", "Fold column is ignored when nfolds > 1.");
     }
     // hide cross-validation parameters unless cross-val is enabled
-    if (_parms._nfolds ==0 && _parms._fold_column == null) {
+    if (!nFoldCV()) {
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
       if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
