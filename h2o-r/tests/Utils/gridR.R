@@ -29,16 +29,22 @@ makeRandomGridSpace <- function(algo,ncols=NULL) {
     if ( sample(0:1,1) ) { grid_space$sample_rate <- runif(sample(2:3,1)) }
   }
   if ( algo == "deeplearning" ) {
-    if ( sample(0:1,1) ) { grid_space$activation = sample(c("Rectifier", "Tanh", "TanhWithDropout",
+    if ( sample(0:1,1) ) { grid_space$activation <- sample(c("Rectifier", "Tanh", "TanhWithDropout",
                                                             "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
                                                           sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$hidden = lapply(sample(1:3,sample(2:3,1)), function (x) rep(sample(10:200,1),sample(2:3,1))) }
-    if ( sample(0:1,1) ) { grid_space$epochs = sample(1:10, sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$loss = sample(c("Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute"),
+    if ( sample(0:1,1) ) { grid_space$hidden <- lapply(sample(1:3,sample(2:3,1)), function (x) rep(sample(10:200,1),sample(2:3,1))) }
+    if ( sample(0:1,1) ) { grid_space$epochs <- sample(1:10, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$loss <- sample(c("Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute"),
                                                     sample(2:3,1)) }
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
-
+  if ( algo == "kmeans" ) {
+    if ( sample(0:1,1) ) { grid_space$max_iterations <- sample(1:1000, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$standardize <- c(TRUE, FALSE) }
+    if ( sample(0:1,1) ) { grid_space$seed = sample(1:1000, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$init = sample(c('Random','PlusPlus','Furthest'), sample(2:3,1)) }
+    grid_space$k <- sample(1:10, 1)
+  }
   grid_space
 }
 
