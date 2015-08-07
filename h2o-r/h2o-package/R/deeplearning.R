@@ -1,16 +1,16 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
 #' Build a Deep Learning Neural Network
 #'
-#' Performs Deep Learning neural networks on an \linkS4class{H2OFrame}
+#' Performs Deep Learning neural networks on an \linkS4class{Frame}
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
+#' @param training_frame An \linkS4class{Frame} object containing the variables in the model.
 #' @param id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logcial. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
 #' @param n_folds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
-#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
+#' @param validation_frame (Optional) An \code{\link{Frame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -173,17 +173,17 @@ h2o.deeplearning <- function(x, y, training_frame,
   # Pass over ellipse parameters and deprecated parameters
   dots <- .model.ellipses(list(...))
 
-  # Training_frame and validation_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame and validation_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   if (!missing(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                   stop("argument \"validation_frame\" must be a valid Frame or key")
                  })
   }
   # Parameter list to send to model builder
@@ -323,8 +323,8 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
-#' @param data An \linkS4class{H2OFrame} object.
-#' @return Returns an \linkS4class{H2OFrame} object containing the
+#' @param data An \linkS4class{Frame} object.
+#' @return Returns an \linkS4class{Frame} object containing the
 #'         reconstruction MSE.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
@@ -338,7 +338,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' head(prostate.anon)
 #' @export
 h2o.anomaly <- function(object, data) {
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',.eval.frame(data):eval)
   res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE)
   key <- res$model_metrics[[1L]]$predictions$frame_id$name
 
@@ -351,9 +351,9 @@ h2o.anomaly <- function(object, data) {
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.
-#' @param data An \linkS4class{H2OFrame} object.
+#' @param data An \linkS4class{Frame} object.
 #' @param layer Index of the hidden layer to extract.
-#' @return Returns an \linkS4class{H2OFrame} object with as many features as the
+#' @return Returns an \linkS4class{Frame} object with as many features as the
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
 #' @examples
@@ -370,8 +370,7 @@ h2o.anomaly <- function(object, data) {
 #' @export
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
-  .h2o.eval.frame(data)
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', .eval.frame(data):eval)
   res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 

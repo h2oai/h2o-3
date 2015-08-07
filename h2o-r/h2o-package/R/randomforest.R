@@ -1,6 +1,6 @@
 #' Build a Big Data Random Forest Model
 #'
-#' Builds a Random Forest Model on an \linkS4class{H2OFrame}
+#' Builds a Random Forest Model on an \linkS4class{Frame}
 #'
 #' @param x A vector containing the names or indices of the predictor variables
 #'        to use in building the GBM model.
@@ -8,7 +8,7 @@
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
 #'        or a categorical variable).
-#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the
+#' @param training_frame An \code{\linkS4class{Frame}} object containing the
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
@@ -26,7 +26,7 @@
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param validation_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
@@ -67,17 +67,17 @@ h2o.randomForest <- function( x, y, training_frame,
   }
 
 
-  # Training_frame and validation_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame and validation_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   if (!missing(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                   stop("argument \"validation_frame\" must be a valid Frame or key")
                  })
   }
 

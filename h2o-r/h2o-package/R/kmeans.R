@@ -4,7 +4,7 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OFrame} object containing the
+#' @param training_frame An \linkS4class{Frame} object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -20,14 +20,13 @@
 #' @param standardize Logical, indicates whether the data should be
 #'        standardized before running k-means.
 #' @param init A character string that selects the initial set of k cluster
-#'        centers. Possible values are "Random": for random initialization,
+#'        centers.  Possible values are "Random": for random initialization,
 #'        "PlusPlus": for k-means plus initialization, or "Furthest": for
 #'        initialization at the furthest point from each successive center.
-#'        Additionally, the user may specify a the initial centers as a
-#'        matrix, data.frame, H2OFrame, or list of vectors. For matrices,
-#'        data.frames, and H2OFrames, each row of the respective structure
-#'        is an initial center. For lists of vectors, each vector is an
-#'        initial center.
+#'        Additionally, the user may specify a the initial centers as a matrix,
+#'        data.frame, Frame, or list of vectors.  For matrices, data.frames,
+#'        and Frames, each row of the respective structure is an initial
+#'        center.  For lists of vectors, each vector is an initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
@@ -47,11 +46,11 @@ h2o.kmeans <- function(training_frame, x, k,
                        init = c("Furthest","Random", "PlusPlus"),
                        seed)
 {
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if( !is.Frame(training_frame) )
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
 
   # Gather user input
@@ -73,12 +72,14 @@ h2o.kmeans <- function(training_frame, x, k,
     parms$seed <- seed
 
   # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || inherits(init, "H2OFrame") ) {
+  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {
     parms[["init"]] <- "User"
-    # Convert user-specified starting points to H2OFrame
+    # Convert user-specified starting points to Frame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
       init <- as.h2o(init)
+    } else {
+      .eval.frame(init)
     }
     parms[["user_points"]] <- init
     # Set k

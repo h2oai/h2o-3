@@ -4,7 +4,7 @@
 #' Generalized low rank decomposition of a H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OFrame} object containing the
+#' @param training_frame An \linkS4class{Frame} object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -43,7 +43,7 @@
 #'        standard normal distribution, "PlusPlus": for initialization using the clusters
 #'        from k-means++ initialization, or "SVD": for initialization using the 
 #'        first k right singular vectors. Additionally, the user may specify the 
-#'        initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
+#'        initial Y as a matrix, data.frame, Frame, or list of vectors.
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
@@ -67,15 +67,15 @@ h2o.glrm <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
   
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   
   ## -- Force evaluate temporary ASTs -- ##
-  .h2o.eval.frame(training_frame)
+  .eval.frame(training_frame)
   
   # Gather user input
   parms <- list()
@@ -114,9 +114,9 @@ h2o.glrm <- function(training_frame, x, k,
     parms$seed <- seed
   
   # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || inherits(init, "H2OFrame") ) {
+  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {
     parms[["init"]] <- "User"
-    # Convert user-specified starting points to H2OFrame
+    # Convert user-specified starting points to Frame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
       init <- as.h2o(init)

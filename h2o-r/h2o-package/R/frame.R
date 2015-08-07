@@ -18,10 +18,15 @@
 #`
 #` Frame/AST Node/environment Fields
 #` E$op       <- Operation or opcode that produces this Frame, a string
-#` E$eval     <- A (possibly empty) list of dependent Nodes.  Set to an ID string for evaluated ops
 #` # If the ID field is present, this Node is user  -managed, and will NOT be deleted by GC.
 #` # If the ID field is missing, this Node is client-managed, and will     be deleted by GC.
 #` E$id       <- A user-specified name, used in the H2O cluster
+#` # If the ID field is present, this node is evaluated on creation and the
+#` # EVAL field is set equal to the ID field.  If this ID field is missing, the
+#` # EVAL field holds either a list-of-Nodes representing the lazy evaluation
+#` # semantics, OR a tmp ID representing the H2O-cluster name for the evaluated
+#` # result.  Thus for all evaluated nodes the EVAL field holds the cluster name.
+#` E$eval     <- A (possibly empty) list of dependent Nodes.  Set to an ID string for evaluated ops
 #` E$visit    <- A temporary field used to manage DAG visitation
 #` 
 #` # A number of fields represent cached queries of an evaluated frame.
@@ -156,8 +161,11 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); prin
   res
 }
 
-# Evaluate this Frame on demand.  The eval field is used as a flag to
-# signal that the node has already been executed.  
+# Evaluate this Frame on demand.  The EVAL field is used as a flag to
+# signal that the node has already been executed.  Once evaluted
+# the EVAL field holds the cluster name; thus:
+#    .eval.frame(hex):eval
+# Always yields the cluster's name for the evaluated results.
 .eval.frame <- function(x) {
   stopifnot(is.Frame(x))
   if( !is.character(x:eval) ) {
@@ -175,7 +183,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); prin
 #'
 #' Returns the number of rows and columns for a Frame object.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An \linkS4class{Frame} object.
 #' @seealso \code{\link[base]{dim}} for the base R method.
 #' @examples
 #' localH2O <- h2o.init()
@@ -196,10 +204,10 @@ length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) 
 #' Returns the first or last rows of an H2O parsed data object.
 #'
 #' @name h2o.head
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An \linkS4class{Frame} object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #' @param ... Further arguments passed to or from other methods.
-#' @return A data frame containing the first or last n rows of an \linkS4class{H2OFrame} object.
+#' @return A data frame containing the first or last n rows of an \linkS4class{Frame} object.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
@@ -409,15 +417,15 @@ NULL
 #'
 #' Obtain and display quantiles for H2O parsed data.
 #'
-#' \code{quantile.H2OFrame}, a method for the \code{\link{quantile}} generic. Obtain and return quantiles for
-#' an \code{\linkS4class{H2OFrame}} object.
+#' \code{quantile.Frame}, a method for the \code{\link{quantile}} generic. Obtain and return quantiles for
+#' an \code{\linkS4class{Frame}} object.
 #'
-#' @param x An \code{\linkS4class{H2OFrame}} object with a single numeric column.
+#' @param x An \code{\linkS4class{Frame}} object with a single numeric column.
 #' @param probs Numeric vector of probabilities with values in [0,1].
 #' @param combine_method How to combine quantiles for even sample sizes. Default is to do linear interpolation.
 #'                       E.g., If method is "lo", then it will take the lo value of the quantile. Abbreviations for average, low, and high are acceptable (avg, lo, hi).
 #' @param ... Further arguments passed to or from other methods.
-#' @return A vector describing the percentiles at the given cutoffs for the \code{\linkS4class{H2OFrame}} object.
+#' @return A vector describing the percentiles at the given cutoffs for the \code{\linkS4class{Frame}} object.
 #' @examples
 #' # Request quantiles for an H2O parsed data set:
 #' library(h2o)
@@ -603,7 +611,7 @@ summary.Frame <- function(object, factors=6L, ...) {
 #'
 #' Obtain the mean of a column of a parsed H2O data object.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An \linkS4class{Frame} object.
 #' @param trim The fraction (0 to 0.5) of observations to trim from each end of \code{x} before the mean is computed.
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @param ... Further arguments to be passed from or to other methods.
@@ -629,7 +637,7 @@ mean.Frame <- function(x, ...) {
 # TODO: figure out funcionality/use for documentation
 # h2o.mode <-
 # function(x) {
-#  if(!is(x, "H2OFrame")) || nrow(x) > 1L) stop('`x` must be a H2OFrame object')
+#  if(!is(x, "Frame")) || nrow(x) > 1L) stop('`x` must be a Frame object')
 # tabularx = invisible(table(x))
 #  maxCount = max(tabularx$Count)
 #  modes = tabularx$row.names[tabularx$Count == maxCount]
@@ -641,8 +649,8 @@ mean.Frame <- function(x, ...) {
 #'
 #' Obtain the variance of a column of a parsed H2O data object.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @param y \code{NULL} (default) or a column of an \linkS4class{H2OFrame} object. The default is equivalent to y = x (but more efficient).
+#' @param x An \linkS4class{Frame} object.
+#' @param y \code{NULL} (default) or a column of an \linkS4class{Frame} object. The default is equivalent to y = x (but more efficient).
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @param use An optional character string to be used in the presence of missing values. This must be one of the following strings. "everything", "all.obs", or "complete.obs".
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
@@ -676,7 +684,7 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #'
 #' Obtain the standard deviation of a column of data.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An \linkS4class{Frame} object.
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @seealso \code{\link{h2o.var}} for variance, and \code{\link[stats]{sd}} for the base R implementation.
 #' @examples
@@ -828,7 +836,7 @@ as.integer <- function(x) {
 #' Convert H2O Data to Factors
 #'
 #' Convert a column into a factor column.
-#' @param x a column from an \linkS4class{H2OFrame} data set.
+#' @param x a column from an \linkS4class{Frame} data set.
 #' @seealso \code{\link{is.factor}}.
 #' @examples
 #' localH2O <- h2o.init()

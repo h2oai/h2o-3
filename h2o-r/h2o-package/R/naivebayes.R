@@ -14,7 +14,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
 #'        column index number starting at 0, and increasing from left to right. The response must be a categorical
 #'        variable with at least two levels.
-#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
@@ -46,11 +46,11 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            eps = 0,
                            compute_metrics = TRUE)
 {
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
 
   .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column",

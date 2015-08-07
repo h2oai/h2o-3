@@ -33,8 +33,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "double[]",     stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "float",        stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "float[]",      stringsAsFactors = FALSE),
-                   data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key",          stringsAsFactors = FALSE),
-                   data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key<Frame>",   stringsAsFactors = FALSE),
+                   data.frame(type = "Frame",     scalar = TRUE,  row.names = "Key",          stringsAsFactors = FALSE),
+                   data.frame(type = "Frame",     scalar = TRUE,  row.names = "Key<Frame>",   stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "Key<Key>",     stringsAsFactors = FALSE),
                    data.frame(type = "H2OModel",  scalar = TRUE,  row.names = "Key<Model>",   stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "int",          stringsAsFactors = FALSE),
@@ -82,8 +82,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Export Files Endpoint Generator
 .h2o.__EXPORT_FILES <- function(frame,path,force) {
-  .h2o.eval.frame(frame)
-  paste0("Frames/",frame@id,"/export/",path,"/overwrite/",force)
+  paste0("Frames/", .eval.frame(frame):eval, "/export/",path,"/overwrite/",force)
 }
 
 #' Model Endpoint

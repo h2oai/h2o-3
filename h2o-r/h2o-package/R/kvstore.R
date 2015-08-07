@@ -139,3 +139,90 @@ h2o.removeAll <- function() invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DE
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
 h2o.getFrame <- function(id) .newFrame("getFrame",id)
+
+#' Get an R reference to an H2O model
+#'
+#' Returns a reference to an existing model in the H2O instance.
+#'
+#' @param id A string indicating the unique id of the model to retrieve.
+#' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#'
+#' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
+#' model.retrieved <- h2o.getModel(model_id)
+#' @export
+h2o.getModel <- function(model_id) {
+  json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
+  model_category <- json$output$model_category
+  if (is.null(model_category))
+    model_category <- "Unknown"
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction")))
+    stop(paste0("model_category, \"", model_category,"\", missing in the output"))
+  Class <- paste0("H2O", model_category, "Model")
+  model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  MetricsClass <- paste0("H2O", model_category, "Metrics")
+  # setup the metrics objects inside of model...
+  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
+  parameters <- list()
+  allparams  <- list()
+  lapply(json$parameters, function(param) {
+    if (!is.null(param$actual_value)) {
+      name <- param$name
+      value <- param$actual_value
+      mapping <- .type.map[param$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
+
+      if (type == "numeric" && value == "Infinity")
+        value <- Inf
+      else if (type == "numeric" && value == "-Infinity")
+        value <- -Inf
+
+      # Parse frame information to a key
+      if (type == "Frame")
+        value <- value$name
+      # Parse model information to a key
+      if (type == "H2OModel") {
+        value <- value$name
+      }
+
+      # Response column needs to be parsed
+      if (name == "response_column")
+        value <- value$column_name
+      allparams[[name]] <<- value
+      # Store only user changed parameters into parameters
+      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value))
+        parameters[[name]] <<- value
+    }
+  })
+
+  # Convert ignored_columns/response_column to valid R x/y
+  cols <- colnames(h2o.getFrame(parameters$training_frame))
+
+  parameters$x <- setdiff(cols, parameters$ignored_columns)
+  allparams$x <- setdiff(cols, allparams$ignored_columns)
+  if (!is.null(parameters$response_column))
+  {
+    parameters$y <- parameters$response_column
+    allparams$y <- allparams$response_column
+    parameters$x <- setdiff(parameters$x, parameters$y)
+    allparams$x <- setdiff(allparams$x, allparams$y)
+  }
+
+  allparams$ignored_columns <- NULL
+  allparams$response_column <- NULL
+  parameters$ignored_columns <- NULL
+  parameters$response_column <- NULL
+  .newH2OModel(Class         = Class,
+               model_id      = model_id,
+               algorithm     = json$algo,
+               parameters    = parameters,
+               allparameters = allparams,
+               model         = model)
+}
+

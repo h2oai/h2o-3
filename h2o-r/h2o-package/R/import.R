@@ -39,7 +39,7 @@
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
 #' @param col.names (Optional) A \linkS4class{H2ORawData} or
-#'        \linkS4class{H2OFrame} (\code{version = 2}) object containing a single
+#'        \linkS4class{Frame} (\code{version = 2}) object containing a single
 #'        delimited line with the column names for the file.
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.

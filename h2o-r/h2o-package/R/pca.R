@@ -5,7 +5,7 @@
 #' to calculate the singular value decomposition of the Gram matrix.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OFrame} object containing the
+#' @param training_frame An \linkS4class{Frame} object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
@@ -53,15 +53,15 @@ h2o.prcomp <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
 
   ## -- Force evaluate temporary ASTs -- ##
-  .h2o.eval.frame(training_frame)
+  .eval.frame(training_frame)
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame

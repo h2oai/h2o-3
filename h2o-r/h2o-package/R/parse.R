@@ -132,14 +132,5 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   else "[]"
 }
 
-#'
-#' The H2OFrame Constructor
-.h2o.parsedData <- function(destination_frame, nrows, ncols, col_names) {
-#  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names, computed=T)
-#  .newH2OFrame(id=destination_frame, mutable=mutable)
-  stop() # unimplemented
-}
-
-
 # ASCII lookup on sep
 .asc <- function(c) strtoi(charToRaw(c),16L)

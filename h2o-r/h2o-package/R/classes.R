@@ -81,7 +81,7 @@ setMethod("show", "H2OConnection", function(object) {
 #' This virtual class represents a model built by H2O.
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
-#' the data used to build the model (an object of class H2OFrame).
+#' the data used to build the model (an object of class Frame).
 #'
 #' @slot id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
@@ -208,7 +208,7 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 #' This virtual class represents a clustering model built by H2O.
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
-#' the data used to build the model (an object of class H2OFrame).
+#' the data used to build the model (an object of class Frame).
 #'
 #' @slot id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.

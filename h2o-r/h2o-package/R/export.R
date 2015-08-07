@@ -6,14 +6,14 @@
 
 #' Export an H2O Data Frame to a File
 #'
-#' Exports an \linkS4class{H2OFrame} (which can be either VA or FV) to a file.
+#' Exports an \linkS4class{Frame} (which can be either VA or FV) to a file.
 #' This file may be on the H2O instace's local filesystem, or to HDFS (preface
 #' the path with hdfs://) or to S3N (preface the path with s3n://).
 #'
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
-#' @param data An \linkS4class{H2OFrame} data frame.
+#' @param data An \linkS4class{Frame} data frame.
 #' @param path The path to write the file to. Must include the directory and
 #'        filename. May be prefaced with hdfs:// or s3n://. Each row of data
 #'        appears as line of the file.
@@ -32,8 +32,8 @@
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE) {
-  if (!is(data, "H2OFrame"))
-    stop("`data` must be an H2OFrame object")
+  if (!is.Frame(data))
+    stop("`data` must be an Frame object")
 
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
@@ -61,8 +61,8 @@ h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,
 #' Download an H2O data set to a CSV file on the local disk
 #'
 #' @section Warning: Files located on the H2O server may be very large! Make
-#'        sure you have enough hard drive psace to accomoadet the entire file.
-#' @param data an \linkS4class{H2OFrame} object to be downloaded.
+#'        sure you have enough hard drive space to accomodate the entire file.
+#' @param data an \linkS4class{Frame} object to be downloaded.
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
@@ -77,11 +77,11 @@ h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,
 #' file.remove(myFile)
 #' @export
 h2o.downloadCSV <- function(data, filename) {
-  if (!is(data, "H2OFrame"))
-    stop("`data` must be an H2OFrame object")
+  if (!is.Frame(data))
+    stop("`data` must be an Frame object")
 
   conn = h2o.getConnection()
-  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?src_key=', data@id)
+  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?src_key=', .eval.frame(data):eval)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))

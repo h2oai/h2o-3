@@ -5,8 +5,8 @@
 # ------------------------------- Helper Functions --------------------------- #
 # Used to verify data, x, y and turn into the appropriate things
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
-  if(!is(data,  "H2OFrame"))
-    stop('`data` must be an H2OFrame object')
+  if( !is.Frame(data))
+    stop('`data` must be an Frame object')
   if(!is.character(x) && !is.numeric(x))
     stop('`x` must be column names or indices')
   if( !autoencoder )
@@ -54,8 +54,8 @@
 }
 
 .verify_datacols <- function(data, cols) {
-  if(!is(data, "H2OFrame"))
-    stop('`data` must be an H2OFrame object')
+  if(!is.Frame(data))
+    stop('`data` must be an Frame object')
   if(!is.character(cols) && !is.numeric(cols))
     stop('`cols` must be column names or indices')
 
@@ -97,9 +97,9 @@
 
 
 .h2o.modelJob <- function( algo, params, do_future ) {
-  .h2o.eval.frame(params$training_frame)
+  .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) ) 
-    .h2o.eval.frame(params$validation_frame)
+    .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params)
   if( do_future )         job
   else h2o.getFutureModel(job)
@@ -163,10 +163,8 @@
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is(i, "H2OFrame"))
-      i@id
-    else
-      i
+    if(is.Frame(i))  .eval.frame(i):eval
+    else             i
   })
 
   #---------- Validate parameters ----------#
@@ -209,10 +207,10 @@ h2o.getFutureModel <- function(object) {
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired
-#' @param newdata A \linkS4class{H2OFrame} object in which to look for
+#' @param newdata A \linkS4class{Frame} object in which to look for
 #'        variables with which to predict.
 #' @param ... additional arguments to pass on.
-#' @return Returns an \linkS4class{H2OFrame} object with probabilites and
+#' @return Returns an \linkS4class{Frame} object with probabilites and
 #'         default predictions.
 #' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
 #'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
@@ -223,10 +221,8 @@ predict.H2OModel <- function(object, newdata, ...) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
 
-  .h2o.eval.frame(newdata)
-
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', newdata@id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  .eval.frame(newdata):eval)
   res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   h2o.getFrame(res$name)
@@ -284,7 +280,7 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
-#' @param data An \linkS4class{H2OFrame}. The model will make predictions
+#' @param data An \linkS4class{Frame}. The model will make predictions
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
@@ -303,11 +299,11 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
 h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
-  if(!is.null(data) && !is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  if( !is.Frame(data) ) stop("`data` must be an Frame object")
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingFrame else data@id
+  data.id <- if( missingData ) trainingFrame else .eval.frame(data):eval
   if( !missingData && data.id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
@@ -318,8 +314,6 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
   }
   else if( !missingData ) {
-    .h2o.eval.frame(data)
-
     parms <- list()
     parms[["model"]] <- model@model_id
     parms[["frame"]] <- data.id
@@ -1047,7 +1041,7 @@ h2o.null_dof <- function(object, valid=FALSE, ...) {
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
-#' @param newdata An \linkS4class{H2OFrame} object that can be scored on.
+#' @param newdata An \linkS4class{Frame} object that can be scored on.
 #'        Requires a valid response column.
 #' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
@@ -1090,9 +1084,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  .h2o.eval.frame(newdata)
-
-  url <- paste0("Predictions/models/",object@model_id, "/frames/", newdata@id)
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", .eval.frame(newdata):eval)
   res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object
