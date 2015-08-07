@@ -41,7 +41,7 @@ test.LiblineaR <- function() {
                      beta_epsilon   = 1E-2)
     
     h2op         <- predict(h2o.m, testhex)
-    h2opreds     <- head(h2op, nrow(h2op))
+    h2opreds     <- as.data.frame(h2op)
     h2oCM        <- table(testLabels, h2opreds$predict)
     
     h2oPrecision <- h2oCM[1]/ (h2oCM[1] + h2oCM[3])

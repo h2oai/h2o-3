@@ -87,3 +87,15 @@ class ASTIsFactor extends ASTPrim {
     return new ValFrame(new Frame(new String[]{"is.factor"}, new Vec[]{vec}));
   }
 }
+
+/** Convert to a numeric */
+class ASTAsNumeric extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (as.numeric col)
+  @Override String str() { return "as.numeric"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.numeric requires a single column");
+    return new ValFrame(new Frame(fr._names, new Vec[]{fr.anyVec().toNumeric()}));
+  }
+}
+

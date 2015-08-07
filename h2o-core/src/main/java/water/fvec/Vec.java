@@ -1040,8 +1040,7 @@ public class Vec extends Keyed<Vec> {
 //  }
 
   /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
-   *  The original Vec is not mutated.
-   */
+   *  The original Vec is not mutated.  */
   public Vec toEnum() {
     if( isEnum() ) return makeCopy(domain());
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
@@ -1052,6 +1051,10 @@ public class Vec extends Keyed<Vec> {
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
     return copyOver(dom);
   }
+
+  /** Create a new Vec (as opposed to wrapping it) that is the Numeric'd version of the original.
+   *  The original Vec is not mutated.  */
+  public Vec toNumeric() { return makeCopy(null,T_NUM); }
 
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];

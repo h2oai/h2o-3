@@ -822,13 +822,11 @@ as.logical.Frame <- function(x) {
   .Primitive("as.logical")(res)
 }
 
-as.integer <- function(x) {
-  if( is.Frame(x) ) {
-    x <- .fetch.data(x,1) # Force evaluation
-    if( is.data.frame(x) ) {
-      if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
-      x <- x[1,1]
-    } 
+as.integer.Frame <- function(x) {
+  x <- .fetch.data(x,1) # Force evaluation
+  if( is.data.frame(x) ) {
+    if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
+    x <- x[1,1]
   }
   .Primitive("as.integer")(x)
 }
@@ -867,6 +865,18 @@ as.character.Frame <- function(x) {
   paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
 }
 
+
+#' Convert H2O Data to Numeric
+#'
+#' Converts an H2O column into a numeric value column.
+#' @param x a column from an \linkS4class{Frame} data set.
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
+#' prostate.hex[,2] <- as.numeric(prostat.hex[,2])
+#' @export
+as.numeric.Frame <- function(x) { .newExpr("as.numeric",x) }
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
