@@ -212,7 +212,7 @@ The {\texttt{h2o.init()}} command creates an H2O cluster or establishes a connec
 
 \subsection{Launching from R}
 
-If you do not specify the argument {\texttt{max\_mem\_size}} when you run {\texttt{h2o.init( )}}, the default heap size of the H2O instance running on 32-bit Java is 1g. H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine. 
+If you do not specify the argument {\texttt{max\_mem\_size}} when you run {\texttt{h2o.init()}}, the default heap size of the H2O instance running on 32-bit Java is 1g. H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine. 
 
 For best performance, the allocated memory should be 4x the size of your data, but never more than the total amount of memory on your computer. For larger data sets, we recommend running on a server or service with more memory available for computing.
 
@@ -261,7 +261,7 @@ hadoop jar h2odriver_hdp2.1.jar water.hadoop.h2odriver -libjars ../h2o.jar -mapp
 \end{lstlisting}
 
 \begin{itemize}
-\item For each major release of each distribution of Hadoop, there is a driver jar file that the user will need to launch H2O with. Currently available driver jar files in each build of H2O include {\texttt{h2odriver_cdh5.jar, h2odriver_hdp2.1.jar}}, and {\texttt{mapr2.1.3.jar}}.
+\item For each major release of each distribution of Hadoop, there is a driver jar file that the user will need to launch H2O with. Currently available driver jar files in each build of H2O include {\texttt{h2odriver\_cdh5.3.jar, h2odriver\_hdp2.1.jar}}, and {\texttt{mapr3.1.1.jar}}.
 \item The above command launches exactly one 1g node of H2O; however,  we recommend launching the cluster with 4 times the memory of your data file.
 \item{\texttt{mapperXmx}} is the mapper size or the amount of memory allocated to each node.
 \item{\texttt{nodes}} is the number of nodes requested to form the cluster.
@@ -274,7 +274,7 @@ hadoop jar h2odriver_hdp2.1.jar water.hadoop.h2odriver -libjars ../h2o.jar -mapp
 Launch the EC2 instances using the H2O AMI by running {\texttt{h2o-cluster-launch-instances.py}.
 
 \begin{spverbatim}
-$ python h2o-cluster-launch-instances.py
+python h2o-cluster-launch-instances.py
 Using boto version 2.27.0
 Launching 2 instances.
 Waiting for instance 1 of 2 ...
@@ -289,7 +289,7 @@ Waiting for instance 2 of 2 ...
 \subsection{Checking Cluster Status}
 
 
-To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo( )}}.
+To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo()}}.
 \begin{spverbatim}
 > library(h2o)
 > localH2O = h2o.init(ip = 'localhost', port = 54321)
@@ -316,9 +316,7 @@ Users of the H2O package may submit general enquiries and bug reports to h2o.ai 
 
 \subsection{Gradient Boosting Overview} 
 
-A gradient boosted model is an ensemble of tree models that can be either regression or classification. Both are forward-learning ensemble methods that obtain predictive results through gradually improved estimations. Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees. By sequentially applying weak classification algorithms to the incrementally changed data, a series of decision trees are created that produce an ensemble of weak prediction models.
-
-While boosting trees increases their accuracy, it also decreases speed and interpretability. The gradient boosting method generalizes tree boosting to minimize these issues. 
+A gradient boosted model is an ensemble of tree models that can be either regression or classification. Both are forward-learning ensemble methods that obtain predictive results through gradually improved estimations. Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees. By sequentially applying weak classification algorithms to the incrementally changed data, a series of decision trees are created that produce an ensemble of weak prediction models. While boosting trees increases their accuracy, it also decreases speed and interpretability. The gradient boosting method generalizes tree boosting to minimize these issues. 
 
 \subsubsection{Summary of features} 
 H2O's GBM functionalities include:
@@ -353,7 +351,7 @@ This section describes the functions of the parameters for GBM:
 
 \item {\texttt{key}}: The unique hex key assigned to the generated model. If left blank, a key is automatically generated. 
 
-\item \texttt{loss}: Enter {\texttt{AUTO}} or {\texttt{Bernoulli}} to select the loss type. The default is {\texttt{AUTO}}. 
+\item \texttt{distribution}: Enter {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}} to select the distribution function. The default is {\texttt{AUTO}}. 
 
 \item {\texttt{ntrees}}: A non-negative integer that defines the number of trees. The default is 50. 
 
@@ -361,7 +359,7 @@ This section describes the functions of the parameters for GBM:
 
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10. 
 
-\item {\texttt{learn\_rate}}:An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0. 
+\item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0. 
 
 \item {\texttt{nbins}}: The number of bins to use for building the histogram. The default is 20. 
 
@@ -369,7 +367,7 @@ This section describes the functions of the parameters for GBM:
 
 \item {\texttt{balance\_classes}}: Balance training data class counts via over or undersampling for imbalanced data. The default is {\texttt{FALSE}}. 
 
-\item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 1. 
+\item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5. 
 
 \item {\texttt{seed}}: Seed for random numbers that affects sampling. 
 
@@ -381,7 +379,7 @@ This section describes the functions of the parameters for GBM:
 
 \subsubsection{Theory and framework} 
 
-Gradient boosting is a machine learning technique that combines two powerful tools: gradient-based optimization and boosting. Gradient-based optimization uses gradient computations to minimize a model's loss function with respect to the training data. Boosting additively collects an ensemble of weak models in order to ultimately create a strong learning system for predictive tasks. Here we consider gradient boosting in the example of K-class classification, although the model for regression follows similar logic. The following analysis follows from the discussion in Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
+Gradient boosting is a machine learning technique that combines two powerful tools: gradient-based optimization and boosting. Gradient-based optimization uses gradient computations to minimize a model's loss function with respect to the training data. Boosting additively collects an ensemble of weak models in order to ultimately create a strong learning system for predictive tasks. Here we consider gradient boosting in the example of K-class classification, although the model for regression follows a similar logic. The following analysis follows from the discussion in Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 \newline
 \\
 {\bf{\footnotesize{GBM for classification}}}
@@ -391,45 +389,41 @@ Gradient boosting is a machine learning technique that combines two powerful too
 1. Initialize $f_{k0} = 0, k = 1,2,\dots,K$ 
 \\
 2. For $m=1$ to $M$
-\\
-\indent a. Set $p_k(x) = \frac{e^{f_k(x)}}{\sum_{l=1}^K e^{f_l(x)}}$ for all $k = 1,2\dots, K$
-\\
-\indent b. For $k=1$ to $K$
-\\
-\indent \indent i. Compute $r_{ikm} = y_{ik} - p_k(x_i),  i = 1,2,\dots,N$
-\\
-\indent \indent ii. Fit a regression tree to the targets $r_{ikm}, i = 1,2,\dots,N$, 
-\par \hspace{3em} giving terminal regions $R_{jkm}, 1,2,\dots,J_m$
-\\
-\indent \indent iii. Compute $$\gamma_{jkm} = \frac{K-1}{K} \frac{\sum_{x_i \in R_{jkm}} (r_{ikm})}{\sum_{x_i \in R_{jkm}} |r_{ikm}| (1 - |r_{ikm}|)} , j=1,2,\dots,J_m$$
-\\
-\indent \indent iv. Update $f_{km}(x) = f_{k,m-1}(x) + \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$
+
+\hspace{1cm} a. Set $p_k(x) = \frac{e^{f_k(x)}}{\sum_{l=1}^K e^{f_l(x)}}$ for all $k = 1,2\dots, K$
+
+\hspace{1cm} b. For $k=1$ to $K$
+
+\hspace{2cm} i. Compute $r_{ikm} = y_{ik} - p_k(x_i),  i = 1,2,\dots,N$
+
+\hspace{2cm} ii. Fit a regression tree to the targets $r_{ikm}, i = 1,2,\dots,N$, 
+\par \hspace{2.5cm} giving terminal regions $R_{jkm}, 1,2,\dots,J_m$
+
+\hspace{2cm}iii. Compute $$\gamma_{jkm} = \frac{K-1}{K} \frac{\sum_{x_i \in R_{jkm}} (r_{ikm})}{\sum_{x_i \in R_{jkm}} |r_{ikm}| (1 - |r_{ikm}|)} , j=1,2,\dots,J_m$$
+
+\hspace{2cm} iv. Update $f_{km}(x) = f_{k,m-1}(x) + \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$
 \\
 3. Output $f_k^{\hat{}}(x) = f_{kM}(x),  k=1,2,\dots,K$
 \\
 \line(1,0){500}
-\\
-\\ 
+
 In the above algorithm, for $k$-classification, H2O builds $k$-regression trees to represent one classification tree. The index $m$ tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. In this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model, and then to fit a regression tree to these gradient computations. This fitting process is distributed and parallelized, and details on this framework can be found on the h2o.ai blog at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
 \\
 \\
 The final procedure in the inner loop is to add to the current model to the fitted regression tree, which improves the accuracy of the model during the inherent gradient descent step. After $M$ iterations, the final ``boosted" model can be tested out on new data.
 
 \subsubsection{Loss Function}
-
 The AdaBoost method builds an additive logistic regression model:
-
 $${F(x) = log}\frac{Pr(Y = 1|x)}{Pr(Y = -1|x)} = \sum_{m=1}^{M} \alpha_m f_m (x) $$
 
 by stagewise fitting using the loss function: 
-
 $$L(y, F(x)) = exp(-y  F (x)) $$
 
 
 
 \subsubsection{Distributed Trees}
 
-In H2O's implementation of GBM, distributed trees are used. H2O overlays trees on the data by assigning a tree node to each row. The nodes are numbered and the number of each node is stored in a temporary vector as "Node\_ID" for each row. H2O makes a pass over all the rows using the most efficient method, which is not necessarily numerical order. A local histogram using local data only is created in parallel for each row on each node. The histograms are then assembled and a split column is selected to make the decision. The rows are re-assigned to nodes and the entire process is repeated. 
+H2O's implementation of GBM uses distributed trees. H2O overlays trees on the data by assigning a tree node to each row. The nodes are numbered and the number of each node is stored in a temporary vector as "Node\_ID" for each row. H2O makes a pass over all the rows using the most efficient method, which may not necessarily be  numerical order. A local histogram using only local data is created in parallel for each row on each node. The histograms are then assembled and a split column is selected to make the decision. The rows are re-assigned to nodes and the entire process is repeated. 
 
 For example, for an initial tree, all rows start on node 0. A MapReduce (MR) task computes the statistics and uses them to make an algorithmically-based decision, such as lowest mean squared error (MSE). In the next layer in the tree (and the next MR task), a decision is made for each row: if X $<$ 1.5, go right in the tree; otherwise, go left. H2O computes the stats for each new leaf in the tree, and each pass across all the rows builds the entire layer. 
 
@@ -439,9 +433,9 @@ Each layer represents another MR task; therefore, a tree that is five layers dee
 
 Scoring and building is done in one pass. Each row is tested against the decision from the previous pass, assigned to a new leaf, and a histogram is built on that leaf. To score, H2O traverses the tree and obtains the results. The tree is compressed to a smaller object that can still be traversed, scored, and printed. 
 
-Although the GBM algorithm builds each tree one level at a time, H2O is able to quickly run the entire level in parallel and distributed. More data can be offset by more CPUs or nodes.  Since H2O does the per-level compute in parallel, which requires sending histograms over the network, the amount of data can become very large for a very deep tree. 
+Although the GBM algorithm builds each tree one level at a time, H2O is able to quickly run the entire level in parallel and distributed. The processing requirements for more data can be offset by more CPUs or nodes.  Since H2O does the per-level compute in parallel, which requires sending histograms over the network, the amount of data can become very large for a very deep tree. 
 
-High max-bin sizes slow down generation of deep trees, but this is not an issue for GBM tree depths, as GBM typically uses very shallow trees. Bin limits over 20 have been shown to have very little improvement on the quality of the GBM model. 
+High max-bin sizes slow down generation of deep trees, but this is not a problem for GBM tree depths as GBM typically uses very shallow trees. Bin limits over 20 have been shown to provide very little improvement on the quality of the GBM model. 
 
 For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report actually uses the first tree, so the first two reports are not equal. The reported MSE is the inclusive effect of all prior trees, and generally decreases monotonically on the training dataset. However, the curve will generally bottom out and then begin to slowly rise on the validation set as overfitting sets in. 
 
@@ -455,7 +449,7 @@ For example, if the factor is split into five bins, H2O orders the bins by bin n
 
 Increasing the number of bins is less useful for covering factor columns, but is more important for the one-versus-many approach. The "split-by-a-numerical-value" is basically a random split of the factors, so the number of bins is less important. Top-level tree splits (shallow splits) use the maximum allotment as their bin size, so the top split uses 1024 bins, the next level in the tree uses 512 bins, and so on. 
 
-Factors for binary classification have a third (and optimal) choice: to split all bins (and factors within those bins) that have a mean of less than 0.5 one way, and the rest of the bins and factors the other way, creating an arbitrary set of factors with a known optimal split. This is represented as a bitset in the embedded Java model. Therefore, factor columns with less than the limit ($~$1024) always get an optimal split for categorical problems. 
+Factors for binary classification have a third (and optimal) choice: to split all bins (and factors within those bins) that have a mean of less than 0.5 one way, and the rest of the bins and factors the other way, creating an arbitrary set of factors with a known optimal split. This is represented as a bitset in the embedded Java model. Therefore, factor columns with less than the limit ($\mathtt{\sim}$ 1024) always get an optimal split for categorical problems. 
 
 For categorical problems with $N$ possible values, the split candidate is determined by the formula $2^{N-1}-1$. For binary classification and regression problems, the number of split candidates is reduced to $N-1$ by sorting the categorical feature values by label average. 
 
@@ -465,7 +459,7 @@ For categorical problems with $N$ possible values, the split candidate is determ
 In the above example, an important user-specified value is $N$, which represents the number of bins that data are partitioned into before the tree's best split point is determined. Split points are determined by considering the end points of each bin, and the one-versus-many split for each bin. To model all factors individually, you can specify high $N$ values, but this will slow down the modeling process. For shallow trees, we recommend keeping the total count of bins across all splits at 1024 (so that a top-level split uses 1024, but a 2nd level split uses 512 bins, and so forth). This value is then maxed with the input bin count.
 \\
 \\
-Another important parameter to specify is the size $J$ of the trees, which must be controlled in order to avoid overfitting. Increasing $J$ enables larger variable interaction effects, so knowing about these effects is helpful in setting the value for $J$. Large values of $J$ have also been found to have excessive computational cost, since Cost = \#columns $\cdot N \cdot K \cdot 2^{J}$. However, lower values generally also have the highest performance. Models with $4 \leq J \leq 8$ and a larger number of trees $M$ reflect this generalization. Later, we will discuss how to use grid search models to tune these parameters in the model selection process.
+Another important parameter to specify is the size ($J$) of the trees, which must be controlled in order to avoid overfitting. Increasing $J$ enables larger variable interaction effects, so knowing about these effects is helpful in setting the value for $J$. Large values of $J$ have also been found to have excessive computational cost, since Cost = \#columns $\cdot N \cdot K \cdot 2^{J}$. However, lower values generally also have the highest performance. Models with $4 \leq J \leq 8$ and a larger number of trees $M$ reflect this generalization. Later, we will discuss how to use grid search models to tune these parameters in the model selection process.
 \\
 \\
 You can also specify the shrinkage constant, which controls the learning rate of the model and is actually a form of regularization. Shrinkage modifies the algorithm's update of $f_{km}(x)$ instead with the scaled addition $\nu \cdot \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$, where the constant $\nu$ is between 0 and 1. Smaller values of $\nu$ lead to greater rates of training errors, assuming that $M$ is fixed, but that in general $\nu$ and $M$ are inversely related when the error is  fixed.
@@ -481,9 +475,9 @@ Download the Airline dataset from: {\url{https://github.com/h2oai/h2o/blob/maste
 \subsubsection{Loading data}  
 
 Loading a dataset in R for use with H2O is slightly different from the usual methodology, as we must convert our datasets into \texttt{H2OParsedData} objects. For this example, download the toy weather dataset from {\url{https://raw.githubusercontent.com/h2oai/h2o/master/smalldata/weather.csv}}.  Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
-\begin{spverbatim}
+\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
 weather.hex = h2o.uploadFile(h2o_server, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
-\end{spverbatim}
+\end{lstlisting}
 \bigskip
 \noindent
 To see a brief summary of the data, run the following command.
@@ -494,7 +488,8 @@ summary(weather.hex)
 
 \subsection{Performing a trial run}  
 Returning to the Airline dataset, load the dataset with H2O and select the variables to use to predict a chosen response. For example, model whether flights are delayed based on the departure's scheduled day of the week and day of the month.
-\begin{spverbatim}
+
+\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
 
 # Load the data and prepare for modeling
 air_train.hex = h2o.uploadFile(h2o_server, path = "AirlinesTrain.csv", header = TRUE, sep = ",", key = "airline_train.hex")
@@ -503,19 +498,15 @@ air_test.hex = h2o.uploadFile(h2o_server, path = "AirlinesTest.csv", header = TR
 
 myX <- c("fDayofMonth", "fDayOfWeek")
 
-\end{spverbatim}
+\end{lstlisting}
 
 Now, train the GBM model:
 
-\begin{spverbatim}
-air.model <- h2o.gbm(y = "IsDepDelayed", x = myX, 
-                   distribution="multinomial", 
-                   data = air_train.hex, n.trees=100, 
-                   interaction.depth=4, 
-                   shrinkage=0.1,
-                   importance=TRUE)
+\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+air.model <- h2o.gbm(y = "IsDepDelayed", x = myX, distribution="multinomial", data = air_train.hex, n.trees=100, interaction.depth=4, shrinkage=0.1, importance=TRUE)
                    
-\end{spverbatim}
+\end{lstlisting}
+
 \noindent
 Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify, for example, \texttt{nfolds=5}. 
 
@@ -550,10 +541,7 @@ head(pred)
 
 \subsection{Web interface} 
 
-To mirror the model building process in R, use the H2O web interface. After loading data or training a model in R, use the browser to access the IP address and port number (e.g., {\texttt{localhost:12345}}) and launch the web interface. From the web interface, click  \textsc{Admin} $>$ \textsc{Jobs} to view specific model details or click  \textsc{Data} $>$ \textsc{View All} to view and keep track of currently used datasets. 
-\\
-\\
-\includegraphics[height=5cm]{AdminJobs.jpg} \includegraphics[height=5cm]{DataViewAll.jpg}
+H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345) to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames. 
 
 \subsubsection{Variable importances} 
 
@@ -571,7 +559,7 @@ The following algorithm outputs are supported:
 
 \subsubsection{Java model}  
 
-To access Java (POJO) code to use to build the current model in Java, click the \textsc{Java model} button in the top right of a model summary page. If the model is small enough, the code for the model displays within the GUI; larger models can be inspected after downloading the model.
+To access Java (POJO) code to use to build the current model in Java, click the \textsc{Preview POJO} button at the bottom of the model results. If the model is small enough, the code for the model displays within the GUI; larger models can be inspected after downloading the model.
 \\
 \\
 To download the model: 
@@ -586,15 +574,11 @@ To download the model:
 
 To support grid search capabilities for model tuning,  specify sets of values for parameter arguments to tweak certain parameters and observe changes in model behavior. The following is an example of a grid search:
 
-\begin{spverbatim}
+\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
 
-air.grid <- h2o.gbm(y = "IsDepDelayed", x = myX, 
-                   distribution="multinomial", 
-                   data = air_train.hex, n.trees=c(5,10,15), 
-                   interaction.depth=c(2,3,4), 
-                   shrinkage=c(0.1,0.2))
+air.grid <- h2o.gbm(y = "IsDepDelayed", x = myX, distribution="multinomial", data = air_train.hex, n.trees=c(5,10,15), interaction.depth=c(2,3,4), shrinkage=c(0.1,0.2))
 
-\end{spverbatim}
+\end{lstlisting}
 \noindent
 This example specifies three different tree numbers, three different tree sizes, and two different shrinkage values. This grid search model effectively trains eighteen different models over the possible combinations of these parameters. Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to the beginning section for parameter descriptions and suggested values.
 
@@ -624,25 +608,31 @@ Gradient boosted machines sequentially fit new models to provide a more accurate
 
 \section{References}
 
-Click, Cliff and SriSatish Ambati. {\textbf{"Cliff Click Explains GBM at Netflix October 10 2013"}} \url{http://www.slideshare.net/0xdata/cliff-click-explains-gbm} SlideShare (2013).  
+Click, Cliff and SriSatish Ambati. {\textbf{"Cliff Click Explains GBM at Netflix October 10 2013"}}\\
+ \url{http://www.slideshare.net/0xdata/cliff-click-explains-gbm} SlideShare (2013).  
 \\
 \\
-Dietterich, Thomas G, and Eun Bae Kong. {\textbf{“Machine Learning Bias, Statistical Bias, and Statistical Variance of Decision Tree Algorithms.”}} \url{http://www.iiia.csic.es/~vtorra/tr-bias.pdf} ML-95 255 (1995).
+Dietterich, Thomas G, and Eun Bae Kong. {\textbf{“Machine Learning Bias, Statistical Bias, and Statistical Variance of Decision Tree Algorithms.”}} \\
+\url{http://www.iiia.csic.es/~vtorra/tr-bias.pdf} ML-95 255 (1995).
 \\
 \\
-Elith, Jane, John R Leathwick, and Trevor Hastie. {\textbf{“A Working Guide to Boosted Regression Trees.”}} \url{http://onlinelibrary.wiley.com/doi/10.1111/j.1365-2656.2008.01390.x/abstract} Journal of Animal Ecology 77.4 (2008): 802-813
+Elith, Jane, John R Leathwick, and Trevor Hastie. {\textbf{“A Working Guide to Boosted Regression Trees.”}} \\\url{http://onlinelibrary.wiley.com/doi/10.1111/j.1365-2656.2008.01390.x/abstract} Journal of Animal Ecology 77.4 (2008): 802-813
 \\
 \\
-Friedman, Jerome H. {\textbf{“Greedy Function Approximation: A Gradient Boosting Machine.”}} \url{http://statweb.stanford.edu/~jhf/ftp/trebst.pdf} Annals of Statistics (2001): 1189-1232.
+Friedman, Jerome H. {\textbf{“Greedy Function Approximation: A Gradient Boosting Machine.”}}\\
+ \url{http://statweb.stanford.edu/~jhf/ftp/trebst.pdf} Annals of Statistics (2001): 1189-1232.
 \\
 \\
-Friedman, Jerome, Trevor Hastie, Saharon Rosset, Robert Tibshirani, and Ji Zhu. {\textbf{“Discussion of Boosting Papers.”}}\url{http://web.stanford.edu/~hastie/Papers/boost_discussion.pdf} Ann. Statist 32 (2004): 102-107
+Friedman, Jerome, Trevor Hastie, Saharon Rosset, Robert Tibshirani, and Ji Zhu. {\textbf{“Discussion of Boosting Papers.”}}\\
+\url{http://web.stanford.edu/~hastie/Papers/boost_discussion.pdf} Ann. Statist 32 (2004): 102-107
 \\
 \\
-Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. {\textbf{``Additive Logistic Regression: A Statistical View of Boosting (With Discussion and a Rejoinder by the Authors).”}} \url{http://projecteuclid.org/DPubS?service=UI&version=1.0&verb=Display&handle=euclid.aos/1016218223} The Annals of Statistics 28.2 (2000): 337-407
+Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. {\textbf{``Additive Logistic Regression: A Statistical View of Boosting (With Discussion and a Rejoinder by the Authors).”}}\\
+ \url{http://projecteuclid.org/DPubS?service=UI&version=1.0&verb=Display&handle=euclid.aos/1016218223} The Annals of Statistics 28.2 (2000): 337-407
 \\
 \\
-Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. {\textbf{The Elements of Statistical Learning}}  \url{http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf}. Vol.1. N.p., page 339: Springer New York, 2001. 
+Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. {\textbf{The Elements of Statistical Learning}}\\
+  \url{http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf}. Vol.1. N.p., page 339: Springer New York, 2001. 
 \\
 \\
 
