@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 
 def deeplearning_autoencoder(ip, port):
-    h2o.init(ip, port)
+    
 
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)

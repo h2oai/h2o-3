@@ -5,7 +5,7 @@ import random
 import string
 
 def nb_baddata(ip, port):
-    h2o.init(ip, port)
+    
 
     rawdata = [[random.gauss(0,1) for c in range(10)] for r in range(100)]
 
