@@ -463,7 +463,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // OUT
     double _tss;
-    double[] _gc; // Grand center (mean of every column)
+    double[] _gc; // Grand center (mean of cols)
 
     TotSS(double[] means, double[] mults, String[][] isCats, int[] card) {
       _means = means;
@@ -472,14 +472,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       _isCats = isCats;
       _card = card;
 
-      if(mults!=null) {
-        _gc = new double[means.length];
-        for(int i=0; i<means.length; i++) {
-          if(isCats[i] != null)
-            _gc[i] = Math.min(Math.round(means[i]), _card[i]-1);  // TODO: Should set to majority class of column
-        }
-      } else
-        _gc = Arrays.copyOf(means, means.length);
+      // Mean of numeric col is zero when standardized
+      _gc = mults!=null ? new double[means.length] : Arrays.copyOf(means, means.length);
+      for(int i=0; i<means.length; i++) {
+        if(isCats[i] != null)
+          _gc[i] = Math.min(Math.round(means[i]), _card[i]-1);  // TODO: Should set to majority class of categorical column
+      }
     }
 
     @Override public void map(Chunk[] cs) {
