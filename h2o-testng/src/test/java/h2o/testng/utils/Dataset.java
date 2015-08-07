@@ -14,6 +14,8 @@ import water.parser.ParserType;
 
 public class Dataset {
 
+	private final String splitByRegex = ";";
+
 	private String dataSetId;
 	private String dataSetDirectory;
 	private String fileName;
@@ -27,10 +29,80 @@ public class Dataset {
 	public Dataset(String dataSetId, String dataSetDirectory, String fileName, String responseColumn,
 			String columnNames, String columnTypes) {
 
-		this(dataSetId, dataSetDirectory, fileName, responseColumn, columnNames.split(";"), columnTypes.split(";"));
+		String[] arrayColumnNames = null;
+		String[] arrayColumnTypes = null;
+		if (StringUtils.isNotEmpty(columnNames.trim())) {
+			arrayColumnNames = columnNames.split(splitByRegex);
+		}
+		if (StringUtils.isNotEmpty(columnTypes.trim())) {
+			arrayColumnTypes = columnTypes.split(splitByRegex);
+		}
+
+		initDataset(dataSetId, dataSetDirectory, fileName, responseColumn, arrayColumnNames, arrayColumnTypes);
 	}
 
 	public Dataset(String dataSetId, String dataSetDirectory, String fileName, String responseColumn,
+			String[] columnNames, String[] columnTypes) {
+
+		initDataset(dataSetId, dataSetDirectory, fileName, responseColumn, columnNames, columnTypes);
+	}
+
+	// ---------------------------------------------- //
+	// public functions
+	// ---------------------------------------------- //
+	public boolean isAvailabel() {
+
+		if (!isAvailabel) {
+			System.out.println("Dataset characteristic is not availabel");
+		}
+		return isAvailabel;
+	}
+
+	public void closeFrame() {
+
+		if (frame != null) {
+			frame.remove();
+			frame.delete();
+		}
+	}
+
+	public Frame getFrame() {
+
+		if (frame == null) {
+			createFrame();
+		}
+
+		return frame;
+	}
+
+	public void printDataset() {
+
+		System.out.println("dataSetId: " + dataSetId);
+		System.out.println("dataSetDirectory: " + dataSetDirectory);
+		System.out.println("fileName: " + fileName);
+		System.out.println("responseColumn: " + responseColumn);
+
+		System.out.print("columnNames: ");
+		if (columnNames != null) {
+			for (String e : columnNames) {
+				System.out.print(e + ",");
+			}
+		}
+		System.out.println();
+
+		System.out.print("columnTypes: ");
+		if (columnTypes != null) {
+			for (String e : columnTypes) {
+				System.out.print(e + ",");
+			}
+		}
+		System.out.println();
+	}
+
+	// ---------------------------------------------- //
+	// private functions
+	// ---------------------------------------------- //
+	private void initDataset(String dataSetId, String dataSetDirectory, String fileName, String responseColumn,
 			String[] columnNames, String[] columnTypes) {
 
 		this.dataSetId = dataSetId.trim();
@@ -43,45 +115,23 @@ public class Dataset {
 		setAvailabel();
 	}
 
-	// ---------------------------------------------- //
-	// public functions
-	// ---------------------------------------------- //
-	public boolean isAvailabel() {
-
-		setAvailabel();
-		return isAvailabel;
-	}
-	
-	public void closeFrame(){
-		if(frame != null){
-			frame.delete();
-		}
-	}
-	
-	public Frame getFrame() {
-		
-		if (frame == null) {
-			createFrame();
-		}
-		
-		return frame;
-	}
-	
-	// ---------------------------------------------- //
-	// private functions
-	// ---------------------------------------------- //
 	private void setAvailabel() {
 
+		System.out.println("validate dataset characterictis: " + dataSetId);
+		printDataset();
+
 		isAvailabel = true;
-		
+
 		if (StringUtils.isEmpty(dataSetId) || StringUtils.isEmpty(dataSetDirectory) || StringUtils.isEmpty(fileName)
 				|| StringUtils.isEmpty(responseColumn)) {
 			isAvailabel = false;
 		}
-		else if(columnNames == null || columnNames.length == 0){
+		else if (columnNames == null || columnNames.length == 0) {
+			System.out.println("columnNames is empty");
 			isAvailabel = false;
 		}
-		else if(columnTypes == null || columnTypes.length == 0){
+		else if (columnTypes == null || columnTypes.length == 0) {
+			System.out.println("columnTypes is empty");
 			isAvailabel = false;
 		}
 	}
@@ -89,12 +139,13 @@ public class Dataset {
 	private void createFrame() {
 
 		System.out.println("Create frame with " + fileName);
-		
-		if(!isAvailabel()){
+		this.printDataset();
+
+		if (!isAvailabel()) {
 			System.out.println("Dataset is not available");
 			return;
 		}
-		
+
 		String filePath = null;
 		Frame fr = null;
 		File file = null;
@@ -117,11 +168,12 @@ public class Dataset {
 		nfs = NFSFileVec.make(file);
 		key = Key.make(skey);
 
-//		ps = new ParseSetup(ParserType.CSV, (byte) ',', false, ParseSetup.HAS_HEADER, columnNames.length, columnNames,
-//				ParseSetup.strToColumnTypes(columnTypes), null, null, null);
 		try {
-			// fr = ParseDataset.parse(key_dataset, nfs_dataset._key, true, ps);
-			fr = ParseDataset.parse(key, nfs._key);
+			ps = new ParseSetup(ParserType.CSV, (byte) ',', false, ParseSetup.HAS_HEADER, columnNames.length, columnNames,
+					ParseSetup.strToColumnTypes(columnTypes), null, null, null);
+
+			fr = ParseDataset.parse(key, new Key[] { nfs._key }, true, ps);
+//			 fr = ParseDataset.parse(key, nfs._key);
 		}
 		catch (Exception e) {
 			nfs.remove();

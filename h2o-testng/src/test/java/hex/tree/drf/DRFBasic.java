@@ -15,6 +15,8 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -23,6 +25,12 @@ import water.TestNGUtil;
 import water.fvec.Frame;
 
 public class DRFBasic extends TestNGUtil {
+
+	@BeforeClass
+	public void beforeClass() {
+
+		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
+	}
 
 	@DataProvider(name = "drfCases")
 	public static Object[][] drfCases() {
@@ -38,8 +46,6 @@ public class DRFBasic extends TestNGUtil {
 		List<String> lines = null;
 		List<String> negLines = null;
 		List<String> allLines = new ArrayList<String>();
-
-		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
 
 		try {
 			// read data from file
@@ -128,6 +134,13 @@ public class DRFBasic extends TestNGUtil {
 		}
 	}
 
+	//TODO: how to run it one time when all of package is run.
+	@AfterClass
+	public void afterClass() {
+
+		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
+	}
+
 	private void _basic(String testcase_id, String test_description, DRFModel.DRFParameters parameter, String[] rawInput) {
 
 		System.out.println(String.format("Testcase: %s", testcase_id));
@@ -138,15 +151,11 @@ public class DRFBasic extends TestNGUtil {
 		}
 
 		Frame trainFrame = null;
-		Frame validateFrame = null;
 		DRF job = null;
 		DRFModel drfModel = null;
 		Frame score = null;
 
 		trainFrame = parameter._train.get();
-		if (parameter._valid != null) {
-			validateFrame = parameter._valid.get();
-		}
 
 		try {
 			Scope.enter();
@@ -190,14 +199,6 @@ public class DRFBasic extends TestNGUtil {
 			}
 			if (drfModel != null) {
 				drfModel.delete();
-			}
-			if (trainFrame != null) {
-				trainFrame.remove();
-				trainFrame.delete();
-			}
-			if (validateFrame != null) {
-				validateFrame.remove();
-				validateFrame.delete();
 			}
 			if (score != null) {
 				score.remove();

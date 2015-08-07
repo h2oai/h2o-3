@@ -19,6 +19,8 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -132,6 +134,12 @@ public class GLMBasic extends TestNGUtil {
 			"scikit"
 	));
 
+	@BeforeClass
+	public void beforeClass() {
+
+		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
+	}
+	
 	@DataProvider(name = "glmCases")
 	public static Object[][] glmCases() {
 
@@ -143,8 +151,6 @@ public class GLMBasic extends TestNGUtil {
 
 		Object[][] data = null;
 		List<String> lines = null;
-
-		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
 
 		try {
 			// read data from file
@@ -223,6 +229,12 @@ public class GLMBasic extends TestNGUtil {
 			resetStandardStreams();
 		}
 	}
+	
+	@AfterClass
+	public void afterClass() {
+
+		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
+	}
 
 	private void _basic(String testcaseId, GLMParameters glmParams, String[] rawInput) {
 
@@ -234,7 +246,6 @@ public class GLMBasic extends TestNGUtil {
 		}
 
 		Frame trainFrame = null;
-		Frame validateFrame = null;
 		Frame betaConstraints = null;
 
 		// Build the appropriate glm, given the above parameters
@@ -245,9 +256,6 @@ public class GLMBasic extends TestNGUtil {
 		HashMap<String, Double> coef = null;
 
 		trainFrame = glmParams._train.get();
-		if (glmParams._valid != null) {
-			validateFrame = glmParams._valid.get();
-		}
 		if (glmParams._beta_constraints != null) {
 			betaConstraints = glmParams._beta_constraints.get();
 		}
@@ -275,12 +283,6 @@ public class GLMBasic extends TestNGUtil {
 			Assert.fail("Test is failed. It can't predict", ex);
 		}
 		finally {
-			if (trainFrame != null) {
-				trainFrame.delete();
-			}
-			if (validateFrame != null) {
-				validateFrame.delete();
-			}
 			if (betaConstraints != null) {
 				betaConstraints.delete();
 			}
