@@ -16,6 +16,8 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -24,6 +26,12 @@ import water.TestNGUtil;
 import water.fvec.Frame;
 
 public class GBMBasic extends TestNGUtil {
+
+	@BeforeClass
+	public void beforeClass() {
+
+		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
+	}
 
 	@DataProvider(name = "gbmCases")
 	public static Object[][] gbmCases() {
@@ -39,8 +47,6 @@ public class GBMBasic extends TestNGUtil {
 		List<String> lines = null;
 		List<String> negLines = null;
 		List<String> allLines = new ArrayList<String>();
-
-		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
 
 		try {
 			// read data from file
@@ -124,6 +130,12 @@ public class GBMBasic extends TestNGUtil {
 		}
 	}
 
+	@AfterClass
+	public void afterClass() {
+
+		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
+	}
+
 	private void _basic(String testcase_id, String test_description, GBMParameters parameter, String[] rawInput) {
 
 		System.out.println(String.format("Testcase: %s", testcase_id));
@@ -134,15 +146,11 @@ public class GBMBasic extends TestNGUtil {
 		}
 
 		Frame trainFrame = null;
-		Frame validateFrame = null;
 		GBM job = null;
 		GBMModel gbmModel = null;
 		Frame score = null;
 
 		trainFrame = parameter._train.get();
-		if (parameter._valid != null) {
-			validateFrame = parameter._valid.get();
-		}
 
 		try {
 			Scope.enter();
@@ -174,14 +182,6 @@ public class GBMBasic extends TestNGUtil {
 			}
 		}
 		finally {
-			if (trainFrame != null) {
-				trainFrame.remove();
-				trainFrame.delete();
-			}
-			if (validateFrame != null) {
-				validateFrame.remove();
-				validateFrame.delete();
-			}
 			if (score != null) {
 				score.remove();
 				score.delete();

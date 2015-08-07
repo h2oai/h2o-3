@@ -9,8 +9,9 @@ import java.util.List;
 import water.TestNGUtil;
 
 public class FunctionUtils {
+
 	public static final String testcase_type = "testcase_type";
-	
+
 	public static boolean isNegativeTestcase(List<String> tcHeaders, String[] input) {
 
 		final String negative = "negative";
@@ -21,7 +22,7 @@ public class FunctionUtils {
 
 		return false;
 	}
-	
+
 	public static HashMap<String, Dataset> readDataSetCharacteristic() {
 
 		HashMap<String, Dataset> result = new HashMap<String, Dataset>();
@@ -41,8 +42,7 @@ public class FunctionUtils {
 		try {
 			System.out.println("read dataset characteristic");
 			file = TestNGUtil.find_test_file_static(dataSetCharacteristicFilePath);
-			lines = Files.readAllLines(file.toPath(),
-					Charset.defaultCharset());
+			lines = Files.readAllLines(file.toPath(), Charset.defaultCharset());
 		}
 		catch (Exception e) {
 			System.out.println("Cannot open dataset characteristic file: " + dataSetCharacteristicFilePath);
@@ -67,11 +67,12 @@ public class FunctionUtils {
 
 		return result;
 	}
-	
-	public void closeAllFrameInDatasetCharacteristic(HashMap<String, Dataset> mapDatasetCharacteristic){
-		for (String key: mapDatasetCharacteristic.keySet()) {
 
-		    mapDatasetCharacteristic.get(key).closeFrame();
+	public static void closeAllFrameInDatasetCharacteristic(HashMap<String, Dataset> mapDatasetCharacteristic) {
+
+		for (String key : mapDatasetCharacteristic.keySet()) {
+
+			mapDatasetCharacteristic.get(key).closeFrame();
 		}
 	}
 }
