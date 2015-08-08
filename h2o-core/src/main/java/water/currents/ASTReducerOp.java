@@ -349,213 +349,76 @@ class ASTProdNA extends ASTPrim {
   }
 }
 
-class ASTCumSum extends ASTPrim {
+abstract class ASTCumu extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (cumu x)
+  @Override String str() { throw H2O.unimpl(); }
+  abstract double op(double l, double r);
+  abstract double init();
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
+    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+
+    CumuTask t = new CumuTask(f.anyVec().nChunks(),init());
+    t.doAll(1,f.anyVec());
+    final double[] chkCumu = t._chkCumu;
+    Vec cumuVec = t.outputFrame().anyVec();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        double d=c.cidx()==0?0:chkCumu[c.cidx()-1];
+        for(int i=0;i<c._len;++i)
+          c.set(i, op(c.atd(i),d));
+      }
+    }.doAll(cumuVec);
+    return new ValFrame(new Frame(cumuVec));
+  }
+
+  protected class CumuTask extends MRTask<CumuTask> {
+    final int _nchks;   // IN
+    final double _init; // IN
+    double[] _chkCumu;  // OUT, accumulation over each chunk
+
+    CumuTask(int nchks, double init) { _nchks = nchks; _init=init; }
+    @Override public void setupLocal() { _chkCumu = new double[_nchks]; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      double acc=_init;
+      for(int i=0;i<c._len;++i)
+        nc.addNum(acc=op(acc,c.atd(i)));
+      _chkCumu[c.cidx()]=acc;
+    }
+    @Override public void reduce(CumuTask t) { if( _chkCumu != t._chkCumu ) ArrayUtils.add(_chkCumu, t._chkCumu); }
+    @Override public void postGlobal() {
+      for(int i=1;i<_chkCumu.length;++i) _chkCumu[i] = op(_chkCumu[i],_chkCumu[i-1]);
+    }
+  }
+}
+
+
+class ASTCumSum extends ASTCumu {
   @Override int nargs() { return 1+1; } // (cumsum x)
   @Override String str() { return "cumsum"; }
-
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame f = stk.track(asts[1].exec(env)).getFrame();
-
-    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
-    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
-
-    // per chunk cum-sum
-    CumSumTask t = new CumSumTask(f.anyVec().nChunks());
-    t.doAll(1, f.anyVec());
-    final double[] chkSums = t._chkSums;
-    Vec cumuVec = t.outputFrame().anyVec();
-    new MRTask() {
-      @Override public void map(Chunk c) {
-        double d=c.cidx()==0?0:chkSums[c.cidx()-1];
-        for(int i=0;i<c._len;++i)
-          c.set(i, c.atd(i)+d);
-      }
-    }.doAll(cumuVec);
-    return new ValFrame(new Frame(cumuVec));
-  }
-
-  private class CumSumTask extends MRTask<CumSumTask> {
-    //IN
-    final int _nchks;
-
-    //OUT
-    double[] _chkSums;
-
-    CumSumTask(int nchks) { _nchks = nchks; }
-    @Override public void setupLocal() { _chkSums = new double[_nchks]; }
-    @Override public void map(Chunk c, NewChunk nc) {
-      double sum=0;
-      for(int i=0;i<c._len;++i) {
-        sum += c.isNA(i) ? Double.NaN : c.atd(i);
-        if( Double.isNaN(sum) ) nc.addNA();
-        else                    nc.addNum(sum);
-      }
-      _chkSums[c.cidx()] = sum;
-    }
-    @Override public void reduce(CumSumTask t) { if( _chkSums != t._chkSums ) ArrayUtils.add(_chkSums, t._chkSums); }
-    @Override public void postGlobal() {
-      // cumsum the _chunk_sums array
-      for(int i=1;i<_chkSums.length;++i) _chkSums[i] += _chkSums[i-1];
-    }
-  }
+  @Override double op(double l, double r) { return l+r; }
+  @Override double init() { return 0; }
 }
 
-class ASTCumProd extends ASTPrim {
+class ASTCumProd extends ASTCumu {
   @Override int nargs() { return 1+1; } // (cumprod x)
   @Override String str() { return "cumprod"; }
-
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame f = stk.track(asts[1].exec(env)).getFrame();
-
-    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
-    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
-
-    // per chunk cum-prod
-    CumProdTask t = new CumProdTask(f.anyVec().nChunks());
-    t.doAll(1, f.anyVec());
-    final double[] chkProds = t._chkProds;
-    Vec cumuVec = t.outputFrame().anyVec();
-    new MRTask() {
-      @Override public void map(Chunk c) {
-        if( c.cidx()!=0 ) {
-          double d=chkProds[c.cidx()-1];
-          for(int i=0;i<c._len;++i)
-            c.set(i, c.atd(i)*d);
-        }
-      }
-    }.doAll(cumuVec);
-    return new ValFrame(new Frame(cumuVec));
-  }
-
-  private class CumProdTask extends MRTask<CumProdTask> {
-    //IN
-    final int _nchks;
-
-    //OUT
-    double[] _chkProds;
-
-    CumProdTask(int nchks) { _nchks = nchks; }
-    @Override public void setupLocal() { _chkProds = new double[_nchks]; }
-    @Override public void map(Chunk c, NewChunk nc) {
-      double prod=1;
-      for(int i=0;i<c._len;++i) {
-        prod *= c.isNA(i) ? Double.NaN : c.atd(i);
-        if( Double.isNaN(prod) ) nc.addNA();
-        else                    nc.addNum(prod);
-      }
-      _chkProds[c.cidx()] = prod;
-    }
-    @Override public void reduce(CumProdTask t) { if( _chkProds != t._chkProds ) ArrayUtils.add(_chkProds, t._chkProds); }
-    @Override public void postGlobal() {
-      // cumsum the _chunk_sums array
-      for(int i=1;i<_chkProds.length;++i) _chkProds[i] *= _chkProds[i-1];
-    }
-  }
+  @Override double op(double l, double r) { return l*r; }
+  @Override double init() { return 1; }
 }
 
-class ASTCumMin extends ASTPrim {
+class ASTCumMin extends ASTCumu {
   @Override int nargs() { return 1+1; }
   @Override String str() { return "cummin"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame f = stk.track(asts[1].exec(env)).getFrame();
-
-    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
-    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
-
-    // per chunk cum-min
-    CumMinTask t = new CumMinTask(f.anyVec().nChunks());
-    t.doAll(1, f.anyVec());
-    final double[] chkMins = t._chkMins;
-    Vec cumuVec = t.outputFrame().anyVec();
-    new MRTask() {
-      @Override public void map(Chunk c) {
-        if( c.cidx()!=0 ) {
-          double d=chkMins[c.cidx()-1];
-          for(int i=0;i<c._len;++i)
-            c.set(i, Math.min(c.atd(i), d));
-        }
-      }
-    }.doAll(cumuVec);
-    return new ValFrame(new Frame(cumuVec));
-  }
-
-  private class CumMinTask extends MRTask<CumMinTask> {
-    //IN
-    final int _nchks;
-
-    //OUT
-    double[] _chkMins;
-
-    CumMinTask(int nchks) { _nchks = nchks; }
-    @Override public void setupLocal() { _chkMins = new double[_nchks]; }
-    @Override public void map(Chunk c, NewChunk nc) {
-      double min=Double.MAX_VALUE;
-      for(int i=0;i<c._len;++i) {
-        min = c.isNA(i) ? Double.NaN : Math.min(min, c.atd(i));
-        if( Double.isNaN(min) ) nc.addNA();
-        else                    nc.addNum(min);
-      }
-      _chkMins[c.cidx()] = min;
-    }
-    @Override public void reduce(CumMinTask t) { if( _chkMins != t._chkMins ) ArrayUtils.add(_chkMins, t._chkMins); }
-    @Override public void postGlobal() {
-      // cumsum the _chunk_sums array
-      for(int i=1;i<_chkMins.length;++i)
-        _chkMins[i] = _chkMins[i-1] < _chkMins[i] ? _chkMins[i-1] : _chkMins[i];
-    }
-  }
+  @Override double op(double l, double r) { return Math.min(l,r); }
+  @Override double init() { return Double.MAX_VALUE; }
 }
 
-class ASTCumMax extends ASTPrim {
-  @Override int nargs() { return 1+1; } //(cummax x)
+class ASTCumMax extends ASTCumu {
+  @Override int nargs() { return 1+1; }
   @Override String str() { return "cummax"; }
-
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame f = stk.track(asts[1].exec(env)).getFrame();
-
-    if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
-    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
-
-    // per chunk cum-min
-    CumMaxTask t = new CumMaxTask(f.anyVec().nChunks());
-    t.doAll(1, f.anyVec());
-    final double[] chkMaxs = t._chkMaxs;
-    Vec cumuVec = t.outputFrame().anyVec();
-    new MRTask() {
-      @Override public void map(Chunk c) {
-        if( c.cidx()!=0 ) {
-          double d=chkMaxs[c.cidx()-1];
-          for(int i=0;i<c._len;++i)
-            c.set(i, Math.min(c.atd(i), d));
-        }
-      }
-    }.doAll(cumuVec);
-    return new ValFrame(new Frame(cumuVec));
-  }
-
-  private class CumMaxTask extends MRTask<CumMaxTask> {
-    //IN
-    final int _nchks;
-
-    //OUT
-    double[] _chkMaxs;
-
-    CumMaxTask(int nchks) { _nchks = nchks; }
-    @Override public void setupLocal() { _chkMaxs = new double[_nchks]; }
-    @Override public void map(Chunk c, NewChunk nc) {
-      double max=-Double.MAX_VALUE;
-      for(int i=0;i<c._len;++i) {
-        max = c.isNA(i) ? Double.NaN : Math.max(max, c.atd(i));
-        if( Double.isNaN(max) ) nc.addNA();
-        else                    nc.addNum(max);
-      }
-      _chkMaxs[c.cidx()] = max;
-    }
-    @Override public void reduce(CumMaxTask t) { if( _chkMaxs != t._chkMaxs ) ArrayUtils.add(_chkMaxs, t._chkMaxs); }
-    @Override public void postGlobal() {
-      // cumsum the _chunk_sums array
-      for(int i=1;i<_chkMaxs.length;++i)
-        _chkMaxs[i] = _chkMaxs[i-1] > _chkMaxs[i] ? _chkMaxs[i-1] : _chkMaxs[i];
-    }
-  }
+  @Override double op(double l, double r) { return Math.max(l,r); }
+  @Override double init() { return -Double.MAX_VALUE; }
 }
