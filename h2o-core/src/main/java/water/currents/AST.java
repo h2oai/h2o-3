@@ -156,6 +156,15 @@ abstract public class AST extends Iced<AST> {
     init(new ASTRunif());
     init(new ASTTmpAssign());
 
+    // String Ops
+    init(new ASTStrSplit());
+    init(new ASTStrSub());
+    init(new ASTGSub());
+    init(new ASTTrim());
+    init(new ASTToLower());
+    init(new ASTToUpper());
+
+
     // Functional data mungers
     init(new ASTApply());
     init(new ASTComma());
@@ -168,6 +177,11 @@ abstract public class AST extends Iced<AST> {
 
     // Cut
     init(new ASTCut());
+
+    // Repeaters
+    init(new ASTRepLen());
+    init(new ASTSeq());
+    init(new ASTSeqLen());
   }
 }
 

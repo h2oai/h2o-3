@@ -910,7 +910,7 @@ class H2OFrame:
     """
     :return: a frame of the counts at each combination of factor levels
     """
-    return H2OFrame(expr=ExprNode("table",self,data2))
+    return H2OFrame(expr=ExprNode("table",self,data2) if data2 is not None else ExprNode("table",self))
 
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """
