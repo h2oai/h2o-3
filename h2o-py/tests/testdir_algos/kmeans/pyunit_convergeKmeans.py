@@ -38,7 +38,7 @@ def convergeKmeans(ip,port):
                         max_iterations=1)
   avg_change = sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
                                                                                        all_fit2.centers())]) / ncent
-  assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] < miters
+  assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, convergeKmeans)
