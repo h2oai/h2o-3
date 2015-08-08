@@ -109,7 +109,7 @@
 .h2o.startModelJob <- function(algo, params, version) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
-  ALL_PARAMS <- .h2o.__remoteSend(method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = version, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
   params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
