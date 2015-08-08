@@ -366,9 +366,11 @@ abstract class ASTCumu extends ASTPrim {
     Vec cumuVec = t.outputFrame().anyVec();
     new MRTask() {
       @Override public void map(Chunk c) {
-        double d=c.cidx()==0?0:chkCumu[c.cidx()-1];
-        for(int i=0;i<c._len;++i)
-          c.set(i, op(c.atd(i),d));
+        if( c.cidx()!=0 ) {
+          double d=chkCumu[c.cidx()-1];
+          for(int i=0;i<c._len;++i)
+            c.set(i, op(c.atd(i), d));
+        }
       }
     }.doAll(cumuVec);
     return new ValFrame(new Frame(cumuVec));
@@ -393,7 +395,6 @@ abstract class ASTCumu extends ASTPrim {
     }
   }
 }
-
 
 class ASTCumSum extends ASTCumu {
   @Override int nargs() { return 1+1; } // (cumsum x)
