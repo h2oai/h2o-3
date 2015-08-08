@@ -18,8 +18,8 @@ public class GLRMModelV99 extends ModelSchema<GLRMModel, GLRMModelV99, GLRMModel
     @API(help = "Final step size")
     public double step_size;
 
-    @API(help = "Mapping from training data to lower dimensional k-space")
-    public double[][] archetypes;
+    @API(help = "Mapping from lower dimensional k-space to training features")
+    public TwoDimTableBase archetypes;
 
     @API(help = "Singular values of XY matrix")
     public double[] singular_vals;

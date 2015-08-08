@@ -9,6 +9,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.TwoDimTable;
 
 import java.util.Random;
 
@@ -340,9 +341,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Average change in objective function this iteration
     public double _avg_change_obj;
 
-    // Mapping from training data to lower dimensional k-space (Y')
-    public double[/*feature*/][/*k*/] _archetypes;
-    public GLRM.Archetypes _archetypes_full;   // Needed for indexing into Y' for scoring
+    // Mapping from lower dimensional k-space to training features (Y)
+    public TwoDimTable _archetypes;
+    public GLRM.Archetypes _archetypes_raw;   // Needed for indexing into Y for scoring
 
     // Final step size
     public double _step_size;
@@ -473,14 +474,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {
-        double[] xyblock = _output._archetypes_full.lmulCatBlock(tmp,d);
+        double[] xyblock = _output._archetypes_raw.lmulCatBlock(tmp,d);
         preds[_output._permutation[d]] = _parms.mimpute(xyblock);
       }
 
       // Numeric columns
       for (int d = _output._ncats; d < preds.length; d++) {
         int ds = d - _output._ncats;
-        double xy = _output._archetypes_full.lmulNumCol(tmp, ds);
+        double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
         preds[_output._permutation[d]] = _parms.impute(xy);
       }
       return preds;

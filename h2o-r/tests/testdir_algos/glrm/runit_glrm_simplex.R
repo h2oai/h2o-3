@@ -12,9 +12,9 @@ test.glrm.simplex <- function(conn) {
   
   Log.info("Run GLRM with quadratic mixtures (simplex) regularization on X")
   initY <- matrix(runif(k*n), nrow = k, ncol = n)
-  fitH2O <- h2o.glrm(train.h2o, init = initY, loss = "L2", regularization_x = "Simplex", gamma_x = 1, gamma_y = 0)
+  fitH2O <- h2o.glrm(train.h2o, k = k, init = initY, loss = "L2", regularization_x = "Simplex", gamma_x = 1, gamma_y = 0)
   Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))
-  fitY <- t(fitH2O@model$archetypes)
+  fitY <- as.matrix(fitH2O@model$archetypes)
   fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
 
   Log.info("Check that X matrix consists of rows within standard probability simplex")

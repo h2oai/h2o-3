@@ -21,6 +21,7 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -405,7 +406,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Matrix x_r = new Matrix(xxchol.getL()).transpose();
       x_r = x_r.times(Math.sqrt(_train.numRows()));
 
-      Matrix yt = new Matrix(model._output._archetypes);
+      Matrix yt = new Matrix(model._output._archetypes_raw.getY(true));
       QRDecomposition yt_qr = new QRDecomposition(yt);
       Matrix yt_r = yt_qr.getR();   // S from QR decomposition of Y' = ZS
       Matrix rrmul = x_r.times(yt_r.transpose());
@@ -470,8 +471,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         int[] numLevels = tinfo._adaptedFrame.numLevels();
 
         // Use closed form solution for X if L2 loss and regularization
-        double[][] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
-        Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);
+        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
+        Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (na_cnt == 0 && _parms.hasClosedForm())
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
@@ -506,8 +507,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // step = 1.0 / model._output._iterations;   // Step size \alpha_k = 1/iters
           if(model._output._avg_change_obj > 0) {   // Objective decreased this iteration
-            yt = ytnew;
-            model._output._archetypes = yt._archetypes;
+            model._output._archetypes_raw = yt = ytnew;
             model._output._objective = obj_new;
             step *= 1.05;
             steps_in_row = Math.max(1, steps_in_row+1);
@@ -537,8 +537,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(xinfo._key, xinfo);
         model._output._step_size = step;
         model._output._loading_key = _parms._loading_key;
-        model._output._archetypes_full = yt;  // Need full archetypes object for scoring
-        model._output._archetypes = yt._archetypes;
+        model._output._archetypes_raw = yt;  // Need full archetypes object for scoring
+        model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
         // Impute and compute error metrics on training/validation frame
@@ -583,7 +583,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   protected static final class Archetypes extends Iced<Archetypes> {
-    double[][] _archetypes;
+    double[][] _archetypes;  // Y has nrows = k (lower dim), ncols = m (features)
     boolean _transposed;    // Is _archetypes = Y'? Used during model building for convenience.
     final int[] _catOffsets;
     final int[] _numLevels;
@@ -606,6 +606,35 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // If transpose = true, we want to return Y'
     public double[][] getY(boolean transpose) {
       return (transpose ^ _transposed) ? ArrayUtils.transpose(_archetypes) : _archetypes;
+    }
+
+    public TwoDimTable buildTable(String[] features, boolean transpose) {  // Must pass in categorical column expanded feature names
+      int rank = rank();
+      int nfeat = nfeatures();
+      assert features != null && features.length == nfeatures();
+
+      double[][] yraw = getY(transpose);
+      if(transpose) {  // rows = features (m), columns = archetypes (k)
+        String[] rowNames = features;
+        String[] colTypes = new String[rank];
+        String[] colFormats = new String[rank];
+        String[] colHeaders = new String[rank];
+
+        Arrays.fill(colTypes, "double");
+        Arrays.fill(colFormats, "%5f");
+        for (int i = 0; i < colHeaders.length; i++) colHeaders[i] = "Arch" + String.valueOf(i + 1);
+        return new TwoDimTable("Archetypes", null, rowNames, colHeaders, colTypes, colFormats, "", new String[yraw.length][], yraw);
+      } else {  // rows = archetypes (k), columns = features (m)
+        String[] rowNames = new String[rank];
+        String[] colTypes = new String[nfeat];
+        String[] colFormats = new String[nfeat];
+        String[] colHeaders = features;
+
+        Arrays.fill(colTypes, "double");
+        Arrays.fill(colFormats, "%5f");
+        for (int i = 0; i < rowNames.length; i++) rowNames[i] = "Arch" + String.valueOf(i + 1);
+        return new TwoDimTable("Archetypes", null, rowNames, colHeaders, colTypes, colFormats, "", new String[yraw.length][], yraw);
+      }
     }
 
     // For j = 0 to number of numeric columns - 1
