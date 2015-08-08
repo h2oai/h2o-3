@@ -150,7 +150,7 @@ demo(h2o.gbm)
 \end{enumerate}
 
 \subsection{Making a build from Source Code} 
-If you are a developer who wants to make changes to the R package before building and installing it, pull the source code from Git (\url{https://github.com/h2oai/h2o}) and follow the instructions in From Source Code (Github) at {\url{http://docs.h2o.ai/developuser/quickstart\_git.html}}.
+If you are a developer who wants to make changes to the R package before building and installing it, pull the source code from Git (\url{https://github.com/h2oai/h2o-3}) and follow the instructions in From Source Code (Github) at {\url{http://docs.h2o.ai/developuser/quickstart\_git.html}}.
 
 After making the build, navigate to the Rcran folder with the R package in the build’s directory, then run and install.
 \begin{spverbatim}
@@ -256,13 +256,13 @@ To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
 \begin{lstlisting}[breaklines,basicstyle=\ttfamily]
 
-hadoop jar h2odriver_hdp2.1.jar water.hadoop.h2odriver -libjars ../h2o.jar -mapperXmx 1g -nodes 1 -output hdfsOutputDirName
+hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
 \end{lstlisting}
 
 \begin{itemize}
 \item For each major release of each distribution of Hadoop, there is a driver jar file that the user will need to launch H2O with. Currently available driver jar files in each build of H2O include {\texttt{h2odriver\_cdh5.3.jar, h2odriver\_hdp2.1.jar}}, and {\texttt{mapr3.1.1.jar}}.
-\item The above command launches exactly one 1g node of H2O; however,  we recommend launching the cluster with 4 times the memory of your data file.
+\item The above command launches exactly one 6g node of H2O; however,  we recommend launching the cluster with 4 times the memory of your data file.
 \item{\texttt{mapperXmx}} is the mapper size or the amount of memory allocated to each node.
 \item{\texttt{nodes}} is the number of nodes requested to form the cluster.
 \item{\texttt{output}} is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
