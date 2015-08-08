@@ -1,5 +1,15 @@
 package water.util;
 
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
+import edu.emory.mathcs.utils.ConcurrencyUtils;
+import hex.Transformer;
+import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+
 import java.util.Arrays;
 
 public class MathUtils {
@@ -220,4 +230,85 @@ public class MathUtils {
     return d < 0?-1:1;
   }
 
+  public static class FFT {
+    public class FFTTransformer extends Transformer<FFTTransformer> {
+
+      /** Input dataset to transform */
+      public Frame dataset;
+      public Key<Frame> destination_frame;
+
+      public FFTTransformer() { this(Key.<FFTTransformer>make()); }
+      public FFTTransformer(Key<FFTTransformer> dest) { this(dest, "FFT job"); }
+      public FFTTransformer(Key<FFTTransformer> dest, String desc) {
+        super(dest, desc);
+      }
+
+      @Override
+      protected FFTTransformer execImpl() {
+        return this;
+      }
+    }
+
+    private static void initCheck(Frame input) {
+      ConcurrencyUtils.setNumberOfThreads(1);
+      for (Vec v : input.vecs()) {
+        if (v.naCnt() > 0)
+          throw new H2OIllegalArgumentException("FFT can not be computed on rows with missing values");
+        if (!v.isNumeric())
+          throw new H2OIllegalArgumentException("FFT can only be computed on numeric columns");
+      }
+    }
+
+    /**
+     * Compute the real-valued 1D Fourier transform for each row in the given Frame, and return a new Frame
+     * @param input Frame containing numeric columns with data samples
+     * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
+     */
+    public static Frame transform1D(Frame input) {
+      initCheck(input);
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int N = cs.length;
+          double[] a = new double[N];
+          for (int row=0; row<cs[0]._len; ++row) {
+            // fill 1D array
+            for (int i = 0; i < N; ++i)
+              a[i] = cs[i].atd(row);
+            // compute FFT for each row
+            new DoubleFFT_1D(N).realForward(a);
+            // write result to NewChunk
+            for (int i = 0; i < N; ++i)
+              ncs[i].addNum(a[i]);
+          }
+        }
+      }.doAll(input.numCols(), input).outputFrame();
+    }
+
+    /**
+     * Compute the real-valued 1D inverse Fourier transform for each row in the given Frame, and return a new Frame
+     * @param input Frame containing numeric columns with data samples
+     * @return Frame containing real-valued 1D inverse FFT of each row (same dimensionality)
+     */
+    public static Frame inverseTransform1D(Frame input) {
+      initCheck(input);
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int N = cs.length;
+          double[] a = new double[N];
+          for (int row=0; row<cs[0]._len; ++row) {
+            // fill 1D array
+            for (int i = 0; i < N; ++i)
+              a[i] = cs[i].atd(row);
+            // compute inverse FFT for each row
+            new DoubleFFT_1D(N).realInverse(a, true);
+            // write result to NewChunk
+            for (int i = 0; i < N; ++i)
+              ncs[i].addNum(a[i]);
+          }
+        }
+      }.doAll(input.numCols(), input).outputFrame();
+    }
+  }
 }
