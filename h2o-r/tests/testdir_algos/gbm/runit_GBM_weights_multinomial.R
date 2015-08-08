@@ -16,7 +16,7 @@ test_weights_by_row_duplication <- function() {
   set.seed(1234)
   x1 <- rpois(n, rep(2, n)) + 1  #Random integer-valued (>=1) weights
   df <- cbind(as.data.frame(prostate), x1)  #design matrix with weight and outcome cols
-  hdf <- as.h2o(object = df, destination_frame = "hdf")  #for h2o
+  hdf <- as.h2o(df, destination_frame = "hdf")  #for h2o
   hdf$CAPSULE <- as.factor(hdf$CAPSULE)
   split_hdf <- h2o.splitFrame(hdf)
   hdf_train <- split_hdf[[1]]
@@ -28,7 +28,7 @@ test_weights_by_row_duplication <- function() {
   rep_idxs <- unlist(sapply(1:nrow(hdf_train), function(i) rep(i, tmp[i])))
   rdf <- df_train[rep_idxs,]  #repeat rows
   rdf$x1 <- 1  #set weights back to 1.0
-  rhdf <- as.h2o(object = rdf, destination_frame = "rhdf")  #for h2o
+  rhdf <- as.h2o(rdf, destination_frame = "rhdf")  #for h2o
   rhdf$CAPSULE <- as.factor(rhdf$CAPSULE)
   
   print("Set variables for h2o.")

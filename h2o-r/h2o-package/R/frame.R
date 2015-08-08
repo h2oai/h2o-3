@@ -198,6 +198,11 @@ dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 #` Column names of an H2O Frame
 names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
 
+colnames <- function(x, do.NULL=TRUE, prefix = "col") {
+  if( !is.Frame(x) ) return(base::colnames(x,do.NULL,prefix))
+  return(names.Frame(x))
+}
+
 #` Length - number of columns
 length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
 
@@ -417,6 +422,10 @@ NULL
   .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), paste0('[',paste0('"',value,'"',collapse=" "),']'))
 }
 
+`colnames<-` <- function(x, value) {
+  if( !is.Frame(x) ) return(base::`colnames<-`(x,value))
+  return(`names<-.Frame`(x,value))
+}
 
 #'
 #' Quantiles of H2O Data Frame.
@@ -1091,3 +1100,10 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   .h2o.__waitOnJob(json$key$name)
   data
 }
+
+#' Remove Rows With NAs
+#'
+#' @param object H2OFrame object
+#' @param ... Ignored
+#' @export
+na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)

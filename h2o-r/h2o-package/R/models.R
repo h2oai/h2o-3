@@ -96,17 +96,17 @@
 }
 
 
-.h2o.modelJob <- function( algo, params, do_future ) {
+.h2o.modelJob <- function( algo, params, do_future, version=.h2o.__REST_API_VERSION ) {
   .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) ) 
     .eval.frame(params$validation_frame)
-  job <- .h2o.startModelJob(algo, params)
+  job <- .h2o.startModelJob(algo, params, version)
   if( do_future )         job
   else h2o.getFutureModel(job)
 }
 
 
-.h2o.startModelJob <- function(algo, params) {
+.h2o.startModelJob <- function(algo, params, version) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.__remoteSend(method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
@@ -168,7 +168,7 @@
   })
 
   #---------- Validate parameters ----------#
-  validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
+  validation <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = version, paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
@@ -185,7 +185,7 @@
   }
 
   #---------- Build! ----------#
-  res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
+  res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = version, .h2o.__MODEL_BUILDERS(algo), .params = param_values)
 
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
