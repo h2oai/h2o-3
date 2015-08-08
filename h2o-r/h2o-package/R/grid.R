@@ -23,7 +23,8 @@
 #' library(rjson)
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
+#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex, 
+#'                                            hyper_params = list(ntrees = c(1,2,3)))
 #' @export
 h2o.grid <- function(algorithm,
                      grid_id,
@@ -70,7 +71,8 @@ h2o.grid <- function(algorithm,
 #' library(rjson)
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5, training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
+#' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5, training_frame = iris.hex,
+#'                                                            hyper_params = list(ntrees = c(1,2,3)))
 #' grid <- h2o.getGrid("gbm_grid")
 #' @export
 h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {

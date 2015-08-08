@@ -2,6 +2,8 @@
 expect_model_param <- function(models, attribute_name, expected_values) {
   params <- unique(lapply(models, function(model) { model@allparameters[[attribute_name]] } ))
   expect_equal(length(params), length(expected_values))
+  Log.info(paste0("params: ", paste(params, collapse=",")))
+  Log.info(paste0("expected_values: ", paste(expected_values, collapse=",")))
   expect_true(all(params %in% expected_values))
   expect_true(all(expected_values %in% params))
 }
@@ -21,12 +23,12 @@ makeRandomGridSpace <- function(algo,ncols=NULL) {
     if ( sample(0:1,1) ) { grid_space$nbins_cats <- sample(2:1024, sample(2:3,1)) }
   }
   if ( algo == "gbm" ) {
-    if ( sample(0:1,1) ) { grid_space$learn_rate <- runif(sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$learn_rate <- round(runif(sample(2:3,1)),6) }
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
   if ( algo == "drf" ) {
     if ( sample(0:1,1) ) { grid_space$mtries <- sample(2:ncols, sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$sample_rate <- runif(sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$sample_rate <- round(runif(sample(2:3,1)),6) }
   }
   if ( algo == "deeplearning" ) {
     if ( sample(0:1,1) ) { grid_space$activation <- sample(c("Rectifier", "Tanh", "TanhWithDropout",
