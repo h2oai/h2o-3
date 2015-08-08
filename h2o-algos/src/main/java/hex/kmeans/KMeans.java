@@ -194,12 +194,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Compute all interesting KMeans stats (errors & variances of clusters,
     // etc).  Return new centers.
-    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
+    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
       if (model._parms._standardize) {
-        model._output._centers_std_raw = centers;
+        model._output._centers_std_raw = task._cMeans;
       }
-      model._output._centers_raw = destandardize(centers, _isCats, means, mults);
+      model._output._centers_raw = destandardize(task._cMeans, _isCats, means, mults);
       model._output._size = task._size;
       model._output._withinss = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -296,7 +296,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
           // Compute model stats; update standardized cluster centers
           oldCenters = centers;
-          centers = computeStatsFillModel(task, model, vecs, centers, means, mults);
+          centers = computeStatsFillModel(task, model, vecs, means, mults);
 
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
