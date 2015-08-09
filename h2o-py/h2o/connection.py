@@ -382,6 +382,12 @@ class H2OConnection(object):
   """
 
   @staticmethod
+  def make_url(url_suffix,**kwargs):
+    self=__H2OCONN__
+    _rest_version = kwargs['_rest_version'] if "_rest_version" in kwargs else self._rest_version
+    return "http://{}:{}/{}/{}".format(self._ip,self._port,_rest_version,url_suffix)
+
+  @staticmethod
   def get(url_suffix, **kwargs):
     if __H2OCONN__ is None:
       raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
