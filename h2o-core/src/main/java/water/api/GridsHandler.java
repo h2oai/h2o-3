@@ -8,17 +8,20 @@ import water.Key;
 
 /**
  * /Grids/ end-point handler.
- *
  */
 public class GridsHandler extends Handler {
 
-  /** Return all the grids. */
+  /**
+   * Return all the grids.
+   */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public GridSchemaV99 list(int version, GridSchemaV99 s) {
     throw H2O.unimpl();
   }
 
-  /** Return a specified grid. */
+  /**
+   * Return a specified grid.
+   */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public GridSchemaV99 fetch(int version, GridSchemaV99 s) {
     Grid grid = getFromDKV("grid_id", s.grid_id.key(), Grid.class);
@@ -28,6 +31,19 @@ public class GridsHandler extends Handler {
       modelIds[i] = new KeyV3.ModelKeyV3(models[i]);
     }
     s.model_ids = modelIds;
+    s.hyper_names = grid.getHyperNames();
+    s.failed_params = toModelParametersSchema(grid.getFailedParameters());
+    s.failure_details = grid.getFailureDetails();
     return s;
+  }
+
+  private ModelParametersSchema[] toModelParametersSchema(Model.Parameters[] modelParameters) {
+    ModelParametersSchema[] result = new ModelParametersSchema[modelParameters.length];
+    for (int i = 0; i < modelParameters.length; i++) {
+      result[i] =
+          (ModelParametersSchema) Schema.schema(Schema.getLatestVersion(), modelParameters[i])
+              .fillFromImpl(modelParameters[i]);
+    }
+    return result;
   }
 }
