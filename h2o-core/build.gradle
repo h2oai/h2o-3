@@ -14,6 +14,7 @@ dependencies {
   compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-server:8.1.17.v20150415"
+  compile "com.github.rwl:jtransforms:2.4.0"
   // For Java6 we need named groups in regexp to have nice user API
   compile "com.github.tony19:named-regexp:0.2.3"
 
