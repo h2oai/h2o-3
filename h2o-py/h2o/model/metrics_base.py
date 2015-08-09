@@ -10,7 +10,7 @@ class MetricsBase(object):
 
   The methods here are available acorss different model categories, and so appear here.
   """
-  def __init__(self, metric_json,on,algo):
+  def __init__(self, metric_json,on=None,algo=""):
     self._metric_json = metric_json
     self._on_train = False   # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
     self._on_valid = False
@@ -19,6 +19,7 @@ class MetricsBase(object):
     if on=="training_metrics": self._on_train=True
     elif on=="validation_metrics": self._on_valid=True
     elif on=="cross_validation_metrics": self._on_xval=True
+    elif on is None: pass
     else: raise ValueError("on expected to be train,valid,or xval. Got: " +str(on))
 
   def __repr__(self):
@@ -158,12 +159,12 @@ class H2ORegressionModelMetrics(MetricsBase):
 
   It is possible to retrieve the R^2 (1 - MSE/variance) and MSE
   """
-  def __init__(self,metric_json,on,algo=""):
+  def __init__(self,metric_json,on=None,algo=""):
     super(H2ORegressionModelMetrics, self).__init__(metric_json, on, algo)
 
 
 class H2OClusteringModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on, algo=""):
+  def __init__(self, metric_json, on=None, algo=""):
     super(H2OClusteringModelMetrics, self).__init__(metric_json, on, algo)
 
   def tot_withinss(self):
@@ -191,7 +192,7 @@ class H2OClusteringModelMetrics(MetricsBase):
     return None
 
 class H2OMultinomialModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on, algo=""):
+  def __init__(self, metric_json, on=None, algo=""):
     super(H2OMultinomialModelMetrics, self).__init__(metric_json, on, algo)
 
   def confusion_matrix(self):
@@ -214,7 +215,7 @@ class H2OBinomialModelMetrics(MetricsBase):
   To input the different criteria, use the static variable `criteria`
   """
 
-  def __init__(self, metric_json, on, algo=""):
+  def __init__(self, metric_json, on=None, algo=""):
     """
       Create a new Binomial Metrics object (essentially a wrapper around some json)
 
@@ -489,9 +490,9 @@ class H2OBinomialModelMetrics(MetricsBase):
     raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on, algo=""):
+  def __init__(self, metric_json, on=None, algo=""):
     super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on, algo)
 
 class H2ODimReductionModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on, algo=""):
+  def __init__(self, metric_json, on=None, algo=""):
     super(H2ODimReductionModelMetrics, self).__init__(metric_json, on, algo)
