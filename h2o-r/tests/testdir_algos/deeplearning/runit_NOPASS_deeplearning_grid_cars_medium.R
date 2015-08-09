@@ -70,10 +70,16 @@ check.deeplearning.grid.cars <- function(conn) {
                                        hyper_params=new_grid_space) }
   expect_equal(length(cars_deeplearning_grid@model_ids), length(cars_deeplearning_grid2@model_ids))
 
+  Log.info("Check that the hyper_params that were passed to grid, were used to construct the models...")
+  # Get models
+  grid_models <- lapply(cars_deeplearning_grid@model_ids, function(mid) { model = h2o.getModel(mid) })
+  # Check expected number of models
+  expect_equal(length(grid_models), size_of_grid_space)
+  # Check parameters coverage
+  for ( name in names(grid_space) ) { expect_model_param(grid_models, name, grid_space[[name]]) }
+
   # TODO
-  # Log.info("Check a random grid model against its equivalent, non-grid model, trained with the same parameters...")
   # Log.info("Check best grid model against a randomly selected grid model...")
-  # Log.info("Check negative cases...")
 
   testEnd()
 }

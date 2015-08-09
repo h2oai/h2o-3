@@ -2,11 +2,12 @@
 
 ##H2O
 
-###Simons (3.0.1.5) - 8/6/15
+###Simons (3.0.1.6) - 8/7/15
+
 
 ####New Features
-
 The following changes represent features that have been added since the previous release:
+
 
 
 #####Web UI
@@ -15,8 +16,8 @@ The following changes represent features that have been added since the previous
 
 
 ####Enhancements
-
 The following changes are improvements to existing features (which includes changed default values):
+
 
 
 #####Algorithms
@@ -62,8 +63,8 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/5d4eb4d3c96161c92dc5aa4ce84f91a636739778): Add warning message during POJO export if `offset_column` is specified (is not supported)
 
 ####Bug Fixes 
-
 The following changes are to resolve incorrect software behavior:
+
 
 
 #####Algorithms
@@ -94,7 +95,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1660](https://0xdata.atlassian.net/browse/PUBDEV-1660): h2oR: when try to get a slice from pca eigenvectors get some formatting error [GitHub](https://github.com/h2oai/h2o-3/commit/8380c9697cb057f2437c8f14deea3a702f810805)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/bce4e036ad52d3a4dd75960653f016dc6c076622): fix broken %in% in R
 - [PUBDEV-1831](https://0xdata.atlassian.net/browse/PUBDEV-1831): Cross-validation metrics are not displayed in R (and Python?)
-- [PUBDEV-1840](https://0xdata.atlassian.net/browse/PUBDEV-1840): Autoencoder model doesn't display properly in R (training metrics)
+- [PUBDEV-1840](https://0xdata.atlassian.net/browse/PUBDEV-1840): Autoencoder model doesn't display properly in R (training metrics) [GitHub](https://github.com/h2oai/h2o-3/commit/5a9880fa00615481da4c1897af3d974c42529e36)
 
 #####System
 

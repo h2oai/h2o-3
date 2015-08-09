@@ -72,13 +72,13 @@ Build a cluster of EC2 instances by running the following commands on the host t
  
 	``` 
  
- --OR--
+   --OR--
    
  	```
  	./h2o-cluster-launch-instances.py
  	./h2o-cluster-download-h2o.sh
 	```
-  >**Note**: The second method may be faster than the first, since download pulls from S3. 
+   >**Note**: The second method may be faster than the first, since download pulls from S3. 
 
 
 0. Distribute the credentials using `./h2o-cluster-distribute-aws-credentials.sh`. 
@@ -90,12 +90,13 @@ Build a cluster of EC2 instances by running the following commands on the host t
   `./h2o-cluster-start-h2o.sh`
   
   Wait 60 seconds after entering the command before entering it on the next node. 
+  
 0. In your internet browser, substitute any of the public DNS node addresses for `IP_ADDRESS` in the following example:
   `http://IP_ADDRESS:54321`
 
-- To start H2O: `./h2o-cluster-stop-h2o.sh`
-- To stop H2O: `./h2o-cluster-start-h2o.sh`
-- To shut down the cluster, use your [Amazon AWS console](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html) to shut down the cluster manually. 
+  - To start H2O: `./h2o-cluster-start-h2o.sh`
+  - To stop H2O: `./h2o-cluster-stop-h2o.sh`
+  - To shut down the cluster, use your [Amazon AWS console](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html) to shut down the cluster manually. 
 
 
 
