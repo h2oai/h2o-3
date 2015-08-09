@@ -437,6 +437,13 @@ h2o.median <- function(x, na.rm = TRUE) {
 #' @export
 setMethod("median", "H2OFrame", h2o.median)
 
+#' Range of an H2O Column
+#'
+#' @param x An H2OFrame object.
+#' @param na.rm ignore missing values
+#' @export
+setMethod("range", "H2OFrame", function(x,na.rm=TRUE) .h2o.nary_frame_op("range", x, na.rm))
+
 #' Cut H2O Numeric Data to Factor
 #'
 #' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
