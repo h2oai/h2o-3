@@ -65,9 +65,9 @@ checkGLRMPredErr <- function(fitH2O, trainH2O, validH2O = NULL, tolerance = 1e-6
   pred.df <- as.data.frame(pred)
   trainR <- as.data.frame(trainH2O)
   checkTrainErr(fitH2O, trainR, pred.df, tolerance)
-  # if(!is.null(validH2O) && !is.null(fitH2O@model$validation_metrics)) {
-  #  validR <- as.data.frame(validH2O)
-  #  checkValidErr(fitH2O, validR, pred.df, tolerance)
-  # }
+  if(!is.null(validH2O) && !is.null(fitH2O@model$validation_metrics)) {
+    validR <- as.data.frame(validH2O)
+    checkValidErr(fitH2O, validR, pred.df, tolerance)
+  }
   return(pred)
 }
