@@ -8,6 +8,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 import java.util.Random;
 
@@ -179,7 +180,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else sum += u[i];
           }
-          return sum == 1 ? 0 : Double.POSITIVE_INFINITY;
+          return MathUtils.equalsWithinOneSmallUlp(sum, 1) ? 0 : Double.POSITIVE_INFINITY;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
