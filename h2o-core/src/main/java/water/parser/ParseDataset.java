@@ -815,7 +815,7 @@ public final class ParseDataset extends Job<Frame> {
     int namelen = 0;
     for (String s : fr.names()) namelen = Math.max(namelen, s.length());
     String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
-    Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "numLevels"));
+    Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "cardinality"));
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     for( int i = 0; i < vecArr.length; i++ ) {
