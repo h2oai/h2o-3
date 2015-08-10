@@ -1106,6 +1106,39 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   data
 }
 
+#' Split an H2O Data Set
+#'
+#' Split an existing H2O data set according to user-specified ratios.
+#'
+#' @param data An \linkS4class{H2OFrame} object representing the dataste to split.
+#' @param ratios A numeric value or array indicating the ratio of total rows
+#'        contained in each split. Must total up to less than 1.
+#' @param destination_frames An array of frame IDs equal to the number of ratios
+#'        specified plus one.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex = h2o.importFile(path = irisPath)
+#' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
+#' head(iris.split[[1]])
+#' summary(iris.split[[1]])
+#' @export
+h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
+  if( !is.Frame(data)) stop("`data` must be an Frame object")
+  params <- list()
+  params$dataset <- .eval.frame(data):eval
+  params$ratios <- .collapse(ratios)
+  if (!missing(destination_frames))
+    params$destination_frames <- .collapse.char(destination_frames)
+
+  res <- .h2o.__remoteSend(method="POST", "SplitFrame", .params = params)
+  job_key <- res$key$name
+  .h2o.__waitOnJob(job_key)
+
+  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
+}
+
 #' Remove Rows With NAs
 #'
 #' @param object H2OFrame object
