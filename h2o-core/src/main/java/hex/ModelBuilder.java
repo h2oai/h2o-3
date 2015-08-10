@@ -223,7 +223,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     }
-    return _parms._nfolds == 0 && _parms._fold_column == null ? trainModelImpl(progressUnits(), true) :
+    return !nFoldCV() ? trainModelImpl(progressUnits(), true) :
             // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
             start(new H2O.H2OCountedCompleter() {
               @Override
@@ -246,10 +246,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param restartTimer
    * @return ModelBuilder job
    */
-  abstract public Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
-  abstract public long progressUnits();
+  abstract protected Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
+  abstract protected long progressUnits();
 
   /**
+   * Whether the Job is done after building the model itself, or whether there's extra work to be done
    * Override the Job's behavior here
    * N-fold CV jobs should not mark the job as finished, we do this explicitly in computeCrossValidation
    *
@@ -257,7 +258,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   @Override
   protected boolean canBeDone() {
-    return (_parms._fold_column == null && _parms._nfolds == 0);
+    return !nFoldCV();
   }
 
   /**
@@ -459,12 +460,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
-      modifyParmsForCrossValidationMainModel(N);
-
+      modifyParmsForCrossValidationMainModel(N); //tell the main model that it shouldn't stop early either
       trainModelImpl(-1, false).block(); // builds the main model and wait for completion
       Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done
 
-      // Check that both the job and the model are not yet marked as done
+      // Check that both the job and the model are not yet marked as done (canBeDone() looks at whether N-fold CV is done)
       assert(_state == JobState.RUNNING);
 
       // Compute and put the cross-validation metrics into the main model
@@ -503,14 +503,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /**
    * Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
    * For example, the model might need to be told to not do early stopping.
+   * @param N Total number of cross-validation folds
    */
   public void modifyParmsForCrossValidationMainModel(int N) {
+
   }
 
   boolean _deleteProgressKey = true;
   @Override
   protected boolean deleteProgressKey() {
     return _deleteProgressKey;
+  }
+
+  /**
+   * Whether n-fold cross-validation is done
+   * @return
+   */
+  public boolean nFoldCV() {
+    return _parms._fold_column != null || _parms._nfolds != 0;
   }
 
   /** List containing the categories of models that this builder can
@@ -545,8 +555,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
   protected transient Vec _offset; // Handy offset column
-  protected transient Vec _weights;
-  protected transient Vec _fold;
+  protected transient Vec _weights; // observation weight column
+  protected transient Vec _fold; // fold id column
 
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
@@ -731,7 +741,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_fold_column", "Fold column is ignored when nfolds > 1.");
     }
     // hide cross-validation parameters unless cross-val is enabled
-    if (_parms._nfolds ==0 && _parms._fold_column == null) {
+    if (!nFoldCV()) {
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
       if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
@@ -868,15 +878,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void checkDistributions() {
     if (_parms._distribution == Distribution.Family.poisson) {
       if (_response.min() < 0)
-        error("_respons e", "Response cannot be negative for Poisson distribution.");
+        error("_response", "Response must be non-negative for Poisson distribution.");
     } else if (_parms._distribution == Distribution.Family.gamma) {
       if (_response.min() < 0)
-        error("_response", "Response cannot be negative for Gamma distribution.");
+        error("_response", "Response must be non-negative for Gamma distribution.");
     } else if (_parms._distribution == Distribution.Family.tweedie) {
       if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
       if (_response.min() < 0)
-        error("_response", "Response cannot be negative for Tweedie distribution.");
+        error("_response", "Response must be non-negative for Tweedie distribution.");
     }
   }
 

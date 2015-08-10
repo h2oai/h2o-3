@@ -20,6 +20,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Connector;
 
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import water.api.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
@@ -166,6 +167,14 @@ public class JettyHTTPD {
 
   protected void startHttp() throws Exception {
     _server = new Server();
+
+//    QueuedThreadPool p = new QueuedThreadPool();
+//    p.setName("jetty-h2o");
+//    p.setMinThreads(3);
+//    p.setMaxThreads(50);
+//    p.setMaxIdleTimeMs(3000);
+//    _server.setThreadPool(p);
+
     Connector connector=new SocketConnector();
     if (_ip != null) {
       connector.setHost(_ip);

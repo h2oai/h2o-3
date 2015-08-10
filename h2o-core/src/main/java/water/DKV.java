@@ -56,8 +56,8 @@ public abstract class DKV {
   /** Make the mapping <em>key -&gt; v</em>.  Caching.  */
   static public Value put( Key key, Iced v, Futures fs ) { return put(key,new Value(key,v),fs); }
   /** Make the mapping <em>key -&gt; v</em>.  */
-  static public Value put( Key key, Iced v, Futures fs,boolean donCache ) {
-    return put(key,new Value(key,v),fs,donCache);
+  static public Value put( Key key, Iced v, Futures fs,boolean dontCache ) {
+    return put(key,new Value(key,v),fs,dontCache);
   }
   /** Make the mapping <em>keyed._key -&gt; keyed</em>.  Blocking, caching.  */
   static public Value put( Keyed keyed ) { return put(keyed._key,new Value(keyed._key,keyed)); }
@@ -128,7 +128,7 @@ public abstract class DKV {
       return old;               // Less trivial success, but no network i/o
 
     // Before we start doing distributed writes... block until the cloud
-    // stablizes.  After we start doing distrubuted writes, it is an error to
+    // stabilizes.  After we start doing distributed writes, it is an error to
     // change cloud shape - the distributed writes will be in the wrong place.
     Paxos.lockCloud(key);
 

@@ -437,6 +437,13 @@ h2o.median <- function(x, na.rm = TRUE) {
 #' @export
 setMethod("median", "H2OFrame", h2o.median)
 
+#' Range of an H2O Column
+#'
+#' @param x An H2OFrame object.
+#' @param na.rm ignore missing values
+#' @export
+setMethod("range", "H2OFrame", function(x,na.rm=TRUE) .h2o.nary_frame_op("range", x, na.rm))
+
 #' Cut H2O Numeric Data to Factor
 #'
 #' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
@@ -510,12 +517,12 @@ setMethod("match", "H2OFrame", h2o.match)
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", signature("H2OFrame", "character"), function(x, table) any(match(x, table, nomatch = 0)))
+setMethod("%in%", signature("H2OFrame", "character"), function(x, table) h2o.match(x, table, nomatch = 0))
 
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) all(sapply(table,function(t) any(t==x))))
+setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) h2o.match(x, table, nomatch=0))
 
 #' Remove Rows With NAs
 #'

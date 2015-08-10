@@ -6,7 +6,7 @@ import pandas as pd
 
 def to_H2OFrame(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     # TODO: negative testing
 

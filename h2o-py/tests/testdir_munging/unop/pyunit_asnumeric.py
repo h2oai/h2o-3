@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def asnumeric(ip,port):
-    # Connect to h2o
+    
 
     h2oframe =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars.csv"))
     rows = h2oframe.nrow()

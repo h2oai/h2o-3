@@ -7,7 +7,7 @@ import string
 def baddataKmeans(ip,port):
 
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
   rows = 100
   cols = 10

@@ -61,9 +61,6 @@ public class RequestServer extends NanoHTTPD {
   private RequestServer() {}
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
-  private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
-  private static volatile String _htmlTemplate = "";
-
 
   // Handlers ------------------------------------------------------------
 
@@ -73,9 +70,6 @@ public class RequestServer extends NanoHTTPD {
   private static final LinkedHashMap<java.util.regex.Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
   public static final int numRoutes() { return _routes.size(); }
   public static final Collection<Route> routes() { return _routes.values(); }
-
-  private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
-  private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
   private static Pattern version_pattern = null;
   private static Pattern getVersionPattern() {
@@ -91,34 +85,35 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
 
-    addToNavbar(register("/3/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Create a synthetic H2O Frame."),"/CreateFrame", "Create Frame",  "Data");
-    addToNavbar(register("/3/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Split a H2O Frame."),"/SplitFrame",  "Split Frame",   "Data");
-    addToNavbar(register("/3/Interaction","POST",InteractionHandler.class,"run"        ,"Create interactions between categorical columns."),"/Interaction", "Categorical Interactions",  "Data");
-    addToNavbar(register("/3/MissingInserter" ,"POST",MissingInserterHandler.class,"run","Insert missing values."),"/MissingInserter",  "Insert Missing Values",   "Data");
-    addToNavbar(register("/3/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
-    addToNavbar(register("/3/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
-    addToNavbar(register("/3/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
+    // TODO: ImportFiles should be a POST!
+
+    register("/3/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Create a synthetic H2O Frame.");
+    register("/3/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Split a H2O Frame.");
+    register("/3/Interaction","POST",InteractionHandler.class,"run"        ,"Create interactions between categorical columns.");
+    register("/3/MissingInserter" ,"POST",MissingInserterHandler.class,"run","Insert missing values.");
+    register("/3/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame.");
+    register("/3/ImportFiles","POST",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame.");
+    register("/3/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
+    register("/3/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
     // Admin
-    addToNavbar(register("/3/Cloud",      "GET", CloudHandler.class,  "status", "Determine the status of the nodes in the H2O cloud."), "/Cloud", "Cloud", "Admin");
+    register("/3/Cloud",      "GET", CloudHandler.class,  "status", "Determine the status of the nodes in the H2O cloud.");
     register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", "Determine the status of the nodes in the H2O cloud.");
-    addToNavbar(register("/3/Jobs"       ,"GET", JobsHandler.class,   "list",   "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
-    addToNavbar(register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
-    addToNavbar(register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
-    addToNavbar(register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
-    addToNavbar(register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something."),"/NetworkTest", "NetworkTest",   "Admin");
+    register("/3/Jobs"       ,"GET", JobsHandler.class,   "list",   "Get a list of all the H2O Jobs (long-running actions).");
+    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something.");
+    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something.");
+    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something.");
+    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something.");
     register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
-    addToNavbar(register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
+    register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(register("/3/Tutorials", "GET", TutorialsHandler.class, "nop", "H2O tutorials."), "/Tutorials", "Tutorials Home", "Help");
-
-    // initializeNavBar();
+    register("/3/Tutorials", "GET", TutorialsHandler.class, "nop", "H2O tutorials.");
 
     // REST only, no html:
 
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",
-            "Return information about this H2O.");
+            "Return information about this H2O cluster.");
 
     register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,MetadataHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
@@ -145,8 +140,12 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
+
+    // TODO: add a DEPRECATED flag, and make this next one DEPRECATED
+    register("/3/Frames/(?<frameid>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"frame_id", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
+    register("/3/Frames/(?<frameid>.*)/export" ,"POST", FramesHandler.class, "export",                  new String[] {"frame_id"},
+        "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"frame_id", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
     register("/3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"frame_id", "column"},
@@ -181,6 +180,13 @@ public class RequestServer extends NanoHTTPD {
             "Import given binary model into H2O.");
     register("/99/Models.bin/(?<modelid>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel",                            new String[] {"model_id"},
             "Export given model.");
+
+    register("/99/Grids/(?<gridid>.*)"                              ,"GET"   ,GridsHandler.class, "fetch",                                  new String[] {"grid_id"},
+            "Return the specified grid search result.");
+
+    register("/99/Grids"                                            ,"GET"   ,GridsHandler.class, "list",
+            "Return all grids from H2O distributed K/V store.");
+
 
     register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility",
       "Set Model Builders visibility level.");
@@ -693,13 +699,9 @@ public class RequestServer extends NanoHTTPD {
       }
       ModelSchema ms = (ModelSchema)mb.models[0];
       Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
-      //r.addHeader("Content-Disposition", "attachment; filename=\"" + ms.model_id.key().toString() + ".java\"");
+      // Needed to make file name match class name
+      r.addHeader("Content-Disposition", "attachment; filename=\"" + JCodeGen.toJavaId(ms.model_id.key().toString()) + ".java\"");
       return r;
-    case html: {
-      RString html = new RString(_htmlTemplate);
-      html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
-      return new Response(http_response_header, MIME_HTML, html.toString());
-    }
     default:
       throw H2O.unimpl("Unknown type to wrap(): " + type);
     }
@@ -760,82 +762,6 @@ public class RequestServer extends NanoHTTPD {
           os.write(buffer, 0, len);
         return os.toByteArray();
       }
-  }
-
-  // html template and navbar handling -----------------------------------------
-
-  private static String loadTemplate(String name) {
-    water.H2O.registerResourceRoot(new File("src/main/resources/www"));
-    water.H2O.registerResourceRoot(new File("h2o-core/src/main/resources/www"));
-    // Try-with-resource
-    try (InputStream resource = water.init.JarHash.getResource2(name)) {
-      return new String(toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
-    }
-    catch( IOException ioe ) { Log.err(ioe); return null; }
-  }
-
-  private static class MenuItem {
-    private final String _handler;
-    private final String _name;
-
-    private MenuItem(String handler, String name) {
-      _handler = handler;
-      _name = name;
-    }
-
-    private void toHTML(StringBuilder sb) {
-      sb.append("<li><a href='").append(_handler).append(".html'>").append(_name).append("</a></li>");
-    }
-  }
-
-  /**
-   * Call this after the last call addToNavbar().
-   * This is called automatically for navbar entries from inside H2O.
-   * If user app level code calls addToNavbar, then call this again to make those changes visible.
-  static void initializeNavBar() { _htmlTemplate = initializeNavBar(_htmlTemplateFromFile); }
-*/
-
-  private static String initializeNavBar(String template) {
-    /*
-    StringBuilder sb = new StringBuilder();
-    for( String s : _navbarOrdering ) {
-      ArrayList<MenuItem> arl = _navbar.get(s);
-      if( (arl.size() == 1) && arl.get(0)._name.equals(s) ) {
-        arl.get(0).toHTML(sb);
-      } else {
-        sb.append("<li class='dropdown'>");
-        sb.append("<a href='#' class='dropdown-toggle' data-toggle='dropdown'>");
-        sb.append(s);
-        sb.append("<b class='caret'></b>");
-        sb.append("</a>");
-        sb.append("<ul class='dropdown-menu'>");
-        for( MenuItem i : arl )
-          i.toHTML(sb);
-        sb.append("</ul></li>");
-      }
-    }
-    RString str = new RString(template);
-    str.replace("NAVBAR", sb.toString());
-    str.replace("CONTENTS", "%CONTENTS");
-    return str.toString();
-    */
-    return "undefined";
-  }
-
-  // Add a new item to the navbar
-  public static String addToNavbar(Route route, String base_url, String name, String category) {
-    /*
-    assert route != null && base_url != null && name != null && category != null;
-
-    ArrayList<MenuItem> arl = _navbar.get(category);
-    if( arl == null ) {
-      arl = new ArrayList<>();
-      _navbar.put(category, arl);
-      _navbarOrdering.add(category);
-    }
-    arl.add(new MenuItem(base_url, name));
-    */
-    return route._url_pattern.namedPattern();
   }
 
   // Return URLs for things that want to appear Frame-inspection page

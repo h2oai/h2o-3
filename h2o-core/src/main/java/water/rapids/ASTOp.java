@@ -1796,6 +1796,10 @@ abstract class ASTReducerOp extends ASTOp {
         if( E._env.tryLookup((ASTId)a) ) break;
         else dblarys.add(a);
       } else if( a instanceof ASTAssign || a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
+      else if( a instanceof ASTList ) {
+        if( a instanceof ASTLongList ) for(long l: ((ASTLongList)a)._l) dblarys.add(new ASTNum(l));
+        else for( double d: ((ASTDoubleList)a)._d) dblarys.add(new ASTNum(d));
+      }
       else break;
     } while( !E.isEnd() );
 
@@ -3011,6 +3015,16 @@ class ASTRange extends ASTUniPrefixOp {
   @Override String opStr() { return "range"; }
   ASTRange() { super( new String[]{"x"}); }
   @Override ASTOp make() { return new ASTRange(); }
+  @Override ASTRange parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the na.rm
+    AST a = E.parse();  // just dropped on the floor
+    E.eatEnd(); // eat the ending ')'
+    ASTRange res = (ASTRange) clone();
+    res._asts = new AST[]{ary}; // in reverse order so they appear correctly on the stack.
+    return res;
+  }
   @Override void apply(Env env) {
     Frame f = env.popAry();
 
@@ -3773,6 +3787,7 @@ class ASTRunif extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
+    if( !env.isAry() ) throw new IllegalArgumentException("Frame not found: " + env.pop().value());
     Vec rnd = env.popAry().anyVec().makeRand(seed);
     Frame f = new Frame(new String[]{"rnd"}, new Vec[]{rnd});
     env.pushAry(f);
@@ -4692,6 +4707,7 @@ class ASTAsNumeric extends ASTUniPrefixOp {
 }
 
 class ASTFactor extends ASTUniPrefixOp {
+  private static int LEVELSCAP = 50000000;
   ASTFactor() { super(new String[]{"", "ary"});}
   @Override String opStr() { return "as.factor"; }
   @Override ASTOp make() {return new ASTFactor();}
@@ -4699,13 +4715,54 @@ class ASTFactor extends ASTUniPrefixOp {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
+
+    if( v0.isString() ) {
+      // rollup a String column into an enum; no cap on number of unique levels
+      StringCollectDomain t = new StringCollectDomain().doAll(ary.anyVec());
+      if( t.size() > LEVELSCAP ) throw new IllegalArgumentException("More than" + LEVELSCAP + " unique levels found. Too many levels.");
+      final String[] dom = t.domain();
+      String[][] doms = new String[1][];
+      doms[0]=dom;
+      Vec v1 = new MRTask() {
+        @Override public void map(Chunk oc, NewChunk nc) {
+          ValueString v = new ValueString();
+          for (int i = 0; i < oc._len; ++i)
+            nc.addNum(Arrays.binarySearch(dom, oc.atStr(v, i).toString()), 0);
+        }
+      }.doAll(1,v0).outputFrame(ary._names,doms).anyVec();
+      env.pushAry(new Frame(ary._names, new Vec[]{v1}));
+      return;
+    }
     if( v0.isEnum() ) {
       env.pushAry(ary);
       return;
     }
-    Vec v1 = v0.toEnum();
-    Frame fr = new Frame(ary._names, new Vec[]{v1});
-    env.pushAry(fr);
+    env.pushAry(new Frame(ary._names, new Vec[]{v0.toEnum()}));
+  }
+
+  private static class StringCollectDomain extends MRTask<StringCollectDomain> {
+    private IcedHashMap<String,String> _dom;
+    @Override public void setupLocal() { _dom = new IcedHashMap();}
+    @Override public void map(Chunk c) {
+      ValueString v = new ValueString();
+      for( int i=0;i<c._len;++i) _dom.putIfAbsent(c.atStr(v, i).toString(),"");
+    }
+    @Override public void reduce(StringCollectDomain t) {
+      if( _dom!=t._dom ) {
+        IcedHashMap<String,String> l = _dom;
+        IcedHashMap<String,String> r = t._dom;
+        if( l.size() > r.size() ) { l=r; r=_dom; } // smaller on the left
+        for( String s: l.keySet() ) r.putIfAbsent(s,"");
+        _dom=r;
+        t._dom=null;
+      }
+    }
+    private String[] domain() {
+      String[] d=_dom.keySet().toArray(new String[size()]);
+      Arrays.sort(d);
+      return d;
+    }
+    private int size() { return _dom.size(); }
   }
 }
 

@@ -20,8 +20,8 @@ test.glrm.simplex <- function(conn) {
   Log.info("Check that X matrix consists of rows within standard probability simplex")
   fitX.mat <- as.matrix(fitX)
   expect_true(all(fitX.mat >= 0))
-  expect_true(all(apply(fitX.mat, 1, sum) == 1))
-
+  apply(fitX.mat, 1, function(row) { expect_equal(sum(row), 1, .Machine$double.eps) })
+  
   Log.info("Check final objective function value")
   fitXY <- fitX.mat %*% fitY
   expect_equal(sum((train - fitXY)^2), fitH2O@model$objective)

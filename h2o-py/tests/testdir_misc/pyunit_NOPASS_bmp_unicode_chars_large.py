@@ -4,8 +4,8 @@ import h2o
 
 
 def bmp_unicode_chars(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     # get all h2o-supported utf-8 characters (the basic multilingual plane, minus some control characters)
     codes_in_decimal = open(h2o.locate("smalldata/unicode/h2o_supported_utf8_codes.csv"))

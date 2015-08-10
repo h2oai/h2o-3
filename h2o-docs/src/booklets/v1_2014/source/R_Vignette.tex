@@ -1,0 +1,1186 @@
+\documentclass[11pt]{article}
+\usepackage[english]{babel}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,epsfig}
+\usepackage[left=1.1in,top=1in,right=1.1in]{geometry}
+\usepackage{url}
+\usepackage{datetime}
+\usepackage{lipsum}
+\usepackage{spverbatim}
+\usepackage[parfill]{parskip}
+\usepackage{underscore}
+\usepackage{hyperref}
+\hypersetup{colorlinks, urlcolor={blue}}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\begin{document}
+
+\title{H2O and R}
+\author{Jessica Lanford, Patrick Aboyoun, Spencer Aiello, Anqi Fu}
+\date{02/06/2015}
+\maketitle
+\tableofcontents
+
+
+\section{What is H2O?}
+
+H2O is fast scalable open -source machine learning and deep learning for Smarter Applications. With H2O enterprises like PayPal, Nielsen, Cisco and others can use all of their data without sampling and get accurate predictions faster. Advanced algorithms, like Deep Learning, Boosting and Bagging Ensembles are readily available for application designers to build smarter applications through elegant APIs. Some of our earliest customers have built powerful domain-specific predictive engines for Recommendations, Customer Churn, Propensity to Buy, Dynamic Pricing and Fraud Detection for the Insurance, Healthcare, Telecommunications, AdTech,Retail and Payment Systems.
+Using in-memory compression techniques, H2O can handle billions of data rows in-memory � even with a fairly small cluster. The platform includes interfaces for R, Python, Scala, Java, JSON and Coffeescript/JavaScript, along with its built-in Flow web interface that make it easier for non-engineers to stitch together complete analytic workflows. The platform was built alongside (and on top of) both Hadoop and Spark Clusters and is typically deployed within minutes.
+H2O implements almost all common machine learning algorithms � such as generalized linear modeling (linear regression, logistic regression, etc.), Na\"{i}ve Bayes, principal components analysis, time series, k-means clustering and others. H2O also implements best-in-class algorithms such as Random Forest, Gradient Boosting and Deep Learning at scale. Customers can build thousands of models and compare them to get the best prediction results.
+H2O is nurturing a grassroots movement of physicists, mathematicians, computer and data scientists to herald the new wave of discovery with data science. Academic re- searchers and Industrial data scientists collaborate closely with our team to make this possible. Stanford university giants Stephen Boyd, Trevor Hastie, Rob Tibshirani advise the H2O team to build scalable machine learning algorithms. With 100s of meetups over the past two years, H2O has become a word-of-mouth phenomenon growing amongst the data community by a 100-fold and is now used by 12,000+ users, deployed in 2000+ corporations using R, Python, Hadoop and Spark.\textbf{Try it out}H2O offers an R package that can be installed from CRAN. H2O can be downloaded from \url{www.h2o.ai/download}.\textbf{Join the community}Connect with \url{h2ostream@googlegroups.com} and \url{https://github.com/h2oai} to learn about our meetups, training sessions, hackathons, and product updates.\textbf{Learn more about H2O}
+Visit \url{www.h2o.ai}
+
+\section{Introduction}
+
+This documentation describes the functionality of R in H2O. Further information on H2O's system and algorithms, as well as R user documentation, can be found at the H2O website at \url{http://docs.h2o.ai}. This introductory section describes how H2O works with R, followed by a brief overview of generalized linear models (GLM). 
+
+R requires a reference object to the H2O instance because it uses a REST API to send functions to H2O. Data sets are not transmitted directly through the REST API. Instead, the user sends a command (for example, an HDFS path to the data set) either through the browser or via the REST API to ingest data from disk.
+
+The data set is then assigned a Key in H2O that you can use as a reference in future commands to the web server. After preparing your dataset for modeling by defining the significant data and removing the insignificant data, you can create models to represent the results of the data analysis. One of the most popular models for data analysis is GLM. 
+
+GLM estimates regression models for outcomes following exponential distributions in general. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, gamma and Tweedie distributions. Each serves a different purpose, and depending on distribution and link function choice, it can be used either for prediction or classification.
+
+H2O supports Spark, YARN, and all versions of Hadoop. Hadoop is a scalable open-source file system that uses clusters to enable distributed storage and processing of datasets. Depending on your data size, you can get started on your desktop or scale using multiple nodes with Hadoop. 
+
+H2O nodes run as JVM invocations on Hadoop nodes. For performance reasons, we recommend you avoid running an H2O node on the same hardware as the Hadoop NameNode if possible.
+
+Since H2O nodes run as mapper tasks in Hadoop, administrators can see them in the normal JobTracker and TaskTracker frameworks. This provides process-level (i.e. JVM instance-level) visibility.
+
+H2O helps R users make the leap from laptop-based processing to large-scale environments. Hadoop helps H2O users scale their data processing capabilities based on their current needs. Using H2O, R, and Hadoop, you can create a complete end-to-end data analysis solution. For more information about H2O on Hadoop, refer to \url{http://docs.h2o.ai/bits/hadoop/H2O\_on\_Hadoop\_0xdata.pdf}.
+
+This document will walk you through the four steps to data analysis with H2O: installing H2O, preparing your data for modeling (data munging), creating a model using state-of-the-art machine learning algorithms, and scoring your models. 
+
+
+\section{Installation}
+
+To use H2O with R, you can start H2O outside of R and connect to it, or you can launch H2O from R. However, if you launch H2O from R and close the R session, the H2O instance is closed as well. The client object is used to direct R to datasets and models located in H2O.
+
+\subsection{Installing R or R Studio}
+
+To download R:
+\begin{enumerate}
+\item Go to \url{http://cran.r-project.org/mirrors.html}. 
+\item Select your closest local mirror. 
+\item Select your operating system (Linux, OS X, or Windows). 
+\item Depending on your OS, download the appropriate file, along with any required packages. 
+\item When the download is complete, unzip the file and install. \\
+\end{enumerate}
+
+To download R Studio: 
+
+\begin{enumerate}
+\item Go to \url{http://www.rstudio.com/products/rstudio/}. 
+\item Select your deployment type (desktop or server). 
+\item Download the file. 
+\item When the download is complete, unzip the file and install.
+\end{enumerate}
+
+
+\subsection{Installing H2O in R}
+\begin{enumerate}
+\item Load the latest CRAN H2O package by running \begin{spverbatim} install.packages("h2o") \end{spverbatim} 
+
+Note: Our push to CRAN will be behind the bleeding edge version and due to resource constraints, may be behind the published version. However, there is a best-effort to keep the versions the same. 
+
+\item To get the latest build, download it from \url{http://h2o.ai/download} and make sure to run the following (replacing the asterisks [*] with the version number): 
+\begin{spverbatim}
+> if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+> if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+> install.packages("h2o", repos=(c("http://s3.amazonaws.com/h2o-release/h2o
+/master/****/R", getOption("repos"))))
+> library(h2o)
+\end{spverbatim}
+\item Run a demo to see an example classification model using GLM. 
+\begin{spverbatim}
+demo(glm)
+\end{spverbatim}
+\end{enumerate}
+
+\subsection{Making a build from the Source Code}
+If you are a developer who wants to make changes to the R package before building and installing it, pull the source code from Git (\url{https://github.com/h2oai/h2o}) and follow the instructions in From Source Code (Github) at \url{http://docs.h2o.ai/developuser/quickstart\_git.html}.
+
+After making the build, navigate to the Rcran folder with the R package in the build directory, then run (replacing the asterisks [*] with the version number) and install.
+\begin{spverbatim}
+$ make clean
+$ make build
+$ cd target/Rcran
+$ R CMD INSTALL h2o_****.tar.gz
+* installing to library 'C:/Users//Documents/R/win-library/3.0'
+* installing *source* package 'h2o' ...
+** R
+** demo
+** inst
+...
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded
+...
+DONE (h2o)
+\end{spverbatim}
+
+
+\section{H2O Initialization}
+
+\subsection{Launching from R}
+
+If you do not specify the argument {\texttt{max\_mem\_size}} when you run {\texttt{h2o.init(nthreads = -1)}}, the default heap size of the H2O instance running on 32-bit Java is 1g. H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine. The {\texttt{nthreads = -1}} parameter allows H2O to use all CPUs on the host, which is recommended. 
+
+For best performance, the allocated memory should be 4x the size of your data, but never more than the total amount of memory on your computer. For larger data sets, we recommend running on a server or service with more memory available for computing.
+
+
+To launch H2O from R, run the following in R:
+\begin{spverbatim}
+> library(h2o)
+# Start H2O on localhost, port 54321, with 4g of memory using all CPUs
+> localH2O <- h2o.init(ip = 'localhost', port = 54321, nthreads= -1, max_mem_size = '4g') \end{spverbatim} 
+\\
+
+R displays the following output: 
+\begin{spverbatim}
+Successfully connected to http://localhost:54321
+R is connected to H2O cluster:
+   H2O cluster uptime:         11 minutes 35 seconds
+   H2O cluster version:        2.7.0.1497
+   H2O cluster name:           H2O_started_from_R
+   H2O cluster total nodes:    1
+   H2O cluster total memory:   3.56 GB
+   H2O cluster total cores:    8
+   H2O cluster allowed cores:  8
+   H2O cluster healthy:        TRUE
+\end{spverbatim}
+
+If you are operating on a single node, initialize H2O using all CPUs with: \begin{spverbatim} h2o_server = h2o.init(nthreads = -1)\end{spverbatim}\\
+
+To connect with an existing H2O cluster node other than the default localhost:54321, specify the IP address and port number in the parentheses. For example:\begin{spverbatim}h2o_cluster = h2o.init(ip = "192.555.1.123", port = 12345, nthreads = -1)\end{spverbatim}
+
+
+\subsection{Launching from the Command Line}
+
+After launching the H2O instance, initialize the connection by running {\texttt{h2o.init(nthreads = -1)}} with the IP address and port number of a node in the cluster. In the following example, change 192.168.1.161 to your machine's local host. 
+\begin{spverbatim}
+> library(h2o)
+> localH2O <- h2o.init(ip = '192.168.1.161', port = 54321, nthreads = -1)
+\end{spverbatim}
+
+\subsection{Launching on Hadoop}
+
+To launch H2O nodes and form a cluster on the Hadoop cluster, run:
+\begin{spverbatim}
+$ hadoop jar h2odriver_hdp2.1.jar water.hadoop.h2odriver -libjars ../h2o.jar -mapperXmx 1g -nodes 1 -output hdfsOutputDirName
+\end{spverbatim}
+
+\begin{itemize}
+\item For each major release of each distribution of Hadoop, there is a driver jar file that the user will need to launch H2O with. Currently available driver jar files in each build of H2O include {\texttt{h2odriver_cdh5.jar, h2odriver_hdp2.1.jar}}, and {\texttt{mapr2.1.3.jar}}.
+\item The above command launches exactly one 1g node of H2O; however,  we recommend launching the cluster with 4 times the memory of your data file.
+\item{\texttt{mapperXmx}} is the mapper size or the amount of memory allocated to each node.
+\item{\texttt{nodes}} is the number of nodes requested to form the cluster.
+\item{\texttt{output}} is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
+\end{itemize}
+
+
+\subsection{Launching on an EC2}
+
+Launch the EC2 instances using the H2O AMI by running {\texttt{h2o-cluster-launch-instances.py}, which is available on our github, \url{https://github.com/h2oai/h2o/tree/master/ec2}.
+
+\begin{spverbatim}
+$ python h2o-cluster-launch-instances.py
+Using boto version 2.27.0
+Launching 2 instances.
+Waiting for instance 1 of 2 ...
+  .
+  .
+  instance 1 of 2 is up.
+Waiting for instance 2 of 2 ...
+  instance 2 of 2 is up.
+
+\end{spverbatim}
+
+\subsection{Checking Cluster Status}
+
+
+To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo( )}}.
+\begin{spverbatim}
+> library(h2o)
+> localH2O = h2o.init(ip = 'localhost', port = 54321, nthreads = -1)
+> h2o.clusterInfo(localH2O)
+\end{spverbatim}
+
+An easy-to-read summary of information about the cluster displays. 
+\begin{spverbatim}
+R is connected to H2O cluster:
+  H2O cluster uptime:         43 minutes 43 seconds
+  H2O cluster version:        2.7.0.1497
+  H2O cluster name:           H2O_started_from_R
+  H2O cluster total nodes:    1
+  H2O cluster total memory:   3.56 GB
+  H2O cluster total cores:    8
+  H2O cluster allowed cores:  8
+  H2O cluster healthy:        TRUE
+\end{spverbatim}
+
+
+\section{Data Preparation in R}
+
+The following section describes some important points to remember about data preparation (munging) and some of the tools and methods available in H2O, as well as a data training example. 
+
+\subsection{Notes}
+\begin{itemize}
+
+\item Although it may seem like you are manipulating the data in R due to the look and feel, once the data has been passed to H2O, all data munging occurs in the H2O instance. The information is passed to R through JSON APIs, so some functions may not have another method. 
+\item You are not limited by R's ability to handle data, but by the total amount of memory allocated to the H2O instance. To process large data sets, make sure to allocate enough memory. For more information, refer to ``Launching in R." 
+\item You can manipulate datasets with thousands of factor levels using H2O in R, so if you ask H2O to display a table in R with information from high cardinality factors, the results may overwhelm R`s capacity. 
+\item To manipulate data in R and not in H2O, use {\texttt{as.data.frame()}}, {\texttt{as.h2o()}}, and {\texttt{str()}}. \begin{itemize}
+\item {\texttt{as.data.frame( )}} converts an H2O data frame into an R data frame. Be aware that if your request exceeds R’s capabilities due to the amount of data, the R session will crash. If possible, we recommend only taking subsets of the entire data set (the necessary data columns or rows), and not the whole data set. 
+\item {\texttt{as.h2o( )}} transfers data from R to the H2O instance. We recommend ensuring that you allocate enough memory to the H2O instance for successful data transfer.
+\item {\texttt{str( )}} returns the elements of the new object to confirm that the data transferred correctly. It$'$s a good way to verify there were no data loss or conversion issues. 
+\end{itemize}
+\end{itemize}
+
+\subsection{Tools and Methods}
+
+The following section describes some of the tools and methods available in H2O for data preparation. 
+\begin{itemize}
+\item {\textbf{Data Profiling}}: Quickly summarize the shape of your dataset to avoid bias or missing information before you start building your model. Missing data, zero values, text, and a visual distribution of the data are visualized automatically upon data ingestion. 
+\item {\textbf{Summary Statistics}}: Visualize your data with summary statistics to get the mean, standard deviation, min, max, or quantile (for numeric columns) or cardinality and counts (for enum columns), and a preview of the data set. 
+\item {\textbf{Aggregate, Filter, Bin, and Derive Columns}}: Build unique views with Group functions, Filtering, Binning, and Derived Columns. 
+\item {\textbf{Slice, Log Transform, and Anonymize}}: Normalize and partition to get your data into the right shape for modeling, and anonymize to remove confidential information. 
+\item {\textbf{Variable Creation}}: Highly customizable variable value creation to hone in on the key data characteristics to model. 
+\item {\textbf{PCA}}: Principal Component Analysis makes feature selection easy with a simple interface and standard input values to reduce the many dimensions in your dataset into key components. 
+\item {\textbf{Training and Validation Sampling Plan}}: Design a random or stratified sampling plan to generate data sets for model training and scoring. 
+\end{itemize}
+
+\subsection{Demo: Creating Aggregates from Split Data}
+
+The following section depicts an example of creating aggregates for data training using {\texttt{ddply()}}. Using this method, you can split your dataset and apply a function to the subsets.
+
+To apply a user-specified function to each subset of an H2O dataset and combine the results, use {\texttt{ddply()}}, with the name of the H2O object, the variable name, and the function in the parentheses. For more information about functions, refer to {\texttt{h2o.addFunction}} in the Appendix.
+
+\begin{spverbatim}
+library(h2o)
+localH2O = h2o.init(nthreads = -1)
+
+# Import iris dataset to H2O
+> irisPath = system.file("extdata", "iris_wheader.csv", package = "h2o")
+> iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+
+# Add function taking mean of sepal_len column
+> fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
+> h2o.addFunction(localH2O, fun)
+
+# Apply function to groups by class of flower
+# uses h2o's ddply, since iris.hex is an H2OParsedData object
+> res = ddply(iris.hex, "class", fun)
+> head(res)
+\end{spverbatim}
+
+\section{Models}
+
+The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to ``Running Models." 
+
+H2O supports the following models: Deep Learning, Generalized Linear Models (GLM), Gradient Boosted Regression (GBM), K-Means, Na\"{i}ve Bayes, Principal Components Analysis (PCA), Principal Components Regression (PCR), Random Forest (RF), and Cox Proportional Hazards (PH). 
+
+The list is growing quickly, so check back often at \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
+
+{\textbf{Generalized Linear Models (GLM)}}: A flexible generalization of ordinary linear regression for response variables that have error distribution models other than a normal distribution. GLM unifies various other statistical models, including linear, logistic, Poisson, and more.
+
+{\textbf{Decision trees}}: Used in RF; a decision support tool that uses a tree-like graph or model of decisions and their possible consequences.
+
+{\textbf{Gradient Boosting (GBM)}}: A method to produce a prediction model in the form of an ensemble of weak prediction models. It builds the model in a stage-wise fashion and is generalized by allowing an arbitrary differentiable loss function. It is one of the most powerful methods available today.
+
+{\textbf{K-Means}}: A method to uncover groups or clusters of data points often used for segmentation. It clusters observations into k certain points with the nearest mean.
+
+{\textbf{Anomaly Detection}}: Identify the outliers in your data by invoking a powerful pattern recognition model, the Deep Learning Auto-Encoder.
+
+{\textbf{Deep Learning}}: Model high-level abstractions in data by using non-linear transformations in a layer-by-layer method. Deep learning is an example of supervised learning and can make use of unlabeled data that other algorithms cannot.
+
+{\textbf{Na\"{i}ve Bayes}}: A probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
+
+{\textbf{Grid Search}}: The standard way of performing hyper-parameter optimization to make model configuration easier. It is measured by cross-validation of an independent data set.
+
+After creating a model, use it to make predictions. For more information about predictions, refer to ``Predictions." 
+
+\subsection{Demo: GLM}
+
+The following demo demonstrates how to import a file, define significant data, view data, create testing and training sets using sampling, define the model, and display the results.
+
+\begin{spverbatim}
+# Import dataset and display summary
+> airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+> airlines.hex = h2o.importFile(localH2O, path = airlinesURL, key = "airlines.hex")
+> summary(airlines.hex)
+
+# Define columns to ignore, quantiles and histograms
+> high_na_columns = h2o.ignoreColumns(data = airlines.hex)
+> delay_quantiles = quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)
+> hist(airlines.hex$ArrDelay)
+
+# Find number of flights by airport
+> originFlights = h2o.ddply(airlines.hex, 'Origin', nrow)
+> originFlights.R = as.data.frame(originFlights)
+
+# Find number of cancellations per month
+> flightsByMonth = h2o.ddply(airlines.hex,"Month", nrow)
+> flightsByMonth.R = as.data.frame(originFlights)
+
+# Find months with the highest cancellation ratio
+> fun = function(df) {sum(df$Cancelled)}
+> h2o.addFunction(h, fun)
+> cancellationsByMonth = h2o.ddply(airlines.hex,"Month", fun)
+> cancellation_rate = cancellationsByMonth$C1/flightsByMonth$C1)
+> rates_table = cbind(flightsByMonth$Month, cancellation_rate)
+> rates_table.R = as.data.frame(rates.table)
+
+# Construct test and train sets using sampling
+> airlines.split = h2o.splitFrame(data = airlines.hex,ratios = 0.85)
+> airlines.train = airlines.split[[1]]
+> airlines.test = airlines.split[[2]]
+
+# Display a summary using table-like functions
+> h2o.table(airlines.train$Cancelled)
+> h2o.table(airlines.test$Cancelled)
+
+# Set predictor and response variables
+> Y = "IsDepDelayed"
+> X = c("Origin", "Dest", "DayofMonth", "Year", "UniqueCarrier", "DayOfWeek", "Month", "DepTime", "ArrTime", "Distance")
+# Define the data for the model and display the results
+> airlines.glm <- h2o.glm(data=airlines.train, x=X, y=Y, family = "binomial", alpha = 0.5)
+
+# Predict using GLM model
+> pred = h2o.predict(object = airlines.glm, newdata = airlines.test)
+
+\end{spverbatim}
+
+
+
+
+\section{Data Manipulation in R}
+
+The following section describes some common R commands. For a complete command list, including parameters, refer to \url{http://docs.h2o.ai/bits/h2o\_package.pdf}.
+For additional help within R's Help tab, precede the command with a question mark (for example, {\texttt{?h2o}}) for suggested commands containing the search terms. For more information on a command, precede the command with two question marks ({\texttt{??h2o}}). 
+
+\subsection{Importing Files}
+
+The H2O package consolidates all of the various supported import functions using {\texttt{h2o.importFile( )}}. Although {\texttt{h2o.importFolder}} and {\texttt{h2o.importHDFS}} will still work, these functions are deprecated and should be updated to {\texttt{h2o.importFile( )}}. There are a few ways to import files: 
+
+\begin{spverbatim}
+
+# To import small iris data file from H2O's package:
+> irisPath = system.file("extdata", "iris.csv", package="h2o")
+> iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+|=================================================| 100%
+
+# To import an entire folder of files as one data object:
+> pathToFolder = "/Users/Amy/data/airlines/"
+> airlines.hex = h2o.importFile(localH2O, path = pathToFolder, key = "airlines.hex")
+|=================================================| 100%
+
+# To import from HDFS, connect to your Hadoop cluster and start an H2O instance in R using the IP that was specified by Hadoop:
+> remoteH2O = h2o.init(ip= <IPAddress>, port =54321, nthreads = -1)
+> pathToData = "hdfs://mr-0xd6.h2oai.loc/datasets/airlines_all.csv"
+> airlines.hex = h2o.importFile(remoteH2O, path = pathToData, key = "airlines.hex")
+|=================================================| 100%
+\end{spverbatim}
+
+
+\subsection{Uploading Files}
+
+To upload a file in a directory local to your H2O instance, we recommend {\texttt{h2o.importFile()}}. The alternative is to use {\texttt{h2o.uploadFile()}} which can also upload data local to your H2O instance in addition to uploading data local to your R session. In the parentheses, specify the H2O reference object in R and the complete URL or normalized file path for the file.
+\begin{spverbatim}
+> irisPath = system.file("extdata", "iris.csv", package="h2o")
+> iris.hex = h2o.uploadFile(localH2O, path = irisPath, key = "iris.hex")
+|====================================================| 100% 
+\end{spverbatim}
+
+
+\subsection{Finding Factors}
+
+To determine if any column in a data set is a factor, use h2o.anyFactor( ) with the name of the R reference object in the parentheses. 
+\begin{spverbatim}
+> irisPath = system.file("extdata", "iris_wheader.csv", package="h2o")
+> iris.hex = h2o.importFile(localH2O, path = irisPath)
+|===================================================| 100%
+> h2o.anyFactor(iris.hex)
+[1] TRUE
+\end{spverbatim}
+
+\subsection{Converting to Factors}
+
+To convert an integer into a non-ordered factor (also called an enum or categorical), use {\texttt{as.factor( )}} with the name of the R reference object in parentheses followed by the number of the column to convert in brackets. 
+\begin{spverbatim}
+# Import prostate data
+> prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+> prostate.hex <- h2o.importFile(localH2O, path = prosPath)
+|===================================================| 100%
+# Converts column 4 (RACE) to an enum
+> is.factor(prostate.hex[,4])
+[1] FALSE
+> prostate.hex[,4]<-as.factor(prostate.hex[,4]) 
+> is.factor(prostate.hex[,4])
+[1] TRUE
+# Summary will return a count of the factors
+> summary(prostate.hex[,4])
+ RACE   
+ 1 :341 
+ 2 : 36 
+ 0 :  3 
+\end{spverbatim}
+
+
+\subsection{Converting Data Frames}
+
+To convert an H2O parsed data object into an R data frame that can be manipulated using R commands, use {\texttt{as.data.frame( )}} with the name of the R reference object in the parentheses.
+
+Caution: While this can be very useful, be careful using this command when converting H2O parsed data objects. H2O can easily handle data sets that are often too large to be handled equivalently well in R. 
+
+\begin{spverbatim}
+# Creates object that defines path
+> prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+# Imports data set
+> prostate.hex = h2o.importFile(localH2O, path = prosPath)
+|===================================================| 100%
+# Converts current data frame (prostate data set) to an R data frame
+> prostate.R <- as.data.frame(prostate.hex)
+# Displays a summary of data frame where the summary was executed in R
+> summary(prostate.data.frame) 
+       ID            CAPSULE            AGE             RACE
+Min.   :  1.00   Min.   :0.0000   Min.   :43.00   Min.   :0.000
+1st Qu.: 95.75   1st Qu.:0.0000   1st Qu.:62.00   1st Qu.:1.000
+       .... 
+\end{spverbatim}
+
+
+\subsection{Transferring Data Frames}
+To transfer a data frame from the R environment to the H2O instance, use  {\texttt{as.h2o( )}}. In the parentheses, specify the name of the h2o.init object that communicates with R and H2O and the object in the R environment to be converted to an H2O object. Optionally, you can include the reference to the H2O instance (the key). Precede the key with {\texttt{key=}} and enclose the key in quotes as in the following example. 
+
+\begin{spverbatim}
+# Import the iris data into H2O
+> data(iris)
+> iris
+    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
+1            5.1         3.5          1.4         0.2     setosa
+2            4.9         3.0          1.4         0.2     setosa
+3            4.7         3.2          1.3         0.2     setosa
+4            4.6         3.1          1.5         0.2     setosa
+5            5.0         3.6          1.4         0.2     setosa
+6            5.4         3.9          1.7         0.4     setosa
+
+# Converts R object "iris" into H2O object “iris.hex"
+> iris.hex = as.h2o(localH2O, iris, key= "iris.hex")
+  |=============================================================| 100%
+IP Address: localhost 
+Port      : 54321 
+Parsed Data Key: iris.hex 
+
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+6          5.4         3.9          1.7         0.4  setosa
+\end{spverbatim}
+
+
+\subsection{Renaming Data Frames}
+
+To rename a dataframe on the server running H2O for a data set manipulated in R, use {\texttt{h2o.assign( )}}. For instance, in the following example, the prostate data set was uploaded to the H2O instance and the data was manipulated to remove outliers. {\texttt{h2o.assign( )}} saves the new data set on the H2O server so that it can be analyzed using H2O without overwriting the original data set.  
+
+\begin{spverbatim}
+> prosPath <- system.file("extdata", "prostate.csv", package=“h2o")
+> prostate.hex<-h2o.importFile(localH2O, path = prosPath)
+    |===================================================| 100%
+## Assign a new name to prostate dataset in the KV store
+> prostate.hex@key
+[1] "prostate.hex"
+> prostate.hex <- h2o.assign(data = prostate.hex, key = "newName.hex")
+> prostate.hex@key
+[1] "newName.hex"
+
+\end{spverbatim}
+
+\subsection{Getting Column Names}
+
+To obtain a list of the column names in the data set, use {\texttt{colnames( )}} or {\texttt{names( )}} with the name of the R reference object in the parentheses. 
+
+\begin{spverbatim}
+##Displays the titles of the columns
+> colnames(iris.hex)
+[1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"     
+> names(iris.hex)
+[1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"     
+\end{spverbatim}
+
+
+\subsection{Getting Minimum and Maximum Values}
+
+To obtain the maximum values for the real-valued columns in a data set, use {\texttt{max( )}} with the name of the R reference object in the parentheses. 
+To obtain the minimum values for the real-valued columns in a data set, use {\texttt{min( )}} with the name of the R reference object in the parentheses. 
+\begin{spverbatim}
+> min(prostate.hex$AGE)
+[1] 43
+> max(prostate.hex$AGE)
+[1] 79
+\end{spverbatim}
+
+
+\subsection{Getting Quantiles}
+
+To request quantiles for an H2O parsed data set, use {\texttt{quantile( )}} with the name of the R reference object in the parentheses. 
+To request a quantile for a single numerical column, use {\texttt{quantile(ReferenceObject\$ColumnName)}},  where {\texttt{ReferenceObject}} represents the R reference object name and {\texttt{ColumnName}} represents the name of the specified column. 
+When you request for a full parsed data set consisting of a single column, {\texttt{quantile( )}} displays a matrix with quantile information for the data set. 
+
+\begin{spverbatim}
+> prosPath <- system.file("extdata", "prostate.csv", package=“h2o")
+> prostate.hex <- h2o.importFile(localH2O, path = prosPath)
+# Returns the percentiles at 0, 10, 20, ..., 100%
+> prostate.qs <- quantile(prostate.hex$PSA, probs = (1:10)/10)
+> prostate.qs
+   10%    20%    30%    40%    50%    60%    70%    80%    90%   100% 
+   2.60    4.48    5.77    7.40    8.75   11.00  13.70   20.16   33.21  139.70 
+# Take the outliers or the bottom and top 10% of data
+> PSA.outliers <- prostate.hex[prostate.hex$PSA <= prostate.qs["10%"] | prostate.hex$PSA >=   prostate.qs["90%"],]
+# Check that the number of rows return is about 20% of the original data
+> nrow(prostate.hex)
+[1] 380
+> nrow(PSA.outliers)
+[1] 78
+> nrow(PSA.outliers)/nrow(prostate.hex)
+[1] 0.2052632
+\end{spverbatim}
+
+
+\subsection{Summarizing Data} 
+To generate a summary (similar to the one in R) for each of the columns in the data set, use {\texttt{summary( )}} with the name of the R reference object in the parentheses. 
+For continuous real functions, this produces a summary that includes information on quartiles, min, max, and mean. 
+For factors, this produces information about counts of elements within each factor level. 
+
+\begin{spverbatim}
+> summary(australia.hex)
+ premax          salmax         minairtemp      maxairtemp      maxsst          
+ Min.   : 18.0   Min.   :3441   Min.   :272.6   Min.   :285.0   Min.   :285697  
+ 1st Qu.: 75.0   1st Qu.:3490   1st Qu.:277.0   1st Qu.:292.0   1st Qu.:290491  
+ Median :150.0   Median :3533   Median :278.8   Median :299.9   Median :293643  
+ Mean   :161.5   Mean   :3529   Mean   :279.9   Mean   :297.5   Mean   :295676  
+ 3rd Qu.:250.0   3rd Qu.:3558   3rd Qu.:282.0   3rd Qu.:302.4   3rd Qu.:301942  
+ Max.   :450.0   Max.   :3650   Max.   :290.0   Max.   :310.0   Max.   :303697  
+ maxsoilmoist     Max_czcs         runoffnew       
+ Min.   : 0.000   Min.   : 0.160   Min.   :   0.0  
+ 1st Qu.: 0.000   1st Qu.: 0.629   1st Qu.:   0.0  
+ Median : 4.000   Median : 1.020   Median :  19.0  
+ Mean   : 5.117   Mean   : 1.369   Mean   : 232.2  
+ 3rd Qu.: 9.000   3rd Qu.: 1.705   3rd Qu.: 300.0  
+ Max.   :16.000   Max.   :11.370   Max.   :2400.0  
+\end{spverbatim}
+
+
+\subsection{Summarizing Data in a Table} 
+To summarize the data, use {\texttt{h2o.table( )}}. Because H2O can handle larger data sets, it is possible to generate tables that are larger than R`s capacity. 
+
+To summarize multiple columns, use {\texttt{head(h2o.table (ObjectName[, c(ColumnNumber,ColumnNumber)]))}} where {\texttt{ObjectName}} is the name of the object in R and {\texttt{ColumnNumber}} is the number of the column. 
+
+\begin{spverbatim}
+# Counts of the ages of all patients
+> h2o.table(prostate.hex[,"AGE"])
+IP Address: localhost 
+Port      : 54321 
+Parsed Data Key: Last.value.128 
+
+  row.names Count
+1        43     1
+2        47     1
+3        50     2
+4        51     3
+5        52     2
+6        53     4
+> h2o.table(prostate.hex[,"AGE"], return.in.R = TRUE)
+row.names
+43 47 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 
+ 1  1  2  3  2  4 10  5  7 10 10 13  9 13 20 11 17 24 23 16 28 23 29 24 13 15 13 14  9  4  5  2 
+
+# Two-way table of ages (rows) and race (cols) of all patients
+# Example: For the first row there is one count of a 43 year old that's labeled as RACE = 0
+> h2o.table(prostate.hex[,c("AGE","RACE")])
+IP Address: localhost 
+Port      : 54321 
+Parsed Data Key: Last.value.139 
+
+  row.names X0 X1 X2
+1        43  1  0  0
+2        47  0  1  0
+3        50  0  2  0
+4        51  0  3  0
+5        52  0  2  0
+6        53  0  3  1
+\end{spverbatim}
+
+
+\subsection{Generating Random Uniformly Distributed Numbers}
+
+To append a column of random numbers to an H2O data frame for facilitating creation of testing/training data splits for analysis and validation in H2O, use {\texttt{h2o.runif()}} with the name of the R reference object in the parentheses. This method is best for customized frame splitting; otherwise, use {\texttt{h2o.splitFrame()}}. However, {\texttt{h2o.runif()}} is not as fast or stable as {\texttt{h2o.splitFrame()}}. 
+
+\begin{spverbatim}
+> s <- h2o.runif(phbirths.hex) ##Creates object “s" for h2o.runif on phbirths data set
+> summary (s)  ##Summarize the results of h2o.runif
+ rnd               
+ Min.   :0.000105  
+ 1st Qu.:0.249472  
+ Median :0.489969  
+ Mean   :0.492103  
+ 3rd Qu.:0.739377  
+ Max.   :0.998859  
+> phbirths.train <- phbirths.hex[s <= 0.8,] ##Create training set with threshold of 0.8
+> phbirths.train <- h2o.assign(phbirths.train, “phbirths.train") ##Assign name to training set
+> phbirths.test <- phbirths.hex[s > 0.8,] ##Create test set with threshold to filter values greater than 0.8
+> phbirths.test <- h2o.assign(phbirths.test, “phbirths.test") ##Assign name to test set
+> nrow(phbirths.train) + nrow(phbirths.test) ##Combine results of test & training sets, then display result
+[1] 1115
+\end{spverbatim}
+ 
+
+\subsection{Splitting Frames}
+
+To generate two subsets (according to specified ratios) from an existing H2O data set for testing/training, use {\texttt{h2o.splitFrame()}}.  This method is preferred over {\texttt{h2o.runif}} because it is faster and more stable. 
+
+\begin{spverbatim}
+# Splits data in prostate data frame with a ratio of 0.75
+> prostate.split <- h2o.splitFrame(data = prostate.hex , ratios = 0.75)
+# Creates training set from 1st data set in split
+> prostate.train <- prostate.split[[1]] 
+# Creates testing set from 2st data set in split
+> prostate.test <- prostate.split[[2]]
+\end{spverbatim}
+
+
+\subsection{Getting Frames}
+
+To create a reference object to the data frame in H2O, use {\texttt{h2o.getFrame()}}. This is helpful for  users that alternate between the web UI and the R API or multiple users accessing the same H2O instance. The following example assumes prostate.hex is in the key-value (KV) store.
+
+\begin{spverbatim}
+> prostate.hex <- h2o.getFrame(h2o = localH2O, key = "prostate.hex")
+\end{spverbatim}
+
+
+\subsection{Getting Models}
+ To create a reference object for the model in H2O, use {\texttt{h2o.getModel()}}. This is helpful for  users that alternate between the web UI and the R API or multiple users accessing the same H2O instance. The following example assumes gbm.model is in the key-value (KV) store.
+\begin{spverbatim}
+gbm.model <- h2o.getModel(h2o = localH2O, key = "GBM_8e4591a9b413407b983d73fbd9eb44cf")
+\end{spverbatim}
+
+\subsection{Listing H2O Objects}
+
+To generate a list of all H2O objects generated during a session, along with each object’s size in bytes, use {\texttt{h2o.ls()}} with the address of the instance in the parentheses. If the instance is local, use localH2O. 
+
+\begin{spverbatim}
+> h2o.ls(localH2O)
+                                                   Key       Bytesize
+      1               GBM_8e4591a9b413407b983d73fbd9eb44cf    40617
+      2               GBM_a3ae2edf5dfadbd9ba5dc2e9560c405d     1516
+\end{spverbatim}
+
+
+\subsection{Removing H2O Objects}
+
+To remove an H2O object on the server associated with an object in the R environment, use {\texttt{h2o.rm()}}. For optimal performance, we recommend removing the object from the R environment as well using {\texttt{remove()}}, with the name of the object in the parentheses. If you do not specify an R environment, then the current environment is used. 
+\begin{spverbatim}
+> h2o.rm(object = localH2O, keys = "prostate.train")
+\end{spverbatim}
+
+
+\subsection{Adding Functions}
+
+To add a user-defined function in R to the H2O instance, use {\texttt{h2o.addFunction()}}, with the IP address of the H2O instance and the function in the parentheses.  
+\begin{spverbatim}
+# Send the functional expression to H2O
+> simpleFun <- h2o.addFunction(localH2O, function(x) { 2*x + 5 }, "simpleFun")
+# Evaluate the expression across prostate's AGE column
+> calculated = h2o.exec(expr_to_execute = simpleFun(prostate.hex[,"AGE"]), h2o = localH2O)
+> cbind(prostate.hex[,"AGE"], calculated)
+IP Address: localhost 
+Port      : 54321 
+Parsed Data Key: Last.value.152 
+
+  AGE fun
+1  65 135
+2  72 149
+3  70 145
+4  76 157
+5  69 143
+6  71 147
+\end{spverbatim}
+
+
+\section{Running Models}
+
+To run the models, use the following commands. 
+\subsection{Gradient Boosted Models (GBM)}
+ To generate gradient boosted models for developing forward-learning ensembles, use {\texttt{h2o.gbm()}}.  In the parentheses, define x (the predictor variable vector), y (the integer or categorical response variable), the distribution type (multinomial is the default, gaussian is used for regression), and the name of the H2OParsedData object. 
+
+For more information, use {\texttt{help(h2o.gbm)}}.
+\begin{spverbatim}
+> library(h2o)
+> localH2O <- h2o.init(nthreads = -1)
+> iris.hex <- as.h2o(localH2O, object = iris, headers = T, key = "iris.hex")
+> iris.gbm <- h2o.gbm(y = 1, x = 2:5, data = iris.hex, n.trees = 10,
+interaction.depth = 3, n.minobsinnode = 2, shrinkage = 0.2, distribution= "gaussian")
+|===================================================| 100%
+# To obtain the Mean-squared Error by tree from the model object:
+> iris.gbm@model[,"err"]
+ [1] 0.68112220 0.47215388 0.33393673 0.24465574 0.18596269 0.14500129
+ [7] 0.11792983 0.10003321 0.08793070 0.07862922 0.07232574
+
+\end{spverbatim}
+
+To generate a classification model that uses labels, use {\texttt{distribution= "multinomial"}}: 
+\begin{spverbatim}
+> iris.gbm2 <- h2o.gbm(y = 5, x = 1:4, data = iris.hex, n.trees = 15,
+ interaction.depth = 5, n.minobsinnode = 2, shrinkage = 0.01, distribution= "multinomial")
+   
+IP Address: localhost 
+Port      : 54321 
+Parsed Data Key: iris.hex 
+
+GBM Model Key: GBM_baa2f910e4dcbd61fa60da4f2d034687 
+
+Confusion matrix:
+Reported on 0-fold cross-validated data 
+                 Predicted
+Actual            Iris-setosa Iris-versicolor Iris-virginica Error
+  Iris-setosa              50               0              0     0
+  Iris-versicolor           0              50              0     0
+  Iris-virginica            0               0             50     0
+  Totals                   50              50             50     0
+
+Overall Mean-squared Error:  0.3251718 
+\end{spverbatim}
+
+\subsection{Generalized Linear Models (GLM)}
+
+
+Generalized linear models (GLM) are some of the most commonly-used models for many types of data analysis use cases. While some data analysis can be done using general linear models, if the variables are more complex, general linear models may not be as accurate. For example, if the dependent variable has a non-continuous distribution or if the effect of the predictors is not linear, generalized linear models will produce more accurate results than general linear models.  
+
+Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions in general. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, gamma and Tweedie distributions. Each serves a different purpose, and depending on distribution and link function choice, it can be used either for prediction or classification.
+
+H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast,and scales extremely well for models with a limited number (\~\ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute gaussian (linear), logistic, poisson, and gamma regression models.
+
+
+To generate a generalized linear model for developing linear models for exponential distributions, use {\texttt{h2o.glm()}}. You can apply regularization to the model by adjusting the lambda and alpha parameters. 
+For more information, use {\texttt{help(h2o.glm)}}.
+\begin{spverbatim}
+> prostate.hex <- h2o.importFile(localH2O, path =
+"https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv",
+key = "prostate.hex")
+|===================================================| 100%
+> h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), data =
+prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
+|===================================================| 100%
+    Coefficients:
+    AGE          RACE     DCAPS       PSA   Intercept
+    -0.01104  -0.63136   1.31888   0.04713  -1.10896
+
+    Normalized Coefficients:
+    AGE          RACE     DCAPS       PSA   Intercept
+    -0.07208  -0.19495   0.40972   0.94253  -0.33707
+
+    Degrees of Freedom: 379 Total (i.e. Null);  375 Residual
+    Null Deviance:     514.9
+    Residual Deviance: 461.3  AIC: 471.3
+    Deviance Explained: 0.10404
+    AUC: 0.68875  Best Threshold: 0.328
+    
+    Confusion Matrix:
+            Predicted
+    Actual   false true Error
+      false    127  100 0.441
+      true      51  102 0.333
+      Totals   178  202 0.397
+
+    Cross-Validation Models:
+                Nonzeros               Deviance Explained
+      Model 1      4       0.6532738      0.048419803
+      Model 2      4       0.6316527     -0.006414532
+      Model 3      4       0.7100840      0.087779178
+      Model 4      4       0.8268698      0.243020554
+      Model 5      4       0.6354167      0.153190735
+      Model 6      4       0.6888889      0.041892118
+      Model 7      4       0.7366071      0.164717509
+      Model 8      4       0.6711310      0.004897310
+      Model 9      4       0.7803571      0.200384622
+      Model 10     4       0.7435897      0.114548543
+\end{spverbatim}
+
+\subsection{K-Means}
+
+To generate a K-Means model for data characterization, use {\texttt{h2o.kmeans()}}. This algorithm does not rely on a dependent variable. For more information, use {\texttt{help(h2o.kmeans)}}.
+\begin{spverbatim}
+> iris.km = h2o.kmeans(data = iris.hex, centers = 3, cols = 1:4)
+|===================================================| 100%
+> print(iris.km)
+IP Address: localhost 
+Port      : 54321 
+Parsed Data Key: iris.hex 
+K-Means Model Key: KMeans2_937845cadf924db4612c3a7d8f9744a0
+K-means clustering with 3 clusters of sizes 50, 38, 62
+
+Cluster means:
+        C1       C2       C3       C4
+1 5.006000 3.418000 1.464000 0.244000
+2 6.850000 3.073684 5.742105 2.071053
+3 5.901613 2.748387 4.393548 1.433871
+  ....
+\end{spverbatim}
+
+\subsection{Principal Components Analysis (PCA)}
+
+To map a set of variables onto a subspace using linear transformations, use {\texttt{h2o.prcomp()}}. This is the first step in Principal Components Regression. For more information, use {\texttt{help(h2o.prcomp)}}.
+\begin{spverbatim}
+> ausPath = system.file("extdata", "australia.csv", package="h2o")
+> australia.hex = h2o.importFile(localH2O, path = ausPath)
+|===================================================| 100%
+> australia.pca <- h2o.prcomp(data = australia.hex, standardize = TRUE)
+|===================================================| 100%
+      ....
+PCA Model Key: PCA_8fbc38e360de5b3c1ae6b7cc754b499c
+Standard deviations:
+ 1.750703 1.512142 1.031181 0.8283127 0.6083786 0.5481364 0.4181621 0.2314953
+      ....
+
+> summary(australia.pca)
+Importance of components: PC1       PC2       PC3        PC4        PC5        PC6
+Standard deviation     1.7507032 1.5121421 1.0311814 0.82831266 0.60837860 0.54813639 
+Proportion of Variance 0.3831202 0.2858217 0.1329169 0.08576273 0.04626556 0.03755669
+Cumulative Proportion  0.3831202 0.6689419 0.8018588 0.88762155 0.93388711 0.97144380
+\end{spverbatim}
+
+\subsection{Principal Components Regression (PCR)}
+
+To map a set of variables to a set of linearly independent variables, use {\texttt{h2o.pcr()}}. The variables in the new set are linearly independent linear combinations of the original variables and exist in a lower-dimension subspace. This transformation is prepended to the regression model to improve results. For more information, use {\texttt{help(h2o.pcr)}}.
+\begin{spverbatim}
+> prostate.pcr <- h2o.pcr(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE",
+data = prostate.hex, family = "binomial", nfolds = 0, alpha = 0.5, ncomp = 2)
+      ....
+GLM2 Model Key: GLMModel__a71b8209871c4a70d037f113d99d4a89
+
+Coefficients:
+      PC0       PC1 Intercept 
+  3.55117   1.08603  -0.12964
+      ....
+\end{spverbatim}
+
+
+\subsection{Predictions}
+
+The following section describes some of the prediction methods available in H2O. 
+
+{\textbf{Predict}}: Generate outcomes of a data set with any model. Predict with GLM, GBM, Decision Trees or Deep Learning models.\bigskip
+
+{\textbf{Confusion Matrix}}: Visualize the performance of an algorithm in a table to understand how a model performs.\bigskip
+
+{\textbf{Area Under Curve (AUC)}}: A graphical plot to visualize the performance of a model by its sensitivity, true positives and false positives to select the best model.\bigskip
+
+{\textbf{Hit Ratio}}: A classification matrix to visualize the ratio of the number of correctly classified and incorrectly classified cases.\bigskip
+
+{\textbf{PCA Score}}: Determine how well your feature selection fits a particular model.\bigskip
+
+{\textbf{Multi-Model Scoring}}: Compare and contrast multiple models on a data set to find the best performer to deploy into production. 
+
+To apply an H2O model to a holdout set for predictions based on model results, use {\texttt{h2o.predict()}}.  In the following example, H2O generates a model and then displays the predictions for that model. 
+\begin{spverbatim}
+> prostate.fit = h2o.predict(object = prostate.glm, newdata = prostate.hex)
+> (prostate.fit)
+
+        predict        X0        X1
+      1       0 0.7452267 0.2547732
+      2       1 0.3969807 0.6030193
+      3       1 0.4120950 0.5879050
+      4       1 0.3726134 0.6273866
+      5       1 0.6465137 0.3534863
+      6       1 0.4331880 0.5668120
+\end{spverbatim}
+
+
+\section{Support} 
+There are multiple ways to request support for H2O: \bigskip
+
+{\textbf{Email}}: {\url{support@h2o.ai}}
+
+{\textbf{H2OStream on Google Groups}}: {\url{https://groups.google.com/d/forum/h2ostream}} 
+
+{\textbf{JIRA}}: {\url{http://jira.0xdata.com/}}
+
+{\textbf{Meetup information}}: {\url{http://h2o.ai/events}}
+
+\newpage
+\section{References}\bigskip
+
+
+{\bfseries{R Package}}:  \url{http://docs.h2o.ai/bits/h2o\_package.pdf}
+
+{\bfseries{R Ensemble documentation}}: \url{http://www.stat.berkeley.edu/~ledell/R/h2oEnsemble.pdf} 
+
+{\bfseries{Slide deck}}: \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
+
+{\bfseries{R project website}}: \url{http://www.r-project.org} 
+
+
+\section{Appendix: Commands} \label{Appendix} 
+
+The following section lists some common commands by function that are available in R and a brief description of each command. 
+\subsection {Data Set Operations}
+{\emph{Data Import/Export}}\par
+{\texttt{h2o.downloadCSV}}: Download a H2O dataset to a CSV file on local disk.\newline
+{\texttt{h2o.exportFile}}: Export H2O Data Frame to a File.\newline
+{\texttt{h2o.importFile}}: Import a file from the local path and parse it.\newline
+{\texttt{h2o.parseRaw}}: Parse a raw data file. \newline
+{\texttt{h2o.uploadFile}}: Upload a file from the local drive and parse it.\newline
+
+{\emph{Native R to H2O Coercion}}\par
+ {\texttt{as.h2o}}: Convert an R object to an H2O object.\newline
+
+
+\emph{H2O to Native R Coercion}\par
+{\texttt{as.data.frame}}: Check if an object is a data frame, or coerce it if possible.\newline
+{\texttt{as.matrix}}: Convert the specified argument to a matrix.\newline
+ {\texttt{as.table}}: Build a contingency table of the counts at each combination of factor levels.\newline
+
+\emph{Data Generation}\par
+{\texttt{h2o.createFrame}}: Create an H2O data frame, with optional randomization.\newline
+{\texttt{h2o.runif}}: Produce a vector of random uniform numbers.\newline
+{\texttt{h2o.interaction}}: Create interaction terms between categorical features of an H2O Frame.\newline
+\newpage
+\emph{Data Sampling / Splitting}\par
+ {\texttt{h2o.sample}}: Sample an existing H2O Frame by number of observations.\newline
+{\texttt{h2o.splitFrame}: Split an existing H2O data set according to user-specified ratios.\newline
+{\texttt{h2o.nFoldExtractor}}: Split an existing H2O data set into N folds and return a specified holdout split, and the rest.\newline
+
+\emph{Missing Data Handling}\par
+{\texttt{h2o.impute}}: Impute a column of data using the mean, median, or mode.\newline
+{\texttt{h2o.insertMissingValue}}: Replaces a user-specified fraction of entries in a H2O dataset with missing values.\newline
+{\texttt{h2o.ignoreColumns}}: Returns columns' names of a parsed H2O data object that are recommended to be ignored in an analysis per the specified ratio in {\texttt{max\_na}}.\newline
+
+\subsection{General Data Operations}
+
+\emph{Subscripting example to pull pieces from data object.} 
+\begin{spverbatim} 
+  x[i]
+  x[i, j, ... , drop = TRUE]
+  x[[i]]
+  x$name 
+
+  x[i] <- value
+  x[i, j, ...] <- value
+  x[[i]] <- value
+  x$i <- value
+\end{spverbatim}
+
+\emph{Subsetting}\newline
+{\texttt{head, tail}}: Return the First or Last Part of an Object\newline
+
+\emph{Concatenation}\par
+ {\texttt{c}}: Combine Values into a Vector or List\newline
+ {\texttt{cbind}}: Take a sequence of H2O datasets and combine them by column.\par
+{\emph{Data Attributes}}\par
+{\texttt{colnames}}: Return column names for a parsed H2O data object. \newline
+{\texttt{colnames$<$-}}: Retrieve or set the row or column names of a matrix-like object.\newline
+{\texttt{names}}: Get the name of an object. \newline
+{\texttt{names$<$-}}: Set the name of an object. \newline
+{\texttt{dim}}: Retrieve the dimension of an object. \newline
+{\texttt{length}}: Get the length of vectors (including lists) and factors. \newline
+{\texttt{nrow}}: Return a count of the number of rows in an H2OParsedData object. \newline
+{\texttt{ncol}}: Return a count of the number of columns in an H2OParsedData object.\newline
+{\texttt{h2o.anyFactor}}: Check if an H2O parsed data object has any categorical data columns. \newline
+{\texttt{is.factor}}: Check if a given column contains categorical data.\newline
+
+{\emph{Data Type Coercion}}\par
+{\texttt{as.factor}}: Convert a column from numeric to factor.\newline
+{\texttt{as.Date}}: Converts a column from factor to date.\newline
+
+\subsection{Methods from Group Generics}
+
+{\emph{Math (H2O)}}\par
+{\texttt{abs}}: Compute the absolute value of x. \newline
+{\texttt{sign}}: Return a vector with the signs of the corresponding elements of x (the sign of a real number is 1, 0, or -1 if the number is positive, zero, or negative, respectively). \newline
+{\texttt{sqrt}}: Computes the principal square root of x, $\sqrt{x}$.\newline
+{\texttt{ceiling}}: Take a single numeric argument x and return a numeric vector containing the smallest integers not less than the corresponding elements of x. \newline
+{\texttt{floor}}: Take a single numeric argument x and return a numeric vector containing the largest integers not greater than the corresponding elements of x. \newline
+{\texttt{trunc}}: Take a single numeric argument x and return a numeric vector containing the integers formed by truncating the values in x toward 0. \newline
+{\texttt{log}}: Compute logarithms (by default, natural logarithms). \newline
+{\texttt{exp}}: Compute the exponential function.\newline
+
+{\emph{Math (generic)}}\par
+
+{\texttt{cummax}}: Display a vector of the cumulative maxima of the elements of the argument.\newline
+{\texttt{cummin}}: Display a vector of the cumulative minima of the elements of the argument.\newline
+{\texttt{cumprod}}: Display a vector of the cumulative products of the elements of the argument. \newline
+{\texttt{cumsum}}: Display a vector of the cumulative sums of the elements of the argument.  \newline
+{\texttt{log10}}: Compute common (i.e., base 10) logarithms \newline
+{\texttt{log2}}: Compute binary (i.e., base 2) logarithms. \newline
+{\texttt{log1p}}: Compute log(1+x) accurately also for $|x|${}\textless{}\textless{} 1.\newline
+{\texttt{acos}}: Compute the trigonometric arc-cosine. \newline
+{\texttt{acosh}}: Compute the hyperbolic arc-cosine. \newline
+{\texttt{asin}}: Compute the trigonometric arc-sine.\newline
+{\texttt{asinh}}: Compute the hyperbolic arc-sine.\newline
+{\texttt{atan}}: Compute the trigonometric arc-tangent. \newline
+{\texttt{atanh}}: Compute the hyperbolic arc-tangent.\newline
+{\texttt{expm1}}: Compute exp(x) - 1 accurately also for $|x|$\textless{}\textless{} 1.\newline
+{\texttt{cos}}: Compute the trigonometric cosine.\newline
+{\texttt{cosh}}: Compute the hyperbolic cosine. \newline
+{\texttt{cospi}}: Compute the trigonometric two-argument arc-cosine. \newline
+{\texttt{sin}}: Compute the trigonometric sine. \newline
+{\texttt{sinh}}: Compute the hyperbolic sine. \newline
+{\texttt{sinpi}}: Compute the trigonometric two-argument arc-sine. \newline
+{\texttt{tan}}: Compute the trigonometric tangent.\newline
+{\texttt{tanh}}: Compute the hyperbolic tangent.\newline
+{\texttt{tanpi}}: Compute the trigonometric two-argument arc-tangent. \newline
+{\texttt{gamma}}: Display the gamma function $\gamma{x}$ \newline
+{\texttt{lgamma}}: Display the natural logarithm of the absolute value of the gamma function. \newline
+{\texttt{digamma}}: Display the first derivative of the logarithm of the gamma function. \newline
+{\texttt{trigamma}}: Display the second derivative of the logarithm of the gamma function.\newline
+
+\emph{Math2 (H2O)}\par
+{\texttt{round}}: Round the values to the specified number of decimal places (default 0). \newline
+{\texttt{signif}}: Round the values to the specified number of significant digits.\newline
+
+\emph{Summary (H2O)}\par
+{\texttt{max}}: Display the maximum of all the input arguments. \newline
+{\texttt{min}}: Display the minimum of all the input arguments. \newline
+{\texttt{range}}: Display a vector containing the minimum and maximum of all the given arguments. \newline
+{\texttt{sum}}: Calculate the sum of all the values present in its arguments.\newline
+
+\emph{Summary (generic)}\par
+{\texttt{prod}}: Display the product of all values present in its arguments. \newline
+{\texttt{any}}: Given a set of logical vectors, determine if at least one of the values is true. \newline
+{\texttt{all}}: Given a set of logical vectors, determine if all of the values are true.\newline
+
+\subsection{Other Aggregations}
+
+\emph{Non-Group Generic Summaries}\par
+{\texttt{mean}}: Generic function for the (trimmed) arithmetic mean. \newline
+{\texttt{sd}}: Calculate the standard deviation of a column of continuous real valued data. \newline
+{\texttt{var}}: Compute the variance of x.\newline
+{\texttt{summary}}: Produce result summaries of the results of various model fitting functions. \newline
+{\texttt{quantile}}: Obtain and display quantiles for H2O parsed data.\newline
+
+\emph{Row / Column Aggregation}\par
+{\texttt{apply}: Apply a function over an H2O parsed data object (an array).\newline
+\newpage
+\emph{Group By Aggregation}\par
+{\texttt{h2o.ddply}}: Split H2O dataset, apply a function, and display results.\newline
+{\texttt{h2o.addFunction}}: Add a function defined in R to the H2O server for future use. \newline
+
+\emph{Tabulation}\par
+{\texttt{h2o.table}}: Use the cross-classifying factors to build a table of counts at each combination of factor levels.
+
+\subsection{Data Munging}\par
+
+\emph{Transformation Framework}\newline
+{\texttt{h2o.exec}}: Directly transmit and execute an R expression in the H2O console.\newline
+
+\emph{General Column Manipulations}\par 
+{\texttt{is.na}}: Display missing elements.  \newline
+{\texttt{unique}}: Display a vector, data frame, or array with duplicate elements/rows removed.\newline
+
+\emph{Element Index Selection}\par 
+{\texttt{findInterval}}: Find Interval Numbers or Indices.\newline
+{\texttt{which}}: Display the row numbers for which the condition is true.\newline
+
+\emph{Conditional Element Value Selection}\par {\texttt{ifelse}}: Apply conditional statements to numeric vectors in H2O parsed data objects.\newline
+
+\emph{Numeric Column Manipulations}\par
+{\texttt{h2o.cut}}: Convert H2O Numeric Data to Factor. \newline
+{\texttt{diff}}: Display suitably lagged and iterated differences.\newline
+
+\emph{Character Column Manipulations}\par
+{\texttt{strsplit}}: Splits the given factor column on the input split. \newline
+{\texttt{tolower}}: Change the elements of a character vector to lower case. \newline
+{\texttt{toupper}}: Change the elements of a character vector to lower case. \newline
+{\texttt{trim}}: Remove leading and trailing white space.\newline
+{\texttt{h2o.gsub}}: Match a pattern and replaces all instances of the matched pattern with the replacement string globally. \newline
+{\texttt{h2o.sub}}: Match a pattern and replace the first instance of the matched pattern with the replacement string.\newline
+
+\emph{Factor Level Manipulations}\par
+{\texttt{levels}}: Display a list of the unique values found in a column of categorical data. \newline
+{\texttt{revalue}}: Replace specified values with new values in a factor or character vector.\newline
+
+\emph{Date Manipulations}\par
+{\texttt{h2o.month}}: Convert the entries of a H2OParsedData object from milliseconds to months (on a 0 to 11 scale). \newline
+{\texttt{h2o.year}}: Convert the entries of a H2OParsedData object from milliseconds to years, indexed starting from 1900.\newline
+
+\emph{Matrix Operations}\par
+{\texttt{\%$*$\%}}}: Multiply two matrices, if they are conformable.\newline
+{\texttt{t}}: Given a matrix or data.frame x, t returns the transpose of x.\newline
+
+\subsection{Data Modeling}
+
+\emph{Model Training}\par
+{\texttt{h2o.coxph}}: Fit a Cox Proportional Hazards Model. \newline
+{\texttt{h2o.gbm}}: Build gradient boosted classification trees and gradient boosted regression trees on a parsed data set. \newline
+{\texttt{h2o.glm}}: Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error distribution. \newline
+{\texttt{h2o.kmeans}}: Perform k-means clustering on a data set. \newline
+{\texttt{h2o.naiveBayes}}: Build gradient boosted classification trees and gradient boosted regression trees on a parsed data set.\newline
+{\texttt{h2o.pcr}}: Run GLM regression on PCA results, and allow for transformation of test data to match PCA transformations of training data. \newline
+{\texttt{h2o.prcomp}}: Perform principal components analysis on the given data set. \newline
+{\texttt{h2o.randomForest}}: Perform random forest classification on a data set.\newline
+
+\emph{Deep Learning}\par
+{\texttt{h2o.deeplearning}}: Perform Deep Learning neural networks on an H2OParsedData object.\newline
+{\texttt{h2o.anomaly}}: Detect anomalies in a H2O dataset using a H2O deep learning model with auto-encoding.\newline
+{\texttt{h2o.deepfeatures}}: Extract the non-linear features from a H2O dataset using a H2O deep learning model.\newline
+\newpage
+\emph{Model Scoring}\par
+{\texttt{h2o.predict}}: Obtain predictions from various fitted H2O model objects.\newline
+
+\emph{Classification Model Helpers}\par
+{\texttt{h2o.confusionMatrix}}: Display prediction errors for classification data from a column of predicted responses and a column of actual (reference) responses in H2O.\newline
+{\texttt{h2o.gains}}: Construct the gains table and lift charts for binary outcome algorithms.\newline
+{\texttt{h2o.hitRatio}}: Compute the percentage of instances where the actual class of an observation is in the top user-specified number of classes predicted by the model.\newline
+{\texttt{h2o.performance}}: Evaluate the predictive performance of a model via various measures.\newline
+
+{\emph{Clustering Helper}}\par
+{\texttt{h2o.gapStatistic}}: Measure the suitability of the fit of a clustering algorithm. \newline
+
+\emph{Regression Model Helper}\par
+{\texttt{h2o.mse}}: Display the mean squared error calculated from a column of predicted responses and a column of actual (reference) responses in H2O.\newline
+
+\emph{GLM Helper}\par
+ {\texttt{h2o.getGLMLambdaModel}}: Retrieve the H2O GLM model built using a specific value of lambda from a lambda search.\newline
+
+\subsection{H2O Cluster Operations} 
+\emph{H2O Key Value Store Access}\par
+{\texttt{h2o.assign}}: Assign H2O hex.keys to objects in their R environment.\newline
+{\texttt{h2o.getFrame}}: Get a reference to an existing H2O data set. \newline
+{\texttt{h2o.getModel}}: Get a reference to an existing H2O model. \newline
+{\texttt{h2o.ls: Display}} a list of object keys in the running instance of H2O. \newline
+{\texttt{h2o.rm}}: Remove H2O objects from the server where the instance of H2O is running, but does not remove it from the R environment.\newline
+
+\emph{H2O Object Serialization}\par
+{\texttt{h2o.loadAll}}: Load all H2OModel object in a directory from disk that was saved using {\texttt{h2o.saveModel}} or {\texttt{h2o.saveAll}}.\newline
+{\texttt{h2o.loadModel}}: Load an H2OModel object from disk.\newline
+{\texttt{h2o.saveAll}}: Save all H2OModel objects to disk to be loaded back into H2O using {\texttt{h2o.loadModel}} or {\texttt{h2o.loadAll}}.\newline
+{\texttt{h2o.saveModel}}: Save an H2OModel object to disk to be loaded back into H2O using {\texttt{h2o.loadModel}}.\newline
+
+\emph{H2O Cluster Connection}\par
+{\texttt{h2o.init (nthreads = -1)}}: Connect to a running H2O instance using all CPUs on the host and check the local H2O R package is the correct version.\newline
+{\texttt{h2o.shutdown}}: Shut down the specified H2O instance. All data on the server will be lost!\newline
+
+\emph{H2O Load Balancing}\par
+{\texttt{h2o.rebalance}}: Rebalance (repartition) an existing H2O data set into given number of chunks (per Vec), for load-balancing across multiple threads or nodes.\newline
+
+\emph{H2O Cluster Information}\par
+{\texttt{h2o.clusterInfo}}: Display the name, version, uptime, total nodes, total memory, total cores and health of a cluster running H2O.\newline
+{\texttt{h2o.clusterStatus}}: Retrieve information on the status of the cluster running H2O.\newline
+
+\emph{H2O Logging}\par
+{\texttt{h2o.clearLogs}}: Clear all H2O R command and error response logs from the local disk. \newline
+{\texttt{h2o.downloadAllLogs}}: Download all H2O log files to the local disk.\newline
+{\texttt{h2o.logAndEcho}}: Write a message to the H2O Java log file and echo it back.  \newline
+{\texttt{h2o.openLog}}: Open existing logs of H2O R POST commands and error responses on the local disk.\newline
+{\texttt{h2o.getLogPath}}: Get the file path for the H2O R command and error response logs.\newline
+{\texttt{h2o.setLogPath}}: Set the file path for the H2O R command and error response logs.\newline
+{\texttt{h2o.startLogging}}: Begin logging H2O R POST commands and error responses. \newline
+{\texttt{h2o.stopLogging}}: Stop logging H2O R POST commands and error responses.\newline
+
+
+
+
+\end{document}

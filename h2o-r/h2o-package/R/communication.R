@@ -473,10 +473,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
-
-  for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%f"
-    xx[[j]] <- .format.helper(x[[j]], formats[j])
+  if( !is.null(formats) ) {  # might be NULL if resulted from slicing H2OTable (no need for full blown slice method on H2OTable... allow to be data frame at that point)
+    for (j in seq_along(x)) {
+#      if( formats[j] == "%d" ) formats[j] <- "%f"
+      xx[[j]] <- .format.helper(x[[j]], formats[j])
+    }
   }
   # drop empty columns
   nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)

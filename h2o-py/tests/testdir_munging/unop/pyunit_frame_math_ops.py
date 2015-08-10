@@ -7,8 +7,8 @@ import math
 import scipy.special
 
 def frame_math_ops(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]
     asin_acos_atanh_data = [[random.uniform(-1,1) for r in range(10)] for c in range(10)]
