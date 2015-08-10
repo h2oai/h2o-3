@@ -8,7 +8,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.splitframe <- function(conn) {
+test.splitframe <- function() {
   # add datasets here: paste( DIRECTORY, LIST OF FILES, sep = "/")
   datasets <- list(
     "milsongs" = paste("milsongs", c("milsongs-test.csv.gz", "milsongs-train.csv.gz"), sep = "/"),

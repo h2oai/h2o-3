@@ -10,15 +10,9 @@ complexFilterTest_Goalies_43 <- function() {
     Log.info("Uploading Goalies")
     hex <- h2o.importFile(locate("smalldata/poisson/Goalies.csv"), "rGoalies.hex")
     print(hex)
-Log.info("Performing compound task !( ( hex[,c(\"PostSHO\")] != 5.86538292444 ) & ( hex[,c(\"W\")] >= 5.12738355475 ) | ( ( hex[,c(\"PostGA\")] >= 31.6363447616 )) ) on dataset <Goalies>")
-         filterHex <- hex[!( ( hex[,c("PostSHO")] != 5.86538292444 ) & ( hex[,c("W")] >= 5.12738355475 ) | ( ( hex[,c("PostGA")] >= 31.6363447616 )) ),]
-#         print(head(filterHex))
-Log.info("Performing compound task !( ( hex[,c(\"ENG\")] != 9.78570671214 ) & ( hex[,c(\"PostENG\")] >= 0.175569994546 ) | ( ( hex[,c(\"GA\")] >= 8.04089068384 )) ) on dataset Goalies, and also subsetting columns.")
-         filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("GA","PostT","L","PostMin","PostW","PostENG","ENG","PostSHO","PostL","GP","PostGA","year")]
-#         print(filterHex)
-    Log.info("Now do the same filter & subset, but select complement of columns.")
-         filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("tmID","lgID","T/OL","Min","stint","PostSA","PostGP","W","SHO","playerID","SA")]
-#         print(filterHex)
+    filterHex <- hex[!( ( hex[,c("PostSHO")] != 5.86538292444 ) & ( hex[,c("W")] >= 5.12738355475 ) | ( ( hex[,c("PostGA")] >= 31.6363447616 )) ),]
+    filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("GA","PostT","L","PostMin","PostW","PostENG","ENG","PostSHO","PostL","GP","PostGA","year")]
+    filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("tmID","lgID","T/OL","Min","stint","PostSA","PostGP","W","SHO","playerID","SA")]
 testEnd()
 }
 doTest("compoundFilterTest_ on data Goalies unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_Goalies_43)

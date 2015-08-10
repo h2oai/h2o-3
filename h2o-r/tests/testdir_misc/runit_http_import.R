@@ -5,10 +5,10 @@ source("../h2o-runit.R")
 # Testing on HTTP #
 #-----------------#
 
-test.import.http <- function(conn) {
+test.import.http <- function() {
   url <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"
 
-  t <- system.time(aa <- h2o.importFile(conn, url))
+  t <- system.time(aa <- h2o.importFile( url))
   print(aa)
   print(t)
 

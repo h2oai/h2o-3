@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.bad.headers <- function(conn) {
+test.bad.headers <- function() {
   citibikePath <- locate("smalldata/jira/citibike_head.csv")
   # summary use to fail on datasets that had spaces in the headers during import.
-  f <- h2o.importFile(conn, citibikePath , destination_frame = "citibike.hex")  
+  f <- h2o.importFile(citibikePath , destination_frame = "citibike.hex")  
   f.df <- read.csv(citibikePath)
 
   print(colnames(f))

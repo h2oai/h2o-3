@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.string.manipulation <- function(conn) {
+test.string.manipulation <- function() {
   s1 <- as.h2o(" this is a string ")
   s2 <- as.h2o("this is another string")
   s3 <- as.h2o("this is a longer string")
