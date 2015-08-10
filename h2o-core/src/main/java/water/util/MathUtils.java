@@ -1,8 +1,9 @@
 package water.util;
 
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_2D;
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_3D;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
-import hex.Transformer;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
@@ -231,25 +232,8 @@ public class MathUtils {
   }
 
   public static class FFT {
-    public class FFTTransformer extends Transformer<FFTTransformer> {
 
-      /** Input dataset to transform */
-      public Frame dataset;
-      public Key<Frame> destination_frame;
-
-      public FFTTransformer() { this(Key.<FFTTransformer>make()); }
-      public FFTTransformer(Key<FFTTransformer> dest) { this(dest, "FFT job"); }
-      public FFTTransformer(Key<FFTTransformer> dest, String desc) {
-        super(dest, desc);
-      }
-
-      @Override
-      protected FFTTransformer execImpl() {
-        return this;
-      }
-    }
-
-    private static void initCheck(Frame input) {
+    public static void initCheck(Frame input) {
       ConcurrencyUtils.setNumberOfThreads(1);
       for (Vec v : input.vecs()) {
         if (v.naCnt() > 0)
@@ -262,21 +246,27 @@ public class MathUtils {
     /**
      * Compute the real-valued 1D Fourier transform for each row in the given Frame, and return a new Frame
      * @param input Frame containing numeric columns with data samples
-     * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
+     * @param N Number of samples (must be less or equal than number of columns)
+     * @param inverse Whether to compute the inverse
+     * @return Frame containing real-valued 1D (inverse)FFT of each row (same dimensionality)
      */
-    public static Frame transform1D(Frame input) {
+    public static Frame transform1D(Frame input, final int N, final boolean inverse) {
       initCheck(input);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          int N = cs.length;
           double[] a = new double[N];
           for (int row=0; row<cs[0]._len; ++row) {
             // fill 1D array
             for (int i = 0; i < N; ++i)
               a[i] = cs[i].atd(row);
+
             // compute FFT for each row
-            new DoubleFFT_1D(N).realForward(a);
+            if (!inverse)
+              new DoubleFFT_1D(N).realForward(a);
+            else
+              new DoubleFFT_1D(N).realInverse(a, true);
+
             // write result to NewChunk
             for (int i = 0; i < N; ++i)
               ncs[i].addNum(a[i]);
@@ -286,27 +276,73 @@ public class MathUtils {
     }
 
     /**
-     * Compute the real-valued 1D inverse Fourier transform for each row in the given Frame, and return a new Frame
+     * Compute the real-valued 2D Fourier transform for each row in the given Frame, and return a new Frame
      * @param input Frame containing numeric columns with data samples
-     * @return Frame containing real-valued 1D inverse FFT of each row (same dimensionality)
+     * @param rows width
+     * @param cols height
+     * @param inverse Whether to compute the inverse
+     * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
      */
-    public static Frame inverseTransform1D(Frame input) {
+    public static Frame transform2D(Frame input, final int rows, final int cols, final boolean inverse) {
       initCheck(input);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          int N = cs.length;
-          double[] a = new double[N];
-          for (int row=0; row<cs[0]._len; ++row) {
-            // fill 1D array
-            for (int i = 0; i < N; ++i)
-              a[i] = cs[i].atd(row);
-            // compute inverse FFT for each row
-            new DoubleFFT_1D(N).realInverse(a, true);
-            // write result to NewChunk
-            for (int i = 0; i < N; ++i)
-              ncs[i].addNum(a[i]);
-          }
+          double[][] a = new double[rows][cols];
+          // each row is a 2D sample
+          for (int i=0; i<rows; ++i)
+            for (int j=0; j<cols; ++j)
+              a[i][j] = cs[i + rows * j].at8(j);
+
+          // compute 2D FFT
+          if (!inverse)
+            new DoubleFFT_2D(rows, cols).realForward(a);
+          else
+            new DoubleFFT_2D(rows, cols).realInverse(a, true);
+
+          // write result to NewChunk
+          for (int i=0; i<rows; ++i)
+            for (int j=0; j<cols; ++j)
+              ncs[i].addNum(a[i][j]);
+
+        }
+      }.doAll(input.numCols(), input).outputFrame();
+    }
+
+    /**
+     * Compute the real-valued 3D Fourier transform for each row in the given Frame, and return a new Frame
+     * @param input Frame containing numeric columns with data samples
+     * @param rows height
+     * @param cols width
+     * @param depth depth
+     * @param inverse Whether to compute the inverse
+     * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
+     */
+    public static Frame transform3D(Frame input, final int rows, final int cols, final int depth, final boolean inverse) {
+      initCheck(input);
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          double[][][] a = new double[rows][cols][depth];
+
+          // each row is a 3D sample
+          for (int i=0; i< rows; ++i)
+            for (int j=0; j< cols; ++j)
+              for (int k=0; k< depth; ++k)
+                a[i][j][k] = cs[i + rows * j].at8(j);
+
+          // compute 3D FFT
+          if (!inverse)
+            new DoubleFFT_3D(depth, rows, cols).realForward(a);
+          else
+            new DoubleFFT_3D(depth, rows, cols).realInverse(a, true);
+
+          // write result to NewChunk
+          for (int i = 0; i < rows; ++i)
+            for (int j = 0; j < cols; ++j)
+              for (int k = 0; k < depth; ++k)
+                ncs[i].addNum(a[i][j][k]);
+
         }
       }.doAll(input.numCols(), input).outputFrame();
     }

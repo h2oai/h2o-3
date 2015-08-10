@@ -495,6 +495,12 @@ public class ArrayUtils {
       if (from[i]<result) result = from[i];
     return result;
   }
+  public static long minValue(int[] from) {
+    int result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<result) result = from[i];
+    return result;
+  }
 
   // Find an element with linear search & return it's index, or -1
   public static <T> int find(T[] ts, T elem) {

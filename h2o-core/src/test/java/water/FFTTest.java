@@ -1,7 +1,6 @@
 package water;
 
 import hex.CreateFrame;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
@@ -32,11 +31,11 @@ public class FFTTest extends TestUtil {
       cf.get();
       frame = DKV.getGet(cf.dest());
       long now = System.currentTimeMillis();
-      frameFFT = MathUtils.FFT.transform1D(frame);
+      frameFFT = MathUtils.FFT.transform1D(frame, cf.cols, false);
       Log.info("Computed 1D DFT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
 
       now = System.currentTimeMillis();
-      frameRec = MathUtils.FFT.inverseTransform1D(frameFFT);
+      frameRec = MathUtils.FFT.transform1D(frameFFT, cf.cols, true);
       Log.info("Computed inverse 1D DFT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
 
       for (int i=0; i<frame.vecs().length; ++i)
