@@ -1,4 +1,4 @@
-\documentclass{article}[11pt]
+\documentclass[11pt]{article}
 \setcounter{secnumdepth}{5}
 \setcounter{tocdepth}{5}
 \usepackage[english]{babel}
@@ -35,13 +35,50 @@
 
 \begin{document}
 
+%----------------------------------------------------------------------
+% Definition for "lstlisting" blocks
+%----------------------------------------------------------------------
+% --- USAGE ---
+%
+% \begin{lstlisting}[style=R}
+% ...
+% \end{lstlisting}
+%
+% % \begin{lstlisting}[style=output}
+% ...
+% \end{lstlisting}
+%----------------------------------------------------------------------
+
+% By default, make listings all black so it's easy to spot the ones that aren't set to a style.
+% This is just a debugging technique.
+\lstset{backgroundcolor=\color{black}}
+
+\lstdefinestyle{R}{
+  language=R,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  backgroundcolor=\color{white}
+}
+
+\definecolor{mygray}{rgb}{0.92,0.92,0.92}
+
+\lstdefinestyle{output}{
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  backgroundcolor=\color{mygray}
+}
+
+%----------------------------------------------------------------------
+
 \thispagestyle{empty} %removes page number
 
 \begin{center}
 \textsc{\Large\bf{Generalized Linear Modeling  with H2O's R Package}}
 \\
 \bigskip
-\textsc{\small{Tomas Nykodym \hspace{40pt} Ariel Rao \hspace{40pt} Amy Wang \hspace{40pt} Jessica Lanford}}
+\textsc{\small{Tomas Nykodym \hspace{20pt} Ariel Rao \hspace{20pt} Amy Wang \hspace{20pt} Tom Kraljevic \hspace{20pt} Jessica Lanford}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -55,7 +92,7 @@ August 2015: Third Edition
 {\raggedright\vfill\ 
 
 Generalized Linear Modeling  with H2O's R Package\\
-  by Tomas Nykodym, Ariel Rao, Amy Wang, \&\ Jessica Lanford \\
+  by Tomas Nykodym, Ariel Rao, Amy Wang, Tom Kraljevic, \&\ Jessica Lanford \\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -85,18 +122,29 @@ Printed in the United States of America.
 
 \tableofcontents
 
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
 \newpage
 
 \section{Introduction} \label{1}
 This document describes Generalized Linear Model implementation on H2O platform, list of supported features and how to use them from R. 
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \section{What is H2O?}
 
 H2O is fast scalable open-source machine learning and deep learning for Smarter Applications. With H2O, enterprises like PayPal, Nielsen, Cisco and others can use all of their data without sampling and get accurate predictions faster. Advanced algorithms, like Deep Learning, Boosting, and Bagging Ensembles are readily available for application designers to build smarter applications through elegant APIs. Some of our earliest customers have built powerful domain-specific predictive engines for Recommendations, Customer Churn, Propensity to Buy, Dynamic Pricing and Fraud Detection for the Insurance, Healthcare, Telecommunications, AdTech, Retail and Payment Systems.
 Using in-memory compression techniques, H2O can handle billions of data rows in-memory, even with a fairly small cluster. The platform includes interfaces for R, Python, Scala, Java, JSON and Coffeescript/JavaScript, along with a built-in  web interface, Flow, that make it easier for non-engineers to stitch together complete analytic workflows. The platform was built alongside (and on top of) both Hadoop and Spark Clusters and is typically deployed within minutes.
 H2O implements almost all common machine learning algorithms, such as generalized linear modeling (linear regression, logistic regression, etc.), Na\"{i}ve Bayes, principal components analysis, time series, k-means clustering and others. H2O also implements best-in-class algorithms such as Random Forest, Gradient Boosting and Deep Learning at scale. Customers can build thousands of models and compare them to get the best prediction results.
-H2O is nurturing a grassroots movement of physicists, mathematicians, computer and data scientists to herald the new wave of discovery with data science. Academic researchers and Industrial data scientists collaborate closely with our team to make this possible. Stanford university giants Stephen Boyd, Trevor Hastie, Rob Tibshirani advise the H2O team to build scalable machine learning algorithms. With 100s of meetups over the past two years, H2O has become a word-of-mouth phenomenon growing amongst the data community by a 100-fold and is now used by 12,000+ users, deployed in 2000+ corporations using R, Python, Hadoop and Spark.\textbf{Try it out}H2O offers an R package that can be installed from CRAN. H2O can be downloaded at {\url{www.h2o.ai/download}}.\textbf{Join the community}Connect with {\url{h2ostream@googlegroups.com}} and {\url{https://github.com/h2oai}} to learn about our meetups, training sessions, hackathons, and product updates.\textbf{Learn more about H2O}
-Visit {\url{www.h2o.ai}}.
+H2O is nurturing a grassroots movement of physicists, mathematicians, computer and data scientists to herald the new wave of discovery with data science. Academic researchers and Industrial data scientists collaborate closely with our team to make this possible. Stanford university giants Stephen Boyd, Trevor Hastie, Rob Tibshirani advise the H2O team to build scalable machine learning algorithms. With 100s of meetups over the past two years, H2O has become a word-of-mouth phenomenon growing amongst the data community by a 100-fold and is now used by 12,000+ users, deployed in 2000+ corporations using R, Python, Hadoop and Spark.\textbf{Try it out}H2O offers an R package that can be installed from CRAN.
+
+H2O can be downloaded directly from \mbox{\url{http://h2o.ai/download}}.\textbf{Join the community}Connect with \mbox{\url{h2ostream@googlegroups.com}} and \mbox{\url{https://github.com/h2oai}} to learn about our meetups, training sessions, hackathons, and product updates.\textbf{Learn more about H2O}
+Visit \mbox{\url{http://h2o.ai}}.
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \newpage
 
@@ -107,130 +155,140 @@ Generalized linear models (GLM) are the workhorse for most predictive analysis u
 H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number ($\mathtt{\sim}$ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to the glmnet package for R (refer to \citetalias{glmnet}). 
 H2O's GLM fits the model by solving following problem:
 
-\[ \min\limits_{\beta}\ {{1\over{N}} log-likelihood(family,\beta)  + \lambda (\alpha \| \beta \|_1}  + {1- \alpha \over 2} \| \beta \|_2^2) \]
+\[ \min\limits_{\beta}\ (\ Classic GLM  + Regularization Penalty \ )\]
 
-The elastic net parameter $\alpha$ controls the penalty distribution between L1 and L2 penalty. The range is any value between 0 and 1. When $\alpha$ = 0, we have no L1 penalty and the problem becomes ridge regression. If $\alpha$ = 1, there is no L2 penalty and we have lasso.
+which is equivalent to:
+
+\[ \min\limits_{\beta}\ (\ {{1\over{N}} log\_likelihood(family,\beta)  + \lambda (\alpha \| \beta \|_1} + {1- \alpha \over 2} \| \beta \|_2^2) \ )\]
+
+\bigskip
+The elastic net parameter $\alpha$ controls the penalty distribution between L1 (Lasso) and L2 (Ridge Regression) penalties. The range is any value between 0 and 1. When $\alpha$ = 0, we have no L1 penalty and the problem becomes ridge regression. If $\alpha$ = 1, there is no L2 penalty and we have lasso.
 
 The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the L2-only penalty does not reduce coefficients to exactly 0. The two penalties also differ in the case of correlated predictors. The L2 penalty shrinks coefficients for correlated columns towards each other, while the L1 penalty will pick one and drive the others to zero. Using the elastic net argument $\alpha$, you can combine these two behaviors. It is also useful to always add a small L2 penalty to increase numerical stability.
 
 Similarly to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting from null-model (maximum penalty) going down to minimally penalized model. This search is made efficient by employing strong-rules as described in \citetalias{strong} to filter out inactive coefficients (coefficients pushed to zero by penalty). Computing the full regularization path is useful in that it gives more insight about the importance of individual coefficients and quality of the model while allowing selection of the optimal amount of penalization for the given problem and data.
 
-
 \subsubsection{Summary of features} 
 In summary, H2O's GLM functionalities include:
 
 \begin{itemize} 
+\item automatic standardization of predictor variables
 \item fits generalized linear model with elastic net penalty
-\item supported GLM families include Gaussian, Binomial, Poisson and Gamma
+\item supported GLM families include Gaussian, Binomial, Poisson, Gamma, and Tweedie
 \item efficient handling of categorical variables
-\item efficient computation full regularization path
+\item efficient computation of full regularization path
+\item IRLSM (best for data with many rows and fewer predictors) and LBFGS (best for data with many predictors) solvers
+\item automatic lambda search for best model
+\item stopping criterium when many predictors are used
 \item efficient distributed n-fold cross validation
-\item distributed grid search over elastic-net parameter $\alpha$
+% \item distributed grid search over elastic-net parameter $\alpha$
+\item offset column
+\item row weights
 \item upper and lower bounds for coefficients
-\item proximal operator interface
+% \item proximal operator interface
 \end{itemize}
 
-
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \section{Installation} 
 
-You can load the latest CRAN H2O package by running:
+You can load a recent H2O package from CRAN by running (be advised that the version of H2O in CRAN often lags by a release):
 
-\begin{spverbatim}
-> install.packages("h2o")
-\end{spverbatim}
-\bigskip
-\noindent
-Alternatively, you can (and should for this tutorial) download the latest H2O build by following the ``Install in R" instructions in the H2O download table:
-{\url{http://s3.amazonaws.com/h2o-release/h2o/master/latest.html}}.
-
-\noindent
-Open your R Console and run the following to install the latest H2O build in R:
-
-\footnotesize %need so that code fits on 1 line
-\begin{spverbatim}
-# The following two commands remove any previously installed H2O packages for R.
-if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
-if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
-
-# Next, we download packages that H2O depends on.
-if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
-if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
-if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
-if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
-if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
-if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
-if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
-\end{spverbatim}
-\begin{spverbatim}
-# Now we download, install and initialize the H2O package for R (replacingthe * with the latest version number obtained from the H2O download page)
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/*/R")))
-library(h2o)
-localH2O = h2o.init(nthreads = -1)
-\end{spverbatim}
-\normalsize%restore default text size
-\noindent
-To launch on a single node, initialize H2O on all the cores of your machine with
-
-\begin{spverbatim}
-> localH2O = h2o.init(nthreads = -1)
-
-\end{spverbatim}
-\noindent
-The function \texttt{h2o.init()} will initialize a H2O instance and instantiates a H2O client module. By default, the H2O instance will launch on \texttt{localhost:54321}. To establish a connection to an existing H2O cluster node, explicitly state the IP address (\texttt{ip = "localhost"}) and port number (\texttt{port = 54321}) in the \texttt{h2o.init()} call.
-
-\noindent
-Run the following command to observe an example classification model built through H2O's GLM:
-
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-# Build a GLM model on prostate data with formula: CAPSULE ~ AGE + RACE + PSA + DCAPS
-> prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-> prostate.hex = h2o.importFile(localH2O, path = prostatePath, key = "prostate.hex")
-> h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), data = prostate.hex, family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE,  
-use_all_factor_levels = FALSE, variable_importances = FALSE, higher_accuracy = FALSE)
+\begin{lstlisting}[style=R]
+install.packages("h2o")
 \end{lstlisting}
 
-\vspace{10 mm}
-\noindent
+Alternatively, you can (and should for this tutorial) download the latest stable H2O-3 build from the H2O download page as directed below:
+
+\begin{itemize}
+\item Go to http://h2o.ai/download
+\item Choose the latest stable H2O-3 build (This vignette was created with the Simons 3.0.1.4 release of H2O-3)
+\item Click on the "Install in R" tab
+\item Copy and paste the instructions into your R session
+\end{itemize}
+
+\bigskip
+Once you have H2O installed, initialize H2O on all the cores of your machine:
+
+\begin{lstlisting}[style=R]
+library(h2o)
+localH2O = h2o.init(nthreads = -1)
+\end{lstlisting}
+
+The function \texttt{h2o.init()} creates a connection to an H2O instance, and will optionally start H2O locally if it is not already running. By default, the H2O instance will launch on \texttt{localhost:54321}. To establish a connection to a pre-existing H2O cluster, explicitly state the IP address (\texttt{ip = "localhost"}) and port number (\texttt{port = 54321}) in the \texttt{h2o.init()} call.
+
+\subsection{Verifying your installation}
+Run the following commands to observe an example classification model built with H2O's GLM:
+
+\begin{lstlisting}[style=R]
+# Build a GLM model on prostate data with the equivalent of
+# the following formula:
+#
+#     CAPSULE ~ AGE + RACE + PSA + DCAPS
+#
+prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
+prostate.hex = h2o.importFile(prostatePath)
+model = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial")
+print(model)
+\end{lstlisting}
+
 The output of the model build will include coefficients, as well as some validation statistics:
+\begin{lstlisting}[style=output]
+Model Details:
+==============
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-IP Address: 127.0.0.1 
-Port      : 54321 
-Parsed Data Key: prostate.hex 
-
-GLM2 Model Key: GLMModel__827586bb2c59ba79dc129b8500174940
+H2OBinomialModel: glm
+Model ID:  GLM_model_R_1439070697963_10 
+GLM Model:
+    family  link                                regularization number_of_predictors_total number_of_active_predictors
+1 binomial logit Elastic Net (alpha = 0.5, lambda = 3.251E-4 )                   4.000000                    5.000000
+  number_of_iterations training_frame
+1             5.000000 prostate.hex_1
 
 Coefficients:
-      AGE      RACE     DCAPS       PSA Intercept 
- -0.01104  -0.63136   1.31888   0.04713  -1.10896 
+      names coefficients standardized_coefficients
+1 Intercept    -1.115184                 -0.337716
+2       AGE    -0.010970                 -0.071507
+3      RACE    -0.622777                 -0.192044
+4     DCAPS     1.314494                  0.407818
+5       PSA     0.046886                  0.936381
 
-Normalized Coefficients:
-      AGE      RACE     DCAPS       PSA Intercept 
- -0.07208  -0.19495   0.40972   0.94253  -0.33707 
+H2OBinomialMetrics: glm
+** Reported on training data. **
 
-Degrees of Freedom: 379 Total (i.e. Null);  375 Residual
-Null Deviance:     512.3
-Residual Deviance: 449.5  AIC: 459.5
-Deviance Explained: 0.12254 
- Best Threshold: 0.28
+MSE:  0.2027033
+R^2:  0.1572268
+LogLoss:  0.5914635
+AUC:  0.7176298
+Gini:  0.4352596
+Null Deviance:  512.2888
+Residual Deviance:  449.5123
+AIC:  459.5123
 
-Confusion Matrix:
-        Predicted
-Actual   false true Error
-  false     75  152 0.670
-  true      18  135 0.118
-  Totals    93  287 0.447
+Confusion Matrix for F1-optimal threshold:
+        0   1    Error      Rate
+0      80 147 0.647577  =147/227
+1      18 135 0.117647   =18/153
+Totals 98 282 0.434211  =165/380
 
-AUC =  0.7157151 (on train)
+Maximum Metrics:
+                      metric threshold    value        idx
+1                     max f1  0.284067 0.620690 274.000000
+2                     max f2  0.207167 0.778230 360.000000
+3               max f0point5  0.413261 0.636672 108.000000
+4               max accuracy  0.413261 0.705263 108.000000
+5              max precision  0.998477 1.000000   0.000000
+6           max absolute_MCC  0.413261 0.369123 108.000000
+7 max min_per_class_accuracy  0.331788 0.647577 176.000000
 \end{lstlisting}
 
 \subsection{Support} 
 
-Users of the H2O package may submit general enquiries and bug reports to H2O.ai support address, {\url{h2ostream@googlegroups.com}}. 
-Alternatively, specific bugs or issues may be filed to the H2O.ai JIRA at {\url{https://0xdata.atlassian.net/secure/Dashboard.jspa}}.
+Users of the H2O package may submit general enquiries and bug reports to H2O.ai support address, \mbox{\url{h2ostream@googlegroups.com}}.  Alternatively, specific bugs or issues may be filed to the H2O.ai JIRA at \mbox{\url{http://jira.h2o.ai}}.
 
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \section{Generalized Linear Modeling} 
 This section contains a brief overview of generalized linear models and follows up with a few details for each model family.
@@ -255,7 +313,6 @@ Another metric frequently used for model selection is the Akaike information cri
 
 \[ aic = 2(k - ln(L_{m}))\]
 
-\noindent
 where k is the number of model parameters and $ln(L_{m})$ is the log likelihood of the fitted model over the data.
 
 
@@ -305,10 +362,10 @@ Deviance is simply the sum of squared errors:
 
 Included in the H2O package is a prostate cancer data set. The data was collected by Dr. Donn Young at  Ohio State University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds based on features such as age and race.
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-> filepath = system.file("extdata", "prostate.csv",package = "h2o")
-> prostate.hex = h2o.importFile(object = localH2O, filepath, key = "prostate.hex")
-> gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", data = prostate.hex, family = "gaussian")
+\begin{lstlisting}[style=R]
+filepath = system.file("extdata", "prostate.csv",package = "h2o")
+prostate.hex = h2o.importFile(object = localH2O, filepath, key = "prostate.hex")
+gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", data = prostate.hex, family = "gaussian")
 \end{lstlisting}
 
 \subsubsection{Logistic Regression (Binomial Family)}
@@ -338,12 +395,9 @@ Deviance is -2 log likelihood:
 \textbf{Example}\\
 
 Using the prostate data set, build a binomial model that classifies if there is penetration of the prostatic capsule (CAPSULE). Make sure the entries in the CAPSULE column are binary entries by using the \texttt{h2o.table()} function. Change the regression by setting the family to binomial.
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-> h2o.table(prostate.hex[,"CAPSULE"])
-  row.names Count
-1         0   227
-2         1   153
-> binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", data = prostate.hex, family = "binomial")
+\begin{lstlisting}[style=R]
+h2o.table(prostate.hex[,"CAPSULE"])
+binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", data = prostate.hex, family = "binomial")
 \end{lstlisting}
 
 \subsubsection{Poisson Models}
@@ -361,15 +415,14 @@ Deviance is
 
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) - y - \hat{y}}\]
 
-
 \textbf{Example}\\
 
 Load the Insurance data from the MASS library and import into H2O. Run a poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they own (Group).
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-> library(MASS)
-> data(Insurance)
-> insurance.hex = as.h2o(localH2O, Insurance)
-> poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", data = insurance.hex, family = "poisson")
+\begin{lstlisting}[style=R]
+library(MASS)
+data(Insurance)
+insurance.hex = as.h2o(localH2O, Insurance)
+poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", data = insurance.hex, family = "poisson")
 \end{lstlisting}
 
 \subsubsection{Gamma Models}
@@ -390,12 +443,15 @@ Deviance is
 
 To change the link function from the default inverse function to the log link function, modify the \texttt{link} argument.
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-> gamma.inverse <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="inverse")
-
-> gamma.log <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="log")
+\begin{lstlisting}[style=R]
+gamma.inverse <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="inverse")
+gamma.log <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="log")
 \end{lstlisting}
 % Strong Rules paper
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
 \section{GLM on H2O}
 H2O's GLM implementation presents a high-performance distributed algorithm, which scales linearly with the number of rows and works extremely well for datasets with limited number of active predictors. 
 
@@ -444,7 +500,7 @@ The detailed output of the GLM model varies depending on the distribution used f
 
 First, let's build a simple GLM on a small dataset and see what we get out:
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+\begin{lstlisting}[style=R]
 library(h2o)
 
 # Initialize H2O
@@ -464,7 +520,7 @@ m <- h2o.glm(x = 3:9, y = 2, data = hex, family = "binomial")
 
 The default \texttt{show} of this model has the following output:
 
-\begin{verbatim}
+\begin{lstlisting}[style=output]
 IP Address: 127.0.0.1 
 Port      : 54321 
 Parsed Data Key: prostate_train.hex 
@@ -493,7 +549,7 @@ Actual   false true Error
   Totals   179  126 0.216
 
 AUC =  0.8318927 (on train) 
-\end{verbatim}
+\end{lstlisting}
 
 Briefly, the output contains the IP address and port number of the H2O cluster where the model was trained. It includes the data key, the model key, the coefficients, and  some model metrics. Let's look at these in detail.
 
@@ -508,7 +564,7 @@ By default, H2O's GLM generates additional models with 1/10 of the original data
 
 The following R code generates predictions:
 
-\begin{verbatim}
+\begin{lstlisting}[style=R]
 test.path <- paste(data.bucket, "/logreg/prostate_test.csv", sep = "")
 
 # import the data from the url
@@ -522,7 +578,8 @@ predictions
 
 # generate the model metrics
 h2o.performance(data=predictions[,3], reference=test[,1])
-\end{verbatim}
+\end{lstlisting}
+
 \subsection{Categorical Variables}
 When applying linear models to datasets with categorical variables, the usual approach is to expand the categoricals into a set of binary vectors, with one vector per each categorical level (e.g. by calling {\texttt{model.matrix}} in R). H2O performs similar expansions automatically and no prior changes to the dataset are needed. Each categorical column is treated as a set of sparse binary vectors.
 
@@ -587,9 +644,10 @@ And the overall memory cost is given by:
 
 If $M >> N$, the second term is not needed and the algorithm scales linearly both in the number of nodes and the number of CPUs per node. However, the equation above also implies that our algorithm is limited in the number of predictors it can handle, since the size of the Gram matrix grows quadratically due to a memory and network throughput issue with the number of predictors and its decomposition cost grows as the cube of the number of predictors (which is a computational cost issue). In many cases, H2O can work around these limitations due to its handling of categoricals and by employing strong rules to filter out inactive predictors.  
 
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \section{Use case: Classification with Airline data}
-
 
 \subsection{Airline dataset overview} 
 
@@ -602,22 +660,20 @@ Save the .csv file to your working directory by clicking  "View Raw."  Before ru
 Loading a dataset in R for use with H2O is slightly different from the usual methodology because we must convert our datasets into \texttt{H2OParsedData} objects. In this example, we will use a toy weather dataset that is available here: {\url{https://raw.githubusercontent.com/h2oai/h2o/master/smalldata/weather.csv}}. 
 
 First, load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command:
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+\begin{lstlisting}[style=R]
 weather.hex = h2o.uploadFile(localH2O, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
 \end{lstlisting}
 \bigskip
-\noindent
+
 To see a quick summary of the data, run the following command:
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+\begin{lstlisting}[style=R]
 summary(weather.hex)
 \end{lstlisting}
-
 
 \subsection{Performing a trial run} \label{3.2}
 Returning to the Airline dataset demo, we first load the dataset into H2O and select the variables we want to use to predict a chosen response. For example, we can model if flights are delayed based on the departure's scheduled day of the week and day of the month.
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-
+\begin{lstlisting}[style=R]
 library(h2o)
 localH2O = h2o.init(nthreads = -1)
 #Load the data and prepare for modeling
@@ -625,48 +681,41 @@ air_train.hex = h2o.uploadFile(localH2O, path = "~/Downloads/AirlinesTrain.csv",
 air_test.hex = h2o.uploadFile(localH2O, path = "~/Downloads/AirlinesTest.csv", header = TRUE, sep = ",", key = "airline_test.hex")
 x = c("fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Origin", "Dest", "Distance")
 y = "IsDepDelayed"
-
 \end{lstlisting}
 
 Now we train the GLM model:
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-airline.glm <- h2o.glm(x=x,
-                       y=y,
-                       data=air_train.hex,
-                       key = "glm_model",
-                       family="binomial",
-                       lambda_search = TRUE,
-                       return_all_lambda = TRUE,
-                       use_all_factor_levels = TRUE,
-                       variable_importances = TRUE)
+\begin{lstlisting}[style=R]
+airline.glm <- h2o.glm(x=x, y=y, data=air_train.hex, key = "glm_model", family="binomial", lambda_search = TRUE, return_all_lambda = TRUE, use_all_factor_levels = TRUE, variable_importances = TRUE)
 \end{lstlisting}
 
 \subsubsection{Extracting and handling the results} \label{3.2.1}
 
 We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-print("Predict on GLM model")
+\begin{lstlisting}[style=R]
+# Predict on GLM model
 best_glm = airline.glm@models[[airline.glm@best_model]]
 air.results = h2o.predict(object = best_glm, newdata = air_test.hex)
-print("Check performance and AUC")
-perf = h2o.performance(air.results$YES,air_test.hex$IsDepDelayed )
+
+# Check performance and AUC
+perf = h2o.performance(air.results$YES, air_test.hex$IsDepDelayed )
 print(perf)
 perf@model$auc
-print("Show distribution of predictions with quantile.")
+
+# Show distribution of predictions with quantile
 quant = quantile.H2OParsedData(air.results$YES)
-print("Extract strongest predictions.")
+
+# Extract strongest predictions
 top.air <- h2o.assign(air.results[air.results$YES > quant["75%"]], key="top.air")
 top.air
 \end{lstlisting}
-\noindent
-\\
-\\
+
 Once we have a satisfactory model, the \texttt{h2o.predict()} command can be used to compute and store predictions on the new data, which can then be used for further tasks in the interactive modeling process.
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+\begin{lstlisting}[style=R]
 #Perform classification on the held out data
 prediction = h2o.predict(object = best_glm, newdata=air_test.hex)
+
 #Copy predictions from H2O to R
 pred = as.data.frame(prediction)
 head(pred)
@@ -689,6 +738,9 @@ To download the model,
 \item Follow the curl and java compile commands displayed in the instructions at the top of the Java model.
 \end{enumerate}
 \newpage
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \section{Appendix: Parameters}
 \begin{itemize}
@@ -732,10 +784,6 @@ To download the model,
 %Ignored_cols: No default.
 %Non-negative: Restricts coefficients to be non-negative. Default is false.
 %parallelism: @Is this just a python thing?
-
-
-
-
 
 \newpage
 
@@ -785,8 +833,5 @@ Foundations and Trends in Optimization, 1(3):123-231, 2014.
 \bibitem{jira}
 {\url{https://0xdata.atlassian.net/secure/Dashboard.jspa}}
 \end{thebibliography}
-
-%\url{http://h2o.ai}
-
 
 \end{document}
