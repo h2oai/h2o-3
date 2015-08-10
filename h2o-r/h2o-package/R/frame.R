@@ -1853,7 +1853,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   }
 
   # Substitute NAs for blank cells rather than skipping
-  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
+  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", ...)
   # df <- read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
   close(tcon)
   df

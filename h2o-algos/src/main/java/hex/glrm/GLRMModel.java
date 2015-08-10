@@ -408,7 +408,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       v.setDomain(adaptedDomme[i]);
       fullFrm.add(prefix + _output._names[i], v);
     }
-    GLRMScore gs = new GLRMScore(null, ncols, _parms._k, true).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, _parms._k, true).doAll(fullFrm);
 
     // Return the imputed training frame
     int x = ncols + _parms._k, y = fullFrm.numCols();
@@ -421,14 +421,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   private class GLRMScore extends MRTask<GLRMScore> {
-    final String[] _domain;
     final int _ncolA;   // Number of cols in original data A
     final int _ncolX;   // Number of cols in X (rank k)
     final boolean _save_imputed;  // Save imputed data into new vecs?
     ModelMetrics.MetricBuilder _mb;
 
-    GLRMScore( String[] domain, int ncolA, int ncolX, boolean save_imputed ) {
-      _domain = domain; _ncolA = ncolA; _ncolX = ncolX; _save_imputed = save_imputed;
+    GLRMScore( int ncolA, int ncolX, boolean save_imputed ) {
+      _ncolA = ncolA; _ncolX = ncolX; _save_imputed = save_imputed;
     }
 
     @Override public void map( Chunk chks[] ) {
@@ -507,7 +506,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame loadingFrm = DKV.get(_output._loading_key).get();
     fullFrm.add(loadingFrm);
 
-    GLRMScore gs = new GLRMScore(null, ncols, _parms._k, false).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
     ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }

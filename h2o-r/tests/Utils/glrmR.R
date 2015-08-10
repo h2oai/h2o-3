@@ -7,16 +7,10 @@ compareCats <- function(pred, actual) {
   
   misclass <- 0
   for(i in 1:ncol(pred.df)) {
-    if(length(levels(pred.df[,i])) != length(levels(actual.df[,i]))) {
-      if(all(levels(pred.df[,i]) %in% levels(actual.df[,i])))
-        levels(pred.df[,i]) <- levels(actual.df[,i])
-      else if(all(levels(actual.df[,i]) %in% levels(pred.df[,i])))
-        levels(actual.df[,i]) <- levels(pred.df[,i])
-      else
-        stop("Levels are mismatched! H2O levels: ", paste(levels(predH2O[,i]), collapse = ", "), "\tR levels: ", paste(levels(predR[,i]), collapse = ", "))
-    }
+    pstr <- as.character(pred.df[,i])
+    astr <- as.character(actual.df[,i])
     isMissing <- sapply(actual.df[,i], is.na)
-    misclass <- misclass + sum(pred.df[!isMissing,i] != actual.df[!isMissing,i])
+    misclass <- misclass + sum(pstr[!isMissing] != astr[!isMissing])
   }
   misclass
 }
@@ -71,9 +65,9 @@ checkGLRMPredErr <- function(fitH2O, trainH2O, validH2O = NULL, tolerance = 1e-6
   pred.df <- as.data.frame(pred)
   trainR <- as.data.frame(trainH2O)
   checkTrainErr(fitH2O, trainR, pred.df, tolerance)
-  if(!is.null(validH2O) && !is.null(fitH2O@model$validation_metrics)) {
-    validR <- as.data.frame(validH2O)
-    checkValidErr(fitH2O, validR, pred.df, tolerance)
-  }
+  # if(!is.null(validH2O) && !is.null(fitH2O@model$validation_metrics)) {
+  #  validR <- as.data.frame(validH2O)
+  #  checkValidErr(fitH2O, validR, pred.df, tolerance)
+  # }
   return(pred)
 }
