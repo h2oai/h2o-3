@@ -5,8 +5,8 @@ import random
 
 def covtype(ip,port):
 
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   # Log.info("Importing covtype.20k.data...\n")
   covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))

@@ -8,7 +8,7 @@ from sklearn.preprocessing import Imputer
 
 def benignKmeans(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)  # connect to localhost:54321
+      # connect to localhost:54321
 
 
     #  Log.info("Importing benign.csv data...\n")

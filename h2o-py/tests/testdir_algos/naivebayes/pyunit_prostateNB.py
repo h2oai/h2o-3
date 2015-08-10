@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def nb_prostate(ip, port):
-    h2o.init(ip, port)
+    
 
     print "Importing prostate.csv data..."
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))

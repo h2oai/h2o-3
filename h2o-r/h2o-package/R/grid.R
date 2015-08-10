@@ -23,7 +23,8 @@
 #' library(rjson)
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
+#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex,
+#'                  hyper_params = list(ntrees = c(1,2,3)))
 #' @export
 h2o.grid <- function(algorithm,
                      grid_id,
@@ -70,16 +71,25 @@ h2o.grid <- function(algorithm,
 #' library(rjson)
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5, training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
+#' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5,
+#'          training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
 #' grid <- h2o.getGrid("gbm_grid")
 #' @export
 h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
   json <- .h2o.__remoteSend(conn, method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id))
-
+  print(json)
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })
+  hyper_names <- lapply(json$hyper_names, function(name) { name })
+  failed_params <- json$failed_params
+  failure_details <- lapply(json$failure_details, function(msg) { msg })
 
-  new(class, grid_id = grid_id, model_ids = model_ids)
+  new(class,
+      grid_id = grid_id,
+      model_ids = model_ids,
+      hyper_names = hyper_names,
+      failed_params = failed_params,
+      failure_details = failure_details)
 }
 

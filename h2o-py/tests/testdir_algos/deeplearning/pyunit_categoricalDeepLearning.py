@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 
 def deeplearning_multi(ip,port):
-    h2o.init(ip, port)
+    
 
     print("Test checks if Deep Learning works fine with a categorical dataset")
 

@@ -64,11 +64,9 @@ import water.util.PojoUtils;
  * @see hex.grid.ModelFactory
  * @see hex.grid.HyperSpaceWalker
  * @see #startGridSearch(Key, ModelFactory, HyperSpaceWalker)
- *
  */
 // FIXME: this class should be driver which is passed to job as H2OCountedCompleter. Will be
 // FIXME: refactored as part of Job refactoring.
-// FIXME: the failed job should be somehow reported to user in result Grid object
 public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
 
   /**
@@ -107,8 +105,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       grid.write_lock(jobKey());
     } else {
       grid =
-          new Grid<MP>(dest(), _hyperSpaceWalker.getParams(),
-                       _hyperSpaceWalker.getHyperParamNames(), _modelFactory.getModelName());
+          new Grid<>(dest(),
+                     _hyperSpaceWalker.getParams(),
+                     _hyperSpaceWalker.getHyperParamNames(),
+                     _modelFactory.getModelName());
       grid.delete_and_lock(jobKey());
     }
     // Java trick
@@ -214,9 +214,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     try {
       m = (Model) (startBuildModel(params, grid).get());
       grid.putModel(checksum, m._key);
-      grid.update(jobKey());
     } catch (RuntimeException e) {
       Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+      grid.appendFailedModelParameters(params, e.getMessage());
+    } finally {
+      // Always update grid in DKV after model building attempt
+      grid.update(jobKey());
     }
     return m;
   }

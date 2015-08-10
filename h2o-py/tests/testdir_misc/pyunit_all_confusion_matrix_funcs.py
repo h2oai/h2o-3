@@ -4,8 +4,8 @@ import h2o
 import random
 
 def all_confusion_matrix_funcs(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     metrics = ["min_per_class_accuracy", "absolute_MCC", "precision", "accuracy", "f0point5", "f2", "f1"]
     train = [True, False]

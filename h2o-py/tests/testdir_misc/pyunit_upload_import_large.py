@@ -4,7 +4,7 @@ import h2o
 
 def upload_import(ip, port):
     # Connect to a pre-existing cluster
-    h2o.init(ip, port)
+    
 
     uploaded_frame = h2o.upload_file(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
     imported_frame = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))

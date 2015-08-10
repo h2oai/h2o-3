@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def confusion_matrices_check(ip, port):
-    h2o.init(ip, port)
+    
 
     local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[0, 'b'],
                   [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]

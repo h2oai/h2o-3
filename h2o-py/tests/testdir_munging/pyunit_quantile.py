@@ -6,7 +6,7 @@ import numpy as np
 
 def quantile(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     data = [[random.uniform(-10000,10000)] for c in range(1000)]
     h2o_data = h2o.H2OFrame(python_obj=data)
