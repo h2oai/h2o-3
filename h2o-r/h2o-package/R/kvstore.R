@@ -303,7 +303,7 @@ h2o.download_pojo <- function(model, path="", conn=h2o.getConnection(), getjar=T
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
       if (! .__curlError) {
         jar.path <- paste0(path, "/h2o-genmodel.jar")
-        writeBin(tmp, jar.path, useBytes = TRUE);
+        writeBin(tmp, jar.path, useBytes = TRUE)
       }
     }
   }

@@ -10,37 +10,20 @@ from . import H2OConnection
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
     self._id = dest_key
-
-    # setup training metrics
-    if "training_metrics" in model_json["output"]:
-      tm = model_json["output"]["training_metrics"]
-      tm = metrics_class(tm,True,False,False,model_json["algo"])
-      model_json["output"]["training_metrics"] = tm
-
-    # setup validation metrics
-    if "validation_metrics" in model_json["output"]:
-      vm = model_json["output"]["validation_metrics"]
-      if vm is None:
-        model_json["output"]["validation_metrics"] = None
-      else:
-        vm = metrics_class(vm,False,True,False,model_json["algo"])
-        model_json["output"]["validation_metrics"] = vm
-    else:
-      model_json["output"]["validation_metrics"] = None
-
-    # setup cross validation metrics
-    if "cross_validation_metrics" in model_json["output"]:
-      cvm = model_json["output"]["cross_validation_metrics"]
-      if cvm is None:
-        model_json["output"]["cross_validation_metrics"] = None
-      else:
-        cvm = metrics_class(cvm,False,False,True,model_json["algo"])
-        model_json["output"]["cross_validation_metrics"] = cvm
-    else:
-      model_json["output"]["cross_validation_metrics"] = None
-
     self._model_json = model_json
     self._metrics_class = metrics_class
+    self._is_xvalidated=False
+    self._xval_keys=None
+
+    for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
+      if metric in model_json["output"]:
+        if  model_json["output"][metric] is not None:
+          if metric=="cross_validation_metrics":
+            self._is_xvalidated=True
+          model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
+
+    if self._is_xvalidated:
+      self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
   def __repr__(self):
     self.show()
@@ -57,6 +40,27 @@ class ModelBase(object):
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id)
     prediction_frame_id = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     return h2o.get_frame(prediction_frame_id)
+
+  def is_cross_validated(self):
+    """
+    :return:  True if the model was cross-validated.
+    """
+    return self._is_xvalidated
+
+  def xval_keys(self):
+    """
+    :return: The model keys for the cross-validated model.
+    """
+    return self._xval_keys
+
+  def get_xval_models(self,key=None):
+    """
+    Return a Model object.
+
+    :param key: If None, return all cross-validated models; otherwise return the model that key points to.
+    :return: A model or list of models.
+    """
+    return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
 
   def deepfeatures(self, test_data, layer):
     """

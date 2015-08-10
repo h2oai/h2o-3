@@ -3,9 +3,10 @@ package hex.grid;
 import hex.Model;
 import hex.ModelBuilder;
 
-/** FIXME
+/** A model factory interface producing model builders of given
+ * type.
  *
- * @param <MP>
+ * @param <MP> model builder input parameter type
  */
 public interface ModelFactory<MP extends Model.Parameters> {
 
