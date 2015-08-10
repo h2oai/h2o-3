@@ -4,7 +4,7 @@ import h2o
 
 def toupper_tolower_check(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     frame = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 

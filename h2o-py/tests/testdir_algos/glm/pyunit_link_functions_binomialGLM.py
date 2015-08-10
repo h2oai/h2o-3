@@ -7,8 +7,8 @@ import statsmodels.api as sm
 
 
 def link_functions_binomial(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   print("Read in prostate data.")
   h2o_data = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))

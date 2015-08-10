@@ -4,7 +4,7 @@ import h2o
 
 def runif_check(ip, port):
     # Connect to a pre-existing cluster
-    h2o.init(ip, port)
+    
 
     uploaded_frame = h2o.upload_file(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
     r_u = uploaded_frame[0].runif(1234)

@@ -4,7 +4,7 @@ import h2o
 
 def multi_dim_slicing(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
 

@@ -363,7 +363,7 @@ def run_test(sys_args, test_to_run):
   # ver = pkg_resources.get_distribution("h2o").version
   # print "H2O PYTHON PACKAGE VERSION: " + str(ver)
   ip, port = sys_args[2].split(":")
-  init(ip,port)
+  init(ip,port,strict_version_check=False)
   log_and_echo("------------------------------------------------------------")
   log_and_echo("")
   log_and_echo("STARTING TEST: "+str(ou()))

@@ -4,7 +4,7 @@ import h2o
 
 def insert_missing(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     data = [[1, 2, 3, 1, 'a', 1, 9],
             [1, 6, 4, 2, 'a', 1, 9],

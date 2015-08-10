@@ -49,9 +49,6 @@ class H2OConnection(object):
     :return: None
     """
 
-    if "H2O_DISABLE_STRICT_VERSION_CHECK" in os.environ:
-       strict_version_check = False
-
     port = as_int(port)
     if not (isinstance(port, int) and 0 <= port <= sys.maxint):
        raise ValueError("Port out of range, "+port)

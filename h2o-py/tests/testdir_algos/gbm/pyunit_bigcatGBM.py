@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def bigcatGBM(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
   
   #Log.info("Importing bigcat_5000x2.csv data...\n")
   bigcat = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/bigcat_5000x2.csv"))

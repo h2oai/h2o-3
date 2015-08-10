@@ -6,7 +6,7 @@ import h2o
 
 def missing(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     missing_ratios = [0, 0.1, 0.25, 0.5, 0.75, 0.99]
     errors = [0, 0, 0, 0, 0, 0]
