@@ -71,12 +71,6 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
 
   //==========================
 
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("Parse Started");
-    String url = JobV3.link(job.key.key());
-    return ab.href("Poll",url,url);
-  }
-
   // Helper so ParseSetup can link to Parse
   public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames, String[] columnTypes, String[][] naStrings, int chunkSize) {
     return "Parse?source_keys="+Arrays.toString(srcs)+

@@ -280,52 +280,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
       col.clearBinsField();
   }
 
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    String[] urls = RequestServer.frameChoices(getSchemaVersion(),_fr);
-    for( String url : urls )
-      ab.href("hex",url,url);
-
-    // Main data display
-    // Column names
-    String titles[] = new String[_fr._names.length+1];
-    titles[0]="";
-    System.arraycopy(_fr._names,0,titles,1,_fr._names.length);
-    ab.arrayHead(titles);
-
-    // Rollup data
-    final long nrows = _fr.numRows();
-    formatRow(ab,"","type" ,new ColOp() { String op(ColV3 c) { return c.type; } } );
-    formatRow(ab,"","min"  ,new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mins[0]); } } );
-    formatRow(ab,"","max"  ,new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.maxs[0]); } } );
-    formatRow(ab,"","mean" ,new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mean   ); } } );
-    formatRow(ab,"","sigma",new ColOp() { String op(ColV3 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.sigma  ); } } );
-
-    // Optional rows: missing elements, zeros, positive & negative infinities, levels
-    for( ColV3 c : columns ) if( c.missing_count > 0 )
-        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(ColV3 c) { return c.missing_count == 0 ?"":Long.toString(c.missing_count);}}); break; }
-    for( ColV3 c : columns ) if( c.zero_count > 0 )
-        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(ColV3 c) { return c.zero_count == 0 ?"":Long.toString(c.zero_count);}}); break; }
-    for( ColV3 c : columns ) if( c.positive_infinity_count > 0 )
-        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(ColV3 c) { return c.positive_infinity_count == 0 ?"":Long.toString(c.positive_infinity_count);}}); break; }
-    for( ColV3 c : columns ) if( c.negative_infinity_count > 0 )
-        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(ColV3 c) { return c.negative_infinity_count == 0 ?"":Long.toString(c.negative_infinity_count);}}); break; }
-    for( ColV3 c : columns ) if( c.domain!=null)
-        { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(ColV3 c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
-
-    // Frame data
-    final int len = columns.length > 0 ? columns[0].data.length : 0;
-    for( int i=0; i<len; i++ ) {
-      final int row = i;
-      formatRow(ab,"",Long.toString(row_offset +row+1),new ColOp() {
-          String op(ColV3 c) {
-            return formatCell(c.data==null?0:c.data[row],c.string_data ==null?null:c.string_data[row],c,0); }
-        } );
-    }
-    ab.arrayTail();
-
-    return ab.bodyTail();
-  }
-
   private abstract static class ColOp { abstract String op(ColV3 v); }
   private String rollUpStr(ColV3 c, double d) {
     return formatCell(c.domain!=null || "uuid".equals(c.type) || "string".equals(c.type) ? Double.NaN : d,null,c,4);

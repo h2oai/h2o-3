@@ -47,18 +47,4 @@ public class H2OErrorV3<I extends H2OError, S extends H2OErrorV3<I, S>> extends 
     return http_status;
   }
 
-  @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.bodyHead();
-
-    if (0 == http_status)
-      ab.title("H2O Error");
-    else
-      ab.title(H2OError.httpStatusHeader(http_status));
-    ab.p("<div class='alert alert-error'>").p(msg).p("</div>");
-    if (null != stacktrace)
-      ab.p(Arrays.toString(stacktrace));
-
-    return ab.bodyTail();
-  }
-
 }

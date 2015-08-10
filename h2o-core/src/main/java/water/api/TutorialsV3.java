@@ -51,5 +51,4 @@ public class TutorialsV3 extends RequestSchema<Iced,TutorialsV3> {
                   + "</div>"
                   + "</div>";
 
-  @Override public HTML writeHTML_impl( HTML ab ) { return ab.p(TutorialsV3.HTML); }
 }

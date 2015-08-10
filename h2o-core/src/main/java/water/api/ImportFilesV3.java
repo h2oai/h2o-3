@@ -21,20 +21,5 @@ class ImportFilesV3 extends RequestSchema<Iced,ImportFilesV3> {
 
   @API(help="dels", direction=API.Direction.OUTPUT)
   String dels[];
-
-  //==========================
-  // Custom adapters go here
-
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("ImportFiles");
-    if( destination_frames.length == 0 )
-      ab.putStr("path",path);
-    else
-      ab.href("path",path, ParseSetupV3.link(destination_frames));
-    ab.putAStr("files",files);
-    ab.putAStr( "keys", destination_frames);
-    ab.putAStr("fails",fails);
-    ab.putAStr( "dels", dels);
-    return ab;
-  }
+  
 }
