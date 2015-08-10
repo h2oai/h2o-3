@@ -25,22 +25,10 @@ def pubdev_1839(ip, port):
 
     def split_fit_predict(data):
         global gbm0,drf0,glm0,dl0
-        r = data['Days'].runif()
-        train = data[  r  < 0.6]
-        test  = data[(0.6 <= r) & (r < 0.9)]
-        hold  = data[ 0.9 <= r ]
+        train = h2o.import_frame(h2o.locate("smalldata/jira/pubdev_1839_repro_train.csv"))
+        test  = h2o.import_frame(h2o.locate("smalldata/jira/pubdev_1839_repro_test.csv"))
 
-        tr = h2o.as_list(train, use_pandas=False)
-        te = h2o.as_list(test, use_pandas=False)
-        h = h2o.as_list(hold, use_pandas=False)
-
-        print "Training data has",train.ncol(),"columns and",train.nrow(),"rows, test has",test.nrow(),"rows, holdout has",hold.nrow()
-        print "Training data: "
-        for r in tr: print r
-        print "Test data: "
-        for r in te: print r
-        print "Hold data: "
-        for r in h: print r
+        print "Training data has",train.ncol(),"columns and",train.nrow(),"rows, test has",test.nrow()
 
         glm0 = h2o.glm(x           =train.drop("bikes"),
                        y           =train     ["bikes"],
@@ -48,8 +36,6 @@ def pubdev_1839(ip, port):
                        validation_y=test      ["bikes"],
                        Lambda=[1e-5],
                        family="poisson")
-
-    split_fit_predict(bpd)
 
     wthr1 = h2o.import_frame(path=[h2o.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv"),
                                    h2o.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv")])
