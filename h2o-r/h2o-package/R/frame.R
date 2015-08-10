@@ -332,8 +332,13 @@ NULL
   }
   # Have a row selector?
   if( !missing(row) ) {
-    if( !is.Frame(row) )   # Generic R expression
-      row <- .row.col.selector(row)
+    if( !is.Frame(row) )  { # Generic R expression
+      ro <- substitute(row)
+      browser()
+      if( ro[[1]]==":" ) row <- paste0("[", ro[[2]]-1, ":", ro[[3]] - ro[[2]] + 1,"]")
+      else               row <- .row.col.selector(row)
+
+    }
     data <- .newExpr("rows",data,row) # Row selector
   }
   data
