@@ -4,7 +4,7 @@ import h2o
 
 
 def upload_file(ip, port):
-    h2o.init(ip, port)
+    
 
     a = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))
     print a.describe()

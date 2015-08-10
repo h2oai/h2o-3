@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def pubdev_1696(ip, port):
-    h2o.init(ip, port)
+    
 
     iris = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))
 

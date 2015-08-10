@@ -416,19 +416,19 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat(which, "Set Metrics: \n")
   cat("=====================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
-  if( !is.null(tm$frame) && !is.null(tm$frame$name) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
-  if( !is.null(tm$MSE)                              )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
-  if( !is.null(tm$r2)                               )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
-  if( !is.null(tm$logloss)                          )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
-  if( !is.null(tm$AUC)                              )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
-  if( !is.null(tm$Gini)                             )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
-  if( !is.null(tm$null_deviance)                    )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
-  if( !is.null(tm$residual_deviance)                )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
-  if( !is.null(tm$AIC)                              )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
-  if( !is.null(tm$cm)                               )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n")); } }
-  if( !is.null(tm$cm)                               )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) } }
-  if( !is.null(tm$hit_ratio_table)                  )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
+  if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
+  if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
+  if( !is.null(tm$r2)                                              )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
+  if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
+  if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
+  if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
+  if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
+  if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
+  if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
+  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n")); } }
+  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) } }
+  if( !is.null(tm$hit_ratio_table)                                 )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
+  if( !is.null(tm$hit_ratio_table)                                 )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
   invisible(tm)
 }
@@ -718,3 +718,40 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
     }
   }
 }
+#' H2O Grid
+#'
+#' A class to contain the information about grid results
+#' @slot conn an \linkS4class{H2OConnection}
+#' @slot grid_id the final identifier of grid
+#' @slot model_ids  list of model IDs which are included in the grid object
+#' @slot hyper_names  list of parameter names used for grid search
+#' @slot failed_params  list of model parameters which caused a failure during model buiilding
+#' @slot failure_details  list of detailed messages which correspond to failed parameters field
+#' @seealso \linkS4class{H2OModel} for the final model types.
+#' @aliases H2OGrid
+#' @export
+setClass("H2OGrid", representation(conn = "H2OConnection",
+                                   grid_id = "character",
+                                   model_ids = "list",
+                                   hyper_names = "list",
+                                   failed_params = "list",
+                                   failure_details = "list"))
+
+#' Format grid object in user-friendly way
+#'
+#' @rdname H2OGrid-class
+#' @param object an \code{H2OGrid} object.
+#' @export
+setMethod("show", "H2OGrid", function(object) {
+  cat("H2O Grid Details\n")
+  cat("================\n\n")
+  cat("Grid ID:", object@grid_id, "\n")
+  cat("Used hyper parameters: \n")
+  lapply(object@hyper_names, function(name) { cat("  ", name, "\n") })
+  cat("Models:\n")
+  lapply(object@model_ids, function(model_id) {
+    cat("  ", model_id, "\n")
+  })
+  cat("Number of failed models:", length(object@failed_params), "\n")
+})
+

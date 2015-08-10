@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 
 def prostateKmeans(ip,port):
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
   #Log.info("Importing prostate.csv data...\n")
   prostate_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))

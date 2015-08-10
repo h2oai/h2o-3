@@ -6,6 +6,13 @@ from connection import H2OConnection
 from frame      import H2OFrame
 from job        import H2OJob
 from model.model_future import H2OModelFuture
+from model.dim_reduction import H2ODimReductionModel
+from model.autoencoder import H2OAutoEncoderModel
+from model.multinomial import H2OMultinomialModel
+from model.regression import H2ORegressionModel
+from model.binomial import H2OBinomialModel
+from model.clustering import H2OClusteringModel
+
 
 
 # Response variable model building
@@ -111,29 +118,12 @@ def _resolve_model(future_model, **kwargs):
     model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
   model_type = model_json["output"]["model_category"]
-  if model_type=="Binomial":
-    from model.binomial import H2OBinomialModel
-    model = H2OBinomialModel(future_model.job.dest_key,model_json)
-
-  elif model_type=="Clustering":
-    from model.clustering import H2OClusteringModel
-    model = H2OClusteringModel(future_model.job.dest_key,model_json)
-
-  elif model_type=="Regression":
-    from model.regression import H2ORegressionModel
-    model = H2ORegressionModel(future_model.job.dest_key,model_json)
-
-  elif model_type=="Multinomial":
-    from model.multinomial import H2OMultinomialModel
-    model = H2OMultinomialModel(future_model.job.dest_key,model_json)
-
-  elif model_type=="AutoEncoder":
-    from model.autoencoder import H2OAutoEncoderModel
-    model = H2OAutoEncoderModel(future_model.job.dest_key,model_json)
-
-  elif model_type=="DimReduction":
-    from model.dim_reduction import H2ODimReductionModel
-    model = H2ODimReductionModel(future_model.job.dest_key,model_json)
+  if   model_type=="Binomial":     model = H2OBinomialModel(    future_model.job.dest_key,model_json)
+  elif model_type=="Clustering":   model = H2OClusteringModel(  future_model.job.dest_key,model_json)
+  elif model_type=="Regression":   model = H2ORegressionModel(  future_model.job.dest_key,model_json)
+  elif model_type=="Multinomial":  model = H2OMultinomialModel( future_model.job.dest_key,model_json)
+  elif model_type=="AutoEncoder":  model = H2OAutoEncoderModel( future_model.job.dest_key,model_json)
+  elif model_type=="DimReduction": model = H2ODimReductionModel(future_model.job.dest_key,model_json)
 
   else:
     print model_type

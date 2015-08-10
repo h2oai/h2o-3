@@ -4,8 +4,8 @@ import h2o
 
 
 def levels_nlevels_setlevel_setLevels_test(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 

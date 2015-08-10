@@ -45,7 +45,13 @@ Now, parse the imported data:
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
+0. Review the data in the **Edit Column Names and Types** section.
+0. Click the **Next page** button until you reach the last page. 
+
+   ![Page buttons](../images/Flow_PageButtons.png)
+
+0. For column 1559, select `Enum` from the drop-down column type menu. 
+0. Click the **Parse** button.  
 
   ![Parsing Data](../images/RF_Parse.png)
 

@@ -1,13 +1,36 @@
 package hex;
 
-import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
-import water.*;
-import water.fvec.*;
-import water.util.*;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
+import hex.genmodel.GenModel;
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.Lockable;
+import water.MRTask;
+import water.MemoryManager;
+import water.Weaver;
+import water.fvec.C0DChunk;
+import water.fvec.Chunk;
+import water.fvec.EnumWrappedVec;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.SB;
+import water.util.TwoDimTable;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -51,6 +74,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  process, and are considered "first class citizens" by the front-end - the
    *  front-end will cache Parameters (in the browser, in JavaScript, on disk)
    *  and rebuild Parameter instances from those caches.
+   *
+   *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
+   *  them!
    */
   public abstract static class Parameters extends Iced {
     /** Maximal number of supported levels in response. */
@@ -157,6 +183,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double missingColumnsType() { return Double.NaN; }
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
+
+    // FIXME: this is really horrible hack, Model.Parameters has method checksum_impl,
+    // but not checksum, the API is totally random :(
+    public long checksum() {
+      return checksum_impl();
+    }
 
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
@@ -532,7 +564,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics)
-        throw new IllegalArgumentException("Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed).");
+        throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null) {
@@ -874,6 +906,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // sb.p("//     java -cp h2o-genmodel.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
+    if (_parms._offset_column != null) {
+      sb.nl();
+      sb.nl();
+      sb.p("//").nl();
+      sb.p("// NOTE:  Java model export does not support offset_column.").nl();
+      sb.p("//").nl();
+      Log.warn("Java model export does not support offset_column.");
+    }
     if (preview && toJavaCheckTooBig()) {
       sb.nl();
       sb.nl();

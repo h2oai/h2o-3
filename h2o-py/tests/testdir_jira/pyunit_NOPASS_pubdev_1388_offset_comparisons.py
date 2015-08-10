@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def offset_1388(ip, port):
-    h2o.init(ip, port)
+    
 
     print "Loading datasets..."
     pros_hex = h2o.import_frame(h2o.locate("smalldata/prostate/prostate.csv"))

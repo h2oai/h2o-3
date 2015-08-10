@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def distribution_behaviorGBM(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   #Log.info("==============================")
   #Log.info("Default Behavior - Gaussian")

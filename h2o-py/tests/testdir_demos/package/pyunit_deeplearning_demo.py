@@ -4,7 +4,7 @@ import h2o
 
 def demo_deeplearning(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     # Execute gbm demo
     h2o.demo(func="deeplearning", interactive=False, test=True)

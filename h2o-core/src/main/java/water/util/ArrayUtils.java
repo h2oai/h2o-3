@@ -1,11 +1,12 @@
 package water.util;
 
-import water.MemoryManager;
-
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Random;
+
+import water.MemoryManager;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -33,7 +34,16 @@ public class ArrayUtils {
     for (double d: from) result += d;
     return result;
   }
-
+  public static float[] reduceMin(float[] a, float[] b) {
+    for (int i=0; i<a.length; ++i)
+      a[i] = Math.min(a[i], b[i]);
+    return a;
+  }
+  public static float[] reduceMax(float[] a, float[] b) {
+    for (int i=0; i<a.length; ++i)
+      a[i] = Math.max(a[i], b[i]);
+    return a;
+  }
   public static double innerProduct(double [] x, double [] y){
     double result = 0;
     for (int i = 0; i < x.length; i++)
@@ -292,10 +302,10 @@ public class ArrayUtils {
   }
   public static double[][] formGram(double[][] x) { return formGram(x, false); }
 
-  public static String[] permuteCols(String[] vec, int[] idx) {
+  public static double[] permute(double[] vec, int[] idx) {
     if(vec == null) return null;
     assert vec.length == idx.length : "Length of vector must match permutation vector length: Got " + vec.length + " != " + idx.length;
-    String[] res = new String[vec.length];
+    double[] res = new double[vec.length];
 
     for(int i = 0; i < vec.length; i++)
       res[i] = vec[idx[i]];
@@ -310,6 +320,14 @@ public class ArrayUtils {
       for(int i = 0; i < ary.length; i++)
         res[i][j] = ary[i][idx[j]];
     }
+    return res;
+  }
+  public static double[][] permuteRows(double[][] ary, int[] idx) {
+    if(ary == null) return null;
+    assert ary.length == idx.length : "Number of rows must match permutation vector length: Got " + ary.length + " != " + idx.length;
+    double[][] res = new double[ary.length][ary[0].length];
+    for(int i = 0; i < ary.length; i++)
+      res[i] = permute(ary[i], idx);
     return res;
   }
 
@@ -424,6 +442,12 @@ public class ArrayUtils {
     return result;
   }
   public static int minIndex(float[] from) {
+    int result = 0;
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<from[result]) result = i;
+    return result;
+  }
+  public static int minIndex(double[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
       if (from[i]<from[result]) result = i;
@@ -931,6 +955,48 @@ public class ArrayUtils {
     for (int i = 1; i < arr.length; i++) {
       System.arraycopy(arr[i], 0, result, j, arr[i].length);
       j += arr[i].length;
+    }
+    return result;
+  }
+
+  public static Object[][] zip(Object[] a, Object[] b) {
+    if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lenghts!");
+    Object[][] result = new Object[a.length][2];
+    for (int i = 0; i < a.length; i++) {
+      result[i][0] = a[i];
+      result[i][1] = b[i];
+    }
+
+    return result;
+  }
+
+  public static <K, V> int crossProductSize(Map<K, V[]> hyperSpace) {
+    int size = 1;
+    for (Map.Entry<K,V[]> entry : hyperSpace.entrySet()) {
+      V[] value = entry.getValue();
+      size *= value != null ? value.length : 1;
+    }
+    return size;
+  }
+
+  public static Integer[] interval(Integer start, Integer end) {
+    return interval(start, end, 1);
+  }
+  public static Integer[] interval(Integer start, Integer end, Integer step) {
+    int len = 1 + (end - start) / step; // Include both ends of interval
+    Integer[] result = new Integer[len];
+    for(int i = 0, value = start; i < len; i++, value += step) {
+      result[i] = value;
+    }
+    return result;
+  }
+
+  public static Float[] interval(Float start, Float end, Float step) {
+    int len = 1 + (int)((end - start) / step); // Include both ends of interval
+    Float[] result = new Float[len];
+    Float value = start;
+    for(int i = 0; i < len; i++, value += step) {
+      result[i] = value;
     }
     return result;
   }

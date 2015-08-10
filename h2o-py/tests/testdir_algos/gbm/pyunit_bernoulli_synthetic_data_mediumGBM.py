@@ -10,8 +10,8 @@ from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
 def bernoulli_synthetic_data_mediumGBM(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     # Generate training dataset (adaptation of http://www.stat.missouri.edu/~speckman/stat461/boost.R)
     train_rows = 10000

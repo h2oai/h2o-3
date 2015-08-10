@@ -1369,24 +1369,31 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       try {
         tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        vfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
           Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toEnum())._key);
         }
         DKV.put(tfr);
+        DKV.put(vfr);
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
         parms._train = tfr._key;
         parms._response_column = "Cost";
         parms._seed = 0xdecaf;
         parms._distribution = dist;
         parms._min_rows = 1;
-        parms._ntrees = 300;
+        parms._ntrees = 30;
+//        parms._offset_column = "logInsured"; //POJO scoring not supported for offsets
         parms._learn_rate = 1e-3f;
 
         // Build a first model; all remaining models should be equal
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();
+
+        Frame res = gbm.score(vfr);
+        Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
 
         ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
 

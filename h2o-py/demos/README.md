@@ -74,6 +74,7 @@ To set up your Python environment to run these examples, download and install H2
 - [Airlines Prep](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prep_airlines.ipynb) - Condition the airline dataset by filtering out NAs if the departure delay in the input dataset is unknown. Anything longer than `minutesOfDelayWeTolerate` is treated as delayed. 
 - [GBM model using prostate dataset](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/prostate_gbm.ipynb) - Creates a GBM model using the prostate dataset.  
 - [Balance Classes](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/rf_balance_classes.ipynb) - Imports the airlines dataset, parses it, displays a summary, and runs GLM with a binomial link function. 
+- [Clustering with KMeans](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/kmeans_aic_bic_diagnostics.ipynb) - Demonstrates kmeans clusters and different diagnostics for selecting the number of clusters.  Link to data is provided in the notebook.
 
 
 
