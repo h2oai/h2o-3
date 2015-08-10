@@ -228,10 +228,10 @@ head.Frame <- function(x,n=6L) {
   stopifnot(length(n) == 1L)
   n <- if (n < 0L) max(nrow(x) + n, 0L)
        else        min(n, nrow(x))
-  if( n >= 0L && n <= 1000L ) { # Short version, just report the cached internal DF
+  if( n >= 0L && n <= 1000L ) # Short version, just report the cached internal DF
     head(.fetch.data(x,n),n)
-  } else # Long version, fetch all asked for "the hard way"
-    x[seq_len(n),]
+  else # Long version, fetch all asked for "the hard way"
+    .newExpr("rows",x,paste0("[0:",n,"]"))
 }
 
 #' @rdname h2o.head
@@ -242,7 +242,7 @@ tail.Frame <- function(x,n=6L) {
   if( n==0L ) head(x,n=0L)
   else {
     startidx <- max(1L, endidx - n + 1)
-    x[startidx:endidx,]
+    .newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx),"]"))
   }
 }
 
@@ -1107,3 +1107,31 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' @param ... Ignored
 #' @export
 na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
+
+#' Cross Tabulation and Table Creation in H2O
+#'
+#' Uses the cross-classifying factors to build a table of counts at each combination of factor levels.
+#'
+#' @param x An \linkS4class{H2OFrame} object with at most two columns.
+#' @param y An \linkS4class{H2OFrame} similar to x, or \code{NULL}.
+#' @return Returns a tabulated \linkS4class{H2OFrame} object.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' summary(prostate.hex)
+#'
+#' # Counts of the ages of all patients
+#' head(h2o.table(prostate.hex[,3]))
+#' h2o.table(prostate.hex[,3])
+#'
+#' # Two-way table of ages (rows) and race (cols) of all patients
+#' head(h2o.table(prostate.hex[,c(3,4)]))
+#' h2o.table(prostate.hex[,c(3,4)])
+#' @export
+h2o.table <- function(x, y = NULL) {
+  if( !is.Frame(x) ) stop("`x` must be an Frame object")
+  if( !is.null(y) && !is.Frame(y)) stop("`y` must be an H2OFrame object")
+  if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
+}

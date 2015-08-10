@@ -43,11 +43,12 @@ test.LiblineaR.airlines <- function() {
     h2op         <- predict(h2o.m, testhex)
     h2operf      <- h2o.performance(h2o.m, testhex)
     h2opreds     <- head(h2op, nrow(h2op))
-    h2oCM        <- table(testLabels, h2opreds$predict)
+    vec.preds    <- as.vector((h2opreds$predict))
+    h2oCM        <- table(testLabels, as.logical(vec.preds))
     h2oPrecision <- h2oCM[1] / (h2oCM[1] + h2oCM[3])
     h2oRecall    <- h2oCM[1] / (h2oCM[1] + h2oCM[2])
     h2oF1        <- 2 * (h2oPrecision * h2oRecall) / (h2oPrecision + h2oRecall)
-    h2oAUC       <- performance(prediction(h2opreds$predict, testLabels), measure = "auc")@y.values
+    h2oAUC       <- performance(prediction(vec.preds, testLabels), measure = "auc")@y.values
     
     Log.info("                ============= H2O Performance =============\n")
     Log.info(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n", sep = ""))
