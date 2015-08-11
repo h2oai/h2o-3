@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def vi_reg(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/BostonHousing.csv"))
     #data.summary()

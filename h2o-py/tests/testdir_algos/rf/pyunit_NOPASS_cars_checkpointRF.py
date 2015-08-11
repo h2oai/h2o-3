@@ -9,6 +9,13 @@ def cars_checkpoint(ip,port):
     s = cars.runif()
     train = cars[s > .2]
     valid = cars[s <= .2]
+    t = h2o.as_list(train, use_pandas=False)
+    v = h2o.as_list(valid, use_pandas=False)
+    print "\n*** Training dataset:"
+    for r in t: print r
+    print "\n*** Validation dataset:"
+    for r in v: print r
+
     print "\n*** Description (chunk distribution, etc) of training frame:"
     train.describe()
     print "\n*** Description (chunk distribution, etc) of validation frame:"

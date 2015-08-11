@@ -450,7 +450,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(dinfo._key, dinfo);
 
         int weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
-        int[] numLevels = tinfo._adaptedFrame.numLevels();
+        int[] numLevels = tinfo._adaptedFrame.cardinality();
 
         // Use closed form solution for X if L2 loss and regularization
         double[][] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
@@ -565,13 +565,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double[][] _archetypes;
     boolean _transposed;    // Is _archetypes = Y'? Used during model building for convenience.
     final int[] _catOffsets;
-    final int[] _numLevels;
+    final int[] _numLevels;  // numLevels[i] = -1 if column i is not categorical
 
     Archetypes(double[][] y, boolean transposed, int[] catOffsets, int[] numLevels) {
       _archetypes = y;
       _transposed = transposed;
       _catOffsets = catOffsets;
-      _numLevels = numLevels;   // TODO: Check sum(numLevels) + nnums == nfeatures()
+      _numLevels = numLevels;   // TODO: Check sum(cardinality[cardinality > 0]) + nnums == nfeatures()
     }
 
     public int rank() {

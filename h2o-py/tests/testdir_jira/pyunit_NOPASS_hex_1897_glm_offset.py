@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def offset_1897(ip, port):
-    h2o.init(ip, port)
+    
 
     print 'Checking binomial models for GLM with and without offset'
     print 'Import prostate dataset into H2O and R...'

@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def pca_scoring(ip, port):
-    h2o.init(ip, port)
+    
 
     print "Importing arrests.csv data..."
     arrestsH2O = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))

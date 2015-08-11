@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def fiftycatGBM(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   # Training set has only 45 categories cat1 through cat45
   #Log.info("Importing 50_cattest_train.csv data...\n")

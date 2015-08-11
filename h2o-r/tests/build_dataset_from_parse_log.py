@@ -173,7 +173,7 @@ class Dataset:
                                      r"\s*max\((\S*).\)" +
                                      r"\s*(na\((\S+)\))?" +
                                      r"\s*(constant)?" +
-                                     r"\s*numLevels\((\d+)\)",
+                                     r"\s*cardinality\((\d+)\)",
                                      s)
             if (match_groups is not None):
                 col_num = int(match_groups.group(1))

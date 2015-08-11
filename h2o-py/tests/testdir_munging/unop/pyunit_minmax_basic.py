@@ -4,8 +4,8 @@ import h2o
 import numpy as np
 
 def minmax_basic(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     print "Uploading iris data..."
     iris_h2o = h2o.import_frame(h2o.locate("smalldata/iris/iris_wheader.csv"))

@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.grid.Grid;
 import water.api.API;
 import water.api.KeyV3;
+import water.api.ModelParametersSchema;
 import water.api.Schema;
 
 /**
@@ -24,8 +25,17 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   @API(help = "Model IDs build by a grid search")
   public KeyV3.ModelKeyV3[] model_ids;
 
+  @API(help = "Used hyper parameters.", direction = API.Direction.OUTPUT)
+  public String[] hyper_names;
+
+  @API(help = "List of failed parameters", direction = API.Direction.OUTPUT)
+  public ModelParametersSchema[] failed_params; // Using common ancestor of XXXParamsV3
+
+  @API(help = "List of detailed failure messages", direction = API.Direction.OUTPUT)
+  public String[] failure_details;
+
   @Override
   public Grid createImpl() {
-    return new Grid(null, null, null, null);
+    return Grid.GRID_PROTO;
   }
 }

@@ -978,4 +978,26 @@ public class ArrayUtils {
     }
     return size;
   }
+
+  public static Integer[] interval(Integer start, Integer end) {
+    return interval(start, end, 1);
+  }
+  public static Integer[] interval(Integer start, Integer end, Integer step) {
+    int len = 1 + (end - start) / step; // Include both ends of interval
+    Integer[] result = new Integer[len];
+    for(int i = 0, value = start; i < len; i++, value += step) {
+      result[i] = value;
+    }
+    return result;
+  }
+
+  public static Float[] interval(Float start, Float end, Float step) {
+    int len = 1 + (int)((end - start) / step); // Include both ends of interval
+    Float[] result = new Float[len];
+    Float value = start;
+    for(int i = 0; i < len; i++, value += step) {
+      result[i] = value;
+    }
+    return result;
+  }
 }
