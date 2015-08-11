@@ -5,7 +5,6 @@ import water.Job;
 import water.Key;
 import water.Keyed;
 import water.api.KeyV3.JobKeyV3;
-import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PojoUtils;
 import water.util.PrettyPrint;
@@ -107,17 +106,4 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
   //==========================
   // Helper so Jobs can link to JobPoll
   public static String link(Key key) { return "/Jobs/"+key; }
-
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("Job Poll");
-    if( "DONE".equals(status) ) {
-      Job job = (Job)Key.make(key.name).get();
-      String url = "deprecated"; // InspectV1.link(job.dest());
-      ab.href("Inspect",url,url).putStr("status",status).put4f("progress",progress);
-    } else {
-      String url = link(key.key());
-      ab.href("JobPoll",url,url).putStr("status",status).put4f("progress",progress);
-  }
-    return ab.putStr("msec",PrettyPrint.msecs(msec,false)).putStr("exception",exception);
-  }
 }

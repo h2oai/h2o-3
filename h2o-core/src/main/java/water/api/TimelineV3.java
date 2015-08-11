@@ -3,7 +3,6 @@ package water.api;
 import water.*;
 import water.api.TimelineHandler.Timeline;
 import water.init.TimelineSnapshot;
-import water.util.DocGen;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -65,7 +64,6 @@ public class TimelineV3 extends RequestSchema<Timeline,TimelineV3> {
     @Override protected String ioType() {return "UDP";}
     @Override protected String event() {return "heartbeat";}
     @Override public    String bytes() {return sends + " sent " + ", " + recvs + " received";}
-    @Override public    DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {ab.cell("haha"); return ab;}
     @Override public    String toString() { return "HeartBeat(" + sends + " sends, " + recvs + " receives)"; }
   } // HeartBeatEvent
 
@@ -181,16 +179,5 @@ public class TimelineV3 extends RequestSchema<Timeline,TimelineV3> {
     } // if timeline.snapshot
     events = outputEvents.toArray(new EventV3[null == outputEvents ? 0 : outputEvents.size()]);
     return this;
-  }
-
-  @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.title("Timeline");
-    ab.bodyHead();
-    ab.arrayHead(new String []{"hh:mm:ss:ms","nanosec","who","I/O Kind","event","bytes"});
-    for(EventV3 e:events)
-      ab.arrayRow(new String[]{e.date,""+e.nanos,e.who(),e.ioType(),e.event(),e.bytes()});
-    ab.arrayTail();
-    ab.bodyTail();
-    return ab;
   }
 }

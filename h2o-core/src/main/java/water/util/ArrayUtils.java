@@ -995,7 +995,7 @@ public class ArrayUtils {
     int len = 1 + (int)((end - start) / step); // Include both ends of interval
     Float[] result = new Float[len];
     Float value = start;
-    for(int i = 0; i < len; i++, value += step) {
+    for(int i = 0; i < len; i++, value = start + i*step) {
       result[i] = value;
     }
     return result;

@@ -198,7 +198,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @return checksum
      */
     protected long checksum_impl() {
-      long xs = 0x600D;
+      long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
       Arrays.sort(fields,
@@ -217,22 +217,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (f.get(this) != null) {
               if (c.getComponentType() == Integer.TYPE){
                 int[] arr = (int[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Float.TYPE) {
                 float[] arr = (float[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Double.TYPE) {
                 double[] arr = (double[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.deepHashCode(arr));
+                xs = P * xs + (long) Arrays.deepHashCode(arr);
               } //else lead to ClassCastException
             } else {
-              xs ^= (0xDECAF + P);
+              xs = P * xs + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -242,10 +242,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else {
           try {
             f.setAccessible(true);
-            if (f.get(this) != null) {
-              xs ^= (0x1337 + P * (long)(f.get(this)).hashCode());
+            Object value = f.get(this);
+            if (value != null) {
+              xs = P * xs + (long)(value.hashCode());
             } else {
-              xs ^= (0x1337 + P);
+              xs = P * xs + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);

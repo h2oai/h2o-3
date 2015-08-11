@@ -797,7 +797,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :return: Return a new classifier or regression model.
   """
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["y","training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   return h2o_model_builder.supervised(parms)
 
@@ -886,7 +886,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         learn_rate=None,nbins=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
-        score_each_iteration=None,offset_column=None,weights_column=None,do_future=None):
+        score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None):
   """
   Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
   The default distribution function will guess the model type based on the response column typerun properly the
@@ -928,7 +928,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         tweedie_variance_power=None,tweedie_link_power=None,alpha=None,prior=None,lambda_search=None,
         nlambdas=None,lambda_min_ratio=None,beta_constraints=None,offset_column=None,weights_column=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
-        intercept=None, Lambda=None, do_future=None):
+        intercept=None, Lambda=None, do_future=None, checkpoint=None):
   """
   Build a Generalized Linear Model
   Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
@@ -1001,7 +1001,7 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
 def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
            nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
            user_points=None,ignored_columns=None,score_each_iteration=None,keep_cross_validation_predictions=None,
-           ignore_const_cols=None):
+           ignore_const_cols=None,checkpoint=None):
   """
   Performs k-means clustering on an H2O dataset.
 
@@ -1032,7 +1032,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
                   build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_cats=None,
                   binomial_double_trees=None,validation_frame=None,balance_classes=None,max_after_balance_size=None,
                   seed=None,offset_column=None,weights_column=None,nfolds=None,fold_column=None,fold_assignment=None,
-                  keep_cross_validation_predictions=None):
+                  keep_cross_validation_predictions=None,checkpoint=None):
   """
   Build a Big Data Random Forest Model
   Builds a Random Forest Model on an H2OFrame
@@ -1123,7 +1123,7 @@ def svd(x,validation_x=None,nv=None,max_iterations=None,transform=None,seed=None
 def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
                 laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
                 balance_classes=None,max_after_balance_size=None, nfolds=None,fold_column=None,fold_assignment=None,
-                keep_cross_validation_predictions=None):
+                keep_cross_validation_predictions=None,checkpoint=None):
   """
   The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
   Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.
