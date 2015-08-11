@@ -200,13 +200,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    */
   private Model buildModel(final MP params, Grid<MP> grid) {
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters)
-    Key<Model> key = grid.getModelKey(params);
+    // FIXME: get checksum here since model builder will modify instance of params!!!
+    long checksum = params.checksum();
+    Key<Model> key = grid.getModelKey(checksum);
     // It was already built
     if (key != null) {
       return key.get();
     }
-    // FIXME: get checksum here since model builder will modify instance of params!!!
-    long checksum = params.checksum();
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)

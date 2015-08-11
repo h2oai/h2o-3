@@ -128,7 +128,11 @@ public class Grid<MP extends Model.Parameters>
 
   public Key<Model> getModelKey(MP params) {
     long checksum = params.checksum();
-    Key<Model> mKey = _cache.get(IcedLong.valueOf(checksum));
+    return getModelKey(checksum);
+  }
+
+  Key<Model> getModelKey(long paramsChecksum) {
+    Key<Model> mKey = _cache.get(IcedLong.valueOf(paramsChecksum));
     return mKey;
   }
 
