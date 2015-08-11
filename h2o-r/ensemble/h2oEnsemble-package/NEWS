@@ -1,12 +1,18 @@
 # News for the h2oEnsemble package. #
 
-h2oEnsemble 0.0.5 (Pre-release)
-----------------
-* Fixed bug in `h2o.glm.wrapper` that, when used as a metalearer, was using the incorrect predicted values column for binomial outcomes (it was using the `predict` column of predicted labels, instead of the `p1` column.)  This was causing ensembles that used `h2o.glm.wrapper` as the metalearner to appear much worse (in terms of AUC) than they actually were.
-* TO DO: Full support for `h2o.*` metalearning functions (data no longer pulled into R). 
-* TO DO: Re-do the metalearing code such that the `Z` matrix of cv-pred values from the base learners to stay entirely within the H2O cluster.  Currently, we pull the `Z` matrix into R memory, which results in a memory bottleneck that caps the number of training rows at around 8-10 million (cannot allocate vector error).
 * TO DO: Add support for new distribution/family arg in `h2o.gbm` and `h2o.glm`
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
+* Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
+
+
+h2oEnsemble 0.0.5 (2015-08-10)
+----------------
+* Added full support for `h2o.*` metalearning functions (data is no longer pulled into R). Previously, we pulled the `Z` matrix into R memory in order to be able to make use of SuperLearner-based metalearning functions, but this is no longer the default functionality.  We still pull the `Z` matrix into R memory if a SL-based metalearner is specified, however.  Using SL-based metalearners is suboptimal from a memory management perspective and may be deprecated in the future.  
+* Re-wrote the backend of `h2o.ensemble` such the `Z` matrix of cv-pred values from the base learners to stay entirely within the H2O cluster using the recently updated cross-validation capabilities of the h2o base learner functions.
+* Updated many of the wrapper functions to include newly implemented arguments.
+* Updated bug in example code for `h2o.enemble` that used predicted labels instead of predicted value for h2o metalearners.  This made it look like h2o metalearners were suboptimal when they were not.
+* New distribution families (gamma, tweedie, poisson) are now supported when all base learners and metalearners can utilize the distribution (functionality currently untested).
+* The example for the `h2o.ensemble` function was updated.
 
 
 h2oEnsemble 0.0.4 (2015-06-15)

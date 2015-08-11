@@ -34,7 +34,7 @@ install_github("h2oai/h2o-3/h2o-r/ensemble/h2oEnsemble-package")
 - Historically, techniques like [non-negative least squares (NNLS)](https://en.wikipedia.org/wiki/Non-negative_least_squares) have been used to find the optimal weighted combination of the base learners, however any supervised learning algorithm can be used as a metalearner.  
 - If your base learning library includes several versions of a particular algorithm (with different tuning parameters), then you should consider using a metalearner that can perform well in the presence of correlated predictors (e.g. Ridge Regression).
 - We allow the user to specify any learner wrapper to define a metalearner, and we can use the `SL.nnls` function (in the `SuperLearner_wrappers.R` script) and the `SL.glm` (included in the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) R package).
-- The ensembles that use an h2o-based metalearner have suboptimal performance, which will be addressed in a future release.  
+- When using a SuperLearner-based function for a metalearner, an `N x L` matrix will be pulled into R memory from H2O (`n` is number of observations and `L` is the number of base learners).  This may cause the code to fail for training sets of greater than ~8M rows due to a memory allocation issue.  Support for SuperLearner-based metalearners will be deprecated in the future when this package is merged into the H2O core (if this is a problem for anyone let me know).
 
 
 ## Known Issues
@@ -45,13 +45,13 @@ GET /Cloud.json HTTP/1.1
 Host: localhost:54321
 Accept: */*
 ```
-- The `h2o.*` algorithms are currently performing sub-optimally as metalearners.  Work is being done to address this issue.  As a result, we are currently supporting the `SL.*` based metalearners from the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) R package.  This means that a matrix of size `n x L`, where `L` is the number of base learners and `n` is the number of training observations, must be pulled into R memory for the metalearning step.  This is a memory bottleneck that will be addressed in a future release.  The plan is to use H2O/Java-based metalearners to avoid having to pull data back into R.
 - When using a `h2o.deeplearning` model as a base learner, it is not possible to reproduce ensemble model results exactly even when using the `seed` argument of `h2o.ensemble` is set if your H2O cluster uses multiple cores.  This is due to the fact that `h2o.deeplearning` results are only reproducible when trained on a single core.
 - The multicore and snow cluster functionality is not working (see the `parallel` option of the `h2o.ensemble` function).  There is a conflict with using the R parallel functionality in conjunction with the H2O parallel functionality.  The `h2o.*` base learning algorithms will use all cores available, so even when the `h2o.ensemble` function is executed with the default `parallel = "seq"` option, you will be training in parallel.  The `parallel` argument was intended to parallelize the cross-validation and base learning steps, but this functionality either needs to be re-architected to work in concert with H2O parallelism or removed in a future release.
 - Currently, the `h2o.ensemble` function outputs a list object which makes up the ensemble "model".  This R object can be serialized to disk using the R base `save` function.  However, if you save the ensemble model to disk, then use it in the future to generate predictions on a test set using a new H2O cluster instance (with a different cluster IP address), this will not work.  This can be fixed by updating the cluster IP address in the saved object with the new one.  The model saving process will probably be modified in the future to serialize each of the individual H2O base models using the `h2o::saveModel` function.  Therefore, the saved H2O base models will be accessible individually.  Currently, the ensemble fit is stored as a single R list object which contains all the base learner fits, the metalearner fit, and a few other pieces of data.
+- Passing the `validation_frame` to `h2o.ensemble` does not currently do anything.  This should be updated to produce predicted values.  Right now, you must use the `predict.h2o.ensemble` function to generate predictions on a test set.
 
 
 ## Benchmarks
 
-Benchmarking code for `h2oEnsemble` Classic (compatible with H2O Classic (H2O version < 3.0)) is available here: [https://github.com/ledell/h2oEnsemble-benchmarks](https://github.com/ledell/h2oEnsemble-benchmarks)
+Benchmarking code for `h2oEnsemble` Classic (compatible with H2O Classic (H2O version < 3.0)) is available here: [https://github.com/ledell/h2oEnsemble-benchmarks](https://github.com/ledell/h2oEnsemble-benchmarks)  These benchmarks are out of date -- a major rewrite of the `h2o.ensemble` backend occured in version 0.0.5, which speeds things up quite a bit.  New benchmarks forthcoming. 
 
