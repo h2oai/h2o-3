@@ -1,4 +1,5 @@
 \name{h2o.example.wrapper}
+\alias{h2o.example.wrapper}
 \alias{h2o.glm.wrapper}
 \alias{h2o.gbm.wrapper}
 \alias{h2o.randomForest.wrapper}
@@ -30,7 +31,9 @@ An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
 }
-
+\item{...}{
+  Additional arguments to be passed to or from methods.
+}
 }
 \value{
 An H2O model.
@@ -41,7 +44,7 @@ Erin LeDell \email{erin@h2o.ai}
 }
 
 \seealso{
-\code{\link[h2oEnsemble::h2o.ensemble]{h2o.ensemble}}
+\code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}}
 }
 
 
