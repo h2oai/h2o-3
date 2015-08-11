@@ -673,9 +673,11 @@ public abstract class GLMTask  {
   public static class GLMIterationTask extends FrameTask2<GLMIterationTask> {
     final GLMParameters _params;
     final double [] _beta;
-    protected Gram  _gram;
-    double [] _xy;
-    double    _yy;
+    protected Gram  _gram; // wx%*%x
+    double [] _xy; // wx^t%*%z,
+    double [] _xw; // xw[j]=\sum_i w_ix_ij
+    double _wz;
+    double _yy;
     GLMValidation _val; // validation of previous model
     final double _ymu;
     long _nobs;
@@ -683,7 +685,9 @@ public abstract class GLMTask  {
     int [] _ti;
     public double _likelihood;
     final double _lambda;
-    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
+    double wsum, wsumu;
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate,
+                             double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
       _beta = beta;
@@ -691,7 +695,6 @@ public abstract class GLMTask  {
       _validate = validate;
       _lambda = lambda;
     }
-
 
     @Override public boolean handlesSparseData(){return true;}
 
@@ -719,6 +722,7 @@ public abstract class GLMTask  {
         _val = new GLMValidation(domain, true, _ymu, _params, rank, .5, true); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
+      _xw = MemoryManager.malloc8d(_dinfo.fullN()); // + 1 is for intercept
       if(_params._family == Family.binomial && _validate){
         _ti = new int[2];
       }
@@ -751,15 +755,20 @@ public abstract class GLMTask  {
         _val.add(y, mu, r.weight, r.offset);
       _likelihood += r.weight*_params.likelihood(y,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
+      wsum+=w;
+      wsumu+=r.weight; // just add the user observation weight for the scaling.
       double wz = w * z;
-
+      _wz += wz;
       _yy += wz * z;
-      for(int i = 0; i < r.nBins; ++i)
+      for(int i = 0; i < r.nBins; ++i) {
         _xy[r.binIds[i]] += wz;
+        _xw[r.binIds[i]] += w;
+      }
       for(int i = 0; i < r.nNums; ++i){
         int id = r.numIds == null?(i + numStart):r.numIds[i];
         double val = r.numVals[i];
         _xy[id] += wz*val;
+        _xw[id] += w*val;
       }
       if(_dinfo._intercept)
         _xy[_xy.length-1] += wz;
@@ -769,9 +778,13 @@ public abstract class GLMTask  {
     @Override
     public void reduce(GLMIterationTask git){
       ArrayUtils.add(_xy, git._xy);
+      ArrayUtils.add(_xw, git._xw);
       _gram.add(git._gram);
       _yy += git._yy;
       _nobs += git._nobs;
+      _wz += git._wz;
+      wsum += git.wsum;
+      wsumu += git.wsumu;
       if (_validate) _val.reduce(git._val);
       _likelihood += git._likelihood;
       super.reduce(git);
@@ -797,8 +810,10 @@ public abstract class GLMTask  {
             interceptRow[j] -= nobs * _dinfo._normSub[j-ns]*_dinfo._normMul[j-ns];
         }
         // and the xy vec as well
-        for(int i = ns; i < _dinfo.fullN(); ++i)
-          _xy[i] -= _xy[_xy.length-1]*_dinfo._normSub[i-ns]*_dinfo._normMul[i-ns];
+        for(int i = ns; i < _dinfo.fullN(); ++i) {
+          _xy[i] -= _xy[_xy.length - 1] * _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
+          _xw[i] = _xw[i]*_dinfo._normMul[i - ns] - wsum * _dinfo._normSub[i - ns] *  _dinfo._normSub[i - ns]; // CHECK WITH TOMAS
+        }
       }
       if(_val != null){
         _val.computeAIC();
@@ -810,7 +825,7 @@ public abstract class GLMTask  {
     }
   }
 
-  public static class GLMCoordinateDescentTask extends FrameTask2<GLMCoordinateDescentTask> {
+ /* public static class GLMCoordinateDescentTask extends FrameTask2<GLMCoordinateDescentTask> {
     final GLMParameters _params;
     final double [] _betaw;
     final double [] _betacd;
@@ -819,7 +834,8 @@ public abstract class GLMTask  {
     public double _ws=0;
     long _nobs;
     public double _likelihood;
-    public  GLMCoordinateDescentTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] betaw, double [] betacd, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
+    public  GLMCoordinateDescentTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] betaw,
+                                     double [] betacd, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
       _betaw = betaw;
@@ -887,8 +903,9 @@ public abstract class GLMTask  {
     }
 
   }
+*/
 
-  public static class GLMCoordinateDescentTaskSeq extends MRTask<GLMCoordinateDescentTaskSeq> {
+  public static class GLMCoordinateDescentTaskSeqNaive extends MRTask<GLMCoordinateDescentTaskSeqNaive> {
     public double [] _normMulold;
     public double [] _normSubold;
     public double [] _normMulnew;
@@ -904,9 +921,10 @@ public abstract class GLMTask  {
     boolean _interceptnew;
     boolean _interceptold;
 
-    public  GLMCoordinateDescentTaskSeq(boolean interceptold, boolean interceptnew, int cat_num ,
+    public  GLMCoordinateDescentTaskSeqNaive(boolean interceptold, boolean interceptnew, int cat_num ,
                                         double [] betaold, double [] betanew, int [] catLvlsold, int [] catLvlsnew,
-                                        double [] normMulold, double [] normSubold, double [] normMulnew, double [] normSubnew, boolean skipFirst ){ // pass it norm mul and norm sup - in the weights already done. norm
+                                        double [] normMulold, double [] normSubold, double [] normMulnew, double [] normSubnew,
+                                             boolean skipFirst ){ // pass it norm mul and norm sup - in the weights already done. norm
       //mul and mean will be null without standardization.
       _normMulold = normMulold;
       _normSubold = normSubold;
@@ -1024,7 +1042,7 @@ public abstract class GLMTask  {
     }
 
     @Override
-    public void reduce(GLMCoordinateDescentTaskSeq git){
+    public void reduce(GLMCoordinateDescentTaskSeqNaive git){
       ArrayUtils.add(_temp, git._temp);
       _nobs += git._nobs;
       super.reduce(git);
@@ -1032,6 +1050,21 @@ public abstract class GLMTask  {
 
   }
 
+
+  public static class GLMCoordinateDescentTaskSeq {
+
+    public  GLMCoordinateDescentTaskSeq(double [] grads, double [][] gram, double [] xw , double [] betaold, double [] betanew , int variable, boolean intercept){
+      for(int i = 0; i < grads.length; i++) {
+        if (i != variable) {//variable is index of most recently updated
+    //      if(!intercept)
+           grads[i] += ((betaold[variable] - betanew[variable]) * gram[Math.max(variable,i)][Math.min(variable, i)]);
+  //        else
+//            grads[i] += ( betaold[i] - betanew[i]) * xw[i] ; // * (< wx_variable,ones >) );
+        }
+      }
+     }
+
+  }
 
 
   public static class GLMCoordinateDescentTaskSeqIntercept extends MRTask<GLMCoordinateDescentTaskSeqIntercept> {
