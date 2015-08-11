@@ -37,5 +37,5 @@ Breiman, L. (1996) Stacked Regressions, Machine Learning, 24:49–64.\cr
 \code{\link[SuperLearner:SuperLearner]{SuperLearner}}, \code{\link[subsemble:subsemble]{subsemble}}
 }
 \examples{
-See \code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}} for examples.
+\code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}}
 }

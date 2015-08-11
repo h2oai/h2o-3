@@ -7,12 +7,13 @@ H2O Ensemble
 This function creates a "Super Learner" ensemble using the H2O base learning algorithms specified by the user.
 }
 \usage{
-h2o.ensemble(x, y, training_frame, family = "binomial", 
+h2o.ensemble(x, y, training_frame,  
   model_id = "", validation_frame = NULL,
+  family = c("AUTO", "binomial", "gaussian"),
   learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper", "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
   cvControl = list(V = 5, shuffle = TRUE), 
-  seed = 1, parallel = "seq")
+  seed = 1, parallel = "seq", ...)
 }
 \arguments{
   \item{x}{
@@ -47,6 +48,9 @@ A random seed to be set (integer); defaults to 1. If \code{NULL}, then a random 
 }
   \item{parallel}{
 A character string specifying optional parallelization. Use \code{"seq"} for sequential computation (the default) of the cross-validation and base learning steps. Use \code{"multicore"} to perform the V-fold (internal) cross-validation step as well as the final base learning step in parallel over all available cores. Or parallel can be a snow cluster object. Both parallel options use the built-in functionality of the R core "parallel" package.  Currently, only \code{"seq"} is compatible with the parallelized H2O algorithms, so this argument may be removed or modified in the future.
+}
+\item{...}{
+  Additional arguments to be passed to or from methods.
 }
 }
 

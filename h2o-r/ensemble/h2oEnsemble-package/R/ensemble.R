@@ -172,7 +172,7 @@ h2o.ensemble <- function(x, y, training_frame,
   
   # Do V-fold cross-validation of each learner (in a loop/apply over 1:L)...
   fitlist <- sapply(X = 1:L, FUN = .fitWrapper, y = y, xcols = x, training_frame = training_frame,
-                    validation_frame = validation_frame, family = family, learner = learner, 
+                    validation_frame = NULL, family = family, learner = learner, 
                     seed = seed, fold_column = "fold_id", 
                     simplify = FALSE)
   
@@ -206,7 +206,7 @@ h2o.ensemble <- function(x, y, training_frame,
 .fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, seed, fold_column) {
   if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
-  fit <- match.fun(learner[l])(y=y, x=x, training_frame=training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+  fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)
 }
 
