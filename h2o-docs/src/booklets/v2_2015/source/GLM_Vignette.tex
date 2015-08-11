@@ -43,7 +43,7 @@ Mountain View, CA 94043\\
 August 2015: Third Edition
 \bigskip
 
-Photos by \textcopyright H2O.ai, Inc. 
+Photos by \textcopyright H2O.ai, Inc.
 \bigskip
 
 While every precaution has been taken in the\\
@@ -76,10 +76,44 @@ This document introduces the reader to Generalized Linear Modeling with H2O.  Ex
 %----------------------------------------------------------------------
 \newpage
 
+%\subsubsection{Summary of features} 
+%In summary, H2O's GLM functionalities include:
+%
+%\begin{itemize} 
+%\item automatic standardization of predictor variables
+%\item fits generalized linear model with elastic net penalty
+%\item supported GLM families include Gaussian, Binomial, Poisson, Gamma, and Tweedie
+%\item efficient handling of categorical variables
+%\item efficient computation of full regularization path
+%\item IRLSM (best for data with many rows and fewer predictors) and LBFGS (best for data with many predictors) solvers
+%\item automatic lambda search for best model
+%\item stopping criterium when many predictors are used
+%\item efficient distributed n-fold cross validation
+% \item distributed grid search over elastic-net parameter $\alpha$
+%\item offset column
+%\item row weights
+%\item upper and lower bounds for coefficients
+%\item proximal operator interface
+%\end{itemize}
+
+\newcommand{\waterVersion}{3.0.1.4}
+\input{common/installation.tex}
+
 \section{GLM Concepts}
 Generalized linear models (GLM) are the workhorse for most predictive analysis use cases. GLM can be used for both regression and classification, it scales well to large datasets, and is based on solid statistical background. It is a generalization of linear models, allowing for modeling of data with exponential distributions and for categorical data (classification). GLM models are fitted by solving the maximum likelihood optimization problem.
 
-\subsection{GLM on H2O}
+Generalized linear models are generalizations of linear regression models. Linear regression models the dependency of response y on a vector of predictors x ($y \sim x^T \beta + \beta_0$). The models are built with the assumptions that y has a gaussian distribution with a variance of $\sigma^2$ and the mean is a linear function of x with an offset of some constant $\beta_0$, i.e. $ y = \mathcal{N}(x^T \beta + \beta_0 ,  \sigma^2) $. These assumptions can be overly restrictive for real-world data that do not necessarily have a gaussian distribution. 
+
+GLM generalizes linear regression in the following ways: 
+
+\begin{itemize} 
+\item adding a non-linear link function that transforms the expectation of response variable, so that $link(y) \sim x^T \beta + \beta_0$.
+\item allowing variance to depend on the predicted value by specifying the conditional distribution of the response variable or the family argument.
+\end{itemize}
+
+This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
+
+\subsection{GLM in H2O}
 H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number ($\mathtt{\sim}$ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to the glmnet package for R (refer to \citetalias{glmnet}). 
 H2O's GLM fits the model by solving following problem:
 
@@ -95,39 +129,6 @@ The elastic net parameter $\alpha$ controls the penalty distribution between L1 
 The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the L2-only penalty does not reduce coefficients to exactly 0. The two penalties also differ in the case of correlated predictors. The L2 penalty shrinks coefficients for correlated columns towards each other, while the L1 penalty will pick one and drive the others to zero. Using the elastic net argument $\alpha$, you can combine these two behaviors. It is also useful to always add a small L2 penalty to increase numerical stability.
 
 Similarly to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting from null-model (maximum penalty) going down to minimally penalized model. This search is made efficient by employing strong-rules as described in \citetalias{strong} to filter out inactive coefficients (coefficients pushed to zero by penalty). Computing the full regularization path is useful in that it gives more insight about the importance of individual coefficients and quality of the model while allowing selection of the optimal amount of penalization for the given problem and data.
-
-\subsubsection{Summary of features} 
-In summary, H2O's GLM functionalities include:
-
-\begin{itemize} 
-\item automatic standardization of predictor variables
-\item fits generalized linear model with elastic net penalty
-\item supported GLM families include Gaussian, Binomial, Poisson, Gamma, and Tweedie
-\item efficient handling of categorical variables
-\item efficient computation of full regularization path
-\item IRLSM (best for data with many rows and fewer predictors) and LBFGS (best for data with many predictors) solvers
-\item automatic lambda search for best model
-\item stopping criterium when many predictors are used
-\item efficient distributed n-fold cross validation
-% \item distributed grid search over elastic-net parameter $\alpha$
-\item offset column
-\item row weights
-\item upper and lower bounds for coefficients
-% \item proximal operator interface
-\end{itemize}
-
-\input{common/installation.tex}
-
-\section{Generalized Linear Modeling} 
-This section contains a brief overview of generalized linear models and follows up with a few details for each model family.
-
-Generalized linear models are generalizations of linear regression models. Linear regression models the dependency of response y on a vector of predictors x ($y \sim x^T \beta + \beta_0$). The models are built with the assumptions that y has a gaussian distribution with a variance of $\sigma^2$ and the mean is a linear function of x with an offset of some constant $\beta_0$, i.e. $ y = \mathcal{N}(x^T \beta + \beta_0 ,  \sigma^2) $. These assumptions can be overly restrictive for real-world data that do not necessarily have a gaussian distribution. GLM generalizes linear regression in the following ways: 
-\begin{itemize} 
-\item adding a non-linear link function that transforms the expectation of response variable, so that $link(y) \sim x^T \beta + \beta_0$.
-\item allowing variance to depend on the predicted value by specifying the conditional distribution of the response variable or the family argument.
-
-\end{itemize}
-This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
 
 \subsection{Model Fitting}
 GLM models are fitted by maximizing the likelihood. For the gaussian family, maximum likelihood is simply the minimal mean squared error, which has an analytical solution and can be solved with ordinary least squares. For all other families, the maximum likelihood problem has no analytical solution so we must use an iterative method such as IRLSM, Newton method, gradient descent, or L-BFGS.
@@ -147,7 +148,7 @@ where k is the number of model parameters and $ln(L_{m})$ is the log likelihood 
 \subsection{Regularization} 
 We introduce penalties to the model building process to avoid over-fitting, reduce variance of the prediction error, and handle correlated predictors. There are two common penalized linear models: ridge regression and lasso. Ridge regression provides greater numerical stability and is easier and faster to compute. In comparison, lasso leads to a sparse solution, which is advantageous in many situations, as it can be used for feature selection and to produce models with fewer parameters. When encountering highly correlated columns, the L2 penalty tends to push all of the coefficients towards each other, while the L1 penalty will pick one and remove the others to produce 0 coefficients.
 
-\subsubsection{Lasso}
+\subsubsection{Lasso and Ridge Regression}
 
 Lasso represents the L1 penalty and is an alternative regularized least squares method that uses the constraint $||B||_1$. The penalty is configured using the \texttt{alpha} parameter. The main difference between lasso and ridge regression is that as the penalty for ridge regression increases, the parameters are reduced to non-zero values. With lasso, if the penalty is increased, the parameters can be reduced to zero values. Since reducing parameters to zero removes them from the model, the lasso method provides only the relevant data. Ridge regression never removes any data. 
 
