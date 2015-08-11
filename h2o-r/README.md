@@ -166,3 +166,10 @@ Note:  As started, H2O is limited to the CRAN default of 2 CPUs.
            > h2o.shutdown(localH2O)
            > localH2O = h2o.init(nthreads = -1)
 ```
+
+#Documentation/References
+
+- [R Package Documentation](http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html)
+- [Porting R Scripts Guide](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md)
+- [R FAQ](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/FAQ.md#r)
+- [YouTube video - Quick Start with R](https://www.youtube.com/watch?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0&v=zzV1kTCnmR0)
