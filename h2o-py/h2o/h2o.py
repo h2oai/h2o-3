@@ -1421,4 +1421,4 @@ def import_frame(path=None):
   :return: A new H2OFrame
   """
   warnings.warn("deprecated: Use import_file", DeprecationWarning)
-  return H2OFrame(file_path=path)
+  return import_file(path)
