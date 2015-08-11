@@ -797,7 +797,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :return: Return a new classifier or regression model.
   """
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   return h2o_model_builder.supervised(parms)
 
@@ -875,7 +875,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
   :param export_weights_and_biases: Whether to export Neural Network weights and biases to H2O Frames"
   :return: Return a new autoencoder
   """
-  parms = {k:v for k,v in locals().items() if k=="training_frame" or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   parms["autoencoder"]=True
   return h2o_model_builder.unsupervised(parms)
@@ -918,7 +918,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   :param weights_column: Specify the weights column.
   :return: A new classifier or regression model.
   """
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="gbm"
   return h2o_model_builder.supervised(parms)
 
@@ -983,7 +983,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   aic, and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion
   matrices.
   """
-  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="glm"
   return h2o_model_builder.supervised(parms)
 
@@ -1022,7 +1022,7 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
   :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   :return: Returns an object of class H2OClusteringModel.
   """
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_x", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="kmeans"
   return h2o_model_builder.unsupervised(parms)
 
@@ -1061,12 +1061,13 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
   :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :return: A new classifier or regression model.
   """
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="drf"
   return h2o_model_builder.supervised(parms)
 
 
-def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None):
+def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
+           training_frame=None,validation_frame=None):
   """
   Principal components analysis of a H2O dataset using the power method
   to calculate the singular value decomposition of the Gram matrix.
@@ -1088,11 +1089,12 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   every categorical variable will be dropped. Defaults to FALSE.
   :return: a new dim reduction model
   """
-  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="pca"
   return h2o_model_builder.unsupervised(parms)
 
-def svd(x,validation_x=None,nv=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None):
+def svd(x,validation_x=None,nv=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
+        training_frame=None, validation_frame=None):
   """
   Singular value decomposition of a H2O dataset using the power method.
 
@@ -1112,7 +1114,7 @@ def svd(x,validation_x=None,nv=None,max_iterations=None,transform=None,seed=None
   categorical variable will be dropped. Defaults to TRUE.
   :return: a new dim reduction model
   """
-  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="svd"
   parms['_rest_version']=99
   return h2o_model_builder.unsupervised(parms)
@@ -1142,9 +1144,9 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,vali
   :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
   """
-  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="naivebayes"
-  return h2o_model_builder.supervised_model_build(parms)
+  return h2o_model_builder.supervised(parms)
 
 
 def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,

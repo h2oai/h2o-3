@@ -11,7 +11,7 @@ from model.clustering import H2OClusteringModel
 
 
 def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):
-  is_auto_encoder = "autoencoder" in kwargs and kwargs["autoencoder"] is not None
+  is_auto_encoder = kwargs is not None and "autoencoder" in kwargs and kwargs["autoencoder"] is not None
   if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
   if not is_auto_encoder and y is None: raise ValueError("Missing response")
   if vx is not None and vy is None:     raise ValueError("Missing response validating a supervised model")
@@ -26,7 +26,7 @@ def supervised(kwargs):
   weights    = _ow("weights_column",kwargs)
   fold_column= _ow("fold_column",   kwargs)
   algo  = kwargs["algo"]
-  parms={k:v for k,v in kwargs.items() if k not in ["x","y","validation_x","validation_y","algo"] and v is not None}
+  parms={k:v for k,v in kwargs.items() if (k not in ["x","y","validation_x","validation_y","algo"] and v is not None) or k=="validation_frame"}
   return supervised_model_build(x,y,vx,vy,algo,offsets,weights,fold_column,parms)
 
 def unsupervised_model_build(x,validation_x,algo_url,kwargs): return _model_build(x,None,validation_x,None,algo_url,None,None,None,kwargs)
@@ -48,13 +48,18 @@ def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is fr
   fr=kwargs["training_frame"]
   if c is None or isinstance(c,H2OFrame): res=c
   else:
-    if fr is None: raise ValueError("offsets/weights given, but missing frame")
+    if fr is None: raise ValueError("offsets/weights given, but missing training_frame")
     res=fr[c]
   kwargs[name] = None if res is None else res.col_names()[0]
+  # check validation frame here as well
+  if res is not None: # if valid_x/valid_y not None, then validation_frame must also be passed
+    if kwargs["validation_x"] is not None and kwargs["validation_frame"] is None:
+      raise ValueError("offsets/weights given, but missing validation_frame")
   return res
 
 # Sanity check features and response variable.
 def _check_frame(x,y,response):  # y and response are only ever different for validation
+  if x is None: return None
   x._eager()
   if y is not None:
     y._eager()
@@ -62,19 +67,19 @@ def _check_frame(x,y,response):  # y and response are only ever different for va
     x[response._col_names[0]] = y
   return x
 
-def _check_extra_col(x,vx,extra_col):
-  x=_check_frame(x,extra_col,extra_col)
-  if vx is not None: vx = _check_frame(vx,extra_col,extra_col)
-  return x, vx
+def _check_col(x,vx,vfr,col):
+  x=_check_frame(x,col,col)
+  vx= None if vfr is None else _check_frame(vx,vfr[col.names()[0]],vfr[col.names()[0]])
+  return x,vx
 
 # Build an H2O model
 def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
   if x is None:  raise ValueError("Missing features")
-  x = _check_frame(x,y,y)
-  if vx is not None: vx = _check_frame(vx,vy,y)
-  if offsets     is not None: x,vx = _check_extra_col(x,vx,offsets)
-  if weights     is not None: x,vx = _check_extra_col(x,vx,weights)
-  if fold_column is not None: x,vx = _check_extra_col(x,vx,fold_column)
+  x =_check_frame(x,y,y)
+  vx=_check_frame(vx,vy,y)
+  if offsets     is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],offsets)
+  if weights     is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],weights)
+  if fold_column is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],fold_column)
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
