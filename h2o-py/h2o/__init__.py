@@ -378,8 +378,8 @@ Here is a brief example of H2O on Hadoop:
   --------------------------  ------------------------------------
   pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
   pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
-  trainFrame = h2o.import_frame(path=pathDataTrain)
-  testFrame = h2o.import_frame(path=pathDataTest)
+  trainFrame = h2o.import_file(path=pathDataTrain)
+  testFrame = h2o.import_file(path=pathDataTest)
 
   #Parse Progress: [##################################################] 100%
   #Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols

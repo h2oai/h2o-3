@@ -1,9 +1,7 @@
-"""
-This module provides all of the top level calls for models and various data transform methods.
-By simply
-"""
-
+import warnings
+warnings.simplefilter('always', DeprecationWarning)
 import os
+import functools
 import os.path
 import re
 import urllib
@@ -61,7 +59,6 @@ def import_file(path=None):
   :return: A new H2OFrame
   """
   return H2OFrame(file_path=path)
-
 
 def parse_setup(raw_frames):
   """
@@ -1398,3 +1395,30 @@ def can_use_pandas():
     return True
   except ImportError:
     return False
+
+
+#  ALL DEPRECATED METHODS BELOW #
+
+def h2o_deprecated(newfun=None):
+  def o(fun):
+    if newfun is not None: m = "{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__)
+    else:                  m = "{} is deprecated.".format(fun.__name__)
+    @functools.wraps(fun)
+    def i(*args, **kwargs):
+      print
+      print
+      warnings.warn(m, category=DeprecationWarning, stacklevel=2)
+      return fun(*args, **kwargs)
+    return i
+  return o
+
+@h2o_deprecated(import_file)
+def import_frame(path=None):
+  """
+  Deprecated for import_file.
+
+  :param path: A path specifiying the location of the data to import.
+  :return: A new H2OFrame
+  """
+  warnings.warn("deprecated: Use import_file", DeprecationWarning)
+  return H2OFrame(file_path=path)
