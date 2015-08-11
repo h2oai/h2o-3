@@ -1,94 +1,87 @@
-
 \section{Installation} 
 
-You can load a recent H2O package from CRAN by running (be advised that the version of H2O in CRAN often lags by a release):
+The easiest way to install H2O is directly via an R or Python package.
+(Note this document was created with H2O version \waterVersion.)
+
+\subsection{Installation in R}
+
+You can load a recent H2O package from CRAN by running (be advised
+that the version of H2O in CRAN often lags by a release):
 
 \begin{lstlisting}[style=R]
 install.packages("h2o")
 \end{lstlisting}
 
-Alternatively, you can (and should for this tutorial) download the latest stable H2O-3 build from the H2O download page as directed below:
+Alternatively, you can (and should for this tutorial) download the
+latest stable H2O-3 build from the H2O download page as directed
+below:
 
 \begin{itemize}
 \item Go to http://h2o.ai/download
-\item Choose the latest stable H2O-3 build (This vignette was created with the Simons 3.0.1.4 release of H2O-3)
+\item Choose the latest stable H2O-3 build
 \item Click on the "Install in R" tab
 \item Copy and paste the instructions into your R session
 \end{itemize}
 
 \bigskip
-Once you have H2O installed, initialize H2O on all the cores of your machine:
+Once you have H2O installed on your system, verify the installation
+with the following instructions:
 
 \begin{lstlisting}[style=R]
 library(h2o)
-localH2O = h2o.init(nthreads = -1)
+
+# Start H2O on your local machine using all available cores.
+# By default, CRAN policies limit use to only 2 cores.
+h2o.init(nthreads = -1)
+
+# Get help
+?h2o.glm
+
+# Show a demo
+demo(h2o.glm)
 \end{lstlisting}
 
-The function \texttt{h2o.init()} creates a connection to an H2O instance, and will optionally start H2O locally if it is not already running. By default, the H2O instance will launch on \texttt{localhost:54321}. To establish a connection to a pre-existing H2O cluster, explicitly state the IP address (\texttt{ip = "localhost"}) and port number (\texttt{port = 54321}) in the \texttt{h2o.init()} call.
+\subsection{Installation in Python}
 
+You can load a recent H2O package from PyPI by running:
 
-\subsection{Verifying your installation}
-Run the following commands to observe an example classification model built with H2O's GLM:
-
-\begin{lstlisting}[style=R]
-# Build a GLM model on prostate data with the equivalent of
-# the following formula:
-#
-#     CAPSULE ~ AGE + RACE + PSA + DCAPS
-#
-prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-prostate.hex = h2o.importFile(prostatePath)
-model = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial")
-print(model)
+\begin{lstlisting}[style=python]
+pip install h2o
 \end{lstlisting}
 
-The output of the model build will include coefficients, as well as some validation statistics:
-\begin{lstlisting}[style=output]
-Model Details:
-==============
+Alternatively, you can (and should for this tutorial) download the
+latest stable H2O-3 build from the H2O download page as directed
+below:
 
-H2OBinomialModel: glm
-Model ID:  GLM_model_R_1439070697963_10 
-GLM Model:
-    family  link                                regularization number_of_predictors_total number_of_active_predictors
-1 binomial logit Elastic Net (alpha = 0.5, lambda = 3.251E-4 )                   4.000000                    5.000000
-  number_of_iterations training_frame
-1             5.000000 prostate.hex_1
+\begin{itemize}
+\item Go to http://h2o.ai/download
+\item Choose the latest stable H2O-3 build
+\item Click on the "Install in Python" tab
+\item Copy and paste the instructions into your python session
+\end{itemize}
 
-Coefficients:
-      names coefficients standardized_coefficients
-1 Intercept    -1.115184                 -0.337716
-2       AGE    -0.010970                 -0.071507
-3      RACE    -0.622777                 -0.192044
-4     DCAPS     1.314494                  0.407818
-5       PSA     0.046886                  0.936381
+\bigskip
+Once you have H2O installed on your system, verify the installation
+with the following instructions:
 
-H2OBinomialMetrics: glm
-** Reported on training data. **
+\begin{lstlisting}[style=python]
+import h2o
 
-MSE:  0.2027033
-R^2:  0.1572268
-LogLoss:  0.5914635
-AUC:  0.7176298
-Gini:  0.4352596
-Null Deviance:  512.2888
-Residual Deviance:  449.5123
-AIC:  459.5123
+# Start H2O on your local machine
+h2o.init()
 
-Confusion Matrix for F1-optimal threshold:
-        0   1    Error      Rate
-0      80 147 0.647577  =147/227
-1      18 135 0.117647   =18/153
-Totals 98 282 0.434211  =165/380
+# Get help
+help(h2o.glm)
 
-Maximum Metrics:
-                      metric threshold    value        idx
-1                     max f1  0.284067 0.620690 274.000000
-2                     max f2  0.207167 0.778230 360.000000
-3               max f0point5  0.413261 0.636672 108.000000
-4               max accuracy  0.413261 0.705263 108.000000
-5              max precision  0.998477 1.000000   0.000000
-6           max absolute_MCC  0.413261 0.369123 108.000000
-7 max min_per_class_accuracy  0.331788 0.647577 176.000000
+# Show a demo
+h2o.demo("glm")
 \end{lstlisting}
 
+\subsection{Pointing to a different H2O cluster}
+
+The above examples illustrate creating an H2O cluster of 1 node on
+your local machine.
+
+You can also set the \texttt{ip} and \texttt{port} parameters to tell
+h2o.init() to connect to a pre-created H2O cluster (in a multi-node
+Hadoop environment, for example).
