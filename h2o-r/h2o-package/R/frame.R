@@ -905,6 +905,11 @@ as.character.Frame <- function(x) {
 #' @export
 as.numeric.Frame <- function(x) { .newExpr("as.numeric",x) }
 
+as.numeric <- function(x) {
+  if( !is.Frame(x) ) .Primitive("as.double")(x)
+  else as.numeric.Frame(x)
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
@@ -982,7 +987,34 @@ h2o.cbind <- function(...) {
   .newExprList("cbind",li)
 }
 
-#' Produe a Vector of Random Uniform Numbers
+#' Merge Two H2O Data Frames
+#'
+#' Merges two \linkS4class{Frame} objects by shared column names. Unlike the
+#' base R implementation, \code{h2o.merge} only supports merging through shared
+#' column names.
+#'
+#' In order for \code{h2o.merge} to work in multinode clusters, one of the
+#' datasets must be small enough to exist in every node. Currently, this
+#' function only supports \code{all.x = TRUE}. All other permutations will fail.
+#'
+#' @param x,y \linkS4class{Frame} objects
+#' @param all.x a logical value indicating whether or not shared values are
+#'        preserved or ignored in \code{x}.
+#' @param all.y a logical value indicating whether or not shared values are
+#'        preserved or ignored in \code{y}.
+#' @examples
+#' h2o.init()
+#' left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
+#' color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
+#' right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'),
+#' citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
+#' l.hex <- as.h2o(left)
+#' r.hex <- as.h2o(right)
+#' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
+#' @export
+h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
+
+#' Produce a Vector of Random Uniform Numbers
 #'
 #' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
 #' dataset.
@@ -1084,7 +1116,7 @@ apply <- function(X, MARGIN, FUN, ...) {
 #' *This is primarily used for testing*. Randomly replaces a user-specified fraction of
 #' entries in a H2O dataset with missing values.
 #'
-#' @param data An \linkS4class{H2OFrame} object representing the dataset.
+#' @param data An \linkS4class{Frame} object representing the dataset.
 #' @param fraction A number between 0 and 1 indicating the fraction of entries
 #'        to replace with missing.
 #' @param seed A random number used to select which entries to replace with
@@ -1133,7 +1165,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
-#' @return Returns a \linkS4class{H2OFrame} object.
+#' @return Returns a \linkS4class{Frame} object.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1189,7 +1221,7 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
 #'
 #' Split an existing H2O data set according to user-specified ratios.
 #'
-#' @param data An \linkS4class{H2OFrame} object representing the dataste to split.
+#' @param data An \linkS4class{Frame} object representing the dataste to split.
 #' @param ratios A numeric value or array indicating the ratio of total rows
 #'        contained in each split. Must total up to less than 1.
 #' @param destination_frames An array of frame IDs equal to the number of ratios
@@ -1218,9 +1250,19 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
 }
 
+#'
+#' Filter NA Coluns
+#'
+#' @param data A dataset to filter on.
+#' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
+#' @export
+h2o.filterNACols <- function(data, frac=0.2) {
+  (as.data.frame(.newExpr("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
+}
+
 #' Remove Rows With NAs
 #'
-#' @param object H2OFrame object
+#' @param object Frame object
 #' @param ... Ignored
 #' @export
 na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
@@ -1229,9 +1271,9 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #'
 #' Uses the cross-classifying factors to build a table of counts at each combination of factor levels.
 #'
-#' @param x An \linkS4class{H2OFrame} object with at most two columns.
-#' @param y An \linkS4class{H2OFrame} similar to x, or \code{NULL}.
-#' @return Returns a tabulated \linkS4class{H2OFrame} object.
+#' @param x An \linkS4class{Frame} object with at most two columns.
+#' @param y An \linkS4class{Frame} similar to x, or \code{NULL}.
+#' @return Returns a tabulated \linkS4class{Frame} object.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
@@ -1249,7 +1291,7 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #' @export
 h2o.table <- function(x, y = NULL) {
   if( !is.Frame(x) ) stop("`x` must be an Frame object")
-  if( !is.null(y) && !is.Frame(y)) stop("`y` must be an H2OFrame object")
+  if( !is.null(y) && !is.Frame(y)) stop("`y` must be an Frame object")
   if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
 }
 

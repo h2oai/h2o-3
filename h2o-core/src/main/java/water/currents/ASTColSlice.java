@@ -120,6 +120,24 @@ class ASTFlatten extends ASTPrim {
   }
 }
 
+class ASTFilterNACols extends ASTPrim {
+  @Override int nargs() { return 1+2; } // (filterNACols frame frac)
+  @Override String str() { return "filterNACols"; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    double frac = asts[2].exec(env).getNum();
+    double nrow = fr.numRows()*frac;
+    Vec vecs[] = fr.vecs();
+    long[] idxs = new long[fr.numCols()];
+    int j=0;
+    for( int i=0; i<idxs.length; i++ )
+      if( vecs[i].naCnt() < nrow )
+        idxs[j++] = i;
+    Vec vec = Vec.makeVec(Arrays.copyOf(idxs,j),null,Vec.VectorGroup.VG_LEN1.addVec());
+    return new ValFrame(new Frame(vec));
+  }
+}
+
 /** cbind: bind columns together into a new frame */
 class ASTCBind extends ASTPrim {
   @Override int nargs() { return -1; } // variable number of args
