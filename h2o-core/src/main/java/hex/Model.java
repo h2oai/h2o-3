@@ -198,7 +198,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @return checksum
      */
     protected long checksum_impl() {
-      long xs = 0x600D;
+      long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
       Arrays.sort(fields,
@@ -209,30 +209,32 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   });
 
       for (Field f : fields) {
+        String o = "zzz: " + count + " " + f.getName() + " : ";
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
+          o += " ARRAY: ";
           try {
             f.setAccessible(true);
             if (f.get(this) != null) {
               if (c.getComponentType() == Integer.TYPE){
                 int[] arr = (int[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Float.TYPE) {
                 float[] arr = (float[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Double.TYPE) {
                 double[] arr = (double[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+                xs = P * xs + (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
-                xs ^= (0xDECAF + P * (long)Arrays.deepHashCode(arr));
+                xs = P * xs + (long) Arrays.deepHashCode(arr);
               } //else lead to ClassCastException
             } else {
-              xs ^= (0xDECAF + P);
+              xs = P * xs + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -242,16 +244,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else {
           try {
             f.setAccessible(true);
-            if (f.get(this) != null) {
-              xs ^= (0x1337 + P * (long)(f.get(this)).hashCode());
+            Object value = f.get(this);
+            o += value;
+            if (value != null) {
+              o += "[" + o.hashCode() + "]";
+              xs = P * xs + (long)(value.hashCode());
             } else {
-              xs ^= (0x1337 + P);
+              xs = P * xs + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
           }
         }
         count++;
+        System.err.println(o + " => " + xs);
       }
       xs ^= train().checksum() * (_valid == null ? 17 : valid().checksum());
       return xs;
