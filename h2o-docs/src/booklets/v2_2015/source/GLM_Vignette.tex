@@ -187,14 +187,14 @@ Deviance is simply the sum of squared errors:
 \[ D = \sum\limits_{i=1}\limits^{N}{(y_i - \hat{y}_i)^2} \]
 
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 Included in the H2O package is a prostate cancer data set. The data was collected by Dr. Donn Young at  Ohio State University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds based on features such as age and race.
 
 \begin{lstlisting}[style=R]
 filepath = system.file("extdata", "prostate.csv",package = "h2o")
 prostate.hex = h2o.importFile(object = localH2O, filepath, key = "prostate.hex")
-gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", data = prostate.hex, family = "gaussian")
+gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", training_frame = prostate.hex, family = "gaussian")
 \end{lstlisting}
 
 \subsubsection{Logistic Regression (Binomial Family)}
@@ -221,12 +221,12 @@ The model is fitted by solving:
 Deviance is -2 log likelihood:
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) + (1 - y)log(1-\hat{y})  )}\]
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 Using the prostate data set, build a binomial model that classifies if there is penetration of the prostatic capsule (CAPSULE). Make sure the entries in the CAPSULE column are binary entries by using the \texttt{h2o.table()} function. Change the regression by setting the family to binomial.
 \begin{lstlisting}[style=R]
 h2o.table(prostate.hex[,"CAPSULE"])
-binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", data = prostate.hex, family = "binomial")
+binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial")
 \end{lstlisting}
 
 \subsubsection{Poisson Models}
@@ -244,14 +244,14 @@ Deviance is
 
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) - y - \hat{y}}\]
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 Load the Insurance data from the MASS library and import into H2O. Run a poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they own (Group).
 \begin{lstlisting}[style=R]
 library(MASS)
 data(Insurance)
 insurance.hex = as.h2o(localH2O, Insurance)
-poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", data = insurance.hex, family = "poisson")
+poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", training_frame = insurance.hex, family = "poisson")
 \end{lstlisting}
 
 \subsubsection{Gamma Models}
@@ -268,7 +268,7 @@ Deviance is
 \[D = -2\sum\limits_{i=1}\limits^{N}{log({y_i \over \hat{y}_i}) - {y_i - \hat{y}_i \over\hat{y}_i }}\]
 
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 To change the link function from the default inverse function to the log link function, modify the \texttt{link} argument.
 
@@ -276,27 +276,30 @@ To change the link function from the default inverse function to the log link fu
 gamma.inverse <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="inverse")
 gamma.log <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="log")
 \end{lstlisting}
-% Strong Rules paper
+
+\subsubsection{Tweedie Models}
+
+TODO
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
 \section{GLM on H2O}
-H2O's GLM implementation presents a high-performance distributed algorithm, which scales linearly with the number of rows and works extremely well for datasets with limited number of active predictors. 
+H2O's GLM implementation presents a high-performance distributed algorithm, which scales linearly with the number of rows and works extremely well for datasets with a limited number of active predictors.
 
 \subsection{Input Parameters}
 This section describes the specifics of GLM implementation on H2O, such as selecting regularization parameters and handling of categoricals. 
 
 \subsubsection{Predictors \& Response}
-Every model must specify its predictors and response; it is the equivalent formula object in R. Predictors and response are specified by \texttt{source}, \texttt{x}, and \texttt{y} parameters, with an optional \texttt{offset} parameter. 
+Every model must specify its predictors and response; it is the equivalent formula object in R. Predictors and response are specified by \texttt{training\_frame}, \texttt{x}, and \texttt{y} parameters, with an optional \texttt{offset} parameter.
 
-\texttt{source} refers to a frame containing a training dataset. All predictors and the response (and offset, if there is one) must be part of this frame.
+\texttt{training\_frame} refers to a frame containing a training dataset. All predictors and the response (and offset, if there is one) must be part of this frame.
 
-\texttt{x} contains the list of column names or column indices referring to vectors from the source frame; it can not contain periods.
+\texttt{x} contains the list of column names or column indices referring to vectors from the training frame; it can not contain periods.
 
-\texttt{y} is a column name or index referring to a vector from the source frame.
+\texttt{y} is a column name or index referring to a vector from the training frame.
 
-\texttt{offset} is a column name or index referring to a vector from the source frame.
+\texttt{offset} is a column name or index referring to a vector from the training frame.
   
 \subsubsection{Family \& Link}
 Family and Link are both optional parameters. The default family is \texttt{Gaussian} and the default link is a canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link = `log'}.
