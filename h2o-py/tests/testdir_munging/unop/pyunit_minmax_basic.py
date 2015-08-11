@@ -8,7 +8,7 @@ def minmax_basic(ip,port):
     
 
     print "Uploading iris data..."
-    iris_h2o = h2o.import_frame(h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris_h2o = h2o.import_file(h2o.locate("smalldata/iris/iris_wheader.csv"))
     iris_np = np.genfromtxt(h2o.locate("smalldata/iris/iris_wheader.csv"), delimiter=",", skip_header=1)
 
     print "Computing min & max of the first column of iris..."

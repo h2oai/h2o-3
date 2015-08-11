@@ -6,7 +6,7 @@ def get_model_test(ip,port):
     
     
 
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     r = prostate[0].runif()
     train = prostate[r < 0.70]
@@ -40,7 +40,7 @@ def get_model_test(ip,port):
         assert p1 == p2, "expected binomial predictions to be the same for row {}, but got {} and {}".format(r, p1, p2)
 
     # Clustering
-    benign_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     km_h2o = h2o.kmeans(x=benign_h2o, k=3)
     benign_km = h2o.get_model(km_h2o._id)
     assert benign_km._model_json['output']['model_category'] == "Clustering"

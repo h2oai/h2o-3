@@ -4,7 +4,7 @@ import h2o
 
 def tweedie_weights(ip,port):
 
-    data = h2o.import_frame(h2o.locate("smalldata/glm_test/cancar_logIn.csv"))
+    data = h2o.import_file(h2o.locate("smalldata/glm_test/cancar_logIn.csv"))
     data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
     data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
     data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()

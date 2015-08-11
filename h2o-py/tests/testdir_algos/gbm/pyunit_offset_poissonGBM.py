@@ -6,7 +6,7 @@ def offset_poisson(ip,port):
     # Connect to a pre-existing cluster
     
 
-    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 

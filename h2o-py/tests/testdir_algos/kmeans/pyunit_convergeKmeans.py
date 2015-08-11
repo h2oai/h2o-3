@@ -8,7 +8,7 @@ def convergeKmeans(ip,port):
     # connect to localhost:54321
 
   # Log.info("Importing ozone.csv data...\n")
-  ozone_h2o = h2o.import_frame(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+  ozone_h2o = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
   #ozone_h2o.summary()
 
   miters = 5
