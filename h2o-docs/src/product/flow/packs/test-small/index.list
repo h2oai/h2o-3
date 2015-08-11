@@ -242,7 +242,6 @@ gbm_junit_weights_all_ones_twos.flow
 gbm_junit_weights_all_ones.flow
 gbm_junit_weights_all_tiny.flow
 gbm_junit_weights.flow
-glm_junit_40k_categoricals.flow
 glm_junit_arff_iris_spacesep.flow
 glm_junit_arff_iris_weirdsep.flow
 glm_junit_arff_iris.flow
