@@ -319,6 +319,33 @@ Since JSON is just a representation format, it cannot be directly executed, so a
 
 ---
 
+**How do I score using an exported POJO?**
+
+The generated POJO can be used indepedent of a H2O cluster. First curl h2o-genmodel.jar file and the java code for model. The following is an example, note the ip address and model names will need to be changed. 
+
+```
+mkdir tmpdir
+cd tmpdir
+curl http://127.0.0.1:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+curl http://127.0.0.1:54321/3/Models.java/gbm_model > gbm_model.java
+```
+
+To score a simple csv file download the [PredictCSV.java](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java) file and compile it with the POJO. Make a subdirectory for the compilation which is useful if you have multiple model to score on.
+
+```
+wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java
+mkdir gbm_model_dir
+javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
+``` 
+
+Pass in the classpath using `-cp`, the model name (or class) using `--model`, the csv file you want to score using argument `--input`, and the location you want the predictions to be writen to by specifying `--output`. Keep in mind you need to match the table column names to the order specified in the POJO and the output file will be in a hex format which is a lossless text representation of floating point numbers. R and Java alike will be able to read the hex strings as numerics.
+
+```
+java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
+```
+
+---
+
 **How do I predict using multiple response variables?**
 
 Currently, H2O does not support multiple response variables. To predict different response variables, build multiple modes. 
