@@ -14,13 +14,13 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
-import water.util.DocGen.HTML;
 import water.util.GAUtils;
 import water.util.Log;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.lang.management.ManagementFactory;
@@ -806,6 +806,44 @@ final public class H2O {
    */
   public static H2OFailException fail(String msg) { return H2O.fail(msg, null); }
 
+  /**
+   * Return an error message with an accompanying URL to help the user get more detailed information.
+   *
+   * @param number H2O tech note number.
+   * @param message Message to present to the user.
+   * @return A longer message including a URL.
+   */
+  public static String technote(int number, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n")
+            .append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number));
+
+    return sb.toString();
+  }
+
+  /**
+   * Return an error message with an accompanying list of URLs to help the user get more detailed information.
+   *
+   * @param numbers H2O tech note numbers.
+   * @param message Message to present to the user.
+   * @return A longer message including a list of URLs.
+   */
+  public static String technote(int[] numbers, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n");
+
+    for (int number : numbers) {
+      sb.append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number)).append("\n");
+    }
+
+    return sb.toString();
+  }
 
 
   // --------------------------------------------------------------------------
@@ -1002,7 +1040,6 @@ final public class H2O {
     }
     @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(T)this); }
     @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(T)this); }
-    @Override final public HTML       writeHTML(HTML       ab) { return icer().writeHTML(ab,(T)this); }
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
@@ -1010,7 +1047,6 @@ final public class H2O {
     @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
-    @Override       public HTML writeHTML_impl( HTML ab ) { return ab; }
   }
 
 
@@ -1217,10 +1253,6 @@ final public class H2O {
 
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
-  static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu, String summary ) {
-    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth,summary),base_url,label,menu);
-  }
 
   static public void registerGET( String url_pattern, Class hclass, String hmeth, String summary ) {
     registerGET(url_pattern, hclass, hmeth, null, summary);

@@ -11,12 +11,14 @@ import sys
 import string
 import time
 import tempfile
+import tabulate
 import subprocess
 import atexit
 import pkg_resources
 from two_dim_table import H2OTwoDimTable
 import h2o
 import logging
+import site
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
@@ -48,9 +50,6 @@ class H2OConnection(object):
     :return: None
     """
 
-    if "H2O_DISABLE_STRICT_VERSION_CHECK" in os.environ:
-       strict_version_check = False
-
     port = as_int(port)
     if not (isinstance(port, int) and 0 <= port <= sys.maxint):
        raise ValueError("Port out of range, "+port)
@@ -66,10 +65,12 @@ class H2OConnection(object):
     jarpaths = [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
                 os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
                 os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
+                os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar")
                 ]
     if os.path.exists(jarpaths[0]):   jar_path = jarpaths[0]
     elif os.path.exists(jarpaths[1]): jar_path = jarpaths[1]
-    else:                             jar_path = jarpaths[2]
+    elif os.path.exists(jarpaths[2]): jar_path = jarpaths[2]
+    else:                             jar_path = jarpaths[3]
     if start_h2o:
       if not ice_root:
         ice_root = tempfile.mkdtemp()
@@ -209,7 +210,10 @@ class H2OConnection(object):
     if mmax: vm_opts += ["-Xmx{}g".format(mmax)]
     if ea:   vm_opts += ["-ea"]
 
-    h2o_opts = ["-jar", jar_path,
+    h2o_opts = ["-verbose:gc",
+                "-XX:+PrintGCDetails",
+                "-XX:+PrintGCTimeStamps",
+                "-jar", jar_path,
                 "-name", "H2O_started_from_python",
                 "-ip", "127.0.0.1",
                 "-port", "54321",
@@ -221,7 +225,10 @@ class H2OConnection(object):
     cmd = [command] + vm_opts + h2o_opts
 
     cwd = os.path.abspath(os.getcwd())
-    self._child = subprocess.Popen(args=cmd, stdout=stdout, stderr=stderr, cwd=cwd)
+    if sys.platform == "win32":
+      self._child = subprocess.Popen(args=cmd,stdout=stdout,stderr=stderr,cwd=cwd,creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+    else:
+      self._child = subprocess.Popen(args=cmd, stdout=stdout, stderr=stderr, cwd=cwd, preexec_fn=os.setsid)
     cld = self._connect(1, 30, True)
     return cld
 
@@ -373,6 +380,12 @@ class H2OConnection(object):
 
   All methods are static and rely on an active __H2OCONN__ object.
   """
+
+  @staticmethod
+  def make_url(url_suffix,**kwargs):
+    self=__H2OCONN__
+    _rest_version = kwargs['_rest_version'] if "_rest_version" in kwargs else self._rest_version
+    return "http://{}:{}/{}/{}".format(self._ip,self._port,_rest_version,url_suffix)
 
   @staticmethod
   def get(url_suffix, **kwargs):

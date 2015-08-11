@@ -4,7 +4,6 @@ import water.AutoBuffer;
 import water.Freezable;
 import water.H2O;
 import water.Iced;
-import water.util.DocGen.HTML;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -113,5 +112,4 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     return ab;
   }
   @Override public IcedHashMapBase<K, V> readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
-  @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.fail(); }
 }

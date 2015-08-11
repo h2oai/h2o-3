@@ -2,7 +2,7 @@ Package: h2o
 Version: SUBST_PROJECT_VERSION
 Type: Package
 Title: R Interface for H2O
-Date: 2015-6-1
+Date: 2015-7-1
 Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
 Description: R scripting functionality for H2O, the open source
@@ -51,5 +51,6 @@ Collate:
          'naivebayes.R'
          'word2vec.R'
          'locate.R'
+         'grid.R'
          'shim.R'
          'zzz.R'

@@ -4,8 +4,8 @@ import h2o
 import random
 
 def random_attack(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     def attack(family, train, valid, x, y):
         kwargs = {}
@@ -41,7 +41,7 @@ def random_attack(ip,port):
                 upper_bound = lower_bound + random.random()
                 bc.append([name, lower_bound, upper_bound])
             beta_constraints = h2o.H2OFrame(python_obj=bc)
-            beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
+            beta_constraints.setNames(['names', 'lower_bounds', 'upper_bounds'])
             kwargs['beta_constraints'] = beta_constraints.send_frame()
 
         # display the parameters and their corresponding values

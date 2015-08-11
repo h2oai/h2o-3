@@ -12,7 +12,7 @@ def weights_gamma(ip,port):
     #     n.trees = 20,interaction.depth = 1,n.minobsinnode = 1,shrinkage = 1,bag.fraction = 1,train.fraction = 1)
     #pr = predict(gg,newdata = table.1.2,type = "response")
     #htable= as.h2o(table.1.2,destination_frame = "htable")
-    hh = h2o.gbm(x=htable[0:3],y=htable["medskad"],distribution="gamma",weights_column=htable["antskad"],
+    hh = h2o.gbm(x=htable[0:3],y=htable["medskad"],training_frame=htable,distribution="gamma",weights_column="antskad",
                  ntrees=20,max_depth=1,min_rows=1,learn_rate=1)
     ph = hh.predict(htable)
 

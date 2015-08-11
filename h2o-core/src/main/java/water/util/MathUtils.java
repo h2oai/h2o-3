@@ -1,5 +1,8 @@
 package water.util;
 
+import water.MRTask;
+import water.fvec.Chunk;
+
 import java.util.Arrays;
 
 public class MathUtils {
@@ -220,4 +223,16 @@ public class MathUtils {
     return d < 0?-1:1;
   }
 
+  public static class SquareError extends MRTask<SquareError> {
+    public double _sum;
+    @Override public void map( Chunk resp, Chunk pred ) {
+      double sum = 0;
+      for( int i=0; i<resp._len; i++ ) {
+        double err = resp.atd(i)-pred.atd(i);
+        sum += err*err;
+      }
+      _sum = sum;
+    }
+    @Override public void reduce( SquareError ce ) { _sum += ce._sum; }
+  }
 }

@@ -8,7 +8,7 @@ import h2o
 
 def prostateGBM(ip,port):
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
   df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
   df.describe()
@@ -17,8 +17,10 @@ def prostateGBM(ip,port):
   train = df.drop("ID")
 
   # For VOL & GLEASON, a zero really means "missing"
-  train[train["VOL"]==0,"VOL"]         = float("nan")
-  train[train["GLEASON"]==0,"GLEASON"] = float("nan")
+  vol = train['VOL']
+  vol[vol == 0] = None
+  gle = train['GLEASON']
+  gle[gle == 0] = None
 
   # Convert CAPSULE to a logical factor
   train['CAPSULE'] = train['CAPSULE'].asfactor()

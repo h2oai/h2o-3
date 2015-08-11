@@ -4,7 +4,7 @@ import h2o
 
 def upload_import_small(ip, port):
     # Connect to a pre-existing cluster
-    h2o.init(ip, port)
+    
 
     various_datasets = ["smalldata/iris/iris.csv", "smalldata/iris/iris_wheader.csv", "smalldata/prostate/prostate.csv",
                         "smalldata/prostate/prostate_woheader.csv.gz"]

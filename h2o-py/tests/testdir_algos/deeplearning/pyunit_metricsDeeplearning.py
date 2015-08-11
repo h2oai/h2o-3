@@ -4,14 +4,14 @@ import h2o
 
 
 def deep_learning_metrics_test(ip, port):
-    h2o.init(ip, port)               # connect to existing cluster
+                   # connect to existing cluster
 
     df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     df.drop("ID")                              # remove ID
     df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical
     vol = df['VOL']
-    vol[vol == 0,:] = float("nan")               # 0 VOL means 'missing'
+    vol[vol == 0] = float("nan")               # 0 VOL means 'missing'
 
     r = vol.runif()                            # random train/test split
     train = df[r < 0.8]

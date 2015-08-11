@@ -620,20 +620,18 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
+    if isinstance(item, (int,str,unicode,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
     elif isinstance(item, slice):
       item = slice(item.start,min(self.ncol(),item.stop))
       return H2OFrame(expr=ExprNode("cols",self,item))
-    elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
+    elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
       allrows = False
       allcols = False
-      if isinstance(cols, slice):
-        allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
-      if isinstance(rows, slice):
-        allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
+      if isinstance(cols, slice):  allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
+      if isinstance(rows, slice):  allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
       if allrows and allcols: return self                              # fr[:,:]    -> all rows and columns.. return self
       if allrows: return H2OFrame(expr=ExprNode("cols",self,item[1]))  # fr[:,cols] -> really just a column slice

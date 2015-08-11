@@ -3,12 +3,12 @@ sys.path.insert(1, "../../")
 import h2o
 
 def confusion_matrices_check(ip, port):
-    h2o.init(ip, port)
+    
 
     local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[0, 'b'],
                   [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
     h2o_data = h2o.H2OFrame(python_obj=local_data)
-    h2o_data.set_names(['response', 'predictor'])
+    h2o_data.setNames(['response', 'predictor'])
     h2o_data.show()
 
     gbm = h2o.gbm(x=h2o_data[1:], y=h2o_data["response"].asfactor(), ntrees=1, distribution="bernoulli")

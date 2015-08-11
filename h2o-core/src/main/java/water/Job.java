@@ -1,14 +1,15 @@
 package water;
 
-import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
-import water.H2O.H2OCountedCompleter;
-import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.util.Log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+
+import hex.ModelBuilder;
+import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.util.Log;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -114,6 +115,8 @@ public class Job<T extends Keyed> extends Keyed {
    *  people like 'em. */
   public final Key<T> dest() { return _dest; }
 
+  public final Key<Job> jobKey() { return _key; }
+
   /** User description */
   public String _description;
   /** Job start_time using Sys.CTM */
@@ -164,7 +167,7 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  protected Job(Key<T> jobKey, Key<T> dest, String desc) {
+  private Job(Key<T> jobKey, Key<T> dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
@@ -191,7 +194,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job<T> start(final H2OCountedCompleter fjtask, long work, boolean restartTimer) {
+  protected Job<T> start(final H2OCountedCompleter fjtask, long work, boolean restartTimer) {
     if (work >= 0)
       DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";

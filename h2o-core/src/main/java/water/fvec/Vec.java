@@ -785,7 +785,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
-    return (Key<Vec>)Key.make(bits);
+    return Key.make(bits);
   }
 
   /** Make a Vector-group key.  */
@@ -1306,7 +1306,7 @@ public class Vec extends Keyed<Vec> {
       byte [] bits = _key._kb.clone();
       bits[0] = Key.VEC;
       UnsafeUtils.set4(bits,2,vecId);//
-      return (Key<Vec>)Key.make(bits);
+      return Key.make(bits);
     }
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */

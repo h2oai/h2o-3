@@ -4,7 +4,7 @@ import h2o
 
 
 def svd_1_golden(ip, port):
-    h2o.init(ip, port)
+    
 
     print "Importing USArrests.csv data..."
     arrestsH2O = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))

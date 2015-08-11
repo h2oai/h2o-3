@@ -143,12 +143,6 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     return (S)this;
   }
 
-  @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.title(this.getClass().getSimpleName()+" Started");
-    String url = JobV3.link(job.key.key());
-    return ab.href("Poll",url,url);
-  }
-
   // TODO: Drop this writeJSON_impl and use the default one.
   // TODO: Pull out the help text & metadata into the ParameterSchema for the front-end to display.
   @Override

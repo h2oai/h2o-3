@@ -22,7 +22,7 @@ test.km.iter_max <- function() {
   Log.info("Check cluster centers have converged")
   fitall2 <- h2o.kmeans(ozone.hex, init = getCenters(fitall), max_iter = 1)
   avg_change <- sum((getCenters(fitall) - getCenters(fitall2))^2)/ncent
-  expect_true(avg_change < 1e-6 || getIterations(fitall) > miters)
+  expect_true(avg_change < 1e-6 || getIterations(fitall) == miters)  # Either converged or hit max_iterations limit
   testEnd()
 }
 

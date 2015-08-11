@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def perfectSeparation_unbalanced(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     print("Read in synthetic unbalanced dataset")
     data = h2o.import_frame(h2o.locate("smalldata/synthetic_perfect_separation/unbalanced.csv"))

@@ -3,8 +3,8 @@ sys.path.insert(1, "../../")
 import h2o
 
 def score_history_test(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 

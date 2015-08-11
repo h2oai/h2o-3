@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 
 def anomaly(ip, port):
-    h2o.init(ip, port)
+    
 
     print "Deep Learning Anomaly Detection MNIST"
 

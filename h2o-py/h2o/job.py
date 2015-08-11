@@ -7,9 +7,10 @@ from connection import H2OConnection
 import h2o
 import time
 import sys
+import h2o
 
 
-class H2OJob(object):
+class H2OJob:
   """
   A class representing an H2O Job.
   """

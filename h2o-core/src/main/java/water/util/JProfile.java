@@ -40,39 +40,4 @@ public class JProfile extends Iced {
 
     return this;
   }
-
-  public boolean toHTML( StringBuilder sb ) {
-    // build tab list
-    sb.append("<div class='tabbable tabs-left'>\n");
-    sb.append(" <ul class='nav nav-tabs' id='nodesTab'>\n");
-    for( int i = 0; i < nodes.length; ++i ) {
-      sb.append("<li class='").append(i == 0 ? "active" : "").append("'>\n");
-      sb.append("<a href='#tab").append(i).append("' data-toggle='tab'>");
-      sb.append(nodes[i].name).append("</a>\n");
-      sb.append("</li>");
-    }
-    sb.append("</ul>\n");
-
-    // build the tab contents
-    sb.append(" <div class='tab-content' id='nodesTabContent'>\n");
-    for( int i = 0; i < nodes.length; ++i ) {
-      sb.append("<div class='tab-pane").append(i == 0 ? " active": "").append("' ");
-      sb.append("id='tab").append(i).append("'>\n");
-      for (int j=0; j<nodes[i].profile.counts.length; ++j) {
-        sb.append("<pre>").append(nodes[i].profile.counts[j]).append("\n").append(nodes[i].profile.stacktraces[j]).append("</pre>");
-      }
-      sb.append("</div>");
-    }
-    sb.append("  </div>");
-    sb.append("</div>");
-
-    sb.append("<script type='text/javascript'>" +
-            "$(document).ready(function() {" +
-            "  $('#nodesTab a').click(function(e) {" +
-            "    e.preventDefault(); $(this).tab('show');" +
-            "  });" +
-            "});" +
-            "</script>");
-    return true;
-  }
 }

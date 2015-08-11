@@ -3015,6 +3015,16 @@ class ASTRange extends ASTUniPrefixOp {
   @Override String opStr() { return "range"; }
   ASTRange() { super( new String[]{"x"}); }
   @Override ASTOp make() { return new ASTRange(); }
+  @Override ASTRange parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the na.rm
+    AST a = E.parse();  // just dropped on the floor
+    E.eatEnd(); // eat the ending ')'
+    ASTRange res = (ASTRange) clone();
+    res._asts = new AST[]{ary}; // in reverse order so they appear correctly on the stack.
+    return res;
+  }
   @Override void apply(Env env) {
     Frame f = env.popAry();
 
@@ -3777,6 +3787,7 @@ class ASTRunif extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
+    if( !env.isAry() ) throw new IllegalArgumentException("Frame not found: " + env.pop().value());
     Vec rnd = env.popAry().anyVec().makeRand(seed);
     Frame f = new Frame(new String[]{"rnd"}, new Vec[]{rnd});
     env.pushAry(f);

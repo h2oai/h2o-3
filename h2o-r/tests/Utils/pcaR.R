@@ -17,18 +17,29 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   return(is_flipped)
 }
 
-checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6) {
+checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   k <- fitH2O@parameters$k
   pcimpR <- summary(fitR)$importance
-  pcimpH2O <- fitH2O@model$pc_importance
+  pcimpH2O <- fitH2O@model$importance
   eigvecR <- fitR$rotation
   eigvecH2O <- fitH2O@model$eigenvectors
   
   pcimpR <- pcimpR[,1:k]
   eigvecR <- eigvecR[,1:k]
+  
+  if(sort_rows && !is.null(rownames(eigvecH2O)) && !is.null(rownames(eigvecR))) {
+    Log.info("Sorting rows alphabetically by row name")
+    eigvecH2O <- eigvecH2O[order(rownames(eigvecH2O)),]
+    eigvecR <- eigvecR[order(rownames(eigvecR)),]
+    expect_equal(dim(eigvecH2O), dim(eigvecR))
+    expect_true(all(rownames(eigvecH2O) == rownames(eigvecR)))
+  }
+  
   if(k == 1) {
+    eigvecH2O <- as.matrix(eigvecH2O)
     eigvecR <- as.matrix(eigvecR)
     pcimpR <- as.matrix(pcimpR)
+    colnames(eigvecH2O) <- "PC1"
     colnames(eigvecR) <- "PC1"
     colnames(pcimpR) <- "PC1"
   }

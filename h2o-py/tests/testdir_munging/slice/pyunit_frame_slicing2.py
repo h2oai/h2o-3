@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def expr_slicing(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     iris.show()

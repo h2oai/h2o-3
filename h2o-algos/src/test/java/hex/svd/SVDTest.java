@@ -124,7 +124,6 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._only_v = false;
       parms._keep_u = false;
-      parms._transform = DataInfo.TransformType.NONE;
 
       try {
         job = new SVD(parms);

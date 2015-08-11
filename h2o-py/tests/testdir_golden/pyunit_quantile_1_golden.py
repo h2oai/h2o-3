@@ -5,7 +5,7 @@ import random
 import numpy as np
 
 def quantile_1_golden(ip, port):
-    h2o.init(ip, port)
+    
 
     probs = [0.01, 0.05, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.95, 0.99]
 
@@ -70,3 +70,4 @@ def quantile_1_golden(ip, port):
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, quantile_1_golden)
+

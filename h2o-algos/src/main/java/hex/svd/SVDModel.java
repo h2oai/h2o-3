@@ -79,7 +79,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
         _work = new double[dims];
       }
 
-      @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+      @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
       @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
         return m._output.addModelMetrics(new ModelMetricsSVD(m, f));

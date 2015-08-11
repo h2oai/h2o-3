@@ -6,8 +6,8 @@ import statsmodels.api as sm
 
 def prostate(ip,port):
 
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   # Log.info("Importing prostate.csv data...\n")
   h2o_data = h2o.upload_file(path=h2o.locate("smalldata/logreg/prostate.csv"))

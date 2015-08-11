@@ -350,8 +350,6 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
-
-
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
@@ -383,6 +381,16 @@ public class Frame extends Lockable<Frame> {
     for( int i=0; i<vecs.length; i++ )
       ds[i] = vecs[i].domain();
     return ds;
+  }
+
+  /** Number of categorical levels for enum columns; -1 for non-enum columns.
+   * @return the number of levels for enum columns */
+  public int[] cardinality() {
+    Vec[] vecs = vecs();
+    int[] card = new int[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      card[i] = vecs[i].cardinality();
+    return card;
   }
 
   /** All the column means.

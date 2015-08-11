@@ -31,11 +31,10 @@ dependencies {
   compile 'commons-collections:commons-collections:3.0'
   compile 'org.javassist:javassist:3.18.2-GA'
 
-  // org.Reflections library 
-  // JitPack compiles this project using java 1.7 which is set as default JDK in reflections' pom.xml. We need this project compiled by java 1.5. That's why there is new fork of the reflections
-  // on Github with JDK version changed and JitPack compiles the dependency from there
-  //!! This should be replaced by regular maven dependency of reflections 0.9.11 or higher when it's available
-  compile 'com.github.MadMan0708:reflections:-SNAPSHOT'
+  // org.Reflections library is replaced by H2O specific version of library which was published into Maven Central
+  // In this case the library is same as library available at reflections' github repository from commit 527e8ba8851406a66376086ff81b5a44ea53b0ed
+  // !! This should be replaced by regular maven dependency of reflections 0.9.11 or higher when it's available
+  compile 'ai.h2o:reflections:0.9.11-h2o-custom'
 
   // Jets3t is required by S3N support
   compile 'net.java.dev.jets3t:jets3t:0.6.1'

@@ -98,6 +98,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isEnum() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
             parms._offset_column != null,
@@ -227,7 +228,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           cp.write_lock(self());
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
-            throw new IllegalArgumentException("Predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns.");
+            throw new IllegalArgumentException("Number of (non-constant) predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
           }
           if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
             throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");

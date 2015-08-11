@@ -4,7 +4,7 @@ import h2o
 
 def rbind_check(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     frame = h2o.import_frame(path=h2o.locate("smalldata/junit/cars.csv"))
     row_orig = frame.nrow()

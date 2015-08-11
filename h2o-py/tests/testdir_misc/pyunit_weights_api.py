@@ -3,8 +3,8 @@ sys.path.insert(1, "../../")
 import h2o
 
 def weights_api(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     h2o_iris_data = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))
     r = h2o_iris_data.runif()
@@ -32,7 +32,8 @@ def weights_api(ip,port):
                                y=iris_train[4],
                                ntrees=5,
                                distribution="multinomial",
-                               weights_column="C2")
+                               weights_column="C2",
+                               training_frame=iris_train)
 
     # training_frame not specified, weights not part of x
     try:
@@ -40,7 +41,8 @@ def weights_api(ip,port):
                                    y=iris_train[4],
                                    ntrees=5,
                                    distribution="multinomial",
-                                   weights_column="C4")
+                                   weights_column="C4",
+                                   training_frame=iris_train)
 
         assert False, "expected an error"
     except:
@@ -78,7 +80,9 @@ def weights_api(ip,port):
                                validation_y=iris_valid[4],
                                ntrees=5,
                                distribution="multinomial",
-                               weights_column="C2")
+                               weights_column="C2",
+                               training_frame=iris_train,
+                               validation_frame=iris_valid)
 
     # validation_frame not specified, weights not part of validation_x
     try:
