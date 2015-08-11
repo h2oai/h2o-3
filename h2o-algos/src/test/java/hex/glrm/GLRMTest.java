@@ -4,20 +4,17 @@ import hex.DataInfo;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
@@ -62,8 +59,8 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._gamma_x = parms._gamma_y = 0.5;
-      parms._regularization_x = GLRMParameters.Regularizer.L2;
-      parms._regularization_y = GLRMParameters.Regularizer.L2;
+      parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_y = GLRMParameters.Regularizer.Quadratic;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.User;
@@ -109,8 +106,8 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 10;
       parms._gamma_x = parms._gamma_y = 0.25;
-      parms._regularization_x = GLRMParameters.Regularizer.L2;
-      parms._regularization_y = GLRMParameters.Regularizer.L2;
+      parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_y = GLRMParameters.Regularizer.Quadratic;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._min_step_size = 1e-5;
@@ -277,8 +274,8 @@ public class GLRMTest extends TestUtil {
         parms = new GLRMParameters();
         parms._train = train._key;
         parms._k = train.numCols();
-        parms._regularization_x = GLRMParameters.Regularizer.L2;
-        parms._regularization_y = GLRMParameters.Regularizer.L2;
+        parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
+        parms._regularization_y = GLRMParameters.Regularizer.Quadratic;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;

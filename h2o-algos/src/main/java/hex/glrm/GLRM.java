@@ -321,7 +321,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return centers_exp;
     }
 
-    // In case of L2 loss and regularization, initialize closed form X = AY'(YY' + \gamma)^(-1)
+    // In case of quadratic loss and regularization, initialize closed form X = AY'(YY' + \gamma)^(-1)
     private void initialXClosedForm(DataInfo dinfo, Archetypes yt_arch, double[] normSub, double[] normMul) {
       Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
       double[][] ygram = ArrayUtils.formGram(yt_arch._archetypes);
@@ -471,7 +471,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         int weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
         int[] numLevels = tinfo._adaptedFrame.cardinality();
 
-        // Use closed form solution for X if L2 loss and regularization
+        // Use closed form solution for X if quadratic loss and regularization
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (na_cnt == 0 && _parms.hasClosedForm())

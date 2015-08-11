@@ -19,7 +19,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   public static class GLRMParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public int _k = 1;                            // Rank of resulting XY matrix
-    public Loss _loss = Loss.L2;                  // Loss function for numeric cols
+    public Loss _loss = Loss.Quadratic;                  // Loss function for numeric cols
     public MultiLoss _multi_loss = MultiLoss.Categorical;  // Loss function for categorical cols
     public int _period = 1;                       // Length of the period when _loss = Periodic
     public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
@@ -37,7 +37,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
     public enum Loss {
-      L2, L1, Huber, Poisson, Hinge, Logistic, Periodic
+      Quadratic, L1, Huber, Poisson, Hinge, Logistic, Periodic
     }
 
     public enum MultiLoss {
@@ -49,18 +49,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
     // Quadratic mixture: r_x = Simplex, r_y = 0 (\gamma_y = 0)
     public enum Regularizer {
-      None, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
+      None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
     public final boolean hasClosedForm() {
-      return (_loss == GLRMParameters.Loss.L2 && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.L2)
-              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.L2));
+      return (_loss == GLRMParameters.Loss.Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
+              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic));
     }
 
     // L(u,a): Loss function
     public final double loss(double u, double a) {
       switch(_loss) {
-        case L2:
+        case Quadratic:
           return (u-a)*(u-a);
         case L1:
           return Math.abs(u - a);
@@ -82,7 +82,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // \grad_u L(u,a): Gradient of loss function with respect to u
     public final double lgrad(double u, double a) {
       switch(_loss) {
-        case L2:
+        case Quadratic:
           return 2*(u-a);
         case L1:
           return Math.signum(u - a);
@@ -149,10 +149,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(regularization) {
         case None:
           return 0;
-        case L2:
+        case Quadratic:
           for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
           return ureg;
+        case L2:
+          for(int i = 0; i < u.length; i++)
+            ureg += u[i] * u[i];
+          return Math.sqrt(ureg);
         case L1:
           for(int i = 0; i < u.length; i++)
             ureg += Math.abs(u[i]);
@@ -215,9 +219,16 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(regularization) {
         case None:
           return u;
-        case L2:
+        case Quadratic:
           for(int i = 0; i < u.length; i++)
             v[i] = u[i]/(1+2*alpha*gamma);
+          return v;
+        case L2:
+          // Proof uses Moreau decomposition; see section 6.5.1 of Parikh and Boyd https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf
+          double weight = 1 - alpha*gamma/ArrayUtils.l2norm(u);
+          if(weight < 0) return v;   // Zero vector
+          for(int i = 0; i < u.length; i++)
+            v[i] = weight * u[i];
           return v;
         case L1:
           for(int i = 0; i < u.length; i++)
@@ -279,6 +290,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(regularization) {
         // Domain is all real numbers
         case None:
+        case Quadratic:
         case L2:
         case L1:
           return u;
@@ -299,7 +311,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for real numeric values
     public final double impute(double u) {
       switch(_loss) {
-        case L2:
+        case Quadratic:
         case L1:
         case Huber:
         case Periodic:

@@ -112,8 +112,8 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._train = train._key;
       parms._k = 8;
       parms._gamma_x = parms._gamma_y = 0.1;
-      parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.L2;
-      parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.L2;
+      parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.Quadratic;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_svd = false;
@@ -152,7 +152,7 @@ public class GLRMCategoricalTest extends TestUtil {
     Frame train = null, score = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
     final GLRMModel.GLRMParameters.Regularizer[] regs = new GLRMModel.GLRMParameters.Regularizer[] {
-            GLRMModel.GLRMParameters.Regularizer.L2,
+            GLRMModel.GLRMParameters.Regularizer.Quadratic,
             GLRMModel.GLRMParameters.Regularizer.L1,
             GLRMModel.GLRMParameters.Regularizer.NonNegative,
             GLRMModel.GLRMParameters.Regularizer.OneSparse,
@@ -169,7 +169,7 @@ public class GLRMCategoricalTest extends TestUtil {
       DKV.put(train._key, train);
 
       for(GLRMModel.GLRMParameters.Loss loss : new GLRMModel.GLRMParameters.Loss[] {
-              GLRMModel.GLRMParameters.Loss.L2,
+              GLRMModel.GLRMParameters.Loss.Quadratic,
               GLRMModel.GLRMParameters.Loss.L1,
               GLRMModel.GLRMParameters.Loss.Huber,
               GLRMModel.GLRMParameters.Loss.Poisson,
