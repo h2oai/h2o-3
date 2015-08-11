@@ -37,6 +37,7 @@ class ModelBase(object):
     :return: A new H2OFrame filled with predictions.
     """
     if not test_data: raise ValueError("Must specify test data")
+    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id)
     prediction_frame_id = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     return h2o.get_frame(prediction_frame_id)
@@ -70,6 +71,7 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
+    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id, deep_features_hidden_layer=layer)
     return h2o.get_frame(j["predictions_frame"]["name"])
 
@@ -107,18 +109,14 @@ class ModelBase(object):
     :return: An object of class H2OModelMetrics.
     """
     if test_data is None:
-      if not train and not valid:
-        train = True  # default to train
-
-      if train:
-        return self._model_json["output"]["training_metrics"]
-
-      if valid:
-        return self._model_json["output"]["validation_metrics"]
+      if not train and not valid: train = True  # default to train
+      if train: return self._model_json["output"]["training_metrics"]
+      if valid: return self._model_json["output"]["validation_metrics"]
 
     else:  # cases dealing with test_data not None
       if not isinstance(test_data, H2OFrame):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
+      test_data._eager()
       res = H2OConnection.post_json("ModelMetrics/models/" + self._id + "/frames/" + test_data._id)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
@@ -200,15 +198,9 @@ class ModelBase(object):
     :return: Return the residual deviance, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].residual_deviance()
-    else:
-      return self._model_json["output"]["validation_metrics"].residual_deviance()
+    if not train and not valid: train = True
+    if train and valid:  train = True
+    return self._model_json["output"]["training_metrics"].residual_deviance() if train else self._model_json["output"]["validation_metrics"].residual_deviance()
 
   def residual_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
@@ -219,15 +211,9 @@ class ModelBase(object):
     :return: Return the residual dof, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
-    else:
-      return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
+    if not train and not valid: train = True
+    if train and valid:         train = True
+    return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom() if train else self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
 
   def null_deviance(self,train=False,valid=False,xval=False):
     """
@@ -238,15 +224,9 @@ class ModelBase(object):
     :return: Return the null deviance, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].null_deviance()
-    else:
-      return self._model_json["output"]["validation_metrics"].null_deviance()
+    if not train and not valid: train = True
+    if train and valid:         train = True
+    return self._model_json["output"]["training_metrics"].null_deviance() if train else self._model_json["output"]["validation_metrics"].null_deviance()
 
   def null_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
@@ -257,15 +237,9 @@ class ModelBase(object):
     :return: Return the null dof, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
-    else:
-      return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
+    if not train and not valid: train = True
+    if train and valid:         train = True
+    return self._model_json["output"]["training_metrics"].null_degrees_of_freedom() if train else self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
 
   def pprint_coef(self):
     """
