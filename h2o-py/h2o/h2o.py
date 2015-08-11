@@ -1000,7 +1000,8 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
 
 def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
            nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
-           user_points=None):
+           user_points=None,ignored_columns=None,score_each_iteration=None,keep_cross_validation_predictions=None,
+           ignore_const_cols=None):
   """
   Performs k-means clustering on an H2O dataset.
 
@@ -1067,7 +1068,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
 
 
 def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
-           training_frame=None,validation_frame=None):
+           training_frame=None,validation_frame=None,pca_method=None):
   """
   Principal components analysis of a H2O dataset using the power method
   to calculate the singular value decomposition of the Gram matrix.
