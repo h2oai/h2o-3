@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/weights_all_tiny.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/weights_all_tiny.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/weights_all_tiny.csv\"]\n  destination_frame: \"weights_all_tiny.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 6\n  single_quotes: false\n  column_names: [\"f1\",\"f2\",\"f3\",\"f4\",\"weight\",\"response\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"weights_all_tiny.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"weights_all_tiny.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"weights_all_tiny.hex\", [0.2], [\"weights_all_tiny_test\",\"weights_all_tiny_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-d750de63-9d89-419b-a265-0d8c90f25753\",\"training_frame\":\"weights_all_tiny_train\",\"validation_frame\":\"weights_all_tiny_test\",\"ignore_const_cols\":true,\"response_column\":\"f1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-d750de63-9d89-419b-a265-0d8c90f25753\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-d750de63-9d89-419b-a265-0d8c90f25753\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-d750de63-9d89-419b-a265-0d8c90f25753\", frame: \"weights_all_tiny_test\", predictions_frame: \"prediction-a70d9405-0f8a-460b-98ce-2c6ae3546246\""
+    }
+  ]
+}

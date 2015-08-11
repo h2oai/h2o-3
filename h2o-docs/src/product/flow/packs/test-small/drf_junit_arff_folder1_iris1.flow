@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/arff/folder1/iris1.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/arff/folder1/iris1.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/arff/folder1/iris1.csv\"]\n  destination_frame: \"iris1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris1.hex\", [0.2], [\"iris1_test\",\"iris1_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"drf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-335a8a89-249d-45c0-b5f9-ea540ef8990f\",\"training_frame\":\"iris1_train\",\"validation_frame\":\"iris1_test\",\"ignore_const_cols\":true,\"response_column\":\"C5\",\"ntrees\":\"10\",\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":7560664744549151000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-335a8a89-249d-45c0-b5f9-ea540ef8990f\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-335a8a89-249d-45c0-b5f9-ea540ef8990f\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-335a8a89-249d-45c0-b5f9-ea540ef8990f\", frame: \"iris1_test\", predictions_frame: \"prediction-84a63357-5220-4f66-b52b-d8464b185c61\""
+    }
+  ]
+}

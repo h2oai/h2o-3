@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/weather.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/weather.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/weather.csv\"]\n  destination_frame: \"weather.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 24\n  single_quotes: false\n  column_names: [\"Date\",\"EvapMM\",\"Sunshine\",\"MaxWindSpeed\",\"Temp9am\",\"RelHumid9am\",\"Cloud9am\",\"WindSpeed9am\",\"Pressure9am\",\"Temp3pm\",\"RelHumid3pm\",\"Cloud3pm\",\"WindSpeed3pm\",\"Pressure3pm\",\"ChangeTemp\",\"ChangeTempDir\",\"ChangeTempMag\",\"ChangeWindDirect\",\"MaxWindPeriod\",\"RainToday\",\"TempRange\",\"PressureChange\",\"RISK_MM\",\"RainTomorrow\"]\n  column_types: [\"Time\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"weather.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"weather.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"weather.hex\", [0.2], [\"weather_test\",\"weather_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-ed18e4e5-53c9-44d5-ae9d-2f2df26be08c\",\"training_frame\":\"weather_train\",\"validation_frame\":\"weather_test\",\"ignore_const_cols\":true,\"response_column\":\"Date\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-ed18e4e5-53c9-44d5-ae9d-2f2df26be08c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-ed18e4e5-53c9-44d5-ae9d-2f2df26be08c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-ed18e4e5-53c9-44d5-ae9d-2f2df26be08c\", frame: \"weather_test\", predictions_frame: \"prediction-a4c9f65d-cc3a-4490-b469-cfda7ec2ddff\""
+    }
+  ]
+}
