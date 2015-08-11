@@ -48,11 +48,11 @@ def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is fr
   fr=kwargs["training_frame"]
   if c is None or isinstance(c,H2OFrame): res=c
   else:
-    if fr is None: raise ValueError("offsets/weights given, but missing training_frame")
+    if fr is None: raise ValueError("offsets/weights/fold given, but missing training_frame")
     res=fr[c]
   kwargs[name] = None if res is None else res.col_names()[0]
   if res is not None and kwargs["validation_x"] is not None and kwargs["validation_frame"] is None:  # validation frame must have any offsets, weights, folds, etc.
-    raise ValueError("offsets/weights given, but missing validation_frame")
+    raise ValueError("offsets/weights/fold given, but missing validation_frame")
   return res
 
 def _check_frame(x,y,response):  # y and response are only ever different for validation
