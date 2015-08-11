@@ -22,7 +22,7 @@ A vector containing the names of the predictors in the model.
 The name of the response variable in the model.
 }
   \item{training_frame}{
-(Optional) An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 }
   \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
@@ -31,7 +31,7 @@ A description of the error distribution and link function to be used in the mode
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 }
   \item{validation_frame}{
-(Optional) An \code{\linkS4class{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.
+(Optional) An \code{\linkS4class{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not functional.
 }
   \item{learner}{
 A string or character vector naming the prediction algorithm(s) used to train the base models for the ensemble.  The functions must have the same format as the h2o wrapper functions.
@@ -107,9 +107,6 @@ Breiman, L. (1996) Stacked Regressions, Machine Learning, 24:49–64.\cr
 \author{
 Erin LeDell \email{erin@h2o.ai}
 }
-\note{
-Using an h2o algorithm wrapper function as the metalearner is not yet producing good results.  For now, it is recommended to use the \code{\link[SuperLearner:SL.glm]{SL.glm}} function as the metalearner.
-}
 
 
 \seealso{
@@ -121,7 +118,6 @@ Using an h2o algorithm wrapper function as the metalearner is not yet producing 
 # An example of binary classification on a local machine using h2o.ensemble
 
 library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(SuperLearner)  # For metalearner such as "SL.glm"
 library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
 localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
@@ -138,13 +134,13 @@ y <- "V1"
 x <- setdiff(names(training_frame), y)
 family <- "binomial"
 training_frame[,c(y)] <- as.factor(training_frame[,c(y)])  #Force Binary classification
-validation_frame[,c(y)] <- as.factor(validation_frame[,c(y)])  # check to validate that this guarantees the same 0/1 mapping?
+validation_frame[,c(y)] <- as.factor(validation_frame[,c(y)])
 
 
 # Specify the base learner library & the metalearner
 learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
                "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
-metalearner <- "SL.glm"
+metalearner <- "h2o.deeplearning.wrapper"
 
 
 # Train the ensemble using 5-fold CV to generate level-one data
@@ -159,18 +155,24 @@ fit <- h2o.ensemble(x = x, y = y,
 
 # Generate predictions on the test set
 pred <- predict.h2o.ensemble(fit, validation_frame)
+predictions <- as.data.frame(pred$pred)[,3]  #third column, p1 is P(Y==1)
 labels <- as.data.frame(validation_frame[,c(y)])[,1]
 
 
 # Ensemble test AUC 
-AUC(predictions=as.data.frame(pred$pred)[,1], labels=labels)
-# 0.7889155
+AUC(predictions = predictions , labels = labels)
+# 0.7888723
 
 
 # Base learner test AUC (for comparison)
 L <- length(learner)
-sapply(seq(L), function(l) AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
-# 0.6871342 0.7743299 0.7816997 0.7344790
+auc <- sapply(seq(L), function(l) AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
+data.frame(learner, auc)
+#                   learner       auc
+#1          h2o.glm.wrapper 0.6871288
+#2 h2o.randomForest.wrapper 0.7711654
+#3          h2o.gbm.wrapper 0.7817075
+#4 h2o.deeplearning.wrapper 0.7425813
 
 # Note that the ensemble results above are not reproducible since 
 # h2o.deeplearning is not reproducible when using multiple cores.
