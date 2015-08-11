@@ -1,4 +1,5 @@
 \name{h2o.example.wrapper}
+\alias{h2o.example.wrapper}
 \alias{h2o.glm.wrapper}
 \alias{h2o.gbm.wrapper}
 \alias{h2o.randomForest.wrapper}
@@ -10,7 +11,7 @@ Wrapper functions for h2o algorithms
 This is an example h2o algorithm wrapper function.
 }
 \usage{
-h2o.example.wrapper(x, y, data, key = "", family = "binomial", ...)
+h2o.example.wrapper(x, y, training_frame, model_id = "", family = "binomial", ...)
 }
 
 \arguments{
@@ -20,17 +21,19 @@ A vector containing the names of the predictors in the model.
   \item{y}{
 The name of the response variable in the model.
 }
-  \item{data}{
-An \code{\linkS4class{H2OParsedData}} object containing the variables in the model.
+  \item{training_frame}{
+An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 }
-\item{key}{
-  (Optional) The unique hex key assigned to the resulting model. If none is given, a key will automatically be generated.
+  \item{model_id}{
+(Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 }
 
 \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
 }
-
+\item{...}{
+  Additional arguments to be passed to or from methods.
+}
 }
 \value{
 An H2O model.
@@ -41,7 +44,7 @@ Erin LeDell \email{erin@h2o.ai}
 }
 
 \seealso{
-\code{\link[h2oEnsemble::h2o.ensemble]{h2o.ensemble}}
+\code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}}
 }
 
 

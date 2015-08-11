@@ -107,9 +107,6 @@ public class RequestServer extends NanoHTTPD {
     register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster");
 
-    // Help and Tutorials get all the rest...
-    register("/3/Tutorials", "GET", TutorialsHandler.class, "nop", "H2O tutorials.");
-
     // REST only, no html:
 
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",

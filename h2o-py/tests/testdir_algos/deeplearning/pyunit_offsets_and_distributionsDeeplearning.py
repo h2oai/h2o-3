@@ -17,28 +17,23 @@ def offsets_and_distributions(ip,port):
     insurance["offset"] = insurance["Holders"].log()
 
     # bernoulli
-    dl = h2o.deeplearning(x=cars[2:8], y=cars["economy_20mpg"], distribution="bernoulli", offset_column="x1",
-                           training_frame=cars)
+    dl = h2o.deeplearning(x=cars[2:8], y=cars["economy_20mpg"], distribution="bernoulli", offset_column="x1", training_frame=cars)
     predictions = dl.predict(cars)
 
     # gamma
-    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="gamma", offset_column="offset",
-                           training_frame=insurance)
+    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="gamma", offset_column="offset", training_frame=insurance)
     predictions = dl.predict(insurance)
 
     # gaussian
-    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="gaussian", offset_column="offset",
-                           training_frame=insurance)
+    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="gaussian", offset_column="offset", training_frame=insurance)
     predictions = dl.predict(insurance)
 
     # poisson
-    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="poisson", offset_column="offset",
-                           training_frame=insurance)
+    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="poisson", offset_column="offset", training_frame=insurance)
     predictions = dl.predict(insurance)
 
     # tweedie
-    dl = h2o.deeplearning(x=insurance[0:3], y=insurance["Claims"], distribution="tweedie", offset_column="offset",
-                           training_frame=insurance)
+    dl = h2o.deeplearning(x=insurance.names()[0:3], y="Claims", distribution="tweedie", offset_column="offset", training_frame=insurance)
     predictions = dl.predict(insurance)
 
 if __name__ == "__main__":

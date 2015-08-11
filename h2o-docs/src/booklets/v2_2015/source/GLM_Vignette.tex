@@ -1,81 +1,20 @@
-\documentclass[11pt]{article}
-\setcounter{secnumdepth}{5}
-\setcounter{tocdepth}{5}
-\usepackage[english]{babel}
-\usepackage{textcomp}
-\usepackage{amsmath,amsthm,amsfonts,amssymb,epsfig}
-\usepackage{array}
-\usepackage{datetime}
-\usepackage{lipsum}% http://ctan.org/pkg/lipsum
-\usepackage[left=1.1in,top=1in,right=1.1in]{geometry}% http://ctan.org/pkg/geometry
-\usepackage{listings}% http://ctan.org/pkg/listings
-\usepackage{spverbatim}
-\usepackage{hyperref}
-\usepackage{microtype}
-\hypersetup{colorlinks=true, urlcolor=black, linkcolor=black}
-\usepackage{graphicx}
-\graphicspath{ {images/} }
-\usepackage{parskip}
-\usepackage{titlesec} %used for diminishing heading sizes
-\usepackage[square, sort, comma, numbers]{natbib} %%uses titles for cited references
+\input{common/conf_top.tex}
+
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 \defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
 \defcitealias{admm}{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers by Boyd et. al}
 \defcitealias{prox}{Proximal Algorithms by Boyd et. al}
 
-
-\titleformat*{\section}{\LARGE\bfseries\sffamily}
-\titleformat*{\subsection}{\Large\bfseries\sffamily}
-\titleformat*{\subsubsection}{\large\bfseries\sffamily}
-\titleformat*{\paragraph}{\large\bfseries\sffamily}
-\titleformat*{\subparagraph}{\large\bfseries\sffamily}
-\renewcommand{\familydefault}{\sfdefault} %sans-serif font
-
-
+\input{common/conf_titles.tex}
 
 \begin{document}
 
-%----------------------------------------------------------------------
-% Definition for "lstlisting" blocks
-%----------------------------------------------------------------------
-% --- USAGE ---
-%
-% \begin{lstlisting}[style=R}
-% ...
-% \end{lstlisting}
-%
-% % \begin{lstlisting}[style=output}
-% ...
-% \end{lstlisting}
-%----------------------------------------------------------------------
-
-% By default, make listings all black so it's easy to spot the ones that aren't set to a style.
-% This is just a debugging technique.
-\lstset{backgroundcolor=\color{black}}
-
-\lstdefinestyle{R}{
-  language=R,
-  frame=single,
-  breaklines,
-  basicstyle=\ttfamily,
-  backgroundcolor=\color{white}
-}
-
-\definecolor{mygray}{rgb}{0.92,0.92,0.92}
-
-\lstdefinestyle{output}{
-  frame=single,
-  breaklines,
-  basicstyle=\ttfamily,
-  backgroundcolor=\color{mygray}
-}
-
-%----------------------------------------------------------------------
+\input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
 
 \begin{center}
-\textsc{\Large\bf{Generalized Linear Modeling  with H2O's R Package}}
+\textsc{\Large\bf{Generalized Linear Modeling with H2O}}
 \\
 \bigskip
 \textsc{\small{Tomas Nykodym \hspace{20pt} Ariel Rao \hspace{20pt} Amy Wang \hspace{20pt} Tom Kraljevic \hspace{20pt} Jessica Lanford}}
@@ -91,7 +30,7 @@ August 2015: Third Edition
 
 {\raggedright\vfill\ 
 
-Generalized Linear Modeling  with H2O's R Package\\
+Generalized Linear Modeling with H2O\\
   by Tomas Nykodym, Ariel Rao, Amy Wang, Tom Kraljevic, \&\ Jessica Lanford \\
 \bigskip
   Published by H2O.ai, Inc. \\
@@ -104,7 +43,7 @@ Mountain View, CA 94043\\
 August 2015: Third Edition
 \bigskip
 
-Photos by \textcopyright H2O.ai, Inc. 
+Photos by \textcopyright H2O.ai, Inc.
 \bigskip
 
 While every precaution has been taken in the\\
@@ -114,9 +53,7 @@ omissions, or for damages resulting from the\\
 use of the information contained herein.\\
 \bigskip
 Printed in the United States of America. 
-
-
-}\par
+}
 
 \newpage
 
@@ -127,31 +64,56 @@ Printed in the United States of America.
 
 \newpage
 
-\section{Introduction} \label{1}
-This document describes Generalized Linear Model implementation on H2O platform, list of supported features and how to use them from R. 
+\section{Introduction}
+This document introduces the reader to Generalized Linear Modeling with H2O.  Examples are written in R and python.  The reader is walked through the installation of H2O, basic GLM concepts, building GLM models in H2O, how to interpret model output, how to make predictions, and various implementation details.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
-\section{What is H2O?}
-
-H2O is fast scalable open-source machine learning and deep learning for Smarter Applications. With H2O, enterprises like PayPal, Nielsen, Cisco and others can use all of their data without sampling and get accurate predictions faster. Advanced algorithms, like Deep Learning, Boosting, and Bagging Ensembles are readily available for application designers to build smarter applications through elegant APIs. Some of our earliest customers have built powerful domain-specific predictive engines for Recommendations, Customer Churn, Propensity to Buy, Dynamic Pricing and Fraud Detection for the Insurance, Healthcare, Telecommunications, AdTech, Retail and Payment Systems.
-Using in-memory compression techniques, H2O can handle billions of data rows in-memory, even with a fairly small cluster. The platform includes interfaces for R, Python, Scala, Java, JSON and Coffeescript/JavaScript, along with a built-in  web interface, Flow, that make it easier for non-engineers to stitch together complete analytic workflows. The platform was built alongside (and on top of) both Hadoop and Spark Clusters and is typically deployed within minutes.
-H2O implements almost all common machine learning algorithms, such as generalized linear modeling (linear regression, logistic regression, etc.), Na\"{i}ve Bayes, principal components analysis, time series, k-means clustering and others. H2O also implements best-in-class algorithms such as Random Forest, Gradient Boosting and Deep Learning at scale. Customers can build thousands of models and compare them to get the best prediction results.
-H2O is nurturing a grassroots movement of physicists, mathematicians, computer and data scientists to herald the new wave of discovery with data science. Academic researchers and Industrial data scientists collaborate closely with our team to make this possible. Stanford university giants Stephen Boyd, Trevor Hastie, Rob Tibshirani advise the H2O team to build scalable machine learning algorithms. With 100s of meetups over the past two years, H2O has become a word-of-mouth phenomenon growing amongst the data community by a 100-fold and is now used by 12,000+ users, deployed in 2000+ corporations using R, Python, Hadoop and Spark.\textbf{Try it out}H2O offers an R package that can be installed from CRAN.
-
-H2O can be downloaded directly from \mbox{\url{http://h2o.ai/download}}.\textbf{Join the community}Connect with \mbox{\url{h2ostream@googlegroups.com}} and \mbox{\url{https://github.com/h2oai}} to learn about our meetups, training sessions, hackathons, and product updates.\textbf{Learn more about H2O}
-Visit \mbox{\url{http://h2o.ai}}.
+\input{common/what_is_h2o.tex}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
+\newpage
 
-\newpage
+%\subsubsection{Summary of features} 
+%In summary, H2O's GLM functionalities include:
+%
+%\begin{itemize} 
+%\item automatic standardization of predictor variables
+%\item fits generalized linear model with elastic net penalty
+%\item supported GLM families include Gaussian, Binomial, Poisson, Gamma, and Tweedie
+%\item efficient handling of categorical variables
+%\item efficient computation of full regularization path
+%\item IRLSM (best for data with many rows and fewer predictors) and LBFGS (best for data with many predictors) solvers
+%\item automatic lambda search for best model
+%\item stopping criterium when many predictors are used
+%\item efficient distributed n-fold cross validation
+% \item distributed grid search over elastic-net parameter $\alpha$
+%\item offset column
+%\item row weights
+%\item upper and lower bounds for coefficients
+%\item proximal operator interface
+%\end{itemize}
 
-\section{What is GLM?}
+\newcommand{\waterVersion}{3.0.1.4}
+\input{common/installation.tex}
+
+\section{GLM Concepts}
 Generalized linear models (GLM) are the workhorse for most predictive analysis use cases. GLM can be used for both regression and classification, it scales well to large datasets, and is based on solid statistical background. It is a generalization of linear models, allowing for modeling of data with exponential distributions and for categorical data (classification). GLM models are fitted by solving the maximum likelihood optimization problem.
 
-\subsection{GLM on H2O}
+Generalized linear models are generalizations of linear regression models. Linear regression models the dependency of response y on a vector of predictors x ($y \sim x^T \beta + \beta_0$). The models are built with the assumptions that y has a gaussian distribution with a variance of $\sigma^2$ and the mean is a linear function of x with an offset of some constant $\beta_0$, i.e. $ y = \mathcal{N}(x^T \beta + \beta_0 ,  \sigma^2) $. These assumptions can be overly restrictive for real-world data that do not necessarily have a gaussian distribution. 
+
+GLM generalizes linear regression in the following ways: 
+
+\begin{itemize} 
+\item adding a non-linear link function that transforms the expectation of response variable, so that $link(y) \sim x^T \beta + \beta_0$.
+\item allowing variance to depend on the predicted value by specifying the conditional distribution of the response variable or the family argument.
+\end{itemize}
+
+This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
+
+\subsection{GLM in H2O}
 H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number ($\mathtt{\sim}$ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to the glmnet package for R (refer to \citetalias{glmnet}). 
 H2O's GLM fits the model by solving following problem:
 
@@ -167,139 +129,6 @@ The elastic net parameter $\alpha$ controls the penalty distribution between L1 
 The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the L2-only penalty does not reduce coefficients to exactly 0. The two penalties also differ in the case of correlated predictors. The L2 penalty shrinks coefficients for correlated columns towards each other, while the L1 penalty will pick one and drive the others to zero. Using the elastic net argument $\alpha$, you can combine these two behaviors. It is also useful to always add a small L2 penalty to increase numerical stability.
 
 Similarly to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting from null-model (maximum penalty) going down to minimally penalized model. This search is made efficient by employing strong-rules as described in \citetalias{strong} to filter out inactive coefficients (coefficients pushed to zero by penalty). Computing the full regularization path is useful in that it gives more insight about the importance of individual coefficients and quality of the model while allowing selection of the optimal amount of penalization for the given problem and data.
-
-\subsubsection{Summary of features} 
-In summary, H2O's GLM functionalities include:
-
-\begin{itemize} 
-\item automatic standardization of predictor variables
-\item fits generalized linear model with elastic net penalty
-\item supported GLM families include Gaussian, Binomial, Poisson, Gamma, and Tweedie
-\item efficient handling of categorical variables
-\item efficient computation of full regularization path
-\item IRLSM (best for data with many rows and fewer predictors) and LBFGS (best for data with many predictors) solvers
-\item automatic lambda search for best model
-\item stopping criterium when many predictors are used
-\item efficient distributed n-fold cross validation
-% \item distributed grid search over elastic-net parameter $\alpha$
-\item offset column
-\item row weights
-\item upper and lower bounds for coefficients
-% \item proximal operator interface
-\end{itemize}
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\section{Installation} 
-
-You can load a recent H2O package from CRAN by running (be advised that the version of H2O in CRAN often lags by a release):
-
-\begin{lstlisting}[style=R]
-install.packages("h2o")
-\end{lstlisting}
-
-Alternatively, you can (and should for this tutorial) download the latest stable H2O-3 build from the H2O download page as directed below:
-
-\begin{itemize}
-\item Go to http://h2o.ai/download
-\item Choose the latest stable H2O-3 build (This vignette was created with the Simons 3.0.1.4 release of H2O-3)
-\item Click on the "Install in R" tab
-\item Copy and paste the instructions into your R session
-\end{itemize}
-
-\bigskip
-Once you have H2O installed, initialize H2O on all the cores of your machine:
-
-\begin{lstlisting}[style=R]
-library(h2o)
-localH2O = h2o.init(nthreads = -1)
-\end{lstlisting}
-
-The function \texttt{h2o.init()} creates a connection to an H2O instance, and will optionally start H2O locally if it is not already running. By default, the H2O instance will launch on \texttt{localhost:54321}. To establish a connection to a pre-existing H2O cluster, explicitly state the IP address (\texttt{ip = "localhost"}) and port number (\texttt{port = 54321}) in the \texttt{h2o.init()} call.
-
-\subsection{Verifying your installation}
-Run the following commands to observe an example classification model built with H2O's GLM:
-
-\begin{lstlisting}[style=R]
-# Build a GLM model on prostate data with the equivalent of
-# the following formula:
-#
-#     CAPSULE ~ AGE + RACE + PSA + DCAPS
-#
-prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-prostate.hex = h2o.importFile(prostatePath)
-model = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial")
-print(model)
-\end{lstlisting}
-
-The output of the model build will include coefficients, as well as some validation statistics:
-\begin{lstlisting}[style=output]
-Model Details:
-==============
-
-H2OBinomialModel: glm
-Model ID:  GLM_model_R_1439070697963_10 
-GLM Model:
-    family  link                                regularization number_of_predictors_total number_of_active_predictors
-1 binomial logit Elastic Net (alpha = 0.5, lambda = 3.251E-4 )                   4.000000                    5.000000
-  number_of_iterations training_frame
-1             5.000000 prostate.hex_1
-
-Coefficients:
-      names coefficients standardized_coefficients
-1 Intercept    -1.115184                 -0.337716
-2       AGE    -0.010970                 -0.071507
-3      RACE    -0.622777                 -0.192044
-4     DCAPS     1.314494                  0.407818
-5       PSA     0.046886                  0.936381
-
-H2OBinomialMetrics: glm
-** Reported on training data. **
-
-MSE:  0.2027033
-R^2:  0.1572268
-LogLoss:  0.5914635
-AUC:  0.7176298
-Gini:  0.4352596
-Null Deviance:  512.2888
-Residual Deviance:  449.5123
-AIC:  459.5123
-
-Confusion Matrix for F1-optimal threshold:
-        0   1    Error      Rate
-0      80 147 0.647577  =147/227
-1      18 135 0.117647   =18/153
-Totals 98 282 0.434211  =165/380
-
-Maximum Metrics:
-                      metric threshold    value        idx
-1                     max f1  0.284067 0.620690 274.000000
-2                     max f2  0.207167 0.778230 360.000000
-3               max f0point5  0.413261 0.636672 108.000000
-4               max accuracy  0.413261 0.705263 108.000000
-5              max precision  0.998477 1.000000   0.000000
-6           max absolute_MCC  0.413261 0.369123 108.000000
-7 max min_per_class_accuracy  0.331788 0.647577 176.000000
-\end{lstlisting}
-
-\subsection{Support} 
-
-Users of the H2O package may submit general enquiries and bug reports to H2O.ai support address, \mbox{\url{h2ostream@googlegroups.com}}.  Alternatively, specific bugs or issues may be filed to the H2O.ai JIRA at \mbox{\url{http://jira.h2o.ai}}.
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\section{Generalized Linear Modeling} 
-This section contains a brief overview of generalized linear models and follows up with a few details for each model family.
-
-Generalized linear models are generalizations of linear regression models. Linear regression models the dependency of response y on a vector of predictors x ($y \sim x^T \beta + \beta_0$). The models are built with the assumptions that y has a gaussian distribution with a variance of $\sigma^2$ and the mean is a linear function of x with an offset of some constant $\beta_0$, i.e. $ y = \mathcal{N}(x^T \beta + \beta_0 ,  \sigma^2) $. These assumptions can be overly restrictive for real-world data that do not necessarily have a gaussian distribution. GLM generalizes linear regression in the following ways: 
-\begin{itemize} 
-\item adding a non-linear link function that transforms the expectation of response variable, so that $link(y) \sim x^T \beta + \beta_0$.
-\item allowing variance to depend on the predicted value by specifying the conditional distribution of the response variable or the family argument.
-
-\end{itemize}
-This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
 
 \subsection{Model Fitting}
 GLM models are fitted by maximizing the likelihood. For the gaussian family, maximum likelihood is simply the minimal mean squared error, which has an analytical solution and can be solved with ordinary least squares. For all other families, the maximum likelihood problem has no analytical solution so we must use an iterative method such as IRLSM, Newton method, gradient descent, or L-BFGS.
@@ -319,7 +148,7 @@ where k is the number of model parameters and $ln(L_{m})$ is the log likelihood 
 \subsection{Regularization} 
 We introduce penalties to the model building process to avoid over-fitting, reduce variance of the prediction error, and handle correlated predictors. There are two common penalized linear models: ridge regression and lasso. Ridge regression provides greater numerical stability and is easier and faster to compute. In comparison, lasso leads to a sparse solution, which is advantageous in many situations, as it can be used for feature selection and to produce models with fewer parameters. When encountering highly correlated columns, the L2 penalty tends to push all of the coefficients towards each other, while the L1 penalty will pick one and remove the others to produce 0 coefficients.
 
-\subsubsection{Lasso}
+\subsubsection{Lasso and Ridge Regression}
 
 Lasso represents the L1 penalty and is an alternative regularized least squares method that uses the constraint $||B||_1$. The penalty is configured using the \texttt{alpha} parameter. The main difference between lasso and ridge regression is that as the penalty for ridge regression increases, the parameters are reduced to non-zero values. With lasso, if the penalty is increased, the parameters can be reduced to zero values. Since reducing parameters to zero removes them from the model, the lasso method provides only the relevant data. Ridge regression never removes any data. 
 
@@ -358,14 +187,14 @@ Deviance is simply the sum of squared errors:
 \[ D = \sum\limits_{i=1}\limits^{N}{(y_i - \hat{y}_i)^2} \]
 
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 Included in the H2O package is a prostate cancer data set. The data was collected by Dr. Donn Young at  Ohio State University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds based on features such as age and race.
 
 \begin{lstlisting}[style=R]
 filepath = system.file("extdata", "prostate.csv",package = "h2o")
 prostate.hex = h2o.importFile(object = localH2O, filepath, key = "prostate.hex")
-gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", data = prostate.hex, family = "gaussian")
+gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", training_frame = prostate.hex, family = "gaussian")
 \end{lstlisting}
 
 \subsubsection{Logistic Regression (Binomial Family)}
@@ -373,7 +202,7 @@ Logistic regression can be used for a binary classification problem where the re
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.5]{scurve.png}
+\includegraphics[scale=0.5]{images/scurve.png}
 \end{figure}
 
 
@@ -392,12 +221,12 @@ The model is fitted by solving:
 Deviance is -2 log likelihood:
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) + (1 - y)log(1-\hat{y})  )}\]
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 Using the prostate data set, build a binomial model that classifies if there is penetration of the prostatic capsule (CAPSULE). Make sure the entries in the CAPSULE column are binary entries by using the \texttt{h2o.table()} function. Change the regression by setting the family to binomial.
 \begin{lstlisting}[style=R]
 h2o.table(prostate.hex[,"CAPSULE"])
-binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", data = prostate.hex, family = "binomial")
+binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial")
 \end{lstlisting}
 
 \subsubsection{Poisson Models}
@@ -415,14 +244,14 @@ Deviance is
 
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) - y - \hat{y}}\]
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 Load the Insurance data from the MASS library and import into H2O. Run a poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they own (Group).
 \begin{lstlisting}[style=R]
 library(MASS)
 data(Insurance)
 insurance.hex = as.h2o(localH2O, Insurance)
-poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", data = insurance.hex, family = "poisson")
+poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", training_frame = insurance.hex, family = "poisson")
 \end{lstlisting}
 
 \subsubsection{Gamma Models}
@@ -439,7 +268,7 @@ Deviance is
 \[D = -2\sum\limits_{i=1}\limits^{N}{log({y_i \over \hat{y}_i}) - {y_i - \hat{y}_i \over\hat{y}_i }}\]
 
 
-\textbf{Example}\\
+\textbf{Example in R}\\
 
 To change the link function from the default inverse function to the log link function, modify the \texttt{link} argument.
 
@@ -447,27 +276,30 @@ To change the link function from the default inverse function to the log link fu
 gamma.inverse <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="inverse")
 gamma.log <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="log")
 \end{lstlisting}
-% Strong Rules paper
+
+\subsubsection{Tweedie Models}
+
+TODO
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
 \section{GLM on H2O}
-H2O's GLM implementation presents a high-performance distributed algorithm, which scales linearly with the number of rows and works extremely well for datasets with limited number of active predictors. 
+H2O's GLM implementation presents a high-performance distributed algorithm, which scales linearly with the number of rows and works extremely well for datasets with a limited number of active predictors.
 
 \subsection{Input Parameters}
 This section describes the specifics of GLM implementation on H2O, such as selecting regularization parameters and handling of categoricals. 
 
 \subsubsection{Predictors \& Response}
-Every model must specify its predictors and response; it is the equivalent formula object in R. Predictors and response are specified by \texttt{source}, \texttt{x}, and \texttt{y} parameters, with an optional \texttt{offset} parameter. 
+Every model must specify its predictors and response; it is the equivalent formula object in R. Predictors and response are specified by \texttt{training\_frame}, \texttt{x}, and \texttt{y} parameters, with an optional \texttt{offset} parameter.
 
-\texttt{source} refers to a frame containing a training dataset. All predictors and the response (and offset, if there is one) must be part of this frame.
+\texttt{training\_frame} refers to a frame containing a training dataset. All predictors and the response (and offset, if there is one) must be part of this frame.
 
-\texttt{x} contains the list of column names or column indices referring to vectors from the source frame; it can not contain periods.
+\texttt{x} contains the list of column names or column indices referring to vectors from the training frame; it can not contain periods.
 
-\texttt{y} is a column name or index referring to a vector from the source frame.
+\texttt{y} is a column name or index referring to a vector from the training frame.
 
-\texttt{offset} is a column name or index referring to a vector from the source frame.
+\texttt{offset} is a column name or index referring to a vector from the training frame.
   
 \subsubsection{Family \& Link}
 Family and Link are both optional parameters. The default family is \texttt{Gaussian} and the default link is a canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link = `log'}.
@@ -738,6 +570,11 @@ To download the model,
 \item Follow the curl and java compile commands displayed in the instructions at the top of the Java model.
 \end{enumerate}
 \newpage
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+\input{common/further_info.tex}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------

@@ -10,14 +10,15 @@ def weights_check(ip,port):
 
     def check_same(data1, data2, min_rows_scale):
         gbm1_regression = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
-                                  y=data1["economy"],
+                                  y="economy",
+                                  training_frame=data1,
                                   min_rows=5,
                                   ntrees=5,
                                   max_depth=5)
         gbm2_regression = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
                                   y=data2["economy"],
                                   min_rows=5*min_rows_scale,
-                                  weights_column="weights",
+                                  weights_column=data2["weights"],
                                   ntrees=5,
                                   max_depth=5)
         gbm1_binomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
@@ -29,6 +30,7 @@ def weights_check(ip,port):
         gbm2_binomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
                                 y=data2["economy_20mpg"],
                                 weights_column="weights",
+                                training_frame=data2,
                                 min_rows=5*min_rows_scale,
                                 distribution="bernoulli",
                                 ntrees=5,
@@ -42,6 +44,7 @@ def weights_check(ip,port):
         gbm2_multinomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
                                    y=data2["cylinders"],
                                    weights_column="weights",
+                                   training_frame=data2,
                                    min_rows=5*min_rows_scale,
                                    distribution="multinomial",
                                    ntrees=5,

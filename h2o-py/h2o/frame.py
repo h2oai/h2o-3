@@ -619,7 +619,7 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,list,slice)): return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
+    if isinstance(item, (int,str,unicode,list,slice)): return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
     elif isinstance(item, H2OFrame):           return H2OFrame(expr=ExprNode("[",self,item,None))
     elif isinstance(item, tuple):
       rows = item[0]
@@ -638,8 +638,6 @@ class H2OFrame:
       if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)):
         return H2OFrame(expr=ExprNode("[", self, item[0], item[1]))._scalar()
       return H2OFrame(expr=ExprNode("[",self,item[0],item[1]))
-      #   return H2OFrame(expr=ExprNode("[", ExprNode("[",self,None,item[1]),item[0],None))._scalar()
-      # return H2OFrame(expr=ExprNode("[", ExprNode("[", self, None, item[1]), item[0], None))
 
   def __setitem__(self, b, c):
     """

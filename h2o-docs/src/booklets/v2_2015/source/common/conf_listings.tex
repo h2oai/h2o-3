@@ -1,0 +1,44 @@
+
+%----------------------------------------------------------------------
+% Definition for "lstlisting" blocks
+%----------------------------------------------------------------------
+% --- USAGE ---
+%
+% \begin{lstlisting}[style=R}
+% ...
+% \end{lstlisting}
+%
+% % \begin{lstlisting}[style=output}
+% ...
+% \end{lstlisting}
+%----------------------------------------------------------------------
+
+% By default, make listings all black so it's easy to spot the ones that aren't set to a style.
+% This is just a debugging technique.
+\lstset{backgroundcolor=\color{black}}
+
+\lstdefinestyle{R}{
+  language=R,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  backgroundcolor=\color{white}
+}
+
+\lstdefinestyle{python}{
+  language=python,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  backgroundcolor=\color{white}
+}
+
+\definecolor{mygray}{rgb}{0.92,0.92,0.92}
+
+\lstdefinestyle{output}{
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  backgroundcolor=\color{mygray}
+}
+
