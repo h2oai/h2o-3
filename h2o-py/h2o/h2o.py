@@ -998,7 +998,9 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
   kwargs["do_future"] = True
   return glm(x,y,validation_x,validation_y,**kwargs)
 
-def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,nfolds=None,fold_column=None,fold_assignment=None):
+def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
+           nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
+           user_points=None):
   """
   Performs k-means clustering on an H2O dataset.
 
@@ -1020,7 +1022,7 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
   :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   :return: Returns an object of class H2OClusteringModel.
   """
-  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_x", "validation_frame", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="kmeans"
   return h2o_model_builder.unsupervised(parms)
 

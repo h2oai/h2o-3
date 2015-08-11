@@ -18,9 +18,10 @@ def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,we
   return _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs)
 
 def supervised(kwargs):
-  x,y = _supervised_frame_helper(kwargs["x"],kwargs["y"],kwargs["training_frame"])
-  vx,vy=None,None
-  if "validation_x" in kwargs: vx,vy = _supervised_frame_helper(kwargs["validation_x"],kwargs["validation_y"], kwargs["validation_frame"])
+  x =_frame_helper(kwargs["x"],kwargs["training_frame"])
+  y =_frame_helper(kwargs["y"],kwargs["training_frame"])
+  vx=_frame_helper(kwargs["validation_x"],kwargs["validation_frame"])
+  vy=_frame_helper(kwargs["validation_y"],kwargs["validation_frame"])
   offsets    = _ow("offset_column", kwargs)
   weights    = _ow("weights_column",kwargs)
   fold_column= _ow("fold_column",   kwargs)
@@ -28,22 +29,19 @@ def supervised(kwargs):
   parms={k:v for k,v in kwargs.items() if k not in ["x","y","validation_x","validation_y","algo"] and v is not None}
   return supervised_model_build(x,y,vx,vy,algo,offsets,weights,fold_column,parms)
 
-# No response variable model building
-def unsupervised_model_build(x,validation_x,algo_url,kwargs): return _model_build(x,None,validation_x,None,algo_url,None,None,None,**kwargs)
+def unsupervised_model_build(x,validation_x,algo_url,kwargs): return _model_build(x,None,validation_x,None,algo_url,None,None,None,kwargs)
 def unsupervised(kwargs):
-  x,y = _supervised_frame_helper(kwargs["x"],None,kwargs["training_frame"])  # y is just None
-  vx=None
-  if "validation_x" in kwargs: vx,vy=_supervised_frame_helper(kwargs["validation_x"],None,kwargs["validation_frame"])
+  x = _frame_helper(kwargs["x"],kwargs["training_frame"])  # y is just None
+  vx=_frame_helper(kwargs["validation_x"],kwargs["validation_frame"])
   algo=kwargs["algo"]
   parms={k:v for k,v in kwargs.items() if k not in ["x","validation_x","algo"] and v is not None}
-  return unsupervised_model_build(x,vx,algo,**parms)
+  return unsupervised_model_build(x,vx,algo,parms)
 
-def _supervised_frame_helper(x,y,fr):
-  if not isinstance(x, H2OFrame) or not isinstance(y, H2OFrame):
+def _frame_helper(col,fr):
+  if col is None: return None
+  if not isinstance(col,H2OFrame):
     if fr is None: raise ValueError("Missing training_frame")
-    if not isinstance(x, H2OFrame): x=fr[x]
-    if not isinstance(y, H2OFrame): y=fr[y]
-  return x,y
+  return fr[col] if not isinstance(col,H2OFrame) else col
 
 def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is frame
   c=kwargs[name]
