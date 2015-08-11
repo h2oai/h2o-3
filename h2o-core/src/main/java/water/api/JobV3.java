@@ -5,7 +5,6 @@ import water.Job;
 import water.Key;
 import water.Keyed;
 import water.api.KeyV3.JobKeyV3;
-import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PojoUtils;
 import water.util.PrettyPrint;

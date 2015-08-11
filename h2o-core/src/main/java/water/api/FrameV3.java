@@ -8,7 +8,6 @@ import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
 import water.util.*;
-import water.util.DocGen.HTML;
 
 /**
  * All the details on a Frame.  Note that inside ColV3 there are fields which won't be
@@ -285,12 +284,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     return formatCell(c.domain!=null || "uuid".equals(c.type) || "string".equals(c.type) ? Double.NaN : d,null,c,4);
   }
 
-  private void formatRow( HTML ab, String color, String msg, ColOp vop ) {
-    ab.p("<tr").p(color).p(">");
-    ab.cell(msg);
-    for( ColV3 c : columns )  ab.cell(vop.op(c));
-    ab.p("</tr>");
-  }
 
   private String formatCell( double d, String str, ColV3 c, int precision ) {
     if( Double.isNaN(d) ) return "-";

@@ -1,6 +1,5 @@
 package water;
 
-import water.util.DocGen.HTML;
 import water.util.ReflectionUtils;
 import water.util.UnsafeUtils;
 import water.fvec.*;
@@ -487,9 +486,6 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   /** Implementation of the {@link Iced} serialization protocol, only called by
    * auto-genned code.  Not intended to be called by user code. */
   @Override public final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   * auto-genned code.  Not intended to be called by user code. */
-  @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    * auto-genned code.  Not intended to be called by user code. */
   @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {

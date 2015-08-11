@@ -3,7 +3,6 @@ package water.api;
 import water.*;
 import water.api.TimelineHandler.Timeline;
 import water.init.TimelineSnapshot;
-import water.util.DocGen;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

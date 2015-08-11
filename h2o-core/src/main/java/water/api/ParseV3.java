@@ -5,7 +5,6 @@ import water.Iced;
 import water.Key;
 import water.api.KeyV3.VecKeyV3;
 import water.parser.ParserType;
-import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 

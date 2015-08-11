@@ -5,7 +5,6 @@ import water.api.KeyV3.FrameKeyV3;
 import water.fvec.FileVec;
 import water.parser.ParseSetup;
 import water.parser.ParserType;
-import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 

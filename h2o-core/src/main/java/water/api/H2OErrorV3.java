@@ -1,10 +1,8 @@
 package water.api;
 
 import water.H2OError;
-import water.util.DocGen;
 import water.util.IcedHashMap;
 
-import java.util.Arrays;
 
 /**
  * Schema which represents a back-end error which will be returned to the client.  Such

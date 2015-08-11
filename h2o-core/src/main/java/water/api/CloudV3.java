@@ -1,7 +1,6 @@
 package water.api;
 
 import water.*;
-import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -223,39 +222,6 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
         ticksHashMap.put(h2o.toString(), newLte);
       }
     }
-  }
-
-  private HTML formatRow( HTML ab, String color,
-                          String name, long ping, float load,
-                          long total_data, long mem_data, long num_keys,
-                          long free_mem, long tot_mem, long max_mem,
-                          long free_disk, long max_disk,
-                          int rpcs, short fjthrds[], short fjqueue[],
-                          int tpcs, int fds, int cores,
-                          double gflops, double mem_bw,
-                          String pid
-                          ) {
-    ab.p("<tr").p(color).p(">");
-    // Basic node health
-    ab.cell(name).cell(PrettyPrint.msecs(ping,true)).cell(String.format("%4.3f",load));
-    // Data footprint
-    int data_perc = total_data==0?100:(int)(mem_data*100/total_data);
-    ab.cell(PrettyPrint.bytes(total_data)+(total_data==0?"":" ("+data_perc+"%)"));
-    ab.cell(num_keys);
-    // GC health
-    ab.cell(PrettyPrint.bytes(free_mem)+"<br>"+PrettyPrint.bytes(tot_mem)+"<br>"+PrettyPrint.bytes(max_mem));
-    // Disk health
-    int disk_perc = max_disk==0?100:(int)(free_disk*100/max_disk);
-    ab.cell(PrettyPrint.bytes(max_disk)+(max_disk==0?"":" ("+disk_perc+"%)"));
-    // CPU Fork/Join Activity
-    ab.p("<td nowrap>").p(Integer.toString(rpcs)+fjq(fjthrds)+fjq(fjqueue)).p("</td>");
-    // File Descripters and System
-    ab.cell(Integer.toString(tpcs)+" / "+(fds < 0 ? "-" : Integer.toString(fds)));
-    // Node performance
-    ab.cell(cores).cell(String.format("%4.3f GFlops",gflops)).cell(PrettyPrint.bytesPerSecond((long)mem_bw));
-    ab.cell(pid);
-
-    return ab.p("</tr>");
   }
 
   private void fjadd( short[] fjs, int x, short fj ) {
