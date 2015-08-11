@@ -51,13 +51,10 @@ def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is fr
     if fr is None: raise ValueError("offsets/weights given, but missing training_frame")
     res=fr[c]
   kwargs[name] = None if res is None else res.col_names()[0]
-  # check validation frame here as well
-  if res is not None: # if valid_x/valid_y not None, then validation_frame must also be passed
-    if kwargs["validation_x"] is not None and kwargs["validation_frame"] is None:
-      raise ValueError("offsets/weights given, but missing validation_frame")
+  if res is not None and kwargs["validation_x"] is not None and kwargs["validation_frame"] is None:  # validation frame must have any offsets, weights, folds, etc.
+    raise ValueError("offsets/weights given, but missing validation_frame")
   return res
 
-# Sanity check features and response variable.
 def _check_frame(x,y,response):  # y and response are only ever different for validation
   if x is None: return None
   x._eager()
@@ -72,7 +69,6 @@ def _check_col(x,vx,vfr,col):
   vx= None if vfr is None else _check_frame(vx,vfr[col.names()[0]],vfr[col.names()[0]])
   return x,vx
 
-# Build an H2O model
 def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
   if x is None:  raise ValueError("Missing features")
   x =_check_frame(x,y,y)
@@ -81,20 +77,18 @@ def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
   if weights     is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],weights)
   if fold_column is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],fold_column)
 
-  # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
   if vx is not None: kwargs['validation_frame']=vx._id
-  if y is not None: kwargs['response_column']=y._col_names[0]
+  if y is not None:  kwargs['response_column']=y._col_names[0]
 
   kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
 
-  # launch the job (only resolve the model if do_future is False)
   do_future = kwargs.pop("do_future") if "do_future" in kwargs else False
   future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")), x)
   return future_model if do_future else _resolve_model(future_model, **kwargs)
 
 def _resolve_model(future_model, **kwargs):
-  future_model.poll() # Wait for model-building to be complete
+  future_model.poll()
   if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
   else:                                model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
