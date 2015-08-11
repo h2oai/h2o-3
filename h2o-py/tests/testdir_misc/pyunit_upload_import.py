@@ -11,7 +11,7 @@ def upload_import_small(ip, port):
 
     for dataset in various_datasets:
         uploaded_frame = h2o.upload_file(h2o.locate(dataset))
-        imported_frame = h2o.import_frame(h2o.locate(dataset))
+        imported_frame = h2o.import_file(h2o.locate(dataset))
 
         rows_u, cols_u = uploaded_frame.dim()
         rows_i, cols_i = imported_frame.dim()

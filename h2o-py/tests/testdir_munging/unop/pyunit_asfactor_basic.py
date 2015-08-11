@@ -7,7 +7,7 @@ def asfactor_basic(ip,port):
   
 
   #Log.info("Printing out the head of the cars datasets")
-  h2oframe =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars.csv"))
+  h2oframe =  h2o.import_file(path=h2o.locate("smalldata/junit/cars.csv"))
   h2oframe.show()
 
   h2oframe['cylinders'].show()

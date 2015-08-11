@@ -6,7 +6,7 @@ def rep_len_check(ip,port):
     # Connect to a pre-existing cluster
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # data is single column (vec)
     vec = iris[0].rep_len(length_out=301)

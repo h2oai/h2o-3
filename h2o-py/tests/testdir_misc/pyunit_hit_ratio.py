@@ -6,9 +6,9 @@ def hit_ratio_test(ip,port):
     
     
 
-    air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
-    air_valid = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
-    air_test = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_train = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_valid = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
     gbm_mult = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth","fMonth"]],
                        y=air_train["fDayOfWeek"].asfactor(),

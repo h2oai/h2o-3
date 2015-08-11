@@ -61,7 +61,7 @@ class H2OFrame:
   def __str__(self): return self._id
 
   def _import_parse(self,file_path):
-    rawkey = h2o.import_file(file_path)
+    rawkey = h2o.lazy_import(file_path)
     setup = h2o.parse_setup(rawkey)
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
@@ -73,6 +73,12 @@ class H2OFrame:
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
+
+  def _import_file_or_dir(self,path):
+    if os.path.isdir(path):
+      paths = os.path.listdir
+    paths = [path] if isinstance(path,str) else path
+    return [ _import1(fname) for fname in paths ]
 
   def _upload_python_object(self, python_obj):
     """

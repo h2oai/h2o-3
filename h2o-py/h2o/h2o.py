@@ -23,21 +23,21 @@ import h2o_model_builder
 __PROGRESS_BAR__ = True  # display & update progress bar while polling
 
 
-def import_file(path):
+def lazy_import(path):
   """
   Import a single file or collection of files.
 
   :param path: A path to a data file (remote or local).
   :return: A new H2OFrame
   """
-  paths = [path] if isinstance(path,str) else path
-  return [ _import1(fname) for fname in paths ]
+  if isinstance(path,(list,tuple)): return [_import(p)[0] for p in path]
+  elif os.path.isdir(path):         return _import(path)
+  else:                             return [_import(path)[0]]
 
-def _import1(path):
+def _import(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
-  if j['fails']:
-    raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
-  return j['destination_frames'][0]
+  if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
+  return j['destination_frames']
 
 def upload_file(path, destination_frame=""):
   """
@@ -53,7 +53,7 @@ def upload_file(path, destination_frame=""):
   return H2OFrame(raw_id=destination_frame)
 
 
-def import_frame(path=None):
+def import_file(path=None):
   """
   Import a frame from a file (remote or local machine). If you run H2O on Hadoop, you can access to HDFS
 
@@ -125,7 +125,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
 
 def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   """
-  Used in conjunction with import_file and parse_setup in order to make alterations before parsing.
+  Used in conjunction with lazy_import and parse_setup in order to make alterations before parsing.
 
   :param setup: Result of h2o.parse_setup
   :param id: An optional id for the frame.

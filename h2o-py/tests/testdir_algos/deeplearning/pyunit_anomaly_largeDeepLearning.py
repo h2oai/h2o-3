@@ -7,8 +7,8 @@ def anomaly(ip, port):
 
     print "Deep Learning Anomaly Detection MNIST"
 
-    train = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
-    test = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/test.csv.gz"))
+    train = h2o.import_file(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    test = h2o.import_file(h2o.locate("bigdata/laptop/mnist/test.csv.gz"))
 
     predictors = range(0,784)
     resp = 784

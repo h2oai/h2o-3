@@ -8,7 +8,7 @@ def perfectSeparation_balanced(ip,port):
     
 
     print("Read in synthetic balanced dataset")
-    data = h2o.import_frame(path=h2o.locate("smalldata/synthetic_perfect_separation/balanced.csv"))
+    data = h2o.import_file(path=h2o.locate("smalldata/synthetic_perfect_separation/balanced.csv"))
 
     print("Fit model on dataset")
     model = h2o.glm(x=data[["x1", "x2"]], y=data["y"], family="binomial", lambda_search=True,alpha=[0.5], Lambda=[1e-8])

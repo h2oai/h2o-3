@@ -6,7 +6,7 @@ def binop_pipe(ip,port):
     
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     rows, cols = iris.dim()
     iris.show()
 

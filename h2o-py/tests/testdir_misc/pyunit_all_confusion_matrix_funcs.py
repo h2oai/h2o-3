@@ -12,10 +12,10 @@ def all_confusion_matrix_funcs(ip,port):
     valid = [True, False]
 
     print "PARSING TRAINING DATA"
-    air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     print "PARSING TESTING DATA"
-    air_test = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
     print
     print "RUNNING FIRST GBM: "

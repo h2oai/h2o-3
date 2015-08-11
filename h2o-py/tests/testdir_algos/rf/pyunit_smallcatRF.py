@@ -16,7 +16,7 @@ def smallcatRF(ip,port):
     
 
     #Log.info("Importing alphabet_cattest.csv data...\n")
-    alphabet = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
+    alphabet = h2o.import_file(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
     alphabet["y"] = alphabet["y"].asfactor()
     #Log.info("Summary of alphabet_cattest.csv from H2O:\n")
     #alphabet.summary()

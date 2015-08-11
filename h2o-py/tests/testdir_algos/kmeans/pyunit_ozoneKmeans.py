@@ -6,7 +6,7 @@ def ozoneKM(ip, port):
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  train = h2o.import_frame(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+  train = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
 
   # See that the data is ready
   print train.describe()

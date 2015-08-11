@@ -5,7 +5,7 @@ import h2o
 def insert_missing(ip,port):
   air_path = [h2o.locate("smalldata/airlines/allyears2k_headers.zip")]
 
-  data = h2o.import_frame(path=air_path)
+  data = h2o.import_file(path=air_path)
 
   hour1 = data["CRSArrTime"] / 100
   mins1 = data["CRSArrTime"] % 100

@@ -10,7 +10,7 @@ def prostateKmeans(ip,port):
     # connect to localhost:54321
 
   #Log.info("Importing prostate.csv data...\n")
-  prostate_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   #prostate.summary()
 
   prostate_sci = np.loadtxt(h2o.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
