@@ -10,12 +10,12 @@ from model.binomial import H2OBinomialModel
 from model.clustering import H2OClusteringModel
 
 
-def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,**kwargs):
+def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):
   is_auto_encoder = "autoencoder" in kwargs and kwargs["autoencoder"] is not None
   if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
   if not is_auto_encoder and y is None: raise ValueError("Missing response")
   if vx is not None and vy is None:     raise ValueError("Missing response validating a supervised model")
-  return _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,**kwargs)
+  return _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs)
 
 def supervised(kwargs):
   x,y = _supervised_frame_helper(kwargs["x"],kwargs["y"],kwargs["training_frame"])
@@ -26,7 +26,7 @@ def supervised(kwargs):
   fold_column= _ow("fold_column",   **kwargs)
   algo  = kwargs["algo"]
   parms={k:v for k,v in kwargs.items() if k not in ["x","y","validation_x","validation_y","algo"] and v is not None}
-  return supervised_model_build(x,y,vx,vy,algo,offsets,weights,fold_column,**parms)
+  return supervised_model_build(x,y,vx,vy,algo,offsets,weights,fold_column,parms)
 
 # No response variable model building
 def unsupervised_model_build(x,validation_x,algo_url,kwargs): return _model_build(x,None,validation_x,None,algo_url,None,None,None,**kwargs)
@@ -70,7 +70,7 @@ def _check_extra_col(x,vx,extra_col):
   return x, vx
 
 # Build an H2O model
-def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,**kwargs):
+def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
   if x is None:  raise ValueError("Missing features")
   x = _check_frame(x,y,y)
   if vx is not None: vx = _check_frame(vx,vy,y)
