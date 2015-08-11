@@ -558,6 +558,7 @@ def download_csv(data, filename):
   should be saved to.
   :return: None
   """
+  data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
   url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
   with open(filename, 'w') as f:
