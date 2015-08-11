@@ -21,9 +21,9 @@ def supervised(kwargs):
   x,y = _supervised_frame_helper(kwargs["x"],kwargs["y"],kwargs["training_frame"])
   vx,vy=None,None
   if "validation_x" in kwargs: vx,vy = _supervised_frame_helper(kwargs["validation_x"],kwargs["validation_y"], kwargs["validation_frame"])
-  offsets    = _ow("offset_column", **kwargs)
-  weights    = _ow("weights_column",**kwargs)
-  fold_column= _ow("fold_column",   **kwargs)
+  offsets    = _ow("offset_column", kwargs)
+  weights    = _ow("weights_column",kwargs)
+  fold_column= _ow("fold_column",   kwargs)
   algo  = kwargs["algo"]
   parms={k:v for k,v in kwargs.items() if k not in ["x","y","validation_x","validation_y","algo"] and v is not None}
   return supervised_model_build(x,y,vx,vy,algo,offsets,weights,fold_column,parms)
@@ -45,7 +45,7 @@ def _supervised_frame_helper(x,y,fr):
     if not isinstance(y, H2OFrame): y=fr[y]
   return x,y
 
-def _ow(name,**kwargs):  # for checking offsets and weights, c is column, fr is frame
+def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is frame
   c=kwargs[name]
   fr=kwargs["training_frame"]
   if c is None or isinstance(c,H2OFrame): res=c
