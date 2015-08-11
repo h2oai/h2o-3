@@ -209,11 +209,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   });
 
       for (Field f : fields) {
-        String o = "zzz: " + count + " " + f.getName() + " : ";
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
-          o += " ARRAY: ";
           try {
             f.setAccessible(true);
             if (f.get(this) != null) {
@@ -245,9 +243,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           try {
             f.setAccessible(true);
             Object value = f.get(this);
-            o += value;
             if (value != null) {
-              o += "[" + o.hashCode() + "]";
               xs = P * xs + (long)(value.hashCode());
             } else {
               xs = P * xs + P;
@@ -257,7 +253,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
         }
         count++;
-        System.err.println(o + " => " + xs);
       }
       xs ^= train().checksum() * (_valid == null ? 17 : valid().checksum());
       return xs;
