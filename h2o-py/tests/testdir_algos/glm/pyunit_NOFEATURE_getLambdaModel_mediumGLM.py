@@ -4,8 +4,8 @@ import h2o
 import random
 
 def getLambdaModel(ip,port):
-	# Connect to h2o
-	h2o.init(ip,port)
+	
+	
 
 	print("Read data")
 	prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))

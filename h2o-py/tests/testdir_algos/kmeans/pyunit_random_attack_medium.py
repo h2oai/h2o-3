@@ -4,8 +4,8 @@ import h2o
 import random
 
 def random_attack(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     def attack(train, x):
         kwargs = {}
@@ -22,7 +22,7 @@ def random_attack(ip,port):
                 for p in range(kwargs['k']):
                     s.append([random.uniform(train[c].mean()-100,train[c].mean()+100) for c in x])
                 start = h2o.H2OFrame(python_obj=s)
-                kwargs['user_points'] = start.send_frame()
+                kwargs['user_points'] = start
             else:
                 kwargs['init'] = ["Furthest","Random", "PlusPlus"][method]
         if random.randint(0,1): kwargs['seed'] = random.randint(1,10000)

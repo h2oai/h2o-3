@@ -11,8 +11,8 @@ import h2o
 import numpy as np
 
 def dim_checks(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   # Log.info("Uploading logreg/princeton/cuse.dat")
   h2o_data = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
@@ -43,7 +43,7 @@ def dim_checks(ip,port):
 
   h2oColAmpFive = h2o_slice & 5
 
-  assert len(h2oColAmpFive) == h2o_rows, "expected the number of rows to remain unchanged"
+  assert h2oColAmpFive.nrow() == h2o_rows, "expected the number of rows to remain unchanged"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, dim_checks)

@@ -8,7 +8,7 @@ import h2o
 import numpy as np
 
 def kmeans_mllib(ip, port):
-    h2o.init(ip, port)
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.

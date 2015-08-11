@@ -406,8 +406,11 @@ Here is a brief example of H2O on Hadoop:
 __version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
 from model import *
+from demo import *
+from logging import *
 from frame import H2OFrame
-from frame import H2OVec
+from expr import ExprNode
 from two_dim_table import H2OTwoDimTable
+from h2o import __PROGRESS_BAR__
 
-__all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]
+__all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable"]

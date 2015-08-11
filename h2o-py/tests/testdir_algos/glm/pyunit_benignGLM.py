@@ -3,13 +3,13 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def benign(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     training_data = h2o.import_frame(h2o.locate("smalldata/logreg/benign.csv"))
 
     Y = 3
-    X = [x for x in range(2,11) if x != Y]
+    X = range(3) + range(4,11)
 
     #Log.info("Build the model")
     model = h2o.glm(y=training_data[Y].asfactor(), x=training_data[X], family="binomial", alpha=[0], Lambda=[1e-5])

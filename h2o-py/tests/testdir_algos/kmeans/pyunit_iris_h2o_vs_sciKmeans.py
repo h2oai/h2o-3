@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 
 def iris_h2o_vs_sciKmeans(ip,port):
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
   iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
   iris_sci = np.genfromtxt(h2o.locate("smalldata/iris/iris.csv"), delimiter=',')
@@ -18,9 +18,8 @@ def iris_h2o_vs_sciKmeans(ip,port):
   [6.5,3.0,5.2,2.0]]
 
   start = h2o.H2OFrame(s)
-  start_key = start.send_frame()
 
-  h2o_km = h2o.kmeans(x=iris_h2o[0:4], k=3, user_points=start_key, standardize=False)
+  h2o_km = h2o.kmeans(x=iris_h2o[0:4], k=3, user_points=start, standardize=False)
 
   sci_km = KMeans(n_clusters=3, init=np.asarray(s), n_init=1)
   sci_km.fit(iris_sci)

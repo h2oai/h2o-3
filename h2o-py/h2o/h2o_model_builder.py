@@ -1,104 +1,103 @@
-"""
-This file builds H2O model
-"""
-
 from connection import H2OConnection
-from frame      import H2OFrame, H2OVec
+from frame      import H2OFrame
 from job        import H2OJob
-import h2o
-
-# Response variable model building
-def supervised_model_build(x,y,validation_x,validation_y,algo_url,kwargs):
-  # Sanity check data frames
-  if not y:
-    if algo_url=="deeplearning":
-      if "autoencoder" in kwargs and kwargs["autoencoder"]:
-        pass  # all good
-    else:
-      raise ValueError("Missing response training a supervised model")
-  elif y:
-    if algo_url=="deeplearning":
-      if "autoencoder" in kwargs and kwargs["autoencoder"]:
-        raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
-  if validation_x:
-    if validation_y is None:  raise ValueError("Missing response validating a supervised model")
-  return _model_build(x,y,validation_x,validation_y,algo_url,kwargs)
-
-# No response variable model building
-def unsupervised_model_build(x,validation_x,algo_url,kwargs):
-  return _model_build(x,None,validation_x,None,algo_url,kwargs)
+from model.model_future import H2OModelFuture
+from model.dim_reduction import H2ODimReductionModel
+from model.autoencoder import H2OAutoEncoderModel
+from model.multinomial import H2OMultinomialModel
+from model.regression import H2ORegressionModel
+from model.binomial import H2OBinomialModel
+from model.clustering import H2OClusteringModel
 
 
-# Sanity check features and response variable.
-def _check_frame(x,y,response):
-  if not isinstance(x,H2OFrame):
-    if not isinstance(x,list):
-      raise ValueError("`x` must be an H2OFrame or a list of H2OVecs. Got: " + str(type(x)))
-    x = H2OFrame(vecs=x)
+def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):
+  is_auto_encoder = kwargs is not None and "autoencoder" in kwargs and kwargs["autoencoder"] is not None
+  if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
+  if not is_auto_encoder and y is None: raise ValueError("Missing response")
+  if vx is not None and vy is None:     raise ValueError("Missing response validating a supervised model")
+  return _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs)
+
+def supervised(kwargs):
+  x =_frame_helper(kwargs["x"],kwargs["training_frame"])
+  y =_frame_helper(kwargs["y"],kwargs["training_frame"])
+  vx=_frame_helper(kwargs["validation_x"],kwargs["validation_frame"])
+  vy=_frame_helper(kwargs["validation_y"],kwargs["validation_frame"])
+  offsets    = _ow("offset_column", kwargs)
+  weights    = _ow("weights_column",kwargs)
+  fold_column= _ow("fold_column",   kwargs)
+  algo  = kwargs["algo"]
+  parms={k:v for k,v in kwargs.items() if (k not in ["x","y","validation_x","validation_y","algo"] and v is not None) or k=="validation_frame"}
+  return supervised_model_build(x,y,vx,vy,algo,offsets,weights,fold_column,parms)
+
+def unsupervised_model_build(x,validation_x,algo_url,kwargs): return _model_build(x,None,validation_x,None,algo_url,None,None,None,kwargs)
+def unsupervised(kwargs):
+  x = _frame_helper(kwargs["x"],kwargs["training_frame"])  # y is just None
+  vx=_frame_helper(kwargs["validation_x"],kwargs["validation_frame"])
+  algo=kwargs["algo"]
+  parms={k:v for k,v in kwargs.items() if k not in ["x","validation_x","algo"] and v is not None}
+  return unsupervised_model_build(x,vx,algo,parms)
+
+def _frame_helper(col,fr):
+  if col is None: return None
+  if not isinstance(col,H2OFrame):
+    if fr is None: raise ValueError("Missing training_frame")
+  return fr[col] if not isinstance(col,H2OFrame) else col
+
+def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is frame
+  c=kwargs[name]
+  fr=kwargs["training_frame"]
+  if c is None or isinstance(c,H2OFrame): res=c
+  else:
+    if fr is None: raise ValueError("offsets/weights/fold given, but missing training_frame")
+    res=fr[c]
+  kwargs[name] = None if res is None else res.col_names()[0]
+  if res is not None and kwargs["validation_x"] is not None and kwargs["validation_frame"] is None:  # validation frame must have any offsets, weights, folds, etc.
+    raise ValueError("offsets/weights/fold given, but missing validation_frame")
+  return res
+
+def _check_frame(x,y,response):  # y and response are only ever different for validation
+  if x is None: return None
+  x._eager()
   if y is not None:
-    if not isinstance(y,H2OVec):
-      raise ValueError("`y` must be an H2OVec. Got: " + str(type(y)))
-    for v in x._vecs:
-      if y._name == v._name:
-        raise ValueError("Found response "+y._name+" in training `x` data")
-    x[response._name] = y
+    y._eager()
+    response._eager()
+    x[response._col_names[0]] = y
   return x
 
-# Build an H2O model
-def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
-  # Basic sanity checking
-  if algo_url == "autoencoder":
-    if "autoencoder" in kwargs.keys():
-      if kwargs["autoencoder"]:
-        if y:
-          raise ValueError("`y` should not be specified for autoencoder, remove `y` input.")
-        algo_url="deeplearning"
-  if not x:  raise ValueError("Missing features")
-  x = _check_frame(x,y,y)
-  if validation_x:
-    validation_x = _check_frame(validation_x,validation_y,y)
+def _check_col(x,vx,vfr,col):
+  x=_check_frame(x,col,col)
+  vx= None if vfr is None else _check_frame(vx,vfr[col.names()[0]],vfr[col.names()[0]])
+  return x,vx
 
-  # Send frame descriptions to H2O cluster
-  train_key = x.send_frame()
-  kwargs['training_frame']=train_key
-  if validation_x is not None:
-    valid_key = validation_x.send_frame()
-    kwargs['validation_frame']=valid_key
+def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
+  if x is None:  raise ValueError("Missing features")
+  x =_check_frame(x,y,y)
+  vx=_check_frame(vx,vy,y)
+  if offsets     is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],offsets)
+  if weights     is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],weights)
+  if fold_column is not None: x,vx=_check_col(x,vx,kwargs["validation_frame"],fold_column)
 
-  if y:
-    kwargs['response_column']=y._name
+  kwargs['training_frame']=x._id
+  if vx is not None: kwargs['validation_frame']=vx._id
+  if y is not None:  kwargs['response_column']=y._col_names[0]
 
-  kwargs = dict([(k, kwargs[k]) for k in kwargs if kwargs[k] is not None])
+  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
 
-  # launch the job and poll
-  job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
-  if '_rest_version' in kwargs.keys():
-    model_json = H2OConnection.get_json("Models/"+job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
-  else:
-    model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]
+  do_future = kwargs.pop("do_future") if "do_future" in kwargs else False
+  future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")), x)
+  return future_model if do_future else _resolve_model(future_model, **kwargs)
+
+def _resolve_model(future_model, **kwargs):
+  future_model.poll()
+  if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+  else:                                model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
   model_type = model_json["output"]["model_category"]
-  if model_type=="Binomial":
-    from model.binomial import H2OBinomialModel
-    model = H2OBinomialModel(job.dest_key,model_json)
-
-  elif model_type=="Clustering":
-    from model.clustering import H2OClusteringModel
-    model = H2OClusteringModel(job.dest_key,model_json)
-
-  elif model_type=="Regression":
-    from model.regression import H2ORegressionModel
-    model = H2ORegressionModel(job.dest_key,model_json)
-
-  elif model_type=="Multinomial":
-    from model.multinomial import H2OMultinomialModel
-    model = H2OMultinomialModel(job.dest_key,model_json)
-
-  elif model_type=="AutoEncoder":
-    from model.autoencoder import H2OAutoEncoderModel
-    model = H2OAutoEncoderModel(job.dest_key,model_json)
-
-  else:
-    print model_type
-    raise NotImplementedError
+  if   model_type=="Binomial":     model = H2OBinomialModel(    future_model.job.dest_key,model_json)
+  elif model_type=="Clustering":   model = H2OClusteringModel(  future_model.job.dest_key,model_json)
+  elif model_type=="Regression":   model = H2ORegressionModel(  future_model.job.dest_key,model_json)
+  elif model_type=="Multinomial":  model = H2OMultinomialModel( future_model.job.dest_key,model_json)
+  elif model_type=="AutoEncoder":  model = H2OAutoEncoderModel( future_model.job.dest_key,model_json)
+  elif model_type=="DimReduction": model = H2ODimReductionModel(future_model.job.dest_key,model_json)
+  else: raise NotImplementedError(model_type)
   return model

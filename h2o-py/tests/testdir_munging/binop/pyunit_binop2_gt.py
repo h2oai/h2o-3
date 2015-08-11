@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def binop_gt(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     rows, cols = iris.dim()
@@ -40,7 +40,7 @@ def binop_gt(ip,port):
 
     #vec/vec
     res = iris[0] > iris[1]
-    res_rows = len(res)
+    res_rows = res.nrow()
     assert res_rows == rows, "dimension mismatch"
     new_rows = iris[res].nrow()
     assert new_rows == 150, "wrong number of rows returned"

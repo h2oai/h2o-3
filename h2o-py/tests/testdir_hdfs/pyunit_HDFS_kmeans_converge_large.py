@@ -7,7 +7,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def hdfs_kmeans_converge(ip, port):
-    h2o.init(ip, port)
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
@@ -37,7 +37,9 @@ def hdfs_kmeans_converge(ip, port):
         print cross2_km
 
         print "Check k-means converged or maximum iterations reached"
-        avg_change = ((h2o.H2OFrame(cross1_km.centers()) - h2o.H2OFrame(cross2_km.centers())) ** 2).sum() / ncent
+        c1 = h2o.H2OFrame(cross1_km.centers())
+        c2 = h2o.H2OFrame(cross2_km.centers())
+        avg_change = ((c1-c2)**2).sum() / ncent
         iters = cross1_km._model_json['output']['model_summary'].cell_values[0][3]
         assert avg_change < 1e-6 or iters > miters, "Expected k-means to converge or reach max iterations. avg_change = " \
                                                     "{0} and iterations = {1}".format(avg_change, iters)

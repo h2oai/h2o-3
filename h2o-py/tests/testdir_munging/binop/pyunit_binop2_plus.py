@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def binop_plus(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
     rows, cols = iris.dim()
@@ -19,36 +19,32 @@ def binop_plus(ip,port):
     for x, y in zip([res[c].sum() for c in range(cols-1)], [469.9, 342.6, 266.9, 162.2]):
         assert abs(x - y) < 1e-1,  "expected same values"
 
-    # LHS: scaler, RHS: H2OVec
-    res = 2 + iris[1]
-    assert abs(sum([res[i] for i in range(rows)]) - 342.6) < 1e-1, "expected same values"
-
     # LHS: scaler, RHS: scaler
     res = 2 + iris[0]
-    res2 = 1.1 + res[21]
+    res2 = 1.1 + res[21,:]
     assert abs(res2 - 8.2) < 1e-1, "expected same values"
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
     res = 1.2 + iris[2]
-    res2 = res[21] + iris
+    res2 = res[21,:] + iris
     res2.show()
 
 
     # LHS: scaler, RHS: H2OVec
     res = 1.2 + iris[2]
-    res2 = res[21] + iris[1]
+    res2 = res[21,:] + iris[1]
     res2.show()
 
     # LHS: scaler, RHS: scaler
     res = 1.1 + iris[2]
-    res2 = res[21] + res[10]
+    res2 = res[21,:] + res[10,:]
     assert abs(res2 - 5.2) < 1e-1, "expected same values"
 
     # LHS: scaler, RHS: scaler
     res = 2 + iris[0]
-    res2 = res[21] + 3
+    res2 = res[21,:] + 3
     assert abs(res2 - 10.1) < 1e-1, "expected same values"
 
     ###################################################################
@@ -61,21 +57,10 @@ def binop_plus(ip,port):
     #except EnvironmentError:
     #    pass
 
-    # LHS: H2OVec, RHS: H2OVec
-    res = iris[0] + iris[1]
-    assert abs(sum([res[i] for i in range(rows)]) - 552.5) < 1e-1, "expected same values"
-
-    res = iris[2] + iris[1]
-    assert abs(sum([res[i] for i in range(rows)]) - 349.5) < 1e-1, "expected same values"
-
     # LHS: H2OVec, RHS: scaler
     res = 1.2 + iris[2]
-    res2 = iris[1] + res[21]
+    res2 = iris[1] + res[21,:]
     res2.show()
-
-    # LHS: H2OVec, RHS: scaler
-    res = iris[0] + 2
-    assert abs(sum([res[i] for i in range(rows)]) - 469.9) < 1e-2, "expected different column sum"
 
     ###################################################################
 
@@ -105,7 +90,7 @@ def binop_plus(ip,port):
 
     # LHS: H2OFrame, RHS: scaler
     res = 1.2 + iris[2]
-    res2 = iris + res[21]
+    res2 = iris + res[21,:]
     res2.show()
 
     # LHS: H2OFrame, RHS: scaler

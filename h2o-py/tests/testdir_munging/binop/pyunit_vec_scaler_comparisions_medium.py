@@ -4,7 +4,7 @@ import h2o
 
 def vec_scaler_comparisons(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     air = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
     rows, cols = air.dim()
@@ -12,11 +12,11 @@ def vec_scaler_comparisons(ip,port):
     ## H2OVec/scaler
     # ==
     row_sum = 0
-    for level in air.levels(16):
-       if level == "ANC": continue # TODO: there's a bug here
+    levels = air.levels(16)
+    for level in levels:
        r, c = air[air["Origin"] == str(level)].dim()
-       row_sum = row_sum + r
-    assert row_sum == rows - 1, "expected equal number of rows"
+       row_sum += r
+    assert row_sum == rows, "expected equal number of rows"
 
     # ==, !=
     jan = air[air["Month"] == 1]
@@ -42,11 +42,10 @@ def vec_scaler_comparisons(ip,port):
     ## scaler/H2OVec
     # ==
     row_sum = 0
-    for level in air.levels(16):
-       if level == "ANC": continue
+    for level in levels:
        r, c = air[str(level) == air["Origin"]].dim()
-       row_sum = row_sum + r
-    assert row_sum == rows - 1, "expected equal number of rows"
+       row_sum += r
+    assert row_sum == rows, "expected equal number of rows"
 
     # ==, !=
     jan = air[1 == air["Month"]]

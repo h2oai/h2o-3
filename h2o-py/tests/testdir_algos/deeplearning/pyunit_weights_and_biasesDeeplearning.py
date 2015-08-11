@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 
 def weights_and_biases(ip, port):
-    h2o.init(ip, port)
+    
 
     print "Test checks if Deep Learning weights and biases are accessible from R"
 

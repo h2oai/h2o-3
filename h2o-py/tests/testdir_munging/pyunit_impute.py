@@ -4,7 +4,7 @@ import h2o
 
 def impute(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     prostate.dim()
@@ -18,35 +18,29 @@ def impute(ip,port):
     print "Impute a numeric column with the mean"
     nas = prostate["DPROS"].isna().sum()
     print "NAs before imputation: {0}".format(nas)
-    h2o.impute(prostate, "DPROS", method = "mean")
+    prostate.impute("DPROS", method = "mean")
 
     nas = prostate["DPROS"].isna().sum()
     print "NAs after imputation: {0}".format(nas)
 
     # OTHER POSSIBLE SYNTAXES ALLOWED:
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, 8, method = "mean")
+    prostate.impute(8, method = "mean")
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, ["VOL"], method = "mean")
-
-    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, "VOL", method = "mean")
+    prostate.impute( "VOL", method = "mean")
 
     # USING  MEDIAN
     print "Impute a numeric column with the median"
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, "VOL", method = "median")
+    prostate.impute("VOL", method = "median")
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, 8, method = "median")
+    prostate.impute(8, method = "median")
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, ["VOL"], method = "median")
-
-    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    h2o.impute(prostate, "VOL", method = "median")
+    prostate.impute("VOL", method = "median")
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, impute)

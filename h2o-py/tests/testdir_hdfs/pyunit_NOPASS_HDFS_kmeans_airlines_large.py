@@ -7,7 +7,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def hdfs_kmeans_airlines(ip, port):
-    h2o.init(ip, port)
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.

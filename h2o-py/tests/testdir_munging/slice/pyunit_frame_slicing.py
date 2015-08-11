@@ -3,8 +3,8 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def frame_slicing(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
@@ -17,7 +17,7 @@ def frame_slicing(ip,port):
 
     # H2OFrame[int] (column slice)
     res1 = iris[0]
-    assert abs(res1[8] - 4.4) < 1e-10, "incorrect values"
+    assert abs(res1[8,:] - 4.4) < 1e-10, "incorrect values"
 
     # H2OFrame[int,int]
     res2 = prostate[13, 3]
@@ -30,7 +30,7 @@ def frame_slicing(ip,port):
 
     # H2OFrame[slice, int]
     res4 = iris[5:8, 1]
-    assert abs(res4[0] - 3.9) < 1e-10 and abs(res4[1] - 3.4) < 1e-10 and abs(res4[2] - 3.4) < 1e-10, "incorrect values"
+    assert abs(res4[0,:] - 3.9) < 1e-10 and abs(res4[1,:] - 3.4) < 1e-10 and abs(res4[2,:] - 3.4) < 1e-10, "incorrect values"
 
     # H2OFrame[slice, slice]
     res5 = prostate[5:8, 0:3]
