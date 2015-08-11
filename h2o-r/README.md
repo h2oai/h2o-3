@@ -4,7 +4,7 @@
 
 ## Downloading
 
-We don't yet have a downloadable R artifact for the latest version of H2O. You will need to build it yourself.
+We don't yet have a downloadable R artifact for the latest version of H2O. You will need to build it yourself or install the package from [CRAN](https://cran.r-project.org/web/packages/h2o/index.html).
 
 
 ## Building it yourself
