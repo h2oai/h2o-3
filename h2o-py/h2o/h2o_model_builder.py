@@ -52,7 +52,7 @@ def _ow(name,**kwargs):  # for checking offsets and weights, c is column, fr is 
   else:
     if fr is None: raise ValueError("offsets/weights given, but missing frame")
     res=fr[c]
-  kwargs[name] = None if res is None else res.colnames()[0]
+  kwargs[name] = None if res is None else res.col_names()[0]
   return res
 
 # Sanity check features and response variable.
@@ -64,10 +64,9 @@ def _check_frame(x,y,response):  # y and response are only ever different for va
     x[response._col_names[0]] = y
   return x
 
-def _check_extra_col(x,vx,colname,kwargs):
-  x=_check_frame(x, kwargs[colname],kwargs[colname])
-  if vx is not None: vx = _check_frame(vx,kwargs[colname],kwargs[colname])
-  kwargs[colname] = kwargs[colname]._col_names[0]
+def _check_extra_col(x,vx,extra_col):
+  x=_check_frame(x,extra_col,extra_col)
+  if vx is not None: vx = _check_frame(vx,extra_col,extra_col)
   return x, vx
 
 # Build an H2O model
@@ -75,9 +74,9 @@ def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,**kwargs):
   if x is None:  raise ValueError("Missing features")
   x = _check_frame(x,y,y)
   if vx is not None: vx = _check_frame(vx,vy,y)
-  if offsets     is not None: x,vx = _check_extra_col(x,vx,"offsets",kwargs)
-  if weights     is not None: x,vx = _check_extra_col(x,vx,"weights",kwargs)
-  if fold_column is not None: x,vx = _check_extra_col(x,vx,"fold_column",kwargs)
+  if offsets     is not None: x,vx = _check_extra_col(x,vx,offsets)
+  if weights     is not None: x,vx = _check_extra_col(x,vx,weights)
+  if fold_column is not None: x,vx = _check_extra_col(x,vx,fold_column)
 
   # Send frame descriptions to H2O cluster
   kwargs['training_frame']=x._id
