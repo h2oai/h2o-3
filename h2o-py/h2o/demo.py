@@ -2,6 +2,32 @@ import h2o
 import sys, os
 import site
 
+def system_file(name):
+    """
+    Finds the full file names of data files in the h2o package.
+
+    :param name: File to search for
+    :return: Absolute path
+    """
+    h2o_data_paths = [os.path.join(sys.prefix, "h2o_data", name),
+                      os.path.join(site.USER_BASE, "h2o_data", name)]
+
+    h2o_data_path = None
+    for path in h2o_data_paths:
+        if os.path.exists(path):
+            h2o_data_path = path
+            break
+
+    if h2o_data_path is None:
+        if name is "prostate.csv":
+            h2o_data_path = h2o.locate(os.path.join("smalldata", "prostate", name))
+
+    if h2o_data_path is None or not os.path.exists(h2o_data_path):
+        raise(ValueError, "This demo depends on " + name + " which could not be found")
+
+    return h2o_data_path
+
+
 def demo(func=None, interactive=True, echo=True, test=False):
     """
     H2O built-in demo facility
@@ -21,13 +47,7 @@ def demo(func=None, interactive=True, echo=True, test=False):
     else: print "Demo for {0} has not been implemented.".format(func)
 
 def gbm_demo(interactive, echo, test):
-    h2o_data_paths = [os.path.join(sys.prefix, "h2o_data/prostate.csv"),
-                      os.path.join(site.USER_BASE, "h2o_data/prostate.csv"),
-                      ]
-    if os.path.exists(h2o_data_paths[0]):     h2o_data_path = h2o_data_paths[0]
-    elif os.path.exists(h2o_data_paths[1]):   h2o_data_path = h2o_data_paths[1]
-    elif test:                                h2o_data_path = h2o.locate('smalldata/prostate/prostate.csv')
-    else:                                     raise(ValueError, "This demo depends on prostate.csv, which could not be found")
+    h2o_data_path = system_file("prostate.csv")
 
     demo_description = ['\n-----------------------------------------------------------------',
                         'This is a demo of H2O\'s GBM function.',
@@ -100,12 +120,7 @@ def gbm_demo(interactive, echo, test):
     performance.show()
 
 def deeplearning_demo(interactive, echo, test):
-    h2o_data_paths = [os.path.join(sys.prefix, "h2o_data/prostate.csv"),
-                      os.path.join(site.USER_BASE, "h2o_data/prostate.csv")]
-    if os.path.exists(h2o_data_paths[0]):     h2o_data_path = h2o_data_paths[0]
-    elif os.path.exists(h2o_data_paths[1]):   h2o_data_path = h2o_data_paths[1]
-    elif test:                                h2o_data_path = h2o.locate('smalldata/prostate/prostate.csv')
-    else:                                     raise(ValueError, "This demo depends on prostate.csv, which could not be found")
+    h2o_data_path = system_file("prostate.csv")
 
     demo_description = ['\n-----------------------------------------------------------------',
                         'This is a demo of H2O\'s Deeplearning function.',
@@ -177,12 +192,7 @@ def deeplearning_demo(interactive, echo, test):
     performance.show()
 
 def glm_demo(interactive, echo, test):
-    h2o_data_paths = [os.path.join(sys.prefix, "h2o_data/prostate.csv"),
-                      os.path.join(site.USER_BASE, "h2o_data/prostate.csv")]
-    if os.path.exists(h2o_data_paths[0]):     h2o_data_path = h2o_data_paths[0]
-    elif os.path.exists(h2o_data_paths[1]):   h2o_data_path = h2o_data_paths[1]
-    elif test:                                h2o_data_path = h2o.locate('smalldata/prostate/prostate.csv')
-    else:                                     raise(ValueError, "This demo depends on prostate.csv, which could not be found")
+    h2o_data_path = system_file("prostate.csv")
 
     demo_description = ['\n-----------------------------------------------------------------',
                         'This is a demo of H2O\'s GLM function.',
