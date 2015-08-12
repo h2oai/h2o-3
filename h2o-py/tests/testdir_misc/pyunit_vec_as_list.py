@@ -3,10 +3,10 @@ sys.path.insert(1, "../../")
 import h2o
 
 def vec_as_list(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
 
     res = h2o.as_list(iris[0], use_pandas=False)
     assert abs(float(res[4][0]) - 4.6) < 1e-10 and abs(float(res[6][0]) - 5.4) < 1e-10 and \

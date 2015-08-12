@@ -3,12 +3,12 @@ sys.path.insert(1,"../../../")
 import h2o
 
 def deeplearning_multi(ip,port):
-    h2o.init(ip, port)
+    
 
     print("Test checks if Deep Learning works fine with a categorical dataset")
 
     # print(locate("smalldata/logreg/protstate.csv"))
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
     prostate[1] = prostate[1].asfactor() #CAPSULE -> CAPSULE
     prostate[2] = prostate[2].asfactor() #AGE -> Factor
     prostate[3] = prostate[3].asfactor() #RACE -> Factor

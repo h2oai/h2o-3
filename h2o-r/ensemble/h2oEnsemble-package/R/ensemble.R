@@ -11,7 +11,7 @@ h2o.ensemble <- function(x, y, training_frame,
   
   starttime <- Sys.time()
   runtime <- list()
- 
+  
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -31,6 +31,7 @@ h2o.ensemble <- function(x, y, training_frame,
   }
   
   # Determine prediction task family type automatically
+  # TO DO: Add auto-detection for other distributions like gamma - right now auto-detect as "gaussian"
   if (length(family) > 0) {
     family <- match.arg(family)
   }
@@ -47,11 +48,12 @@ h2o.ensemble <- function(x, y, training_frame,
     }
   }
   if (family == c("gaussian")) {
-    ylim <- range(as.data.frame(training_frame[,c(y)]))  #Used to enforce bounds    
+    # TO DO: (CHECK THIS UPDATE) Update this when h2o.range method gets implemented for H2OFrame cols
+    ylim <- c(min(training_frame[,c(y)]), max(training_frame[,c(y)]))  #Used to enforce bounds  
   } else {
     ylim <- NULL
   }
-
+  
   
   # Update control args by filling in missing list elements
   cvControl <- do.call(".cv_control", cvControl)
@@ -82,23 +84,39 @@ h2o.ensemble <- function(x, y, training_frame,
   } else if (!inherits(parallel, "cluster")) {
     stop("'parallel' must be either 'seq' or 'multicore' or a snow cluster object")
   }
-    
+  
   # Begin ensemble code
   if (is.numeric(seed)) set.seed(seed)  #If seed is specified, set seed prior to next step
   folds <- sample(rep(seq(V), ceiling(N/V)))[1:N]  # Cross-validation folds (stratified folds not yet supported)
   training_frame$fold_id <- as.h2o(folds)  # Add a fold_id column for each observation so we can subset by row later
+  #training_frame <- h2o.cbind(training_frame, as.h2o(folds))
+  
+  # What type of metalearning function do we have?
+  # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
+  # SuperLearner metalearners provide expanded functionality, but has a much bigger memory footprint
+  if (grepl("^SL.", metalearner)) {
+    metalearner_type <- "SuperLearner"
+  } else if (grepl("^h2o.", metalearner)){
+    metalearner_type <- "h2o"
+  }
   
   # Create the Z matrix of cross-validated predictions
-  Z <- .make_Z(x = x, y = y, training_frame = training_frame, 
-               family = family, 
-               learner = learner, 
-               parallel = parallel, 
-               seed = seed, 
-               V = V, 
-               L = L, 
-               idxs = idxs)
+  mm <- .make_Z(x = x, y = y, training_frame = training_frame, 
+                family = family, 
+                learner = learner, 
+                parallel = parallel, 
+                seed = seed, 
+                V = V, 
+                L = L, 
+                idxs = idxs,
+                metalearner_type = metalearner_type)
+  # TO DO: Could pass on the metalearner arg instead of metalearner_type and get this info internally
+  basefits <- mm$basefits
+  Z <- mm$Z  #pure Z (dimension N x L)
   
   # Metalearning: Regress y onto Z to learn optimal combination of base models
+  # TO DO: Replace grepl for metalearner_type
+  # TO DO: Pass on additional args to match.fun(metalearner) for h2o type
   print("Metalearning")
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   if (grepl("^SL.", metalearner)) {
@@ -107,37 +125,25 @@ h2o.ensemble <- function(x, y, training_frame,
       familyFun <- get(family, mode = "function", envir = parent.frame())
       #print(familyFun$family)  #does not work for SL.glmnet
     } 
-    Ztmp <- Z[, -which(names(Z) %in% c("fold_id", y))]
-    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = as.data.frame(training_frame[,c(y)])[,1], X = Ztmp, newX = Ztmp, 
-                                                                          family = familyFun, id = seq(N), obsWeights = rep(1,N)), gcFirst = FALSE)
+    Zdf <- as.data.frame(Z)
+    Y <- as.data.frame(training_frame[,c(y)])[,1]
+    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y, 
+                                                                          X = Zdf, 
+                                                                          newX = Zdf, 
+                                                                          family = familyFun, 
+                                                                          id = seq(N), 
+                                                                          obsWeights = rep(1,N)), gcFirst = FALSE)
   } else {
-    # Convert Z to H2OParsedData object (should remove when .make_Z is modified to create the H2OParsedData object directly)
-    #Z.hex <- as.h2o(Z, conn = localH2O, destination_frame = "Z.hex")
-    Z.hex <- as.h2o(Z, destination_frame = "Z.hex")
-    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, y = y, training_frame = Z.hex, family = family), gcFirst=FALSE)
+    Z$y <- training_frame[,c(y)]
+    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
+                                                                          y = "y", 
+                                                                          training_frame = Z, 
+                                                                          validation_frame = NULL, 
+                                                                          family = family), gcFirst = FALSE)
   }
-    
-  # Fit the final L models on all data to be saved with the fit
-  # As above, this parallel code should probably be modified to use doPar or similar to replace all the if/else
-  # Also, we should not "FORK"...
-  print("Fitting final base models on full data")
-  if (inherits(parallel, "cluster")) {
-    #If the parallel object is a snow cluster
-    fitlist <- parSapply(cl=parallel, X=1:L, FUN=.fitWrapper, y=y, xcols=x, training_frame=training_frame,
-                         validation_frame = validation_frame, family=family, learner=learner, seed=seed, simplify=FALSE)    
-  } else if (parallel=="multicore") {
-    cl <- makeCluster(detectCores(), type="FORK") 
-    fitlist <- parSapply(cl=cl, X=1:L, FUN=.fitWrapper, y=y, xcols=x, training_frame=training_frame,
-                         validation_frame = validation_frame, family=family, learner=learner, seed=seed, simplify=FALSE)
-    stopCluster(cl)
-  } else {
-    fitlist <- sapply(X=1:L, FUN=.fitWrapper, y=y, xcols=x, training_frame=training_frame,
-                      validation_frame = validation_frame, family=family, learner=learner, seed=seed, simplify=FALSE)
-  } 
-  runtime$baselearning <- lapply(fitlist, function(ll) ll$fittime)
-  names(runtime$baselearning) <- learner
-  basefits <- lapply(fitlist, function(ll) ll$fit)  #Base fits (trained on full data) to be saved
-  names(basefits) <- learner      
+  
+  # Since baselearning is now performed along with CV, see if we can get this info, or deprecate this
+  runtime$baselearning <- NULL
   runtime$total <- Sys.time() - starttime
   
   # Ensemble model
@@ -161,94 +167,55 @@ h2o.ensemble <- function(x, y, training_frame,
 
 
 
-# Helper function for .make_Z:
-# Identify the v^th training/test indices and the l^th learner,
-# then train a model and generate predictions on the test set
-.cvFun <- function(i, idxs, xcols, y, training_frame, family, learner, seed) {
-  # Note: Using arg named 'xcols' instead of 'x' to avoid name collisions with clusterApply
-  print(sprintf("Cross-validating learner %s: fold %s", idxs$l[i], idxs$v[i]))
-  #train_idxs <- as.numeric(training_frame$fold_id!=idxs$v[i])  #cv validation fold indexes, but this is just T/F, so need to change?
-  #train_tf <- as.logical(as.data.frame(train_idxs)[,1])
-  train_hex <- h2o.assign(training_frame[training_frame$fold_id!=idxs$v[i],], "train_hex")
-  test_hex <- h2o.assign(training_frame[training_frame$fold_id==idxs$v[i],], "test_hex")
-  
-  if (is.numeric(seed)) set.seed(seed)  #If seed is specified, set seed prior to next step
-  fit <- match.fun(learner[idxs$l[i]])(y = y, x = xcols, training_frame = train_hex, validation_frame = test_hex, family = family, link = "family_default")
-     
-  # TO DO: Get preds directly from `fit` object above
-  # Currently we will pull the `preds` vec into R, but this should be updated later
-  #test_idxs <- training_frame$fold_id==idxs$v[i]
-  if (family %in% c("binomial","bernoulli")) {
-     preds <- as.data.frame(h2o.predict(fit, test_hex))$p1
-  } else {
-    # TO DO: check this
-    preds <- as.data.frame(h2o.predict(fit, test_hex))$predict
-  }
-  # Note: column subsetting not supported yet in H2OParsedData object however, 
-  # if we can enable that, then it is probably better to insert the preds into 
-  # a H2OParsedData object instead of returning 'preds' and bringing into R memory.
-  #Z[Z$fold_id==v,l] <- as.data.frame(h2o.predict(fit, data[data$fold_id==v]))$X1
-  return(preds)
-  #invisible(TRUE)
-}            
-
-
 # Generate the CV predicted values for all learners
-.make_Z <- function(x, y, training_frame, family, learner, parallel, seed, V, L, idxs) {
+.make_Z <- function(x, y, training_frame, family, learner, parallel, seed, V, L, idxs, metalearner_type = c("h2o", "SuperLearner")) {
   
-  # TO DO: Modify to create H2OParsedData object instead of R data.frame.
-  # Create Z matrix so we can fill it in later
-  Zdf <- as.data.frame(matrix(0, nrow(training_frame), L))  # Therefore, instead we will fill in with zeros
-  Zdf$fold_id <- as.data.frame(training_frame$fold_id)[,1]
+  # Do V-fold cross-validation of each learner (in a loop/apply over 1:L)...
+  fitlist <- sapply(X = 1:L, FUN = .fitWrapper, y = y, xcols = x, training_frame = training_frame,
+                    validation_frame = NULL, family = family, learner = learner, 
+                    seed = seed, fold_column = "fold_id", 
+                    simplify = FALSE)
   
-  # should swap if/else clutter below for doPar or similar
-  if (inherits(parallel, "cluster")) {
-    #If the parallel object is a snow cluster
-    require(parallel)
-    cvRes <- parSapply(cl=parallel, X=seq(V*L), FUN=.cvFun, idxs=idxs, xcols=x, y=y, training_frame=training_frame, family=family,
-                       learner=learner, seed=seed, simplify=FALSE)       
-  } else if (parallel=="multicore") {
-    require(parallel)
-    cl <- makeCluster(detectCores(), type="FORK")  #May update in future to avoid copying all objects in memory
-    cvRes <- parSapply(cl=cl, X=seq(V*L), FUN=.cvFun, idxs=idxs, xcols=x, y=y, training_frame=training_frame, family=family,
-                       learner=learner, seed=seed, simplify=FALSE) 
-    stopCluster(cl)
-  } else {
-    cvRes <- sapply(X=seq(V*L), FUN=.cvFun, idxs=idxs, xcols=x, y=y, training_frame=training_frame, family=family,
-                    learner=learner, seed=seed, simplify=FALSE)  
-  }
-  #TO DO: Maybe change this step, this is clunky...
-  for (i in seq(V*L)) {
-    Zdf[Zdf$fold_id==idxs$v[i],idxs$l[i]]  <- cvRes[[i]]
-  }
-  names(Zdf) <- c(learner, "fold_id")
-  # Regarding Z assignment commented below: When converting this h2o object to a data.frame later, 
-  # it gets messed up...returning memory address instead of predicted value for h2o.gbm, for example
-  # Z <- as.h2o(localH2O, Zdf, key="Z")
-  # return(Z)  
-  # Therefore, for now, we will return Z as an R data.frame.  
-  # This should be fixed though, so we don't have to pull the Z matrix into R memory
-  Zdf[,c(y)] <- as.data.frame(training_frame[,c(y)])[,1]  #Concat outcome column to Z
-  if (family == "binomial") {
-    Zdf[,c(y)] <- as.factor(Zdf[,c(y)])  #required because as.h2o does not currently preserve col types
-  }
-  return(Zdf)
+  runtime$cv <- lapply(fitlist, function(ll) ll$fittime)
+  names(runtime$cv) <- learner
+  basefits <- lapply(fitlist, function(ll) ll$fit)  #Base fits (trained on full data) to be saved
+  names(basefits) <- learner      
+  
+  # In the case of binary classification, a 3-col HDF is returned, colnames == c("predict", "p0", "p1")
+  # In the case of regression, 1-col HDF is already returned, colname == "predict"
+  .compress_cvpred_into_1col <- function(l, family) {
+    # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
+    if (family %in% c("bernoulli", "binomial")) {
+      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$p1, simplify = FALSE)
+    } else {
+      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
+    }
+    cvpred_sparse <- do.call("h2o.cbind", predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+    cvpred_col <- apply(cvpred_sparse, 1, sum)
+    return(cvpred_col@frame_id)
+  } 
+  cvpred_framelist <- sapply(1:L, function(l) h2o.getFrame(.compress_cvpred_into_1col(l, family)))
+  Zhf <- do.call(h2o.cbind, cvpred_framelist)
+  names(Zhf) <- learner
+
+  return(list(Z = Zhf, basefits = basefits))
 }
 
 
-# Train a model on full data for learner l 
-.fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, seed) {
+# Train a model using learner l 
+.fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, seed, fold_column) {
+  if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
-  fit <- match.fun(learner[l])(y=y, x=x, training_frame=training_frame, validation_frame = validation_frame, family=family)
+  fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)
 }
 
 
 # Wrapper function for .fitFun to record system.time
-.fitWrapper <- function(l, y, xcols, training_frame, validation_frame, family, learner, seed) {
-  print(sprintf("Training base learner %s for final fit", l))
+.fitWrapper <- function(l, y, xcols, training_frame, validation_frame, family, learner, seed, fold_column) {
+  print(sprintf("Cross-validating and training base learner %s: %s", l, learner[l]))
   fittime <- system.time(fit <- .fitFun(l, y, xcols, training_frame, validation_frame, family, 
-                                        learner, seed), gcFirst=FALSE)
+                                        learner, seed, fold_column), gcFirst=FALSE)
   return(list(fit=fit, fittime=fittime))
 }
 
@@ -286,7 +253,6 @@ predict.h2o.ensemble <- function(object, newdata) {
     }
   }
   names(basepreddf) <- names(object$basefits)
-  #basepred <- as.h2o(basepreddf, conn = localH2O, destination_frame ="basepred")
   basepred <- as.h2o(basepreddf, destination_frame = "basepred")
   
   if (grepl("H2O", class(object$metafit))) {

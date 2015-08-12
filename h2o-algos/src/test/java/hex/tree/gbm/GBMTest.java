@@ -10,12 +10,13 @@ import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import water.util.MathUtils;
 
 import java.util.Arrays;
 
 public class GBMTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -53,29 +54,16 @@ public class GBMTest extends TestUtil {
 
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
-      double sq_err = new CompErr().doAll(job.response(),fr2.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(job.response(),fr2.vecs()[0])._sum;
       double mse = sq_err/fr2.numRows();
-      assertEquals(79152.26,mse,0.1);
-      assertEquals(79152.26,gbm._output._scored_train[1]._mse,0.1);
-      assertEquals(79152.26,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
+      assertEquals(79152.12337641386,mse,0.1);
+      assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
+      assertEquals(79152.12337641386,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
       if( gbm != null ) gbm.delete();
     }
-  }
-
-  private static class CompErr extends MRTask<CompErr> {
-    double _sum;
-    @Override public void map( Chunk resp, Chunk pred ) {
-      double sum = 0;
-      for( int i=0; i<resp._len; i++ ) {
-        double err = resp.atd(i)-pred.atd(i);
-        sum += err*err;
-      }
-      _sum = sum;
-    }
-    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
   }
 
   @Test public void testBasicGBM() {
@@ -526,7 +514,7 @@ public class GBMTest extends TestUtil {
       GBMModel gbm = job.trainModel().get();
 
       Frame pred = gbm.score(vfr);
-      double sq_err = new CompErr().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
       double mse = sq_err/pred.numRows();
       assertEquals(3.0199, mse, 1e-15); //same results
       job.remove();
@@ -1369,24 +1357,31 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       try {
         tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        vfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
           Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toEnum())._key);
         }
         DKV.put(tfr);
+        DKV.put(vfr);
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
         parms._train = tfr._key;
         parms._response_column = "Cost";
         parms._seed = 0xdecaf;
         parms._distribution = dist;
         parms._min_rows = 1;
-        parms._ntrees = 3;
+        parms._ntrees = 30;
+//        parms._offset_column = "logInsured"; //POJO scoring not supported for offsets
         parms._learn_rate = 1e-3f;
 
         // Build a first model; all remaining models should be equal
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();
+
+        Frame res = gbm.score(vfr);
+        Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
 
         ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
 

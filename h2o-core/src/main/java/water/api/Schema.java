@@ -16,29 +16,71 @@ import java.util.regex.Pattern;
 
 
 /**
- * Base Schema class.  All REST API Schemas inherit from here.
+ * Base Schema class; all REST API Schemas inherit from here.
  * <p>
  * The purpose of Schemas is to provide a stable, versioned interface to
  * the functionality in H2O, which allows the back end implementation to
  * change rapidly without breaking REST API clients such as the Web UI
- * and R binding.  Schemas also allow for functionality which exposes the
+ * and R and Python bindings.  Schemas also allow for functionality which exposes the
  * schema metadata to clients, allowing them to do service discovery and
- * to adapt dynamically to new H2O functionality (e.g., to be able to call
+ * to adapt dynamically to new H2O functionality, e.g. to be able to call
  * any ModelBuilder, even new ones written since the client was built,
- * without knowing any details about the specific algo).
+ * without knowing any details about the specific algo.
  * <p>
- * Most schemas have a 1-to-1 mapping to an Iced implementation object.
+ * In most cases, Java developers who wish to expose new functionality through the
+ * REST API will need only to define their schemas with the fields that they
+ * wish to expose, adding @API annotations to denote the field metadata.
+ * Their fields will be copied back and forth through the reflection magic in this
+ * class.  If there are fields they have to adapt between the REST API representation
+ * and the back end this can be done piecemeal by overriding the fill* methods, calling
+ * the versions in super, and making only those changes that are absolutely necessary.
+ * A lot of work has gone into avoiding boilerplate code.
+ * <p>
+ * Schemas are versioned for stability.  When you look up the schema for a given impl
+ * object or class you supply a version number.  If a schema for that version doesn't
+ * exist then the versions are searched in reverse order.  For example, if you ask for
+ * version 5 and the highest schema version for that impl class is 3 then V3 will be returned.
+ * This allows us to move to higher versions without having to write gratuitous new schema
+ * classes for the things that haven't changed in the new version.
+ * <p>
+ * The current version can be found by calling
+ * Schema.getHighestSupportedVersion(). For schemas that are still in flux
+ * because development is ongoing we also support an EXPERIMENTAL_VERSION, which
+ * indicates that there are no interface stability guarantees between H2O versions.
+ * Eventually these schemas will move to a normal, stable version number.  Call
+ * Schema.getExperimentalVersion() to find the experimental version number (99 as
+ * of this writing).
+ * <p>
+ * Schema names must be unique within an application in a single namespace.  The
+ * class getSimpleName() is used as the schema name.  During Schema discovery and
+ * registration there are checks to ensure that the names are unique.
+ * <p>
+ * Most schemas have a 1-to-1 mapping to an Iced implementation object, aka the "impl"
+ * or implementation class.  This class is specified as a type parameter to the Schema class.
+ * This type parameter is used by reflection magic to avoid a large amount of boilerplate
+ * code.
+ * <p>
  * Both the Schema and the Iced object may have children, or (more often) not.
  * Occasionally, e.g. in the case of schemas used only to handle HTTP request
  * parameters, there will not be a backing impl object and the Schema will be
  * parameterized by Iced.
+ * <p>
+ * Other than Schemas backed by Iced this 1-1 mapping is enforced: a check at Schema
+ * registration time ensures that at most one Schema is registered for each Iced class.
+ * This 1-1 mapping allows us to have generic code here in the Schema class which does
+ * all the work for common cases.  For example, one can write code which accepts any
+ * Schema instance and creates and fills an instance of its associated impl class:
+ * {@code
+ * I impl = schema.createAndFillImpl();
+ * }
  * <p>
  * Schemas have a State section (broken into Input, Output and InOut fields)
  * and an Adapter section.  The adapter methods fill the State to and from the
  * Iced impl objects and from HTTP request parameters.  In the simple case, where
  * the backing object corresponds 1:1 with the Schema and no adapting need be
  * done, the methods here in the Schema class will do all the work based on
- * reflection.
+ * reflection.  In that case your Schema need only contain the fields you wish
+ * to expose, and no adapter code.
  * <p>
  * Methods here allow us to convert from Schema to Iced (impl) and back in a
  * flexible way.  The default behaviour is to map like-named fields back and
@@ -50,69 +92,118 @@ import java.util.regex.Pattern;
  * modify the results a bit (e.g., to map differently-named fields, or to
  * compute field values).
  * <p>
- * Schema Fields must have a single API annotation describing their direction
+ * Schema Fields must have a single @API annotation describing their direction
  * of operation and any other properties such as "required".  Fields are
- * API.Direction.OUTPUT by default.  Transient and static fields are ignored.
- * @see water.api.API for information on the field annotations
+ * API.Direction.INPUT by default.  Transient and static fields are ignored.
+ * <p>
+ * Most Java developers need not be concerned with the details that follow, because the
+ * framework will make these calls as necessary.
  * <p>
  * Some use cases:
  * <p>
- * To create a schema object and fill it from an existing impl object (the common case):<br>
- * {@code
- * S schema = schema(version);
- * schema.fillFromImpl(impl);
- * }
+ * To find and create an instance of the appropriate schema for an Iced object, with the
+ * given version or the highest previous version:<pre>
+ * Schema s = Schema.schema(6, impl);
+ * </pre>
  * <p>
- * To create an impl object and fill it from an existing schema object (the common case):<br>
- * {@code
+ * To create a schema object and fill it from an existing impl object (the common case):<pre>
+ * S schema = MySchemaClass(version).fillFromImpl(impl);</pre>
+ * or more generally:
+ * <pre>
+ * S schema = Schema(version, impl).fillFromImpl(impl);</pre>
+ * To create an impl object and fill it from an existing schema object (the common case):
+ * <pre>
  * I impl = schema.createImpl(); // create an empty impl object and any empty children
- * schema.fillImpl(impl);        // fill the empty impl object and any children from the Schema and its children
- * }
- * <p>
+ * schema.fillImpl(impl);        // fill the empty impl object and any children from the Schema and its children</pre>
  * or
- * {@code
- * I impl = schema.createAndFillImpl();  // helper which does schema.fillImpl(schema.createImpl())
- * }
+ * <pre>
+ * I impl = schema.createAndFillImpl();  // helper which does schema.fillImpl(schema.createImpl())</pre>
+ * <p>
+ * Schemas that are used for HTTP requests are filled with the default values of their impl
+ * class, and then any present HTTP parameters override those default values.
  * <p>
  * To create a schema object filled from the default values of its impl class and then
  * overridden by HTTP request params:
- * {@code
- * S schema = schema(version);
+ * <pre>
+ * S schema = MySchemaClass(version);
  * I defaults = schema.createImpl();
  * schema.fillFromImpl(defaults);
  * schema.fillFromParms(parms);
- * }
- *
+ * </pre>
+ * or more tersely:
+ * <pre>
+ * S schema = MySchemaClass(version).fillFromImpl(schema.createImpl()).fillFromParms(parms);
+ * </pre>
+ * @see Meta#getSchema_version()
+ * @see Meta#getSchema_name()
+ * @see Meta#getSchema_type()
+ * @see water.api.API
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
-  protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+  private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
   private static final int EXPERIMENTAL_VERSION = 99;
-  public static final String EXCLUDE_FIELDS = "__exclude_fields";
-  public static final String INCLUDE_FIELDS = "__include_fields";
 
+  /**
+   * Metadata for a Schema, including the version, name and type.  This information is included in all REST API
+   * responses as a field in the Schema so that the payloads are self-describing, and it is also available through
+   * the /Metadata/schemas REST API endpoint for the purposes of REST service discovery.
+   */
   public static final class Meta extends Iced {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version, meaning that
+     * there are no stability guarantees between H2O versions.
+     */
     @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
-    public int schema_version;
+    private int schema_version;
 
-    /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
+    /** Get the simple schema (class) name, for example DeepLearningParametersV3.  Must not be changed after creation (treat as final).  */
     @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.", direction=API.Direction.OUTPUT)
-    public String schema_name;
+    private String schema_name;
 
+    /** Get the simple name of H2O type that this Schema represents, for example DeepLearningParameters. */
     @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
-    public String schema_type; // subclasses can redefine this
+    private String schema_type; // subclasses can redefine this
 
+    /** Default constructor used only for newInstance() in generic reflection-based code. */
     public Meta() {}
+
+    /** Standard constructor which supplies all the fields.  The fields should be treated as immutable once set. */
     public Meta(int version, String name, String type) {
       this.schema_version = version;
       this.schema_name = name;
       this.schema_type = type;
     }
 
+    /**
+     * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version,
+     * meaning that there are no stability guarantees between H2O versions.
+     */
+    public int getSchema_version() {
+      return schema_version;
+    }
+
+    /** Get the simple schema (class) name, for example DeepLearningParametersV3. */
+    public String getSchema_name() {
+      return schema_name;
+    }
+
+    /** Get the simple name of the H2O type that this Schema represents, for example DeepLearningParameters. */
+    public String getSchema_type() {
+      return schema_type;
+    }
+
+    /** Set the simple name of the H2O type that this Schema represents, for example Key&lt;Frame&gt;. NOTE: using this is a hack and should be avoided. */
+    protected void setSchema_type(String schema_type) {
+      this.schema_type = schema_type;
+    }
+
+    // TODO: make private in Iced:
+    /** Override the JSON serializer to prevent a recursive loop in AutoBuffer.  User code should not call this, and soon it should be made protected. */
     @Override
     public final water.AutoBuffer writeJSON_impl(water.AutoBuffer ab) {
       // Overridden because otherwise we get in a recursive loop trying to serialize this$0.
@@ -124,7 +215,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   @API(help="Metadata on this schema instance, to make it self-describing.", direction=API.Direction.OUTPUT)
-  public Meta __meta = null;
+  private Meta __meta = null;
+
+  /** Get the metadata for this schema instance which makes it self-describing when serialized to JSON. */
+  protected Meta get__meta() {
+    return __meta;
+  }
 
   // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
   // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
@@ -143,6 +239,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   // 17 and 3 will get added to the Map.
   private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
+  /**
+   * Default constructor; triggers lazy schema registration.
+   * @throws water.exceptions.H2OFailException if there is a name collision or there is more than one schema which maps to the same Iced class
+   */
   public Schema() {
     String name = this.getClass().getSimpleName();
     int version = extractVersion(name);
@@ -169,7 +269,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
 
-  protected static Pattern _version_pattern = null;
+  private static Pattern _version_pattern = null;
   /** Extract the version number from the schema class name.  Returns -1 if there's no version number at the end of the classname. */
   private static int extractVersion(String clz_name) {
     if (null == _version_pattern) // can't just use a static initializer
@@ -179,26 +279,42 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return Integer.valueOf(m.group(1));
   }
 
+  /**
+   * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version, meaning that
+   * there are no stability guarantees between H2O versions.
+   */
   public int getSchemaVersion() {
     return __meta.schema_version;
   }
 
 
   private static int latest_version = -1;
+  /**
+   * Get the highest schema version number that we've encountered during schema registration.
+   */
   public final static int getLatestVersion() {
     return latest_version;
   }
 
-  // Bound the version search if we haven't yet registered all schemas
+  /**
+   * Get the highest schema version that we support.  This bounds the search for a schema if we haven't yet
+   * registered all schemas and don't yet know the latest_version.
+   */
   public final static int getHighestSupportedVersion() {
     return HIGHEST_SUPPORTED_VERSION;
    }
 
+  /**
+   * Get the experimental schema version, which indicates that a schema is not guaranteed stable between H2O releases.
+   */
   public final static int getExperimentalVersion() {
     return EXPERIMENTAL_VERSION;
   }
 
-  /** Register the given schema class. */
+  /**
+   * Register the given schema class.
+   * @throws water.exceptions.H2OFailException if there is a name collision, if the type parameters are bad, or if the version is bad
+   */
   private static void register(Class<? extends Schema> clz) {
     synchronized(clz) {
       // Was there a race to get here?  If so, return.
@@ -255,7 +371,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
         // Validate the fields:
         SchemaMetadata meta = new SchemaMetadata(s);
-
         for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
           String name = field_meta.name;
 
@@ -281,8 +396,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   /**
-   * Create an implementation object and any child objects but DO NOT fill them.
-   * The purpose of a createImpl without a fillImpl is to be able to get the default
+   * Create an appropriate implementation object and any child objects but does not fill them.
+   * The standard purpose of a createImpl without a fillImpl is to be able to get the default
    * values for all the impl's fields.
    * <p>
    * For objects without children this method does all the required work. For objects
@@ -293,8 +408,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * a default constructor (e.g., a Keyed object constructor can still create and set
    * the Key), but they must not fill any fields which can be filled later from the schema.
    * <p>
-   * TODO: We *could* handle the common case of children with the same field names here
+   * TODO: We could handle the common case of children with the same field names here
    * by finding all of our fields that are themselves Schemas.
+   * @throws H2OIllegalArgumentException if Class.newInstance fails
    */
   public I createImpl() {
     try {
@@ -303,30 +419,32 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     catch (Exception e) {
       String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
       Log.err(msg + ": " + e);
-      throw H2O.fail(msg, e);
+      H2OIllegalArgumentException heae = new H2OIllegalArgumentException(msg);
+      heae.initCause(e);
+      throw heae;
     }
   }
 
-  /** Fill an impl object and any children from this schema and its children. */
+  /** Fill an impl object and any children from this schema and its children. If a schema doesn't need to adapt any fields if does not need to override this method. */
   public I fillImpl(I impl) {
-    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // TODO: make consistent and remove
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // TODO: make field names in the impl classes consistent and remove
     PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
     return impl;
   }
 
-  /** Convenience helper which creates and fill an impl. */
+  /** Convenience helper which creates and fills an impl object from this schema. */
   final public I createAndFillImpl() {
     return this.fillImpl(this.createImpl());
   }
 
-  // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
-  /** Version and Schema-specific filling from the implementation object. */
+  /** Fill this Schema from the given implementation object. If a schema doesn't need to adapt any fields if does not need to override this method. */
   public S fillFromImpl(I impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make field names in the impl classes consistent and remove
     return (S)this;
   }
 
+  /** Return the class of the implementation type parameter I for the given Schema class. Used by the metadata facilities and the reflection-base field-copying magic in PojoUtils. */
   public static Class<? extends Iced> getImplClass(Class<? extends Schema> clz) {
     Class<? extends Iced> impl_class = (Class<? extends Iced>)ReflectionUtils.findActualClassParameter(clz, 0);
     if (null == impl_class)
@@ -334,6 +452,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return impl_class;
   }
 
+  /** Return the class of the implementation type parameter I for this Schema.  Used by generic code which deals with arbitrary schemas and their backing impl classes. */
   public Class<I> getImplClass() {
     if (null == _impl_class)
       _impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
@@ -344,17 +463,26 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return _impl_class;
   }
 
-  // Fill self from parms.  Limited to dumb primitive parsing and simple
-  // reflective field filling.  Ignores fields not in the Schema.  Throws IAE
-  // if the primitive parameter cannot be parsed as the primitive field type.
-
-  // Duplicate args are handled by the web server, as 'parms' can only have a single arg
-  // mapping for a given name.
-
-  // Also does various sanity checks for broken Schemas.  Fields must not be
-  // private.  Input fields get filled here, so must not be final.
+  /**
+   * Fill this Schema from a set of (generally HTTP) parameters.
+   * <p>
+   * Using reflection this process determines the type of the target field and
+   * conforms the types if possible.  For example, if the field is a Keyed type
+   * the name (ID) will be looked up in the DKV and mapped appropriately.
+   * <p>
+   * The process ignores parameters which are not fields in the schema, and it
+   * verifies that all fields marked as required are present in the parameters
+   * list.
+   * <p>
+   * It also does various sanity checks for broken Schemas, for example fields must
+   * not be private, and since input fields get filled here they must not be final.
+   * @param parms Properties map of parameter values
+   * @return this
+   * @throws H2OIllegalArgumentException for bad parameters
+   */
   public S fillFromParms(Properties parms) {
     // Get passed-in fields, assign into Schema
+    Class thisSchemaClass = this.getClass();
 
     Map<String, Field> fields = new HashMap<>();
     Field current = null; // declare here so we can print in catch{}
@@ -399,42 +527,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                   "Attempting to set output field: " + key + " for class: " + this.getClass().toString(),
                   "Attempting to set output field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was annotated as API.Direction.OUTPUT)");
         }
-
-        // Primitive parse by field type
-        Object parse_result = parse(key, parms.getProperty(key),f.getType(), api.required());
-        if (parse_result != null && f.getType().isArray() && parse_result.getClass().isArray() && (f.getType().getComponentType() != parse_result.getClass().getComponentType())) {
-          // We have to conform an array of primitives.  There's got to be a better way. . .
-          if (parse_result.getClass().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
-            int[] from = (int[])parse_result;
-            Integer[] copy = new Integer[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else if (parse_result.getClass().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
-            Integer[] from = (Integer[])parse_result;
-            int[] copy = new int[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else if (parse_result.getClass().getComponentType() == Double.class && f.getType().getComponentType() == double.class) {
-            Double[] from = (Double[])parse_result;
-            double[] copy = new double[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else if (parse_result.getClass().getComponentType() == Float.class && f.getType().getComponentType() == float.class) {
-            Float[] from = (Float[])parse_result;
-            float[] copy = new float[from.length];
-            for (int i = 0; i < from.length; i++)
-              copy[i] = from[i];
-            f.set(this, copy);
-          } else {
-            throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
-          }
-        } else {
-          f.set(this, parse_result);
-        }
-    } catch( ArrayIndexOutOfBoundsException aioobe ) {
+        // Parse value and set the field
+        setField(this, f, key, parms.getProperty(key), api.required(), thisSchemaClass);
+      } catch( ArrayIndexOutOfBoundsException aioobe ) {
         // Come here if missing annotation
         throw H2O.fail("Broken internal schema; missing API annotation for field: " + key);
       } catch( IllegalAccessException iae ) {
@@ -467,36 +562,83 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         throw H2O.fail("Missing annotation for API field: " + f.getName());
       }
     }
-    return (S)this;
+    return (S) this;
+  }
+
+  /**
+   * Safe method to set the field on given schema object
+   * @param o  schema object to modify
+   * @param f  field to modify
+   * @param key  name of field to modify
+   * @param value  string-based representation of value to set
+   * @param required  is field required by API
+   * @param thisSchemaClass  class of schema handling this (can be null)
+   * @throws IllegalAccessException
+   */
+  public static <T extends Schema>  void setField(T o, Field f, String key, String value, boolean required, Class thisSchemaClass) throws IllegalAccessException {
+    // Primitive parse by field type
+    Object parse_result = parse(key, value, f.getType(), required, thisSchemaClass);
+    if (parse_result != null && f.getType().isArray() && parse_result.getClass().isArray() && (f.getType().getComponentType() != parse_result.getClass().getComponentType())) {
+      // We have to conform an array of primitives.  There's got to be a better way. . .
+      if (parse_result.getClass().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
+        int[] from = (int[])parse_result;
+        Integer[] copy = new Integer[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
+        Integer[] from = (Integer[])parse_result;
+        int[] copy = new int[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Double.class && f.getType().getComponentType() == double.class) {
+        Double[] from = (Double[])parse_result;
+        double[] copy = new double[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Float.class && f.getType().getComponentType() == float.class) {
+        Float[] from = (Float[])parse_result;
+        float[] copy = new float[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else {
+        throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
+      }
+    } else {
+      f.set(o, parse_result);
+    }
   }
 
   // URL parameter parse
-  private <E> Object parse( String field_name, String s, Class fclz, boolean required ) {
+  static <E> Object parse(String field_name, String s, Class fclz, boolean required, Class schemaClass) {
     try {
-      if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
-      if( fclz.equals(int.class) ) return parseInteger(s, int.class);
-      if( fclz.equals(long.class) ) return parseInteger(s, long.class);
-      if( fclz.equals(short.class) ) return parseInteger(s, short.class);
-      if( fclz.equals(boolean.class) ) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
-      if( fclz.equals(byte.class) ) return parseInteger(s, byte.class);
-      if( fclz.equals(double.class) ) return Double.valueOf(s);
-      if( fclz.equals(float.class) ) return Float.valueOf(s);
+      if (fclz.equals(String.class)) return s; // Strings already the right primitive type
+      if (fclz.equals(int.class)) return parseInteger(s, int.class);
+      if (fclz.equals(long.class)) return parseInteger(s, long.class);
+      if (fclz.equals(short.class)) return parseInteger(s, short.class);
+      if (fclz.equals(boolean.class)) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
+      if (fclz.equals(byte.class)) return parseInteger(s, byte.class);
+      if (fclz.equals(double.class)) return Double.valueOf(s);
+      if (fclz.equals(float.class)) return Float.valueOf(s);
     } catch (NumberFormatException ne) {
-      String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
+      String msg = "Illegal argument for field: " + field_name + " of schema: " +  schemaClass.getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
       throw new H2OIllegalArgumentException(msg);
     }
-    if( fclz.isArray() ) {      // An array?
-      if( s.equals("null") || s.length() == 0) return null;
-      read(s,    0       ,'[',fclz);
-      read(s,s.length()-1,']',fclz);
+    if (fclz.isArray()) {      // An array?
+      if (s.equals("null") || s.length() == 0) return null;
+      read(s, 0, '[', fclz);
+      read(s, s.length() - 1, ']', fclz);
 
-      String inside = s.substring(1,s.length() -1).trim();
+      String inside = s.substring(1, s.length() - 1).trim();
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
       if (inside.length() == 0)
-        splits = new String[] {};
+        splits = new String[]{};
       else
         splits = splitArgs(inside);
-      Class<E> afclz = (Class<E>)fclz.getComponentType();
+      Class<E> afclz = (Class<E>) fclz.getComponentType();
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
       if (afclz == int.class) { // TODO: other primitive types. . .
@@ -509,17 +651,16 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         // Fails with primitive classes; need the wrapper class.  Thanks, Java.
         a = (E[]) Array.newInstance(afclz, splits.length);
       }
-      
-      for( int i=0; i<splits.length; i++ ) {
+
+      for (int i = 0; i < splits.length; i++) {
         if (String.class == afclz || KeyV3.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
 
           if ("null".equals(stripped)) {
             a[i] = null;
-          } else if (! stripped.startsWith("\"") || ! stripped.endsWith("\"")) {
-            String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
-
+          } else if (!stripped.startsWith("\"") || !stripped.endsWith("\"")) {
+            String msg = "Illegal argument for field: " + field_name + " of schema: " + schemaClass.getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
             IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             values.put("function", fclz.getSimpleName() + ".fillFromParms()");
             values.put("argument", field_name);
@@ -529,57 +670,60 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           }
 
           stripped = stripped.substring(1, stripped.length() - 1);
-          a[i] = (E) parse(field_name, stripped, afclz, required);
+          a[i] = (E) parse(field_name, stripped, afclz, required, schemaClass);
         } else {
-          a[i] = (E) parse(field_name, splits[i].trim(), afclz, required);
+          a[i] = (E) parse(field_name, splits[i].trim(), afclz, required, schemaClass);
         }
       }
       return a;
     }
 
-    if( fclz.equals(Key.class) )
-      if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(field_name, s);
+    if (fclz.equals(Key.class))
+      if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(field_name, s);
       else if (!required && (s == null || s.length() == 0)) return null;
-      else return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
+      else
+        return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
 
-    if( KeyV3.class.isAssignableFrom(fclz) ) {
+    if (KeyV3.class.isAssignableFrom(fclz)) {
       if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(field_name, s);
       if (!required && (s == null || s.length() == 0)) return null;
 
       return KeyV3.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
-    if( Enum.class.isAssignableFrom(fclz) )
-      return Enum.valueOf(fclz,s);
+    if (Enum.class.isAssignableFrom(fclz))
+      return Enum.valueOf(fclz, s); // TODO: try/catch needed!
 
     // TODO: these can be refactored into a single case using the facilities in Schema:
-    if( FrameV3.class.isAssignableFrom(fclz) )
-      if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(field_name, s);
+    if (FrameV3.class.isAssignableFrom(fclz)) {
+      if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(field_name, s);
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
-        if (! v.isFrame()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Frame", v.get().getClass());
+        if (!v.isFrame()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Frame", v.get().getClass());
         return new FrameV3((Frame) v.get()); // TODO: version!
       }
+    }
 
-    if( JobV3.class.isAssignableFrom(fclz) )
-      if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(s);
+    if (JobV3.class.isAssignableFrom(fclz)) {
+      if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(s);
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
-        if (! v.isJob()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Job", v.get().getClass());
+        if (!v.isJob()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Job", v.get().getClass());
         return new JobV3().fillFromImpl((Job) v.get()); // TODO: version!
       }
+    }
 
     // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
     // where the frame name is also specified.
-    if ( FrameV3.ColSpecifierV3.class.isAssignableFrom(fclz)) {
+    if (FrameV3.ColSpecifierV3.class.isAssignableFrom(fclz)) {
       return new FrameV3.ColSpecifierV3(s);
     }
 
-    if( ModelSchema.class.isAssignableFrom(fclz) )
+    if (ModelSchema.class.isAssignableFrom(fclz))
       throw H2O.fail("Can't yet take ModelSchema as input.");
     /*
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
@@ -591,8 +735,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       return v.get();
       }
     */
-    throw H2O.fail("Unimplemented schema fill from "+fclz.getSimpleName());
-  }
+    throw H2O.fail("Unimplemented schema fill from " + fclz.getSimpleName());
+  } // parse()
 
   /**
    * Helper functions for parse()
@@ -605,7 +749,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *    be stored into return_type without overflow.
    *  - Throws an IllegalAgumentException if return_type is not an integer data type.
    **/
-  private <T> T parseInteger(String s, Class<T> return_type) {
+  static private <T> T parseInteger(String s, Class<T> return_type) {
     try {
       java.math.BigDecimal num = new java.math.BigDecimal(s);
       T result = (T) num.getClass().getDeclaredMethod(return_type.getSimpleName() + "ValueExact", new Class[0]).invoke(num);
@@ -619,11 +763,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
   
-  private int read( String s, int x, char c, Class fclz ) {
+  static private int read( String s, int x, char c, Class fclz ) {
     if( peek(s,x,c) ) return x+1;
     throw new IllegalArgumentException("Expected '"+c+"' while reading a "+fclz.getSimpleName()+", but found "+s);
   }
-  private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
+  static private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
   // Splits on commas, but ignores commas in double quotes.  Required
   // since using a regex blow the stack on long column counts
@@ -741,6 +885,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /**
    * For a given version and Iced class return an appropriate Schema instance, if any.
+   * @throws H2OIllegalArgumentException if Class.newInstance() throws
    * @see #schema(int, java.lang.String)
    */
   public static Schema schema(int version, Class<? extends Iced> impl_class) {
@@ -748,13 +893,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   // FIXME: can be parameterized by type: public static <T extends Schema> T newInstance(Class<T> clz)
-  public static Schema newInstance(Class<? extends Schema> clz) {
-    Schema s = null;
+  public static <T extends Schema> T newInstance(Class<T> clz) {
+    T s = null;
     try {
       s = clz.newInstance();
     }
     catch (Exception e) {
-      H2O.fail("Failed to instantiate schema of class: " + clz.getCanonicalName());
+      throw new H2OIllegalArgumentException("Failed to instantiate schema of class: " + clz.getCanonicalName() + ", cause: " + e);
     }
     return s;
   }
@@ -766,6 +911,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * If a higher version is asked for than is available (e.g., if the highest version of
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then an instance
    * of FrameV2 will be returned.  This compatibility lookup is cached.
+   * @throws H2ONotFoundArgumentException if an appropriate schema is not found
    */
   private static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);
@@ -780,6 +926,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /**
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
+   * @throws H2ONotFoundArgumentException if an appropriate schema is not found
    */
   protected static Schema newInstance(String schema_name) {
     Class<? extends Schema> clz = schemas.get(schema_name);
@@ -789,25 +936,24 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   /**
-   * Generate Markdown documentation for this Schema.
-   */
-  public StringBuffer markdown(StringBuffer appendToMe) {
-    return markdown(appendToMe, true, true);
-  }
-
-  /**
    * Generate Markdown documentation for this Schema possibly including only the input or output fields.
+   * @throws H2ONotFoundArgumentException if reflection on a field fails
    */
   public StringBuffer markdown(StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
     return markdown(new SchemaMetadata(this), appendToMe, include_input_fields, include_output_fields);
   }
 
+  /**
+   * Append Markdown documentation for another Schema, given we already have the metadata constructed.
+   * @throws H2ONotFoundArgumentException if reflection on a field fails
+   */
   public StringBuffer markdown(SchemaMetadata meta, StringBuffer appendToMe) {
     return markdown(meta, appendToMe, true, true);
   }
 
   /**
    * Generate Markdown documentation for this Schema, given we already have the metadata constructed.
+   * @throws H2ONotFoundArgumentException if reflection on a field fails
    */
   public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
     MarkdownBuilder builder = new MarkdownBuilder();

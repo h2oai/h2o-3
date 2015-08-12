@@ -4,8 +4,8 @@ import h2o
 import random
 
 def random_attack(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     def attack(family, train, valid, x, y):
         kwargs = {}

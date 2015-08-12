@@ -95,72 +95,14 @@
   cf_matrix
 }
 
-
-
-
 .h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-  .key.validate(params$key)
+  .key.validate(params$key_value)
   #---------- Force evaluate temporary ASTs ----------#
-  ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.getModelParameters(algo = algo)
 
   params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
-  error <- lapply(ALL_PARAMS, function(i) {
-    e <- ""
-    if (i$required && !(i$name %in% names(params)))
-      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
-    else if (i$name %in% names(params)) {
-      # changing Java types to R types
-      mapping <- .type.map[i$type,]
-      type    <- mapping[1L, 1L]
-      scalar  <- mapping[1L, 2L]
-      if (is.na(type))
-        stop("Cannot find type ", i$type, " in .type.map")
-      if (scalar) { # scalar == TRUE
-        if (type == "H2OModel")
-            type <-  "character"
-        if (!inherits(params[[i$name]], type))
-          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
-        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
-          e <- paste0("\"", i$name,"\" must be in")
-          for (fact in i$values)
-            e <- paste0(e, " \"", fact, "\",")
-          e <- paste(e, "but got", params[[i$name]])
-        }
-        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
-          params[[i$name]] <<- "Infinity"
-        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
-          params[[i$name]] <<- "-Infinity"
-      } else {      # scalar == FALSE
-        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
-        if (length(k) > 0)
-          for (n in k)
-            if (params[[i$name]][n] == Inf)
-              params[[i$name]][n] <<- "Infinity"
-            else
-              params[[i$name]][n] <<- "-Infinity"
-        if (!inherits(params[[i$name]], type))
-          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
-        else if (type == "character")
-          params[[i$name]] <<- .collapse.char(params[[i$name]])
-        else
-          params[[i$name]] <<- .collapse(params[[i$name]])
-      }
-    }
-    e
-  })
-
-  if(any(nzchar(error)))
-    stop(error)
-
-  #---------- Create parameter list to pass ----------#
-  param_values <- lapply(params, function(i) {
-    if(is(i, "H2OFrame"))
-      i@frame_id
-    else
-      i
-  })
-
+  param_values <- .h2o.checkModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
@@ -210,6 +152,89 @@
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@conn, object@job_key)
   h2o.getModel(object@model_id, object@conn)
+}
+
+.h2o.prepareModelParameters <- function(algo, params) {
+  if (!inherits(params$training_frame, "H2OFrame")) {
+   tryCatch(params$training_frame <- h2o.getFrame(params$training_frame),
+            error = function(err) {
+              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
+            })
+  }
+  if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
+  if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
+  args <- .verify_dataxy(params$training_frame, x, y)
+  if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+  if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+  params$ignored_columns <- args$x_ignore
+  params$response_column <- args$y
+
+  params
+}
+
+.h2o.getModelParameters <- function(conn = h2o.getConnection(), algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  allParameters <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
+  allParameters
+}
+
+.h2o.checkModelParameters <- function(algo, allParams, params) {
+  error <- lapply(allParams, function(i) {
+    e <- ""
+    if (i$required && !(i$name %in% names(params)))
+      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
+    else if (i$name %in% names(params)) {
+      # changing Java types to R types
+      mapping <- .type.map[i$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
+      if (is.na(type))
+        stop("Cannot find type ", i$type, " in .type.map")
+      if (scalar) { # scalar == TRUE
+        if (type == "H2OModel")
+            type <-  "character"
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
+          e <- paste0("\"", i$name,"\" must be in")
+          for (fact in i$values)
+            e <- paste0(e, " \"", fact, "\",")
+          e <- paste(e, "but got", params[[i$name]])
+        }
+        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
+          params[[i$name]] <<- "Infinity"
+        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
+          params[[i$name]] <<- "-Infinity"
+      } else {      # scalar == FALSE
+        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (params[[i$name]][n] == Inf)
+              params[[i$name]][n] <<- "Infinity"
+            else
+              params[[i$name]][n] <<- "-Infinity"
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if (type == "character")
+          params[[i$name]] <<- .collapse.char(params[[i$name]])
+        else
+          params[[i$name]] <<- .collapse(params[[i$name]])
+      }
+    }
+    e
+  })
+
+  if(any(nzchar(error)))
+    stop(error)
+  
+  #---------- Create parameter list to pass ----------#
+  param_values <- lapply(params, function(i) {
+    if(is(i, "H2OFrame"))
+      i@frame_id
+    else
+      i
+  })
+
+  param_values
 }
 
 #' Predict on an H2O Model
@@ -326,7 +351,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
   data.frame_id <- if( missingData ) trainingFrame else data@frame_id
-  if( !missingData && data.frame_id == trainingFrame ) {
+  if( !is.null(trainingFrame) && !missingData && data.frame_id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
   }
@@ -416,7 +441,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$AUC)
+        v <- c(v,model.parts$xm@metrics$AUC)
         v_names <- c(v_names,"xval")
       }
     }
@@ -462,7 +487,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$AIC)
+        v <- c(v,model.parts$xm@metrics$AIC)
         v_names <- c(v_names,"xval")
       }
     }
@@ -521,7 +546,7 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$r2)
+        v <- c(v,model.parts$xm@metrics$r2)
         v_names <- c(v_names,"xval")
       }
     }
@@ -580,7 +605,7 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$mean_residual_deviance)
+        v <- c(v,model.parts$xm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
@@ -644,7 +669,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$Gini)
+        v <- c(v,model.parts$xm@metrics$Gini)
         v_names <- c(v_names,"xval")
       }
     }
@@ -740,8 +765,8 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm$centroid_stats$within_cluster_sum_of_squares
-        else v <- c(v,model.parts$xm$MSE)
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$xm@metrics$MSE)
         v_names <- c(v_names,"xval")
       }
     }
@@ -789,7 +814,7 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$logloss)
+        v <- c(v,model.parts$xm@metrics$logloss)
         v_names <- c(v_names,"xval")
       }
     }
@@ -912,7 +937,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v[[length(v)+1]] <- model.parts$xm$hit_ratio_table
+        v[[length(v)+1]] <- model.parts$xm@metrics$hit_ratio_table
         v_names <- c(v_names,"xval")
       }
     }
@@ -1169,7 +1194,7 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v <- c(v,model.parts$xm$tot_withinss)
+      v <- c(v,model.parts$xm@metrics$tot_withinss)
       v_names <- c(v_names,"xval")
     }
   }
@@ -1208,7 +1233,7 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v <- c(v,model.parts$xm$betweenss)
+      v <- c(v,model.parts$xm@metrics$betweenss)
       v_names <- c(v_names,"xval")
     }
   }
@@ -1247,7 +1272,7 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v <- c(v,model.parts$xm$totss)
+      v <- c(v,model.parts$xm@metrics$totss)
       v_names <- c(v_names,"xval")
     }
   }
@@ -1294,7 +1319,7 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v[[length(v)+1]] <- model.parts$xm$centroid_stats
+      v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats
       v_names <- c(v_names,"xval")
     }
   }
@@ -1333,7 +1358,7 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
   if ( xval ) {
     if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
     else {
-      v[[length(v)+1]] <- model.parts$xm$centroid_stats$size
+      v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats$size
       v_names <- c(v_names,"xval")
     }
   }
@@ -1375,7 +1400,7 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$null_deviance)
+        v <- c(v,model.parts$xm@metrics$null_deviance)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1416,7 +1441,7 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$residual_deviance)
+        v <- c(v,model.parts$xm@metrics$residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1458,7 +1483,7 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$residual_degrees_of_freedom)
+        v <- c(v,model.parts$xm@metrics$residual_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1499,7 +1524,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
     if ( xval ) {
       if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
       else {
-        v <- c(v,model.parts$xm$null_degrees_of_freedom)
+        v <- c(v,model.parts$xm@metrics$null_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1718,9 +1743,9 @@ h2o.sdev <- function(object) {
   tm <- object@model$training_metrics
   vm <- object@model$validation_metrics
   xm <- object@model$cross_validation_metrics
-  if( !is.null(vm@metrics) && !is.null(xm) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=xm) )
-  if( is.null(vm@metrics) && !is.null(xm) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=xm) )
-  if( !is.null(vm@metrics) && is.null(xm) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=NULL) )
+  if( !is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=xm) )
+  if( is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=xm) )
+  if( !is.null(vm@metrics) && is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=vm,xm=NULL) )
   return( list(o=o,m=m,tm=tm,vm=NULL,xm=NULL) )
 }
 

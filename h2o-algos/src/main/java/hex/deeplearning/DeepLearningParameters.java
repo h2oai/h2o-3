@@ -707,7 +707,7 @@ public class DeepLearningParameters extends Model.Parameters {
         throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
       }
       if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
-        throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+        throw new IllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
       }
 
       //compare the user-given parameters before and after and check that they are not changed

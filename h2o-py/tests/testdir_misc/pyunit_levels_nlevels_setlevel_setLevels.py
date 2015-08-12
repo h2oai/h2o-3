@@ -4,10 +4,10 @@ import h2o
 
 
 def levels_nlevels_setlevel_setLevels_test(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # frame (default)
     levels = iris.levels()
@@ -49,7 +49,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     ################### reimport, set new domains, rerun tests ###################################
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
     iris[4] = iris[4].setLevels(levels=["a", "b", "c"])
 
     # frame (default)

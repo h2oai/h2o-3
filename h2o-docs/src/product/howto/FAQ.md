@@ -296,6 +296,14 @@ Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value betw
 
 ---
 
+**How does H2O handle name collisions/conflicts in the dataset?**
+
+If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
+
+
+
+---
+
 ##General
 
 **How do I score using an exported JSON model?**
@@ -311,9 +319,42 @@ Since JSON is just a representation format, it cannot be directly executed, so a
 
 ---
 
+**How do I score using an exported POJO?**
+
+The generated POJO can be used indepedently of a H2O cluster. First use `curl` to send the h2o-genmodel.jar file and the java code for model to the server. The following is an example; the ip address and model names will need to be changed. 
+
+```
+mkdir tmpdir
+cd tmpdir
+curl http://127.0.0.1:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+curl http://127.0.0.1:54321/3/Models.java/gbm_model > gbm_model.java
+```
+
+To score a simple .CSV file, download the [PredictCSV.java](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java) file and compile it with the POJO. Make a subdirectory for the compilation (this is useful if you have multiple models to score on).
+
+```
+wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java
+mkdir gbm_model_dir
+javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
+``` 
+
+Specify the following:
+- the classpath using `-cp` 
+- the model name (or class) using `--model` 
+- the csv file you want to score using `--input` 
+- the location for the predictions using `--output`. 
+ 
+You must match the table column names to the order specified in the POJO. The output file will be in a .hex format, which is a lossless text representation of floating point numbers. Both R and Java will be able to read the hex strings as numerics.
+
+```
+java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
+```
+
+---
+
 **How do I predict using multiple response variables?**
 
-Currently, H2O does not support multiple response variables. To predict different response variables, build multiple modes. 
+Currently, H2O does not support multiple response variables. To predict different response variables, build multiple models. 
 
 ---
 
@@ -443,7 +484,12 @@ This error message means that there is a space (or other unsupported character) 
 
 ---
 
+**How does `importFiles()` work in H2O?**
 
+`importFiles()` gets the basic information for the file and then returns a key representing that file. This key is used during parsing to read in the file and to save space so that the file isn't loaded every time; instead, it is loaded into H2O then referenced using the key. For files hosted online, H2O verifies the destination is valid, creates a vec that loads the file when necessary, and returns a key.
+
+
+---
 
 ##Hadoop
 

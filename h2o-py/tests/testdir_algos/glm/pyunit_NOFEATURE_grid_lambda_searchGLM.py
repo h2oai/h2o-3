@@ -4,11 +4,11 @@ import h2o
 import random
 
 def grid_lambda_search(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   # Log.info("Importing prostate.csv data...\n")
-  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
   #prostate.summary()
 

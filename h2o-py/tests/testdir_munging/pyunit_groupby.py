@@ -6,9 +6,9 @@ import numpy as np
 
 def group_by(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    h2o_iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    h2o_iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     pd_iris = pd.read_csv(h2o.locate("smalldata/iris/iris_wheader.csv"))
 
     h2o_agg_funcs = ["count","count_unique","first","last","min","max","mean","avg","sd","stdev","var","sum","ss"]

@@ -203,7 +203,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p._classification_stop = -1;
                                             p._regression_stop = -1;
                                             p._balance_classes = classification && balance_classes;
-                                            p._quiet_mode = false;
+                                            p._quiet_mode = true;
                                             p._score_validation_sampling = csm;
                                             p._elastic_averaging = elastic_averaging;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
@@ -267,6 +267,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._reproducible = reproducible;
                                             p2._response_column = frame._names[resp];
                                             p2._overwrite_with_best_model = overwrite_with_best_model;
+                                            p2._quiet_mode = true;
                                             p2._epochs = epochs;
                                             p2._replicate_training_data = rng.nextBoolean();
                                             p2._seed = myseed;

@@ -3,12 +3,12 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def link_incompatible_error(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
 
     print("Reading in original prostate data.")
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
 
     print("Throw error when trying to create model with incompatible logit link.")
     try:

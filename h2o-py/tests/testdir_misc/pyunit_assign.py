@@ -4,7 +4,7 @@ import h2o
 
 def pyunit_assign(ip,port):
 
-    pros = h2o.import_frame(h2o.locate("smalldata/prostate/prostate.csv"))
+    pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
     pq = pros.quantile()
 
     PSA_outliers = pros[pros["PSA"] <= pq[1,1] or pros["PSA"] >= pq[1,9]]

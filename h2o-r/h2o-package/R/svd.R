@@ -14,10 +14,10 @@
 #' @param max_iterations The maximum number of iterations to run each power
 #'        iteration loop. Must be between 1 and 1e6 inclusive.
 #' @param transform A character string that indicates how the training data
-#'        should be transformed before running PCA. Possible values are "NONE":
-#'        for no transformation, "DEMEAN": for subtracting the mean of each
-#'        column, "DESCALE": for dividing by the standard deviation of each
-#'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+#'        should be transformed before running PCA. Possible values are: "NONE"
+#'        for no transformation; "DEMEAN" for subtracting the mean of each
+#'        column; "DESCALE" for dividing by the standard deviation of each
+#'        column; "STANDARDIZE" for demeaning and descaling; and "NORMALIZE"
 #'        for demeaning and dividing each column by its range (max - min).
 #' @param seed (Optional) Random seed used to initialize the right singular vectors
 #'        at the beginning of each power method iteration.

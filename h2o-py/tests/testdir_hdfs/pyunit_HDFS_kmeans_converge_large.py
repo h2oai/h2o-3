@@ -7,7 +7,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def hdfs_kmeans_converge(ip, port):
-    h2o.init(ip, port)
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
@@ -19,7 +19,7 @@ def hdfs_kmeans_converge(ip, port):
 
         print "Import BigCross.data from HDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_cross_file)
-        cross_h2o = h2o.import_frame(url)
+        cross_h2o = h2o.import_file(url)
         n = cross_h2o.nrow()
         print "rows: {0}".format(n)
         ncent = 3

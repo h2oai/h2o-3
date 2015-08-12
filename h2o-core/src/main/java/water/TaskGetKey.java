@@ -25,9 +25,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   static Value get( H2ONode target, Key key ) { return get(start(target,key)); }
 
   static Value get(RPC<TaskGetKey> rpc) {
-    TaskGetKey tgk = rpc.get();                  // Block for it
-    TGKS.putIfMatchUnlocked(tgk._xkey,null,rpc); // Clear from dup cache
-    return tgk._val;
+    return rpc.get()._val;                  // Block for it
   }
   // Start an RPC to fetch a Value, handling short-cutting dup-fetches
   static RPC<TaskGetKey> start( H2ONode target, Key key ) {
@@ -80,6 +78,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
     if( old != null && !old.isEmpty() ) old=null;
     Value res = H2O.putIfMatch(_xkey,_val,old);
     if( res != old ) _val = res;
+    TGKS.remove(_xkey); // Clear from dup cache
   }
 
   // Received an ACKACK; executes on the node sending the Value

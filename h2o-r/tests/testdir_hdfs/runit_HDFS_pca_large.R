@@ -23,22 +23,25 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+check.pca_large <- function(conn) {
 
-#----------------------------------------------------------------------
-# Single file cases.
-#----------------------------------------------------------------------
+  #----------------------------------------------------------------------
+  # Single file cases.
+  #----------------------------------------------------------------------
 
-heading("Import BigCross.data from HDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
-cross.hex <- h2o.importFile(conn, url)
-n <- nrow(cross.hex)
-print(paste("Imported n =", n, "rows"))
+  heading("Import BigCross.data from HDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
+  cross.hex <- h2o.importFile(conn, url)
+  n <- nrow(cross.hex)
+  print(paste("Imported n =", n, "rows"))
 
-heading("Running PCA on BigCross.data")
-cross.pca = h2o.prcomp(training_frame = cross.hex, k = 25, max_iterations = 1000)
-print(cross.pca@model$eigenvectors)
-print(cross.pca@model$importance)
+  heading("Running PCA on BigCross.data")
+  cross.pca = h2o.prcomp(training_frame = cross.hex, k = 25, max_iterations = 1000)
+  print(cross.pca@model$eigenvectors)
+  print(cross.pca@model$importance)
 
-PASS_BANNER()
 
+  testEnd()
+}
+
+doTest("PCA test", check.pca_large)

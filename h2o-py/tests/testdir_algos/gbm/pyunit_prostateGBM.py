@@ -8,9 +8,9 @@ import h2o
 
 def prostateGBM(ip,port):
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
-  df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   df.describe()
 
   # Remove ID from training frame

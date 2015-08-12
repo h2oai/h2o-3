@@ -4,11 +4,11 @@ import h2o
 
 def czechboardRF(ip,port):
 
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     # Training set has checkerboard pattern
-    board = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/czechboard_300x300.csv"))
+    board = h2o.import_file(path=h2o.locate("smalldata/gbm_test/czechboard_300x300.csv"))
     board["C3"] = board["C3"].asfactor()
     board.summary()
 

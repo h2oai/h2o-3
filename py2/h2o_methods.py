@@ -280,6 +280,9 @@ def split_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
     time.sleep(2)
     result = self.poll_job(job_key)
     verboseprint("split_frame result:", dump_json(result))
+    for d in result["jobs"][0]["destination_frames"]:
+        print d["name"]
+
     return result
 
 #******************************************************************************************8

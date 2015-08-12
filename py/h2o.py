@@ -434,6 +434,7 @@ class H2O(object):
             timeout=timeoutSecs,
             postData=kwargs
         )
+        job_json = self.poll_job(a["key"]["name"], timeoutSecs=timeoutSecs)
         H2O.verboseprint("\nsplit_frame result:", h2o_util.dump_json(a))
         return a
 

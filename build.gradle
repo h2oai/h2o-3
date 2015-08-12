@@ -130,10 +130,6 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-        // JitPack builds GitHub projects on demand and publishes ready-to-use packages. It's here until there is official release of Reflections library
-         maven {
-	  url "https://jitpack.io"
-	}
         // mavenLocal()
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
@@ -163,6 +159,9 @@ subprojects {
         // Include Findbugs only if the property is specified
         if (applyFindbugsPlugin) {
             apply from: "$rootDir/gradle/findbugs.gradle"
+        }
+        if (project.hasProperty("doCheckStyle")) {
+            apply from: "$rootDir/gradle/checkstyle.gradle"
         }
     }
 

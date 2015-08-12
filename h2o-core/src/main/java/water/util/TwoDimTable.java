@@ -210,7 +210,7 @@ public class TwoDimTable extends Iced {
   public int getRowDim() { return rowHeaders.length; }
 
   /**
-   * Get row dimension
+   * Get col dimension
    * @return int
    */
   public int getColDim() { return colHeaders.length; }
@@ -241,66 +241,87 @@ public class TwoDimTable extends Iced {
    * @return String containing the ASCII version of the table
    */
   public String toString() {
-    return toString(2);
+    return toString(2, true);
   }
-
   /**
    * Print table to String, using user-given padding
    * @param pad number of spaces for padding between columns
    * @return String containing the ASCII version of the table
    */
   public String toString(final int pad) {
+    return toString(pad, true);
+  }
+
+  private static int PRINTOUT_ROW_LIMIT = 20;
+  private boolean skip(int row) {
+    assert(PRINTOUT_ROW_LIMIT % 2 == 0);
+    if (getRowDim() <= PRINTOUT_ROW_LIMIT) return false;
+    if (row <= PRINTOUT_ROW_LIMIT/2) return false;
+    if (row >= getRowDim()-PRINTOUT_ROW_LIMIT/2) return false;
+    return true;
+  }
+  /**
+   * Print table to String, using user-given padding
+   * @param pad number of spaces for padding between columns
+   * @param full whether to print the full table (otherwise top 5 and bottom 5 rows only)
+   * @return String containing the ASCII version of the table
+   */
+  public String toString(final int pad, boolean full) {
     if (pad < 0)
       throw new IllegalArgumentException("pad must be a non-negative integer");
 
     final int rowDim = getRowDim();
     final int colDim = getColDim();
 
-    final String[][] cellStrings = new String[rowDim + 1][colDim + 1];
+    final int actualRowDim = full ? rowDim : Math.min(PRINTOUT_ROW_LIMIT+1, rowDim);
+
+    final String[][] cellStrings = new String[actualRowDim + 1][colDim + 1];
     for (String[] row: cellStrings)
       Arrays.fill(row, "");
 
     cellStrings[0][0] = colHeaderForRowHeaders != null ? colHeaderForRowHeaders : "";
-    for (int r = 0; r < rowDim; ++r)
-      cellStrings[r+1][0] = rowHeaders[r];
+    int row = 0;
+    for (int r = 0; r < rowDim; ++r) {
+      if (!full && skip(r)) continue;
+      cellStrings[row+1][0] = rowHeaders[r];
+      row++;
+    }
     for (int c = 0; c < colDim; ++c)
       cellStrings[0][c+1] = colHeaders[c];
 
     for (int c = 0; c < colDim; ++c) {
       final String formatString = colFormats[c];
-      switch (colTypes[c]) {
-        case "double":
-          for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Double)cellValues[r][c].get());
-          }
-          break;
-        case "float":
-          for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
-          }
-          break;
-        case "int":
-          for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
-          }
-          break;
-        case "long":
-          for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
-          }
-          break;
-        default:
-          for (int r = 0; r < rowDim; ++r)
+      row = 0;
+      for (int r = 0; r < rowDim; ++r) {
+        if (!full && skip(r)) continue;
+        switch (colTypes[c]) {
+          case "double":
+            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Double)cellValues[r][c].get());
+            break;
+          case "float":
+            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
+            break;
+          case "int":
+            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
+            break;
+          case "long":
+            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
+            break;
+          default:
             if (cellValues[r][c] != null && cellValues[r][c].get() != null)
-              cellStrings[r+1][c+1] = String.format(formatString, cellValues[r][c]);
-          break;
+              cellStrings[row+1][c+1] = String.format(formatString, cellValues[r][c]);
+            break;
+        }
+        row++;
       }
     }
 
     final int[] colLen = new int[colDim + 1];
-    for (int c = 0; c <= colDim; ++c)
-      for (int r = 0; r <= rowDim; ++r)
+    for (int c = 0; c <= colDim; ++c) {
+      for (int r = 0; r <= actualRowDim; ++r) {
         colLen[c] = Math.max(colLen[c], cellStrings[r][c].length());
+      }
+    }
 
     final StringBuilder sb = new StringBuilder();
     if (tableHeader.length() > 0) {
@@ -310,14 +331,19 @@ public class TwoDimTable extends Iced {
       sb.append(" (").append(tableDescription).append(")");
     }
     sb.append(":\n");
-    for (int r = 0; r <= rowDim; ++r) {
+    for (int r = 0; r <= actualRowDim; ++r) {
       int len = colLen[0];
-      if (len > 0)
-        sb.append(String.format("%" + colLen[0] + "s", cellStrings[r][0]));
-      for (int c = 1; c <= colDim; ++c) {
-        len = colLen[c];
+      if (actualRowDim != rowDim && r - 1 == PRINTOUT_ROW_LIMIT/2) {
+        assert(!full);
+        sb.append("---");
+      } else {
         if (len > 0)
-          sb.append(String.format("%" + (len + pad) + "s", cellStrings[r][c].equals("null") ? "" : cellStrings[r][c]));
+          sb.append(String.format("%" + colLen[0] + "s", cellStrings[r][0]));
+        for (int c = 1; c <= colDim; ++c) {
+          len = colLen[c];
+          if (len > 0)
+            sb.append(String.format("%" + (len + pad) + "s", cellStrings[r][c].equals("null") ? "" : cellStrings[r][c]));
+        }
       }
       sb.append("\n");
     }
