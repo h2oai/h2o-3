@@ -144,7 +144,6 @@ Another metric frequently used for model selection is the Akaike information cri
 
 where k is the number of model parameters and $ln(L_{m})$ is the log likelihood of the fitted model over the data.
 
-
 \subsection{Regularization} 
 We introduce penalties to the model building process to avoid over-fitting, reduce variance of the prediction error, and handle correlated predictors. There are two common penalized linear models: ridge regression and lasso. Ridge regression provides greater numerical stability and is easier and faster to compute. In comparison, lasso leads to a sparse solution, which is advantageous in many situations, as it can be used for feature selection and to produce models with fewer parameters. When encountering highly correlated columns, the L2 penalty tends to push all of the coefficients towards each other, while the L1 penalty will pick one and remove the others to produce 0 coefficients.
 
@@ -168,11 +167,10 @@ A model-fitting problem with an elastic net penalty becomes:
 
 \[ \min\limits_{\beta,\beta_0}\ {{1\over{N}} ln(L(family,\beta,\beta_0))  + \lambda (\alpha \| \beta \|_1}  + {1- \alpha \over 2} \| \beta \|_2^2) \]
 
-
-\subsection{GLM Models} 
+\subsection{GLM Model Families}
 The following subsection describes the GLM families supported in H2O. 
 
-\subsubsection{Linear Regression (Gaussian family) }
+\subsubsection{Linear Regression (Gaussian family)}
 Linear regression refers to the gaussian family model. It is the simplest example of GLM, but it has many uses and several advantages over the other families, such as faster and more stable computation. 
 
 It models the dependency as a purely linear function (with link = identity):
@@ -182,19 +180,19 @@ The model is fitted by solving the least squares problem (maximum likelihood for
 
 \[ \min\limits_{\beta,\beta_0} { {1 \over 2N}\sum\limits_{i=1}\limits^{N}(x_i^{T}\beta  + \beta_0- y_i)^T (x_i^{T}\beta + \beta_0 - y_i)  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
-
 Deviance is simply the sum of squared errors:
 \[ D = \sum\limits_{i=1}\limits^{N}{(y_i - \hat{y}_i)^2} \]
 
-
-\textbf{Example in R}\\
+\waterExampleInR
 
 Included in the H2O package is a prostate cancer data set. The data was collected by Dr. Donn Young at  Ohio State University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds based on features such as age and race.
 
 \begin{lstlisting}[style=R]
-filepath = system.file("extdata", "prostate.csv",package = "h2o")
-prostate.hex = h2o.importFile(object = localH2O, filepath, key = "prostate.hex")
-gaussian.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "VOL", training_frame = prostate.hex, family = "gaussian")
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+gaussian.fit = h2o.glm(y = "VOL", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "gaussian")
 \end{lstlisting}
 
 \subsubsection{Logistic Regression (Binomial Family)}
@@ -205,13 +203,9 @@ Logistic regression can be used for a binary classification problem where the re
 \includegraphics[scale=0.5]{images/scurve.png}
 \end{figure}
 
-
- 
-
 \[ \hat{y} = Pr(y = 1|x) = {e^{x^T\beta + \beta_0} \over 1 + e^{x^T \beta + \beta_0} } \]
 
 or alternatively:
-
 
 \[log {\hat{y} \over 1- \hat{y}} = log{Pr(y=1|x) \over Pr(y=0|x)} = x^T \beta + \beta_0\]
 
@@ -221,12 +215,18 @@ The model is fitted by solving:
 Deviance is -2 log likelihood:
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) + (1 - y)log(1-\hat{y})  )}\]
 
-\textbf{Example in R}\\
+\waterExampleInR
 
 Using the prostate data set, build a binomial model that classifies if there is penetration of the prostatic capsule (CAPSULE). Make sure the entries in the CAPSULE column are binary entries by using the \texttt{h2o.table()} function. Change the regression by setting the family to binomial.
 \begin{lstlisting}[style=R]
-h2o.table(prostate.hex[,"CAPSULE"])
-binomial.fit = h2o.glm(x = c("AGE", "RACE", "PSA", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial")
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+is.factor(h2o_df$CAPSULE)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+is.factor(h2o_df$CAPSULE)
+binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "binomial")
 \end{lstlisting}
 
 \subsubsection{Poisson Models}
@@ -240,18 +240,27 @@ The model is fitted by solving:
 
 \[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}(y_i (x_i^{T}\beta  + \beta_0) - e^{x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
-Deviance is 
+Deviance is:
 
 \[D = -2\sum\limits_{i=1}\limits^{N}{(y log(\hat{y}) - y - \hat{y}}\]
 
-\textbf{Example in R}\\
+\waterExampleInR
 
 Load the Insurance data from the MASS library and import into H2O. Run a poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they own (Group).
 \begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
 library(MASS)
 data(Insurance)
-insurance.hex = as.h2o(localH2O, Insurance)
-poisson.fit = h2o.glm(x = c("District", "Group", "Age"), y = "Claims", training_frame = insurance.hex, family = "poisson")
+
+# Convert ordered factors into unordered factors.
+# H2O only handles unordered factors today.
+class(Insurance$Group) <- "factor"
+class(Insurance$Age) <- "factor"
+
+# Copy the R data.frame to an H2OFrame using as.h2o()
+h2o_df = as.h2o(Insurance)
+poisson.fit = h2o.glm(y = "Claims", x = c("District", "Group", "Age"), training_frame = h2o_df, family = "poisson")
 \end{lstlisting}
 
 \subsubsection{Gamma Models}
@@ -263,18 +272,21 @@ The model is fitted by solving:
 
 \[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
-Deviance is 
+Deviance is:
 
 \[D = -2\sum\limits_{i=1}\limits^{N}{log({y_i \over \hat{y}_i}) - {y_i - \hat{y}_i \over\hat{y}_i }}\]
 
-
-\textbf{Example in R}\\
+\waterExampleInR
 
 To change the link function from the default inverse function to the log link function, modify the \texttt{link} argument.
 
 \begin{lstlisting}[style=R]
-gamma.inverse <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="inverse")
-gamma.log <- h2o.glm(x=c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), y="DPROS", data=prostate.hex, family="gamma", link="log")
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+gamma.inverse <- h2o.glm(y = "DPROS", x = c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), training_frame = h2o_df, family = "gamma", link = "inverse")
+gamma.log <- h2o.glm(y="DPROS", x = c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), training_frame = h2o_df, family = "gamma", link = "log")
 \end{lstlisting}
 
 \subsubsection{Tweedie Models}
@@ -284,22 +296,179 @@ TODO
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
-\section{GLM on H2O}
-H2O's GLM implementation presents a high-performance distributed algorithm, which scales linearly with the number of rows and works extremely well for datasets with a limited number of active predictors.
+\section{Building GLM Models in H2O}
+
+H2O's GLM implementation presents a high-performance distributed
+algorithm, which scales linearly with the number of rows and works
+extremely well for datasets with a limited number of active
+predictors.
+
+\subsection{Classification vs. Regression}
+
+GLM can produce both two categories of model, classification (binary
+classification only) and regression.  (Binary classification in GLM
+is also called logistic regression.)
+
+The data type of the response column determines the model category.
+If the response data type is a categorical (also called a factor or an enum) then a
+classification model will be created.  If the response column data
+type is numeric (either integer or real), then a regression model will be created.
+
+The following examples show how to coerce the data type of a column
+to a factor.
+
+\bigskip
+\waterExampleInR
+\begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+summary(h2o_df)
+\end{lstlisting}
+
+\waterExampleInPython
+\begin{lstlisting}[style=python]
+import h2o
+h2o.init()
+path = h2o.system_file("prostate.csv")
+h2o_df = h2o.import_file(path)
+h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+h2o_df.summary()
+\end{lstlisting}
+
+\subsection{Training and Validation Frames}
+
+The word Frame in this context refers to an H2OFrame, the fundamental way of
+storing data in H2O's distributed memory.
+
+\texttt{training\_frame} refers to a frame containing a training
+dataset.  All predictors and the response (as well as offset and
+weights, if specified) must be part of this frame.
+
+\texttt{validation\_frame} refers to an optional frame containing
+a validation dataset.  If specified, this frame must have the exact
+same columns as the training dataset.  Metrics are calculated on the
+validation dataset for convenience purposes.
+
+Note there are functions to calculate the same metrics after the model
+training completes for the case when a validation dataset is not provided up
+front during training.
+
+\subsection{Predictor and Response Variables}
+
+Every model must specify its predictors and response.  Predictors and
+response are specified by the \texttt{x}, and \texttt{y} parameters.
+
+\texttt{x} contains the list of column names or column indices
+referring to vectors from the training frame; it can not contain
+periods.
+
+\texttt{y} is a column name or index referring to a vector from the
+training frame.
+
+\subsubsection{Categorical Variables}
+
+If the response column is a categorical, then a classification model will
+be created.  GLM only supports binomial classification, meaning the response
+column may only have two levels.
+
+Predictor columns that are categorical may have more than two levels.
+
+Users are encouraged to let GLM expand categorical columns itself.
+GLM can take advantage of the categorical column for better performance
+and memory utilization.
+
+\textbf{Do not one-hot encode} categorical columns with many levels into many binary columns!
+This is very inefficient.  (This is especially true for Python users, who are
+used to expanding their categorical variables manually for other frameworks.)
+
+\subsection{Regularization Parameters}
+\subsubsection{alpha and lambda}
+\subsubsection{lambda search}
+
+\subsection{Family and Link}
+
+\subsection{Handling Wide Data and Building Sparse Models}
+\subsubsection{Solver Selection}
+\subsubsection{Strong Rules for L1}
+\subsubsection{Stopping Criteria}
+
+\subsection{Advanced Features}
+\subsubsection{Standardizing Data}
+\subsubsection{n-fold Cross Validation}
+\subsubsection{Grid Search}
+\subsubsection{Offsets}
+
+\texttt{offset\_column} is an optional column name or index referring to a
+column in the training frame.
+
+This column specifies a prior known component to be included in the
+linear predictor during training.
+
+\subsubsection{Row Weights}
+
+\texttt{weights\_column} is an optional column name or index referring to a
+column in the training frame.
+
+This column specifies on a per-row basis the weight of that row.  If
+no weight column is specified, a default value of 1 is used for each row.
+
+\subsubsection{Coefficient Constraints}
+\subsubsection{Proximal Operators}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+\section{GLM Model Output}
+\subsection{Coefficients and Normalized coefficients}
+\subsection{Model outputs common to all families}
+\subsubsection{Objective value}
+\subsubsection{Scoring history}
+\subsubsection{etc.}
+\subsection{Additional model outputs for logistic regression (aka binomial classification)}
+\subsubsection{AUC}
+\subsubsection{etc.}
+\subsection{Sanity checking the model}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+\section{Making Predictions}
+\subsection{Batch In-H2O predictions}
+\subsection{Real-time low-latency predictions with the NanoFast scoring engine}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+\section{R Use Case:  Logistic regression with Airline Dataset}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+\section{Python Use Case:  Logistic regression with Airline Dataset}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+Implementation Details
+\subsection{Categorical variables}
+\subsubsection{Largest categorical speed optimization}
+\subsection{Performance}
+\subsection{Handling data with many predictors}
+\subsection{Data corner cases}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
+
+\section{OLD}
 
 \subsection{Input Parameters}
 This section describes the specifics of GLM implementation on H2O, such as selecting regularization parameters and handling of categoricals. 
 
 \subsubsection{Predictors \& Response}
-Every model must specify its predictors and response; it is the equivalent formula object in R. Predictors and response are specified by \texttt{training\_frame}, \texttt{x}, and \texttt{y} parameters, with an optional \texttt{offset} parameter.
 
-\texttt{training\_frame} refers to a frame containing a training dataset. All predictors and the response (and offset, if there is one) must be part of this frame.
-
-\texttt{x} contains the list of column names or column indices referring to vectors from the training frame; it can not contain periods.
-
-\texttt{y} is a column name or index referring to a vector from the training frame.
-
-\texttt{offset} is a column name or index referring to a vector from the training frame.
   
 \subsubsection{Family \& Link}
 Family and Link are both optional parameters. The default family is \texttt{Gaussian} and the default link is a canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link = `log'}.
