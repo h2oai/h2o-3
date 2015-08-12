@@ -110,13 +110,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   @Override
   protected void applyMiniBatchUpdate(int n) {
     assert(_training);
-    if (_localmodel._classification)
-      ((Neurons.Softmax)_neurons[_neurons.length-1]).bprop(n);
-    else if (!_localmodel.get_params()._autoencoder)
-      ((Neurons.Linear)_neurons[_neurons.length-1]).bprop(n);
-    else
-      _neurons[_neurons.length-1].bprop();
-
+    assert(n>0);
+    _neurons[_neurons.length-1].bprop(n);
     for (int i = _neurons.length - 2; i > 0; --i)
       _neurons[i].bprop();
   }
@@ -284,6 +279,9 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
       if (minfo.get_params()._autoencoder) {
         neurons[neurons.length - 1].fprop(seed, training);
+        if (training) {
+          neurons[neurons.length - 1].addGradient();
+        }
       } else {
         if (consensus_minfo != null) {
           for (int i = 1; i < neurons.length; i++) {

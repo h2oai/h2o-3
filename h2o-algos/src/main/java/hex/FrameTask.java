@@ -173,7 +173,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
             processRow(seed++, row);
         }
         num_processed_rows++;
-        if (miniBatchCounter % miniBatchSize == 0) {
+        if (miniBatchCounter > 0 && miniBatchCounter % miniBatchSize == 0) {
           applyMiniBatchUpdate(miniBatchCounter);
           miniBatchCounter = 0;
         }

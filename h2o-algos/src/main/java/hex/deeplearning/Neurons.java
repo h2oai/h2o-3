@@ -19,6 +19,7 @@ import java.util.*;
  */
 public abstract class Neurons {
   protected int units;
+  float _sumGrad[];
 
   /**
    * Constructor of a Neuron Layer
@@ -26,6 +27,7 @@ public abstract class Neurons {
    */
   Neurons(int units) {
     this.units = units;
+    _sumGrad = new float[units];
   }
 
   /**
@@ -194,6 +196,28 @@ public abstract class Neurons {
    *  Back propagation
    */
   protected abstract void bprop();
+
+  protected void bprop(int n) {
+    final float rows = _a.size();
+    float m = _minfo.adaDelta() ? 0 : momentum();
+    float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
+    for( int row = 0; row < rows; row++ ) {
+      final float g = _sumGrad[row]/n;
+      bprop(row, g, r, m);
+    }
+    Arrays.fill(_sumGrad, 0);
+  }
+
+  protected void addGradient() {
+    assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
+    Distribution dist = new Distribution(params._distribution);
+    final int rows = _a.size();
+    if (_w instanceof Storage.DenseRowMatrix) {
+      for (int row = 0; row < rows; row++) {
+        _sumGrad[row] += autoEncoderGradient(dist, row);
+      }
+    } else throw H2O.unimpl("Only DenseRowMatrix is implemented for AutoEncoder (Must have sparse=false and col_major=false).");
+  }
 
   void bprop_sparse(float r, float m) {
     Storage.SparseVector prev_a = (Storage.SparseVector) _previous._a;
@@ -820,10 +844,7 @@ public abstract class Neurons {
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       if (_w instanceof Storage.DenseRowMatrix) {
         final int rows = _a.size();
-        Distribution dist = (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length) ?
-                new Distribution(params._distribution) : null;
         for (int row = 0; row < rows; row++) {
-          if (dist != null) _e.set(row, autoEncoderGradient(dist, row));
           float g = _e.get(row) * (1f - _a.get(row) * _a.get(row));
           bprop(row, g, r, m);
         }
@@ -879,9 +900,6 @@ public abstract class Neurons {
         for( int row = 0; row < _a.size(); row++ ) {
           _a.set(row, 0);
           if( !training || _dropout == null || _dropout.unit_active(row) ) {
-//            _a.set(row, Float.NEGATIVE_INFINITY);
-//            for( int i = 0; i < _previous._a.size(); i++ )
-//              _a.set(row, Math.max(_a.get(row), _w.get(row, i) * _previous._a.get(i)));
             float mymax = Float.NEGATIVE_INFINITY;
             int start = x.begin()._idx;
             int end = x.end()._idx;
@@ -905,11 +923,7 @@ public abstract class Neurons {
         final int rows = _a.size();
         for( int row = 0; row < rows; row++ ) {
           assert (!_minfo.get_params()._autoencoder);
-//          if (_minfo.get_params().autoencoder && _index == _minfo.get_params().hidden.length)
-//            _e.set(row, autoEncoderError(row));
           float g = _e.get(row);
-//                if( _a[o] < 0 )   Not sure if we should be using maxout with a hard zero bottom
-//                    g = 0;
           bprop(row, g, r, m);
         }
       }
@@ -957,10 +971,7 @@ public abstract class Neurons {
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       final int rows = _a.size();
       if (_w instanceof Storage.DenseRowMatrix) {
-        Distribution dist = (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length) ?
-                new Distribution(params._distribution) : null;
         for (int row = 0; row < rows; row++) {
-          if (dist != null) _e.set(row, autoEncoderGradient(dist, row));
           //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
           float g = _a.get(row) > 0f ? _e.get(row) : 0f;
           bprop(row, g, r, m);
@@ -1003,10 +1014,8 @@ public abstract class Neurons {
    * Output neurons for classification - Softmax
    */
   public static class Softmax extends Output {
-    float _sumGrad[] = null;
     public Softmax(int units) {
       super(units);
-      _sumGrad = new float[units];
     }
     protected void fprop() {
       gemv((Storage.DenseVector) _a, (Storage.DenseRowMatrix) _w, (Storage.DenseVector) _previous._a, _b, null);
@@ -1078,24 +1087,12 @@ public abstract class Neurons {
         _sumGrad[row] += g;
       }
     }
-
-    protected void bprop(int n) {
-      final float rows = _a.size();
-      float m = _minfo.adaDelta() ? 0 : momentum();
-      float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-      for( int row = 0; row < rows; row++ ) {
-        final float g = _sumGrad[row]/n;
-        bprop(row, g, r, m);
-      }
-      Arrays.fill(_sumGrad, 0);
-    }
   }
 
   /**
    * Output neurons for regression - Linear units
    */
   public static class Linear extends Output {
-    float _sumGrad;
     public Linear() {
       super(1);
     }
@@ -1113,16 +1110,7 @@ public abstract class Neurons {
       final float t = target; //t is in response space
       final float y = _a.get(row);
       float g = (float)new Distribution(params._distribution, params._tweedie_power).gradient(t, y); //y is in link space
-      _sumGrad += g;
-    }
-
-    protected void bprop(int n) {
-      final int row = 0;
-      float m = _minfo.adaDelta() ? 0 : momentum();
-      float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-      final float g = _sumGrad /n;
-      bprop(row, g, r, m);
-      _sumGrad = 0;
+      _sumGrad[row] += g;
     }
   }
 
