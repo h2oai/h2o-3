@@ -524,8 +524,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           // training
           {
             final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make());
-            final Vec l2 = mse_frame.anyVec();
-            Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             mse_frame.delete();
             ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain); //updated by model.score
             _output._training_metrics = mtrain;
@@ -533,8 +531,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
-            final Vec l2 = mse_frame.anyVec();
-            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
             mse_frame.delete();
             ModelMetrics mtest = ModelMetrics.getFromDKV(this,ftest); //updated by model.score
             _output._validation_metrics = mtest;
@@ -665,11 +661,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //          }
 //        }
 
-          // print the freshly scored model to ASCII
-          if (keep_running && printme)
-            Log.info(toString());
-          if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
+        // print the freshly scored model to ASCII
+        if (keep_running && printme)
+          Log.info(toString());
+        if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
       }
       if (model_info().unstable()) {
         Log.warn(unstable_msg);
@@ -803,7 +799,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean()));
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean() /*mean MSE*/));
     return res;
   }
 

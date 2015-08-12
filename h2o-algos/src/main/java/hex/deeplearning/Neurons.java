@@ -210,6 +210,9 @@ public abstract class Neurons {
     }
   }
 
+  /**
+   * Auto-Encoder specific accumulation of reconstruction errors
+   */
   protected void accumulateMiniBatchGradient() {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     Distribution dist = new Distribution(params._distribution); //no need for tweedie power here
