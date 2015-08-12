@@ -234,7 +234,6 @@ glm_junit_arff_iris_weirdsep.flow
 glm_junit_arff_iris.flow
 glm_junit_auc.flow
 glm_junit_benign.flow
-glm_junit_bestbuy_train_10k.flow
 glm_junit_cars_20mpg.flow
 glm_junit_cars.flow
 glm_junit_two_spiral.flow
