@@ -29,7 +29,12 @@
   .eval.frame(x)
   if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:eval, "?row_count=",N))$frames[[1]]
-    data    <- as.data.frame(lapply(res$columns, function(c) c$data ))
+    # Convert to data.frame, handling short data (trailing NAs)
+    L <- lapply(res$columns, function(c) c$data )
+    maxlen <- max(sapply(L,length))
+    pad.na <- function(x) { c(x,rep(NA,maxlen-length(x))) }
+    data <- do.call(data.frame,lapply(L,pad.na))
+    # Zero rows?  Then force a zero-length full width data.frame
     if( length(data)==0 ) data <- as.data.frame(matrix(NA,ncol=length(res$columns),nrow=0L))
     colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
     if( length(data) > 0 ) {
