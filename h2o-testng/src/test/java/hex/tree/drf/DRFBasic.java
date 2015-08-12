@@ -4,6 +4,7 @@ import h2o.testng.utils.Dataset;
 import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
+import h2o.testng.utils.RecordingTestcase;
 import hex.Distributions.Family;
 
 import java.nio.charset.Charset;
@@ -49,7 +50,7 @@ public class DRFBasic extends TestNGUtil {
 
 		try {
 			// read data from file
-			lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
+			// lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
 		}
 		catch (Exception ignore) {
 			System.out.println("Cannot open file: " + testcaseFilePath);
@@ -74,19 +75,18 @@ public class DRFBasic extends TestNGUtil {
 			allLines.addAll(negLines.subList(firstRow, negLines.size()));
 		}
 
-		data = new Object[allLines.size()][8];
+		data = new Object[allLines.size()][7];
 		int r = 0;
 		for (String line : allLines) {
 			String[] variables = line.trim().split(",", -1);
 
 			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
 			data[r][1] = variables[tcHeaders.indexOf("test_description")];
-			data[r][2] = variables[tcHeaders.indexOf("dataset_directory")];
-			data[r][3] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][4] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
-			data[r][6] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
-			data[r][7] = variables;
+			data[r][2] = variables[tcHeaders.indexOf("train_dataset_id")];
+			data[r][3] = variables[tcHeaders.indexOf("validate_dataset_id")];
+			data[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
+			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
+			data[r][6] = variables;
 
 			r++;
 		}
@@ -95,11 +95,13 @@ public class DRFBasic extends TestNGUtil {
 	}
 
 	@Test(dataProvider = "drfCases")
-	public void basic(String testcase_id, String test_description, String dataset_directory, String train_dataset_id,
-			String validate_dataset_id, Dataset train_dataset, Dataset validate_dataset, String[] rawInput) {
+	public void basic(String testcase_id, String test_description, String train_dataset_id, String validate_dataset_id,
+			Dataset train_dataset, Dataset validate_dataset, String[] rawInput) {
 
 		DRFModel.DRFParameters DRFParameter = null;
 		redirectStandardStreams();
+
+		RecordingTestcase rt = new RecordingTestcase();
 
 		try {
 			String invalidMessage = validate(train_dataset_id, train_dataset, rawInput);
@@ -122,6 +124,10 @@ public class DRFBasic extends TestNGUtil {
 		}
 		finally {
 
+			// TODO: get memory by H2O's API
+			System.out.println("Total Memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
+			System.out.println("Total Time used in testcase:" + (rt.getTimeRecording()) + "millis");
+			
 			// wait 100 mili-sec for output/error to be stored
 			try {
 				Thread.sleep(100);
@@ -134,7 +140,7 @@ public class DRFBasic extends TestNGUtil {
 		}
 	}
 
-	//TODO: how to run it one time when all of package is run.
+	// TODO: how to run it one time when all of package is run.
 	@AfterClass
 	public void afterClass() {
 
@@ -288,6 +294,9 @@ public class DRFBasic extends TestNGUtil {
 			drfParams._distribution = f;
 		}
 
+		// set response_column param
+		drfParams._response_column = train_dataset.getResponseColumn();
+
 		// set train/validate params
 		Frame trainFrame = null;
 		Frame validateFrame = null;
@@ -345,8 +354,6 @@ public class DRFBasic extends TestNGUtil {
 		new Param("_r2_stopping", "double"),
 		new Param("_build_tree_one_node", "boolean"),
 		new Param("_class_sampling_factors", "float[]"),
-		
-		new Param("_response_column", "String",true,true),
 	}; 
 	
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
@@ -400,14 +407,9 @@ public class DRFBasic extends TestNGUtil {
 			"collinear_cols",
 
 			// dataset files & ids
-			"dataset_directory",
 			"train_dataset_id",
-			"train_dataset_filename",
 			"validate_dataset_id",
-			"validate_dataset_filename",
 
-			"_response_column",
-			"response_column_type",
 			"ignored_columns",
 			"R",
 			"Scikit",

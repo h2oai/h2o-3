@@ -56,7 +56,6 @@ public class GLMBasic extends TestNGUtil {
 			new Param("_prior", "double"),
 			new Param("_max_active_predictors", "int"),
 			new Param("_ignored_columns", "String[]"),
-			new Param("_response_column", "String"),
 	};
 	
 	private static OptionsGroupParam familyOptionsParams = new OptionsGroupParam(
@@ -71,7 +70,6 @@ public class GLMBasic extends TestNGUtil {
 
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
 			"0",
-			"1",
 			"test_description",
 			"testcase_id",
 
@@ -121,14 +119,9 @@ public class GLMBasic extends TestNGUtil {
 			"collinear_cols",
 
 			// dataset files & ids
-			"dataset_directory",
 			"train_dataset_id",
-			"train_dataset_filename",
 			"validate_dataset_id",
-			"validate_dataset_filename",
 
-			"_response_column",
-			"response_column_type",
 			"_ignored_columns",
 			"r",
 			"scikit"
@@ -166,7 +159,7 @@ public class GLMBasic extends TestNGUtil {
 		// remove headers
 		lines.removeAll(lines.subList(0, firstRow));
 
-		data = new Object[lines.size()][8];
+		data = new Object[lines.size()][7];
 		int r = 0;
 
 		for (String line : lines) {
@@ -174,12 +167,11 @@ public class GLMBasic extends TestNGUtil {
 
 			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
 			data[r][1] = variables[tcHeaders.indexOf("test_description")];
-			data[r][2] = variables[tcHeaders.indexOf("dataset_directory")];
-			data[r][3] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][4] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
-			data[r][6] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
-			data[r][7] = variables;
+			data[r][2] = variables[tcHeaders.indexOf("train_dataset_id")];
+			data[r][3] = variables[tcHeaders.indexOf("validate_dataset_id")];
+			data[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
+			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
+			data[r][6] = variables;
 
 			r++;
 		}
@@ -188,7 +180,7 @@ public class GLMBasic extends TestNGUtil {
 	}
 
 	@Test(dataProvider = "glmCases")
-	public void basic(String testcaseId, String testDescription, String datasetDirectory, String trainDatasetId,
+	public void basic(String testcaseId, String testDescription, String trainDatasetId,
 			String validateDatasetId, Dataset trainDataset, Dataset validateDataset, String[] rawInput) {
 
 		GLMParameters glmParams = null;
@@ -353,6 +345,9 @@ public class GLMBasic extends TestNGUtil {
 				p.parseAndSet(glmParams, rawInput[tcHeaders.indexOf(p.name)]);
 			}
 		}
+		
+		// set response column params
+		glmParams._response_column = trainDataset.getResponseColumn();
 
 		// set train/validate params
 		Frame trainFrame = null;
