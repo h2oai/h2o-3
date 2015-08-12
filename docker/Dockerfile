@@ -35,15 +35,16 @@ RUN \
   apt-get clean
 
 
-# Fetch h2o Simons-7
+# Fetch h2o latest_stable
 RUN \
-  wget http://h2o-release.s3.amazonaws.com/h2o/rel-simons/7/h2o-3.0.1.7.zip -O /opt/h2o.zip && \
+  wget http://h2o-release.s3.amazonaws.com/h2o/latest_stable -O latest && \
+  wget --no-check-certificate -i latest -O /opt/h2o.zip && \
   unzip -d /opt /opt/h2o.zip && \
   rm /opt/h2o.zip && \
   cd /opt && \
   cd `find . -name 'h2o.jar' | sed 's/.\///;s/\/h2o.jar//g'` && \ 
   cp h2o.jar /opt && \
-  wget https://s3.amazonaws.com/h2o-training/mnist/train.csv.gz && \
+  wget http://s3.amazonaws.com/h2o-training/mnist/train.csv.gz && \
   gunzip train.csv.gz 
 
 # Define a mountable data directory
