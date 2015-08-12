@@ -112,8 +112,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     assert(_training);
     if (_localmodel._classification)
       ((Neurons.Softmax)_neurons[_neurons.length-1]).bprop(n);
-    else
+    else if (!_localmodel.get_params()._autoencoder)
       ((Neurons.Linear)_neurons[_neurons.length-1]).bprop(n);
+    else
+      _neurons[_neurons.length-1].bprop();
 
     for (int i = _neurons.length - 2; i > 0; --i)
       _neurons[i].bprop();
