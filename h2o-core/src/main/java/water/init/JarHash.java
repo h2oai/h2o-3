@@ -57,29 +57,12 @@ public abstract class JarHash {
     return ffHash;
   }
 
-
-  private static final ArrayList<File> RESOURCE_FILES = new ArrayList<>();
-
-  public static void registerResourceRoot(File f) {
-    if (f.exists()) {
-      RESOURCE_FILES.add(f);
-    }
-  }
-
   // Look for resources (JS files, PNG's, etc) from the self-jar first, then
   // from a possible local dev build.
   public static InputStream getResource2(String uri) {
-    try {
       // If -Dwebdev=1 is set in VM args, we're in front end dev mode, so skip the class loader.
       // This is to allow the front end scripts/styles/templates to be loaded from the build
       //  directory during development.
-
-      // Try all registered locations
-      for( File f : RESOURCE_FILES ) {
-        File f2 = new File(f,uri);
-        if( f2.exists() )
-          return new FileInputStream(f2);
-      }
 
       // Fall through to jar file mode.
       ClassLoader cl = ClassLoader.getSystemClassLoader();
@@ -91,8 +74,6 @@ public abstract class JarHash {
         is = loadResource(uri, cl);
       }
       if (is != null) return is;
-
-    } catch (FileNotFoundException ignore) {}
 
     Log.warn("Resource not found: " + uri);
     return null;
