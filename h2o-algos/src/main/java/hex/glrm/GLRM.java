@@ -20,7 +20,6 @@ import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.MathUtils;
 import water.util.RandomUtils;
 import water.util.TwoDimTable;
 
