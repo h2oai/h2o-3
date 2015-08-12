@@ -386,6 +386,21 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
 
+The current version of DRF is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
+
+- Improved ability to train on categorical variables (using the `nbins_cats` parameter)
+- Minor changes in histogramming logic for some corner cases
+- By default, DRF now builds half as many trees for binomial problems, similar to GBM: one tree to estimate class 0, probability p0, class 1 probability is 1-p0. 
+
+There was some code cleanup and refactoring to support the following features:
+
+- Per-row observation weights
+- Per-row offsets
+- N-fold cross-validation
+
+DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram), since it was not applicable to cases with observation weights or for cross-validation. 
+
+
 ###Defining a DRF Model
 
 - **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
@@ -891,6 +906,18 @@ Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and
 
 Gradient Boosted Regression and Gradient Boosted Classification are forward learning ensemble methods. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O's GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
 
+The current version of GBM is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
+
+- Improved ability to train on categorical variables (using the `nbins_cats` parameter)
+- Minor changes in histogramming logic for some corner cases
+
+There was some code cleanup and refactoring to support the following features:
+
+- Per-row observation weights
+- Per-row offsets
+- N-fold cross-validation
+- Support for more distribution functions (such as Gamma, Poisson, and Tweedie)
+
 ###Defining a GBM Model
 
 - **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
@@ -1004,7 +1031,12 @@ The output for GBM includes the following:
 
 - **What if there are a large number of categorical factor levels?**
 
-  Large number of categoricals are handled very efficiently - there is never any one-hot encoding.
+  Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
+
+- **Given the same training set and the same GBM parameters, will GBM produce a different model with two different validation data sets, or the same model?**
+
+  The same model will be generated. 
+
 
 ###GBM Algorithm 
 
