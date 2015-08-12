@@ -607,10 +607,8 @@ final public class H2O {
    *
    * Use reflection to find all classes that inherit from water.api.AbstractRegister
    * and call the register() method for each.
-   *
-   * @param relativeResourcePath Relative path from running process working dir to find web resources.
    */
-  public static void registerRestApis(String relativeResourcePath) {
+  public static void registerRestApis() {
     if (apisRegistered) {
       throw H2O.fail("APIs already registered");
     }
@@ -635,7 +633,7 @@ final public class H2O {
             Log.debug("Found REST API registration for class: " + registerClass.getName());
             Object instance = registerClass.newInstance();
             water.api.AbstractRegister r = (water.api.AbstractRegister) instance;
-            r.register(relativeResourcePath);
+            r.register();
           }
           catch (Exception e) {
             throw H2O.fail(e.toString());
@@ -1266,10 +1264,6 @@ final public class H2O {
   static public void registerPOST( String url_pattern, Class hclass, String hmeth, String summary ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.register(url_pattern,"POST",hclass,hmeth,null,summary);
-  }
-
-  public static void registerResourceRoot(File f) {
-    JarHash.registerResourceRoot(f);
   }
 
   /** Start the web service; disallow future URL registration.
