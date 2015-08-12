@@ -353,7 +353,7 @@ public class DeepLearningParameters extends Model.Parameters {
   /**
    * Enable shuffling of training data (on each node). This option is
    * recommended if training data is replicated on N nodes, and the number of training samples per iteration
-   * is close to N times the dataset size, where all nodes train will (almost) all
+   * is close to N times the dataset size, where all nodes train with (almost) all
    * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
    * times the dataset size or larger).
    */
@@ -384,6 +384,10 @@ public class DeepLearningParameters extends Model.Parameters {
   public boolean _elastic_averaging = false;
   public double _elastic_averaging_moving_rate = 0.9;
   public double _elastic_averaging_regularization = 1e-3;
+
+  // stochastic gradient descent: mini-batch size = 1
+  // batch gradient descent: mini-batch size = # training rows
+  public int _mini_batch_size = 1;
 
   public enum MissingValuesHandling {
     Skip, MeanImputation
@@ -644,7 +648,8 @@ public class DeepLearningParameters extends Model.Parameters {
             "_export_weights_and_biases",
             "_elastic_averaging",
             "_elastic_averaging_moving_rate",
-            "_elastic_averaging_regularization"
+            "_elastic_averaging_regularization",
+            "_mini_batch_size"
     };
 
     // the following parameters must not be modified when restarting from a checkpoint

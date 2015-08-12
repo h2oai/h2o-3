@@ -316,7 +316,8 @@ public class DeepLearningModelInfo extends Iced {
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
                     + ", " + get_params()._distribution + " distribution, " + get_params()._loss + " loss, "
                     + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size) + ", "
-                    + String.format("%,d", get_processed_global()) + " training samples",
+                    + String.format("%,d", get_processed_global()) + " training samples, "
+                    + " mini-batch size " + String.format("%,d", get_params()._mini_batch_size),
             new String[neurons.length],
             new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                     "Mean Rate", "Rate RMS", "Momentum",

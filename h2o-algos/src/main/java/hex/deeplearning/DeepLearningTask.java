@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
-import hex.Distribution;
 import hex.FrameTask;
 import water.DKV;
 import water.H2O;
@@ -92,7 +91,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param seed Seed is only used if reproducible mode is enabled
    * @param r Row (must be dense for now)
    */
-  @Override public final void processRow(long seed, DataInfo.Row r){
+  @Override public final void processRow(long seed, DataInfo.Row r) {
     assert !r.isSparse():"Deep learning does not support sparse rows.";
     if (_localmodel.get_params()._reproducible) {
       seed += _localmodel.get_processed_global(); //avoid periodicity
@@ -102,6 +101,27 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _localmodel.checkMissingCats(r.binIds);
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
     step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
+  }
+
+  /**
+   * Apply the gradient to update the weights
+   * @param n number of trained examples in this last mini batch
+   */
+  @Override
+  protected void applyMiniBatchUpdate(int n) {
+    assert(_training);
+    if (_localmodel._classification)
+      ((Neurons.Softmax)_neurons[_neurons.length-1]).bprop(n);
+    else
+      ((Neurons.Linear)_neurons[_neurons.length-1]).bprop(n);
+
+    for (int i = _neurons.length - 2; i > 0; --i)
+      _neurons[i].bprop();
+  }
+
+  @Override
+  protected int getMiniBatchSize() {
+    return _localmodel.get_params()._mini_batch_size;
   }
 
   /**
@@ -230,7 +250,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       if (minfo._classification)
         neurons[neurons.length - 1] = new Neurons.Softmax(minfo.units[minfo.units.length - 1]);
       else
-        neurons[neurons.length - 1] = new Neurons.Linear(1);
+        neurons[neurons.length - 1] = new Neurons.Linear();
     }
 
     //copy parameters from NN, and set previous/input layer links
@@ -245,7 +265,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   /**
-   * Forward/Backward propagation
+   * Forward propagation
    * assumption: layer 0 has _a filled with (horizontalized categoricals) double values
    * @param seed
    * @param neurons
@@ -262,11 +282,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
       if (minfo.get_params()._autoencoder) {
         neurons[neurons.length - 1].fprop(seed, training);
-        if (training) {
-          for (int i=neurons.length-1; i>0; --i) {
-            neurons[i].bprop();
-          }
-        }
       } else {
         if (consensus_minfo != null) {
           for (int i = 1; i < neurons.length; i++) {
@@ -287,7 +302,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
               assert ((double) (int) responses[0] == responses[0]); //classification -> integer labels expected
               target_label = (int) responses[0];
             }
-            ((Neurons.Softmax) neurons[neurons.length - 1]).bprop(target_label);
+            ((Neurons.Softmax) neurons[neurons.length - 1]).addGradient(target_label);
           }
         } else {
           // compute prediction (in link space)
@@ -298,11 +313,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
             double sub = minfo.data_info()._normRespSub == null ? 0 : minfo.data_info()._normRespSub[0];
             neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
           }
-//          //bring prediction to response space
-//          float pred = neurons[neurons.length - 1]._a.get(0);
-//          pred = (float)new Distribution(minfo.get_params()._distribution, minfo.get_params()._tweedie_power).link(pred); //bring (descaled) response back to link domain
-//          neurons[neurons.length - 1]._a.set(0, pred);
-
           if (training) {
             for (int i = 1; i < neurons.length - 1; i++)
               Arrays.fill(neurons[i]._e.raw(), 0);
@@ -312,12 +322,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
             } else {
               target_value = (float)responses[0]; //actual response in response space
             }
-            ((Neurons.Linear) neurons[neurons.length - 1]).bprop(target_value);
+            ((Neurons.Linear) neurons[neurons.length - 1]).addGradient(target_value);
           }
-        }
-        if (training) {
-          for (int i = neurons.length - 2; i > 0; --i)
-            neurons[i].bprop();
         }
       }
     }

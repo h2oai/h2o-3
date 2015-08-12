@@ -69,11 +69,12 @@ public class DeepLearningMNIST extends TestUtil {
         p._hidden = new int[]{1024, 1024, 2048};
         p._train_samples_per_iteration = -2;
         p._input_dropout_ratio = 0.2;
-//        p._score_interval = 0;
-//        p._score_duty_cycle = 1;
+        p._mini_batch_size = 1;
+//        p._train_samples_per_iteration = -1;
+        p._shuffle_training_data = true;
         p._l1= 1e-5;
         p._max_w2= 10;
-        p._epochs = 1000;
+        p._epochs = 500;
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
