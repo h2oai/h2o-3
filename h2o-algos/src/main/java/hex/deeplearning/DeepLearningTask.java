@@ -111,14 +111,24 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   protected void applyMiniBatchUpdate(int n) {
     assert(_training);
     assert(n>0);
-    _neurons[_neurons.length-1].bprop(n);
+    // last layer: Apply mini batch (need to know mini-batch size n)
+    _neurons[_neurons.length-1].bpropMiniBatch(n);
+    // non-last layers: Apply mini batch (need to know mini-batch size n)
     for (int i = _neurons.length - 2; i > 0; --i)
       _neurons[i].bprop();
+
+    // all errors are reset to 0
+    for (int i = 0; i<_neurons.length ;++i) {
+      Storage.DenseVector e = _neurons[i]._e;
+      if (e==null) continue;
+      Arrays.fill(e.raw(), 0);
+    }
   }
 
   @Override
   protected int getMiniBatchSize() {
     return _localmodel.get_params()._mini_batch_size;
+//    return (int)Math.min(1+Math.log(1+_localmodel.get_processed_global()), _localmodel.get_params()._mini_batch_size); //smooth increase from 1 to _mini_batch_size
   }
 
   /**
@@ -280,7 +290,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       if (minfo.get_params()._autoencoder) {
         neurons[neurons.length - 1].fprop(seed, training);
         if (training) {
-          neurons[neurons.length - 1].addGradient();
+          neurons[neurons.length - 1].accumulateMiniBatchGradient();
         }
       } else {
         if (consensus_minfo != null) {
@@ -292,8 +302,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         if (minfo._classification) {
           ((Neurons.Softmax) neurons[neurons.length - 1]).fprop();
           if (training) {
-            for (int i = 1; i < neurons.length - 1; i++)
-              Arrays.fill(neurons[i]._e.raw(), 0);
             assert ((double) (int) responses[0] == responses[0]);
             final int target_label;
             if (Double.isNaN(responses[0])) { //missing response
@@ -302,7 +310,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
               assert ((double) (int) responses[0] == responses[0]); //classification -> integer labels expected
               target_label = (int) responses[0];
             }
-            ((Neurons.Softmax) neurons[neurons.length - 1]).addGradient(target_label);
+            ((Neurons.Softmax) neurons[neurons.length - 1]).accumulateMiniBatchGradient(target_label);
           }
         } else {
           // compute prediction (in link space)
@@ -314,15 +322,13 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
             neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
           }
           if (training) {
-            for (int i = 1; i < neurons.length - 1; i++)
-              Arrays.fill(neurons[i]._e.raw(), 0);
             float target_value;
             if (Double.isNaN(responses[0])) { //missing response
               target_value = Neurons.missing_real_value;
             } else {
               target_value = (float)responses[0]; //actual response in response space
             }
-            ((Neurons.Linear) neurons[neurons.length - 1]).addGradient(target_value);
+            ((Neurons.Linear) neurons[neurons.length - 1]).accumulateMiniBatchGradient(target_value);
           }
         }
       }

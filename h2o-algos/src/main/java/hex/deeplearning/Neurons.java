@@ -3,8 +3,8 @@ package hex.deeplearning;
 import hex.DataInfo;
 import hex.Distribution;
 import water.*;
-import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 import water.util.RandomUtils;
 
@@ -19,7 +19,6 @@ import java.util.*;
  */
 public abstract class Neurons {
   protected int units;
-  float _sumGrad[];
 
   /**
    * Constructor of a Neuron Layer
@@ -27,7 +26,6 @@ public abstract class Neurons {
    */
   Neurons(int units) {
     this.units = units;
-    _sumGrad = new float[units];
   }
 
   /**
@@ -155,7 +153,7 @@ public abstract class Neurons {
     params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     _a = new Storage.DenseVector(units);
-    if (!(this instanceof Output) && !(this instanceof Input)) {
+    if (!(this instanceof Input)) {
       _e = new Storage.DenseVector(units);
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
@@ -193,28 +191,32 @@ public abstract class Neurons {
   protected abstract void fprop(long seed, boolean training);
 
   /**
-   *  Back propagation
+   *  Back propagation of error terms stored in _e (for non-final layers)
    */
   protected abstract void bprop();
 
-  protected void bprop(int n) {
+  /**
+   * Back-propagate accumulated mini-batch gradients (stored in _sumGrad)
+   * @param n actual mini-batch size (could be less than _parms._mini_batch_size at map() boundaries)
+   */
+  protected void bpropMiniBatch(int n) {
+    assert(_index == params._hidden.length);
     final float rows = _a.size();
     float m = _minfo.adaDelta() ? 0 : momentum();
     float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
     for( int row = 0; row < rows; row++ ) {
-      final float g = _sumGrad[row]/n;
+      final float g = _e.raw()[row]/n;
       bprop(row, g, r, m);
     }
-    Arrays.fill(_sumGrad, 0);
   }
 
-  protected void addGradient() {
+  protected void accumulateMiniBatchGradient() {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    Distribution dist = new Distribution(params._distribution);
+    Distribution dist = new Distribution(params._distribution); //no need for tweedie power here
     final int rows = _a.size();
     if (_w instanceof Storage.DenseRowMatrix) {
       for (int row = 0; row < rows; row++) {
-        _sumGrad[row] += autoEncoderGradient(dist, row);
+        _e.add(row, autoEncoderGradient(dist, row));
       }
     } else throw H2O.unimpl("Only DenseRowMatrix is implemented for AutoEncoder (Must have sparse=false and col_major=false).");
   }
@@ -840,6 +842,7 @@ public abstract class Neurons {
     // Computing partial derivative g = dE/dnet = dE/dy * dy/dnet, where dE/dy is the backpropagated error
     // dy/dnet = (1 - a^2) for y(net) = tanh(net)
     @Override protected void bprop() {
+      assert (_index < _minfo.get_params()._hidden.length);
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       if (_w instanceof Storage.DenseRowMatrix) {
@@ -917,12 +920,13 @@ public abstract class Neurons {
       compute_sparsity();
     }
     @Override protected void bprop() {
+      assert (_index < _minfo.get_params()._hidden.length);
+      assert (!_minfo.get_params()._autoencoder);
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       if (_w instanceof Storage.DenseRowMatrix) {
         final int rows = _a.size();
         for( int row = 0; row < rows; row++ ) {
-          assert (!_minfo.get_params()._autoencoder);
           float g = _e.get(row);
           bprop(row, g, r, m);
         }
@@ -967,6 +971,7 @@ public abstract class Neurons {
     }
 
     @Override protected void bprop() {
+      assert (_index < _minfo.get_params()._hidden.length);
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       final int rows = _a.size();
@@ -1014,9 +1019,7 @@ public abstract class Neurons {
    * Output neurons for classification - Softmax
    */
   public static class Softmax extends Output {
-    public Softmax(int units) {
-      super(units);
-    }
+    public Softmax(int units) { super(units); }
     protected void fprop() {
       gemv((Storage.DenseVector) _a, (Storage.DenseRowMatrix) _w, (Storage.DenseVector) _previous._a, _b, null);
       final float max = ArrayUtils.maxValue(_a.raw());
@@ -1041,7 +1044,7 @@ public abstract class Neurons {
      * Compute dE/dw via chain rule: dE/dw = dE/dy * dy/dnet * dnet/dw, where net = sum(xi*wi)+b and y = activation function
      * @param target actual class label
      */
-    protected void addGradient(int target) {
+    protected void accumulateMiniBatchGradient(int target) {
       assert (target != missing_int_value); // no correction of weights/biases for missing label
       float g; //partial derivative dE/dy * dy/dnet
       final float rows = _a.size();
@@ -1082,9 +1085,7 @@ public abstract class Neurons {
           default:
             throw H2O.unimpl();
         }
-
-        // add to per-row gradient
-        _sumGrad[row] += g;
+        _e.add(row, g);
       }
     }
   }
@@ -1104,13 +1105,13 @@ public abstract class Neurons {
      * Backpropagation for regression
      * @param target floating-point target value
      */
-    protected void addGradient(float target) {
+    protected void accumulateMiniBatchGradient(float target) {
       assert (target != missing_real_value);
       final int row = 0;
       final float t = target; //t is in response space
       final float y = _a.get(row);
       float g = (float)new Distribution(params._distribution, params._tweedie_power).gradient(t, y); //y is in link space
-      _sumGrad[row] += g;
+      _e.add(row, g);
     }
   }
 

@@ -993,7 +993,7 @@ public class DeepLearningTest extends TestUtil {
       dl = job.trainModel().get();
 
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
-      Assert.assertEquals(mm._MSE, 0.10820468552102394, 1e-8);
+      Assert.assertEquals(0.07218677514305402, mm._MSE, 1e-8);
 
       job.remove();
     } finally {
