@@ -855,6 +855,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+
+    private void doUpdateCD(double [] grads, Gram gram, double [] betaold, double [] betanew , int variable) {
+
+      for(int i = 0; i < grads.length; i++) {
+        if (i != variable) {//variable is index of most recently updated
+          grads[i] += ((betaold[variable] - betanew[variable]) * gram.get(i,variable));
+        }
+      }
+
+    }
+
     protected void solve(boolean doLineSearch){
       if (_activeData.fullN() > _parms._max_active_predictors)
         throw new TooManyPredictorsException();
@@ -1115,76 +1126,49 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           int iter2=0; // total cd iters
 
           // new IRLS iteration
-          while (iter2++ < 1) {
+          while (iter2++ < 30) {
 
-            GLMIterationTask gt = new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
+            GLMIterationTask gt = new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
+                    false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
                     null).doAll(_activeData._adaptedFrame);
-
             wsum = gt.wsum;
             wsumu = gt.wsumu;
             int iter1 = 0;
             double [] grads = Arrays.copyOfRange(gt._xy,0,gt._xy.length-1 ); // initialize to inner ps with observations
-            for(int i = 0; i < grads.length-1; i++)
-              grads[i] -= beta[beta.length-1] * gt._xw[i];
-
+            for(int i = 0; i < grads.length; ++i) {
+              double ip = 0;
+              for(int j = 0; j < beta.length; ++j)
+                ip += beta[j]*gt._gram.get(i,j);
+              grads[i] = grads[i] - ip + beta[i]*gt._gram.get(i,i);
+            }
             // CD loop
             while (iter1++ < 300) {
 
-        /*      for(int i=0; i < _activeData._cats; i++) {
+              for(int i=0; i < _activeData._cats; ++i) {
                 int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
-                int prev_level_num = 0;
-
-                boolean intercept = (i == 0); // prev var is intercept
-                if(!intercept)
-                  prev_level_num = _activeData._catOffsets[i]-_activeData._catOffsets[i-1];
-
-                int start_old = _activeData._catOffsets[i];
-                GLMCoordinateDescentTaskSeq stupdate;
-                if(intercept)
-                else
 
                 for(int j=0; j < level_num; ++j) // ST multiple ones at the same time.
-                  beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage(stupdate._temp[j] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                  beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage( grads[_activeData._catOffsets[i]+j]  / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
                           / (gt._gram._xx[_activeData._catOffsets[i]+j][_activeData._catOffsets[i]+j] / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
-              }*/
 
-              int cat_num = 2; // if intercept, or not intercept but not first numeric, then both are numeric .
+                for(int j=0; j < level_num ; ++j) // update grads vector according to "cat levels " introduced.
+                  if( beta[_activeData._catOffsets[i]+j] !=0 )
+                    doUpdateCD(grads, gt._gram, betaold, beta, _activeData._catOffsets[i] + j);
+              }
+
               for (int i = 0; i < _activeData._nums; ++i) {
-
-                 boolean intercept = (i == 0 && _activeData.numStart() == 0); // if true then all numeric case and doing beta_1
-
-                  if(i > 0 || intercept) {// previous var is a numeric var
-                  cat_num = 3;
-
-                  beta[i+_activeData.numStart()] = ADMM.shrinkage(grads[_activeData.numStart() + i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                   beta[i+_activeData.numStart()] = ADMM.shrinkage(grads[_activeData.numStart() + i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
                           / (gt._gram._xx[i+_activeData.numStart()][i+_activeData.numStart()] / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
 
                   if(beta[i+_activeData.numStart()]!=0) // update all the grad entries
-                    new GLMCoordinateDescentTaskSeq(grads, gt._gram._xx, gt._xw, betaold, beta, _activeData.numStart() + i, intercept);
+                    doUpdateCD(grads, gt._gram, betaold, beta, _activeData.numStart() + i);
 
-                }
-              /*  else if (i == 0 && !intercept){ // previous one is the last categorical variable
-                  int prev_level_num = _activeData.numStart()-_activeData._catOffsets[_activeData._cats-1];
-
-
-                  beta[_activeData.numStart()] = ADMM.shrinkage(stupdate._temp[0] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
-                          / (gt._gram._xx[_activeData.numStart()][_activeData.numStart()] / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
-                }*/
               }
-
-              // intercept update: preceded by a categorical or numeric variable
-         //     GLMCoordinateDescentTaskSeq iupdate ;
-           /*   if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1).isEnum()) { // only categorical vars
-                cat_num = 2;
-                }
-              else*/ { // last variable is numeric
-                cat_num = 3;
-               }
 
               if(_parms._intercept){
                 double sum=0;
                 for(int i=0; i < beta.length-1; i++)
-                 sum += ( beta[i]* gt._xw[i] );
+                 sum += ( beta[i]* gt._gram.get(beta.length-1,i) ); //gt._xw[i]
                 beta[beta.length - 1] = (gt._wz - sum)/ wsum;
               }
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
@@ -1208,7 +1192,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           System.out.println("iter2 = " + iter2);
 
           _taskInfo._iter = iter2;
-     //     for (Vec v : newVecs) v.remove();
           break;
         }
 
