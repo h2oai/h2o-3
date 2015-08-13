@@ -46,7 +46,7 @@ grid_models <- lapply(grid@model_ids, function(mid) {
 
 There are two core entities: `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](ref???).  The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyper parameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced. 
 
-Currently, the implementation supports a simple cartezian grid search, but additional space traversal strategies are currently in development. This triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, it is ignored; however, it can still be tracked in the job list. Model builder jobs are triggered in sequential order. 
+Currently, the implementation supports a simple cartesian grid search, but additional space traversal strategies are currently in development. This triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, it is ignored; however, it can still be tracked in the job list. Model builder jobs are run serially in sequential order. More advanced job scheduling schemes are under development.
 
 The grid object contains the results of the grid search: a list of model keys produced by the grid search. The grid object publishes a simple API to get the models. 
 
@@ -55,9 +55,9 @@ Launch the grid search by specifying:
 - the model parameters (provides a common setting used to create new models)
 - the hyper parameters (a map `<parameterName, listOfValues>` that defines the parameter spaces to traverse)
 
-The Java API can grid search any parameters defined in the model parameter's class (e.g., `GBMParameters`). Gridable parameters are not restricted in any case. 
+The Java API can grid search any parameters defined in the model parameter's class (e.g., `GBMParameters`). Paramters that are appropriate for gridding are marked by the @API parameter, but this is not enforced by the framework. 
 
-Additional parameters are available in the model builder to support creation of model parameters and configuration. This eliminates the requirement of the previous implementation where each gridable value was represented as a `double`. This also allows users to specify different building strategies for model parameters. For example, a REST layer using a builder that validates parameters against the model parameter's schema, where the Java API uses a simple reflective builder. Additional reflections support is provided by PojoUtils (methods `setField`, `getFieldValue`). 
+Additional parameters are available in the model builder to support creation of model parameters and configuration. This eliminates the requirement of the previous implementation where each gridable value was represented as a `double`. This also allows users to specify different building strategies for model parameters. For example, a REST layer uses a builder that validates parameters against the model parameter's schema, where the Java API uses a simple reflective builder. Additional reflections support is provided by PojoUtils (methods `setField`, `getFieldValue`). 
 
 ###Example
 
@@ -83,7 +83,7 @@ This feature is tested with the intention of fixing semantics of the grid API. T
 
 **R Tests**
 
-- GBM grid using wine, airlines, and iris datasets verifying the consistency of results
+- GBM grids using wine, airlines, and iris datasets verify the consistency of results
 - DL grid using the `hidden` parameter verifying the passing of structured parameters as a list of values
 - Minor R testing support verifying equality of the model's parameters against  a given list of hyper parameters. 
 
@@ -96,9 +96,9 @@ This feature is tested with the intention of fixing semantics of the grid API. T
 ##Caveats/In Progress
 
 - Currently, the schema system requires specific classes instead of parameterized classes. For example, the schema definition `Grid<GBMParameters>` is not supported unless your define the class `GBMGrid extends Grid<GBMParameters>`. 
-- Grid scheduler is sequential only. 
+- Grid Job scheduler is sequential only; schedulers for concurrent builds are under development. 
 - The model builder job and grid jobs are not associated. 
-- There is no way to list the hyper space parameters that caused the model builder job failure. 
+- There is no way to list the hyper space parameters that caused a model builder job failure. 
 - There is no model query interface (i.e., display the best model for the specified criterion). 
 
 
