@@ -3326,8 +3326,8 @@ class ASTRepLen extends ASTUniPrefixOp {
         // this is equivalent to what R does, but by additionally calling "as.data.frame"
         String[] col_names = new String[(int)_length];
         for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
-        Frame f = new Frame(col_names, new Vec[(int)_length]);
-        for (int i = 0; i < f.numCols(); ++i)
+        Frame f = new Frame();
+        for (int i = 0; i < _length; ++i)
           f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
         env.pushAry(f);
       }
