@@ -292,7 +292,7 @@ public class MathUtils {
           // each row is a 2D sample
           for (int i=0; i<rows; ++i)
             for (int j=0; j<cols; ++j)
-              a[i][j] = cs[i + rows * j].at8(j);
+              a[i][j] = cs[i + j*rows].atd(j);
 
           // compute 2D FFT
           if (!inverse)
@@ -329,7 +329,7 @@ public class MathUtils {
           for (int i=0; i< rows; ++i)
             for (int j=0; j< cols; ++j)
               for (int k=0; k< depth; ++k)
-                a[i][j][k] = cs[i + rows * j].at8(j);
+                a[i][j][k] = cs[i + j*rows + k*rows*cols].atd(j);
 
           // compute 3D FFT
           if (!inverse)

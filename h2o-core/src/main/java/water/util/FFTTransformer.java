@@ -52,7 +52,7 @@ public class FFTTransformer extends Transformer<FFTTransformer> {
             new H2O.H2OCountedCompleter() {
               @Override
               protected void compute2() {
-                Frame fft = null;
+                Frame fft;
                 if (_dimensions[1] == 1 && _dimensions[2] == 1) {
                   fft = MathUtils.FFT.transform1D(_dataset, _dimensions[0], _inverse);
                 } else if (_dimensions[2] == 1) {
