@@ -77,7 +77,6 @@ h2o.grid <- function(algorithm,
 #' @export
 h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
   json <- .h2o.__remoteSend(conn, method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id))
-  print(json)
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })

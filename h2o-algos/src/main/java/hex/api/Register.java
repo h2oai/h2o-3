@@ -15,7 +15,7 @@ import water.api.AbstractRegister;
 
 public class Register extends AbstractRegister {
   @Override
-  public void register() {
+  public void register(String relativeResourcePath) {
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
     ModelBuilder.registerModelBuilder("gbm", "Gradient Boosting Machine", GBM.class);
