@@ -15,7 +15,7 @@ Each parameter exposed by the schema can specify if it is supported by grid sear
 
 Invoke a new GBM model grid search by passing the following request to H2O: 
 
-```
+```json
 Method: POST  , URI: /99/Grid/gbm, route: /99/Grid/gbm, parms:{hyper_parameters={"ntrees":[1,5],"learn_rate":[0.1,0.01]}, training_frame=filefd41fe7ac0b_csv_1.hex_2, grid_id=gbm_grid_search, response_column=Species, ignored_columns=[""]}
 ```
 
@@ -32,7 +32,7 @@ Grid search in R provides the following capabilities:
 
 ###Example
 
-```
+```R
 ntrees_opts = c(1, 5)
 learn_rate_opts = c(0.1, 0.01)
 hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
@@ -61,7 +61,7 @@ Additional parameters are available in the model builder to support creation of 
 
 ###Example
 
-```
+```java
 HashMap<String, Object[]> hyperParms = new HashMap<>();
 hyperParms.put("_ntrees", new Integer[]{1, 2});
 hyperParms.put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
