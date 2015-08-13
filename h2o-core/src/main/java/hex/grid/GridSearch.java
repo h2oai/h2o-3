@@ -5,7 +5,7 @@ import java.util.Map;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
-import hex.grid.HyperSpaceWalker.CartezianWalker;
+import hex.grid.HyperSpaceWalker.CartesianWalker;
 import water.DKV;
 import water.H2O;
 import water.Job;
@@ -281,9 +281,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       final ModelFactory<MP> modelFactory,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
     // Create a walker to traverse hyper space of model parameters
-    CartezianWalker<MP>
+    CartesianWalker<MP>
         hyperSpaceWalker =
-        new CartezianWalker<>(params, hyperParams, paramsBuilderFactory);
+        new CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
 
     return startGridSearch(destKey, modelFactory, hyperSpaceWalker);
   }
