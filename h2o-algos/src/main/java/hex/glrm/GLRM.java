@@ -526,15 +526,23 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 4) Save solution to model output
         // Save X frame for user reference later
         Vec[] xvecs = new Vec[_ncolX];
+        String[] xnames = new String[_ncolX];
         if(overwriteX) {
-          for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
+          for (int i = 0; i < _ncolX; i++) {
+            xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
+            xnames[i] = "Arch" + String.valueOf(i + 1);
+          }
         } else {
-          for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xold(i, _ncolA));
+          for (int i = 0; i < _ncolX; i++) {
+            xvecs[i] = fr.vec(idx_xold(i, _ncolA));
+            xnames[i] = "Arch" + String.valueOf(i + 1);
+          }
         }
-        x = new Frame(_parms._loading_key, null, xvecs);
+        x = new Frame(_parms._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
+
         model._output._step_size = step;
         model._output._loading_key = _parms._loading_key;
         model._output._archetypes_raw = yt;  // Need full archetypes object for scoring
