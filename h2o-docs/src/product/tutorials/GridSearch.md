@@ -46,7 +46,7 @@ grid_models <- lapply(grid@model_ids, function(mid) {
 
 There are two core entities: `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](ref???).  The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyper parameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced. 
 
-Currently, the implementation supports a simple cartezian grid search, but additional space traversal strategies are currently in development. This triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, it is ignored; however, it can still be tracked in the job list. Model builder jobs are triggered in sequential order. 
+Currently, the implementation supports a simple cartesian grid search, but additional space traversal strategies are currently in development. This triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, it is ignored; however, it can still be tracked in the job list. Model builder jobs are triggered in sequential order. 
 
 The grid object contains the results of the grid search: a list of model keys produced by the grid search. The grid object publishes a simple API to get the models. 
 
