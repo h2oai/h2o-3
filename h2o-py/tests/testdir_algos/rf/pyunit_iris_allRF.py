@@ -6,7 +6,7 @@ def iris_all(ip,port):
     
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris2.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris2.csv"))
 
     model = h2o.random_forest(y=iris[4], x=iris[0:4], ntrees=50, max_depth=100)
     model.show()

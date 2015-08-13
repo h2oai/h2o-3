@@ -6,7 +6,7 @@ def vec_show(ip,port):
     
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     print "iris:"
     iris.show()
 

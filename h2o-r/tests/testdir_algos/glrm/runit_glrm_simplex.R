@@ -23,7 +23,7 @@ test.glrm.simplex <- function(conn) {
     expect_false(all(fitX.mat >= 0) && all(apply(fitX.mat, 1, sum) == 1))
   } else {
     expect_true(all(fitX.mat >= 0))
-    expect_true(all(apply(fitX.mat, 1, sum) == 1))
+    apply(fitX.mat, 1, function(row) { expect_equal(sum(row), 1, .Machine$double.eps) })
     expect_equal(sum((train - fitX.mat %*% fitY)^2), fitH2O@model$objective)
   }
   testEnd()

@@ -351,7 +351,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
   data.frame_id <- if( missingData ) trainingFrame else data@frame_id
-  if( !missingData && data.frame_id == trainingFrame ) {
+  if( !is.null(trainingFrame) && !missingData && data.frame_id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
   }

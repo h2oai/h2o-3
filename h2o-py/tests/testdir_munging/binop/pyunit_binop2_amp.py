@@ -6,7 +6,7 @@ def binop_amp(ip,port):
     
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
     rows, cols = iris.dim()
 
     ###################################################################

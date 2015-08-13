@@ -6,7 +6,7 @@ def get_modelGBM(ip,port):
   
   
 
-  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   prostate.describe()
   prostate[1] = prostate[1].asfactor()
   prostate_gbm = h2o.gbm(y=prostate[1], x=prostate[2:9], distribution="bernoulli")

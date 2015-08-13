@@ -4,7 +4,7 @@ import h2o
 
 def pyunit_which(ip,port):
 
-    iris = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
     setosa = h2o.which(iris[4]=="Iris-setosa")
     versicolor = h2o.which(iris[4]=="Iris-versicolor")
     virginica = h2o.which(iris[4]=="Iris-virginica")

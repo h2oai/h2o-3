@@ -7,7 +7,7 @@ def user(ip, port):
     # Connect to a pre-existing cluster
     h2o.init(ip=ip, port=port)
 
-    a = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    a = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
     print a[0].names()  # Column header
@@ -38,7 +38,7 @@ def user(ip, port):
     try:                   print a["Sepal_len"]  # Error, mispelt column name
     except ValueError, ex: pass  # Expected error
 
-    b = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    b = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
     d = c + c + sum(a)
     e = c + a + 1

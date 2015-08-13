@@ -8,7 +8,7 @@ def covtype_get_model(ip,port):
     
 
     #Log.info("Importing covtype.20k.data...\n")
-    covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.import_file(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
 
     Y = 54
     X = range(0,20) + range(29,54)

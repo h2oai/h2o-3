@@ -7,7 +7,7 @@ def framesliceGBM(ip,port):
   
 
   #Log.info("Importing prostate data...\n")
-  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   prostate = prostate[1:9]
 
   #Log.info("Running GBM on a sliced data frame...\n")

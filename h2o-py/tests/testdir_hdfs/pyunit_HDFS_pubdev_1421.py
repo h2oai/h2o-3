@@ -14,7 +14,7 @@ def pubdev_1421(ip, port):
         hdfs_airlines_test_file  = "/datasets/airlines.test.csv"
 
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_airlines_test_file)
-        air_test = h2o.import_frame(url)
+        air_test = h2o.import_file(url)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, pubdev_1421)

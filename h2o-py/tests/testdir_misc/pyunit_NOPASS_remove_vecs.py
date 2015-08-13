@@ -5,7 +5,7 @@ import random
 
 def pyunit_remove_vecs(ip,port):
     # TODO PUBDEV-1789
-    pros = h2o.import_frame(h2o.locate("smalldata/prostate/prostate.csv"))
+    pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
     rows, cols = pros.dim()
 
     remove = random.randint(1,5)

@@ -6,7 +6,7 @@ def strsplit_check(ip,port):
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    frame = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # single column (frame)
     result = frame["C5"].strsplit("-")
