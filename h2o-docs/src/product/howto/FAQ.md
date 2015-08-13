@@ -153,10 +153,6 @@ H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net ar
 
 ---
 
-<!---
-
-#commenting out as still in dev but wanted to save for later
-
 **Are there any H2O examples using text for classification?**
 
 Currently, the following examples are available for Sparkling Water: 
@@ -167,7 +163,8 @@ https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/mlconf_201
 b) Use Word2Vec Skip-gram model + GBM for classifying job titles 
 https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.scala 
 
--->
+---
+
 
 ##Building H2O
 
@@ -491,10 +488,16 @@ This error message means that there is a space (or other unsupported character) 
 
 ---
 
+**Does H2O support GPUs?**
+
+Currently, we do not support this capability. If you are interested in contributing your efforts to support this feature to our open-source code database, please contact us at [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
+
+
+---
+
 ##Hadoop
 
-<!---
->commenting out as in progress per Michal
+
 **Why did I get an error in R when I tried to save my model to my home directory in Hadoop?**
 
 To save the model in HDFS, prepend the save directory with `hdfs://`:
@@ -511,7 +514,6 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 ```
 
 ---
--->
 
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
@@ -554,12 +556,6 @@ Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test
 When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
 
 ---
-
-
-
-
-
-
 
 ##Java
 
@@ -737,6 +733,14 @@ fr.describe()
 ---
 
 ##R
+
+**Which versions of R are compatible with H2O?**
+
+Currently, the only version of R that is known to not work well with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using this version, we recommend upgrading the R version before using H2O. 
+
+
+
+---
 
 **How can I install the H2O R package if I am having permissions problems?**
 

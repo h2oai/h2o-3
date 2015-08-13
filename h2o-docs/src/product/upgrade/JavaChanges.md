@@ -1,6 +1,7 @@
 #Java Changes
 
-This document describes the changes in the Java API from H2O Classic to H2O 3.0. 
+This document describes the changes in the Java API from early versions of H2O 3.0 and later to the current version. 
+
 
 ##Unify distribution parameter cross algorithms
 
