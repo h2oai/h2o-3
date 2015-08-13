@@ -50,7 +50,7 @@ public class DRFBasic extends TestNGUtil {
 
 		try {
 			// read data from file
-			// lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
+			lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
 		}
 		catch (Exception ignore) {
 			System.out.println("Cannot open file: " + testcaseFilePath);
