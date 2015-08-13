@@ -70,7 +70,6 @@ dl_iris_wheader-nonspd.flow
 dl_iris_wheader.flow
 dl_iris2.flow
 dl_iris22.flow
-gbm_iris_test_numeric_missing_extra.flow
 gbm_iris_test_train.flow
 gbm_iris.flow
 gbm_test_czechboard_300x300.flow
