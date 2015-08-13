@@ -226,7 +226,6 @@ gbm_junit_two_spiral.flow
 gbm_junit_ven-11.flow
 gbm_junit_weather.flow
 gbm_junit_weights_all_ones_twos.flow
-gbm_junit_weights_all_ones.flow
 gbm_junit_weights_all_tiny.flow
 gbm_junit_weights.flow
 glm_junit_arff_iris_spacesep.flow
