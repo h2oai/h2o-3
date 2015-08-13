@@ -30,7 +30,7 @@
   if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:eval, "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
-    L <- lapply(res$columns, function(c) c$data )
+    L <- lapply(res$columns, function(c) if( c$type=="string" ) c$string_data else c$data )
     maxlen <- max(sapply(L,length))
     pad.na <- function(x) { c(x,rep(NA,maxlen-length(x))) }
     data <- do.call(data.frame,lapply(L,pad.na))
@@ -40,8 +40,10 @@
     if( nrow(data) > 0 ) {
       for( i in 1:length(data) ) {  # Set factor levels
         dom <- res$columns[[i]]$domain
-        if( !is.null(dom) )
+        if( !is.null(dom) ) # H2O has a domain; force R to do so also
           data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
+        else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
+          data[,i] <- as.character(data[,i]) # Force to string type
       }
     }
     .set(x,"data",data)
@@ -91,7 +93,7 @@ h2o.rm <- function(ids,pattern="") {
     ids <- keys[grep(pattern, keys)]
   }
   if( is.Frame(ids) ) {
-    if( !is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
+    if( is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
     ids <- ids:id;
   }
   if(!is.character(ids)) stop("`ids` must be of class character")

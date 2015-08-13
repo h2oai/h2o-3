@@ -97,8 +97,8 @@ NULL
 #' @export
 Ops.Frame <- function(x,y) 
   .newExpr(.Generic,
-           if( is.character(x) ) paste0('"',x,'"') else x,
-           if( is.character(y) ) paste0('"',y,'"') else y)
+           if( is.character(x) ) .quote(x) else x,
+           if( is.character(y) ) .quote(y) else y)
 
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
@@ -301,12 +301,19 @@ str.Frame <- function(x, cols=FALSE, ...) {
   gc()
 }
 
+# Convert to Currents number-list syntax
+.num.list <- function(nl) paste0('[',paste0(nl,collapse=" "),']')
+
+# Convert to Currents string-list syntax
+.quote <- function(x) paste0('"',x,'"')
+.str.list <- function(sl) paste0('[',paste0('"',sl,'"',collapse=" "),']')
 
 # Convert a row or column selector to zero-based numbering and return a string
 .row.col.selector <- function( sel ) {
-  # number list for column selection; zero based
-  sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
-  ifelse( is.numeric(sel), paste0('[',paste0(sel2,collapse=" "),']'), as.character(sel) )
+  if( is.numeric(sel) ) { # number list for column selection; zero based
+    sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
+    .num.list(sel2) 
+  } else as.character(sel)
 }
 
 
@@ -411,10 +418,10 @@ NULL
   }
 
   if( !is.Frame(value) && is.na(value) ) value <- "%NA"
-  if( is.character(value) ) value <- paste0('"',value,'"')
+  if( is.character(value) ) value <- .quote(value)
   res <- .newExpr("=", data, value, cols, rows)
   # Set col name and return updated frame
-  if( !is.na(name) )  res <- .newExpr("colnames=", res, idx-1, paste0('"',name,'"'))
+  if( !is.na(name) )  res <- .newExpr("colnames=", res, idx-1, .quote(name))
   res
 }
 
@@ -432,7 +439,7 @@ NULL
 }
 
 `names<-.Frame` <- function(x, value) {
-  .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), paste0('[',paste0('"',value,'"',collapse=" "),']'))
+  .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), .str.list(value))
 }
 
 `colnames<-` <- function(x, value) {
@@ -485,7 +492,7 @@ h2o.quantile <- function(x,
 
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
-  res <- .newExpr("quantile", x, paste0("[",paste0(sapply(probs,as.character),collapse=" "),"]"), paste0('"',combine_method,'"'))
+  res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method))
   res <- as.matrix(res)
   col <- as.numeric(res[,-1])
   names(col) <- paste0(100*res[,1], "%")
@@ -717,7 +724,7 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   } else
     use <- "everything"
   # Eager, mostly to match prior semantics but no real reason it need to be
-  .fetch.data(.newExpr("var",x,y,paste0('"',use,'"')),ncol(x))
+  .fetch.data(.newExpr("var",x,y,.quote(use)),ncol(x))
 }
 
 #' @rdname h2o.var
@@ -770,7 +777,8 @@ as.h2o <- function(x, destination_frame= "") {
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(!is.data.frame(x))
-    x <- as.data.frame(x)
+    if( length(x)==1L ) x <- data.frame(C1=x)
+    else                x <- as.data.frame(x)
   types <- sapply(x, class)
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
@@ -906,6 +914,7 @@ as.character.Frame <- function(x) {
   if( !is.data.frame(data) ) return(as.character(data))
   nr <- nrow(x)
   nc <- ncol(x)
+  if( nr==1L && nc==1L ) return(as.character(data[1,1]))
   res <- paste0("Frame with ",
       nr, ifelse(nr == 1L, " row and ", " rows and "),
       nc, ifelse(nc == 1L, " column\n", " columns\n"), collapse="")
@@ -1023,6 +1032,32 @@ h2o.cbind <- function(...) {
   } else li <- list(...)
   lapply(li, function(l) if( !is.Frame(l) ) stop("`h2o.cbind` accepts only of Frame objects"))
   .newExprList("cbind",li)
+}
+
+#' Combine H2O Datasets by Rows
+#'
+#' Takes a sequence of H2O data sets and combines them by rows
+#'
+#' @name h2o.rbind
+#' @param \dots A sequence of \linkS4class{Frame} arguments. All datasets must exist on the same H2O instance
+#'        (IP and port) and contain the same number of rows.
+#' @return An \linkS4class{Frame} object containing the combined \dots arguments column-wise.
+#' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.cbind <- h2o.rbind(prostate.hex, prostate.hex)
+#' head(prostate.cbind)
+#' @export
+h2o.rbind <- function(...) {
+  ls <- list(...)
+  l <- unlist(ls)
+  if( !is.list(l) ) l <- ls
+  klazzez <- unlist(lapply(l, function(i) is.Frame(i)))
+  if (any(!klazzez)) stop("`h2o.rbind` accepts only Frame objects")
+  .newExprList("rbind", l)
 }
 
 #' Merge Two H2O Data Frames
@@ -1351,3 +1386,33 @@ h2o.tolower <- function(x) .newExpr("tolower", x)
 #' @export
 h2o.toupper <- function(x) .newExpr("toupper", x)
 
+#'
+#' String Substitute
+#'
+#' Mutates the input. Changes the first occurence of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("sub", .quote(pattern), .quote(replacement),x,ignore.case)
+
+#'
+#' String Global Substitute
+#'
+#' Mutates the input. Changes the all occurences of pattern with replacement.
+#'
+#' @param pattern The pattern to replace.
+#' @param replacement The replacement pattern.
+#' @param x The column on which to operate.
+#' @param ignore.case Case sensitive or not
+#' @export
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("gsub", .quote(pattern), .quote(replacement),x,ignore.case)
+
+#'
+#' Trim Space
+#'
+#' @param x The column whose strings should be trimmed.
+#' @export
+h2o.trim <- function(x) .newExpr("trim", x)
