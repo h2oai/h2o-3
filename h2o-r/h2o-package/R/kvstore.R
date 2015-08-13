@@ -37,7 +37,7 @@
     # Zero rows?  Then force a zero-length full width data.frame
     if( length(data)==0 ) data <- as.data.frame(matrix(NA,ncol=length(res$columns),nrow=0L))
     colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
-    if( length(data) > 0 ) {
+    if( nrow(data) > 0 ) {
       for( i in 1:length(data) ) {  # Set factor levels
         dom <- res$columns[[i]]$domain
         if( !is.null(dom) )

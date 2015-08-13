@@ -11,7 +11,6 @@ class ASTAssign extends ASTPrim {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
     ASTNumList cols = check(dst.numCols(), asts[3]);
-    Iced rows = (asts[4] instanceof ASTNumList) ? check( dst.numRows(), asts[4] ) : stk.track(asts[4].exec(env)).getFrame();
 
     // Check for append; add a col of NAs if appending
     if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
@@ -24,10 +23,22 @@ class ASTAssign extends ASTPrim {
     Frame slice = new ASTColSlice().apply(env,stk,new AST[]{null,new ASTFrame(dst),cols}).getFrame();
 
     // Assign over the column slice
-    switch( vsrc.type() ) {
-    case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
-    case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
-    default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+    if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
+      ASTNumList rows = check( dst.numRows(), asts[4] );
+      switch( vsrc.type() ) {
+      case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+      case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
+      case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
+      default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+      }
+    } else {                    // Boolean assignment selection?
+      Frame rows = stk.track(asts[4].exec(env)).getFrame();
+      switch( vsrc.type() ) {
+      case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+      case Val.STR:  throw H2O.unimpl();
+      case Val.FRM:  throw H2O.unimpl();
+      default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+      }
     }
     return new ValFrame(dst);
   }
@@ -45,11 +56,7 @@ class ASTAssign extends ASTPrim {
   }
 
   // Rectangular array copy from src into dst
-  private void assign_frame_frame(Frame dst, Iced rowz, Frame src) {
-    if( rowz instanceof Frame ) {
-      throw H2O.unimpl();
-    }
-    ASTNumList rows = (ASTNumList)rowz;
+  private void assign_frame_frame(Frame dst, ASTNumList rows, Frame src) {
     // Sanity check
     if( dst.numCols() != src.numCols() )
       throw new IllegalArgumentException("Source and destination frames must have the same count of columns");
@@ -98,23 +105,8 @@ class ASTAssign extends ASTPrim {
     throw H2O.unimpl();
   }
 
-  private void assign_frame_scalar(Frame dst, final Iced rowz, final double src) {
-    if( rowz instanceof Frame) {
-      new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          Chunk pc = cs[cs.length - 1];
-          for (int i = 0; i < pc._len; ++i) {
-            if (pc.at8(i) == 1)
-              for (int c = 0; c < cs.length - 1; ++c)
-                cs[c].set(i, src);
-          }
-        }
-      }.doAll(dst.add((Frame)rowz));
-      return;
-    }
-
-    final ASTNumList rows = (ASTNumList)rowz;
+  // Assign a scalar over some dst rows; optimize for all rows
+  private void assign_frame_scalar(Frame dst, final ASTNumList rows, final double src) {
     // Handle fast small case
     Vec[] dvecs = dst.vecs();
     long nrows = rows.cnt();
@@ -156,6 +148,65 @@ class ASTAssign extends ASTPrim {
         }
       }
     }.doAll(dst);
+  }
+
+  // Assign a scalar over some dst rows; optimize for all rows
+  private void assign_frame_scalar(Frame dst, final ASTNumList rows, final String src) {
+    // Handle fast small case
+    Vec[] dvecs = dst.vecs();
+    long nrows = rows.cnt();
+    if( nrows==1 ) {
+      long drow = (long)rows.expand()[0];
+      for( Vec vec : dvecs )
+        vec.set(drow, src);
+      return;
+    }
+
+    // Bulk assign constant (probably the empty string) over a frame
+    //if( dst.numRows() == nrows && rows.isDense() ) {
+    //  new MRTask(){
+    //    @Override public void map(Chunk[] cs) {
+    //      for( Chunk c : cs )  c.replaceAll(new C0StrChunk(src,c._len));
+    //    }
+    //  }.doAll(dst);
+    //  return;
+    //}
+
+    // Handle large case
+    new MRTask(){
+      @Override public void map(Chunk[] cs) {
+        long start = cs[0].start();
+        long end   = start + cs[0]._len;
+        double min = rows.min(), max = rows.max()-1; // exclusive max to inclusive max when stride == 1
+        //     [ start, ...,  end ]     the chunk
+        //1 []                          rows out left:  rows.max() < start
+        //2                         []  rows out rite:  rows.min() > end
+        //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
+        //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
+        //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
+        if( !(max<start || min>end) ) {   // not situation 1 or 2 above
+          int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
+          for(int i=startOffset;i<cs[0]._len;++i)
+            if( rows.has(start+i) )
+              for( Chunk chk : cs )
+                chk.set(i,src);
+        }
+      }
+    }.doAll(dst);
+  }
+
+  // Boolean assignment with a scalar
+  private void assign_frame_scalar(Frame dst, Frame rows, final double src) {
+    new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        Chunk pc = cs[cs.length - 1];
+        for (int i = 0; i < pc._len; ++i) {
+          if (pc.at8(i) == 1)
+            for (int c = 0; c < cs.length - 1; ++c)
+              cs[c].set(i, src);
+        }
+      }
+    }.doAll(dst.add(rows));
   }
 }
 

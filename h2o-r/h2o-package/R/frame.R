@@ -411,6 +411,7 @@ NULL
   }
 
   if( !is.Frame(value) && is.na(value) ) value <- "%NA"
+  if( is.character(value) ) value <- paste0('"',value,'"')
   res <- .newExpr("=", data, value, cols, rows)
   # Set col name and return updated frame
   if( !is.na(name) )  res <- .newExpr("colnames=", res, idx-1, paste0('"',name,'"'))
@@ -920,14 +921,31 @@ as.character.Frame <- function(x) {
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
-#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
-#' prostate.hex[,2] <- as.numeric(prostat.hex[,2])
+#' prostate.hex[,2] <- as.factor (prostate.hex[,2])
+#' prostate.hex[,2] <- as.numeric(prostate.hex[,2])
 #' @export
 as.numeric.Frame <- function(x) { .newExpr("as.numeric",x) }
 
 as.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("as.double")(x)
   else as.numeric.Frame(x)
+}
+
+#'
+#' Delete Columns from a Frame
+#'
+#' Delete the specified columns from the Frame.  Returns a Frame without the specified
+#' columns.
+#'
+#' @param data The Frame.
+#' @param cols The columns to remove.
+#' @export
+h2o.removeVecs <- function(data, cols) {
+  if( !is.Frame(data) ) stop("`data` must be an Frame.")
+  if( missing(cols) ) stop("`cols` must be specified")
+  del.cols <- cols
+  if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
+  .newExpr("cols",data,.row.col.selector(-del.cols))
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
