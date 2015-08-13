@@ -658,6 +658,26 @@ mean.Frame <- function(x, ...) {
   else base::mean(x,...)
 }
 
+#' H2O Median
+#'
+#' Compute the median of a \linkS4class{Frame}.
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @param na.rm a logical, indicating whether na's are omitted.
+#' @examples
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' @export
+h2o.median <- function(x, na.rm = TRUE) .eval.frame(.newExpr("median",x,na.rm)):data
+
+#' @rdname h2o.median
+#' @export
+median.Frame <- function(x, ...) {
+  if( is.Frame(x) ) h2o.median(x,...)
+  else base::median(x,...)
+}
+
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.

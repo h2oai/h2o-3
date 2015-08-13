@@ -98,25 +98,25 @@ abstract public class AST extends Iced<AST> {
     init(new ASTIfElse());
 
     // Reducers
+    init(new ASTAll());
     init(new ASTAny());
     init(new ASTAnyNA());
-    init(new ASTAll());
+    init(new ASTCumMax());
+    init(new ASTCumMin());
+    init(new ASTCumProd());
+    init(new ASTCumSum());
     init(new ASTMax());
     init(new ASTMaxNA());
     init(new ASTMean());
     init(new ASTMeanNA());
+    init(new ASTMedian());
     init(new ASTMin());
     init(new ASTMinNA());
+    init(new ASTProd());
+    init(new ASTProdNA());
     init(new ASTSdev());
     init(new ASTSum());
     init(new ASTSumNA());
-    init(new ASTMedian());
-    init(new ASTProd());
-    init(new ASTProdNA());
-    init(new ASTCumSum());
-    init(new ASTCumProd());
-    init(new ASTCumMax());
-    init(new ASTCumMin());
 
     // Time
     init(new ASTDay());

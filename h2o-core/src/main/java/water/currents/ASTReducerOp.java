@@ -95,21 +95,24 @@ class ASTSum  extends ASTRollupOp { String str() { return "sum" ; } double op( d
 class ASTMin  extends ASTRollupOp { String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
 class ASTMax  extends ASTRollupOp { String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
-class ASTMedian extends ASTRollupOp {
+class ASTMedian extends ASTPrim {
   @Override String str() { return "median"; }
-  @Override double op(double d0, double d1) { throw H2O.unimpl("median only applies to a single numeric H2OFrame column."); }
-  @Override double rup(Vec vec) {
-    Key tk;
-    Frame fr;
-    DKV.put(tk=Key.make(), fr=new Frame(tk,null,new Vec[]{vec}));   // must wrap the vec in a frame for quantile to work
-    double median = median(fr, QuantileModel.CombineMethod.INTERPOLATE); // does linear interpolation for even sample sizes by default
-    DKV.remove(tk);
-    return median;
+  @Override int nargs() { return 1+2; }
+  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    boolean narm = asts[2].exec(env).getNum()==1;
+    if( !narm && (fr.anyVec().length()==0 || fr.anyVec().naCnt() > 0) ) return new ValNum(Double.NaN);
+    // does linear interpolation for even sample sizes by default
+    return new ValNum(median(fr,QuantileModel.CombineMethod.INTERPOLATE));
   }
 
   static double median(Frame fr, QuantileModel.CombineMethod combine_method) {
-    if (fr.numCols() != 1) throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
-    if (!fr.anyVec().isNumeric()) throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+    if( fr.numCols() !=1 || !fr.anyVec().isNumeric() )
+      throw new IllegalArgumentException("median only works on a single numeric column");
+    // Frame needs a Key for Quantile, might not have one from currents
+    Key tk=null;
+    if( fr._key == null ) { DKV.put(tk=Key.make(), fr=new Frame(tk, fr.names(),fr.vecs())); }
+    // Quantiles to get the median
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._probs = new double[]{0.5};
     parms._train = fr._key;
@@ -117,17 +120,14 @@ class ASTMedian extends ASTRollupOp {
     QuantileModel q = new Quantile(parms).trainModel().get();
     double median = q._output._quantiles[0][0];
     q.delete();
+    if( tk!=null ) { DKV.remove(tk); }
     return median;
   }
+
   static double median(Vec v, QuantileModel.CombineMethod combine_method) {
-    Frame f = new Frame(Key.make(), null, new Vec[]{v});
-    DKV.put(f);
-    double res=median(f,combine_method);
-    DKV.remove(f._key);
-    return res;
+    return median(new Frame(v),combine_method);
   }
 }
-
 
 class ASTMad extends ASTPrim {
   @Override int nargs() { return 1+3; } //(mad fr combine_method const)
@@ -317,7 +317,7 @@ class ASTProd extends ASTPrim {
         if( Double.isNaN(prod) ) break;
       }
     }
-    @Override public void reduce( RedProd s ) { _d += s._d; }
+    @Override public void reduce( RedProd s ) { _d *= s._d; }
   }
 }
 
