@@ -804,14 +804,13 @@ public class DeepLearningParameters extends Model.Parameters {
       }
       if (fromParms._adaptive_rate) {
         Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
         toParms._rate = 0;
         toParms._rate_decay = 0;
         toParms._rate_annealing = 0;
         toParms._momentum_start = 0;
         toParms._momentum_ramp = 0;
         toParms._momentum_stable = 0;
-        toParms._nesterov_accelerated_gradient = false;
       } else {
         Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
                 + "rho, epsilon.");

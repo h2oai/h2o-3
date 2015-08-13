@@ -69,6 +69,7 @@ public abstract class Neurons {
   /**
    * Layer state (one per neuron): activity, error
    */
+  public transient Storage.Vector _origa;
   public transient Storage.Vector _a; //can be sparse for input layer
   public transient Storage.DenseVector _e;
 
@@ -155,6 +156,8 @@ public abstract class Neurons {
     _a = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {
       _e = new Storage.DenseVector(units);
+    } else {
+      _origa = new Storage.DenseVector(units);
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
             || this instanceof RectifierDropout || this instanceof Input) ) {
@@ -537,7 +540,7 @@ public abstract class Neurons {
    */
   protected float autoEncoderGradient(Distribution dist, int row) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    final float t = _input._a.get(row);
+    final float t = _input._origa != null ? _input._origa.get(row) : _input._a.get(row);
     final float y = _a.get(row);
     return (float)dist.gradient(t, y);
   }
@@ -819,6 +822,10 @@ public abstract class Neurons {
 
       // Input Dropout
       if (_dropout == null) return;
+      if (params._autoencoder) {
+        // copy input into _origa -- needed for reconstruction error
+        System.arraycopy(_a.raw(), 0, _origa.raw(), 0, _a.raw().length);
+      }
       seed += params._seed + 0x1337B4BE;
       _dropout.randomlySparsifyActivation(_a, seed);
 
