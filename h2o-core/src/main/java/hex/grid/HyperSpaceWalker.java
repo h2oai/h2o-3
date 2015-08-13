@@ -51,7 +51,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    * where the String is a valid field name in the corresponding Model.Parameter, and the Object is
    * the field value (boxed as needed).
    */
-  public static class CartezianWalker<MP extends Model.Parameters> implements HyperSpaceWalker<MP> {
+  public static class CartesianWalker<MP extends Model.Parameters> implements HyperSpaceWalker<MP> {
 
     /**
      * Parameters builder factory to create new instance of parameters.
@@ -89,9 +89,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
      * @param paramsBuilderFactory
      * @param hyperParams
      */
-    public CartezianWalker(MP params,
-                         Map<String, Object[]> hyperParams,
-                         ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
+    public CartesianWalker(MP params,
+                           Map<String, Object[]> hyperParams,
+                           ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
       _params = params;
       _hyperParams = hyperParams;
       _paramsBuilderFactory = paramsBuilderFactory;

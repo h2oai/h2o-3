@@ -4,7 +4,7 @@ import hex.api.DeepLearningGridSearchHandler;
 import hex.deeplearning.DeepLearningParameters;
 
 /**
- * End-point for GBM grid search.
+ * End-point for DeepLearning grid search.
  *
  * @see GridSearchSchema
  */
