@@ -19,7 +19,7 @@ def system_file(name):
             break
 
     if h2o_data_path is None:
-        if name is "prostate.csv":
+        if name == "prostate.csv":
             h2o_data_path = h2o.locate(os.path.join("smalldata", "prostate", name))
 
     if h2o_data_path is None or not os.path.exists(h2o_data_path):
