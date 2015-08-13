@@ -401,8 +401,9 @@ from model import *
 from demo import *
 from logging import *
 from frame import H2OFrame
+from group_by import GroupBy
 from expr import ExprNode
 from two_dim_table import H2OTwoDimTable
 from h2o import __PROGRESS_BAR__
 
-__all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable"]
+__all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable", "GroupBy"]
