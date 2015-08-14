@@ -510,7 +510,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         }
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
-        if (get_params()._diagnostics) model_info().computeStats();
+        model_info().computeStats();
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -738,10 +738,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   public double loss(DataInfo.Row myRow) {
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
-    long seed = 0; //ignored
+    long seed = -1; //ignored
     ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
-    DeepLearningTask.step(seed, neurons, model_info(), null,
-            false /*not training - no need to compute and store gradients*/, new double[]{myRow.response[0]}, 0);
+    DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
 
     //Now compute the loss
     double loss;
@@ -757,16 +756,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       double pred = neurons[neurons.length - 1]._a.raw()[0];
       double actual = myRow.response[0];
 
+      // FIXME: re-enable this such that the loss is computed from the de-standardized prediction/response
       //bring standardized prediction and actual response to real space
-      DataInfo di = model_info().data_info();
-      if (di._normRespMul != null) { //either both are null or none
-        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
-        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
-      }
+//      DataInfo di = model_info().data_info();
+//      if (di._normRespMul != null) { //either both are null or none
+//        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
+//        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
+//      }
       Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
-
-      // compute final deviance
-      loss = dist.deviance(1 /*weight*/, actual, dist.linkInv(pred));
+      pred = dist.linkInv(pred);
+      loss = dist.deviance(1 /*weight*/, actual, pred);
     }
 
     // add L1/L2 penalty of model coefficients (weights & biases)

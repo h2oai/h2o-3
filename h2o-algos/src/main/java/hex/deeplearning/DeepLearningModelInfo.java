@@ -306,11 +306,11 @@ public class DeepLearningModelInfo extends Iced {
    * @return
    */
   TwoDimTable createSummaryTable() {
+    computeStats();
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",
-            (get_params()._diagnostics ? "" : "diagnostics disabled, ") +
             (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
                     (get_params()._autoencoder ? "auto-encoder" :
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
@@ -367,7 +367,7 @@ public class DeepLearningModelInfo extends Iced {
    */
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    if (get_params()._diagnostics && !get_params()._quiet_mode) {
+    if (!get_params()._quiet_mode) {
       if (get_params()._sparsity_beta > 0) {
         for (int k = 0; k < get_params()._hidden.length; k++) {
           sb.append("Average activation in hidden layer ").append(k).append(" is  ").append(mean_a[k]).append(" \n");
@@ -600,7 +600,6 @@ public class DeepLearningModelInfo extends Iced {
    * Compute statistics about this model on all nodes
    */
   public void computeStats() {
-    if (!get_params()._diagnostics) return;
     float[][] rate = get_params()._adaptive_rate ? new float[units.length - 1][] : null;
 
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
@@ -671,14 +670,15 @@ public class DeepLearningModelInfo extends Iced {
    * Unique identifier for this model's state, based on raw numbers
    */
   protected long checksum_impl() {
+    computeStats();
     long cs = parameters._seed;
-    cs ^= size() * get_processed_total();
-    cs ^= (long) (2234.3424 * ArrayUtils.sum(mean_bias));
-    cs *= (long) (9234.1343 * ArrayUtils.sum(rms_bias));
-    cs ^= (long) (9723.9734 * ArrayUtils.sum(mean_weight));
-    cs *= (long) (9234.1783 * ArrayUtils.sum(rms_weight));
-    cs ^= (long) (4273.2344 * (Math.E + ArrayUtils.sum(mean_rate)));
-    cs *= (long) (3378.1999 * (Math.PI + ArrayUtils.sum(rms_rate)));
+    cs += size() * get_processed_total();
+    cs *= (long) (2234.3424e10 * (ArrayUtils.sum(mean_bias)) + mean_bias[0]);
+    cs ^= (long) (9234.1343e10 * (ArrayUtils.sum(rms_bias)) * rms_bias[rms_bias.length-1]);
+    cs *= (long) (9723.9734e10 * (ArrayUtils.sum(mean_weight)) + mean_weight[0]);
+    cs += (long) (9234.1783e10 * (ArrayUtils.sum(rms_weight)) * rms_weight[rms_weight.length-1]);
+    cs *= (long) (4273.2344e10 * (float)(Math.E + ArrayUtils.sum(mean_rate) + mean_rate[0]));
+    cs ^= (long) (3378.1999e10 * (float)(Math.PI + ArrayUtils.sum(rms_rate)) - rms_rate[rms_rate.length-1]);
     return cs;
   }
 

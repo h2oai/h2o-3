@@ -430,6 +430,8 @@ public class DeepLearningParameters extends Model.Parameters {
     for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
     if (_mini_batch_size < 1)
       dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
+    if (!_diagnostics)
+      dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
 
     if (!_autoencoder) {
       if (_valid == null)

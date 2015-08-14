@@ -826,7 +826,7 @@ public abstract class Neurons {
 
       // Input Dropout
       if (_dropout == null) return;
-      if (params._autoencoder) {
+      if (params._autoencoder && params._input_dropout_ratio > 0) {
         // copy input into _origa -- needed for reconstruction error
         System.arraycopy(_a.raw(), 0, _origa.raw(), 0, _a.raw().length);
       }
