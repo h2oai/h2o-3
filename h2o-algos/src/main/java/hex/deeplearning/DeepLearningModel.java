@@ -753,18 +753,23 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     } else {
       if (_parms._autoencoder) throw H2O.unimpl();
 
-      double pred = neurons[neurons.length - 1]._a.raw()[0]; //prediction in standardized response space
+      //prediction and actual response in standardized response space
+      double pred = neurons[neurons.length - 1]._a.raw()[0];
+      double actual = myRow.response[0];
 
-//      //bring standardized prediction to real space
-//      if (model_info().data_info()._normRespMul != null) { //either both are null or none
-//        pred = (pred / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
-//        response = (response / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
-//      }
-//      pred = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(pred);
+      //bring standardized prediction and actual response to real space
+      DataInfo di = model_info().data_info();
+      if (di._normRespMul != null) { //either both are null or none
+        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
+        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
+      }
+      pred = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(pred);
 
-      loss = 0.5 * deviance(1 /*weight*/, myRow.response[0], pred);
+      // compute final deviance
+      loss = deviance(1 /*weight*/, actual, pred);
     }
 
+    // add L1/L2 penalty of model coefficients (weights & biases)
     for (int i = 0; i < _parms._hidden.length + 1; ++i) {
       if (neurons[i]._w == null) continue;
       for (int row = 0; row < neurons[i]._w.rows(); ++row) {
