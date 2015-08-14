@@ -102,13 +102,12 @@ Objects In This Module
 ----------------------
 
 The objects that are of primary concern to the python user are (in order of importance)
-- Keys
+- IDs/Keys
 - Frames
-- Vecs
 - Models
 - ModelMetrics
 - Jobs (to a lesser extent)
-Each of these objects are described in greater detail in this documentation, 
+Each of these objects are described in greater detail in this documentation,
 but a few brief notes are provided here.
 
 
@@ -118,10 +117,10 @@ H2OFrame
 An H2OFrame is a 2D array of uniformly-typed columns. Data in H2O is compressed (often
 achieving 2-4x better compression than gzip on disk) and is held in the JVM heap (i.e.
 data is "in memory"), and *not* in the python process local memory. The H2OFrame is an
-iterable (supporting list comprehensions) wrapper around a list of H2OVec objects. All an
-H2OFrame object is, therefore, is a wrapper on a list that supports various types of operations
-that may or may not be lazy. Here's an example showing how a list comprehension is combined
-with lazy expressions to compute the column means for all columns in the H2OFrame::
+iterable (supporting list comprehensions). All an H2OFrame object is, therefore, is a
+wrapper on a list that supports various types of operations that may or may not be lazy.
+Here's an example showing how a list comprehension is combined with lazy expressions to
+compute the column means for all columns in the H2OFrame::
 
   >>> df = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
@@ -155,17 +154,10 @@ snippet::
 
 After this operation, `vol` has been permanently mutated in place (it is not a copy!).
 
-H2OVec
-++++++
-An H2OVec is a single column of data that is uniformly typed and possibly lazily computed.
-As with H2OFrame, an H2OVec is a pointer to a distributed Java object residing in the H2O
-cloud. In reality, an H2OFrame is simply a collection of H2OVec pointers along with
-some metadata and various member methods.
-
-Expr
-++++
+ExprNode
+++++++++
 In the guts of this module is the Expr class, which defines objects holding
-the cumulative, unevaluated expressions that may become H2OFrame/H2OVec objects.
+the cumulative, unevaluated expressions that may become H2OFrame objects.
 For example:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
@@ -227,7 +219,7 @@ To better demonstrate this concept, refer to the following example:
 As you can see in the example, the result of the GLM call is a binomial model. This example also showcases
 an important feature-munging step needed for GLM to perform a classification task rather than a 
 regression task. Namely, the second column is initially read as a numeric column,
-but it must be changed to a factor by way of the H2OVec operation `asfactor`. Let's take a look
+but it must be changed to a factor by way of the operation `asfactor`. Let's take a look
 at this more deeply:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
@@ -409,8 +401,9 @@ from model import *
 from demo import *
 from logging import *
 from frame import H2OFrame
+from group_by import GroupBy
 from expr import ExprNode
 from two_dim_table import H2OTwoDimTable
 from h2o import __PROGRESS_BAR__
 
-__all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable"]
+__all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable", "GroupBy"]

@@ -44,7 +44,7 @@ grid_models <- lapply(grid@model_ids, function(mid) {
 
 ##Grid Search Java API
 
-There are two core entities: `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](ref???).  The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyper parameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced. 
+There are two core entities: `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](https://en.wikipedia.org/wiki/Hyperparameter_optimization).  The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyper parameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced. 
 
 Currently, the implementation supports a simple cartesian grid search, but additional space traversal strategies are currently in development. This triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, it is ignored; however, it can still be tracked in the job list. Model builder jobs are run serially in sequential order. More advanced job scheduling schemes are under development.
 
@@ -79,83 +79,91 @@ Grid grid = (Grid) gs.get();
 
 ### Exposing grid search end-point for new algorithm
 
-Situation: we implemented PCA algorithm and we would like to expose the algorithm via REST API. We expect that there are: 
-  - PCA model builder called `PCA`
-  - PCA parameters defined as class called `PCAParameters`
-  - PCA parameters schema called `PCAParametersV3`
+In the following example, the PCA algorithm has been implemented and we would like to expose the algorithm via REST API. The following aspects are assumed: 
 
-Adding support for PCA grid search is series of steps:
-  1. adding PCA model build factory into `hex.grid.ModelFactories` class:
-  ```java
-  class ModelFactories {
-    /* ... */
-    public static ModelFactory<PCAModel.PCAParameters>
-      PCA_MODEL_FACTORY =
-      new ModelFactory<PCAModel.PCAParameters>() {
-        @Override
-        public String getModelName() {
-          return "PCA";
-        }
+  - The PCA model builder is called `PCA`
+  - The PCA parameters are defined in a class called `PCAParameters`
+  - The PCA parameters schema is called `PCAParametersV3`
 
-        @Override
-        public ModelBuilder buildModel(PCAModel.PCAParameters params) {
-          return new PCA(params);
-        }
-      };
-  }
-  ```
+To add support for PCA grid search:
 
-  2. adding PCA REST end-point schema:
-  ```java
-  public class PCAGridSearchV99 extends GridSearchSchema<PCAGridSearchHandler.PCAGrid,
-    PCAGridSearchV99,
-    PCAModel.PCAParameters,
-    PCAV3.PCAParametersV3> {
+0. Add the PCA model build factory into the `hex.grid.ModelFactories` class:
 
-  }
-  ```
+	  ```java
+	  class ModelFactories {
+	    /* ... */
+	    public static ModelFactory<PCAModel.PCAParameters>
+	      PCA_MODEL_FACTORY =
+	      new ModelFactory<PCAModel.PCAParameters>() {
+	        @Override
+	        public String getModelName() {
+	          return "PCA";
+	        }
 
-  3. adding PCA REST end-point handler
-  ```java
-  public class PCAGridSearchHandler
-    extends GridSearchHandler<PCAGridSearchHandler.PCAGrid,
-    PCAGridSearchV99,
-    PCAModel.PCAParameters,
-    PCAV3.PCAParametersV3> {
+	        @Override
+	        public ModelBuilder buildModel(PCAModel.PCAParameters params) {
+	          return new PCA(params);
+	        }
+	      };
+	  }
+	  ```
 
-    public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
-      return super.do_train(version, gridSearchSchema);
-    }
+0. Add the PCA REST end-point schema:
 
-    @Override
-    protected ModelFactory<PCAModel.PCAParameters> getModelFactory() {
-      return ModelFactories.PCA_MODEL_FACTORY;
-    }
+	  ```java
+	  public class PCAGridSearchV99 extends GridSearchSchema<PCAGridSearchHandler.PCAGrid,
+	    PCAGridSearchV99,
+	    PCAModel.PCAParameters,
+	    PCAV3.PCAParametersV3> {
 
-    @Deprecated
-    public static class PCAGrid extends Grid<PCAModel.PCAParameters> {
+	  }
+	  ```
 
-      public PCAGrid() {
-        super(null, null, null, null);
-      }
-    }
-  }
-  ```
+0. Add the PCA REST end-point handler:
 
-  4. Registering REST end-point in register factory `hex.api.Register`:
-  ```java
-  public class Register extends AbstractRegister {
-      @Override
-      public void register() {
-          // ...
-          H2O.registerPOST("/99/Grid/pca", PCAGridSearchHandler.class, "train", "Run grid search for PCA model.");
-          // ...
-       }
-  }
-  ```
+	  ```java
+	  public class PCAGridSearchHandler
+	    extends GridSearchHandler<PCAGridSearchHandler.PCAGrid,
+	    PCAGridSearchV99,
+	    PCAModel.PCAParameters,
+	    PCAV3.PCAParametersV3> {
 
-### Implementing new grid search walk strategy
+	    public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
+	      return super.do_train(version, gridSearchSchema);
+	    }
 
+	    @Override
+	    protected ModelFactory<PCAModel.PCAParameters> getModelFactory() {
+	      return ModelFactories.PCA_MODEL_FACTORY;
+	    }
+
+	    @Deprecated
+	    public static class PCAGrid extends Grid<PCAModel.PCAParameters> {
+
+	      public PCAGrid() {
+	        super(null, null, null, null);
+	      }
+	    }
+	  }
+	  ```
+
+0. Register the REST end-point in the register factory `hex.api.Register`:
+
+	  ```java
+	  public class Register extends AbstractRegister {
+	      @Override
+	      public void register() {
+	          // ...
+	          H2O.registerPOST("/99/Grid/pca", PCAGridSearchHandler.class, "train", "Run grid search for PCA model.");
+	          // ...
+	       }
+	  }
+	  ```
+
+
+### Implementing a new grid search walk strategy
+
+	>In progress...
 
 ##Grid Testing
 

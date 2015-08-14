@@ -24,6 +24,8 @@
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
+{\url{http://h2o.gitbooks.io/glm-with-h2o/}}
+
 \bigskip
 August 2015: Third Edition 
 \\%add front page image here? (wavy lines)
@@ -78,7 +80,8 @@ interpret model output, how to make predictions, and various implementation deta
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-\newpage
+
+\newpage
 
 %\subsubsection{Summary of features} 
 %In summary, H2O's GLM functionalities include:
@@ -858,12 +861,88 @@ TODO
 
 \section{Making Predictions}
 
-\subsection{Batch In-H2O predictions}
+Once you have built a model, you can use it to make predictions using two different approaches:  the in-H2O batch
+scoring approach and the real-time NanoFast POJO approach.
+
+\subsection{Batch in-H2O predictions}
+
+Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  In addition to predictions, you
+can also get metrics like AUC if you include the response column in the new data.  Here is an example for logistic
+regression (i.e. binomial classification):
+
+\begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+rand_vec <- h2o.runif(h2o_df, seed = 1234)
+train <- h2o_df[rand_vec <= 0.8,]
+valid <- h2o_df[(rand_vec > 0.8) & (rand_vec <= 0.9),]
+test <- h2o_df[rand_vec > 0.9,]
+binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = train, validation_frame = valid, family = "binomial")
+
+# Make and export predictions.
+pred = h2o.predict(binomial.fit, test)
+h2o.exportFile(pred, "/tmp/pred.csv", force = TRUE)
+# Or you can export the predictions to hdfs:  h2o.exportFile(pred, "hdfs://namenode/path/to/file.csv")
+
+# Calculate metrics.
+perf = h2o.performance(binomial.fit, test)
+print(perf)
+\end{lstlisting}
+
+Here is an example of just making predictions on new data:
+
+\begin{lstlisting}[style=R]
+# Remove the response column to simulate new data points arriving without the answer being known.
+newdata = test
+newdata$CAPSULE <- NULL
+newpred = h2o.predict(binomial.fit, newdata)
+head(newpred)
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+  predict        p0        p1
+1       1 0.1676892 0.8323108
+2       0 0.4824181 0.5175819
+3       1 0.2000061 0.7999939
+4       0 0.9242169 0.0757831
+5       0 0.5044669 0.4955331
+6       0 0.7272743 0.2727257
+\end{lstlisting}
+
+The three columns in the prediction file are the predicted class, the probability that the prediction is class 0
+and the probability that the prediction is class 1.
+
+The predicted class is chosen based on the maximum-F1 threshold.
+
+You can change the threshold manually, for example to 0.3, and recalculate the predict column like this:
+
+\begin{lstlisting}[style=R]
+newpred$predict = newpred$p1 > 0.3
+head(newpred)
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+  predict        p0        p1
+1       1 0.1676892 0.8323108
+2       1 0.4824181 0.5175819
+3       1 0.2000061 0.7999939
+4       0 0.9242169 0.0757831
+5       1 0.5044669 0.4955331
+6       0 0.7272743 0.2727257
+\end{lstlisting}
 
 \subsection{Real-time low-latency predictions with the NanoFast scoring engine}
 
-For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  Using the POJO is
-beyond the scope of this document, but here is an example of how to get one and view it.
+For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  These are very
+low latency, and can easily be embedded in any Java environment (a customer-facing web application, a Storm bolt,
+or a Spark Streaming pipeline, for example).
+
+The POJO does nothing but pure math, and has no dependencies on any other software packages (not even H2O itself),
+so it is easy to work with.
+
+Directions for using the POJO in detail are beyond the scope of this document, but here is an example of how to get
+one and view it.  You can also access the POJO from the Flow Web UI.
 
 \begin{lstlisting}[style=R]
 library(h2o)
