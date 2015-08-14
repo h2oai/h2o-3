@@ -400,7 +400,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("\n")
 
   # VI could be real, true variable importances or GLM coefficients
-  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficients_magnitude)
+  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficient_magnitudes)
   if( haz_varimp ) {
     cat("Variable Importances: (Extract with `h2o.varimp`) \n")
     cat("=================================================\n\n")
