@@ -539,15 +539,15 @@ setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.om
 #' @param destination_frame A frame ID for the result
 #' @param dimensions An array containing the 3 integer values for length, width, depth of each sample.
 #'        The product of LxWxD must total up to less than the number of columns. For 1D FFT, use c(L,1,1).
-#' @param inverse Whether to perform
+#' @param inverse Whether to perform the inverse Fourier transform
 #' @examples
 #' \donttest{
 #'   library(h2o)
 #'   localH2O = h2o.init()
 #'   df <- h2o.createFrame(localH2O, rows = 10000, cols = 1024,
 #'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
-#'   df_fft   <- h2o.fft(data=df,     dimensions=c(1024,1,1), destination_frame="fft",    inverse=F)
-#'   df_recon <- h2o.fft(data=df_fft, dimensions=c(1024,1,1), destination_frame="recond", inverse=T)
+#'   df_fft   <- h2o.fft(data=df,     dimensions=c(1024,1,1), destination_frame="fft",    inverse=FALSE)
+#'   df_recon <- h2o.fft(data=df_fft, dimensions=c(1024,1,1), destination_frame="recond", inverse=TRUE)
 #'   max(abs(df-df_recon))
 #' }
 #' @export
