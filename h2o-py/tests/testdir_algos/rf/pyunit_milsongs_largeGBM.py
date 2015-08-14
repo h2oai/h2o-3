@@ -19,9 +19,9 @@ def milsong_checkpoint(ip,port):
                                validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
 
     # save the model, then load the model
-    model_path = h2o.save_model(model1, name="delete_model", force=True)
+    model_path = h2o.save_model(model1,force=True)
     restored_model = h2o.load_model(model_path)
-    shutil.rmtree("delete_model")
+    shutil.rmtree(model_path)
 
     # continue building the model
     ntrees2 = ntrees1 + 50
