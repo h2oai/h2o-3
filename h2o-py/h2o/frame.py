@@ -75,12 +75,6 @@ class H2OFrame:
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
 
-  def _import_file_or_dir(self,path):
-    if os.path.isdir(path):
-      paths = os.path.listdir
-    paths = [path] if isinstance(path,str) else path
-    return [ _import1(fname) for fname in paths ]
-
   def _upload_python_object(self, python_obj):
     """
     Properly handle native python data types. For a discussion of the rules and
@@ -302,48 +296,59 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("unique", self))._frame()
 
-  def show(self): self.head(rows=10,cols=sys.maxint,show=True)  # all columns
+  def show(self,as_pandas=True):
+    """
+    Used by the H2OFrame.__repr__ method to display a snippet of the data frame.
 
-  def head(self, rows=10, cols=200, show=False, **kwargs):
+    :param as_pandas: Display a pandas style data frame (better for pretty printing wide datasets)
+    :return: None
+    """
+    self.head(rows=10,cols=sys.maxint,show=True,as_pandas=as_pandas)  # all columns
+
+  def head(self, rows=10, cols=200, show=False, as_pandas=False):
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
     :param show: Display the output.
-    :param kwargs: Extra arguments passed from other methods.
+    :param as_pandas: Display with pandas frame.
     :return: None
     """
     self._eager()
-    nrows = min(self.nrow(), rows)
+    nrows = min(self.nrow(),rows)
     ncols = min(self.ncol(), cols)
-    colnames = self.names()[0:ncols]
-    head = self[0:10,0:ncols]
-    res = head.as_data_frame(False)[1:]
-    if show:
-      print "First {} rows and first {} columns: ".format(nrows, ncols)
-      h2o.H2ODisplay(res,colnames)
-    return head
+    colnames = self.names()[:ncols]
+    head = self[0:nrows,0:ncols]
+    res = head.as_data_frame(as_pandas)[1:]
+    if show: self._do_show(as_pandas,res,colnames)
+    return res if as_pandas else head
 
-  def tail(self, rows=10, cols=200, show=False, **kwargs):
+  def _do_show(self,as_pandas,fr,names):
+    print "H2OFrame with {} rows and {} columns: ".format(self.nrow(), self.ncol())
+    if as_pandas:
+      import pandas
+      pandas.options.display.max_rows=20
+      print fr
+    else:
+      h2o.H2ODisplay(fr,names)
+
+  def tail(self, rows=10, cols=200, show=False, as_pandas=False):
     """
     Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
-    :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
     self._eager()
     nrows = min(self.nrow(), rows)
     ncols = min(self.ncol(), cols)
     start_idx = max(self.nrow()-nrows,0)
-    tail = self[start_idx:(start_idx+nrows),:]
+    tail = self[start_idx:(start_idx+nrows),:ncols]
     res = tail.as_data_frame(False)
     colnames = res.pop(0)
-    if show:
-      print "Last {} rows and first {} columns: ".format(nrows,ncols)
-      h2o.H2ODisplay(res,colnames)
+    if show: self._do_show(as_pandas,res,colnames)
     return tail
 
   def levels(self, col=None):
