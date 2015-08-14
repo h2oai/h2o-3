@@ -695,6 +695,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.3189442010379401, mse, 1e-8);
 
+      Assert.assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -733,6 +734,8 @@ public class DeepLearningTest extends TestUtil {
 
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.31868918279790326, mse, 1e-8); //Note: better results than non-shuffled
+
+//      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5)); //PUBDEV-1900
       job.remove();
       dl.delete();
     } finally {
@@ -770,6 +773,8 @@ public class DeepLearningTest extends TestUtil {
 
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.3720304832926737, mse, 1e-8);
+
+      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -808,6 +813,8 @@ public class DeepLearningTest extends TestUtil {
 
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.26629256850235067, mse, 1e-8);
+
+//      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5)); //PUBDEV-1900
       job.remove();
       dl.delete();
     } finally {
@@ -902,6 +909,8 @@ public class DeepLearningTest extends TestUtil {
         else
           Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
 
+        Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+
         job.remove();
       } finally {
         if (tfr != null) tfr.remove();
@@ -953,6 +962,8 @@ public class DeepLearningTest extends TestUtil {
         else
           Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
 
+        Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+
         job.remove();
       } finally {
         if (tfr != null) tfr.remove();
@@ -994,6 +1005,8 @@ public class DeepLearningTest extends TestUtil {
 
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
       Assert.assertEquals(0.07215951137362803, mm._MSE, 1e-8);
+
+      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
 
       job.remove();
     } finally {
