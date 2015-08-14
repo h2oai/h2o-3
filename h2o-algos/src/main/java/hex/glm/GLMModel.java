@@ -55,7 +55,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double [] beta() { return _output._global_beta;}
   public String [] names(){ return _output._names;}
 
-
+  @Override
+  public double deviance(double w, double y, double f) {
+    if (w == 0) {
+      return 0;
+    } else if (w == 1) {
+      return _parms.deviance(y, f);
+    } else {
+      return Double.NaN; //TODO: add deviance(w, y, f)
+    }
+  }
 
   public static class GLMParameters extends Model.Parameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
