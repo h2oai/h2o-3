@@ -91,6 +91,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         , null,"Split a H2O Frame.");
     register("/3/Interaction","POST",InteractionHandler.class,"run"        , null,"Create interactions between categorical columns.");
     register("/3/MissingInserter" ,"POST",MissingInserterHandler.class,"run", null,"Insert missing values.");
+    register("/99/FFTTransformer" ,"POST",FFTTransformerHandler.class,"run" , null,"Create FFT transformation.");
     register("/3/ImportFiles","GET",ImportFilesHandler.class,"importFiles" , null,"Import raw data files into a single-column H2O Frame.");
     register("/3/ImportFiles","POST",ImportFilesHandler.class,"importFiles" , null,"Import raw data files into a single-column H2O Frame.");
     register("/3/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  , null,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");

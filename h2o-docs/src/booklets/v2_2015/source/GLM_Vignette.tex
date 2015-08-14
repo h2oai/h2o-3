@@ -80,7 +80,8 @@ interpret model output, how to make predictions, and various implementation deta
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-\newpage
+
+\newpage
 
 %\subsubsection{Summary of features} 
 %In summary, H2O's GLM functionalities include:
@@ -654,8 +655,10 @@ to obtain a unified solution over separate H2O clouds, or in Bayesian regression
 
 \section{GLM Model Output}
 
-The following sections explain the output produced by the following logistic regression (i.e. binomial
-classification) example:
+The following sections explain the output produced by logistic regression (i.e. binomial classification).
+
+\bigskip
+\waterExampleInR
 
 \begin{lstlisting}[style=R]
 library(h2o)
@@ -747,7 +750,8 @@ Maximum Metrics:
 
 \subsection{Coefficients and Normalized coefficients}
 
-Raw coefficients should be used to make predictions for new data points:
+Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
+make predictions for new data points:
 
 \begin{lstlisting}[style=R]
 binomial.fit@model$coefficients
@@ -757,7 +761,16 @@ binomial.fit@model$coefficients
 -6.46739299 -0.02198278 -0.29576986  0.02855057  1.15680761 
 \end{lstlisting}
 
-Standardized coefficients are useful for inspecting the relative contribution of different coefficients to the model:
+If the \texttt{standardize} option is enabled, H2O returns another set of coefficients, the standardized
+coefficients. These are the predictor weights of the standardized data and are included only for informational
+purposes (e.g. to compare relative variable importance). In this case, the ``normal'' coefficients are obtained
+from the standardized coefficients by \textbf{reversing} the data standardization process (de-scaled, with the
+intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e. no
+standardization prior to scoring). \textbf{Note:} These are \textbf{not} the same as coefficients of a model built
+on non-standardized data.
+
+Standardized coefficients are useful for comparing the relative contribution of different predictors to the
+model:
 
 \begin{lstlisting}[style=R]
 binomial.fit@model$coefficients_table
@@ -772,7 +785,7 @@ Coefficients:
 5   GLEASON     1.156808                  1.298815
 \end{lstlisting}
 
-This view provides a sorted list in descending order:
+This view provides a sorted list of standardized coefficients in descending order for easy comparison:
 
 \begin{lstlisting}[style=R]
 binomial.fit@model$standardized_coefficient_magnitudes
@@ -860,12 +873,94 @@ TODO
 
 \section{Making Predictions}
 
-\subsection{Batch In-H2O predictions}
+Once you have built a model, you can use it to make predictions using two different approaches:  the in-H2O batch
+scoring approach and the real-time NanoFast POJO approach.
+
+\subsection{Batch in-H2O predictions}
+
+Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  In addition to predictions, you
+can also get metrics like AUC if you include the response column in the new data.  See an example for logistic
+regression (i.e. binomial classification) below.
+
+\bigskip
+\waterExampleInR
+
+\begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+rand_vec <- h2o.runif(h2o_df, seed = 1234)
+train <- h2o_df[rand_vec <= 0.8,]
+valid <- h2o_df[(rand_vec > 0.8) & (rand_vec <= 0.9),]
+test <- h2o_df[rand_vec > 0.9,]
+binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = train, validation_frame = valid, family = "binomial")
+
+# Make and export predictions.
+pred = h2o.predict(binomial.fit, test)
+h2o.exportFile(pred, "/tmp/pred.csv", force = TRUE)
+# Or you can export the predictions to hdfs:  h2o.exportFile(pred, "hdfs://namenode/path/to/file.csv")
+
+# Calculate metrics.
+perf = h2o.performance(binomial.fit, test)
+print(perf)
+\end{lstlisting}
+
+Here is an example of just making predictions on new data:
+
+\begin{lstlisting}[style=R]
+# Remove the response column to simulate new data points arriving without the answer being known.
+newdata = test
+newdata$CAPSULE <- NULL
+newpred = h2o.predict(binomial.fit, newdata)
+head(newpred)
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+  predict        p0        p1
+1       1 0.1676892 0.8323108
+2       0 0.4824181 0.5175819
+3       1 0.2000061 0.7999939
+4       0 0.9242169 0.0757831
+5       0 0.5044669 0.4955331
+6       0 0.7272743 0.2727257
+\end{lstlisting}
+
+The three columns in the prediction file are the predicted class, the probability that the prediction is class 0
+and the probability that the prediction is class 1.
+
+The predicted class is chosen based on the maximum-F1 threshold.
+
+You can change the threshold manually, for example to 0.3, and recalculate the predict column like this:
+
+\begin{lstlisting}[style=R]
+newpred$predict = newpred$p1 > 0.3
+head(newpred)
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+  predict        p0        p1
+1       1 0.1676892 0.8323108
+2       1 0.4824181 0.5175819
+3       1 0.2000061 0.7999939
+4       0 0.9242169 0.0757831
+5       1 0.5044669 0.4955331
+6       0 0.7272743 0.2727257
+\end{lstlisting}
 
 \subsection{Real-time low-latency predictions with the NanoFast scoring engine}
 
-For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  Using the POJO is
-beyond the scope of this document, but here is an example of how to get one and view it.
+For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  These are very
+low latency, and can easily be embedded in any Java environment (a customer-facing web application, a Storm bolt,
+or a Spark Streaming pipeline, for example).
+
+The POJO does nothing but pure math, and has no dependencies on any other software packages (not even H2O itself),
+so it is easy to work with.
+
+Directions for using the POJO in detail are beyond the scope of this document, but here is an example of how to get
+one and view it.  You can also access the POJO from the Flow Web UI.
+
+\bigskip
+\waterExampleInR
 
 \begin{lstlisting}[style=R]
 library(h2o)
@@ -876,16 +971,6 @@ h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
 binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "binomial")
 h2o.download_pojo(binomial.fit)
 \end{lstlisting}
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\section{R Use Case:  Logistic regression with Airline Dataset}
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\section{Python Use Case:  Logistic regression with Airline Dataset}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -943,6 +1028,20 @@ handling of categoricals and by employing strong rules to filter out inactive pr
 
 \subsection{Data Corner Cases}
 
+TODO
+
+\begin{itemize}
+\item What if: the training data has an NA?
+
+\item What if: the test data has an NA?
+
+\item What if: a predictor column is categorical, you are making predictions on test data, and the predictor is
+a level that wasn't seen during training?
+
+\item What if: the response column is categorical, you are making predictions on test data, and the response is
+a level that wasn't seen during training?
+\end{itemize}
+
 \subsection{Strong Rules for L1} \label{strongrules}
 
 H2O's GLM employs strong rules (as described in \citetalias{strong}) to discard predictors that are likely to have
@@ -955,216 +1054,6 @@ When applying the strong rules, we evaluate the gradient at the starting solutio
 coefficients, and fit a model using only a subset of the available predictors. Since strong rules may have false
 positives (which are extremely rare in practice), we need to check the solution by testing the kkt conditions and
 verify that all discarded predictors indeed have 0 coefficients.
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\section{OLD}
-
-\subsection{H2O GLM Model Output}
-The detailed output of the GLM model varies depending on the distribution used for the model. In general, there is
-shared output for all Families: Coefficients \& Normalized Coefficients, Validation, and Prediction. We'll cover
-the model output from an R user's point of view.
-
-First, let's build a simple GLM on a small dataset and see what we get out:
-
-\begin{lstlisting}[style=R]
-library(h2o)
-
-# Initialize H2O
-h <- h2o.init()
-
-# path to the data
-data.bucket <- "https://raw.githubusercontent.com/h2oai/h2o/master/smalldata"
-data.path <- paste(data.bucket, "/logreg/prostate_train.csv", sep = "")
-
-# import the data from the url
-hex <- h2o.importFile(h, data.path)
-
-# build a binomial regression
-m <- h2o.glm(x = 3:9, y = 2, data = hex, family = "binomial")  
-# no other features tweaked... yet
-\end{lstlisting}
-
-The default \texttt{show} of this model has the following output:
-
-\begin{lstlisting}[style=output]
-IP Address: 127.0.0.1 
-Port      : 54321 
-Parsed Data Key: prostate_train.hex 
-
-GLM2 Model Key: GLMModel__8b954fd700d924f3e9dee8717b8246ef
-
-Coefficients:
-      AGE      RACE     DPROS     DCAPS       PSA       VOL   GLEASON Intercept 
- -0.07668  -0.10320   0.59479   0.13549   0.43841  -0.22215   1.19657  -0.49458 
-
-Normalized Coefficients:
-      AGE      RACE     DPROS     DCAPS       PSA       VOL   GLEASON Intercept 
- -0.07668  -0.10320   0.59479   0.13549   0.43841  -0.22215   1.19657  -0.49458 
-
-Degrees of Freedom: 304 Total (i.e. Null);  297 Residual
-Null Deviance:     412.1
-Residual Deviance: 301.9  AIC: 317.9
-Deviance Explained: 0.26733 
- Best Threshold: 0.44
-
-Confusion Matrix:
-        Predicted
-Actual   false true Error
-  false    147   34 0.188
-  true      32   92 0.258
-  Totals   179  126 0.216
-
-AUC =  0.8318927 (on train) 
-\end{lstlisting}
-
-Briefly, the output contains the IP address and port number of the H2O cluster where the model was trained. It
-includes the data key, the model key, the coefficients, and some model metrics. Let's look at these in detail.
-
-\subsubsection{Coefficients \& Normalized Coefficients}
-
-Coefficients are the predictor weights (i.e. the actual model used for prediction).  If the \texttt{standardize}
-option is enabled, H2O returns another set of coefficients, the normalized coefficients. These are the predictor
-weights of the standardized data and are included only for informational purposes (e.g. to compare relative
-variable importance). In this case, the coefficients are obtained from the normalized coefficients
-by \textbf{reversing} the data standardization process (de-scaled, with the intercept adjusted by an added offset)
-so that they can be applied to data in its original form (i.e. no standardization prior to scoring). \textbf{Note:}
-These are \textbf{not} the same as coefficients of a model built on non-standardized data.
-
-\subsubsection{Validation}
-
-By default, H2O's GLM generates additional models with 1/10 of the original data to performs 10-fold
-cross-validation. This will provide a quick idea of how the model will generalize. However, it's always best to
-evaluate the model using some holdout data.
-
-\subsubsection{Generating Predictions}
-
-The following R code generates predictions:
-
-\begin{lstlisting}[style=R]
-test.path <- paste(data.bucket, "/logreg/prostate_test.csv", sep = "")
-
-# import the data from the url
-test <- h2o.importFile(h, test.path)
-
-# generate the predictions
-predictions <- h2o.predict(m, test)
-
-# look at the first 6 entries of predictions
-predictions
-
-# generate the model metrics
-h2o.performance(data=predictions[,3], reference=test[,1])
-\end{lstlisting}
-
-\subsection{Categorical Variables}
-
-\subsection{Cross-Validation}
-
-\subsection{Selecting Regularization Parameters}
-
-\subsubsection{Lambda Search}  %%can this be combined with 6.1.3 Lambda Search above? or referenced? seems to contain duplicate info 
-    
-
-\subsection{Strong Rules} %TODO add references
-
-\subsection{Performance Characteristics}
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\section{Use case: Classification with Airline data}
-
-\subsection{Airline dataset overview} 
-
-Download the Airline dataset here: {\url{https://github.com/h2oai/h2o/blob/master/smalldata/airlines/allyears2k_headers.zip}}.
-
-Save the .csv file to your working directory by clicking  "View Raw."  Before running the Airline demo, we'll review how to load data with H2O. 
-
-\subsubsection{Loading data} \label{2.5}
-
-Loading a dataset in R for use with H2O is slightly different from the usual methodology because we must convert our datasets into \texttt{H2OParsedData} objects. In this example, we will use a toy weather dataset that is available here: {\url{https://raw.githubusercontent.com/h2oai/h2o/master/smalldata/weather.csv}}. 
-
-First, load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command:
-\begin{lstlisting}[style=R]
-weather.hex = h2o.uploadFile(localH2O, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
-\end{lstlisting}
-\bigskip
-
-To see a quick summary of the data, run the following command:
-\begin{lstlisting}[style=R]
-summary(weather.hex)
-\end{lstlisting}
-
-\subsection{Performing a trial run} \label{3.2}
-Returning to the Airline dataset demo, we first load the dataset into H2O and select the variables we want to use to predict a chosen response. For example, we can model if flights are delayed based on the departure's scheduled day of the week and day of the month.
-
-\begin{lstlisting}[style=R]
-library(h2o)
-localH2O = h2o.init(nthreads = -1)
-#Load the data and prepare for modeling
-air_train.hex = h2o.uploadFile(localH2O, path = "~/Downloads/AirlinesTrain.csv", header = TRUE, sep = ",", key = "airline_train.hex")
-air_test.hex = h2o.uploadFile(localH2O, path = "~/Downloads/AirlinesTest.csv", header = TRUE, sep = ",", key = "airline_test.hex")
-x = c("fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier", "Origin", "Dest", "Distance")
-y = "IsDepDelayed"
-\end{lstlisting}
-
-Now we train the GLM model:
-
-\begin{lstlisting}[style=R]
-airline.glm <- h2o.glm(x=x, y=y, data=air_train.hex, key = "glm_model", family="binomial", lambda_search = TRUE, return_all_lambda = TRUE, use_all_factor_levels = TRUE, variable_importances = TRUE)
-\end{lstlisting}
-
-\subsubsection{Extracting and handling the results} \label{3.2.1}
-
-We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
-
-\begin{lstlisting}[style=R]
-# Predict on GLM model
-best_glm = airline.glm@models[[airline.glm@best_model]]
-air.results = h2o.predict(object = best_glm, newdata = air_test.hex)
-
-# Check performance and AUC
-perf = h2o.performance(air.results$YES, air_test.hex$IsDepDelayed )
-print(perf)
-perf@model$auc
-
-# Show distribution of predictions with quantile
-quant = quantile.H2OParsedData(air.results$YES)
-
-# Extract strongest predictions
-top.air <- h2o.assign(air.results[air.results$YES > quant["75%"]], key="top.air")
-top.air
-\end{lstlisting}
-
-Once we have a satisfactory model, the \texttt{h2o.predict()} command can be used to compute and store predictions on the new data, which can then be used for further tasks in the interactive modeling process.
-\begin{lstlisting}[style=R]
-#Perform classification on the held out data
-prediction = h2o.predict(object = best_glm, newdata=air_test.hex)
-
-#Copy predictions from H2O to R
-pred = as.data.frame(prediction)
-head(pred)
-\end{lstlisting}
-
-\subsection{Web interface} \label{3.3}
-H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345) to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames. 
-
-\subsubsection{Variable importances} \label{3.3.1}
-The variable importances feature can be enabled with the argument \texttt{variable\_importances=TRUE}.This feature allows us to view the absolute and relative predictive strength of each feature in the prediction task. From R, you can access these strengths with the command \texttt{air.model@model\$varimp}. You can also view a visualization of the variable
-importances on the web interface.
-
-\subsubsection{Java model} %%should this be replaced with instructions for Java POJOs? 
-Java models are currently not available for GLM.
-To download the model, 
-\begin{enumerate}
-\item Open the terminal window. 
-\item Create a directory where the model will be saved.
-\item Set the new directory as the working directory.
-\item Follow the curl and java compile commands displayed in the instructions at the top of the Java model.
-\end{enumerate}
-\newpage
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------

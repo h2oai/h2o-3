@@ -316,7 +316,8 @@ public class DeepLearningModelInfo extends Iced {
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
                     + ", " + get_params()._distribution + " distribution, " + get_params()._loss + " loss, "
                     + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size) + ", "
-                    + String.format("%,d", get_processed_global()) + " training samples",
+                    + String.format("%,d", get_processed_global()) + " training samples, "
+                    + "mini-batch size " + String.format("%,d", get_params()._mini_batch_size),
             new String[neurons.length],
             new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                     "Mean Rate", "Rate RMS", "Momentum",
@@ -717,4 +718,16 @@ public class DeepLearningModelInfo extends Iced {
     return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
+  static public class GradientCheck {
+    GradientCheck(int l, int r, int c) { layer=l; row=r; col=c; }
+    int layer;
+    int row;
+    int col;
+    float gradient;
+    void apply(int l, int r, int c, float g) {
+      if (r==row && c==col && l==layer)
+        gradient=g;
+    }
+  }
+  static public GradientCheck gradientCheck = null;
 }

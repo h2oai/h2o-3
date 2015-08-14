@@ -531,6 +531,49 @@ setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) h2o.match
 #' @export
 setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.omit", object) )
 
+#' Compute FFT of an H2OFrame
+#'
+#' Compute the Discrete Fast Fourier Transform of every row in the H2OFrame
+#'
+#' @param data An \linkS4class{H2OFrame} object representing the dataset to transform
+#' @param destination_frame A frame ID for the result
+#' @param dimensions An array containing the 3 integer values for length, width, depth of each sample.
+#'        The product of LxWxD must total up to less than the number of columns. For 1D FFT, use c(L,1,1).
+#' @param inverse Whether to perform the inverse Fourier transform
+#' @examples
+#' \donttest{
+#'   library(h2o)
+#'   localH2O = h2o.init()
+#'   df <- h2o.createFrame(localH2O, rows = 10000, cols = 1024,
+#'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
+#'   df1 <- h2o.fft(data=df,dimensions=c(1024,1,1),destination_frame="df1",inverse=FALSE)
+#'   df2 <- h2o.fft(data=df1,dimensions=c(1024,1,1),destination_frame="df2",inverse=TRUE)
+#'   max(abs(df1-df2))
+#' }
+#' @export
+h2o.fft <- function(data, destination_frame, dimensions, inverse=F) {
+  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  ## -- Force evaluate temporary ASTs -- ##
+  delete <- !.is.eval(data)
+  if( delete ) {
+    temp_key <- data@frame_id
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
+  }
+  if(!is.logical(inverse)) stop("inverse must be a boolean value")
+  params <- list()
+  params$dataset <- data@frame_id
+  params$dimensions <- .collapse(dimensions)
+  if (!missing(destination_frame))
+    params$destination_frame <- destination_frame
+  params$inverse <- inverse
+
+  res <- .h2o.__remoteSend(data@conn, method="POST", h2oRestApiVersion = 99, "FFTTransformer", .params = params)
+  job_key <- res$key$name
+  .h2o.__waitOnJob(data@conn, job_key)
+
+  h2o.getFrame(res$destination_frame$name)
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
