@@ -601,7 +601,7 @@ def load_model(path):
   :param path: The full path of the H2O Model to be imported.
   :return: the model
   """
-  res = H2OConnection.post_json("Models.bin",dir=path,_rest_version=99)
+  res = H2OConnection.post_json("Models.bin/"+path,_rest_version=99)
   return get_model(res['models'][0]['model_id']['name'])
 
 def cluster_status():
