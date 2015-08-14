@@ -134,7 +134,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE}){//, Solver.COORDINATE_DESCENT}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}){
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -334,7 +334,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._intercept = false;
     params._beta_epsilon = 1e-6;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -426,7 +426,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 0;
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE}) {
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -564,7 +564,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-6;
     params._max_iterations = 1000; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;

@@ -1148,10 +1148,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
 
                 for(int j=0; j < level_num; ++j) // ST multiple ones at the same time.
-                if(gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) !=0)
+                 if(gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) !=0)
                   beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage( grads[_activeData._catOffsets[i]+j]  / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
                           / (gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
-                else
+                 else
                   beta[_activeData._catOffsets[i]+j] = 0;
 
                 for(int j=0; j < level_num ; ++j) // update grads vector according to "cat levels " introduced.
@@ -1168,7 +1168,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
                 if(beta[i+_activeData.numStart()]!=0) // update all the grad entries
                     doUpdateCD(grads, gt._gram, betaold, beta, _activeData.numStart() + i);
-
               }
 
               if(_parms._intercept){
