@@ -129,10 +129,10 @@ h2o.downloadCSV <- function(data, filename) {
 #' @export
 h2o.saveModel <- function(object, path="", force=FALSE) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
-  if(!is.character(dir) || length(dir) != 1L || is.na(dir)) stop("`dir` must be a character string")
+  if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
   force <- as.integer(force)
-  path <- file.path(dir, object@model_id)
-  res <- .h2o.__remoteSend(object@conn, .h2o.__SAVE_MODEL(object@model_id), h2oRestApiVersion = 99, dir=path, force=force)
+  path <- file.path(path, object@model_id)
+  res <- .h2o.__remoteSend(object@conn, "Models.bin", model_id=object@model_id, h2oRestApiVersion = 99, dir=path, force=force)
   res$dir
 }
