@@ -95,6 +95,10 @@ class GroupBy:
       return self
     elif isinstance(col, (str,unicode)): cidx=self._fr.index(col)
     elif isinstance(col, int):         cidx=col
+    elif isinstance(col, (tuple,list)):
+      for i in col:
+        self._add_agg(op,i,name,na)
+      return self
     else:                              raise ValueError("col must be a column name or index.")
     if name=="": name = "{}_{}".format(op,self._fr.col_names()[cidx])
     self._aggs[name]=[op,cidx,na]
