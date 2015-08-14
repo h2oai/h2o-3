@@ -7,7 +7,7 @@ sys.path.insert(1, "../../")
 import h2o
 
 def hdfs_basic(ip, port):
-    h2o.init(ip, port)
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
@@ -24,7 +24,7 @@ def hdfs_basic(ip, port):
 
         print "Testing single file importHDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_iris_file)
-        iris_h2o = h2o.import_frame(url)
+        iris_h2o = h2o.import_file(url)
         iris_h2o.head()
         iris_h2o.tail()
         n = iris_h2o.nrow()
@@ -40,7 +40,7 @@ def hdfs_basic(ip, port):
         print "Testing directory importHDFS"
         urls = ["hdfs://{0}{1}/iris_test.csv".format(hdfs_name_node, hdfs_iris_dir),
                 "hdfs://{0}{1}/iris_train.csv".format(hdfs_name_node, hdfs_iris_dir)]
-        iris_dir_h2o = h2o.import_frame(urls)
+        iris_dir_h2o = h2o.import_file(urls)
         iris_dir_h2o.head()
         iris_dir_h2o.tail()
         n = iris_dir_h2o.nrow()

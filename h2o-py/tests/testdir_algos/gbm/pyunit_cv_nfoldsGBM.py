@@ -3,10 +3,10 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def cv_nfoldsGBM(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
-  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   prostate[1] = prostate[1].asfactor()
   prostate.summary()
 

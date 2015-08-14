@@ -1,10 +1,8 @@
 package water.api;
 
 import water.H2OError;
-import water.util.DocGen;
 import water.util.IcedHashMap;
 
-import java.util.Arrays;
 
 /**
  * Schema which represents a back-end error which will be returned to the client.  Such
@@ -45,20 +43,6 @@ public class H2OErrorV3<I extends H2OError, S extends H2OErrorV3<I, S>> extends 
 
   public int httpStatus() {
     return http_status;
-  }
-
-  @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.bodyHead();
-
-    if (0 == http_status)
-      ab.title("H2O Error");
-    else
-      ab.title(H2OError.httpStatusHeader(http_status));
-    ab.p("<div class='alert alert-error'>").p(msg).p("</div>");
-    if (null != stacktrace)
-      ab.p(Arrays.toString(stacktrace));
-
-    return ab.bodyTail();
   }
 
 }

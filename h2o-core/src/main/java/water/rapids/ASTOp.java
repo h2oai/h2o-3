@@ -3750,6 +3750,11 @@ class ASTRemoveVecs extends ASTUniPrefixOp {
     AST ary = E.parse();
     AST a = E.parse();
     if( a instanceof ASTLongList ) _rmVecs = ((ASTLongList)a)._l;
+    else if( a instanceof ASTDoubleList ) {
+      double [] dlist = ((ASTDoubleList)a)._d;
+      _rmVecs=new long[dlist.length];
+      for(int i=0;i<dlist.length;++i) _rmVecs[i]=(long)dlist[i];
+    }
     else if( a instanceof ASTNum ) _rmVecs = new long[]{(long)((ASTNum)a)._d};
     else throw new IllegalArgumentException("Expected to get an `llist` or `num`. Got: " + a.getClass());
     E.eatEnd(); // eat the ending ')'

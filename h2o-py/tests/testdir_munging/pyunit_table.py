@@ -4,9 +4,9 @@ import h2o
 
 def table_check(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # single column (frame)
     table1 = iris["C5"].table()

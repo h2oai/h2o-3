@@ -123,7 +123,7 @@ H2OFrame object is, therefore, is a wrapper on a list that supports various type
 that may or may not be lazy. Here's an example showing how a list comprehension is combined
 with lazy expressions to compute the column means for all columns in the H2OFrame::
 
-  >>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>> df = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> colmeans = [v.mean() for v in df]                            # compute column means
   >>>
@@ -147,7 +147,7 @@ number `0` in a column to missing (or `NA` in R parlance) as demonstrated in the
 snippet::
 
 
-  >>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>> df = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> vol = df['VOL']                                              # select the VOL column
   >>>
@@ -168,7 +168,7 @@ In the guts of this module is the Expr class, which defines objects holding
 the cumulative, unevaluated expressions that may become H2OFrame/H2OVec objects.
 For example:
 
-  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> a = fr + 3.14159                                             # "a" is now an Expr
   >>>
@@ -186,7 +186,7 @@ This module relies on reference counting of python objects to dispose of
 out-of-scope objects. The Expr class destroys objects and their big data 
 counterparts in the H2O cloud using a remove call:
 
-  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> h2o.remove(fr)                                               # remove prostate data
   >>> fr                                                           # attempting to use fr results in a ValueError
@@ -212,7 +212,7 @@ is a model object belonging to one of the following categories:
 
 To better demonstrate this concept, refer to the following example:
 
-  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
   >>>
@@ -230,7 +230,7 @@ regression task. Namely, the second column is initially read as a numeric column
 but it must be changed to a factor by way of the H2OVec operation `asfactor`. Let's take a look
 at this more deeply:
 
-  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> fr[1].isfactor()                                             # produces False
   >>>
@@ -252,7 +252,7 @@ data and provide a host of metrics on the validation and training data. Here's a
 of this functionality, where we additionally split the data set into three pieces for training, 
 validation, and finally testing:
 
-  >>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate
   >>>
   >>> fr[1] = fr[1].asfactor()                                     # cast to factor
   >>>
@@ -322,7 +322,7 @@ contains data that does not appear in either the training or validation sets: th
 test set metrics. While the returned object is an H2OModelMetrics rather than an H2O model,
 it can be queried in the same exact way. Here's an example:
 
-  >>> fr = h2o.import_frame(path="smalldata/iris/iris_wheader.csv")   # import iris
+  >>> fr = h2o.import_file(path="smalldata/iris/iris_wheader.csv")   # import iris
   >>>
   >>> r = fr[0].runif()                       # generate a random vector for splitting
   >>>
@@ -378,8 +378,8 @@ Here is a brief example of H2O on Hadoop:
   --------------------------  ------------------------------------
   pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
   pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
-  trainFrame = h2o.import_frame(path=pathDataTrain)
-  testFrame = h2o.import_frame(path=pathDataTest)
+  trainFrame = h2o.import_file(path=pathDataTrain)
+  testFrame = h2o.import_file(path=pathDataTest)
 
   #Parse Progress: [##################################################] 100%
   #Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols

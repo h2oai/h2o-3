@@ -181,6 +181,8 @@ Don't worry, R users - we still provide R support in the latest version of H2O, 
 
 We have provided the following helpful resources to assist R users in upgrading to the latest version, including a document that outlines the differences between versions and a tool that reviews scripts for deprecated or renamed parameters. 
 
+Currently, the only version of R that is known to be incompatible with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using that version, we recommend upgrading the R version before using H2O. 
+
 The following video provides step-by-step instructions on how to start H2O in R:
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>

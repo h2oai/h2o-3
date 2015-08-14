@@ -4,18 +4,18 @@ import h2o
 import random
 
 def all_confusion_matrix_funcs(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     metrics = ["min_per_class_accuracy", "absolute_MCC", "precision", "accuracy", "f0point5", "f2", "f1"]
     train = [True, False]
     valid = [True, False]
 
     print "PARSING TRAINING DATA"
-    air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     print "PARSING TESTING DATA"
-    air_test = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
     print
     print "RUNNING FIRST GBM: "

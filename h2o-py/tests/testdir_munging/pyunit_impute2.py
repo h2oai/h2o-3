@@ -4,7 +4,7 @@ import h2o
 
 def impute2(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     methods = ["mean","median","mode"]

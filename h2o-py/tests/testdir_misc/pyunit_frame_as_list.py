@@ -3,12 +3,12 @@ sys.path.insert(1, "../../")
 import h2o
 
 def frame_as_list(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
-    airlines = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k.zip"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
+    airlines = h2o.import_file(path=h2o.locate("smalldata/airlines/allyears2k.zip"))
 
     res1 = h2o.as_list(iris, use_pandas=False)
     assert abs(float(res1[9][0]) - 4.4) < 1e-10 and abs(float(res1[9][1]) - 2.9) < 1e-10 and \

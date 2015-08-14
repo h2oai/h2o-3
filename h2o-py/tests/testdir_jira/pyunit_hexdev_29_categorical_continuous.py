@@ -10,7 +10,7 @@ import h2o
 
 def continuous_or_categorical(ip, port):
   # connect to h2o
-  h2o.init(ip, port)
+  
 
   aa = {
     'h1': [1, 8, 4, 3, 6],

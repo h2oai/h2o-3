@@ -4,9 +4,9 @@ import h2o
 
 def interaction_check(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # add a couple of factor columns to iris
     iris = iris.cbind(iris[4] == "Iris-setosa")

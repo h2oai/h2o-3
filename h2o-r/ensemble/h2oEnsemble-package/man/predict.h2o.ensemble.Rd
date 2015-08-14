@@ -14,7 +14,7 @@ Obtains predictions on a new data set from a \code{\link[h2oEnsemble]{h2o.ensemb
 An object of class 'h2o.ensemble', which is returned from the \code{\link[h2oEnsemble]{h2o.ensemble}} function.
 }
   \item{newdata}{
- A \code{\linkS4class{H2OParsedData}} object in which to look for variables with which to predict. 
+ A \code{\linkS4class{H2OFrame}} object in which to look for variables with which to predict. 
 }
 
 }
@@ -24,7 +24,7 @@ An object of class 'h2o.ensemble', which is returned from the \code{\link[h2oEns
 A vector of predicted values from ensemble fit.
 }
 \item{basepred}{
-A \code{\linkS4class{H2OParsedData}} object with the predicted values from each base learner algorithm for the rows in \code{newdata}.  
+A \code{\linkS4class{H2OFrame}} object with the predicted values from each base learner algorithm for the rows in \code{newdata}.  
 }
 }
 

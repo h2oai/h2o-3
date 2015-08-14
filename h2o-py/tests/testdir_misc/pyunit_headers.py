@@ -3,11 +3,11 @@ sys.path.insert(1, "../../")
 import h2o
 
 def headers(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    headers = h2o.import_frame(h2o.locate("smalldata/airlines/allyears2k_headers_only.csv"))
-    headers_and = h2o.import_frame(h2o.locate("smalldata/airlines/allyears2k.zip"))
+    headers = h2o.import_file(h2o.locate("smalldata/airlines/allyears2k_headers_only.csv"))
+    headers_and = h2o.import_file(h2o.locate("smalldata/airlines/allyears2k.zip"))
     headers_and.setNames(headers.names())
     print headers.names()
     print headers_and.names()

@@ -351,7 +351,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
   data.frame_id <- if( missingData ) trainingFrame else data@frame_id
-  if( !missingData && data.frame_id == trainingFrame ) {
+  if( !is.null(trainingFrame) && !missingData && data.frame_id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
   }
@@ -836,7 +836,7 @@ h2o.varimp <- function(object, ...) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) ) { vi <- object@model$standardized_coefficients_magnitude }  # no true variable importances, maybe glm coeffs? (return standardized table...)
+    if( is.null(vi) ) { vi <- object@model$standardized_coefficient_magnitudes }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))

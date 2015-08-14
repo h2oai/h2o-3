@@ -5,7 +5,7 @@ import java.util.Map;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
-import hex.grid.HyperSpaceWalker.CartezianWalker;
+import hex.grid.HyperSpaceWalker.CartesianWalker;
 import water.DKV;
 import water.H2O;
 import water.Job;
@@ -200,13 +200,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    */
   private Model buildModel(final MP params, Grid<MP> grid) {
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters)
-    Key<Model> key = grid.getModelKey(params);
+    // FIXME: get checksum here since model builder will modify instance of params!!!
+    long checksum = params.checksum();
+    Key<Model> key = grid.getModelKey(checksum);
     // It was already built
     if (key != null) {
       return key.get();
     }
-    // FIXME: get checksum here since model builder will modify instance of params!!!
-    long checksum = params.checksum();
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
@@ -218,6 +218,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
       grid.appendFailedModelParameters(params, e.getMessage());
     } finally {
+      // Update progress by 1 increment
+      this.update(1L);
       // Always update grid in DKV after model building attempt
       grid.update(jobKey());
     }
@@ -281,9 +283,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       final ModelFactory<MP> modelFactory,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
     // Create a walker to traverse hyper space of model parameters
-    CartezianWalker<MP>
+    CartesianWalker<MP>
         hyperSpaceWalker =
-        new CartezianWalker<>(params, hyperParams, paramsBuilderFactory);
+        new CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
 
     return startGridSearch(destKey, modelFactory, hyperSpaceWalker);
   }

@@ -8,10 +8,10 @@ import h2o
 
 def irisGBM(ip,port):
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
   # Import training data
-  train = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+  train = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
   train.describe()
 
   # Run GBM
