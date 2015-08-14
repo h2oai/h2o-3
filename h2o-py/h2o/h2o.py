@@ -499,7 +499,7 @@ def ls():
 
   :return: Returns a list of keys in the current H2O instance
   """
-  return H2OFrame(expr=ExprNode("ls"))._frame().as_data_frame()
+  return H2OFrame(expr=ExprNode("ls")).as_data_frame()
 
 
 def frame(frame_id, exclude=""):
@@ -542,34 +542,30 @@ def download_pojo(model,path="", get_jar=True):
     with open(filename, "w") as f:
       f.write(response.read())
 
-
-
 def download_csv(data, filename):
   """
   Download an H2O data set to a CSV file on the local disk.
-  Warning: Files located on the H2O server may be very large! Make
-  sure you have enough hard drive space to accommodate the entire file.
 
-  :param data: an H2OFrame object to be downloaded.
-  :param filename:A string indicating the name that the CSV file should be
-  should be saved to.
+  Warning: Files located on the H2O server may be very large! Make sure you have enough hard drive space to accommodate the entire file.
+
+  :param data: An H2OFrame object to be downloaded.
+  :param filename: A string indicating the name that the CSV file should be should be saved to.
   :return: None
   """
   data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
   url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
-  with open(filename, 'w') as f:
-    response = urllib2.urlopen(url)
-    f.write(response.read())
+  with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 def download_all_logs(dirname=".",filename=None):
   """
   Download H2O Log Files to Disk
+
   :param dirname: (Optional) A character string indicating the directory that the log file should be saved in.
   :param filename: (Optional) A string indicating the name that the CSV file should be
   :return: path of logs written (as a string)
   """
-  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/Logs/download'
+  url = 'http://{}:{}/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
   response = urllib2.urlopen(url)
 
   if not os.path.exists(dirname): os.mkdir(dirname)
@@ -580,48 +576,33 @@ def download_all_logs(dirname=".",filename=None):
         break
   path = os.path.join(dirname,filename)
 
-  with open(path, 'w') as f:
-    response = urllib2.urlopen(url)
-    f.write(response.read())
-    f.close()
-
   print "Writing H2O logs to " + path
+  with open(path, 'w') as f: f.write(urllib2.urlopen(url).read())
   return path
 
-def save_model(model, dir="", name="", filename="", force=False):
+def save_model(model, path="", force=False):
   """
   Save an H2O Model Object to Disk.
-  In the case of existing files force = TRUE will overwrite the file. Otherwise, the operation will fail.
-  :param dir: string indicating the directory the model will be written to.
-  :param name: string name of the file.
-  :param filename: full path to the file.
-  :param force: logical, indicates how to deal with files that already exist
-  :return: the path of the model (string)
-  """
-  if not isinstance(dir, str): raise ValueError("`dir` must be a character string")
-  if dir == "": dir = os.getcwd()
-  if not isinstance(name, str): raise ValueError("`name` must be a character string")
-  if name == "": name = model._model_json['model_id']['name']
-  if not isinstance(filename, str): raise ValueError("`filename` must be a character string")
-  if not isinstance(force, bool): raise ValueError("`force` must be True or False")
-  path = filename if filename != "" else os.path.join(dir, name)
 
-  kwargs = dict([("dir",path), ("force",int(force)), ("_rest_version", 99)])
-  H2OConnection.get("Models.bin/"+model._model_json['model_id']['name'], **kwargs)
-  return path
+  :param model: The model object to save.
+  :param path: A path to save the model at (hdfs, s3, local)
+  :param force: Overwrite destination directory in case it exists or throw exception if set to false.
+  :return: the path of the saved model (string)
+  """
+  return H2OConnection.get_json("Models.bin",model_id=model._id,dir=os.getcwd() if path=="" else dir,force=force, _rest_version=99)["dir"]
 
 def load_model(path):
   """
   Load a saved H2O model from disk.
-  :param path: The full path of the H2O Model to be imported. For example, if the `dir` argument in h2o.saveModel was
-  set to "/Users/UserName/Desktop" then the `path` argument in h2o.loadModel should be set to something like
-  "/Users/UserName/Desktop/K-meansModel__a7cebf318ca5827185e209edf47c4052"
+  Example:
+      >>> path = h2o.save_model(my_model,dir=my_path)
+      >>> h2o.load_model(path)                         # use the result of save_model
+
+  :param path: The full path of the H2O Model to be imported.
   :return: the model
   """
-  if not isinstance(path, str): raise ValueError("`path` must be a non-empty character string")
-  kwargs = dict([("dir",path), ("_rest_version", 99)])
-  res = H2OConnection.post("Models.bin/", **kwargs)
-  return get_model(res.json()['models'][0]['model_id']['name'])
+  res = H2OConnection.post_json("Models.bin",dir=path,_rest_version=99)
+  return get_model(res['models'][0]['model_id']['name'])
 
 def cluster_status():
   """
