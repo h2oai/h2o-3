@@ -15,7 +15,7 @@ Each parameter exposed by the schema can specify if it is supported by grid sear
 
 Invoke a new GBM model grid search by passing the following request to H2O: 
 
-```
+```json
 Method: POST  , URI: /99/Grid/gbm, route: /99/Grid/gbm, parms:{hyper_parameters={"ntrees":[1,5],"learn_rate":[0.1,0.01]}, training_frame=filefd41fe7ac0b_csv_1.hex_2, grid_id=gbm_grid_search, response_column=Species, ignored_columns=[""]}
 ```
 
@@ -32,7 +32,7 @@ Grid search in R provides the following capabilities:
 
 ###Example
 
-```
+```R
 ntrees_opts = c(1, 5)
 learn_rate_opts = c(0.1, 0.01)
 hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
@@ -61,7 +61,7 @@ Additional parameters are available in the model builder to support creation of 
 
 ###Example
 
-```
+```java
 HashMap<String, Object[]> hyperParms = new HashMap<>();
 hyperParms.put("_ntrees", new Integer[]{1, 2});
 hyperParms.put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
@@ -76,6 +76,86 @@ params._response_column = "cylinders";
 GridSearch gs = GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY);
 Grid grid = (Grid) gs.get();
 ```
+
+### Exposing grid search end-point for new algorithm
+
+Situation: we implemented PCA algorithm and we would like to expose the algorithm via REST API. We expect that there are: 
+  - PCA model builder called `PCA`
+  - PCA parameters defined as class called `PCAParameters`
+  - PCA parameters schema called `PCAParametersV3`
+
+Adding support for PCA grid search is series of steps:
+  1. adding PCA model build factory into `hex.grid.ModelFactories` class:
+  ```java
+  class ModelFactories {
+    /* ... */
+    public static ModelFactory<PCAModel.PCAParameters>
+      PCA_MODEL_FACTORY =
+      new ModelFactory<PCAModel.PCAParameters>() {
+        @Override
+        public String getModelName() {
+          return "PCA";
+        }
+
+        @Override
+        public ModelBuilder buildModel(PCAModel.PCAParameters params) {
+          return new PCA(params);
+        }
+      };
+  }
+  ```
+
+  2. adding PCA REST end-point schema:
+  ```java
+  public class PCAGridSearchV99 extends GridSearchSchema<PCAGridSearchHandler.PCAGrid,
+    PCAGridSearchV99,
+    PCAModel.PCAParameters,
+    PCAV3.PCAParametersV3> {
+
+  }
+  ```
+
+  3. adding PCA REST end-point handler
+  ```java
+  public class PCAGridSearchHandler
+    extends GridSearchHandler<PCAGridSearchHandler.PCAGrid,
+    PCAGridSearchV99,
+    PCAModel.PCAParameters,
+    PCAV3.PCAParametersV3> {
+
+    public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
+      return super.do_train(version, gridSearchSchema);
+    }
+
+    @Override
+    protected ModelFactory<PCAModel.PCAParameters> getModelFactory() {
+      return ModelFactories.PCA_MODEL_FACTORY;
+    }
+
+    @Deprecated
+    public static class PCAGrid extends Grid<PCAModel.PCAParameters> {
+
+      public PCAGrid() {
+        super(null, null, null, null);
+      }
+    }
+  }
+  ```
+
+  4. Registering REST end-point in register factory `hex.api.Register`:
+  ```java
+  public class Register extends AbstractRegister {
+      @Override
+      public void register() {
+          // ...
+          H2O.registerPOST("/99/Grid/pca", PCAGridSearchHandler.class, "train", "Run grid search for PCA model.");
+          // ...
+       }
+  }
+  ```
+
+### Implementing new grid search walk strategy
+
 
 ##Grid Testing
 

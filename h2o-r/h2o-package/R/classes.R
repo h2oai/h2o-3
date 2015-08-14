@@ -400,7 +400,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("\n")
 
   # VI could be real, true variable importances or GLM coefficients
-  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficients_magnitude)
+  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficient_magnitudes)
   if( haz_varimp ) {
     cat("Variable Importances: (Extract with `h2o.varimp`) \n")
     cat("=================================================\n\n")
@@ -748,10 +748,11 @@ setMethod("show", "H2OGrid", function(object) {
   cat("Grid ID:", object@grid_id, "\n")
   cat("Used hyper parameters: \n")
   lapply(object@hyper_names, function(name) { cat("  ", name, "\n") })
+  cat("Number models:", length(object@model_ids), "\n")
+  cat("Number of failed models:", length(object@failed_params), "\n")
   cat("Models:\n")
   lapply(object@model_ids, function(model_id) {
     cat("  ", model_id, "\n")
   })
-  cat("Number of failed models:", length(object@failed_params), "\n")
 })
 
