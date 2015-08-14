@@ -112,9 +112,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' Otherwise, the operation will fail.
 #'
 #' @param object an \linkS4class{H2OModel} object.
-#' @param dir string indicating the directory the model will be written to.
-#' @param name string name of the file.
-#' @param filename the full path to the file.
+#' @param path string indicating the directory the model will be written to.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
@@ -126,37 +124,15 @@ h2o.downloadCSV <- function(data, filename) {
 #' #   destination_frame = "prostate.hex")
 #' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE,
-#' # force = TRUE)
+#' # h2o.saveModel(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
-  if(!is(object, "H2OModel"))
-    stop("`object` must be an H2OModel object")
-
-  if(!is.character(dir) || length(dir) != 1L || is.na(dir))
-    stop("`dir` must be a character string")
-
-  if(!is.character(name) || length(name) != 1L || is.na(name))
-    stop("`name` must be a character string")
-  else if(!nzchar(name))
-    name <- object@model_id
-
-  if(!is.character(filename) || length(filename) != 1L || is.na(filename))
-    stop("`filename` must be a character string")
-
-  if(!is.logical(force) || length(force) != 1L || is.na(force))
-    stop("`force` must be TRUE or FALSE")
+h2o.saveModel <- function(object, path="", force=FALSE) {
+  if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
+  if(!is.character(dir) || length(dir) != 1L || is.na(dir)) stop("`dir` must be a character string")
+  if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
   force <- as.integer(force)
-
-  if(nzchar(filename))
-    path <- filename
-  else
-    path <- file.path(dir, name)
-
+  path <- file.path(dir, object@model_id)
   res <- .h2o.__remoteSend(object@conn, .h2o.__SAVE_MODEL(object@model_id), h2oRestApiVersion = 99, dir=path, force=force)
-
-  # return the path
   res$dir
 }
-
