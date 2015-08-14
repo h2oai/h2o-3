@@ -507,24 +507,73 @@ computation. Recommended combinations are:
 \end{itemize} 
 
 \subsection{Handling Wide Data and Building Sparse Models}
+
+H2O's GLM offers two different approaches to handling wide datasets:  L1 regularization and the L\_BFGS solver.
+
+Quick recommendations:
+
+\begin{itemize}
+\item For a sparse solution (i.e. some predictors are dropped from the final model), use the IRLSM solver with 
+      \texttt{alpha} greater than 0.0 (so you get at least some L1 penalty) and enable \texttt{lambda\_search}.
+
+\item For a dense solution (i.e. all predictors are in the final model), use the L\_BFGS solver with
+      \texttt{alpha} of 1.0 so there is no L1 penalty, only L2 penalty.
+\end{itemize}
+
 \subsubsection{Solver Selection}
-\subsubsection{Strong Rules for L1}
 
-H2O's GLM employs strong rules (as described in \citetalias{strong}) to discard predictors that are likely to have
-0 coefficients prior to model building. According to \citetalias{strong}, we can identify these predictors based on
-a gradient with great accuracy. This provides very few false negatives and virtually no false positives in
-practice, greatly reducing the computational complexity of model fitting and enabling it to run on wide datasets
-with tens of thousands of predictors, provided that there is a limited number of active predictors.
+The two solvers provided in H2O are Iterative Reweighted Least Squares Method (IRLSM) and L\_BFGS.  IRLSM uses
+a Gram Matrix approach underneath the hood, which is very efficient for tall and narrow datasets.  For wider 
+datasets (thousands of predictors and up), the L\_BFGS solver scales better.
 
-When applying the strong rules, we evaluate the gradient at the starting solution, filter out inactive
-coefficients, and fit a model using only a subset of the available predictors. Since strong rules may have false
-positives (which are extremely rare in practice), we need to check the solution by testing the kkt conditions and
-verify that all discarded predictors indeed have 0 coefficients.
+Note that when using the L\_BFGS solver, for performance reasons, we recommend not using any L1 penalty, since
+model building can be slowed down.
+
+You may use \texttt{lambda\_search} with both the IRLSM and L\_BFGS solvers.
+
+\subsubsection{L1 Regularization (Lasso)}
+
+GLM can build sparse models (i.e. models which have fewer coefficients than input predictors) when L1 penalty is
+enabled (i.e. \texttt{alpha} is less than 1.0).
+
+Strong rules for L1 (see Section \ref{strongrules}) are a performance optimization enabled automatically by H2O
+internally (there is no parameter for strong rules).  They are generally only effective when
+\texttt{lambda\_search} is enabled.
 
 \subsubsection{Stopping Criteria}
 
+When using L1 penalty with lambda search, you can specify the \texttt{max\_active\_predictors} parameter to stop
+the search early.  The models built at the beginning of the lambda search have higher values of lambda, consider
+fewer predictors and take less time to calculate the model.  Models built at the end of the lambda search have
+lower values of lambda, incorporate more predictors, and take a longer time to calculate the model.
+
+\bigskip
+\waterExampleInR
+\begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
+h2o_df = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+model = h2o.glm(y = "IsDepDelayed", x = c("Year", "Origin"), training_frame = h2o_df, family = "binomial", lambda_search = TRUE, max_active_predictors = 10)
+print(model)
+v1 = model@model$coefficients
+v2 = v1[v1 > 0]
+print(v2)
+\end{lstlisting}
+
 \subsection{Advanced Features}
+
+H2O's GLM has several advanced features to help build better models.
+
 \subsubsection{Standardizing Data}
+
+The \texttt{standardize} parameter is true by default.  This will standardize numeric columns to have zero mean and
+unit variance.  Note this parameter must be true to produce standardized coefficient magnitudes in the model
+output.
+
+We recommend keeping standardization on when using regularization (i.e. \texttt{lambda} is chosen by H2O or set by
+the user to be greater than 0).
+
+Only advanced users should turn standardization off.
 
 \subsubsection{n-fold Cross Validation}
 
@@ -533,19 +582,8 @@ cross-validation (\texttt{nfolds $> 1$)}. When N-fold cross-validation is enable
 equally-sized parts, trains each of the n models on n-1 parts, and computes validation on the part that was not
 used for training. The reported validation parameters are then obtained as follows:
 
-\begin{itemize} 
-\item Null deviance is sum of null deviances of n-models (each uses null model based on the subset of the data)
-\item Residual deviance is sum of residual deviances of all n-models
-\item AIC is based on log-likelihood, which is summed up similarly to deviance
-\item AUC is based on ROC curve build  by summing up confusion matrices built for all n-models.
-For each threshold, we get a confusion matrix that includes all the rows from the training set. However, each row
-is classified exclusively by the model that did not contain that row in its training set. The computation of AUC is
-the same as for a model without cross-validation.
-\end{itemize}
-
-\subsubsection{Grid Search}
-
 \subsubsection{Grid Search Over Alpha}
+
 Alpha search is not always needed and simply changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
 respectively) works in most cases. If $\alpha$ search is needed, usually only a few values are sufficient. Alpha
 search is invoked by supplying a list of values for $\alpha$ instead of a single value. H2O then produces one model
@@ -557,11 +595,23 @@ and it can be really slow (or even impossible) to compute in large N situations.
 it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, it is
 safer to run with $alpha=1-\epsilon$ instead.
 
+\bigskip
+\waterExampleInR
+\begin{lstlisting}[style=R]
+TODO
+\end{lstlisting}
+
 \subsubsection{Grid Search Over Lambdas}
 
 While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
 by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
 search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
+
+\bigskip
+\waterExampleInR
+\begin{lstlisting}[style=R]
+TODO
+\end{lstlisting}
 
 \subsubsection{Offsets}
 
@@ -591,32 +641,239 @@ The constraints are specified as a frame with following vecs (matched by name; a
 \item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored) - specifies per-column L2 penalties on the distance from the given solution
 \end{itemize}
  
+\subsubsection{Proximal Operators}
+
 The proximal operator interface allows you to run the GLM with a proximal penalty on a distance from a specified
 given solution. There are many potential uses: for example, it can be used as part of an ADMM consensus algorithm
 to obtain a unified solution over separate H2O clouds, or in Bayesian regression approximation.
-
-\subsubsection{Proximal Operators}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
 \section{GLM Model Output}
+
+The following sections explain the output produced by the following logistic regression (i.e. binomial
+classification) example:
+
+\begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+rand_vec <- h2o.runif(h2o_df, seed = 1234)
+train <- h2o_df[rand_vec <= 0.8,]
+valid <- h2o_df[rand_vec > 0.8,]
+binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = train, validation_frame = valid, family = "binomial")
+print(binomial.fit)
+\end{lstlisting}
+
+\begin{lstlisting}[style=output]
+Model Details:
+==============
+
+H2OBinomialModel: glm
+Model ID:  GLM_model_R_1439511782434_25 
+GLM Model:
+    family  link                                regularization number_of_predictors_total number_of_active_predictors number_of_iterations training_frame
+1 binomial logit Elastic Net (alpha = 0.5, lambda = 4.674E-4 )                          4                           5                    5      subset_39
+
+Coefficients:
+      names coefficients standardized_coefficients
+1 Intercept    -6.467393                 -0.414440
+2       AGE    -0.021983                 -0.143745
+3      RACE    -0.295770                 -0.093423
+4       PSA     0.028551                  0.604644
+5   GLEASON     1.156808                  1.298815
+
+H2OBinomialMetrics: glm
+** Reported on training data. **
+
+MSE:  0.1735008
+R^2:  0.2842015
+LogLoss:  0.5151585
+AUC:  0.806806
+Gini:  0.6136121
+Null Deviance:  403.9953
+Residual Deviance:  307.0345
+AIC:  317.0345
+
+Confusion Matrix for F1-optimal threshold:
+         0   1    Error     Rate
+0      125  50 0.285714  =50/175
+1       24  99 0.195122  =24/123
+Totals 149 149 0.248322  =74/298
+
+Maximum Metrics:
+                      metric threshold    value idx
+1                     max f1  0.301518 0.727941 147
+2                     max f2  0.203412 0.809328 235
+3               max f0point5  0.549771 0.712831  91
+4               max accuracy  0.301518 0.751678 147
+5              max precision  0.997990 1.000000   0
+6           max absolute_MCC  0.301518 0.511199 147
+7 max min_per_class_accuracy  0.415346 0.739837 134
+
+H2OBinomialMetrics: glm
+** Reported on validation data. **
+
+MSE:  0.1981162
+R^2:  0.1460683
+LogLoss:  0.5831277
+AUC:  0.7339744
+Gini:  0.4679487
+Null Deviance:  108.4545
+Residual Deviance:  95.63294
+AIC:  105.6329
+
+Confusion Matrix for F1-optimal threshold:
+        0  1    Error    Rate
+0      35 17 0.326923  =17/52
+1       8 22 0.266667   =8/30
+Totals 43 39 0.304878  =25/82
+
+Maximum Metrics:
+                      metric threshold    value idx
+1                     max f1  0.469237 0.637681  38
+2                     max f2  0.203366 0.788043  63
+3               max f0point5  0.527267 0.616438  28
+4               max accuracy  0.593421 0.719512  18
+5              max precision  0.949357 1.000000   0
+6           max absolute_MCC  0.469237 0.391977  38
+7 max min_per_class_accuracy  0.482906 0.692308  36
+\end{lstlisting}
+
 \subsection{Coefficients and Normalized coefficients}
-\subsection{Model outputs common to all families}
-\subsubsection{Objective value}
+
+Raw coefficients should be used to make predictions for new data points:
+
+\begin{lstlisting}[style=R]
+binomial.fit@model$coefficients
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+  Intercept         AGE        RACE         PSA     GLEASON 
+-6.46739299 -0.02198278 -0.29576986  0.02855057  1.15680761 
+\end{lstlisting}
+
+Standardized coefficients are useful for inspecting the relative contribution of different coefficients to the model:
+
+\begin{lstlisting}[style=R]
+binomial.fit@model$coefficients_table
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Coefficients:
+      names coefficients standardized_coefficients
+1 Intercept    -6.467393                 -0.414440
+2       AGE    -0.021983                 -0.143745
+3      RACE    -0.295770                 -0.093423
+4       PSA     0.028551                  0.604644
+5   GLEASON     1.156808                  1.298815
+\end{lstlisting}
+
+This view provides a sorted list in descending order:
+
+\begin{lstlisting}[style=R]
+binomial.fit@model$standardized_coefficient_magnitudes
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Standardized Coefficient Magnitudes:
+          names coefficients sign
+GLEASON GLEASON     1.298815  POS
+PSA         PSA     0.604644  POS
+AGE         AGE     0.143745  NEG
+RACE       RACE     0.093423  NEG
+\end{lstlisting}
+
+\subsection{Model statistics}
+
+Various model statistics are available:
+
+\texttt{MSE} is the mean squared error.  TODO
+
+\texttt{R\textasciicircum2} is the R squared.  TODO
+
+\texttt{LogLoss} is the log loss.  TODO
+
+\texttt{AUC} is based on ROC curve build  by summing up confusion matrices built for all n-models.
+For each threshold, we get a confusion matrix that includes all the rows from the training set. However, each row
+is classified exclusively by the model that did not contain that row in its training set. The computation of AUC is
+the same as for a model without cross-validation.
+
+\texttt{Gini}  TODO
+
+\texttt{Null deviance} is sum of null deviances of n-models (each uses null model based on the subset of the data)
+
+\texttt{Residual deviance} is sum of residual deviances of all n-models
+
+\texttt{AIC} is based on log-likelihood, which is summed up similarly to deviance
+
+Fetch these statistics using the following accessor functions:
+
+\begin{lstlisting}[style=R]
+h2o.num_iterations(binomial.fit)
+h2o.null_dof(binomial.fit, train = TRUE, valid = TRUE)
+h2o.residual_dof(binomial.fit, train = TRUE, valid = TRUE)
+
+h2o.mse(binomial.fit, train = TRUE, valid = TRUE)
+h2o.r2(binomial.fit, train = TRUE, valid = TRUE)
+h2o.logloss(binomial.fit, train = TRUE, valid = TRUE)
+h2o.auc(binomial.fit, train = TRUE, valid = TRUE)
+h2o.giniCoef(binomial.fit, train = TRUE, valid = TRUE)
+h2o.null_deviance(binomial.fit, train = TRUE, valid = TRUE)
+h2o.residual_deviance(binomial.fit, train = TRUE, valid = TRUE)
+h2o.aic(binomial.fit, train = TRUE, valid = TRUE)
+\end{lstlisting}
+
+\subsection{Confusion Matrix}
+
+Fetch the confusion matrix directly using the following accessor function:
+
+\begin{lstlisting}[style=R]
+h2o.confusionMatrix(binomial.fit, valid = FALSE)
+h2o.confusionMatrix(binomial.fit, valid = TRUE)
+\end{lstlisting}
+
 \subsubsection{Scoring history}
-\subsubsection{etc.}
-\subsection{Additional model outputs for logistic regression (aka binomial classification)}
-\subsubsection{AUC}
-\subsubsection{etc.}
+
+\begin{lstlisting}[style=R]
+binomial.fit@model$scoring_history
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+Scoring History:
+            timestamp   duration iteration log_likelihood objective
+1 2015-08-13 19:05:17  0.000 sec         0      201.99764   0.67784
+2 2015-08-13 19:05:17  0.002 sec         1      158.46117   0.53216
+3 2015-08-13 19:05:17  0.003 sec         2      153.74404   0.51658
+4 2015-08-13 19:05:17  0.004 sec         3      153.51935   0.51590
+5 2015-08-13 19:05:17  0.005 sec         4      153.51723   0.51590
+6 2015-08-13 19:05:17  0.006 sec         5      153.51723   0.51590
+\end{lstlisting}
+
 \subsection{Sanity checking the model}
+
+TODO
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
 \section{Making Predictions}
+
 \subsection{Batch In-H2O predictions}
+
 \subsection{Real-time low-latency predictions with the NanoFast scoring engine}
+
+For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  Using the POJO is
+beyond the scope of this document, but here is an example of how to get one and view it.
+
+\begin{lstlisting}[style=R]
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "binomial")
+h2o.download_pojo(binomial.fit)
+\end{lstlisting}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -631,7 +888,10 @@ to obtain a unified solution over separate H2O clouds, or in Bayesian regression
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
-Implementation Details
+\section{Implementation Details}
+
+The following sections discuss some of the implementation choices in H2O's GLM.
+
 \subsection{Categorical Variables}
 
 When applying linear models to datasets with categorical variables, the usual approach is to expand the
@@ -679,8 +939,20 @@ throughput issue with the number of predictors and its decomposition cost grows 
 predictors (which is a computational cost issue). In many cases, H2O can work around these limitations due to its
 handling of categoricals and by employing strong rules to filter out inactive predictors.
 
-\subsection{Handling Data with Many Predictors}
 \subsection{Data Corner Cases}
+
+\subsection{Strong Rules for L1} \label{strongrules}
+
+H2O's GLM employs strong rules (as described in \citetalias{strong}) to discard predictors that are likely to have
+0 coefficients prior to model building. According to \citetalias{strong}, we can identify these predictors based on
+a gradient with great accuracy. This provides very few false negatives and virtually no false positives in
+practice, greatly reducing the computational complexity of model fitting and enabling it to run on wide datasets
+with tens of thousands of predictors, provided that there is a limited number of active predictors.
+
+When applying the strong rules, we evaluate the gradient at the starting solution, filter out inactive
+coefficients, and fit a model using only a subset of the available predictors. Since strong rules may have false
+positives (which are extremely rare in practice), we need to check the solution by testing the kkt conditions and
+verify that all discarded predictors indeed have 0 coefficients.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
