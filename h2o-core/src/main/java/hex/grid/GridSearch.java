@@ -218,6 +218,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
       grid.appendFailedModelParameters(params, e.getMessage());
     } finally {
+      // Update progress by 1 increment
+      this.update(1L);
       // Always update grid in DKV after model building attempt
       grid.update(jobKey());
     }
