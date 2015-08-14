@@ -763,10 +763,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
         actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
       }
-      pred = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(pred);
+      Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
 
       // compute final deviance
-      loss = deviance(1 /*weight*/, actual, pred);
+      loss = dist.deviance(1 /*weight*/, actual, dist.linkInv(pred));
     }
 
     // add L1/L2 penalty of model coefficients (weights & biases)
