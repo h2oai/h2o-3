@@ -75,12 +75,6 @@ class H2OFrame:
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
 
-  def _import_file_or_dir(self,path):
-    if os.path.isdir(path):
-      paths = os.path.listdir
-    paths = [path] if isinstance(path,str) else path
-    return [ _import1(fname) for fname in paths ]
-
   def _upload_python_object(self, python_obj):
     """
     Properly handle native python data types. For a discussion of the rules and
