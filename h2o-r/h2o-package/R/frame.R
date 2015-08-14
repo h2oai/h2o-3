@@ -546,9 +546,9 @@ setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.om
 #'   localH2O = h2o.init()
 #'   df <- h2o.createFrame(localH2O, rows = 10000, cols = 1024,
 #'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
-#'   df_fft   <- h2o.fft(data=df,     dimensions=c(1024,1,1), destination_frame="fft",    inverse=FALSE)
-#'   df_recon <- h2o.fft(data=df_fft, dimensions=c(1024,1,1), destination_frame="recond", inverse=TRUE)
-#'   max(abs(df-df_recon))
+#'   df1 <- h2o.fft(data=df,dimensions=c(1024,1,1),destination_frame="df1",inverse=FALSE)
+#'   df2 <- h2o.fft(data=df1,dimensions=c(1024,1,1),destination_frame="df2",inverse=TRUE)
+#'   max(abs(df1-df2))
 #' }
 #' @export
 h2o.fft <- function(data, destination_frame, dimensions, inverse=F) {
