@@ -10,6 +10,8 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.Exec;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -42,6 +44,42 @@ public class GLRMTest extends TestUtil {
       }
     }
     return err;
+  }
+
+  public static void checkLossbyCol(GLRMParameters parms, GLRMModel model) {
+    int ncats = model._output._ncats;
+    GLRMParameters.Loss[] actual = model._output._lossFunc;
+    assert ncats >= 0 && ncats <= actual.length;
+    if(null == parms._loss_by_col || null == parms._loss_by_col_idx) return;
+    Assert.assertEquals(parms._loss_by_col.length, parms._loss_by_col_idx.length);
+
+    // Map original to adapted frame column indices
+    int[] loss_idx_adapt = new int[parms._loss_by_col_idx.length];
+    for(int i = 0; i < parms._loss_by_col_idx.length; i++) {
+      int idx_adapt = -1;
+      for(int j = 0; j < model._output._permutation.length; j++) {
+        if(model._output._permutation[j] == parms._loss_by_col_idx[i]) {
+          idx_adapt = j; break;
+        }
+      }
+      loss_idx_adapt[i] = idx_adapt;
+    }
+    Arrays.sort(loss_idx_adapt);
+
+    // Check loss function for each column matches input parameter
+    // Categorical columns
+    for(int i = 0; i < ncats; i++) {
+      int idx = Arrays.binarySearch(loss_idx_adapt, i);
+      GLRMParameters.Loss comp = idx >= 0 ? parms._loss_by_col[idx] : parms._multi_loss;
+      Assert.assertEquals(comp, actual[i]);
+    }
+
+    // Numeric columns
+    for(int i = ncats; i < actual.length; i++) {
+      int idx = Arrays.binarySearch(loss_idx_adapt, i);
+      GLRMParameters.Loss comp = idx >= 0 ? parms._loss_by_col[idx] : parms._loss;
+      Assert.assertEquals(comp, actual[i]);
+    }
   }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
@@ -320,6 +358,53 @@ public class GLRMTest extends TestUtil {
     sb.append("Missing Fraction --> Avg SSE in Eigenvectors\n");
     for (String s : Arrays.toString(ev_map.entrySet().toArray()).split(",")) sb.append(s.replace("=", " --> ")).append("\n");
     Log.info(sb.toString());
+  }
+
+  @Test public void testSetColumnLoss() throws InterruptedException, ExecutionException {
+    GLRM job = null;
+    GLRMModel model = null;
+    Frame train = null, score = null;
+
+    try {
+      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 12;
+      parms._loss = GLRMParameters.Loss.Quadratic;
+      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.L1, GLRMParameters.Loss.Huber };
+      parms._loss_by_col_idx = new int[] { 2 /* AGMT */, 5 /* DEG */ };
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._init = GLRM.Initialization.PlusPlus;
+      parms._min_step_size = 1e-5;
+      parms._recover_svd = false;
+      parms._max_iterations = 2000;
+
+      try {
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+        checkLossbyCol(parms, model);
+
+        score = model.score(train);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) {
+        model._parms._loading_key.get().delete();
+        model.delete();
+      }
+    }
   }
 
   @Test public void testRegularizers() throws InterruptedException, ExecutionException {

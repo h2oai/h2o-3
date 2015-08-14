@@ -46,7 +46,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     public GLRMParameters.Loss loss;
 
     @API(help = "Enum loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of enum class
-    public GLRMParameters.MultiLoss multi_loss;
+    public GLRMParameters.Loss multi_loss;
 
     @API(help = "Length of period (only used with periodic loss function)")
     public int period;

@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.DataInfo;
+import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,10 +60,10 @@ public class GLRMCategoricalTest extends TestUtil {
 
     try {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
-      GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
+      GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GLRMModel.GLRMParameters.Loss.L1;
+      parms._loss = GLRMParameters.Loss.L1;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = true;
@@ -108,7 +109,7 @@ public class GLRMCategoricalTest extends TestUtil {
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
-      GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
+      GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 8;
       parms._gamma_x = parms._gamma_y = 0.1;
@@ -151,13 +152,13 @@ public class GLRMCategoricalTest extends TestUtil {
     Random rng = new Random(seed);
     Frame train = null, score = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
-    final GLRMModel.GLRMParameters.Regularizer[] regs = new GLRMModel.GLRMParameters.Regularizer[] {
-            GLRMModel.GLRMParameters.Regularizer.Quadratic,
-            GLRMModel.GLRMParameters.Regularizer.L1,
-            GLRMModel.GLRMParameters.Regularizer.NonNegative,
-            GLRMModel.GLRMParameters.Regularizer.OneSparse,
-            GLRMModel.GLRMParameters.Regularizer.UnitOneSparse,
-            GLRMModel.GLRMParameters.Regularizer.Simplex
+    final GLRMParameters.Regularizer[] regs = new GLRMParameters.Regularizer[] {
+            GLRMParameters.Regularizer.Quadratic,
+            GLRMParameters.Regularizer.L1,
+            GLRMParameters.Regularizer.NonNegative,
+            GLRMParameters.Regularizer.OneSparse,
+            GLRMParameters.Regularizer.UnitOneSparse,
+            GLRMParameters.Regularizer.Simplex
     };
 
     Scope.enter();
@@ -168,17 +169,17 @@ public class GLRMCategoricalTest extends TestUtil {
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
-      for(GLRMModel.GLRMParameters.Loss loss : new GLRMModel.GLRMParameters.Loss[] {
-              GLRMModel.GLRMParameters.Loss.Quadratic,
-              GLRMModel.GLRMParameters.Loss.L1,
-              GLRMModel.GLRMParameters.Loss.Huber,
-              GLRMModel.GLRMParameters.Loss.Poisson,
-              GLRMModel.GLRMParameters.Loss.Hinge,
-              GLRMModel.GLRMParameters.Loss.Logistic
+      for(GLRMParameters.Loss loss : new GLRMParameters.Loss[] {
+              GLRMParameters.Loss.Quadratic,
+              GLRMParameters.Loss.L1,
+              GLRMParameters.Loss.Huber,
+              GLRMParameters.Loss.Poisson,
+              GLRMParameters.Loss.Hinge,
+              GLRMParameters.Loss.Logistic
       }) {
-        for(GLRMModel.GLRMParameters.MultiLoss multiloss : new GLRMModel.GLRMParameters.MultiLoss[] {
-                GLRMModel.GLRMParameters.MultiLoss.Categorical,
-                GLRMModel.GLRMParameters.MultiLoss.Ordinal
+        for(GLRMParameters.Loss multiloss : new GLRMParameters.Loss[] {
+                GLRMParameters.Loss.Categorical,
+                GLRMParameters.Loss.Ordinal
         }) {
           GLRMModel model = null;
           try {
@@ -186,7 +187,7 @@ public class GLRMCategoricalTest extends TestUtil {
             long myseed = rng.nextLong();
             Log.info("GLRM using seed = " + myseed);
 
-            GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
+            GLRMParameters parms = new GLRMParameters();
             parms._train = train._key;
             parms._transform = DataInfo.TransformType.NONE;
             parms._k = 5;
@@ -228,6 +229,62 @@ public class GLRMCategoricalTest extends TestUtil {
       }
     } finally {
       if(train != null) train.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test public void testSetColumnLossCats() throws InterruptedException, ExecutionException {
+    GLRM job = null;
+    GLRMModel model = null;
+    Frame train = null, score = null;
+    final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
+
+    Scope.enter();
+    try {
+      train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+      for(int i = 0; i < cats.length; i++)
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+      train.remove("ID").remove();
+      DKV.put(train._key, train);
+
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 12;
+      parms._loss = GLRMParameters.Loss.Quadratic;
+      parms._multi_loss = GLRMParameters.Loss.Categorical;
+      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Ordinal, GLRMParameters.Loss.Poisson, GLRMParameters.Loss.L1 };
+      parms._loss_by_col_idx = new int[] { 3 /* DPROS */, 1 /* AGE */, 6 /* VOL */ };
+      parms._init = GLRM.Initialization.PlusPlus;
+      parms._min_step_size = 1e-5;
+      parms._recover_svd = false;
+      parms._max_iterations = 2000;
+
+      try {
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+        GLRMTest.checkLossbyCol(parms, model);
+
+        score = model.score(train);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) {
+        model._output._loading_key.get().delete();
+        model.delete();
+      }
       Scope.exit();
     }
   }
