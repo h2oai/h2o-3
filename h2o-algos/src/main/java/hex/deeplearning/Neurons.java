@@ -115,7 +115,6 @@ public abstract class Neurons {
   void sanityCheck(boolean training) {
     if (this instanceof Input) {
       assert(_previous == null);
-      assert (!training || _dropout != null);
     } else {
       assert(_previous != null);
       if (_minfo.has_momenta()) {
@@ -158,7 +157,9 @@ public abstract class Neurons {
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
             || this instanceof RectifierDropout || this instanceof Input) ) {
-      _dropout = this instanceof Input ? new Dropout(units, params._input_dropout_ratio) : new Dropout(units, params._hidden_dropout_ratios[_index]);
+      _dropout = this instanceof Input ?
+              (params._input_dropout_ratio==0 ? null : new Dropout(units, params._input_dropout_ratio)) //input dropout
+              : new Dropout(units, params._hidden_dropout_ratios[_index]); //hidden dropout
     }
     if (!(this instanceof Input)) {
       _previous = neurons[_index]; //incoming neurons
