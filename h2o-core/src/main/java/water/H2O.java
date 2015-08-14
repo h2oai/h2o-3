@@ -932,7 +932,7 @@ final public class H2O {
   static int getWrkThrPoolSize(int i) { return FJPS[i]==null ? -1 : FJPS[i].getPoolSize();             }
 
   // Submit to the correct priority queue
-  public static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+  public static <T extends H2OCountedCompleter> T submitTask( T task ) {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
@@ -1003,6 +1003,7 @@ final public class H2O {
 
     /** Override to specify actual work to do */
     protected abstract void compute2();
+
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {

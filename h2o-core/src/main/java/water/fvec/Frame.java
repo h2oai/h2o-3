@@ -365,7 +365,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Type for every Vec */
-  byte[] types() {
+  public byte[] types() {
     Vec[] vecs = vecs();
     byte bs[] = new byte[vecs.length];
     for( int i=0; i<vecs.length; i++ )

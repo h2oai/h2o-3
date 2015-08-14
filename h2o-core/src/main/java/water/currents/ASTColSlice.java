@@ -1,10 +1,9 @@
 package water.currents;
 
-import water.H2O;
-import water.MRTask;
-import water.fvec.*;
-
 import java.util.Arrays;
+
+import water.*;
+import water.fvec.*;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {
@@ -189,44 +188,97 @@ class ASTRBind extends ASTPrim {
   @Override String str() { return "rbind" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
 
-    // Compute the variable args.  Find the common column count
-    Val vals[] = new Val[asts.length];
-    Frame fr = null;
-    long numRows = 0;
-    for( int i=1; i<asts.length; i++ ) {
-      vals[i] = stk.track(asts[i].exec(env));
-      if( vals[i].isFrame() ) {
-        Frame fr0 = vals[i].getFrame();
-        numRows += fr0.numRows();
-        if( fr == null ) fr = fr0;
-        else if( fr.numCols() != fr0.numCols() ) 
-          throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
-        else if( !Arrays.deepEquals(fr._names,fr0._names) )
-          throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
-      } else numRows++;         // Expand scalars into all columns, 1 row
-    }
-    int numCols = fr==null ? 1 : fr.numCols();
+    // Each argument turns into either a Frame (whose rows are entirely
+    // inlined) or a scalar (which is replicated across as a single row).
+    Val  vals[] = new Val   [asts.length];
+    Key  kfrs[] = new Key   [asts.length];
+    double ds[] = new double[asts.length];
+    Arrays.fill(ds,Double.NaN); // Error check
 
-    // Populate the new Frame
-    Vec[] vecs = new Vec[numCols];
-    for( int c=0; c<numCols; c++ ) vecs[c] = Vec.makeZero(numRows);
-    Frame res = new Frame(fr==null ? new String[]{Frame.defaultColName(0)} : fr._names, vecs);
+    // Compute the variable args.  Find the common column count; compute final chunks and types and names
+
+    Key[] tkeys = new Key[asts.length]; // Temp keys, for key-less frames
+    Frame fr = null; // Canonical Frame; all frames have the same column count, types and names
+    byte[] types = null;          // Column types
+    Vec.VectorGroup group = null; // Some example vector group
+    int nchks=0;                  // Total chunks
     for( int i=1; i<asts.length; i++ ) {
-      switch( vals[i].type() ) {
-      case Val.FRM:  throw H2O.unimpl();
-      case Val.FUN:  throw H2O.unimpl();
-      case Val.STR:  throw H2O.unimpl();
-      case Val.NUM:  
-        // Auto-expand scalars to fill every column
-        for( int c=0; c<numCols; c++ ) {
-          if( stk.inUse(res.vec(c)) ) throw H2O.unimpl(); // Copy on write
-          res.vec(c).set(i-1,vals[i].getNum());
-        }
-        break;
-      default: throw H2O.unimpl();
+      Val val = stk.track(asts[i].exec(env));
+      vals[i] = val;            // Save values computed for pass 2
+      if( val.isFrame() ) {     // Frames vs Scalars
+        Frame fr0 = val.getFrame();
+        kfrs[i] = fr0._key;
+        if( fr0._key == null ) // Unkeyed frame?  Key it, and record a temp key
+          DKV.put(new Frame(kfrs[i]=tkeys[i]=Key.make(), fr0.names(),fr0.vecs()));
+
+        // Check that all frames are compatible
+        if( fr == null ) { fr = fr0; types = fr0.types(); }
+        if( fr.numCols() != fr0.numCols() ) 
+          throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
+        if( !Arrays.deepEquals(fr._names,fr0._names) )
+          throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
+        if( !Arrays.equals(types,fr0.types()) )
+          throw new IllegalArgumentException("rbind frames must have all the same column types, found "+Arrays.toString(types)+" and "+Arrays.toString(fr0.types()));
+
+        nchks += fr0.anyVec().nChunks(); // Total chunks
+        // Capture any exciting group; the new frame will use this group
+        Vec.VectorGroup gp1 = fr0.anyVec().group();
+        if( group == null || group == Vec.VectorGroup.VG_LEN1 ) group = gp1;
+
+      } else {
+        ds[i] = val.getNum();   // Expand scalars into all columns, 1 row
       }
     }
 
-    return new ValFrame(res);
+    // Compute ESPC, rollup the row counts 
+    long[] espc = new long[nchks+1];
+    int coffset = 0;
+    for( int i=0; i< vals.length; ++i) {
+      long roffset = espc[coffset];
+      if( vals[i].isFrame() ) { // Frame?
+        long[] espc2 = vals[i].getFrame().anyVec().get_espc();
+        for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
+          espc[coffset + j] = roffset+ espc2[j];
+        coffset += espc2.length;
+      } else {                     // Scalar?  Then 1 row
+        espc[coffset] = roffset+1; // One row, no more chunks
+      }
+    }
+
+    // Build empty result vectors of the proper type and new row counts.
+    Key[] keys = group.addVecs(fr.numCols());
+    String[] names = fr==null ? new String[]{Frame.defaultColName(0)} : fr._names;
+    String[][] domains = fr.domains();
+    Vec[] vecs = new Vec[keys.length];
+    for( int i=0; i<vecs.length; ++i )
+      vecs[i] = new Vec( keys[i], espc, domains[i], types[i] );
+
+    // Build a frame with all the empty vecs (still no chunks)
+    Key tmp_key = Key.make();
+    Frame res = new Frame( tmp_key, names, vecs );
+    DKV.put(res);               // Publish for MRTask
+
+    // Do the massive parallel rbind, filling in chunks
+...borken....
+    new RbindTask(kfrs,ds,espc).doAll(res);
+
+    // Cleanup keys
+    DKV.remove(tmp_key);        // Just the junk frame; leave the vecs
+    for( Key tkey : tkeys ) DKV.remove(tkey);
+
+    return new ValFrame(new Frame(names, vecs));
   }
+
+  // RBind a single column across all vals
+  private static class RbindTask extends MRTask<RbindTask> {
+    final Key[] _kfrs;
+    final double[] _ds;
+    final long[] _espc;
+
+    RbindTask(Key[] kfrs, double[] ds, long[] espc) { _kfrs = kfrs; _ds = ds; _espc = espc; }
+
+
+
+  }
+
 }
