@@ -38,7 +38,7 @@ test.glrm.orthonnmf <- function(conn) {
   Log.info("Run GLRM with orthogonal non-negative regularization on both X and Y")
   fitH2O <- h2o.glrm(train.h2o, init = initY, loss = "Quadratic", regularization_x = "OneSparse", regularization_y = "OneSparse", gamma_x = 1, gamma_y = 1)
   Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))
-  fitY <- t(fitH2O@model$archetypes)
+  fitY <- as.matrix(fitH2O@model$archetypes)
   fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
   
   Log.info("Check that X and Y matrices are non-negative")
