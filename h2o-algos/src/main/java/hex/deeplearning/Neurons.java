@@ -108,9 +108,6 @@ public abstract class Neurons {
 
   public Storage.DenseVector _avg_a;
 
-  public static final int missing_int_value = Integer.MAX_VALUE; //encode missing label
-  public static final Float missing_real_value = Float.NaN; //encode missing regression target
-
   /**
    * Helper to check sanity of Neuron layers
    * @param training whether training or testing is done
@@ -156,7 +153,7 @@ public abstract class Neurons {
     _a = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {
       _e = new Storage.DenseVector(units);
-    } else {
+    } else if (params._autoencoder && params._input_dropout_ratio > 0) {
       _origa = new Storage.DenseVector(units);
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
@@ -207,16 +204,18 @@ public abstract class Neurons {
     final float rows = _a.size();
     float m = _minfo.adaDelta() ? 0 : momentum();
     float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
+    float scale = 1f/n;
     for( int row = 0; row < rows; row++ ) {
-      final float g = _e.raw()[row]/n;
+      final float g = _e.raw()[row] * scale;
       bprop(row, g, r, m);
     }
   }
 
   /**
-   * Auto-Encoder specific accumulation of reconstruction errors
+   * Accumulation of reconstruction errors for a generic Neurons class
+   * (This is only used for AutoEncoders)
    */
-  protected void accumulateMiniBatchGradient() {
+  protected void accumulateMiniBatchGradient(float ignored) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     Distribution dist = new Distribution(params._distribution); //no need for tweedie power here
     final int rows = _a.size();
@@ -321,6 +320,10 @@ public abstract class Neurons {
       final int w = idx + col;
       float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
       if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+
+      // store the gradient (grad is the negative gradient)
+      if (DeepLearningModelInfo.gradientCheck != null)
+        DeepLearningModelInfo.gradientCheck.apply(_index,row,col,-grad);
 
       if (have_ada) {
         final float grad2 = grad*grad;
@@ -1021,7 +1024,6 @@ public abstract class Neurons {
    */
   public static abstract class Output extends Neurons {
     Output(int units) { super(units); }
-    protected void fprop(long seed, boolean training) { throw new UnsupportedOperationException(); }
     protected void bprop() { throw new UnsupportedOperationException(); }
   }
 
@@ -1030,7 +1032,7 @@ public abstract class Neurons {
    */
   public static class Softmax extends Output {
     public Softmax(int units) { super(units); }
-    protected void fprop() {
+    protected void fprop(long seed, boolean training) {
       gemv((Storage.DenseVector) _a, (Storage.DenseRowMatrix) _w, (Storage.DenseVector) _previous._a, _b, null);
       final float max = ArrayUtils.maxValue(_a.raw());
       float scale = 0f;
@@ -1052,14 +1054,14 @@ public abstract class Neurons {
      * Backpropagation for classification
      * Update every weight as follows: w += -rate * dE/dw
      * Compute dE/dw via chain rule: dE/dw = dE/dy * dy/dnet * dnet/dw, where net = sum(xi*wi)+b and y = activation function
-     * @param target actual class label
+     * @param target actual class label (integer)
      */
-    protected void accumulateMiniBatchGradient(int target) {
-      assert (target != missing_int_value); // no correction of weights/biases for missing label
+    @Override protected void accumulateMiniBatchGradient(float target) {
+      assert(target == (int)target);
       float g; //partial derivative dE/dy * dy/dnet
       final float rows = _a.size();
       for( int row = 0; row < rows; row++ ) {
-        final float t = (row == target ? 1f : 0f);
+        final float t = (row == (int)target ? 1f : 0f);
         final float y = _a.get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
         switch(params._loss) {
@@ -1107,7 +1109,7 @@ public abstract class Neurons {
     public Linear() {
       super(1);
     }
-    protected void fprop() {
+    protected void fprop(long seed, boolean training) {
       gemv((Storage.DenseVector)_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
     }
 
@@ -1115,8 +1117,7 @@ public abstract class Neurons {
      * Backpropagation for regression
      * @param target floating-point target value
      */
-    protected void accumulateMiniBatchGradient(float target) {
-      assert (target != missing_real_value);
+    @Override protected void accumulateMiniBatchGradient(float target) {
       final int row = 0;
       final float t = target; //t is in response space
       final float y = _a.get(row);

@@ -107,16 +107,31 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * Apply the gradient to update the weights
    * @param n number of trained examples in this last mini batch
    */
-  @Override
-  protected void applyMiniBatchUpdate(int n) {
+  @Override public void applyMiniBatchUpdate(int n) {
     assert(_training);
-    assert(n>0);
-    // last layer: Apply mini batch (need to know mini-batch size n)
-    _neurons[_neurons.length-1].bpropMiniBatch(n);
-    // non-last layers: Apply mini batch (need to know mini-batch size n)
-    for (int i = _neurons.length - 2; i > 0; --i)
-      _neurons[i].bprop();
+    applyModelUpdates(_neurons, n);
+    clearGradients();
+  }
 
+  /**
+   * Helper to apply back-propagation without clearing out the gradients afterwards
+   * Used for gradient checking
+   * @param neurons
+   */
+  static public void applyModelUpdates(Neurons[] neurons) {
+    applyModelUpdates(neurons,1);
+  }
+
+  static private void applyModelUpdates(Neurons[] neurons, int n) {
+    assert (n > 0);
+    // last layer: Apply mini batch (need to know mini-batch size n)
+    neurons[neurons.length - 1].bpropMiniBatch(n);
+    // non-last layers: Apply mini batch (need to know mini-batch size n)
+    for (int i = neurons.length - 2; i > 0; --i)
+      neurons[i].bprop();
+  }
+
+  private void clearGradients() {
     // all errors are reset to 0
     for (int i = 0; i<_neurons.length ;++i) {
       Storage.DenseVector e = _neurons[i]._e;
@@ -279,56 +294,37 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param minfo
    * @param consensus_minfo
    * @param training
-   * @param responses
+   * @param responses Standardized response(s)
    */
   public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
                           DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double offset) {
     try {
-      for (int i=1; i<neurons.length-1; ++i) {
+      // Forward propagation
+      for (int i=1; i<neurons.length; ++i)
         neurons[i].fprop(seed, training);
+
+      // Add offset (in link space) if applicable
+      if (offset > 0) {
+        assert (!minfo._classification); // Regression
+        double[] m = minfo.data_info()._normRespMul;
+        double[] s = minfo.data_info()._normRespSub;
+        double mul = m == null ? 1 : m[0];
+        double sub = s == null ? 0 : s[0];
+        neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
       }
-      if (minfo.get_params()._autoencoder) {
-        neurons[neurons.length - 1].fprop(seed, training);
-        if (training) {
-          neurons[neurons.length - 1].accumulateMiniBatchGradient();
-        }
-      } else {
+
+      if (training) {
+        // Compute the mini-batch gradient
+        neurons[neurons.length - 1].accumulateMiniBatchGradient(
+                minfo.get_params()._autoencoder ? Float.NaN //for auto-encoder, pass a dummy "response" (ignored)
+                        : (float)responses[0]               //this is either a class label or a regression target
+        );
+
+        // Elastic Averaging - set up helpers needed during back-propagation
         if (consensus_minfo != null) {
           for (int i = 1; i < neurons.length; i++) {
             neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
             neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
-          }
-        }
-        if (minfo._classification) {
-          ((Neurons.Softmax) neurons[neurons.length - 1]).fprop();
-          if (training) {
-            assert ((double) (int) responses[0] == responses[0]);
-            final int target_label;
-            if (Double.isNaN(responses[0])) { //missing response
-              target_label = Neurons.missing_int_value;
-            } else {
-              assert ((double) (int) responses[0] == responses[0]); //classification -> integer labels expected
-              target_label = (int) responses[0];
-            }
-            ((Neurons.Softmax) neurons[neurons.length - 1]).accumulateMiniBatchGradient(target_label);
-          }
-        } else {
-          // compute prediction (in link space)
-          ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
-          // add offset (in link space)
-          if (offset > 0) {
-            double mul = minfo.data_info()._normRespMul == null ? 1 : minfo.data_info()._normRespMul[0];
-            double sub = minfo.data_info()._normRespSub == null ? 0 : minfo.data_info()._normRespSub[0];
-            neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
-          }
-          if (training) {
-            float target_value;
-            if (Double.isNaN(responses[0])) { //missing response
-              target_value = Neurons.missing_real_value;
-            } else {
-              target_value = (float)responses[0]; //actual response in response space
-            }
-            ((Neurons.Linear) neurons[neurons.length - 1]).accumulateMiniBatchGradient(target_value);
           }
         }
       }

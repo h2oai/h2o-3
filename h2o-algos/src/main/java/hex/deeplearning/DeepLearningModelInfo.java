@@ -718,4 +718,16 @@ public class DeepLearningModelInfo extends Iced {
     return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
+  static public class GradientCheck {
+    GradientCheck(int l, int r, int c) { layer=l; row=r; col=c; }
+    int layer;
+    int row;
+    int col;
+    float gradient;
+    void apply(int l, int r, int c, float g) {
+      if (r==row && c==col && l==layer)
+        gradient=g;
+    }
+  }
+  static public GradientCheck gradientCheck = null;
 }

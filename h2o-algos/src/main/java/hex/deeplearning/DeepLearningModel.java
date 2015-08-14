@@ -732,6 +732,56 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   /**
+   * Compute the loss function
+   * @param myRow denseRow containing numerical/categorical predictor and response data (standardized)
+   * @return loss
+   */
+  public double loss(DataInfo.Row myRow) {
+    Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
+    long seed = 0; //ignored
+    ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+    DeepLearningTask.step(seed, neurons, model_info(), null,
+            false /*not training - no need to compute and store gradients*/, new double[]{myRow.response[0]}, 0);
+
+    //Now compute the loss
+    double loss;
+    if (_parms._loss == DeepLearningParameters.Loss.CrossEntropy) {
+      if (_parms._balance_classes) throw H2O.unimpl();
+      int actual = (int)myRow.response[0];
+      double pred = neurons[neurons.length - 1]._a.get(actual);
+      loss = -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
+    } else {
+      if (_parms._autoencoder) throw H2O.unimpl();
+
+      double pred = neurons[neurons.length - 1]._a.raw()[0]; //prediction in standardized response space
+
+//      //bring standardized prediction to real space
+//      if (model_info().data_info()._normRespMul != null) { //either both are null or none
+//        pred = (pred / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+//        response = (response / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+//      }
+//      pred = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(pred);
+
+      loss = 0.5 * deviance(1 /*weight*/, myRow.response[0], pred);
+    }
+
+    for (int i = 0; i < _parms._hidden.length + 1; ++i) {
+      if (neurons[i]._w == null) continue;
+      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+        for (int col = 0; col < neurons[i]._w.cols(); ++col) {
+          loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
+          loss += 0.5*_parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+        }
+      }
+      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+        loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
+        loss += 0.5*_parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+      }
+    }
+    return loss;
+  }
+
+  /**
    * Predict from raw double values representing the data
    * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
