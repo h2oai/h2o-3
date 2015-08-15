@@ -1,4 +1,5 @@
 
+library(h2o)
 h2o.init()
 
 #---------------------------------------------------------------------
@@ -55,10 +56,26 @@ source("glm/glm_stopping_criteria.R", echo = T)
 h2o.removeAll()
 rm(list=ls())
 
+source("glm/glm_grid_search_over_alpha.R", echo = T)
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+h2o.removeAll()
+rm(list=ls())
+
+source("glm/glm_grid_search_over_lambda.R", echo = T)
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+h2o.removeAll()
+rm(list=ls())
+
 source("glm/glm_model_output_10.R", echo = T)
 source("glm/glm_model_output_20.R", echo = T)
-source("glm/glm_model_output_40.R", echo = T)
 source("glm/glm_model_output_30.R", echo = T)
+source("glm/glm_model_output_40.R", echo = T)
 source("glm/glm_accessors.R", echo = T)
 source("glm/glm_confusion_matrix.R", echo = T)
 source("glm/glm_scoring_history.R", echo = T)
