@@ -249,13 +249,7 @@ University Comprehensive Cancer Center for a study of patients with varying degr
 following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds
 based on features such as age and race.
 
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-gaussian.fit = h2o.glm(y = "VOL", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "gaussian")
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_gaussian_example.R}
 
 \subsubsection{Logistic Regression (Binomial Family)}
 Logistic regression can be used for a binary classification problem where the response is categorical with two
@@ -286,16 +280,7 @@ Using the prostate data set, build a binomial model that classifies if there is 
 capsule (CAPSULE). Make sure the entries in the CAPSULE column are binary entries by using the \texttt{h2o.table()}
 function. Change the regression by setting the family to binomial.
 
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-is.factor(h2o_df$CAPSULE)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-is.factor(h2o_df$CAPSULE)
-binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "binomial")
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_binomial_example.R}
 
 \subsubsection{Poisson Models}
 Poisson regression is generally used in cases where the response represents counts and we assume errors have a
@@ -320,21 +305,7 @@ Load the Insurance data from the MASS library and import into H2O. Run a poisson
 claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
 own (Group).
 
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-library(MASS)
-data(Insurance)
-
-# Convert ordered factors into unordered factors.
-# H2O only handles unordered factors today.
-class(Insurance$Group) <- "factor"
-class(Insurance$Age) <- "factor"
-
-# Copy the R data.frame to an H2OFrame using as.h2o()
-h2o_df = as.h2o(Insurance)
-poisson.fit = h2o.glm(y = "Claims", x = c("District", "Group", "Age"), training_frame = h2o_df, family = "poisson")
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_poisson_example.R}
 
 \subsubsection{Gamma Models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
@@ -356,14 +327,7 @@ Deviance is:
 To change the link function from the default inverse function to the log link function, modify the \texttt{link}
 argument.
 
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-gamma.inverse <- h2o.glm(y = "DPROS", x = c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), training_frame = h2o_df, family = "gamma", link = "inverse")
-gamma.log <- h2o.glm(y="DPROS", x = c("AGE","RACE","CAPSULE","DCAPS","PSA","VOL"), training_frame = h2o_df, family = "gamma", link = "log")
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_gamma_example.R}
 
 \subsubsection{Tweedie Models}
 
@@ -390,24 +354,10 @@ The following examples show how to coerce the data type of a column to a factor.
 
 \bigskip
 \waterExampleInR
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-summary(h2o_df)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/coerce_column_to_factor.R}
 
 \waterExampleInPython
-\begin{lstlisting}[style=python]
-import h2o
-h2o.init()
-path = h2o.system_file("prostate.csv")
-h2o_df = h2o.import_file(path)
-h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
-h2o_df.summary()
-\end{lstlisting}
+\lstinputlisting[style=python]{glm/coerce_column_to_factor.py}
 
 \subsection{Training and Validation Frames}
 
@@ -552,16 +502,7 @@ lower values of lambda, incorporate more predictors, and take a longer time to c
 
 \bigskip
 \waterExampleInR
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-h2o_df = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-model = h2o.glm(y = "IsDepDelayed", x = c("Year", "Origin"), training_frame = h2o_df, family = "binomial", lambda_search = TRUE, max_active_predictors = 10)
-print(model)
-v1 = model@model$coefficients
-v2 = v1[v1 > 0]
-print(v2)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_stopping_criteria.R}
 
 \subsection{Advanced Features}
 
@@ -659,19 +600,7 @@ The following sections explain the output produced by logistic regression (i.e. 
 
 \bigskip
 \waterExampleInR
-
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-rand_vec <- h2o.runif(h2o_df, seed = 1234)
-train <- h2o_df[rand_vec <= 0.8,]
-valid <- h2o_df[rand_vec > 0.8,]
-binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = train, validation_frame = valid, family = "binomial")
-print(binomial.fit)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_model_output_10.R}
 
 \begin{lstlisting}[style=output]
 Model Details:
@@ -753,9 +682,7 @@ Maximum Metrics:
 Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
 make predictions for new data points:
 
-\begin{lstlisting}[style=R]
-binomial.fit@model$coefficients
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_model_output_20.R}
 \begin{lstlisting}[style=output]
   Intercept         AGE        RACE         PSA     GLEASON 
 -6.46739299 -0.02198278 -0.29576986  0.02855057  1.15680761 
@@ -772,9 +699,7 @@ on non-standardized data.
 Standardized coefficients are useful for comparing the relative contribution of different predictors to the
 model:
 
-\begin{lstlisting}[style=R]
-binomial.fit@model$coefficients_table
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_model_output_30.R}
 \begin{lstlisting}[style=output]
 Coefficients:
       names coefficients standardized_coefficients
@@ -787,9 +712,7 @@ Coefficients:
 
 This view provides a sorted list of standardized coefficients in descending order for easy comparison:
 
-\begin{lstlisting}[style=R]
-binomial.fit@model$standardized_coefficient_magnitudes
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_model_output_40.R}
 \begin{lstlisting}[style=output]
 Standardized Coefficient Magnitudes:
           names coefficients sign
@@ -824,35 +747,17 @@ the same as for a model without cross-validation.
 
 Fetch these statistics using the following accessor functions:
 
-\begin{lstlisting}[style=R]
-h2o.num_iterations(binomial.fit)
-h2o.null_dof(binomial.fit, train = TRUE, valid = TRUE)
-h2o.residual_dof(binomial.fit, train = TRUE, valid = TRUE)
-
-h2o.mse(binomial.fit, train = TRUE, valid = TRUE)
-h2o.r2(binomial.fit, train = TRUE, valid = TRUE)
-h2o.logloss(binomial.fit, train = TRUE, valid = TRUE)
-h2o.auc(binomial.fit, train = TRUE, valid = TRUE)
-h2o.giniCoef(binomial.fit, train = TRUE, valid = TRUE)
-h2o.null_deviance(binomial.fit, train = TRUE, valid = TRUE)
-h2o.residual_deviance(binomial.fit, train = TRUE, valid = TRUE)
-h2o.aic(binomial.fit, train = TRUE, valid = TRUE)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_accessors.R}
 
 \subsection{Confusion Matrix}
 
 Fetch the confusion matrix directly using the following accessor function:
 
-\begin{lstlisting}[style=R]
-h2o.confusionMatrix(binomial.fit, valid = FALSE)
-h2o.confusionMatrix(binomial.fit, valid = TRUE)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_confusion_matrix.R}
 
 \subsubsection{Scoring history}
 
-\begin{lstlisting}[style=R]
-binomial.fit@model$scoring_history
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_scoring_history.R}
 \begin{lstlisting}[style=output]
 Scoring History:
             timestamp   duration iteration log_likelihood objective
@@ -885,37 +790,11 @@ regression (i.e. binomial classification) below.
 \bigskip
 \waterExampleInR
 
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-rand_vec <- h2o.runif(h2o_df, seed = 1234)
-train <- h2o_df[rand_vec <= 0.8,]
-valid <- h2o_df[(rand_vec > 0.8) & (rand_vec <= 0.9),]
-test <- h2o_df[rand_vec > 0.9,]
-binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = train, validation_frame = valid, family = "binomial")
-
-# Make and export predictions.
-pred = h2o.predict(binomial.fit, test)
-h2o.exportFile(pred, "/tmp/pred.csv", force = TRUE)
-# Or you can export the predictions to hdfs:  h2o.exportFile(pred, "hdfs://namenode/path/to/file.csv")
-
-# Calculate metrics.
-perf = h2o.performance(binomial.fit, test)
-print(perf)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_binomial_predictions_with_response.R}
 
 Here is an example of just making predictions on new data:
 
-\begin{lstlisting}[style=R]
-# Remove the response column to simulate new data points arriving without the answer being known.
-newdata = test
-newdata$CAPSULE <- NULL
-newpred = h2o.predict(binomial.fit, newdata)
-head(newpred)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_binomial_predictions_without_response.R}
 \begin{lstlisting}[style=output]
   predict        p0        p1
 1       1 0.1676892 0.8323108
@@ -933,10 +812,7 @@ The predicted class is chosen based on the maximum-F1 threshold.
 
 You can change the threshold manually, for example to 0.3, and recalculate the predict column like this:
 
-\begin{lstlisting}[style=R]
-newpred$predict = newpred$p1 > 0.3
-head(newpred)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_recalculate_predict.R}
 \begin{lstlisting}[style=output]
   predict        p0        p1
 1       1 0.1676892 0.8323108
@@ -962,15 +838,7 @@ one and view it.  You can also access the POJO from the Flow Web UI.
 \bigskip
 \waterExampleInR
 
-\begin{lstlisting}[style=R]
-library(h2o)
-h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-binomial.fit = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "binomial")
-h2o.download_pojo(binomial.fit)
-\end{lstlisting}
+\lstinputlisting[style=R]{glm/glm_download_pojo.R}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
