@@ -20,6 +20,7 @@ public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Test
+  @Ignore
   public void cancar() {
     Frame tfr = null;
     DeepLearningModel dl = null;
