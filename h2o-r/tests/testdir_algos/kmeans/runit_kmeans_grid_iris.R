@@ -26,7 +26,7 @@ check.kmeans.grid.iris <- function(conn) {
 
   Log.info("Check that the hyper_params that were passed to grid, were used to construct the models...")
   # Get models
-  grid_models <- lapply(cars_kmeans_grid@model_ids, function(mid) { model = h2o.getModel(mid) })
+  grid_models <- lapply(iris_kmeans_grid2@model_ids, function(mid) { model = h2o.getModel(mid) })
   # Check expected number of models
   expect_equal(length(grid_models), size_of_grid_space)
   # Check parameters coverage
