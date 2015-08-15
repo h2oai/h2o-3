@@ -589,7 +589,8 @@ def save_model(model, path="", force=False):
   :param force: Overwrite destination directory in case it exists or throw exception if set to false.
   :return: the path of the saved model (string)
   """
-  return H2OConnection.get_json("Models.bin",model_id=model._id,dir=os.getcwd() if path=="" else dir,force=force, _rest_version=99)["dir"]
+  path=os.path.join(os.getcwd() if path=="" else oath,model._id)
+  return H2OConnection.get_json("Models.bin",model_id=model._id,dir=path,force=force, _rest_version=99)["dir"]
 
 def load_model(path):
   """
@@ -601,7 +602,7 @@ def load_model(path):
   :param path: The full path of the H2O Model to be imported.
   :return: the model
   """
-  res = H2OConnection.post_json("Models.bin/"+path,_rest_version=99)
+  res = H2OConnection.post_json("Models.bin/",dir=path,_rest_version=99)
   return get_model(res['models'][0]['model_id']['name'])
 
 def cluster_status():
