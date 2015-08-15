@@ -40,6 +40,14 @@ source("glm/glm_gamma_example.R", echo = T)
 h2o.removeAll()
 rm(list=ls())
 
+source("glm/glm_tweedie_example.R", echo = T)
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+h2o.removeAll()
+rm(list=ls())
+
 source("glm/coerce_column_to_factor.R", echo = T)
 
 #---------------------------------------------------------------------
