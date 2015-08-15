@@ -141,24 +141,27 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           _lossFunc[i] = _train.vec(i).isNumeric() ? _parms._loss : _parms._multi_loss;
 
         for(int i = 0; i < _parms._loss_by_col.length; i++) {
-          if (_parms._loss_by_col_idx[i] < 0 || _parms._loss_by_col_idx[i] >= _train.numCols())
-            error("_loss_by_col_idx", "Column index must be in [0," + _train.numCols() + ")");
-
           // Check that specified column loss is in allowable set for column type
           int cidx = _parms._loss_by_col_idx[i];
-          if(_train.vec(cidx).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column!");
-          else if(_train.vec(cidx).isEnum() && !_parms._loss_by_col[i].isForCategorical())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column!");
-
-          _lossFunc[_parms._loss_by_col_idx[i]] = _parms._loss_by_col[i];
+          if (cidx < 0 || cidx >= _train.numCols())
+            error("_loss_by_col_idx", "Column index " + cidx + " must be in [0," + _train.numCols() + ")");
+          else if (_train.vec(cidx).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
+            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + cidx);
+          else if (_train.vec(cidx).isEnum() && !_parms._loss_by_col[i].isForCategorical())
+            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + cidx);
+          else
+            _lossFunc[_parms._loss_by_col_idx[i]] = _parms._loss_by_col[i];
         }
       }
     } else {
-      // Set default loss function for each column
-      _lossFunc = new GLRMParameters.Loss[_train.numCols()];
-      for(int i = 0; i < _lossFunc.length; i++)
-        _lossFunc[i] = _train.vec(i).isNumeric() ? _parms._loss : _parms._multi_loss;
+      if (null != _parms._loss_by_col_idx)
+        error("_loss_by_col", "Must specify loss function for each column");
+      else {
+        // Set default loss function for each column
+        _lossFunc = new GLRMParameters.Loss[_train.numCols()];
+        for (int i = 0; i < _lossFunc.length; i++)
+          _lossFunc[i] = _train.vec(i).isNumeric() ? _parms._loss : _parms._multi_loss;
+      }
     }
 
     _ncolX = _parms._k;

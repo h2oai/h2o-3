@@ -22,11 +22,16 @@
 #'        column, "DESCALE": for dividing by the standard deviation of each
 #'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
 #'        for demeaning and dividing each column by its range (max - min).
-#' @param loss A character string indicating the loss function for numeric columns. 
+#' @param loss A character string indicating the default loss function for numeric columns. 
 #'        Possible values are "Quadratic" (default), "L1", "Huber", "Poisson", "Hinge"
 #'        and "Logistic".
-#' @param multi_loss A character string indicating the loss function for enum columns. 
+#' @param multi_loss A character string indicating the default loss function for enum columns. 
 #'        Possible values are "Categorical" and "Ordinal".
+#' @param loss_by_col A vector of strings indicating the loss function for specific
+#'        columns by corresponding index in loss_by_col_idx. Will override loss for
+#'        numeric columns and multi_loss for enum columns.
+#' @param loss_by_col_idx A vector of column indices to which the corresponding loss
+#'        functions in loss_by_col are assigned. Must be zero indexed.
 #' @param regularization_x A character string indicating the regularization function for
 #'        the X matrix. Possible values are "None" (default), "Quadratic", "L2", "L1",
 #'        "NonNegative", "OneSparse", "UnitOneSparse", and "Simplex".
@@ -68,7 +73,9 @@ h2o.glrm <- function(training_frame, x, k, model_id,
                      loading_key,
                      transform = c("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"),
                      loss = c("Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic"),
-                     multi_loss = c("Categorical", "Ordinal"), 
+                     multi_loss = c("Categorical", "Ordinal"),
+                     loss_by_col = NULL,
+                     loss_by_col_idx = NULL,
                      regularization_x = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
                      regularization_y = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
                      gamma_x = 0,
@@ -114,6 +121,12 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms$transform <- transform
   if(!missing(loss))
     parms$loss <- loss
+  if(!missing(multi_loss))
+    parms$multi_loss <- multi_loss
+  if(!(missing(loss_by_col) || is.null(loss_by_col)))
+    parms$loss_by_col <- .collapse(loss_by_col)
+  if(!(missing(loss_by_col_idx) || is.null(loss_by_col_idx))) 
+    parms$loss_by_col_idx <- .collapse(loss_by_col_idx)
   if(!missing(regularization_x))
     parms$regularization_x <- regularization_x
   if(!missing(regularization_y))
@@ -146,7 +159,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms[["user_points"]] <- init
     # Set k
     if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
-      warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+      warning("Argument k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
     parms[["k"]] <- as.numeric(nrow(init))
   }
@@ -154,7 +167,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms[["user_points"]] <- NULL
   }
   else{
-    stop ("argument init must be set to Random, PlusPlus, SVD, or a valid set of user-defined starting points.")
+    stop("Argument init must be set to Random, PlusPlus, SVD, or a valid set of user-defined starting points.")
   }
   
   # Error check and build model
