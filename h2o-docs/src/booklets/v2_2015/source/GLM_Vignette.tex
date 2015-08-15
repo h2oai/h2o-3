@@ -935,18 +935,54 @@ Steps 1 and 2 are performed distributively and step 3 is computed in parallel on
 characterize the computational complexity and scalability of dataset with M observations and N columns (predictors)
 on a cluster with n nodes with p CPUs each as follows:
 
-\[ O({MN^2 \over pn} + {N^3 \over p})\]
+\bigskip
 
-And the overall memory cost is given by:
+\begin{center}
+    \begin{tabular}{ c || c | c }
+        & & \\
+        & CPU & Memory \\
+        & & \\
+        \hline
+        \hline
+        & & \\
 
-\[ O(MN + N^2pn)\]
+        \begin{tabular}{@{}c@{}}Gram matrix ($ X^TX $) \\ (distributed)\end{tabular} &
+        $ O(\dfrac{MN^2}{pn}) $ &
+        \begin{tabular}{@{}c@{}} $O($training data$)$ + $O($gram matrix$)$ \\ $ O(MN) $ + $ O(N^2pn) $ \end{tabular}
+        \\
 
-If $M >> N$, the second term is not needed and the algorithm scales linearly both in the number of nodes and the
-number of CPUs per node. However, the equation above also implies that our algorithm is limited in the number of
-predictors it can handle, since the size of the Gram matrix grows quadratically due to a memory and network
-throughput issue with the number of predictors and its decomposition cost grows as the cube of the number of
-predictors (which is a computational cost issue). In many cases, H2O can work around these limitations due to its
-handling of categoricals and by employing strong rules to filter out inactive predictors.
+        & & \\
+        \hline
+        & & \\
+
+        \begin{tabular}{@{}c@{}}ADMM + Cholesky decomposition \\ (single node)\end{tabular} &
+        $ O(\dfrac{N^3}{p}) $ &
+        $ O(N^2) $
+        \\
+
+        & & \\
+    \end{tabular}
+\end{center}
+
+\bigskip
+
+\begin{center}
+    \begin{tabular}{ l l }
+    M & Number of rows in the training data \\
+    N & Number of predictors in the training data \\
+    p & Number of CPUs per node \\
+    n & Number of nodes in the cluster \\
+    \end{tabular}
+\end{center}
+
+\bigskip
+
+If $M >> N$, the algorithm scales linearly both in the number of nodes and the number of CPUs per node. However,
+the algorithm is limited in the number of predictors it can handle, since the size of the Gram matrix grows
+quadratically due to a memory and network throughput issue with the number of predictors, and its decomposition
+cost grows as the cube of the number of predictors (which is a computational cost issue). In many cases, H2O can
+work around these limitations due to its handling of categoricals and by employing strong rules to filter out
+inactive predictors.
 
 \subsubsection{L\_BFGS solver}
 
