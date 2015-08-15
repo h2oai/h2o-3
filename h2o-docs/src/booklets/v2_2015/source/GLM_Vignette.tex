@@ -83,28 +83,25 @@ interpret model output, how to make predictions, and various implementation deta
 
 \newpage
 
-%\subsubsection{Summary of features} 
-%In summary, H2O's GLM functionalities include:
-%
-%\begin{itemize} 
-%\item automatic standardization of predictor variables
-%\item fits generalized linear model with elastic net penalty
-%\item supported GLM families include Gaussian, Binomial, Poisson, Gamma, and Tweedie
-%\item efficient handling of categorical variables
-%\item efficient computation of full regularization path
-%\item IRLSM (best for data with many rows and fewer predictors) and LBFGS (best for data with many predictors) solvers
-%\item automatic lambda search for best model
-%\item stopping criterium when many predictors are used
-%\item efficient distributed n-fold cross validation
-% \item distributed grid search over elastic-net parameter $\alpha$
-%\item offset column
-%\item row weights
-%\item upper and lower bounds for coefficients
-%\item proximal operator interface
-%\end{itemize}
-
 \newcommand{\waterVersion}{3.0.1.4}
 \input{common/installation.tex}
+
+\subsection{Example code}
+
+R code for the examples in this document can be found here:
+
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.R}
+
+Python code for the examples in this document can be found here:
+
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.py}
+
+The document source itself can be found here:
+
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.tex}
+
+%----------------------------------------------------------------------
+%----------------------------------------------------------------------
 
 \section{GLM Concepts}
 Generalized linear models (GLM) are the workhorse for most predictive analysis use cases. GLM can be used for both
@@ -251,6 +248,9 @@ based on features such as age and race.
 
 \lstinputlisting[style=R]{glm/glm_gaussian_example.R}
 
+\waterExampleInPython
+\lstinputlisting[style=R]{glm/glm_gaussian_example.py}
+
 \subsubsection{Logistic regression (Binomial family)}
 Logistic regression can be used for a binary classification problem where the response is categorical with two
 levels. It models dependency as $Pr(y = 1|x)$. The canonical link for binomial family is logit (log of the odds)
@@ -282,6 +282,9 @@ function. Change the regression by setting the family to binomial.
 
 \lstinputlisting[style=R]{glm/glm_binomial_example.R}
 
+\waterExampleInPython
+\lstinputlisting[style=R]{glm/glm_binomial_example.py}
+
 \subsubsection{Poisson models}
 Poisson regression is generally used in cases where the response represents counts and we assume errors have a
 Poisson distribution. In general, it can be applied to any data where the response is non-negative.
@@ -307,6 +310,9 @@ own (Group).
 
 \lstinputlisting[style=R]{glm/glm_poisson_example.R}
 
+\waterExampleInPython
+\lstinputlisting[style=R]{glm/glm_poisson_example.py}
+
 \subsubsection{Gamma models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
 variance of the response grows with its mean but the coefficient of variation of the response $\sigma^2(x)/μ(x)$ is
@@ -329,11 +335,18 @@ argument.
 
 \lstinputlisting[style=R]{glm/glm_gamma_example.R}
 
+\waterExampleInPython
+\lstinputlisting[style=R]{glm/glm_gamma_example.py}
+
 \subsubsection{Tweedie models}
 
 TODO
 
+\waterExampleInR
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
+
+\waterExampleInPython
+\lstinputlisting[style=R]{glm/glm_tweedie_example.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -505,6 +518,12 @@ lower values of lambda, incorporate more predictors, and take a longer time to c
 \bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_stopping_criteria.R}
+
+\waterExampleInPython
+\lstinputlisting[style=R]{glm/glm_stopping_criteria.py}
+
+You can also set the \texttt{nlambdas} parameter for a lambda search to fix the number of models attempted across
+the search.
 
 \subsection{Advanced features}
 

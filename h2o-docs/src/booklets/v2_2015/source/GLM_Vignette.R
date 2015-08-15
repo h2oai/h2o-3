@@ -1,3 +1,12 @@
+#---------------------------------------------------------------------
+#
+# Include and run all the R code snippets from the H2O GLM Vignette.
+#
+# The snippets are broken out into separate files so the exact same
+# piece of code both shows up in the document and is run by this
+# script.
+#
+#---------------------------------------------------------------------
 
 library(h2o)
 h2o.init()
@@ -103,4 +112,5 @@ source("glm/glm_recalculate_predict.R", echo = T)
 
 h2o.removeAll()
 rm(list=ls())
+
 source("glm/glm_download_pojo.R", echo = T)
