@@ -123,7 +123,7 @@ print(paste("Took", round(dl_time, digits = 2), units(dl_time), "to build a Deep
 
 ## Variable Importance - For feature selection and rerunning a model build
 print("GLM: Sorted Standardized Coefficient Magnitudes To Find Nonzero Coefficients")
-data.glm@model$standardized_coefficients_magnitude
+data.glm@model$standardized_coefficient_magnitudes
 print("GBM: Variable Importance")
 data.gbm@model$variable_importances
 print("Random Forest: Variable Importance")

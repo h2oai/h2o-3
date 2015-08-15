@@ -27,8 +27,8 @@ def consistency_check(ip,port):
 
     for s, l in zip(small_list, large_list):
         if s != l:
-            assert s == "data = h2o.import_frame(path=small_test)\n" and \
-                   l != "data = h2o.import_frame(path=large_test)\n", \
+            assert s == "data = h2o.import_file(path=small_test)\n" and \
+                   l != "data = h2o.import_file(path=large_test)\n", \
                 "This difference is not allowed between the small and large citibike demos.\nCitibike small: {0}" \
                 "Citibike large: {1}".format(s,l)
 
