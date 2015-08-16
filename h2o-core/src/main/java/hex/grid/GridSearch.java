@@ -180,11 +180,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
           cancel();
           return;
         }
-        // Sequential model building
+        // Sequential model building, should never propagate
+        // exception from underlying model builder
         model = buildModel(params, grid);
       }
       // Grid search is done
       done();
+    } catch(Exception e) {
+      // Something wrong happened during hyper-space walking
+      // So cancel this job
+      failed(e);
     } finally {
       // Unlock grid object
       grid.unlock(jobKey());

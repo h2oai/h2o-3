@@ -925,7 +925,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         tweedie_variance_power=None,tweedie_link_power=None,alpha=None,prior=None,lambda_search=None,
         nlambdas=None,lambda_min_ratio=None,beta_constraints=None,offset_column=None,weights_column=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
-        intercept=None, Lambda=None, do_future=None, checkpoint=None):
+        intercept=None, Lambda=None, max_active_predictors=None, do_future=None, checkpoint=None):
   """
   Build a Generalized Linear Model
   Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
@@ -972,6 +972,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models
   :param intercept: Logical, include constant term (intercept) in the model
+  :param max_active_predictors: (Optional) Convergence criteria for number of predictors when using L1 penalty.
   :return: A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand (if
   it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a H2ORegressionModel is
   returned). The default print-out of the models is shown, but further GLM-specifc information can be queried out of
