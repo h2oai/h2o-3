@@ -428,7 +428,7 @@ public class DataInfo extends Keyed {
     }
   }
 
-  public final class Row {
+  public final class Row extends Iced {
     public boolean bad;
     public double [] numVals;
     public double [] response;

@@ -3,6 +3,7 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Distribution;
+import hex.FrameTask;
 import hex.ModelMetricsRegression;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -20,7 +21,6 @@ public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Test
-  @Ignore
   public void cancar() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -70,15 +70,9 @@ public class DeepLearningGradientCheck extends TestUtil {
         dl.set_model_info(modelInfo.deep_clone());
 
         // pick one random row from the dataset
-        final DataInfo.Row myRow = dl.model_info().data_info().newDenseRow();
         final DataInfo di = dl.model_info().data_info();
         final int rId = loop; //rng.nextInt((int)tfr.numRows());
-        new MRTask(){
-          @Override
-          public void map(Chunk[] cs) {
-            di.extractDenseRow(cs,rId,myRow);
-          }
-        }.doAll(di._adaptedFrame);
+        final DataInfo.Row myRow = new FrameTask.ExtractDenseRow(di, rId).doAll(di._adaptedFrame)._row;
 
         // do one forward propagation pass
         Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
