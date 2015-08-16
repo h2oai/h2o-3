@@ -78,10 +78,12 @@ source("glm/glm_grid_search_over_alpha.R", echo = T)
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("glm/glm_grid_search_over_lambda.R", echo = T)
+# Not supported right now.
+#
+# h2o.removeAll()
+# rm(list=ls())
+#
+# source("glm/glm_grid_search_over_lambda.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------

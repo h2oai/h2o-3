@@ -566,13 +566,16 @@ safer to run with $alpha=1-\epsilon$ instead.
 
 \subsubsection{Grid search over lambda}
 
-While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
-by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
-search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
+% While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
+% by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
+% search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
 
-\bigskip
-\waterExampleInR
-\lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
+% \bigskip
+% \waterExampleInR
+% \lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
+
+Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the lambda
+search capability built in to GLM.
 
 \subsubsection{Offsets}
 
@@ -898,9 +901,9 @@ TODO: How?
       \item Too close to 1:  model predicts “too” well
       \end{itemize}
 \item Look at the number\_of\_iterations or scoring history to see if GLM stops early for a particular
-      lambda that interests you (performing all the iterations probably means the solution isn’t good).  This is
+      lambda that interests you (performing all the iterations probably means the solution is not good).  This is
       controlled by the \texttt{max\_iterations} parameter.
-\item Too many N/As in your training data is bad (GLM discards rows with N/A values)
+\item Too many NAs in your training data is bad (GLM discards rows with NA values)
 
 TODO: How to tell how many training rows were used to build the model?
 
