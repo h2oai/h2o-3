@@ -32,21 +32,17 @@ def weights_and_biases(ip, port):
     assert w2r == 191, "wrong dimensionality! expected {0}, but got {1}.".format(191, w2r)
 
     w3c = weights3.ncol
-    w3r = weights3.\
-      nrow
+    w3r = weights3.nrow
     assert w3c == 191, "wrong dimensionality! expected {0}, but got {1}.".format(191, w3c)
     assert w3r == 7, "wrong dimensionality! expected {0}, but got {1}.".format(7, w3r)
 
     b1c = biases1.ncol
-    b1r = biases1.\
-
-      nrow
+    b1r = biases1.nrow
     assert b1c == 1, "wrong dimensionality! expected {0}, but got {1}.".format(1, b1c)
     assert b1r == 17, "wrong dimensionality! expected {0}, but got {1}.".format(17, b1r)
 
     b2c = biases2.ncol
-    b2r = biases2.\
-      nrow
+    b2r = biases2.nrow
     assert b2c == 1, "wrong dimensionality! expected {0}, but got {1}.".format(1, b2c)
     assert b2r == 191, "wrong dimensionality! expected {0}, but got {1}.".format(191, b2r)
 

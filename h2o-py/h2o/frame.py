@@ -887,7 +887,7 @@ class H2OFrame:
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
-    return H2OFrame(expr=ExprNode("var", self,y,na_rm,use))._scalar()
+    return H2OFrame(expr=ExprNode("var", self,y,na_rm,use))._get()
 
   def sd(self, na_rm=False):
     """
@@ -1169,6 +1169,10 @@ class H2OFrame:
   def _frame(self):  # force an eval on the frame and return it
     self._eager()
     return self
+
+  def _get(self):  # either frame or scalar, decide after computation
+    self._eager()
+    return self._scalar() if self.shape==(1,1) else self
 
   ##### DO NOT ADD METHODS BELOW THIS LINE (pretty please) #####
   def _eager(self, pytmp=True):

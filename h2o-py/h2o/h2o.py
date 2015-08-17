@@ -311,7 +311,7 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
   :param cols: number of columns
   :return: None
   """
-  h2o_rows, h2o_cols = h2o_frame.dim()
+  h2o_rows, h2o_cols = h2o_frame.dim
   assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
                                                 "".format(h2o_rows, rows, h2o_cols, cols)
   if isinstance(python_obj, (list, tuple)):
@@ -345,7 +345,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     assert False, "failed comparison check because unable to import numpy"
 
   import numpy as np
-  rows, cols = h2o_data.dim()
+  rows, cols = h2o_data.dim
   for i in range(num_elements):
     r = random.randint(0,rows-1)
     c = random.randint(0,cols-1)
