@@ -32,7 +32,7 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
     @API(help = "User-specified points", required = false)
     public KeyV3.FrameKeyV3 user_points;
 
-    @API(help="Maximum training iterations")
+    @API(help="Maximum training iterations", gridable = true)
     public int max_iterations;        // Max iterations
 
     @API(help = "Standardize columns", level = API.Level.secondary, gridable = true)
