@@ -1,7 +1,6 @@
 package water.currents;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import water.*;
 import water.fvec.*;
@@ -189,114 +188,149 @@ class ASTRBind extends ASTPrim {
   @Override String str() { return "rbind" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
 
-    // Execute all args.  Find a canonical frame; all Frames must look like this one.
     // Each argument turns into either a Frame (whose rows are entirely
-    // inlined) or a scalar (which is replicated across as a single row). 
+    // inlined) or a scalar (which is replicated across as a single row).
+    Val  vals[] = new Val   [asts.length]; // Computed AST results
+    Key<Frame>  kfrs[] = new Key   [asts.length]; // Input frame keys
+    double ds[] = new double[asts.length]; // Input scalars
+    Arrays.fill(ds,Double.NaN); // Error check
+
+    // Compute the variable args.  Find the common column count; compute final chunks and types and names
+
+    Key<Frame>[] tkeys = new Key[asts.length]; // Temp keys, for key-less frames; these are removed later
     Frame fr = null; // Canonical Frame; all frames have the same column count, types and names
-    int nchks=0;     // Total chunks
-    Val vals[] = new Val[asts.length]; // Computed AST results
+    byte[] types = null;          // Column types
+    Vec.VectorGroup group = null; // Canonical vector group; should be largest group in use
+    int nchks=0;                  // Total chunks
+    long[] chunksPerFrame = new long[asts.length];
     for( int i=1; i<asts.length; i++ ) {
-      vals[i] = stk.track(asts[i].exec(env));
-      if( vals[i].isFrame() ) {
-        fr = vals[i].getFrame();
-        nchks += fr.anyVec().nChunks(); // Total chunks
-      } else nchks++;  // One chunk per scalar
-    }
-    // No Frame, just a pile-o-scalars?
-    if( fr==null )              // Zero-length, 1-column, default name
-      fr = new Frame(new String[]{Frame.defaultColName(0)},new Vec[]{Vec.makeZero(0)});
+      Val val = stk.track(asts[i].exec(env));
+      vals[i] = val;            // Save values computed for pass 2
+      if( val.isFrame() ) {     // Frames vs Scalars
+        Frame fr0 = val.getFrame();
+        kfrs[i] = fr0._key;     // Save frame key
+        if( fr0._key == null )  // Unkeyed frame?  Key it, and record a temp key
+          DKV.put(new Frame(kfrs[i]=tkeys[i]=Key.make(), fr0.names(),fr0.vecs()));
 
-    // Verify all Frames are the same columns, names, types, domains
-    final Frame frs[] = new Frame[asts.length]; // Input frame
-    final byte[] types = fr.types();  // Column types
-    final String[][] domains = fr.domains();
-    final int ncols = fr.numCols();
-    final long[] espc = new long[nchks+1];
-    int coffset = 0;
+        // Check that all frames are compatible
+        if( fr == null ) { fr = fr0; types = fr0.types(); }
+        if( fr.numCols() != fr0.numCols() ) 
+          throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
+        if( !Arrays.deepEquals(fr._names,fr0._names) )
+          throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
+        if( !Arrays.equals(types,fr0.types()) )
+          throw new IllegalArgumentException("rbind frames must have all the same column types, found "+Arrays.toString(types)+" and "+Arrays.toString(fr0.types()));
 
-    for( int i=1; i<asts.length; i++ ) {
-      Val val = vals[i];        // Save values computed for pass 2
-      Frame fr0 = val.isFrame() ? val.getFrame() 
-        // Scalar: auto-expand into a 1-row frame
-        : stk.track(new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
+        int nchk = fr0.anyVec().nChunks();
+        nchks += nchk;          // Total chunks
+        chunksPerFrame[i] = nchks;
+        // Capture any exciting group; the new frame will use this group
+        Vec.VectorGroup gp1 = fr0.anyVec().group();
+        if( group == null || group == Vec.VectorGroup.VG_LEN1 ) group = gp1;
 
-      // Check that all frames are compatible
-      if( fr.numCols() != fr0.numCols() ) 
-        throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
-      if( !Arrays.deepEquals(fr._names,fr0._names) )
-        throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
-      if( !Arrays.equals(types,fr0.types()) )
-        throw new IllegalArgumentException("rbind frames must have all the same column types, found "+Arrays.toString(types)+" and "+Arrays.toString(fr0.types()));
-      if( !Arrays.deepEquals(domains,fr0.domains()) )
-        throw new IllegalArgumentException("rbind frames must have all the same column domains, found "+Arrays.deepToString(domains)+" and "+Arrays.deepToString(fr0.domains()));
-
-      frs[i] = fr0;     // Save frame
-
-      // Roll up the ESCP row counts
-      long roffset = espc[coffset];
-      long[] espc2 = fr0.anyVec().get_espc();
-      for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
-        espc[coffset + j] = (roffset+=espc2[j]);
-      coffset += espc2.length-1; // Chunk offset
-    }
-
-    // Now make Keys for the new Vecs
-    Key[] keys = fr.anyVec().group().addVecs(fr.numCols());
-    Vec[] vecs = new Vec[keys.length];
-    for (int i=0; i<vecs.length; ++i)
-      vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
-
-
-    // Switch to F/J thread for continuations
-    ParallelRbinds t;
-    H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs)).join();
-    return new ValFrame(new Frame(fr.names(), t._vecs));
-  }
-
-  public static class ParallelRbinds extends H2O.H2OCountedCompleter{
-    private final AtomicInteger _ctr;
-    private static int MAXP = 1;
-
-    private Frame[] _frs;
-    private long[] _espc;
-    private Vec[] _vecs;
-    ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs) { _frs = frs; _espc = espc; _vecs = vecs; _ctr = new AtomicInteger(MAXP-1); }
-
-    @Override protected void compute2() {
-      final int ncols = _frs[1].numCols();
-      addToPendingCount(ncols-1);
-      for (int i=0; i < Math.min(MAXP, ncols); ++i) forkVecTask(i);
-    }
-
-    // An RBindTask for each column
-    private void forkVecTask(final int colnum) {
-      Vec[] vecs = new Vec[_frs.length]; // Source Vecs
-      for( int i = 1; i < _frs.length; i++ )
-        vecs[i] = _frs[i].vec(colnum);
-      new RbindTask(new Callback(), vecs, _vecs[colnum], _espc).fork();
-    }
-
-    private class Callback extends H2O.H2OCallback {
-      public Callback(){super(ParallelRbinds.this);}
-      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
-        int i = _ctr.incrementAndGet();
-        if(i < _vecs.length)
-          forkVecTask(i);
+      } else {
+        ds[i] = val.getNum();   // Expand scalars into all columns, 1 row
       }
     }
+
+    // Suppose we are handed 2 scalars, a 5-chunk frame, 3 more scalars, a
+    // 3-chunk frame and a scalar.  Each chunk is 100 rows. The arg list:
+    //   { 1.1, 2.2, frame_5chk, 3.3, 4.4, 5.5, frame_3chk, 6.6 }
+    // There will 5+3 == 8 chunks in the final result.
+    // For each frame, the 0 zero has any leading scalar args (and the last
+    // chunk has any trailing scalars).
+    //           CHUNK CONTENTS                         ESPC
+    // 0: {1.1, 2.2,      frame_5chk.0 chunk}              0
+    // 1: {               frame_5chk.1 chunk}            102
+    // 2: {               frame_5chk.2 chunk}            202
+    // 3: {               frame_5chk.3 chunk}            302
+    // 4: {               frame_5chk.4 chunk}            402
+    // 5: {3.3, 4.4, 5.5, frame_3chk.0 chunk}            502
+    // 6: {               frame_3chk.1 chunk}            605
+    // 7: {               frame_3chk.2 chunk, 6.6}       705
+    // 8:                                                806
+
+    // Compute ESPC, rollup the row counts.  Scalars add 1 row to the 1st chunk
+    // of any following frame; trailing scalars append to the last chunk.
+    long[] espc = new long[nchks+1];
+    int coffset = 1;
+    long roffset = 0;
+    for( int i=1; i< vals.length; ++i) {
+      if( vals[i].isFrame() ) { // Frame?
+        long[] espc2 = vals[i].getFrame().anyVec().get_espc();
+        for( int j=0; j < espc2.length-1; j++ ) // Roll up the row counts
+          espc[coffset + j] = (roffset+=espc2[j+1]);
+        coffset += espc2.length-1; // Chunk offset
+      } else {                     // Scalar?  Then 1 row
+        roffset++;                 // One row, no more chunks
+      }
+    }
+    espc[nchks] = roffset;      // Final row write for trailing scalars
+    // Now espc holds the new expanded data layout
+
+    // Template data layout vector
+    Vec template = Vec.makeCon(0L,null,group,espc);
+
+    // Build empty result vectors of the proper type and new row counts.
+    Key<Vec>[] kvecs = group.addVecs(fr.numCols());
+    String[][] domains = fr.domains();
+    Vec[] vecs = new Vec[kvecs.length];
+    for( int i=0; i<vecs.length; ++i )
+      vecs[i] = new Vec( kvecs[i], espc, domains[i], types[i] );
+
+    // Do the massive parallel rbind, filling in chunks
+    new RbindTask(kfrs,ds,espc, kvecs).doAll(template);
+
+    // Cleanup
+    for( Key<Frame> tkey : tkeys ) if( tkey != null ) DKV.remove(tkey);
+
+
+    String[] names = fr==null ? new String[]{Frame.defaultColName(0)} : fr._names;
+    return new ValFrame(new Frame(names, vecs));
   }
 
   // RBind a single column across all vals
-  private static class RbindTask extends H2O.H2OCountedCompleter<RbindTask> {
-    final transient Vec[] _vecs;
-    final Vec _v;
-    final long[] _espc;
-    String[] _dom;
+  private static class RbindTask extends MRTask<RbindTask> {
+    final Key<Frame>[] _kfrs;   // Source frame(s)
+    final double[] _ds;         // Source scalar(s) when frames are missing
+    final long[] _espc;         // Chunk layout
+    final Key<Vec>[] _kvecs;    // Output Vec keys
 
-    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc) { super(cc); _vecs = vecs; _v = v; _espc = espc; }
-    @Override protected void compute2() {
+    RbindTask(Key<Frame>[] kfrs, double[] ds, long[] espc, Key<Vec>[] kvecs) { _kfrs = kfrs; _ds = ds; _espc = espc; _kvecs = kvecs; }
+
+    @Override public void map( Chunk c ) {
+      int cidx = c.cidx();
+      // Find the Frame this Chunk is being sourced from
+      Frame fr = null;
+      int fchk = 0, nchk = 0, i;
+      for( i=1; i<_kfrs.length; i++ ) {
+        Key<Frame> kfr = _kfrs[i];
+        if( kfr == null ) continue; // Scalar
+        fr = DKV.getGet(kfr);       // Get Frame, get chunks
+        fchk = fr.anyVec().nChunks();
+        nchk += fchk;
+        if( cidx < nchk ) break; // Found the frame
+      }
+      assert cidx < nchk;
+      nchk -= fchk;
+      fchk = cidx-nchk;         // Chunk within the Frame fr
+
+      // If this is the 1st chunk of a frame, copy any prior scalars
+      if( fchk == 0 ) {         // Need to copy scalars?
+        
+
+        throw H2O.unimpl();
+      }
+
+
+      if( cidx == _espc.length-1 ) { // If this is the last chunk, copy any following scalars
+        throw H2O.unimpl();
+      } else {                  // Else bulk-copy the chunk
+        throw H2O.unimpl();
+      }
       throw H2O.unimpl();
     }
+
   }
 
 }

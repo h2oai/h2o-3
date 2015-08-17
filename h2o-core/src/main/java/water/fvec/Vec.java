@@ -428,6 +428,13 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
+  public static Vec[] makeCons(double x, long len, int n) {
+    Vec[] vecs = new Vec[n];
+    for( int i=0; i<n; i++ )
+      vecs[i] = makeCon(x,len,true);
+    return vecs;
+  }
+
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,

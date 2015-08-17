@@ -48,6 +48,10 @@ public class Env {
         _refcnt.add(sp(),((ValFrame)v)._fr);
       return v; 
     }
+    public Frame track(Frame fr) {
+      _refcnt.add(sp(),fr);
+      return fr; 
+    }
     // If an opcode is returning a Frame, it must call "returning(frame)" to
     // track the returned Frame.  Otherwise shared input Vecs who's last use is
     // in this opcode will get deleted as the opcode exits - even if they are

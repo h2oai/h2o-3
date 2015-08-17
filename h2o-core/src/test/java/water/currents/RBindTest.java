@@ -33,6 +33,13 @@ public class RBindTest extends TestUtil {
     }
   }
 
+  //@Test public void test1() {
+  // Test zero args returns zero-length frame
+  // Test N zero-length frames returns a zero-length frame
+  // Test wrong cols or types or domains
+  // Test multi frames, with scalars in-between
+  //}
+
   private Frame checkTree(String tree) { return checkTree(tree,false); }
   private Frame checkTree(String tree, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
