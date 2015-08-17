@@ -15,6 +15,7 @@ class ModelBase(object):
     self._is_xvalidated=False
     self._xval_keys=None
 
+    # build Metric objects out of each metrics
     for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
       if metric in model_json["output"]:
         if  model_json["output"][metric] is not None:
@@ -22,8 +23,12 @@ class ModelBase(object):
             self._is_xvalidated=True
           model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
 
-    if self._is_xvalidated:
-      self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+    if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+
+    # build a useful dict of the params
+    d={}
+    for p in self._model_json["parameters"]: d[p["label"]]=p
+    self._model_json["parameters"]=d
 
   def __repr__(self):
     self.show()
