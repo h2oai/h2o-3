@@ -39,7 +39,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
 
-    @API(help = "Rank of matrix approximation", required = true)
+    @API(help = "Rank of matrix approximation", required = true, gridable = true)
     public int k;
 
     @API(help = "Numeric loss function", values = { "Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic" }) // TODO: pull out of enum class
@@ -54,7 +54,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Loss function by column index (override)")
     public int[] loss_by_col_idx;
 
-    @API(help = "Length of period (only used with periodic loss function)")
+    @API(help = "Length of period (only used with periodic loss function)", gridable = true)
     public int period;
 
     @API(help = "Regularization function for X matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
@@ -63,19 +63,19 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Regularization function for Y matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
     public GLRMParameters.Regularizer regularization_y;
 
-    @API(help = "Regularization weight on X matrix")
+    @API(help = "Regularization weight on X matrix", gridable = true)
     public double gamma_x;
 
-    @API(help = "Regularization weight on Y matrix")
+    @API(help = "Regularization weight on Y matrix", gridable = true)
     public double gamma_y;
 
     @API(help = "Maximum number of iterations")
     public int max_iterations;
 
-    @API(help = "Initial step size")
+    @API(help = "Initial step size", gridable = true)
     public double init_step_size;
 
-    @API(help = "Minimum step size")
+    @API(help = "Minimum step size", gridable = true)
     public double min_step_size;
 
     @API(help = "RNG seed for initialization")
