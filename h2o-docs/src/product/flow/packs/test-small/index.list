@@ -83,7 +83,6 @@ glm_test_prostate_cat_train_upsampled.flow
 glm_test_upsampled.flow
 glm_test_weighted.flow
 dl_chicago_chicagoAllWeather.flow
-dl_iris_iris_test_numeric_missing_extra.flow
 dl_logreg_benign.flow
 dl_logreg_cuseexpanded.flow
 dl_logreg_prostate_missing.flow
