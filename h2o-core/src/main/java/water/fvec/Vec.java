@@ -386,7 +386,7 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  private static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+  public static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
     new MRTask() {              // Body of all zero chunks

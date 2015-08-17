@@ -190,24 +190,24 @@ class ASTRBind extends ASTPrim {
 
     // Each argument turns into either a Frame (whose rows are entirely
     // inlined) or a scalar (which is replicated across as a single row).
-    Val  vals[] = new Val   [asts.length];
-    Key  kfrs[] = new Key   [asts.length];
-    double ds[] = new double[asts.length];
+    Val  vals[] = new Val   [asts.length]; // Computed AST results
+    Key<Frame>  kfrs[] = new Key   [asts.length]; // Input frame keys
+    double ds[] = new double[asts.length]; // Input scalars
     Arrays.fill(ds,Double.NaN); // Error check
 
     // Compute the variable args.  Find the common column count; compute final chunks and types and names
 
-    Key[] tkeys = new Key[asts.length]; // Temp keys, for key-less frames
+    Key<Frame>[] tkeys = new Key[asts.length]; // Temp keys, for key-less frames; these are removed later
     Frame fr = null; // Canonical Frame; all frames have the same column count, types and names
     byte[] types = null;          // Column types
-    Vec.VectorGroup group = null; // Some example vector group
+    Vec.VectorGroup group = null; // Canonical vector group; should be largest group in use
     int nchks=0;                  // Total chunks
     for( int i=1; i<asts.length; i++ ) {
       Val val = stk.track(asts[i].exec(env));
       vals[i] = val;            // Save values computed for pass 2
       if( val.isFrame() ) {     // Frames vs Scalars
         Frame fr0 = val.getFrame();
-        kfrs[i] = fr0._key;
+        kfrs[i] = fr0._key;    // Save frame key
         if( fr0._key == null ) // Unkeyed frame?  Key it, and record a temp key
           DKV.put(new Frame(kfrs[i]=tkeys[i]=Key.make(), fr0.names(),fr0.vecs()));
 
@@ -233,51 +233,52 @@ class ASTRBind extends ASTPrim {
     // Compute ESPC, rollup the row counts 
     long[] espc = new long[nchks+1];
     int coffset = 0;
-    for( int i=0; i< vals.length; ++i) {
+    for( int i=1; i< vals.length; ++i) {
       long roffset = espc[coffset];
       if( vals[i].isFrame() ) { // Frame?
         long[] espc2 = vals[i].getFrame().anyVec().get_espc();
         for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
           espc[coffset + j] = roffset+ espc2[j];
-        coffset += espc2.length;
+        coffset += espc2.length-1; // Chunk offset
       } else {                     // Scalar?  Then 1 row
         espc[coffset] = roffset+1; // One row, no more chunks
       }
     }
+    // Now espc holds the new expanded data layout
+
+    // Template data layout vector
+    Vec template = Vec.makeCon(0L,null,group,espc);
 
     // Build empty result vectors of the proper type and new row counts.
-    Key[] keys = group.addVecs(fr.numCols());
-    String[] names = fr==null ? new String[]{Frame.defaultColName(0)} : fr._names;
+    Key<Vec>[] kvecs = group.addVecs(fr.numCols());
     String[][] domains = fr.domains();
-    Vec[] vecs = new Vec[keys.length];
+    Vec[] vecs = new Vec[kvecs.length];
     for( int i=0; i<vecs.length; ++i )
-      vecs[i] = new Vec( keys[i], espc, domains[i], types[i] );
-
-    // Build a frame with all the empty vecs (still no chunks)
-    Key tmp_key = Key.make();
-    Frame res = new Frame( tmp_key, names, vecs );
-    DKV.put(res);               // Publish for MRTask
+      vecs[i] = new Vec( kvecs[i], espc, domains[i], types[i] );
 
     // Do the massive parallel rbind, filling in chunks
-...borken....
-    new RbindTask(kfrs,ds,espc).doAll(res);
+    new RbindTask(kfrs,ds,espc, kvecs).doAll(template);
 
-    // Cleanup keys
-    DKV.remove(tmp_key);        // Just the junk frame; leave the vecs
-    for( Key tkey : tkeys ) DKV.remove(tkey);
+    // Cleanup
+    for( Key<Frame> tkey : tkeys ) if( tkey != null ) DKV.remove(tkey);
 
+
+    String[] names = fr==null ? new String[]{Frame.defaultColName(0)} : fr._names;
     return new ValFrame(new Frame(names, vecs));
   }
 
   // RBind a single column across all vals
   private static class RbindTask extends MRTask<RbindTask> {
-    final Key[] _kfrs;
-    final double[] _ds;
-    final long[] _espc;
+    final Key<Frame>[] _kfrs;   // Source frame(s)
+    final double[] _ds;         // Source scalar(s) when frames are missing
+    final long[] _espc;         // Chunk layout
+    final Key<Vec>[] _kvecs;    // Output Vec keys
 
-    RbindTask(Key[] kfrs, double[] ds, long[] espc) { _kfrs = kfrs; _ds = ds; _espc = espc; }
+    RbindTask(Key<Frame>[] kfrs, double[] ds, long[] espc, Key<Vec>[] kvecs) { _kfrs = kfrs; _ds = ds; _espc = espc; _kvecs = kvecs; }
 
-
+    @Override public void map( Chunk c ) {
+      throw H2O.unimpl();
+    }
 
   }
 
