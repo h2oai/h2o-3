@@ -545,11 +545,14 @@ Only advanced users should turn standardization off.
 All validation values can be computed using either the training data set (the default option) or using N-fold
 cross-validation (\texttt{nfolds $> 1$)}. When N-fold cross-validation is enabled, H2O randomly splits data into n
 equally-sized parts, trains each of the n models on n-1 parts, and computes validation on the part that was not
-used for training. The reported validation parameters are then obtained as follows:
+used for training.
 
 \bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_cross_validation.R}
+
+You can also optionally control which rows are assigned to which fold with the \texttt{fold\_assignment}
+or \texttt{fold\_column} parameters.
 
 \subsubsection{Grid search over alpha}
 
