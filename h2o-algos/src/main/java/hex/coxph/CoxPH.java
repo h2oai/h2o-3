@@ -437,7 +437,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
         int nResponses = 1;
         boolean useAllFactorLevels = false;
-        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false);
+        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false);
         initStats(model, dinfo);
 
         final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;

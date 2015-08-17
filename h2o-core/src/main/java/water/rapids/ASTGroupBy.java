@@ -65,6 +65,11 @@ import java.util.concurrent.atomic.AtomicInteger;
     else if( s instanceof ASTNum ) _gbCols = new long[]{(long)((ASTNum)s)._d};
     else if( s instanceof ASTAry ) _gbColsDelayed = ((ASTAry)s)._a;
     else if( s instanceof  ASTStringList) _gbColsDelayedByName = ((ASTStringList)s)._s;
+    else if( s instanceof ASTDoubleList ) {
+      double[] d = ((ASTDoubleList)s)._d;
+      _gbCols = new long[d.length];
+      for(int i=0;i<d.length;++i) _gbCols[i]=(long)d[i];
+    }
     else throw new IllegalArgumentException("Badly formed AST. Columns argument must be a llist or number. Got: " +s.getClass());
 
     //parse AGGs

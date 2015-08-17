@@ -20,7 +20,7 @@ def refine_date_col(data, col, pattern):
 
 def date_munge(ip,port):
   crimes_path = h2o.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
-  crimes = h2o.import_frame(path=crimes_path)
+  crimes = h2o.import_file(path=crimes_path)
   crimes.describe()
 
   refine_date_col(crimes, "Date", "%m/%d/%Y %I:%M:%S %p")

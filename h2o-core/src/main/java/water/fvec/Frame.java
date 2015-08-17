@@ -350,8 +350,6 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
-
-
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
@@ -383,6 +381,16 @@ public class Frame extends Lockable<Frame> {
     for( int i=0; i<vecs.length; i++ )
       ds[i] = vecs[i].domain();
     return ds;
+  }
+
+  /** Number of categorical levels for enum columns; -1 for non-enum columns.
+   * @return the number of levels for enum columns */
+  public int[] cardinality() {
+    Vec[] vecs = vecs();
+    int[] card = new int[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      card[i] = vecs[i].cardinality();
+    return card;
   }
 
   /** All the column means.
@@ -1119,6 +1127,7 @@ public class Frame extends Lockable<Frame> {
           for(int row=0;row<cs[0]._len;++row) {
             if( cs[col].isNA(row) ) ncs[col].addNA();
             else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
+            else if( cs[col] instanceof StrWrappedVec.StrWrappedChunk) ncs[col].addStr(cs[col], row);
             else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
             else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
             else ncs[col].addNum(cs[col].atd(row));

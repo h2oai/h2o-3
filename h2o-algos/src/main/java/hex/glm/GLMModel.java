@@ -55,7 +55,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double [] beta() { return _output._global_beta;}
   public String [] names(){ return _output._names;}
 
-
+  @Override
+  public double deviance(double w, double y, double f) {
+    if (w == 0) {
+      return 0;
+    } else if (w == 1) {
+      return _parms.deviance(y, f);
+    } else {
+      return Double.NaN; //TODO: add deviance(w, y, f)
+    }
+  }
 
   public static class GLMParameters extends Model.Parameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
@@ -88,6 +97,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
+        if (glm.nFoldCV())
+          glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
         if(_nlambdas == -1)
           _nlambdas = 100;
         else
@@ -743,7 +754,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
     body.p(");").nl();
     if( _parms._family == Family.binomial ) {
-      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0); // threshold given by ROC").nl();
+      body.ip("preds[0] = (mu > ").p(_output._threshold).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
       body.ip("preds[1] = 1.0 - mu; // class 0").nl();
       body.ip("preds[2] =       mu; // class 1").nl();
     } else {

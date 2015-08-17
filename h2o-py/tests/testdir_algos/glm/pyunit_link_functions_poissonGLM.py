@@ -6,11 +6,11 @@ import zipfile
 import statsmodels.api as sm
 
 def link_functions_poisson(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     print("Read in prostate data.")
-    h2o_data = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))
+    h2o_data = h2o.import_file(path=h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))
 
     sm_data = pd.read_csv(zipfile.ZipFile(h2o.locate("smalldata/prostate/prostate_complete.csv.zip")).
                           open("prostate_complete.csv")).as_matrix()

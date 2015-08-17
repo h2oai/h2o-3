@@ -5,8 +5,8 @@ import random
 import copy
 
 def weights_vi(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     ###### create synthetic dataset1 with 3 predictors: p1 predicts response ~90% of the time, p2 ~70%, p3 ~50%
     response = ['a' for y in range(10000)]

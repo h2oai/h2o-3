@@ -5,17 +5,17 @@ import h2o
 
 def deepLearningDemo(ip, port):
 
-  h2o.init(ip, port)
+  
 
   # Training data
-  train_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
+  train_data = h2o.import_file(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
   train_data = train_data.drop('Site')
   train_data['Angaus'] = train_data['Angaus'].asfactor()
   print train_data.describe()
   train_data.head()
 
   # Testing data
-  test_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
+  test_data = h2o.import_file(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
   test_data['Angaus'] = test_data['Angaus'].asfactor()
   print test_data.describe()
   test_data.head()

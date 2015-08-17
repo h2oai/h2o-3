@@ -166,6 +166,62 @@
     <script>
       //
       // Google Analytics
+      //User ID Generation
+      var prefix = ['abc', 'def', 'ghi'],
+          middle = ['123', '456', '789'],
+          suffix = ['rst', 'uvw', 'xyz'],
+          random = function() {
+              return Math.floor(Math.random() * 3);
+          };
+
+      function setCookie(cname, cvalue, exdays) {
+          var d = new Date();
+          d.setTime(d.getTime() + (exdays*24*60*60*1000));
+          var expires = "expires="+d.toUTCString();
+          document.cookie = cname + "=" + cvalue + "; " + expires;
+      }
+
+      function getCookie(cname) {
+          var name = cname + "=";
+          var ca = document.cookie.split(';');
+          for(var i=0; i < ca.length; i++) {
+              var c = ca[i];
+              while (c.charAt(0)==' ') c = c.substring(1);
+              if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+          }
+          return "";
+      }
+
+      var user = getCookie("username");
+      if (user == "") {
+          var user = "User-" + prefix[random()] + '-' + Math.floor((Math.random() * 60000) + 1) + '-' + suffix[random()]; // e.g. abc-123-rst
+          if (user != "" && user != null) {
+              setCookie("username", user, 365);
+          }
+      }
+
+      // Simple pseudo-random user id - 27 possible values
+      var customUserId = user; // e.g. abc-123-rst
+      function getHitTime() {
+        // Get local time as ISO string with offset at the end
+        var now = new Date();
+        var tzo = -now.getTimezoneOffset();
+        var dif = tzo >= 0 ? '+' : '-';
+        var pad = function(num) {
+            var norm = Math.abs(Math.floor(num));
+            return (norm < 10 ? '0' : '') + norm;
+        };
+        return now.getFullYear()
+            + '-' + pad(now.getMonth()+1)
+            + '-' + pad(now.getDate())
+            + 'T' + pad(now.getHours())
+            + ':' + pad(now.getMinutes())
+            + ':' + pad(now.getSeconds())
+            + '.' + pad(now.getMilliseconds())
+            + dif + pad(tzo / 60)
+            + ':' + pad(tzo % 60);
+      }
+      console.log(customUserId);
       // test
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -173,17 +229,29 @@
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
       ga('create', 'UA-29263631-3');
-      ga('create', 'UA-64842905-1', 'auto', {'name': 'newTracker'}, {'allowLinker': true });
+      ga('create', 'UA-64842905-1', 'auto', {'name': 'newTracker'}, {'allowLinker': true },{'userId': customUserId});
       ga('newTracker.require', 'linker');
       ga('linker:autoLink', ['h2o.ai','leadpages.co', 'amazonaws.com','0xdata.com']);
 
       ga('send', 'pageview', { 'title': 'H2O Downloads for SUBST_PROJECT_VERSION' });
+      // New Tracker Sending Custom Dimension
+        ga(function(tracker) {
+         ga('newTracker.set', 'dimension1', tracker.get('clientId'));
+         ga('newTracker.set', 'dimension2', new Date().getTime() + '.' + Math.random().toString(36).substring(5));
+
+        ga('newTracker.set', 'dimension3', getHitTime());
+        ga('newTracker.set', 'dimension4', customUserId);
+
+         ga('newTracker.send', 'pageview');
+      });
+
       <!-- GA sending events -->
       function trackLink(id, category, action) {
         var link = document.getElementById(id);
         link.onclick = function() {
           ga('send', 'event', category, action, 'SUBST_PROJECT_VERSION');
-          setTimeout(function() { location.href = link.href; }, 300);
+          if(id.indexOf("btnCopy")==-1)
+            setTimeout(function() { location.href = link.href; }, 300);
           return false;
         };
       }
@@ -286,12 +354,30 @@
         trackLink('doc-rest', 'Documentation', 'REST API');
         trackLink('doc-h2o-core-javadoc', 'Documentation', 'H2O Core Javadoc');
         trackLink('doc-h2o-algos-javadoc', 'Documentation', 'H2O Algos Javadoc');
+        trackLink('btnCopy1','Copy to Clipboard', 'Run H2O From Terminal');
+        trackLink('btnCopy2','Copy to Clipboard', 'Use H2O directly from Python');
+        trackLink('btnCopy3','Copy to Clipboard', 'Use H2O Directly from R');
+        trackLink('btnCopy4','Copy to Clipboard', 'Run H2O on Hadoop');
+        trackLink('btnCopy5','Copy to Clipboard', 'Run H2O on Hadoop');
+        trackLink('btnCopy6','Copy to Clipboard', 'Run H2O on Maven');
+        trackLink('btnCopy7','Copy to Clipboard', 'Run H2O on Hadoop');
+        trackLink('btnCopy8','Copy to Clipboard', 'Use H2O directly from Python');
 
         initializeTabs();
       }
     </script>
   </head>
   <body>
+
+    <!-- Google Tag Manager -->
+<noscript><iframe src="//www.googletagmanager.com/ns.html?id=GTM-K3XHT8"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-K3XHT8');</script>
+<!-- End Google Tag Manager -->
     <!--[if lt IE 8]>
       <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
@@ -314,6 +400,103 @@
           <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
           <span id = "quickstart-maven-tab">Use from Maven</span>
         </div>
+        <!-- Clipboard Icon !-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
+        <script type="text/javascript" src="ZeroClipboard.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+        <script src="//app-ab12.marketo.com/js/forms2/js/forms2.min.js"></script>
+        <form id="mktoForm_1016"></form>
+
+        <script></script>
+
+          <script type="text/javascript">
+            $(document).ready(function () {
+                  var firstAdd=false;
+                  ZeroClipboard.config({moviePath:'ZeroClipboard.swf'});
+                  var clip = new ZeroClipboard($(".copy_button"));
+
+
+                  $(".copy_button").click(function(event){
+                    event.preventDefault();
+                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
+
+                      MktoForms2.whenReady(function (form) {
+                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
+                          {
+                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
+                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
+                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Copied!</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
+                          }
+						  else{
+							$(".mktoModalMain .abc h1").html("Copied!");
+						  }
+                    });
+
+
+                  });
+                  $("#download-zip").click(function(event){
+                    event.preventDefault();
+                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
+
+                      MktoForms2.whenReady(function (form) {
+                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
+                          {
+                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
+                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
+                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Downloading...</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
+                          }
+						  else{
+							$(".mktoModalMain .abc h1").html("Downloading...");
+						}
+                    });
+
+
+                  });
+
+                  clip.on( 'mouseover', function(client) {
+                    console.log('mouseover');
+                  } );
+
+                  clip.on('complete', function (client, args) {
+                      alert('clipDetail complete');
+                  });
+              });
+        </script>
+        <style>
+          .btn {
+              float:right;
+              position: relative;
+              display: inline-block;
+              padding: 3px 8px;
+              font-size: 13px;
+              font-weight: bold;
+              line-height: 20px;
+              color: #333;
+              white-space: nowrap;
+              vertical-align: middle;
+              cursor: pointer;
+              background-color: #eee;
+              background-image: -webkit-linear-gradient(#fcfcfc, #eee);
+              background-image: linear-gradient(#fcfcfc, #eee);
+              border: 1px solid #d5d5d5;
+              border-radius: 3px;
+              -webkit-user-select: none;
+              -moz-user-select: none;
+              -ms-user-select: none;
+              user-select: none;
+              -webkit-appearance: none;
+              -webkit-transition:all .5s linear;
+              transition:all .5s linear;
+              -moz-transition:all .5s linear;
+              -ms-transition:all .5s linear;
+
+          }
+          .octicon-clippy{font-size:30px;}
+          .zeroclipboard-is-hover .octicon-clippy{
+            color:#4388db !important;
+          }
+
+        </style>
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
@@ -322,7 +505,11 @@
             <h2>Get started with H<sub>2</sub>O in 3 easy steps</h2>
             <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
             <p>2. From your terminal, run:</p>
-            <p class="terminal">
+
+            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target='to_copy1'>
+              <span class="octicon octicon-clippy"></span>
+            </button>
+            <p class="terminal" id="to_copy1">
               cd ~/Downloads<br/>
               unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
               cd h2o-SUBST_PROJECT_VERSION<br/>
@@ -336,12 +523,18 @@
 
                 <p>1. Prerequisite:    Python 2.7</p>
                 <p>2. Install dependencies:</p>
-                <p class="terminal">
+                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
+              <span class="octicon octicon-clippy"></span>
+            </button>
+                <p class="terminal" id="to_copy8">
                     pip install requests<br/>
                     pip install tabulate
                 </p>
-                <p>At the command line, copy and paste these commands one line at a time:
-                <p class="terminal">
+                <p>At the command line, copy and paste these commands one line at a time:</p>
+                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='to_copy2'>
+                    <span class="octicon octicon-clippy"></span>
+                  </button>
+                <p class="terminal" id="to_copy2">
                     <em># The following command removes the H<sub>2</sub>O module for Python.</em><br/>
                     pip uninstall h2o<br/>
                     <br/>
@@ -352,8 +545,11 @@
             <div id="quickstart-r" style="display:none">
                 <h2>Use H<sub>2</sub>O directly from R</h2>
 
-                <p>Copy and paste these commands into R one line at a time:
-                <p class="terminal">
+                <p>Copy and paste these commands into R one line at a time:</p>
+                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target='to_copy3'>
+                    <span class="octicon octicon-clippy"></span>
+                  </button>
+                <p class="terminal" id="to_copy3"data-clipboard-target='to_copy3'>
                     <em># The following two commands remove any previously installed H<sub>2</sub>O packages for R.</em><br/>
                     if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }<br/>
                     if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }<br/>
@@ -380,7 +576,10 @@
           <div id="quickstart-hadoop" style="display:none">
             <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
             <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
-            <p class="terminal">
+            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='to_copy4'>
+              <span class="octicon octicon-clippy"></span>
+            </button>
+            <p class="terminal" id="to_copy4">
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.2.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.3.zip<br/>
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.4.2.zip<br/>
@@ -390,23 +589,34 @@
                 wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
             </p>
             <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
-            <p class="terminal">
+             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
+              <span class="octicon octicon-clippy"></span>
+            </button>
+            <p class="terminal" id="to_copy7">
                 unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
                 cd h2o-SUBST_PROJECT_VERSION-*<br/>
                 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName<br/>
             </p>
-            <p>3. Point your browser to one of the H2O nodes (i.e. "H2O node ... reports H2O cluster size" in the output below):</p>
-            <p class="terminal">
+            <p>3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
+            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='to_copy5'>
+              <span class="octicon octicon-clippy"></span>
+            </button>
+            <p class="terminal" id="to_copy5">
                 Determining driver host interface for mapper->driver callback...<br/>
                 [Possible callback IP address: 172.16.2.181]<br/>
                 [Possible callback IP address: 127.0.0.1]<br/>
                 ...<br/>
                 Waiting for H2O cluster to come up...<br/>
-                H2O node 172.16.2.184:54321 requested flatfile<br/>
+                H2O node 172.16.2.188:54321 requested flatfile<br/>
                 Sending flatfiles to nodes...<br/>
-                &nbsp;[Sending flatfile to node 172.16.2.184:54321]<br/>
-                <em>H2O node 172.16.2.184:54321 reports H2O cluster size 1 </em><br/>
+                    [Sending flatfile to node 172.16.2.188:54321]<br/>
+                H2O node 172.16.2.188:54321 reports H2O cluster size 1<br/>
                 H2O cluster (1 nodes) is up<br/>
+                (Note: Use the -disown option to exit the driver after cluster formation)<br/>
+                <br/>
+                <em>Open H2O Flow in your web browser: http://172.16.2.188:54321</em><br/>
+                <br/>
+                (Press Ctrl-C to kill the cluster)<br/>
                 Blocking until the H2O cluster shuts down...<br/>
             </p>
           </div>
@@ -415,7 +625,10 @@
               <h2>Gradle-style specification for Maven artifacts</h2>
 
               <p>See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
-              <p class="terminal">
+              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='to_copy6'>
+              <span class="octicon octicon-clippy"></span>
+            </button>
+              <p class="terminal" id="to_copy6">
 def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
 </br>
 repositories {</br>

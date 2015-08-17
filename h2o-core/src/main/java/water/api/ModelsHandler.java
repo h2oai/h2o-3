@@ -3,11 +3,15 @@ package water.api;
 import hex.Model;
 import water.*;
 import water.api.FramesHandler.Frames;
-import water.exceptions.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
 import water.serial.ObjectTreeBinarySerializer;
 import water.util.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -198,7 +202,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     List<Key> keysToExport = new LinkedList<>();
     keysToExport.add(model._key);
     keysToExport.addAll(model.getPublishedKeys());
-
+    mexport.dir =  new File(mexport.dir).getAbsolutePath();
     try {
       new ObjectTreeBinarySerializer().save(keysToExport, FileUtils.getURI(mexport.dir));
     } catch (IOException e) {

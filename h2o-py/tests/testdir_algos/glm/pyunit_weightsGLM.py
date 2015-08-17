@@ -5,14 +5,14 @@ import random
 import copy
 
 def weights_check(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     def check_same(data1, data2):
         glm1_regression = h2o.glm(x=data1[2:20], y=data1[1])
-        glm2_regression = h2o.glm(x=data2[2:21], y=data2[1], weights_column="weights")
+        glm2_regression = h2o.glm(x=data2[2:21], y=data2[1], weights_column="weights", training_frame=data2)
         glm1_binomial = h2o.glm(x=data1[1:20], y=data1[0], family="binomial")
-        glm2_binomial = h2o.glm(x=data2[1:21], y=data2[0], weights_column="weights", family="binomial")
+        glm2_binomial = h2o.glm(x=data2[1:21], y=data2[0], weights_column="weights", family="binomial",training_frame=data2)
 
         assert abs(glm1_regression.mse() - glm2_regression.mse()) < 1e-6, "Expected mse's to be the same, but got {0}, " \
                                                                           "and {1}".format(glm1_regression.mse(),

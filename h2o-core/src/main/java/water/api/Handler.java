@@ -1,8 +1,10 @@
 package water.api;
 
-import water.H2O;
+import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.Iced;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -86,5 +88,23 @@ public class Handler extends H2OCountedCompleter {
     if (null != docs)
       docs.append(sb);
     return sb;
+  }
+
+  public static <T extends Keyed> T getFromDKV(String param_name, String key, Class<T> klazz) {
+    return getFromDKV(param_name, Key.make(key), klazz);
+  }
+  public static <T extends Keyed> T getFromDKV(String param_name, Key key, Class<T> klazz) {
+    if (null == key)
+      throw new H2OIllegalArgumentException(param_name, "Models.getFromDKV()", key);
+
+    Value v = DKV.get(key);
+    if (null == v)
+      throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
+
+    Iced ice = v.get();
+    if (! (klazz.isInstance(ice)))
+      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), klazz, ice.getClass());
+
+    return (T) ice;
   }
 }

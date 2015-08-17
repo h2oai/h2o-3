@@ -25,15 +25,13 @@
 #' @param multi_loss A character string indicating the loss function for enum columns. 
 #'        Possible values are "Categorical" and "Ordinal".
 #' @param regularization_x A character string indicating the regularization function for
-#'        the X matrix. Possible values are "L2", "L1", "NonNegative", "OneSparse", and
-#'        "UnitOneSparse".
+#'        the X matrix. Possible values are "None" (default), "L2", "L1", "NonNegative", 
+#'        "OneSparse", "UnitOneSparse", and "Simplex".
 #' @param regularization_y A character string indicating the regularization function for
-#'        the Y matrix. Possible values are "L2", "L1", "NonNegative", "OneSparse", and
-#'        "UnitOneSparse".
-#' @param gamma_x The weight on the X matrix regularization term. For no X regularization,
-#'        set this value to zero.
-#' @param gamma_y The weight on the Y matrix regularization term. For no Y regularization,
-#'        set this value to zero.
+#'        the Y matrix. Possible values are "None" (default), "L2", "L1", "NonNegative", 
+#'        "OneSparse", "UnitOneSparse", and "Simplex".
+#' @param gamma_x The weight on the X matrix regularization term.
+#' @param gamma_y The weight on the Y matrix regularization term.
 #' @param max_iterations The maximum number of iterations to run the optimization loop.
 #'        Each iteration consists of an update of the X matrix, followed by an update
 #'        of the Y matrix.
@@ -68,8 +66,8 @@ h2o.glrm <- function(training_frame, x, k,
                      transform = c("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"),
                      loss = c("L2", "L1", "Huber", "Poisson", "Hinge", "Logistic"),
                      multi_loss = c("Categorical", "Ordinal"), 
-                     regularization_x = c("L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse"),
-                     regularization_y = c("L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse"),
+                     regularization_x = c("None", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
+                     regularization_y = c("None", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
                      gamma_x = 0,
                      gamma_y = 0,
                      max_iterations = 1000,

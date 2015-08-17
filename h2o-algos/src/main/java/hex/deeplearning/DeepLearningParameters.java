@@ -353,7 +353,7 @@ public class DeepLearningParameters extends Model.Parameters {
   /**
    * Enable shuffling of training data (on each node). This option is
    * recommended if training data is replicated on N nodes, and the number of training samples per iteration
-   * is close to N times the dataset size, where all nodes train will (almost) all
+   * is close to N times the dataset size, where all nodes train with (almost) all
    * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
    * times the dataset size or larger).
    */
@@ -384,6 +384,10 @@ public class DeepLearningParameters extends Model.Parameters {
   public boolean _elastic_averaging = false;
   public double _elastic_averaging_moving_rate = 0.9;
   public double _elastic_averaging_regularization = 1e-3;
+
+  // stochastic gradient descent: mini-batch size = 1
+  // batch gradient descent: mini-batch size = # training rows
+  public int _mini_batch_size = 1;
 
   public enum MissingValuesHandling {
     Skip, MeanImputation
@@ -424,6 +428,8 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
     for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
+    if (_mini_batch_size < 1)
+      dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
 
     if (!_autoencoder) {
       if (_valid == null)
@@ -565,9 +571,9 @@ public class DeepLearningParameters extends Model.Parameters {
       }
     }
     if (!_autoencoder && _sparsity_beta != 0)
-      dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
+      dl.error("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
     if (classification && dl.hasOffsetCol())
-      dl.info("_offset_column", "Offset is only supported for regression.");
+      dl.error("_offset_column", "Offset is only supported for regression.");
 
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
@@ -644,7 +650,8 @@ public class DeepLearningParameters extends Model.Parameters {
             "_export_weights_and_biases",
             "_elastic_averaging",
             "_elastic_averaging_moving_rate",
-            "_elastic_averaging_regularization"
+            "_elastic_averaging_regularization",
+            "_mini_batch_size"
     };
 
     // the following parameters must not be modified when restarting from a checkpoint
@@ -707,7 +714,7 @@ public class DeepLearningParameters extends Model.Parameters {
         throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
       }
       if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
-        throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+        throw new IllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
       }
 
       //compare the user-given parameters before and after and check that they are not changed
@@ -797,14 +804,13 @@ public class DeepLearningParameters extends Model.Parameters {
       }
       if (fromParms._adaptive_rate) {
         Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
         toParms._rate = 0;
         toParms._rate_decay = 0;
         toParms._rate_annealing = 0;
         toParms._momentum_start = 0;
         toParms._momentum_ramp = 0;
         toParms._momentum_stable = 0;
-        toParms._nesterov_accelerated_gradient = false;
       } else {
         Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
                 + "rho, epsilon.");

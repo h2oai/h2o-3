@@ -6,9 +6,9 @@ import random
 
 def slicing_shape(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
     rows, cols = prostate.dim()
 
     #foo = prostate[0:0] # TODO: empty frame allowed?

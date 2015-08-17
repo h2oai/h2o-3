@@ -172,7 +172,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ?6000:100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
+      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
       DKV.put(_dinfo._key, _dinfo);
       if(_valid != null) {
         _validDinfo = _dinfo.validDinfo(_valid);
@@ -231,7 +231,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           map = newMap;
         }
         final int numoff = _dinfo.numStart();
-        String [] valid_col_names = new String[]{"names","beta_given","beta_start","lower_bounds","upper_bounds","rho"};
+        String [] valid_col_names = new String[]{"names","beta_given","beta_start","lower_bounds","upper_bounds","rho","mean","std_dev"};
         Arrays.sort(valid_col_names);
         for(String s:beta_constraints.names())
           if(Arrays.binarySearch(valid_col_names,s) < 0)
@@ -262,6 +262,32 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           rho = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           for (int i = 0; i < (int) v.length(); ++i)
             rho[map == null ? i : map[i]] = v.at(i);
+        }
+        // mean override (for data standardization)
+        if ((v = beta_constraints.vec("mean")) != null) {
+          for(int i = 0; i < v.length(); ++i) {
+            if(!v.isNA(i)) {
+              int idx = map == null ? i : map[i];
+              if (idx > _dinfo._cats) {
+                _dinfo._normSub[idx - _dinfo._cats] = v.at(i);
+              } else {
+                // categorical, will be ignored
+              }
+            }
+          }
+        }
+        // standard deviation override (for data standardization)
+        if ((v = beta_constraints.vec("std_dev")) != null) {
+          for (int i = 0; i < v.length(); ++i) {
+            if (!v.isNA(i)) {
+              int idx = map == null ? i : map[i];
+              if (idx > _dinfo._cats) {
+                _dinfo._normMul[idx - _dinfo._cats] = v.at(i);
+              } else {
+                // categorical, will be ignored
+              }
+            }
+          }
         }
         if (_dinfo._normMul != null) {
           double normG = 0, normS = 0;

@@ -4,10 +4,10 @@ import h2o
 
 def cbind(ip,port):
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)
+  
 
-  hdf = h2o.import_frame(path=h2o.locate('smalldata/jira/pub-180.csv'))
-  otherhdf = h2o.import_frame(path=h2o.locate('smalldata/jira/v-11.csv'))
+  hdf = h2o.import_file(path=h2o.locate('smalldata/jira/pub-180.csv'))
+  otherhdf = h2o.import_file(path=h2o.locate('smalldata/jira/v-11.csv'))
   rows, cols = hdf.dim()
 
   ##################################
@@ -88,7 +88,7 @@ def cbind(ip,port):
   ###################################
   ##### non-mutating H2OVec.cbind ###
   ###################################
-  hdf = h2o.import_frame(path=h2o.locate('smalldata/jira/pub-180.csv'))
+  hdf = h2o.import_file(path=h2o.locate('smalldata/jira/pub-180.csv'))
   rows, cols = hdf.dim()
 
   # vec to frame

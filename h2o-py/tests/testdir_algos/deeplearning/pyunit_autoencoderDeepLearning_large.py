@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 
 def deeplearning_autoencoder(ip, port):
-    h2o.init(ip, port)
+    
 
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)
@@ -56,7 +56,7 @@ def deeplearning_autoencoder(ip, port):
     cm.show()
 
     # 10% error +/- 0.001
-    assert abs(cm.cell_values[10][10] - 0.1078) < 0.001, "Error. Expected 0.1078, but got {0}".format(cm.cell_values[10][10])
+    assert abs(cm.cell_values[10][10] - 0.082) < 0.001, "Error. Expected 0.082, but got {0}".format(cm.cell_values[10][10])
 
 if __name__ == '__main__':
     h2o.run_test(sys.argv, deeplearning_autoencoder)

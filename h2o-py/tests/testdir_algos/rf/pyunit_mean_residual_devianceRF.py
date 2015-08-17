@@ -4,7 +4,7 @@ import h2o
 
 def rf_mean_residual_deviance(ip,port):
 
-    cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars[0].runif()
     train = cars[s > 0.2]
     valid = cars[s <= 0.2]

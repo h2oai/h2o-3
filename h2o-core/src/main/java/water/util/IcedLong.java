@@ -10,4 +10,8 @@ public class IcedLong extends Iced {
   }
   @Override public int hashCode() { return new Long(_val).hashCode(); }
   @Override public String toString() { return Long.toString(_val); }
+
+  public static IcedLong valueOf(long value) {
+    return new IcedLong(value);
+  }
 }

@@ -1268,13 +1268,15 @@ class ASTSlice extends AST {
         } else {
           long[] cols2 = (long[])colSelect;
           if( cols2.length > 0 && cols2[0] < 0 ) { // Dropping cols
+            int[] idxs = new int[cols2.length];
             fr2 = new Frame(ary);
             for( int i=0; i<cols2.length; i++ )
-              fr2.remove((int)-cols2[i]-1);
+              idxs[i]=(int)-cols2[i]-1;
+            fr2.remove(idxs);
           } else {              // Else selecting positive cols
             fr2 = new Frame();
-            for( int i=0; i<cols2.length; i++ )
-              fr2.add(ary._names[(int) cols2[i]], ary.vec((int) cols2[i]));
+            for (long aCols2 : cols2)
+              fr2.add(ary._names[(int) aCols2], ary.vec((int) aCols2));
           }
         }
       } else {

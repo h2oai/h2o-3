@@ -171,6 +171,7 @@ The following video provides step-by-step instructions on how to start H2O using
 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md" target="_blank">Python Parity</a>: This document is is a list of Python capabilities that were previously available only through the H2O R interface but are now available in H2O using the Python interface. 
+
 ---
 
 <a name="R"></a>
@@ -179,6 +180,8 @@ The following video provides step-by-step instructions on how to start H2O using
 Don't worry, R users - we still provide R support in the latest version of H2O, just as before. The R components of H2O have been cleaned up, simplified, and standardized, so the command format is easier and more intuitive. Due to these improvements, be aware that any scripts created with previous versions of H2O will need some revision to be compatible with the latest version. 
 
 We have provided the following helpful resources to assist R users in upgrading to the latest version, including a document that outlines the differences between versions and a tool that reviews scripts for deprecated or renamed parameters. 
+
+Currently, the only version of R that is known to be incompatible with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using that version, we recommend upgrading the R version before using H2O. 
 
 The following video provides step-by-step instructions on how to start H2O in R:
 
@@ -202,6 +205,8 @@ REST APIs are generated immediately out of the code, allowing users to implement
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#route-reference" target="_blank">REST API Reference</a>: This document represents the definitive guide to the H2O REST API. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#schema-reference" target="_blank">REST API Schema Reference</a>: This document represents the definitive guide to the H2O REST API schemas. 
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/api/REST/h2o_3_rest_api_overview.md" target="_blank">H2O 3 REST API Overview</a>: This document provides an overview of how APIs are used in H2O, including versioning, URLs, HTTP verbs, status codes, formats, schemas, and examples. 
 
 ---
 

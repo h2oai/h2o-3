@@ -4,9 +4,9 @@ import h2o
 
 def vec_scaler_comparisons(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    air = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
+    air = h2o.import_file(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
     rows, cols = air.dim()
 
     ## H2OVec/scaler

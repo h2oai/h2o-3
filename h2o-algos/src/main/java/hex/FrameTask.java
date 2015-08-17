@@ -3,7 +3,6 @@ package hex;
 import water.*;
 import water.Job.JobCancelledException;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
@@ -45,7 +44,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   @Override protected void closeLocal(){ _dinfo = null;}
 
   /**
-   * Method to process one row of the data for GLM functions.
+   * Method to process one row of the data. See for separate mini-batch logic below.
    * Numeric and categorical values are passed separately, as is response.
    * Categoricals are passed as absolute indexes into the expanded beta vector, 0-levels are skipped
    * (so the number of passed categoricals will not be the same for every row).
@@ -64,6 +63,19 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    */
   protected void processRow(long gid, DataInfo.Row r){throw new RuntimeException("should've been overridden!");}
   protected void processRow(long gid, DataInfo.Row r, NewChunk [] outputs){throw new RuntimeException("should've been overridden!");}
+
+  /**
+   * Mini-Batch update of model parameters
+   * @param n number of trained examples in this last mini batch
+   */
+  protected void applyMiniBatchUpdate(int n){}
+
+  /**
+   * Return the mini-batch size
+   * Note: If this is overridden, then applyMiniBatch must be overridden as well to perform the model/weight mini-batch update
+   * @return
+   */
+  protected int getMiniBatchSize(){ return 1; }
 
   /**
    * Override this to initialize at the beginning of chunk processing.
@@ -122,7 +134,9 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final boolean sample = (fraction < 0.999 || obs_weights || _shuffle);
     final Random skip_rng = sample ? RandomUtils.getRNG((0x8734093502429734L+_seed+offset)*(_iteration+0x9823423497823423L)) : null;
 
+    final int miniBatchSize = getMiniBatchSize();
     long num_processed_rows = 0;
+    int miniBatchCounter = 0;
     for(int rep = 0; rep < repeats; ++rep) {
       for(int row_idx = 0; row_idx < nrows; ++row_idx){
         int r = sample ? -1 : 0;
@@ -152,14 +166,22 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         if(!row.bad) {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           long seed = offset + rep * nrows + r;
+          miniBatchCounter++;
           if (outputs != null && outputs.length > 0)
             processRow(seed++, row, outputs);
           else
             processRow(seed++, row);
         }
         num_processed_rows++;
+        if (miniBatchCounter > 0 && miniBatchCounter % miniBatchSize == 0) {
+          applyMiniBatchUpdate(miniBatchCounter);
+          miniBatchCounter = 0;
+        }
       }
     }
+    if (miniBatchCounter>0)
+      applyMiniBatchUpdate(miniBatchCounter); //finish up the last piece
+
     assert(fraction != 1 || num_processed_rows == repeats * nrows);
     chunkDone(num_processed_rows);
   }
