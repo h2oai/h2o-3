@@ -7,20 +7,20 @@ def binop_eq(ip,port):
     
 
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    rows, cols = iris.dim()
+    rows, cols = iris.dim
     iris.show()
 
     #frame/scaler
     res = iris == 4.7
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    new_rows = iris[res[0]].nrow()
+    new_rows = iris[res[0]].nrow
     assert new_rows == 2, "wrong number of rows returned"
 
     res = 3.5 == iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    new_rows = iris[res[1]].nrow()
+    new_rows = iris[res[1]].nrow
     assert new_rows == 6, "wrong number of rows returned"
 
     #frame/vec
@@ -40,37 +40,37 @@ def binop_eq(ip,port):
 
     #vec/vec
     res = iris[0] == iris[1]
-    res_rows = res.nrow()
+    res_rows = res.nrow
     assert res_rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow()
+    new_rows = iris[res].nrow
     assert new_rows == 0, "wrong number of rows returned"
 
     res = iris[2] == iris[2]
-    res_rows = res.nrow()
+    res_rows = res.nrow
     assert res_rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow()
+    new_rows = iris[res].nrow
     assert new_rows == 150, "wrong number of rows returned"
 
     #vec/scaler
     res = iris[0] == 4.7
-    res_rows = res.nrow()
+    res_rows = res.nrow
     assert res_rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow()
+    new_rows = iris[res].nrow
     assert new_rows == 2, "wrong number of rows returned"
 
     res = 3.5 == iris[1]
-    res_rows = res.nrow()
+    res_rows = res.nrow
     assert res_rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow()
+    new_rows = iris[res].nrow
     assert new_rows == 6, "wrong number of rows returned"
 
     # frame/frame
     res = iris == iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] == iris[1:3]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:

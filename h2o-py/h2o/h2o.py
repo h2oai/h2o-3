@@ -1053,18 +1053,14 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   Principal components analysis of a H2O dataset using the power method
   to calculate the singular value decomposition of the Gram matrix.
 
-  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
-  nrow(training_frame)) inclusive.
-  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
-  is provided.
-  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
-  1e6 inclusive.
+  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame), nrow(training_frame)) inclusive.
+  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none is provided.
+  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and 1e6 inclusive.
   :param transform: A character string that indicates how the training data should be transformed before running PCA.
   Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
   for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
   for demeaning and dividing each column by its range (max - min).
-  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
-  method iteration.
+  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power method iteration.
   :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included
   in each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of
   every categorical variable will be dropped. Defaults to FALSE.
@@ -1079,8 +1075,7 @@ def svd(x,validation_x=None,nv=None,max_iterations=None,transform=None,seed=None
   """
   Singular value decomposition of a H2O dataset using the power method.
 
-  :param nv: The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame),
-  nrow(training_frame)) inclusive.
+  :param nv: The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame), snrow(training_frame)) inclusive.
   :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
   1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
   and 1e6 inclusive.
@@ -1196,7 +1191,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
   :return: H2OFrame
   """
   data._eager()
-  factors = [data.names()[n] if isinstance(n,int) else n for n in factors]
+  factors = [data.names[n] if isinstance(n,int) else n for n in factors]
   parms = {"dest": _py_tmp_key() if destination_frame is None else destination_frame,
            "source_frame": data._id,
            "factor_columns": [_quoted(f) for f in factors],

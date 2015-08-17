@@ -90,7 +90,7 @@ class GroupBy:
       col=0
       name="count" if name=="" else name
     if col is None:
-      for i in range(self._fr.ncol()):
+      for i in range(self._fr.ncol):
         if i not in self._by: self._add_agg(op,i,name,na)
       return self
     elif isinstance(col, (str,unicode)): cidx=self._fr.index(col)
@@ -100,7 +100,7 @@ class GroupBy:
         self._add_agg(op,i,name,na)
       return self
     else:                              raise ValueError("col must be a column name or index.")
-    if name=="": name = "{}_{}".format(op,self._fr.col_names()[cidx])
+    if name=="": name = "{}_{}".format(op,self._fr.col_names[cidx])
     self._aggs[name]=[op,cidx,na]
     self._computed=False
     return self

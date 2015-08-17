@@ -20,7 +20,7 @@ def get_model_test(ip,port):
     assert regression_gbm2._model_json['output']['model_category'] == "Regression"
     predictions2 = regression_gbm2.predict(test)
 
-    for r in range(predictions1.nrow()):
+    for r in range(predictions1.nrow):
         p1 = predictions1[r,0]
         p2 = predictions2[r,0]
         assert p1 == p2, "expected regression predictions to be the same for row {}, but got {} and {}".format(r, p1, p2)
@@ -34,7 +34,7 @@ def get_model_test(ip,port):
     assert bernoulli_gbm2._model_json['output']['model_category'] == "Binomial"
     predictions2 = bernoulli_gbm2.predict(test)
 
-    for r in range(predictions1.nrow()):
+    for r in range(predictions1.nrow):
         p1 = predictions1[r,0]
         p2 = predictions2[r,0]
         assert p1 == p2, "expected binomial predictions to be the same for row {}, but got {} and {}".format(r, p1, p2)
@@ -54,7 +54,7 @@ def get_model_test(ip,port):
     assert multinomial_dl2._model_json['output']['model_category'] == "Multinomial"
     predictions2 = multinomial_dl2.predict(test)
 
-    for r in range(predictions1.nrow()):
+    for r in range(predictions1.nrow):
         p1 = predictions1[r,0]
         p2 = predictions2[r,0]
         assert p1 == p2, "expected multinomial predictions to be the same for row {0}, but got {1} and {2}" \

@@ -44,7 +44,7 @@ def cv_carsRF(ip,port):
 
     # 3. folds_column
     num_folds = random.randint(2,5)
-    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow())])
+    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
     fold_assignments.setNames(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], training_frame=cars,
@@ -70,7 +70,7 @@ def cv_carsRF(ip,port):
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), fold_assignment="Modulo")
+    rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow, fold_assignment="Modulo")
 
     # 2. nfolds = 0
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=0, seed=1234)
@@ -93,7 +93,7 @@ def cv_carsRF(ip,port):
 
     # 2. more folds than observations
     try:
-        rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, fold_assignment="Modulo")
+        rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow+1, fold_assignment="Modulo")
         assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
         assert True

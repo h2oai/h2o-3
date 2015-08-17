@@ -21,7 +21,7 @@ def match_check(ip,port):
     hh_match.show()
 
     print "print the dim of the subsetted frame"
-    rows, cols = hh_match.dim()
+    rows, cols = hh_match.dim
     print "rows: {0}".format(rows)
     print "cols: {0}".format(cols)
 
@@ -42,7 +42,7 @@ def match_check(ip,port):
     hh_match.show()
 
     print "print the dim of the subsetted frame"
-    rows, cols = hh_match.dim()
+    rows, cols = hh_match.dim
     print "rows: {0}".format(rows)
     print "cols: {0}".format(cols)
 
