@@ -1,34 +1,10 @@
-\documentclass{article}[11pt]
-\setcounter{secnumdepth}{5}
-\setcounter{tocdepth}{5}
-\usepackage[english]{babel}
-\usepackage{textcomp}
-\usepackage{amsmath,amsthm,amsfonts,amssymb,epsfig}
-\usepackage{array}
-\usepackage{datetime}
-\usepackage{lipsum}% http://ctan.org/pkg/lipsum
-\usepackage[left=1.1in,top=1in,right=1.1in]{geometry}% http://ctan.org/pkg/geometry
-\usepackage{listings}% http://ctan.org/pkg/listings
-\usepackage{inconsolata}
-\usepackage{spverbatim}
-\usepackage{hyperref}
-\usepackage{microtype}
-\hypersetup{colorlinks=true, urlcolor=black, linkcolor=black}
-\usepackage{graphicx}
-\graphicspath{ {images/} }
-\usepackage{parskip}
-\usepackage{titlesec} %used for diminishing heading sizes
+\input{common/conf_top.tex}
 
-\titleformat*{\section}{\LARGE\bfseries\sffamily}
-\titleformat*{\subsection}{\Large\bfseries\sffamily}
-\titleformat*{\subsubsection}{\large\bfseries\sffamily}
-\titleformat*{\paragraph}{\large\bfseries\sffamily}
-\titleformat*{\subparagraph}{\large\bfseries\sffamily}
-\renewcommand{\familydefault}{\sfdefault} %sans-serif font
-
+\input{common/conf_titles.tex}
 
 \begin{document}
 
+\input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number  
 
@@ -40,6 +16,8 @@
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
+
+{\url{http://h2o.gitbooks.io/r-with-h2o/}}
 
 \bigskip
 August 2015: Third Edition 
@@ -79,14 +57,7 @@ Printed in the United States of America.
 \newpage
 \tableofcontents
 
-\newpage
-\section{What is H2O?}
-
-H2O is fast scalable open-source machine learning and deep learning for Smarter Applications. With H2O, enterprises like PayPal, Nielsen, Cisco and others can use all of their data without sampling and get accurate predictions faster. Advanced algorithms, like Deep Learning, Boosting and Bagging Ensembles are readily available for application designers to build smarter applications through elegant APIs. Some of our earliest customers have built powerful domain-specific predictive engines for Recommendations, Customer Churn, Propensity to Buy, Dynamic Pricing and Fraud Detection for the Insurance, Healthcare, Telecommunications, AdTech,Retail and Payment Systems.
-Using in-memory compression techniques, H2O can handle billions of data rows in-memory, even with a fairly small cluster. The platform includes interfaces for R, Python, Scala, Java, JSON and Coffeescript/JavaScript, along with a built-in  web interface, Flow, that make it easier for non-engineers to stitch together complete analytic workflows. The platform was built alongside (and on top of) both Hadoop and Spark Clusters and is typically deployed within minutes.
-H2O implements almost all common machine learning algorithms, such as generalized linear modeling (linear regression, logistic regression, etc.), Na\"{i}ve Bayes, principal components analysis, time series, k-means clustering and others. H2O also implements best-in-class algorithms such as Random Forest, Gradient Boosting and Deep Learning at scale. Customers can build thousands of models and compare them to get the best prediction results.
-H2O is nurturing a grassroots movement of physicists, mathematicians, computer and data scientists to herald the new wave of discovery with data science. Academic researchers and Industrial data scientists collaborate closely with our team to make this possible. Stanford university giants Stephen Boyd, Trevor Hastie, Rob Tibshirani advise the H2O team to build scalable machine learning algorithms. With 100s of meetups over the past two years, H2O has become a word-of-mouth phenomenon growing amongst the data community by a 100-fold and is now used by 12,000+ users, deployed in 2000+ corporations using R, Python, Hadoop and Spark.\textbf{Try it out}H2O offers an R package that can be installed from CRAN. H2O can be downloaded at {\url{www.h2o.ai/download}}.\textbf{Join the community}Connect with {\url{h2ostream@googlegroups.com}} and {\url{https://github.com/h2oai}} to learn about our meetups, training sessions, hackathons, and product updates.\textbf{Learn more about H2O}
-Visit {\url{www.h2o.ai}}.
+\input{common/what_is_h2o.tex}
 
 \section{Introduction}
 
@@ -139,8 +110,7 @@ Load the latest CRAN H2O package by running \begin{spverbatim} install.packages(
 
 Note: Our push to CRAN will be behind the bleeding edge version and due to resource constraints, may be behind the published version. However, there is a best-effort to keep the versions the same. 
 
-\footnotesize %need so that code fits on 1 line - using this instead of {lstlisting} since it looks better
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 # The following two commands remove any previously installed H2O packages for R.
 if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
 if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
@@ -154,23 +124,21 @@ if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl")
 if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
-\end{spverbatim}
+\end{lstlisting}
 
 
-\begin{spverbatim}
-# Now we download, install and initialize the H2O package for R (replacingthe * with the latest version number obtained from the H2O download page)
+\begin{lstlisting}[style=R]
+# Now we download, install and initialize the H2O package for R (replacing#the * with the latest version number obtained from the H2O download page)
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/*/R")))
 library(h2o)
 localH2O = h2o.init(nthreads = -1)
-\end{spverbatim}
-\normalsize%restore default text size
+\end{lstlisting}
 
 \subsection{Making a build from the Source Code}
 If you are a developer who wants to make changes to the R package before building and installing it, pull the source code from Git ({\url{https://github.com/h2oai/h2o-3}}) and follow the instructions in at {\url{https://github.com/h2oai/h2o-3/blob/master/README.md}}.
 
 After making the build, navigate to the top-level \texttt{h2o-3} directory using {\texttt{cd $\mathtt{\sim}$/h2o-3}}, then run the following (replacing the asterisks [*] with the version number) and install.
-\small
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 ./gradlew clean 
 ./gradlew build
 $ cd target/Rcran
@@ -187,8 +155,7 @@ Creating a generic function for ...[output truncated]
 ** building package indices
 ** testing if installed package can be loaded
 * DONE (h2o)
-\end{spverbatim}
-\normalsize
+\end{lstlisting}
 
 \section{H2O Initialization}
 
@@ -208,14 +175,14 @@ For best performance, the allocated memory should be 4x the size of your data, b
 
 
 To launch H2O from R, run the following in R:
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
-> library(h2o)
+\begin{lstlisting}[style=R]
+library(h2o)
 # Start H2O on localhost, port 54321, with 4g of memory using all CPUs
-> localH2O <- h2o.init(ip = 'localhost', port = 54321, nthreads= -1, max_mem_size = '4g') \end{spverbatim} 
+localH2O <- h2o.init(ip = 'localhost', port = 54321, nthreads= -1, max_mem_size = '4g')
 \end{lstlisting}
 
 R displays the following output: 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 Successfully connected to http://localhost:54321
 R is connected to H2O cluster:
    H2O cluster uptime:         11 minutes 35 seconds
@@ -226,27 +193,33 @@ R is connected to H2O cluster:
    H2O cluster total cores:    8
    H2O cluster allowed cores:  8
    H2O cluster healthy:        TRUE
-\end{spverbatim}
+\end{lstlisting}
 
-If you are operating on a single node, initialize H2O using all CPUs with: \begin{spverbatim} h2o_server = h2o.init(nthreads = -1)\end{spverbatim}\\
+If you are operating on a single node, initialize H2O using all CPUs with: 
+\begin{lstlisting}[style=R]
+h2o_server = h2o.init(nthreads = -1)
+\end{lstlisting}
 
-To connect with an existing H2O cluster node other than the default localhost:54321, specify the IP address and port number in the parentheses. For example:\begin{spverbatim}h2o_cluster = h2o.init(ip = "192.555.1.123", port = 12345, nthreads = -1)\end{spverbatim}
+To connect with an existing H2O cluster node other than the default localhost:54321, specify the IP address and port number in the parentheses. For example:
+\begin{lstlisting}[style=R]
+h2o_cluster = h2o.init(ip = "192.555.1.123", port = 12345, nthreads = -1)
+\end{lstlisting}
 
 
 \subsection{Launching from the Command Line}
 
 After launching the H2O instance, initialize the connection by running {\texttt{h2o.init(nthreads = -1)}} with the IP address and port number of a node in the cluster. In the following example, change 192.168.1.161 to your machine's local host. 
-\begin{spverbatim}
-> library(h2o)
-> localH2O <- h2o.init(ip = '192.168.1.161', port = 54321, nthreads = -1)
-\end{spverbatim}
+\begin{lstlisting}[style=R]
+library(h2o)
+localH2O <- h2o.init(ip = '192.168.1.161', port = 54321, nthreads = -1)
+\end{lstlisting}
 
 \subsection{Launching on Hadoop}
 
 To launch H2O nodes and form a cluster on the Hadoop cluster, run:
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
-\end{spverbatim}
+\end{lstlisting}
 
 \begin{itemize}
 \item For each major release of each distribution of Hadoop, there is a driver jar file that the user will need to launch H2O with. Currently available driver jar files in each build of H2O include {\texttt{h2odriver\_cdh5.3.jar, h2odriver\_hdp2.1.jar}}, and {\texttt{mapr3.1.1.jar}}.
@@ -267,17 +240,17 @@ If you would still like to set up your own EC2 cluster, follow the instructions 
 
 \item Edit {\texttt{h2o-cluster-launch-instances.py}}to include your SSH key name and security group name, as well as any other environment-specific variables: 
 
-\begin{spverbatim}
+\begin{lstlisting}[style=Python]
 ./h2o-cluster-launch-instances.py
 ./h2o-cluster-distribute-h2o.sh
-\end{spverbatim}
+\end{lstlisting}
 
  ---OR---
 
-\begin{spverbatim}
+\begin{lstlisting}[style=Python]
 ./h2o-cluster-launch-instances.py
 ./h2o-cluster-download-h2o.sh
-\end{spverbatim}
+\end{lstlisting}
 
 {\textbf{Note}}: The second method may be faster than the first, since download pulls from S3. 
 
@@ -303,14 +276,14 @@ If you would still like to set up your own EC2 cluster, follow the instructions 
 
 
 To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo()}}.
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 > library(h2o)
 > localH2O = h2o.init(ip = 'localhost', port = 54321, nthreads = -1)
 > h2o.clusterInfo(localH2O)
-\end{spverbatim}
+\end{lstlisting}
 
 An easy-to-read summary of information about the cluster displays. 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 R is connected to H2O cluster:
   H2O cluster uptime:         43 minutes 43 seconds
   H2O cluster version:        2.7.0.1497
@@ -320,7 +293,7 @@ R is connected to H2O cluster:
   H2O cluster total cores:    8
   H2O cluster allowed cores:  8
   H2O cluster healthy:        TRUE
-\end{spverbatim}
+\end{lstlisting}
 
 
 \section{Data Preparation in R}
@@ -359,7 +332,7 @@ The following section depicts an example of creating aggregates for data trainin
 
 To apply a user-specified function to each subset of an H2O dataset and combine the results, use {\texttt{ddply()}}, with the name of the H2O object, the variable name, and the function in the parentheses. For more information about functions, refer to {\texttt{h2o.addFunction}} in the Appendix.
 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 library(h2o)
 localH2O = h2o.init(nthreads = -1)
 
@@ -375,7 +348,7 @@ localH2O = h2o.init(nthreads = -1)
 # uses h2o's ddply, since iris.hex is an H2OParsedData object
 > res = ddply(iris.hex, "class", fun)
 > head(res)
-\end{spverbatim}
+\end{lstlisting}
 
 \section{Models}
 
@@ -407,7 +380,7 @@ After creating a model, use it to make predictions. For more information about p
 
 The following demo demonstrates how to import a file, define significant data, view data, create testing and training sets using sampling, define the model, and display the results.
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+\begin{lstlisting}[style=R]
 # Import dataset and display summary
 airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
 airlines.hex = h2o.importFile(localH2O, path = airlinesURL, key = "airlines.hex")%%please update - fails here
@@ -466,7 +439,7 @@ For additional help within R's Help tab, precede the command with a question mar
 
 The H2O package consolidates all of the various supported import functions using {\texttt{h2o.importFile()}}. Although {\texttt{h2o.importFolder}} and {\texttt{h2o.importHDFS}} will still work, these functions are deprecated and should be updated to {\texttt{h2o.importFile()}}. There are a few ways to import files: 
 
-\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+\begin{lstlisting}[style=R]
 
 # To import small iris data file from H2O's package:
 irisPath = system.file("extdata", "iris.csv", package="h2o")
@@ -489,27 +462,27 @@ airlines.hex = h2o.importFile(remoteH2O, path = pathToData, key = "airlines.hex"
 \subsection{Uploading Files}
 
 To upload a file in a directory local to your H2O instance, we recommend {\texttt{h2o.importFile()}}. The alternative is to use {\texttt{h2o.uploadFile()}} which can also upload data local to your H2O instance in addition to uploading data local to your R session. In the parentheses, specify the H2O reference object in R and the complete URL or normalized file path for the file.
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 irisPath = system.file("extdata", "iris.csv", package="h2o")
 iris.hex = h2o.uploadFile(localH2O, path = irisPath, key = "iris.hex")
 |====================================================| 100% 
-\end{spverbatim}
+\end{lstlisting}
 
 
 \subsection{Finding Factors}
 
 To determine if any column in a data set is a factor (contains categorical data), use {\texttt{h2o.anyFactor()}} with the name of the R reference object in the parentheses. 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 irisPath = system.file("extdata", "iris_wheader.csv", package="h2o")
 iris.hex = h2o.importFile(localH2O, path = irisPath)
 |===================================================| 100%
 h2o.anyFactor(iris.hex)
 [1] TRUE
-\end{spverbatim}
+\end{lstlisting}
 
 \subsection{Converting to Factors}
 To convert an integer into a non-ordered factor (also called an enum or categorical), use {\texttt{as.factor()}} with the name of the R reference object in parentheses followed by the number of the column to convert in brackets. 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 # Import prostate data
 prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 prostate.hex <- h2o.importFile(localH2O, path = prosPath)
@@ -526,13 +499,13 @@ summary(prostate.hex[,4])
  1 :341 
  2 : 36 
  0 :  3 
-\end{spverbatim}
+\end{lstlisting}
 \subsection{Converting Data Frames}
 
 To convert an H2O parsed data object into an R data frame that can be manipulated using R commands, use {\texttt{as.data.frame()}} with the name of the R reference object in the parentheses.
 
 {\textbf{Caution}}: While this can be very useful, be careful using this command when converting H2O parsed data objects. H2O can easily handle data sets that are often too large to be handled equivalently well in R. 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 # Creates object that defines path
 prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 # Imports data set
@@ -546,13 +519,13 @@ summary(prostate.data.frame)
 Min.   :  1.00   Min.   :0.0000   Min.   :43.00   Min.   :0.000
 1st Qu.: 95.75   1st Qu.:0.0000   1st Qu.:62.00   1st Qu.:1.000
        .... 
-\end{spverbatim}
+\end{lstlisting}
 
 
 \subsection{Transferring Data Frames}
 To transfer a data frame from the R environment to the H2O instance, use  {\texttt{as.h2o()}}. In the parentheses, specify the name of the h2o.init object that communicates with R and H2O and the object in the R environment to be converted to an H2O object. Optionally, you can include the reference to the H2O instance (the key). Precede the key with {\texttt{key=}} and enclose the key in quotes as in the following example. 
 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 # Import the iris data into H2O
 > data(iris)
 > iris
@@ -578,14 +551,14 @@ Parsed Data Key: iris.hex
 4          4.6         3.1          1.5         0.2  setosa
 5          5.0         3.6          1.4         0.2  setosa
 6          5.4         3.9          1.7         0.4  setosa
-\end{spverbatim}
+\end{lstlisting}
 
 
 \subsection{Renaming Data Frames}
 
 To rename a dataframe on the server running H2O for a data set manipulated in R, use {\texttt{h2o.assign()}}. For instance, in the following example, the prostate data set was uploaded to the H2O instance and the data was manipulated to remove outliers. {\texttt{h2o.assign()}} saves the new data set on the H2O server so that it can be analyzed using H2O without overwriting the original data set.  
 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 prostate.hex<-h2o.importFile(localH2O, path = prosPath)
 |===================================================| 100%
@@ -596,19 +569,19 @@ prostate.hex <- h2o.assign(data = prostate.hex, key = "newName.hex")
 prostate.hex@key
 [1] "newName.hex"
 
-\end{spverbatim}
+\end{lstlisting}
 
 \subsection{Getting Column Names}
 
 To obtain a list of the column names in the data set, use {\texttt{colnames()}} or {\texttt{names()}} with the name of the R reference object in the parentheses. 
 
-\begin{spverbatim}
+\begin{lstlisting}[style=R]
 ##Displays the titles of the columns
 colnames(iris.hex)
 [1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"     
 names(iris.hex)
 [1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"     
-\end{spverbatim}
+\end{lstlisting}
 
 
 \subsection{Getting Minimum and Maximum Values}
