@@ -51,6 +51,7 @@
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
+#' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -115,6 +116,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
+                    max_active_predictors = -1,
                     ...
                     )
 {
@@ -166,6 +168,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.

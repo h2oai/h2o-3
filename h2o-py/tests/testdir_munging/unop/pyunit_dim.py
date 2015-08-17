@@ -15,7 +15,7 @@ def dim_checks(ip,port):
   
 
   # Log.info("Uploading logreg/princeton/cuse.dat")
-  h2o_data = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  h2o_data = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   np_data = np.loadtxt(h2o.locate("smalldata/logreg/prostate.csv"), delimiter=',', skiprows=1)
 
   h2o_rows, h2o_cols = h2o_data.dim()

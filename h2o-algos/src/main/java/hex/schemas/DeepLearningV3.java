@@ -83,6 +83,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_categorical_features",
         "reproducible",
         "export_weights_and_biases",
+        "mini_batch_size",
 //        "elastic_averaging",
 //        "elastic_averaging_moving_rate",
 //        "elastic_averaging_regularization"
@@ -534,6 +535,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     @API(help = "Whether to export Neural Network weights and biases to H2O Frames", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean export_weights_and_biases;
+
+    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
+    public int mini_batch_size;
 
 //    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public boolean elastic_averaging;

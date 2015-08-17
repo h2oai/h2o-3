@@ -78,7 +78,7 @@ def baddataKmeans(ip,port):
     assert len(centers[c]) == 10, "expected center to be 10 "+str(len(centers[c]))
 
   # Log.info("Importing iris.csv data...\n")
-  iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+  iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
   km_model = h2o.kmeans(x=iris, k=5)
   centers = km_model.centers()

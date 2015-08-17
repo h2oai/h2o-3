@@ -6,8 +6,8 @@ def cupMediumGBM(ip,port):
   
   
 
-  train = h2o.import_frame(path=h2o.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
-  test = h2o.import_frame(path=h2o.locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
+  train = h2o.import_file(path=h2o.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
+  test = h2o.import_file(path=h2o.locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
 
   train["TARGET_B"] = train["TARGET_B"].asfactor()
 

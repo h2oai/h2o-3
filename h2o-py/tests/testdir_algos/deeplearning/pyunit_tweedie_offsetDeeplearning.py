@@ -4,7 +4,7 @@ import h2o
 
 def tweedie_offset(ip,port):
 
-    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
     insurance["offset"] = insurance["Holders"].log()
     insurance["Group"] = insurance["Group"].asfactor()
     insurance["Age"] = insurance["Age"].asfactor()

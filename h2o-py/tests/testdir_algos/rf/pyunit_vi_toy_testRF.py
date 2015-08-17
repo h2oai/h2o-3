@@ -6,7 +6,7 @@ def vi_toy_test(ip,port):
     
     
 
-    toy_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/toy_data_RF.csv"))
+    toy_data = h2o.import_file(path=h2o.locate("smalldata/gbm_test/toy_data_RF.csv"))
     #toy_data.summary()
 
     toy_data[6] = toy_data[6].asfactor()

@@ -1,7 +1,5 @@
 package water;
 
-import water.util.DocGen.HTML;
-
 /** Auto-serializer interface using a delegator pattern (the faster option is
  *  to byte-code gen directly in all Iced classes, but this requires all Iced
  *  classes go through a ClassLoader).
@@ -35,11 +33,6 @@ public interface Freezable<T extends Freezable> extends Cloneable {
    *  @param ab <code>AutoBuffer</code> to read this object from.
    *  @return Returns an instance of object reconstructed from JSON data. */
   T readJSON(AutoBuffer ab);
-  /** Standard "write thyself into the AutoBuffer" call, using HTML.  Real work
-   *  is in the delegate {@link Icer} classes.
-   *  @param sb  target to serialize this object in HTML form
-   *  @return Returns the original {@link AutoBuffer} for flow-coding. */
-  HTML writeHTML(HTML sb);
   /** Returns a small dense integer, which is cluster-wide unique per-class.
    *  Useful as an array index.
    *  @return Small integer, unique per-type */
@@ -77,11 +70,4 @@ public interface Freezable<T extends Freezable> extends Cloneable {
    *  @return Returns an instance of object reconstructed from JSON data. */
   //noninspection UnusedDeclaration
   T readJSON_impl( AutoBuffer ab );
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   *  auto-genned code.  Not intended to be called by user code.  Override only
-   *  for custom Iced serializers.
-   *  @param ab html to write object to.
-   *  @return Returns the instance of HTML object. */
-  //noninspection UnusedDeclaration
-  HTML writeHTML_impl( HTML ab );
 }

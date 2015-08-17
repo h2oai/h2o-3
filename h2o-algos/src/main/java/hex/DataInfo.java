@@ -405,8 +405,27 @@ public class DataInfo extends Keyed {
     if (_nums == 0) return;
     assert (in.length == out.length);
     assert (in.length == fullN());
-    for (int k=numStart(); k < fullN(); ++k)
-      out[k] = in[k] / (float)_normMul[k-numStart()] + (float)_normSub[k-numStart()];
+    for (int k=numStart(); k < fullN(); ++k) {
+      float m = _normMul == null ? 1f : (float)_normMul[k-numStart()];
+      float s = _normSub == null ? 0f : (float)_normSub[k-numStart()];
+      out[k] = in[k] / m + s;
+    }
+  }
+
+  /**
+   * Undo the standardization/normalization of numerical columns
+   * @param in input values
+   * @param out output values (can be the same as input)
+   */
+  public final void unScaleResponses(double[] in, double[] out) {
+    if (_responses == 0) return;
+    assert (in.length == out.length);
+    assert (in.length == _responses);
+    for (int k=0; k < _responses; ++k) {
+      float m = _normRespMul == null ? 1f : (float)_normRespMul[k];
+      float s = _normRespSub == null ? 0f : (float)_normRespSub[k];
+      out[k] = in[k] / m + s;
+    }
   }
 
   public final class Row {

@@ -85,7 +85,7 @@ public class Grid<MP extends Model.Parameters>
    *
    * @return name of model (for example, "DRF", "GBM")
    */
-  public String modelName() {
+  public String getModelName() {
     return _modelName;
   }
 
@@ -111,7 +111,7 @@ public class Grid<MP extends Model.Parameters>
    *
    * @return training frame shared among all models
    */
-  public Frame trainingFrame() {
+  public Frame getTrainingFrame() {
     return _params.train();
   }
 
@@ -128,7 +128,11 @@ public class Grid<MP extends Model.Parameters>
 
   public Key<Model> getModelKey(MP params) {
     long checksum = params.checksum();
-    Key<Model> mKey = _cache.get(IcedLong.valueOf(checksum));
+    return getModelKey(checksum);
+  }
+
+  Key<Model> getModelKey(long paramsChecksum) {
+    Key<Model> mKey = _cache.get(IcedLong.valueOf(paramsChecksum));
     return mKey;
   }
 

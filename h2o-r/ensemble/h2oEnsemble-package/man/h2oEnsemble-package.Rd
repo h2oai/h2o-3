@@ -12,8 +12,8 @@ This package implements the super learner ensemble (stacking) algorithm using th
 \tabular{ll}{
 Package: \tab h2oEnsemble\cr
 Type: \tab Package\cr
-Version: \tab 0.0.4\cr
-Date: \tab 2015-06-26\cr
+Version: \tab 0.0.5\cr
+Date: \tab 2015-08-11\cr
 License: \tab Apache License (== 2.0)\cr
 }
 }
@@ -37,5 +37,5 @@ Breiman, L. (1996) Stacked Regressions, Machine Learning, 24:49–64.\cr
 \code{\link[SuperLearner:SuperLearner]{SuperLearner}}, \code{\link[subsemble:subsemble]{subsemble}}
 }
 \examples{
-See \code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}} for examples.
+\code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}}
 }

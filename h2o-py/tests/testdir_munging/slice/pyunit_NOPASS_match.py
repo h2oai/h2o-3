@@ -6,7 +6,7 @@ def match_check(ip,port):
     # Connect to a pre-existing cluster
     
 
-    hex = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    hex = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     print "doing the match: h2o.match(hex$Species, [\"Iris-setosa\", \"Iris-versicolor\"]"
     sub_h2o_match = hex[4].match(["Iris-setosa", "Iris-versicolor"])

@@ -6,7 +6,6 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
-import water.api.FrameV3.ColSpecifierV3;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.ModelParametersSchema;
 
@@ -63,19 +62,19 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
-    @API(help = "Tweedie variance power", level = Level.critical)
+    @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
 
-    @API(help = "Tweedie link power", level = Level.critical)
+    @API(help = "Tweedie link power", level = Level.critical, gridable = true)
     public double tweedie_link_power;
 
     @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
     public Solver solver;
 
-    @API(help = "distribution of regularization between L1 and L2.", level = Level.critical)
+    @API(help = "distribution of regularization between L1 and L2.", level = Level.critical, gridable = true)
     public double[] alpha;
 
-    @API(help = "regularization strength", required = false, level = Level.critical)
+    @API(help = "regularization strength", required = false, level = Level.critical, gridable = true)
     public double[] lambda;
 
     @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)

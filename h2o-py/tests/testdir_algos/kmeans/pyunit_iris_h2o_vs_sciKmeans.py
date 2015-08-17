@@ -9,7 +9,7 @@ def iris_h2o_vs_sciKmeans(ip,port):
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+  iris_h2o = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
   iris_sci = np.genfromtxt(h2o.locate("smalldata/iris/iris.csv"), delimiter=',')
   iris_sci = iris_sci[:,0:4]
 

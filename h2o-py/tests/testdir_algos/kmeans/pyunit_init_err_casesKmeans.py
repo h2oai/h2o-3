@@ -8,7 +8,7 @@ def init_err_casesKmeans(ip,port):
       # connect to localhost:54321
 
     # Log.info("Importing benign.csv data...\n")
-    benign_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     #benign_h2o.summary()
     numcol = benign_h2o.ncol()
     numrow = benign_h2o.nrow()

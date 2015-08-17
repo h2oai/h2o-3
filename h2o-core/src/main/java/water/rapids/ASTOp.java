@@ -3326,8 +3326,8 @@ class ASTRepLen extends ASTUniPrefixOp {
         // this is equivalent to what R does, but by additionally calling "as.data.frame"
         String[] col_names = new String[(int)_length];
         for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
-        Frame f = new Frame(col_names, new Vec[(int)_length]);
-        for (int i = 0; i < f.numCols(); ++i)
+        Frame f = new Frame();
+        for (int i = 0; i < _length; ++i)
           f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
         env.pushAry(f);
       }
@@ -3750,6 +3750,11 @@ class ASTRemoveVecs extends ASTUniPrefixOp {
     AST ary = E.parse();
     AST a = E.parse();
     if( a instanceof ASTLongList ) _rmVecs = ((ASTLongList)a)._l;
+    else if( a instanceof ASTDoubleList ) {
+      double [] dlist = ((ASTDoubleList)a)._d;
+      _rmVecs=new long[dlist.length];
+      for(int i=0;i<dlist.length;++i) _rmVecs[i]=(long)dlist[i];
+    }
     else if( a instanceof ASTNum ) _rmVecs = new long[]{(long)((ASTNum)a)._d};
     else throw new IllegalArgumentException("Expected to get an `llist` or `num`. Got: " + a.getClass());
     E.eatEnd(); // eat the ending ')'
