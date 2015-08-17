@@ -12,7 +12,7 @@ def group_by(ip,port):
     pd_iris = pd.read_csv(h2o.locate("smalldata/iris/iris_wheader.csv"))
 
     na_handling = ["ignore","rm","all"]
-    col_names = h2o_iris.col_names()[0:4]
+    col_names = h2o_iris.col_names[0:4]
 
     print "Running smoke test"
 

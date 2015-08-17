@@ -251,12 +251,6 @@ class H2OFrame:
     self._eager()
     return copy.deepcopy(self._col_names)
 
-  def sd(self, na_rm=False):
-    """
-    :return: Standard deviation of the H2OVec elements.
-    """
-    return H2OFrame(expr=ExprNode("sd", self,na_rm))._scalar()
-
   @property
   def names(self,i=None):
     """
@@ -894,6 +888,12 @@ class H2OFrame:
     :return: The covariance matrix of the columns in this H2OFrame.
     """
     return H2OFrame(expr=ExprNode("var", self,y,na_rm,use))._scalar()
+
+  def sd(self, na_rm=False):
+    """
+    :return: Standard deviation of the H2OVec elements.
+    """
+    return H2OFrame(expr=ExprNode("sd", self,na_rm))._scalar()
 
   def asfactor(self):
     """

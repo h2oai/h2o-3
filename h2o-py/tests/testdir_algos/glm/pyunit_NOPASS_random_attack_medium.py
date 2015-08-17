@@ -62,7 +62,7 @@ def random_attack(ip,port):
     print "Import and data munging..."
     pros = h2o.upload_file(h2o.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
-    r = pros[0].runif() # a column of length pros.nrow() with values between 0 and 1
+    r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]

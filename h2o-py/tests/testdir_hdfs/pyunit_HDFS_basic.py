@@ -27,7 +27,7 @@ def hdfs_basic(ip, port):
         iris_h2o = h2o.import_file(url)
         iris_h2o.head()
         iris_h2o.tail()
-        n = iris_h2o.nrow()
+        n = iris_h2o.nrow
         print "rows: {0}".format(n)
         assert n == 150, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 150)
         assert isinstance(iris_h2o, h2o.H2OFrame), "Wrong type. Expected H2OFrame, but got {0}".format(type(iris_h2o))
@@ -43,7 +43,7 @@ def hdfs_basic(ip, port):
         iris_dir_h2o = h2o.import_file(urls)
         iris_dir_h2o.head()
         iris_dir_h2o.tail()
-        n = iris_dir_h2o.nrow()
+        n = iris_dir_h2o.nrow
         print "rows: {0}".format(n)
         assert n == 150, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 150)
         assert isinstance(iris_dir_h2o, h2o.H2OFrame), "Wrong type. Expected H2OFrame, but got {0}".\

@@ -12,7 +12,7 @@ def frame_reducers(ip,port):
     h2o_data = h2o.H2OFrame(python_obj=data)
     np_data = np.array(data)
 
-    row, col = h2o_data.dim()
+    row, col = h2o_data.dim
 
     c = random.randint(0,col-1)
     h2o_val = h2o_data[c].min()
