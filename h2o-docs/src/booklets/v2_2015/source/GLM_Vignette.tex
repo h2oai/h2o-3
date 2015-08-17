@@ -573,16 +573,12 @@ safer to run with $alpha=1-\epsilon$ instead.
 
 \subsubsection{Grid search over lambda}
 
-% While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
-% by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
-% search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
+While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
+with lambda-search disabled.
 
-% \bigskip
-% \waterExampleInR
-% \lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
-
-Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the lambda
-search capability built in to GLM.
+\bigskip
+\waterExampleInR
+\lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
 
 \subsubsection{Offsets}
 
