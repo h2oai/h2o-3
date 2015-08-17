@@ -73,6 +73,14 @@ source("glm/glm_stopping_criteria.R", echo = T)
 h2o.removeAll()
 rm(list=ls())
 
+source("glm/glm_cross_validation.R", echo = T)
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+h2o.removeAll()
+rm(list=ls())
+
 source("glm/glm_grid_search_over_alpha.R", echo = T)
 
 #---------------------------------------------------------------------
