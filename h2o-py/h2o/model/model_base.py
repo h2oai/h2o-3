@@ -68,6 +68,15 @@ class ModelBase(object):
     """
     return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
 
+  @property
+  def xvals(self):
+    """
+    Return a list of the cross-validated models.
+
+    :return: A list of models
+    """
+    return self.get_xval_models()
+
   def deepfeatures(self, test_data, layer):
     """
     Return hidden layer details
