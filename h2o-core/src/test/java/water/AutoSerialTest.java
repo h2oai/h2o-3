@@ -18,7 +18,7 @@ public class AutoSerialTest extends Iced {
   Key _key;
 
   static AutoBuffer _ab = new AutoBuffer(new byte[1000]);
-  static AutoBuffer abw() { return _ab.clearForWriting(); }
+  static AutoBuffer abw() { return _ab.clearForWriting(0); }
   static AutoBuffer abr() { return _ab. flipForReading(); }
 
 
