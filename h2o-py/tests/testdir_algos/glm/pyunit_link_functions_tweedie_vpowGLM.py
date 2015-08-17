@@ -9,7 +9,7 @@ def link_functions_tweedie_vpow(ip,port):
     # Load example data from HDtweedie, y = aggregate claim loss
     hdf = h2o.upload_file(h2o.locate("smalldata/glm_test/auto.csv"))
     y = "y"
-    x = list(set(hdf.names()) - set(["y"]))
+    x = list(set(hdf.names) - set(["y"]))
 
     print "Testing for family: TWEEDIE"
     print "Create models with canonical link: TWEEDIE"

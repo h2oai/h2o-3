@@ -16,7 +16,7 @@ def benign(ip,port):
 
     #Log.info("Check that the columns used in the model are the ones we passed in.")
     #Log.info("===================Columns passed in: ================")
-    in_names = [training_data.names()[i] for i in X]
+    in_names = [training_data.names[i] for i in X]
     #Log.info("===================Columns passed out: ================")
     out_names = [model._model_json['output']['coefficients_table'].cell_values[c][0] for c in range(len(X)+1)]    
     assert in_names == out_names[1:]

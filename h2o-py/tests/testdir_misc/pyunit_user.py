@@ -10,7 +10,7 @@ def user(ip, port):
     a = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
-    print a[0].names()  # Column header
+    print a[0].names  # Column header
     print a[2,0]           # column 0, row 2 value
     print a[2,"sepal_len"] # Column 0, row 2 value
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant

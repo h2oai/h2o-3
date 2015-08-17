@@ -15,7 +15,7 @@ def pyunit_remove_vecs(ip,port):
                                                          "columns.".format(rows,cols,new_rows,new_cols)
 
     remove = random.randint(1,5)
-    p1 = pros.remove_vecs(cols=random.sample(pros.names(),remove))
+    p1 = pros.remove_vecs(cols=random.sample(pros.names,remove))
     new_rows, new_cols = p1.dim
     assert new_rows == rows and new_cols == cols-remove, "Expected {0} rows and {1} columns, but got {2} rows and {3} " \
                                                          "columns.".format(rows,cols,new_rows,new_cols)
