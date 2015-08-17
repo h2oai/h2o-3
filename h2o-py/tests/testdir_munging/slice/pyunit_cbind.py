@@ -45,7 +45,7 @@ def cbind(ip,port):
   assert rows6 == 12 and cols6 == 2, "unexpected dimensions in result"
 
   # sets column names correctly
-  hdf_names = xx.cbind(yy).names()
+  hdf_names = xx.cbind(yy).names
   assert hdf_names == ['colgroup', 'colgroup2'], "expected column names to be the same"
 
   # unequal rows should fail
@@ -75,7 +75,7 @@ def cbind(ip,port):
   assert rows == 12 and cols == 10, "unexpected dimensions in result"
 
   # sets column names correctly
-  assert hdf.names() == ['colgroup','colgroup2','col1','col2','colgroup0','colgroup20','col10','col20','colgroup21','col11'],\
+  assert hdf.names == ['colgroup','colgroup2','col1','col2','colgroup0','colgroup20','col10','col20','colgroup21','col11'],\
     "expected column names to be the same"
 
   # unequal rows should fail
@@ -110,7 +110,7 @@ def cbind(ip,port):
   assert rows10 == 12 and cols10 == 2, "unexpected dimensions in result"
 
   # sets column names correctly
-  hdf_names = xx.cbind(yy).names()
+  hdf_names = xx.cbind(yy).names
   assert hdf_names == ['colgroup', 'colgroup2'], "expected column names to be the same"
 
 if __name__ == "__main__":

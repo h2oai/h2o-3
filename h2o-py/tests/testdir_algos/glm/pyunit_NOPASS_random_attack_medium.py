@@ -36,7 +36,7 @@ def random_attack(ip,port):
         if random.randint(0,1):
             bc = []
             for n in x:
-                name = train.names()[n]
+                name = train.names[n]
                 lower_bound = random.uniform(-1,1)
                 upper_bound = lower_bound + random.random()
                 bc.append([name, lower_bound, upper_bound])
