@@ -207,7 +207,6 @@ drf_junit_cars.flow
 drf_junit_two_spiral.flow
 drf_junit_weather.flow
 drf_junit_weights_all_ones_twos.flow
-drf_junit_weights_all_ones.flow
 drf_junit_weights_all_tiny.flow
 gbm_junit_40k_categoricals.flow
 gbm_junit_arff_iris_spacesep.flow
