@@ -53,12 +53,13 @@ class ASTStrSplit extends ASTPrim {
     ArrayList<HashSet<String>> strs = new ArrayList<>();
 
     // loop over each level in the domain
-    HashSet<String> x; // used all over
+    HashSet<String> x;
     for (String domain : domains) {
-      String[] news = domain.split(regex);  // split the domain on the regex
+      String[] news = domain.split(regex);
       for( int i = 0; i < news.length; ++i ) {
 
-        // we have a "new" column, must add a new HashSet to the array list and start tracking levels for this "i"
+        // we have a "new" column, must add a new HashSet to the array
+        // list and start tracking levels for this "i"
         if( strs.size() == i ) {
           x = new HashSet<>();
           x.add(news[i]);
@@ -70,19 +71,17 @@ class ASTStrSplit extends ASTPrim {
         }
       }
     }
+    return listToArray(strs);
+  }
 
-    // now loop over and create the String[][] result
+  private String[][] listToArray(ArrayList<HashSet<String>> strs) {
     String[][] doms = new String[strs.size()][];
-    for (int i = 0; i < strs.size(); ++i) {
-      x = strs.get(i);
-      doms[i] = new String[x.size()];
-      for (int j = 0; j < x.size(); ++j)
-        doms[i][j] = (String)x.toArray()[j];
-    }
+    int i=0;
+    for (HashSet<String> h: strs)
+      doms[i++] = (String[])(h.toArray());
     return doms;
   }
 }
-
 
 // mutating call
 class ASTToLower extends ASTPrim {
