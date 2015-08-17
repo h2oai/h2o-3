@@ -24,7 +24,7 @@ class UDPRebooted extends UDP {
 
     void send(H2ONode target) {
       assert this != none;
-      new AutoBuffer(target).putUdp(udp.rebooted).put1(ordinal()).close();
+      new AutoBuffer(target,udp.rebooted._prior).putUdp(udp.rebooted).put1(ordinal()).close();
     }
     void broadcast() { send(H2O.SELF); }
   }
@@ -65,7 +65,9 @@ class UDPRebooted extends UDP {
   private static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
-    try { TCPReceiverThread.SOCK.close(); } catch( IOException ignore ) { }
+    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
+    if(!H2O.ARGS.useUDP)
+      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
