@@ -138,7 +138,7 @@ public class UDPReceiverThread extends Thread {
     // this is coming from a UDP packet the deser work is actually small.
 
 
-    H2O.submitTask(new FJPacket(ab,ctrl));
+    H2O.submitTask(new FJPacket(ab));
     return;
   }
 }

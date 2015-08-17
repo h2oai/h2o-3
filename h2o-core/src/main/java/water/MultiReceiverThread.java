@@ -66,7 +66,7 @@ class MultiReceiverThread extends Thread {
         }
 
         // Receive a packet & handle it
-        byte[] buf = new byte[AutoBuffer.MTU];
+        byte[] buf = new byte[H2O.ARGS.MTU];
         DatagramPacket pack = new DatagramPacket(buf,buf.length);
         sock.receive(pack);
         UDPReceiverThread.basic_packet_handling(new AutoBuffer(pack));

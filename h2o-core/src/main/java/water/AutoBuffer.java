@@ -1,6 +1,7 @@
 package water;
 
 import water.H2ONode.H2OSmallMessage;
+import water.UDP.udp;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -74,8 +75,6 @@ public /* final */ class AutoBuffer {
   // I/O persistence flavor: Value.ICE, NFS, HDFS, S3, TCP.  Used to record I/O time.
   final byte _persist;
 
-  // The assumed max UDP packetsize
-  static final int MTU = 1500-8/*UDP packet header size*/;
 
   // Enable this to test random TCP fails on open or write
   static final Random RANDOM_TCP_DROP = null; //new Random();
@@ -171,6 +170,21 @@ public /* final */ class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
+  private int _start = 0;
+  public AutoBuffer( H2ONode h2o, ByteBuffer bb) {
+    this(h2o,bb,0);
+  }
+  public AutoBuffer( H2ONode h2o, ByteBuffer bb, int start) {
+    _h2o = h2o;
+    _bb = bb;
+    _start = start;
+    _chan = null;
+    _read = true;
+    _firstPage = true;
+    _persist = 0;               // No persistance
+  }
+
+
   /** Read from a fixed byte[]; should not be closed. */
   public AutoBuffer( byte[] buf ) { this(buf,0); }
   /** Read from a fixed byte[]; should not be closed. */
@@ -229,6 +243,19 @@ public /* final */ class AutoBuffer {
   // larger TCP-sized buffers.
   private static final boolean DEBUG = Boolean.getBoolean("h2o.find-ByteBuffer-leaks");
   private static long HWM=0;
+
+  private boolean _freeBB = true;
+  public void setFreeBB(boolean val) {_freeBB = val;}
+  public void reset(int start, int sz) {
+    _start = start;
+    _bb.limit(start+sz);
+    _bb.position(start);
+    _firstPage = true;
+    assert _read;
+    int ctrl = getCtrl();
+    assert ctrl > 0 && ctrl < udp.UDPS.length;
+  }
+
 
   static class BBPool {
     long _made, _cached, _freed;
@@ -308,14 +335,18 @@ public /* final */ class AutoBuffer {
       return 0;                 // Flow coding
     }
   }
+
+  static BBPool [] BBP_SML_ARY = new BBPool[] {new BBPool(16, false), new BBPool(32, false), new BBPool(64, false), new BBPool(128, false), new BBPool(256, false), new BBPool(512, false), new BBPool(H2O.ARGS.MTU,true) };
   static BBPool BBP_SML = new BBPool(2*1024, true); // Bytebuffer "common small size", for UDP
   static BBPool BBP_BIG = new BBPool(64*1024, true); // Bytebuffer "common  big  size", for TCP
   public static int TCP_BUF_SIZ = BBP_BIG.size();
 
   private int bbFree() {
-    if(_bb != null && _bb.isDirect())
-      BBPool.FREE(_bb);
-    _bb = null;
+    if(_freeBB) {
+      if (_bb != null && _bb.isDirect())
+        BBPool.FREE(_bb);
+      _bb = null;
+    }
     return 0;                   // Flow-coding
   }
 
@@ -348,7 +379,7 @@ public /* final */ class AutoBuffer {
         // For small-packet write, send via UDP.  Since nothing is sent until
         // now, this close() call trivially orders - since the reader will not
         // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU) return udpSend();
+        if( _bb.position() < H2O.ARGS.MTU) return udpSend();
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
@@ -393,7 +424,7 @@ public /* final */ class AutoBuffer {
       bbFree();
       _time_close_ms = System.currentTimeMillis();
 //      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
-      assert isClosed();
+      assert !_freeBB || isClosed();
     }
     return 0;
   }
@@ -431,7 +462,7 @@ public /* final */ class AutoBuffer {
   }
 
   // True if we opened a TCP channel, or will open one to close-and-send
-  boolean hasTCP() { assert !isClosed(); return _chan instanceof SocketChannel || (_h2o!=null && _bb.position() >= MTU); }
+  boolean hasTCP() { assert !isClosed(); return _chan instanceof SocketChannel || (_h2o!=null && (_bb.position() - _start) >= H2O.ARGS.MTU); }
 
   // True if we are in read-mode
   boolean readMode() { return _read; }
@@ -504,10 +535,10 @@ public /* final */ class AutoBuffer {
   // not connect it up-front to a target - but send the entire packet right now.
   private int udpSend() throws IOException {
     assert _chan == null;
-    TimeLine.record_send(this,false);
+//    TimeLine.record_send(this,false);
     assert _size == 0;
     _size = _bb.position();
-    assert _size < AutoBuffer.BBP_SML.size();
+    assert _size < H2O.ARGS.MTU;
     _bb.flip();                 // Flip for sending
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
       water.init.NetworkInit.multicast(_bb, _priority);
@@ -546,12 +577,14 @@ public /* final */ class AutoBuffer {
    * - Also, set position just past this limit for future reading. */
   private ByteBuffer getSz(int sz) {
     assert _firstPage : "getSz() is only valid for early UDP bytes";
-    if( sz > _bb.limit() ) getImpl(sz);
+    if( sz > _bb.limit() )
+      getImpl(sz);
     _bb.position(sz);
     return _bb;
   }
 
   private ByteBuffer getImpl( int sz ) {
+    assert _start == 0;
     assert _read : "Reading from a buffer in write mode";
     assert _chan != null : "Read to much data from a byte[] backed buffer, AB="+this;
     _bb.compact();            // Move remaining unread bytes to start of buffer; prep for reading
@@ -592,17 +625,36 @@ public /* final */ class AutoBuffer {
       sendPartial();
     return _bb;
   }
+
+  private void switchToLargeBuffer(){
+    ByteBuffer bb = BBP_BIG.make();
+    bb.put(_bb);
+    if(_bb.isDirect())
+      BBP_SML.free(_bb);
+    _bb = bb;
+  }
+  private ByteBuffer reserveBytes(int sz) {
+    if(_bb.hasArray() && _bb.remaining() < sz) { // only applicable for auto-resizing byte array supported buffers
+       if(sz - _bb.remaining() + _bb.position() > H2O.ARGS.MTU) { // eagerly switch to large direct buffer
+         switchToLargeBuffer();
+       } else { // just resize the array
+
+       }
+    }
+    return _bb;
+  }
+
   // Do something with partial results, because the ByteBuffer is full.
   // If we are byte[] backed, double the backing array size.
   // If we are doing I/O, ship the bytes we have now and flip the ByteBuffer.
   private ByteBuffer sendPartial() {
     // Writing into an expanding byte[]?
-    if( (_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < MTU)) {
+    if( (_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < H2O.ARGS.MTU)) {
       // This is a byte[] backed buffer; expand the backing byte[].
       byte[] ary = _bb.array();
       int newlen = ary.length<<1; // New size is 2x old size
-      if(_h2o != null && newlen > MTU)
-        newlen = MTU;
+      if(_h2o != null && newlen > H2O.ARGS.MTU)
+        newlen = H2O.ARGS.MTU;
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newlen),oldpos,newlen-oldpos)
         .order(ByteOrder.nativeOrder());
@@ -610,37 +662,35 @@ public /* final */ class AutoBuffer {
     }
     // Doing I/O with the full ByteBuffer - ship partial results
     _size += _bb.position();
-    if( _chan == null )
-      TimeLine.record_send(this, true);
-
     _bb.flip(); // Prep for writing.
-    try {
-      if( _chan == null )
-        tcpOpen(); // This is a big operation.  Open a TCP socket as-needed.
-      //for( int i=0; i < _bb.limit(); i++ ) if( _bb.get(i)==0 ) _zeros++;
-      long ns = System.nanoTime();
-      while( _bb.hasRemaining() ) {
-        _chan.write(_bb);
-        if( RANDOM_TCP_DROP != null &&_chan instanceof SocketChannel && RANDOM_TCP_DROP.nextInt(100) == 0 )
-          throw new IOException("Random TCP Write Fail");
+    if( _bb.capacity() < BBP_BIG._size ) { // just switch to big buffer
+      switchToLargeBuffer();
+    } else {
+      try {
+        if (_chan == null) {
+          tcpOpen(); // This is a big operation.  Open a TCP socket as-needed.
+          TimeLine.record_send(this, true);
+        }
+        //for( int i=0; i < _bb.limit(); i++ ) if( _bb.get(i)==0 ) _zeros++;
+        long ns = System.nanoTime();
+        while (_bb.hasRemaining()) {
+          _chan.write(_bb);
+          if (RANDOM_TCP_DROP != null && _chan instanceof SocketChannel && RANDOM_TCP_DROP.nextInt(100) == 0)
+            throw new IOException("Random TCP Write Fail");
+        }
+        _time_io_ns += (System.nanoTime() - ns);
+      } catch (IOException e) {  // Some kind of TCP fail?
+        // Change to an unchecked exception (so we don't have to annotate every
+        // frick'n put1/put2/put4/read/write call).  Retry & recovery happens at
+        // a higher level.  AutoBuffers are used for many things including e.g.
+        // disk i/o & UDP writes; this exception only happens on a failed TCP
+        // write - and we don't want to make the other AutoBuffer users have to
+        // declare (and then ignore) this exception.
+        throw new AutoBufferException(e);
       }
-      _time_io_ns += (System.nanoTime()-ns);
-    } catch( IOException e ) {  // Some kind of TCP fail?
-      // Change to an unchecked exception (so we don't have to annotate every
-      // frick'n put1/put2/put4/read/write call).  Retry & recovery happens at
-      // a higher level.  AutoBuffers are used for many things including e.g.
-      // disk i/o & UDP writes; this exception only happens on a failed TCP
-      // write - and we don't want to make the other AutoBuffer users have to
-      // declare (and then ignore) this exception.
-      throw new AutoBufferException(e);
+      _firstPage = false;
+      _bb.clear();
     }
-    if( _bb.capacity() < BBP_BIG._size ) {
-      if(_bb.isDirect())
-        BBP_SML.free(_bb);
-      _bb = BBP_BIG.make();
-    }
-    _firstPage = false;
-    _bb.clear();
     return _bb;
   }
 
@@ -658,12 +708,12 @@ public /* final */ class AutoBuffer {
   @SuppressWarnings("unused")  public int    get4 () { return getSp(4).getInt   (); }
   @SuppressWarnings("unused")  public float  get4f() { return getSp(4).getFloat (); }
   @SuppressWarnings("unused")  public long   get8 () { return getSp(8).getLong  (); }
-  @SuppressWarnings("unused")  public double get8d() { return getSp(8).getDouble(); }
+  @SuppressWarnings("unused")  public double get8d () { return getSp(8).getDouble(); }
 
 
-  int    get1U(int off) { return _bb.get    (off)&0xFF; }
-  int    get4 (int off) { return _bb.getInt (off); }
-  long   get8 (int off) { return _bb.getLong(off); }
+  int    get1U(int off) { return _bb.get    (_start+off)&0xFF; }
+  int    get4 (int off) { return _bb.getInt (_start+off); }
+  long   get8 (int off) { return _bb.getLong(_start+off); }
 
   @SuppressWarnings("unused")  public AutoBuffer putZ (boolean b){ return put1(b?1:0); }
   @SuppressWarnings("unused")  public AutoBuffer put1 (   int b) { assert b >= -128 && b <= 255 : ""+b+" is not a byte";
@@ -756,7 +806,7 @@ public /* final */ class AutoBuffer {
     int y=(int)xy;               // Middle non-zeros
     int z = y==0 ? 0 : getInt(); // Trailing nulls
     Enum[] ts = new Enum[x+y+z];
-    for( int i = x; i < x+y; ++i ) ts[i] = getEnum(values);
+    for( int i = x; i < x + y; ++i ) ts[i] = getEnum(values);
     return ts;
   }
 
@@ -768,7 +818,7 @@ public /* final */ class AutoBuffer {
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
     int y=(int)xy;
-    for( int i=x; i<x+y; i++ ) put(fs[i]);
+    for (int i=x; i<x+y; i++ ) put(fs[i]);
     return this;
   }
   public AutoBuffer putAA(Freezable[][] fs) {
@@ -786,7 +836,7 @@ public /* final */ class AutoBuffer {
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
     int y=(int)xy;
-    for( int i=x; i<x+y; i++ ) putAA(fs[i]);
+    for (int i=x; i<x+y; i++ ) putAA(fs[i]);
     return this;
   }
 
@@ -885,16 +935,25 @@ public /* final */ class AutoBuffer {
     return sz;
   }
 
+  public int start(){return _start;}
   // -----------------------------------------------
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
-  int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
+  int  getCtrl( ) {
+    return getSz(_start+1).get(_start+0)&0xFF;
+  }
   // Get the port in next 2 bytes
-  int  getPort( ) { return getSz(1+2).getChar(1); }
+  int  getPort( ) {
+    return getSz(_start+1+2).getChar(_start+1);
+  }
   // Get the task# in the next 4 bytes
-  int  getTask( ) { return getSz(1+2+4).getInt(1+2); }
+  int  getTask( ) {
+    return getSz(_start+1+2+4).getInt(_start+1+2);
+  }
   // Get the flag in the next 1 byte
-  int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
+  int  getFlag( ) {
+    return getSz(_start+1+2+4+1).get(_start+1+2+4);
+  }
 
   // Set the ctrl, port, task.  Ready to write more bytes afterwards
   AutoBuffer putUdp (UDP.udp type) {

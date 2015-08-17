@@ -175,6 +175,8 @@ final public class H2O {
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
 
+    public int MTU = 1500-8;
+
     /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
     public String ip;
 
@@ -357,8 +359,13 @@ final public class H2O {
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
         ARGS.port = s.parseInt(args[i]);
-      }
-      else if (s.matches("baseport")) {
+      } else if(s.matches("mtu")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.MTU = s.parseInt(args[i]);
+        if(ARGS.MTU > 64*1024 || ARGS.MTU < 512)
+          throw H2O.fail("invalid mtu spec, mtu must be between 512 and " + (65536-16));
+        System.out.println("MTU = " + ARGS.MTU);
+      } else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
         ARGS.baseport = s.parseInt(args[i]);
       }
@@ -873,14 +880,14 @@ final public class H2O {
   public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
   public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0; //126
   public static final byte  FETCH_ACK_PRIORITY = MAX_PRIORITY-1; //125
-  public static final byte        ACK_PRIORITY = MAX_PRIORITY-2; //124
-  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-3; //123
-  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-3; //123
-  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-4; //122
-  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-5; //121
-  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-6; //120
-  public static final byte        GUI_PRIORITY = MAX_PRIORITY-7; //119
-  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-7; //119
+  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2; //124
+  public static final byte        ACK_PRIORITY = MAX_PRIORITY-3; //123
+  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-3; //122
+  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-4; //121
+  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-5; //120
+  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-6; //119
+  public static final byte        GUI_PRIORITY = MAX_PRIORITY-7; //118
+  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-7; //118
   public static final byte        MIN_PRIORITY = 0;
 
   // F/J threads that remember the priority of the last task they started

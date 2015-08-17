@@ -13,16 +13,16 @@ import water.UDP.udp;
  */
 class FJPacket extends H2OCountedCompleter {
   final AutoBuffer _ab;
-  final int _ctrl;              // 1st byte of packet
-  FJPacket( AutoBuffer ab, int ctrl ) { _ab = ab; _ctrl = ctrl;
-    assert 0 < _ctrl && _ctrl < udp.UDPS.length;
-    assert udp.UDPS[_ctrl]._udp != null:"missing udp " + _ctrl;
-  }
+
+  FJPacket( AutoBuffer ab) { _ab = ab; }
 
   @Override protected void compute2() {
+    int ctrl = _ab.getCtrl();
+    if(ctrl == udp.fetchack.ordinal())
+      System.out.println("haha");
     _ab.getPort(); // skip past the port
-    if( _ctrl <= UDP.udp.nack.ordinal() ) {
-      AutoBuffer ab = UDP.udp.UDPS[_ctrl]._udp.call(_ab);
+    if( ctrl <= UDP.udp.nack.ordinal() ) {
+      AutoBuffer ab = UDP.udp.UDPS[ctrl]._udp.call(_ab);
       if(ab != null && !ab.isClosed()) ab.close();
     } else
       RPC.remote_exec(_ab);
@@ -37,7 +37,5 @@ class FJPacket extends H2OCountedCompleter {
     return true;
   }
   // Run at max priority until we decrypt the packet enough to get priorities out
-  @Override protected byte priority() {
-    return UDP.udp.UDPS[_ctrl]._prior;
-  }
+  @Override protected byte priority() {return H2O.DESERIAL_PRIORITY;}
 }

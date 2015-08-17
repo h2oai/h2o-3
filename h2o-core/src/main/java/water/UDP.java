@@ -68,9 +68,13 @@ public abstract class UDP {
   // Dispatch on the enum opcode and return a pretty string
   static private final byte[] pbuf = new byte[16];
   static public String printx16( long lo, long hi ) {
-    UnsafeUtils.set8(pbuf, 0, lo);
-    UnsafeUtils.set8(pbuf, 8, hi);
-    return udp.UDPS[(int)(lo&0xFF)]._udp.print16(new AutoBuffer(pbuf));
+    try {
+      UnsafeUtils.set8(pbuf, 0, lo);
+      UnsafeUtils.set8(pbuf, 8, hi);
+      return udp.UDPS[(int) (lo & 0xFF)]._udp.print16(new AutoBuffer(pbuf));
+    } catch(Throwable t) {
+      return "ERR";
+    }
   }
   private static class IO_record extends UDP {
     AutoBuffer call(AutoBuffer ab) { throw H2O.fail(); }

@@ -68,7 +68,7 @@ public class AtomicTest extends TestUtil {
 
     Random r = new Random(1234567890123456789L);
     int total = 0;
-    while( total < AutoBuffer.MTU*8 ) {
+    while( total < H2O.ARGS.MTU*8 ) {
       byte[] kb = new byte[Key.KEY_LENGTH];
       r.nextBytes(kb);
       Key nk = Key.make(kb);

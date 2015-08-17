@@ -10,6 +10,8 @@ class FetchClazz extends DTask<FetchClazz> {
     assert clazz != null : "No class matching id "+id;
     return clazz;
   }
-  @Override public void compute2() { _clazz = TypeMap.className(_id); tryComplete(); }
+  @Override public void compute2() {
+    _clazz = TypeMap.className(_id); tryComplete();
+  }
   @Override public byte priority() { return H2O.FETCH_ACK_PRIORITY; }
 }

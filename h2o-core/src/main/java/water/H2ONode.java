@@ -14,6 +14,8 @@ import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -249,7 +251,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     public static H2OSmallMessage make(ByteBuffer bb, int priority) {
       int sz = bb.limit();
       assert sz == (0xFFFF & sz);
-      assert sz <= AutoBuffer.BBP_SML.size();
+      assert sz <= H2O.ARGS.MTU;
       byte [] ary = MemoryManager.malloc1(sz+2+1);
       ary[ary.length-1] = (byte)0xef; // eom marker
       ary[0] = (byte)(sz & 0xFF);
@@ -266,8 +268,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
   }
 
-
-  private final PriorityBlockingQueue<H2OSmallMessage> _msgQ = new PriorityBlockingQueue<>();
+  private final BlockingQueue<H2OSmallMessage> _msgQ = new PriorityBlockingQueue<>(); //new ArrayBlockingQueue<>(1000); //
 
   /**
    * Private thread serving (actually ships the bytes over) small msg Q.
@@ -368,7 +369,12 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
    * @param msg
    */
   public void sendMessage(H2OSmallMessage msg) {
-    _msgQ.put(msg);
+    while(true){
+      try {
+        _msgQ.put(msg);
+        break;
+      } catch (InterruptedException e) {}
+    }
     if(_sendThread == null) synchronized(this) {
       if(_sendThread == null)
         (_sendThread = new UDP_TCP_SendThread()).start();
@@ -562,8 +568,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
                     if (rpc._computedAndReplied) {
                       DTask dt = rpc._dt;
                       if(dt != null) {
-                        if (++rpc._ackResendCnt % 5 == 0)
-                          Log.warn("Got " + rpc._ackResendCnt + " resends on ack for task # " + rpc._tsknum + ", class = " + dt.getClass().getSimpleName());
+//                        if (++rpc._ackResendCnt % 5 == 0)
+//                          Log.warn("Got " + rpc._ackResendCnt + " resends on ack for task # " + rpc._tsknum + ", class = " + dt.getClass().getSimpleName());
                         rpc.resend_ack();
                       }
                     }

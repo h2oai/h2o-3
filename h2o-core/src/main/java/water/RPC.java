@@ -74,7 +74,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // A list of CountedCompleters we will call tryComplete on when the RPC
   // finally completes.  Frequently null/zero.
-  ArrayList<H2OCountedCompleter> _fjtasks;
+  ArrayList<CountedCompleter> _fjtasks;
 
   // We only send non-failing TCP info once; also if we used TCP it was large
   // so duplications are expensive.  However, we DO need to keep resending some
@@ -165,8 +165,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   private H2OSmallMessage _sentMsg;
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
-
-  public synchronized RPC<V> call() {
+  public RPC<V> call() {
       // Any Completer will not be carried over to remote; add it to the RPC call
       // so completion is signaled after the remote comes back.
     CountedCompleter cc = _dt.getCompleter();
@@ -466,7 +465,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // Called from either a F/J thread (generally with a UDP packet) or from the
   // TCPReceiver thread.
   static void remote_exec( AutoBuffer ab ) {
-    long lo = ab.get8(0), hi = ab.get8(8);
+    long lo = 0, hi = 0;//ab.get8(0), hi = ab.get8(8);
     final int task = ab.getTask();
     final int flag = ab.getFlag();
     assert flag==CLIENT_UDP_SEND || flag==CLIENT_TCP_SEND; // Client-side send
@@ -618,7 +617,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     final Exception e = _dt.getDException();
     // Also notify any and all pending completion-style tasks
     if( _fjtasks != null )
-      for( final H2OCountedCompleter task : _fjtasks )
+      for( final CountedCompleter task : _fjtasks )
         H2O.submitTask(new H2OCountedCompleter() {
             @Override public void compute2() {
               if(e != null) // re-throw exception on this side as if it happened locally
@@ -629,12 +628,12 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
                   task.completeExceptionally(e);
                 }
             }
-            @Override public byte priority() { return task.priority(); }
+            @Override public byte priority() { return task instanceof  H2OCountedCompleter?((H2OCountedCompleter)task).priority():H2O.MIN_PRIORITY; }
           });
   }
 
   // ---
-  public synchronized RPC<V> addCompleter( H2OCountedCompleter task ) {
+  public synchronized RPC<V> addCompleter( CountedCompleter task ) {
     if( _fjtasks == null ) _fjtasks = new ArrayList(2);
     _fjtasks.add(task);
     return this;

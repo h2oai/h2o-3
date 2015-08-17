@@ -5,6 +5,7 @@ import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.util.Log;
+import water.util.MathUtils;
 import water.util.TwoDimTable;
 
 import java.util.Random;
@@ -14,10 +15,12 @@ import java.util.Random;
  */
 public class NetworkBench extends Iced {
 //  public static int [] MSG_SZS = new int[]{1, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304};
-  public static int [] MSG_SZS = new int[]{1,1,1,1,1};
-  public static int [] MSG_CNT = new int[]{500000,500000,500000,500000,500000};
-//  public static int [] MSG_CNT = new int[]{500000, 25000, 12500, 6000, 781, 391, 195, 98, 49, 25};
+//  public static int [] MSG_SZS = new int[]{1};
+//  public static int [] MSG_CNT = new int[]{100};
 
+  public static int [] MSG_SZS = new int[]{1,64,512,1024,4*1024,8*1024,16*1024,32*1024,64*1024,16*1024*1024};
+  public static int [] MSG_CNT = new int[]{500000,8*32*1024,32*1024,16*1024,4*1024,2*1024,1024,512,256,16};
+//  public static int [] MSG_CNT = new int[]{500000, 25000, 12500, 6000, 781, 391, 195, 98, 49, 25};
 
   public static class NetworkBenchResults {
     final int _msgSz;
@@ -47,10 +50,11 @@ public class NetworkBench extends Iced {
         colFormats[i] = "%2f";
       }
       TwoDimTable td = new TwoDimTable(title, "Network benchmark results, round-trip bandwidth in MB/s", rowHeaders, colHeaders, colTypes, colFormats, "");
+      double sizeKB = _msgSz * _msgCnt / 1024.0;
       for(int i = 0 ; i < _all2AllTimes.length; ++i) {
         for (int j = 0; j < _all2AllTimes.length; ++j)
-          td.set(i, j, 0.01 * ((int) (_msgSz * _msgCnt / (_all2AllTimes[i][j] * 0.00001))));
-        td.set(H2O.CLOUD.size(),i, 0.01 * ((int) (_msgSz * _msgCnt / (_mrtTimes[i] * 0.00001))));
+          td.set(i, j, MathUtils.roundToNDigits( sizeKB / (0.001 * _all2AllTimes[i][j]),4));
+        td.set(H2O.CLOUD.size(),i, MathUtils.roundToNDigits(sizeKB / (_mrtTimes[i] * 0.001),4));
       }
       return td;
     }
@@ -67,12 +71,12 @@ public class NetworkBench extends Iced {
          long t2 = System.currentTimeMillis();
          long [] mrts = new long[H2O.CLOUD.size()];
          Log.info("Network Bench, running All2All, message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
-         long[][] all2all = new TestAll2All(MSG_SZS[i], MSG_CNT[i]).doAllNodes()._time;
+         long[][] all2all = new TestAll2All(i).doAllNodes()._time;
          Log.info("All2All test done in " + ((System.currentTimeMillis()-t2)*0.001) + "s");
-//         for(int j = 0; j < H2O.CLOUD.size(); ++j) {
-//           Log.info("Network Bench, running MRTask test at node " + j + ", message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
-//           mrts[j] = RPC.call(H2O.CLOUD._memary[j], new TestMRTasks(MSG_SZS[i],MSG_CNT[i])).get()._time;
-//         }
+         for(int j = 0; j < H2O.CLOUD.size(); ++j) {
+           Log.info("Network Bench, running MRTask test at node " + j + ", message size = " + MSG_SZS[i] + ", message count = " + MSG_CNT[i]);
+           mrts[j] = RPC.call(H2O.CLOUD._memary[j], new TestMRTasks(i)).get()._time;
+         }
          _results[i] = new NetworkBenchResults(MSG_SZS[i],MSG_CNT[i],all2all,mrts);
        }
        tryComplete();
@@ -88,22 +92,17 @@ public class NetworkBench extends Iced {
   }
 
   private static class TestAll2All extends MRTask<TestAll2All> {
-    final int  _msgSz;  // in
-    final int  _msgCnt; // in
+    final int  _i;  // in=
     long [][] _time; // out
 
-    public TestAll2All(int msgSz, int msgCnt) {
-      _msgSz = msgSz;
-      _msgCnt = msgCnt;
+    public TestAll2All(int i) {
+      _i = i;
     }
 
     private static class SendRandomBytesTsk extends DTask{
       final byte [] dd;
 
-      public SendRandomBytesTsk(int sz) {
-        dd = new byte[sz];
-        new Random().nextBytes(dd);
-      }
+      public SendRandomBytesTsk(byte[] data) {dd = data;}
       @Override
       protected void compute2() {tryComplete();}
     }
@@ -112,26 +111,24 @@ public class NetworkBench extends Iced {
       _time = new long[H2O.CLOUD.size()][];
       final int myId = H2O.SELF.index();
       _time[myId] = new long[H2O.CLOUD.size()];
-      addToPendingCount(H2O.CLOUD.size()-1);
+      addToPendingCount(H2O.CLOUD.size());
       for (int i = 0; i < H2O.CLOUD.size(); ++i) {
-        if (i != myId) {
-          final int fi = i;
-          H2O.submitTask(new H2OCountedCompleter(this) {
-            long t1;
-            @Override
-            protected void compute2() {
-              t1 = System.currentTimeMillis();
-              addToPendingCount(_msgCnt - 1);
-              for (int j = 0; j < _msgCnt; ++j)
-                new RPC(H2O.CLOUD._memary[fi], new SendRandomBytesTsk(_msgSz)).addCompleter(this).call();
-            }
-            @Override
-            public void onCompletion(CountedCompleter cc) {
-              long t2 = System.currentTimeMillis();
-              _time[myId][fi] = (t2 - t1);
-            }
-          });
-        }
+        final int fi = i;
+        new CountedCompleter(this) {
+          long t1;
+          @Override
+          public void compute() {
+            t1 = System.currentTimeMillis();
+            addToPendingCount(MSG_CNT[_i] - 1);
+            for (int j = 0; j < MSG_CNT[_i]; ++j)
+              new RPC(H2O.CLOUD._memary[fi], new SendRandomBytesTsk(data[_i])).addCompleter(this).call();
+          }
+          @Override
+          public void onCompletion(CountedCompleter cc) {
+            long t2 = System.currentTimeMillis();
+            _time[myId][fi] = (t2 - t1);
+          }
+        }.fork();
       }
     }
 
@@ -144,26 +141,31 @@ public class NetworkBench extends Iced {
     }
   }
 
+  private static byte [][] data;
+  static {
+    data = new byte[MSG_SZS.length][];
+    for(int i = 0 ; i < MSG_SZS.length; ++i) {
+      data[i] = new byte[MSG_SZS[i]];
+      new Random().nextBytes(data[i]);
+    }
+  }
+
   private static class TestMRTasks extends DTask<TestMRTasks> {
-    final int _msgSz;  // in
+    final int _i;  // in
     final int _msgCnt; // in
 
-    public TestMRTasks(int msgSz, int msgCnt) {
-      _msgSz = msgSz;
-      _msgCnt = msgCnt;
-
+    public TestMRTasks(int i) {
+      _i = i;
+      _msgCnt = MSG_CNT[i];
     }
     long _time;  // out
     @Override
     protected void compute2() {
-      Futures fs = new Futures();
       _time = System.currentTimeMillis();
       addToPendingCount(_msgCnt-1);
-      final byte [] data  = new byte[_msgSz];
-      new Random().nextBytes(data);
       for(int i = 0; i < _msgCnt; ++i)
         new MRTask(this){
-          byte [] dd = data;
+          byte [] dd = data[_i];
           @Override public void setupLocal(){
             dd = null;
           }
