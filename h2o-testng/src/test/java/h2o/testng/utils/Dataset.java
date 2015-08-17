@@ -163,17 +163,19 @@ public class Dataset {
 		}
 
 		file = TestNGUtil.find_test_file_static(filePath + fileName);
-		assert file.exists();
+		if (file == null || !file.exists()) {
+			System.out.println("cannot find dataset: " + filePath + fileName);
+			assert file.exists();
+		}
 
 		nfs = NFSFileVec.make(file);
 		key = Key.make(skey);
 
 		try {
-			ps = new ParseSetup(ParserType.CSV, (byte) ',', false, ParseSetup.HAS_HEADER, columnNames.length, columnNames,
-					ParseSetup.strToColumnTypes(columnTypes), null, null, null);
+			ps = new ParseSetup(ParserType.CSV, (byte) ',', false, ParseSetup.HAS_HEADER, columnNames.length,
+					columnNames, ParseSetup.strToColumnTypes(columnTypes), null, null, null);
 
 			fr = ParseDataset.parse(key, new Key[] { nfs._key }, true, ps);
-//			 fr = ParseDataset.parse(key, nfs._key);
 		}
 		catch (Exception e) {
 			nfs.remove();

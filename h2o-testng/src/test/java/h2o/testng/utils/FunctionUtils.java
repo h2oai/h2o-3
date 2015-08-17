@@ -6,21 +6,95 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 import water.TestNGUtil;
 
 public class FunctionUtils {
 
-	public static final String testcase_type = "testcase_type";
+	public static Object[][] dataProvider(HashMap<String, Dataset> dataSetCharacteristic, List<String> tcHeaders,
+			String positiveTestcaseFilePath, String negativeTestcaseFilePath, int firstRow) {
 
-	public static boolean isNegativeTestcase(List<String> tcHeaders, String[] input) {
+		Object[][] result = null;
+		Object[][] positiveData = null;
+		Object[][] negativeData = null;
+		int numRow = 0;
+		int numCol = 0;
+		int r = 0;
 
-		final String negative = "negative";
+		positiveData = readTestcaseFile(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath, firstRow, false);
+		negativeData = readTestcaseFile(dataSetCharacteristic, tcHeaders, negativeTestcaseFilePath, firstRow, true);
 
-		if (negative.equals(input[tcHeaders.indexOf(testcase_type)].trim())) {
-			return true;
+		if (positiveData != null && positiveData.length != 0) {
+			numRow += positiveData.length;
+			numCol = positiveData[0].length;
+		}
+		if (negativeData != null && negativeData.length != 0) {
+			numRow += negativeData.length;
+			numCol = negativeData[0].length;
 		}
 
-		return false;
+		if (numRow == 0) {
+			return null;
+		}
+
+		result = new Object[numRow][numCol];
+
+		if (positiveData != null && positiveData.length != 0) {
+			for (int i = 0; i < positiveData.length; i++) {
+				result[r++] = positiveData[i];
+			}
+		}
+		if (negativeData != null && negativeData.length != 0) {
+			for (int i = 0; i < negativeData.length; i++) {
+				result[r++] = negativeData[i];
+			}
+		}
+
+		return result;
+	}
+
+	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic, List<String> tcHeaders,
+			String fileName, int firstRow, boolean isNegativeTestcase) {
+
+		Object[][] result = null;
+		List<String> lines = null;
+		
+		if(StringUtils.isEmpty(fileName)){
+			return null;
+		}
+
+		try {
+			// read data from file
+			lines = Files.readAllLines(TestNGUtil.find_test_file_static(fileName).toPath(), Charset.defaultCharset());
+		}
+		catch (Exception ignore) {
+			System.out.println("Cannot open file: " + fileName);
+			ignore.printStackTrace();
+			return null;
+		}
+
+		// remove headers
+		lines.removeAll(lines.subList(0, firstRow));
+
+		result = new Object[lines.size()][8];
+		int r = 0;
+		for (String line : lines) {
+			String[] variables = line.trim().split(",", -1);
+
+			result[r][0] = variables[tcHeaders.indexOf(testcase_id)];
+			result[r][1] = variables[tcHeaders.indexOf(test_description)];
+			result[r][2] = variables[tcHeaders.indexOf(train_dataset_id)];
+			result[r][3] = variables[tcHeaders.indexOf(validate_dataset_id)];
+			result[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf(train_dataset_id)]);
+			result[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf(validate_dataset_id)]);
+			result[r][6] = isNegativeTestcase;
+			result[r][7] = variables;
+
+			r++;
+		}
+
+		return result;
 	}
 
 	public static HashMap<String, Dataset> readDataSetCharacteristic() {
@@ -75,4 +149,9 @@ public class FunctionUtils {
 			mapDatasetCharacteristic.get(key).closeFrame();
 		}
 	}
+	
+	public final static String testcase_id = "testcase_id";
+	public final static String test_description = "test_description";
+	public final static String train_dataset_id = "train_dataset_id";
+	public final static String validate_dataset_id = "validate_dataset_id";
 }

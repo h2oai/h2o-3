@@ -4,11 +4,9 @@ import h2o.testng.utils.Dataset;
 import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
-import hex.Distributions.Family;
+import hex.Distribution.Family;
 import hex.tree.gbm.GBMModel.GBMParameters;
 
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,63 +38,16 @@ public class GBMBasic extends TestNGUtil {
 		 * The first row of data is used to testing.
 		 */
 		final int firstRow = 4;
-		final String testcaseFilePath = "h2o-testng/src/test/resources/gbmCases.csv";
-		final String negTestcaseFilePath = "h2o-testng/src/test/resources/gbmNegCases.csv";
+		final String positiveTestcaseFilePath = "h2o-testng/src/test/resources/gbmCases.csv";
+		final String negativeTestcaseFilePath = "h2o-testng/src/test/resources/gbmNegCases.csv";
 
-		Object[][] data = null;
-		List<String> lines = null;
-		List<String> negLines = null;
-		List<String> allLines = new ArrayList<String>();
-
-		try {
-			// read data from file
-			lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
-		}
-		catch (Exception ignore) {
-			System.out.println("Cannot open file: " + testcaseFilePath);
-			ignore.printStackTrace();
-		}
-
-		try {
-			// read data from negative file
-			negLines = Files
-					.readAllLines(find_test_file_static(negTestcaseFilePath).toPath(), Charset.defaultCharset());
-		}
-		catch (Exception ignore) {
-			System.out.println("Cannot open file: " + negTestcaseFilePath);
-			ignore.printStackTrace();
-		}
-
-		// remove headers and compile all lines
-		if (lines != null) {
-			allLines.addAll(lines.subList(firstRow, lines.size()));
-		}
-		if (negLines != null) {
-			allLines.addAll(negLines.subList(firstRow, negLines.size()));
-		}
-
-		data = new Object[allLines.size()][7];
-		int r = 0;
-		for (String line : allLines) {
-			String[] variables = line.trim().split(",", -1);
-
-			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
-			data[r][1] = variables[tcHeaders.indexOf("test_description")];			
-			data[r][2] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][3] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
-			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
-			data[r][6] = variables;
-
-			r++;
-		}
-
-		return data;
+		return FunctionUtils.dataProvider(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath,
+				negativeTestcaseFilePath, firstRow);
 	}
 
 	@Test(dataProvider = "gbmCases")
-	public void basic(String testcase_id, String test_description, String train_dataset_id,
-			String validate_dataset_id, Dataset train_dataset, Dataset validate_dataset, String[] rawInput) {
+	public void basic(String testcase_id, String test_description, String train_dataset_id, String validate_dataset_id,
+			Dataset train_dataset, Dataset validate_dataset, boolean isNegativeTestcase, String[] rawInput) {
 
 		GBMParameters gbmParams = null;
 
@@ -112,7 +63,7 @@ public class GBMBasic extends TestNGUtil {
 			else {
 				gbmParams = toGBMParameters(train_dataset_id, validate_dataset_id, train_dataset, validate_dataset,
 						rawInput);
-				_basic(testcase_id, test_description, gbmParams, rawInput);
+				_basic(testcase_id, test_description, gbmParams, isNegativeTestcase, rawInput);
 			}
 		}
 		finally {
@@ -135,7 +86,8 @@ public class GBMBasic extends TestNGUtil {
 		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
 	}
 
-	private void _basic(String testcase_id, String test_description, GBMParameters parameter, String[] rawInput) {
+	private void _basic(String testcase_id, String test_description, GBMParameters parameter,
+			boolean isNegativeTestcase, String[] rawInput) {
 
 		System.out.println(String.format("Testcase: %s", testcase_id));
 		System.out.println(String.format("Description: %s", test_description));
@@ -165,7 +117,7 @@ public class GBMBasic extends TestNGUtil {
 			System.out.println("Validate testcase " + testcase_id);
 			// Assert.assertTrue(gbmModel.testJavaScoring(score, trainFrame, 1e-15));
 
-			if (FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)) {
+			if (isNegativeTestcase) {
 				Assert.fail("It is negative testcase");
 			}
 			else {
@@ -176,7 +128,7 @@ public class GBMBasic extends TestNGUtil {
 			System.out.println("Testcase is failed.");
 			ex.printStackTrace();
 
-			if (!FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)) {
+			if (!isNegativeTestcase) {
 				Assert.fail("Testcase is failed", ex);
 			}
 		}
@@ -241,7 +193,7 @@ public class GBMBasic extends TestNGUtil {
 			System.out.println("Set _distribution: " + f);
 			gbmParams._distribution = f;
 		}
-		
+
 		// set response column params
 		gbmParams._response_column = train_dataset.getResponseColumn();
 
@@ -311,11 +263,10 @@ public class GBMBasic extends TestNGUtil {
 			"0",
 			"test_description",
 			"testcase_id",
-			FunctionUtils.testcase_type,
 
 			// GBM Parameters
-			"regression",
-			"classification",
+			FunctionUtils.test_description,
+			FunctionUtils.testcase_id,
 			
 			"auto",
 			"gaussian",
@@ -359,8 +310,8 @@ public class GBMBasic extends TestNGUtil {
 			"collinear_cols",
 
 			// dataset files & ids
-			"train_dataset_id",
-			"validate_dataset_id",
+			FunctionUtils.train_dataset_id,
+			FunctionUtils.validate_dataset_id,
 
 			"ignored_columns",
 			"R",

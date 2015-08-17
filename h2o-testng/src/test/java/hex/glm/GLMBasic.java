@@ -8,10 +8,6 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +25,6 @@ import water.Scope;
 import water.TestNGUtil;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 
 public class GLMBasic extends TestNGUtil {
@@ -70,8 +65,8 @@ public class GLMBasic extends TestNGUtil {
 
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
 			"0",
-			"test_description",
-			"testcase_id",
+			FunctionUtils.test_description,
+			FunctionUtils.testcase_id,
 
 			// GLM Parameters
 			"regression",
@@ -119,8 +114,8 @@ public class GLMBasic extends TestNGUtil {
 			"collinear_cols",
 
 			// dataset files & ids
-			"train_dataset_id",
-			"validate_dataset_id",
+			FunctionUtils.train_dataset_id,
+			FunctionUtils.validate_dataset_id,
 
 			"_ignored_columns",
 			"r",
@@ -132,7 +127,7 @@ public class GLMBasic extends TestNGUtil {
 
 		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
 	}
-	
+
 	@DataProvider(name = "glmCases")
 	public static Object[][] glmCases() {
 
@@ -140,48 +135,16 @@ public class GLMBasic extends TestNGUtil {
 		 * The first row of data is used to testing.
 		 */
 		final int firstRow = 4;
-		final String testcaseFilePath = "h2o-testng/src/test/resources/glmCases.csv";
+		final String positiveTestcaseFilePath = "h2o-testng/src/test/resources/glmCases.csv";
+		final String negativeTestcaseFilePath = "h2o-testng/src/test/resources/glmNegCases.csv";
 
-		Object[][] data = null;
-		List<String> lines = null;
-
-		try {
-			// read data from file
-			lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
-
-		}
-		catch (IOException ignore) {
-			System.out.println("Cannot open file: " + testcaseFilePath);
-			ignore.printStackTrace();
-			return null;
-		}
-
-		// remove headers
-		lines.removeAll(lines.subList(0, firstRow));
-
-		data = new Object[lines.size()][7];
-		int r = 0;
-
-		for (String line : lines) {
-			String[] variables = line.trim().split(",", -1);
-
-			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
-			data[r][1] = variables[tcHeaders.indexOf("test_description")];
-			data[r][2] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][3] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
-			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
-			data[r][6] = variables;
-
-			r++;
-		}
-
-		return data;
+		return FunctionUtils.dataProvider(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath,
+				negativeTestcaseFilePath, firstRow);
 	}
 
 	@Test(dataProvider = "glmCases")
-	public void basic(String testcaseId, String testDescription, String trainDatasetId,
-			String validateDatasetId, Dataset trainDataset, Dataset validateDataset, String[] rawInput) {
+	public void basic(String testcaseId, String testDescription, String trainDatasetId, String validateDatasetId,
+			Dataset trainDataset, Dataset validateDataset, boolean isNegativeTestcase, String[] rawInput) {
 
 		GLMParameters glmParams = null;
 
@@ -205,7 +168,7 @@ public class GLMBasic extends TestNGUtil {
 			else {
 				glmParams = toGLMParameters(trainDatasetId, validateDatasetId, trainDataset, validateDataset, rawInput);
 
-				_basic(testcaseId, glmParams, rawInput);
+				_basic(testcaseId, glmParams, isNegativeTestcase, rawInput);
 			}
 		}
 		finally {
@@ -221,14 +184,14 @@ public class GLMBasic extends TestNGUtil {
 			resetStandardStreams();
 		}
 	}
-	
+
 	@AfterClass
 	public void afterClass() {
 
 		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
 	}
 
-	private void _basic(String testcaseId, GLMParameters glmParams, String[] rawInput) {
+	private void _basic(String testcaseId, GLMParameters glmParams, boolean isNegativeTestcase, String[] rawInput) {
 
 		System.out.println(String.format("Testcase: %s", testcaseId));
 		// System.out.println(String.format("Description: %s", testDescription));
@@ -267,16 +230,27 @@ public class GLMBasic extends TestNGUtil {
 			score = model.score(trainFrame);
 
 			System.out.println("Predict success.");
-			System.out.println("Testcase is passed.");
+
+			if (isNegativeTestcase) {
+				Assert.fail("It is negative testcase");
+			}
+			else {
+				System.out.println("Testcase is passed.");
+			}
 		}
-		catch (IllegalArgumentException ex) {
-			// can't predict testcase
+		catch (Exception ex) {
+			System.out.println("Testcase is failed");
 			ex.printStackTrace();
-			Assert.fail("Test is failed. It can't predict", ex);
+			if (!isNegativeTestcase) {
+				Assert.fail("Testcase is failed", ex);
+			}
 		}
 		finally {
 			if (betaConstraints != null) {
 				betaConstraints.delete();
+			}
+			if (score != null) {
+				score.delete();
 			}
 			if (model != null)
 				model.delete();
@@ -345,7 +319,7 @@ public class GLMBasic extends TestNGUtil {
 				p.parseAndSet(glmParams, rawInput[tcHeaders.indexOf(p.name)]);
 			}
 		}
-		
+
 		// set response column params
 		glmParams._response_column = trainDataset.getResponseColumn();
 

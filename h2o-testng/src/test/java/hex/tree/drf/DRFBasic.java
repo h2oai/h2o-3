@@ -5,10 +5,8 @@ import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
 import h2o.testng.utils.RecordingTestcase;
-import hex.Distributions.Family;
+import hex.Distribution.Family;
 
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,63 +38,16 @@ public class DRFBasic extends TestNGUtil {
 		 * The first row of data is used to testing.
 		 */
 		final int firstRow = 4;
-		final String testcaseFilePath = "h2o-testng/src/test/resources/drfCases.csv";
-		final String negTestcaseFilePath = "h2o-testng/src/test/resources/drfNegCases.csv";
+		final String positiveTestcaseFilePath = "h2o-testng/src/test/resources/drfCases.csv";
+		final String negativeTestcaseFilePath = "h2o-testng/src/test/resources/drfNegCases.csv";
 
-		Object[][] data = null;
-		List<String> lines = null;
-		List<String> negLines = null;
-		List<String> allLines = new ArrayList<String>();
-
-		try {
-			// read data from file
-			lines = Files.readAllLines(find_test_file_static(testcaseFilePath).toPath(), Charset.defaultCharset());
-		}
-		catch (Exception ignore) {
-			System.out.println("Cannot open file: " + testcaseFilePath);
-			ignore.printStackTrace();
-		}
-
-		try {
-			// read data from negative file
-			negLines = Files
-					.readAllLines(find_test_file_static(negTestcaseFilePath).toPath(), Charset.defaultCharset());
-		}
-		catch (Exception ignore) {
-			System.out.println("Cannot open file: " + negTestcaseFilePath);
-			ignore.printStackTrace();
-		}
-
-		// remove headers and compile all lines
-		if (lines != null) {
-			allLines.addAll(lines.subList(firstRow, lines.size()));
-		}
-		if (negLines != null) {
-			allLines.addAll(negLines.subList(firstRow, negLines.size()));
-		}
-
-		data = new Object[allLines.size()][7];
-		int r = 0;
-		for (String line : allLines) {
-			String[] variables = line.trim().split(",", -1);
-
-			data[r][0] = variables[tcHeaders.indexOf("testcase_id")];
-			data[r][1] = variables[tcHeaders.indexOf("test_description")];
-			data[r][2] = variables[tcHeaders.indexOf("train_dataset_id")];
-			data[r][3] = variables[tcHeaders.indexOf("validate_dataset_id")];
-			data[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("train_dataset_id")]);
-			data[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf("validate_dataset_id")]);
-			data[r][6] = variables;
-
-			r++;
-		}
-
-		return data;
+		return FunctionUtils.dataProvider(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath,
+				negativeTestcaseFilePath, firstRow);
 	}
 
 	@Test(dataProvider = "drfCases")
 	public void basic(String testcase_id, String test_description, String train_dataset_id, String validate_dataset_id,
-			Dataset train_dataset, Dataset validate_dataset, String[] rawInput) {
+			Dataset train_dataset, Dataset validate_dataset, boolean isNegativeTestcase, String[] rawInput) {
 
 		DRFModel.DRFParameters DRFParameter = null;
 		redirectStandardStreams();
@@ -119,7 +70,7 @@ public class DRFBasic extends TestNGUtil {
 				DRFParameter = toDRFParameters(train_dataset_id, validate_dataset_id, train_dataset, validate_dataset,
 						rawInput);
 
-				_basic(testcase_id, test_description, DRFParameter, rawInput);
+				_basic(testcase_id, test_description, DRFParameter, isNegativeTestcase, rawInput);
 			}
 		}
 		finally {
@@ -127,7 +78,7 @@ public class DRFBasic extends TestNGUtil {
 			// TODO: get memory by H2O's API
 			System.out.println("Total Memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
 			System.out.println("Total Time used in testcase:" + (rt.getTimeRecording()) + "millis");
-			
+
 			// wait 100 mili-sec for output/error to be stored
 			try {
 				Thread.sleep(100);
@@ -147,7 +98,8 @@ public class DRFBasic extends TestNGUtil {
 		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
 	}
 
-	private void _basic(String testcase_id, String test_description, DRFModel.DRFParameters parameter, String[] rawInput) {
+	private void _basic(String testcase_id, String test_description, DRFModel.DRFParameters parameter,
+			boolean isNegativeTestcase, String[] rawInput) {
 
 		System.out.println(String.format("Testcase: %s", testcase_id));
 		System.out.println(String.format("Description: %s", test_description));
@@ -178,7 +130,7 @@ public class DRFBasic extends TestNGUtil {
 			System.out.println("Validate testcase " + testcase_id);
 			// Assert.assertTrue(drfModel.testJavaScoring(score, trainFrame, 1e-15));
 
-			if (FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)) {
+			if (isNegativeTestcase) {
 				Assert.fail("It is negative testcase");
 			}
 			else {
@@ -188,14 +140,14 @@ public class DRFBasic extends TestNGUtil {
 		catch (IllegalArgumentException ex) {
 			System.out.println("Testcase is failed");
 			ex.printStackTrace();
-			if (!FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)) {
+			if (!isNegativeTestcase) {
 				Assert.fail("Testcase is failed", ex);
 			}
 		}
 		catch (Exception ex) {
 			System.out.println("Testcase is failed");
 			ex.printStackTrace();
-			if (!FunctionUtils.isNegativeTestcase(tcHeaders, rawInput)) {
+			if (!isNegativeTestcase) {
 				Assert.fail("Testcase is failed", ex);
 			}
 		}
@@ -358,9 +310,8 @@ public class DRFBasic extends TestNGUtil {
 	
 	private static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
 			"0",
-			"test_description",
-			"testcase_id",
-			FunctionUtils.testcase_type,
+			FunctionUtils.test_description,
+			FunctionUtils.testcase_id,
 			
 			// DRF Parameters
 			"regression",
@@ -407,8 +358,8 @@ public class DRFBasic extends TestNGUtil {
 			"collinear_cols",
 
 			// dataset files & ids
-			"train_dataset_id",
-			"validate_dataset_id",
+			FunctionUtils.train_dataset_id,
+			FunctionUtils.validate_dataset_id,
 
 			"ignored_columns",
 			"R",
