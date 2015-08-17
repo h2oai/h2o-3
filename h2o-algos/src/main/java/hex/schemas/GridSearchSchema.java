@@ -74,7 +74,8 @@ public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
       parms.remove("grid_id");
     }
 
-    this.parameters.fillFromParms(parms);
+    // Do not check validity of
+    this.parameters.fillFromParms(parms, false);
 
     return (S) this;
   }
