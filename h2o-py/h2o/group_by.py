@@ -24,7 +24,7 @@ class GroupBy:
   def __init__(self,fr,by,order_by=None):
     self._fr=fr                 # IN
     self._by=by                 # IN
-    self._col_names=fr.names()  # IN
+    self._col_names=fr.names    # IN
     self._aggs={}               # IN
     self._order_by = order_by
     self._computed=False        #

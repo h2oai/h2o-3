@@ -26,9 +26,29 @@ class ModelBase(object):
     if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
     # build a useful dict of the params
-    d={}
-    for p in self._model_json["parameters"]: d[p["label"]]=p
-    self._model_json["parameters"]=d
+    self._params={}
+    for p in self._model_json["parameters"]: self._params[p["label"]]=p
+
+  @property
+  def params(self):
+    """
+    Get the parameters and the actual/default values only.
+
+    :return: A dictionary of parameters used to build this model.
+    """
+    params = {}
+    for p in self._params:
+      params[p] = {"default":self._params[p]["default_value"], "actual":self._params[p]["actual_value"]}
+    return params
+
+  @property
+  def full_parameters(self):
+    """
+    Get the full specification of all parameters.
+
+    :return: a dictionary of parameters used to build this model.
+    """
+    return self._params
 
   def __repr__(self):
     self.show()
