@@ -226,7 +226,7 @@ public final class PersistHdfs extends Persist {
       try {
         long start_ns = System.nanoTime(); // Blocking i/o call timing - without counting repeats
         c.call();
-        TimeLine.record_IOclose(start_ns, start_io_ms, read ? 1 : 0, size, Value.HDFS);
+//        TimeLine.record_IOclose(start_ns, start_io_ms, read ? 1 : 0, size, Value.HDFS);
         break;
         // Explicitly ignore the following exceptions but
         // fail on the rest IOExceptions
