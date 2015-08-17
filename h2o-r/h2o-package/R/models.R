@@ -154,20 +154,29 @@ h2o.getFutureModel <- function(object) {
   h2o.getModel(object@model_id, object@conn)
 }
 
-.h2o.prepareModelParameters <- function(algo, params) {
+.h2o.prepareModelParameters <- function(algo, params, is_supervised) {
   if (!inherits(params$training_frame, "H2OFrame")) {
    tryCatch(params$training_frame <- h2o.getFrame(params$training_frame),
             error = function(err) {
               stop("argument \"training_frame\" must be a valid H2OFrame or ID")
             })
   }
-  if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
-  if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
-  args <- .verify_dataxy(params$training_frame, x, y)
-  if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
-  if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
-  params$ignored_columns <- args$x_ignore
-  params$response_column <- args$y
+  # Check if specified model request is for supervised algo
+  isSupervised <- if (!is.null(is_supervised)) is_supervised else .isSupervised(algo, params)
+
+  if (isSupervised) {
+    if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
+    if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
+    args <- .verify_dataxy(params$training_frame, x, y)
+    if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+    if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+    params$ignored_columns <- args$x_ignore
+    params$response_column <- args$y
+  } else {
+    if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
+    args <- .verify_datacols(params$training_frame, x)
+    params$ignored_columns <- args$cols_ignore
+  }
 
   params
 }
@@ -177,12 +186,12 @@ h2o.getFutureModel <- function(object) {
   allParameters
 }
 
-.h2o.checkModelParameters <- function(algo, allParams, params) {
+.h2o.checkModelParameters <- function(algo, allParams, params, hyper_params = list()) {
   error <- lapply(allParams, function(i) {
     e <- ""
-    if (i$required && !(i$name %in% names(params)))
+    if (i$required && !((i$name %in% names(params)) || (i$name %in% names(hyper_params)))) {
       e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
-    else if (i$name %in% names(params)) {
+    } else if (i$name %in% names(params)) {
       # changing Java types to R types
       mapping <- .type.map[i$type,]
       type    <- mapping[1L, 1L]
@@ -836,7 +845,7 @@ h2o.varimp <- function(object, ...) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) ) { vi <- object@model$standardized_coefficients_magnitude }  # no true variable importances, maybe glm coeffs? (return standardized table...)
+    if( is.null(vi) ) { vi <- object@model$standardized_coefficient_magnitudes }  # no true variable importances, maybe glm coeffs? (return standardized table...)
     if( is.null(vi) ) {
       warning("This model doesn't have variable importances", call. = FALSE)
       return(invisible(NULL))
@@ -1757,4 +1766,13 @@ h2o.sdev <- function(object) {
 .warn.no.cross.validation <- function() {
   warning("No cross-validation metrics available.", call.=FALSE)
   NULL
+}
+
+.isSupervised <- function(algo, params) {
+  if (algo == "kmeans" ||
+      (algo == "deeplearning" && !is.null(params$autoencoder) && params$autoencoder)) {
+    FALSE
+  } else {
+    TRUE
+  }
 }

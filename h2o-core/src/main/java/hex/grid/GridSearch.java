@@ -10,6 +10,7 @@ import water.DKV;
 import water.H2O;
 import water.Job;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
@@ -102,6 +103,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     // this function the grid object is in DKV and accessible.
     Grid<MP> grid = DKV.getGet(dest());
     if (grid != null) {
+      Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
+      Frame oldTrainFrame = grid.getTrainingFrame();
+      if (!specTrainFrame._key.equals(oldTrainFrame._key) ||
+          specTrainFrame.checksum() != oldTrainFrame.checksum()) {
+        throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models"
+                                              + " to a grid with different training input");
+      }
       grid.write_lock(jobKey());
     } else {
       grid =
@@ -172,11 +180,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
           cancel();
           return;
         }
-        // Sequential model building
+        // Sequential model building, should never propagate
+        // exception from underlying model builder
         model = buildModel(params, grid);
       }
       // Grid search is done
       done();
+    } catch(Exception e) {
+      // Something wrong happened during hyper-space walking
+      // So cancel this job
+      failed(e);
     } finally {
       // Unlock grid object
       grid.unlock(jobKey());
@@ -218,6 +231,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
       grid.appendFailedModelParameters(params, e.getMessage());
     } finally {
+      // Update progress by 1 increment
+      this.update(1L);
       // Always update grid in DKV after model building attempt
       grid.update(jobKey());
     }
@@ -252,7 +267,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     if (fr._key == null) {
       throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
     }
-    return Key.make("Grid_" + modelName + "_" + fr._key.toString());
+    return Key.make("Grid_" + modelName + "_" + fr._key.toString() + H2O.calcNextUniqueModelId(""));
   }
 
 

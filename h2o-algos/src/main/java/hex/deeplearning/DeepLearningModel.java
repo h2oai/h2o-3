@@ -524,8 +524,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           // training
           {
             final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make());
-            final Vec l2 = mse_frame.anyVec();
-            Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             mse_frame.delete();
             ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain); //updated by model.score
             _output._training_metrics = mtrain;
@@ -533,8 +531,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
-            final Vec l2 = mse_frame.anyVec();
-            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
             mse_frame.delete();
             ModelMetrics mtest = ModelMetrics.getFromDKV(this,ftest); //updated by model.score
             _output._validation_metrics = mtest;
@@ -665,11 +661,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //          }
 //        }
 
-          // print the freshly scored model to ASCII
-          if (keep_running && printme)
-            Log.info(toString());
-          if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
+        // print the freshly scored model to ASCII
+        if (keep_running && printme)
+          Log.info(toString());
+        if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
       }
       if (model_info().unstable()) {
         Log.warn(unstable_msg);
@@ -733,6 +729,61 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   @Override
   protected double[] score0(double[] data, double[] preds) {
     return score0(data, preds, 1, 0);
+  }
+
+  /**
+   * Compute the loss function
+   * @param myRow denseRow containing numerical/categorical predictor and response data (standardized)
+   * @return loss
+   */
+  public double loss(DataInfo.Row myRow) {
+    Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
+    long seed = 0; //ignored
+    ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+    DeepLearningTask.step(seed, neurons, model_info(), null,
+            false /*not training - no need to compute and store gradients*/, new double[]{myRow.response[0]}, 0);
+
+    //Now compute the loss
+    double loss;
+    if (_parms._loss == DeepLearningParameters.Loss.CrossEntropy) {
+      if (_parms._balance_classes) throw H2O.unimpl();
+      int actual = (int)myRow.response[0];
+      double pred = neurons[neurons.length - 1]._a.get(actual);
+      loss = -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
+    } else {
+      if (_parms._autoencoder) throw H2O.unimpl();
+
+      //prediction and actual response in standardized response space
+      double pred = neurons[neurons.length - 1]._a.raw()[0];
+      double actual = myRow.response[0];
+
+      //bring standardized prediction and actual response to real space
+      DataInfo di = model_info().data_info();
+      if (di._normRespMul != null) { //either both are null or none
+        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
+        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
+      }
+      Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
+
+      // compute final deviance
+      loss = dist.deviance(1 /*weight*/, actual, dist.linkInv(pred));
+    }
+
+    // add L1/L2 penalty of model coefficients (weights & biases)
+    for (int i = 0; i < _parms._hidden.length + 1; ++i) {
+      if (neurons[i]._w == null) continue;
+      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+        for (int col = 0; col < neurons[i]._w.cols(); ++col) {
+          loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
+          loss += 0.5*_parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+        }
+      }
+      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+        loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
+        loss += 0.5*_parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+      }
+    }
+    return loss;
   }
 
   /**
@@ -803,7 +854,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean()));
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean() /*mean MSE*/));
     return res;
   }
 
