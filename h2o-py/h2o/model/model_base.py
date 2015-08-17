@@ -133,7 +133,13 @@ class ModelBase(object):
     :return: the score history (H2OTwoDimTable)
     """
     model = self._model_json["output"]
-    if 'scoring_history' in model.keys() and model["scoring_history"] != None: return model["scoring_history"]
+    if 'scoring_history' in model.keys() and model["scoring_history"] != None:
+      s = model["scoring_history"]
+      if h2o.can_use_pandas():
+        import pandas
+        pandas.options.display.max_rows = 20
+        return pandas.DataFrame(s.cell_values,columns=s.col_header)
+      return model["scoring_history"]
     else: print "No score history for this model"
 
 
