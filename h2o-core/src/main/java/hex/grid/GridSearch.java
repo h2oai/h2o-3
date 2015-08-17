@@ -97,7 +97,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
 
   GridSearch start() {
     final int gridSize = _hyperSpaceWalker.getHyperSpaceSize();
-    Log.info("Starting gridsearch: estimated size of search space =" + gridSize);
+    Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
     // this function the grid object is in DKV and accessible.
@@ -189,6 +189,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     } catch(Exception e) {
       // Something wrong happened during hyper-space walking
       // So cancel this job
+      // FIXME: should I delete grid here? it failed but user can be interested in partial result
       failed(e);
     } finally {
       // Unlock grid object
