@@ -580,7 +580,7 @@ class H2OFrame:
     :return: A frame with the columns dropped.
     """
     self._eager()
-    is_char = all([isinstance(i,(unicode,str)) for i in cols])
+    is_char = all([isinstance(i,basestring) for i in cols])
     if is_char:
       cols = [self._find_idx(col) for col in cols]
     cols = sorted(cols)
@@ -686,18 +686,18 @@ class H2OFrame:
     :return: Returns this H2OFrame.
     """
     update_index=-1
-    if isinstance(b, (str,unicode)): update_index=self.col_names.index(b) if b in self.col_names else self._ncols
+    if isinstance(b, basestring): update_index=self.col_names.index(b) if b in self.col_names else self._ncols
     elif isinstance(b, int): update_index=b
 
     if isinstance(b, tuple):
       bb = b[1]
-      if isinstance(bb, (str,unicode)): update_index=self.col_names.index(bb) if bb in self.col_names else self._ncols
+      if isinstance(bb, basestring): update_index=self.col_names.index(bb) if bb in self.col_names else self._ncols
       elif isinstance(bb, int): update_index=bb
       lhs = ExprNode("[", self,b[0],b[1])
     else:
       lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
     rhs = c._frame() if isinstance(c,H2OFrame) else c
-    col_name = b if (update_index==self._ncols and isinstance(b, (str, unicode))) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
+    col_name = b if (update_index==self._ncols and isinstance(b, basestring)) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
     sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol else ExprNode("=",lhs,rhs)._eager()
     h2o.rapids(ExprNode._collapse_sb(sb))
     self._update()
@@ -812,8 +812,8 @@ class H2OFrame:
     :param inplace: Impute inplace?
     :return: the imputed frame.
     """
-    if isinstance(column, (str, unicode)): column = self._find_idx(column)
-    if isinstance(by, (str, unicode)):     by     = self._find_idx(by)
+    if isinstance(column, basestring): column = self._find_idx(column)
+    if isinstance(by, basestring):     by     = self._find_idx(by)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
   def merge(self, other, allLeft=False, allRite=False):
@@ -1246,8 +1246,8 @@ def _handle_python_lists(python_obj):
   return header, data_to_write
 
 def _is_list(l)    : return isinstance(l, (tuple, list))
-def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(str,unicode)) for i in l])
-def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int  )) for i in l])
+def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,basestring) for i in l])
+def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int)) for i in l])
 def _is_list_of_lists(o):                  return any(isinstance(l, (list, tuple)) for l in o)
 def _handle_numpy_array(python_obj):       return _handle_python_lists(python_obj=python_obj.tolist())
 def _handle_pandas_data_frame(python_obj): return _handle_numpy_array(python_obj=python_obj.as_matrix())
