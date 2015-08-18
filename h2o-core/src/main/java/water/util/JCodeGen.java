@@ -115,11 +115,11 @@ public class JCodeGen {
   }
   public static SB toClassWithArray(SB sb, String modifiers, String className, double[] values) {
     sb.ip(modifiers!=null ? modifiers+" ": "").p("class ").p(className).p(" implements java.io.Serializable {").nl().ii(1);
-    sb.ip("public static final float[] VALUES = ");
+    sb.ip("public static final double[] VALUES = ");
     if (values==null)
       sb.p("null;").nl();
     else {
-      sb.p("new float[").p(values.length).p("];").nl();
+      sb.p("new double[").p(values.length).p("];").nl();
 
       // Static part
       int s = 0;
