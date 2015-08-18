@@ -19,11 +19,11 @@ public class Storage {
    * Abstract vector interface
    */
   public abstract interface Vector {
-    public abstract float get(int i);
-    public abstract void set(int i, float val);
-    public abstract void add(int i, float val);
+    public abstract double get(int i);
+    public abstract void set(int i, double val);
+    public abstract void add(int i, double val);
     public abstract int size();
-    public abstract float[] raw();
+    public abstract double[] raw();
     public abstract Frame toFrame(Key key);
   }
 
@@ -45,14 +45,14 @@ public class Storage {
    * Dense vector implementation
    */
   public static class DenseVector extends Iced implements Vector {
-    private float[] _data;
-    DenseVector(int len) { _data = new float[len]; }
-    DenseVector(float[] v) { _data = v; }
-    @Override public float get(int i) { return _data[i]; }
-    @Override public void set(int i, float val) { _data[i] = val; }
-    @Override public void add(int i, float val) { _data[i] += val; }
+    private double[] _data;
+    DenseVector(int len) { _data = new double[len]; }
+    DenseVector(double[] v) { _data = v; }
+    @Override public double get(int i) { return _data[i]; }
+    @Override public void set(int i, double val) { _data[i] = val; }
+    @Override public void add(int i, double val) { _data[i] += val; }
     @Override public int size() { return _data.length; }
-    @Override public float[] raw() { return _data; }
+    @Override public double[] raw() { return _data; }
     @Override public Frame toFrame(Key key) { return Storage.toFrame(this, key); }
   }
 
@@ -61,25 +61,25 @@ public class Storage {
    */
   public static class SparseVector extends Iced implements Vector {
     int[] _indices;
-    float[] _values;
+    double[] _values;
     private int _size;
     private int _nnz;
 
     @Override public int size() { return _size; }
     public int nnz() { return _nnz; }
 
-    SparseVector(float[] v) { this(new DenseVector(v)); }
+    SparseVector(double[] v) { this(new DenseVector(v)); }
     SparseVector(final DenseVector dv) {
       _size = dv.size();
       // first count non-zeros
       for (int i=0; i<dv._data.length; ++i) {
-        if (dv.get(i) != 0.0f) {
+        if (dv.get(i) != 0.0) {
           _nnz++;
         }
       }
       // only allocate what's needed
       _indices = new int[_nnz];
-      _values = new float[_nnz];
+      _values = new double[_nnz];
       // fill values
       int idx = 0;
       for (int i=0; i<dv._data.length; ++i) {
@@ -97,23 +97,23 @@ public class Storage {
      * @param i element index
      * @return real value
      */
-    @Override public float get(int i) {
+    @Override public double get(int i) {
       final int idx = Arrays.binarySearch(_indices, i);
       return idx < 0 ? 0f : _values[idx];
     }
 
     @Override
-    public void set(int i, float val) {
+    public void set(int i, double val) {
       throw new UnsupportedOperationException("setting values in a sparse vector is not implemented.");
     }
 
     @Override
-    public void add(int i, float val) {
+    public void add(int i, double val) {
       throw new UnsupportedOperationException("adding values in a sparse vector is not implemented.");
     }
 
     @Override
-    public float[] raw() {
+    public double[] raw() {
       throw new UnsupportedOperationException("raw access to the data in a sparse vector is not implemented.");
     }
 
@@ -137,9 +137,9 @@ public class Storage {
       public String toString() {
         return index() + " -> " + value();
       }
-      float value() { return _values[_idx]; }
+      double value() { return _values[_idx]; }
       int index() { return _indices[_idx]; }
-      void setValue(float val) { _values[_idx] = val; }
+      void setValue(double val) { _values[_idx] = val; }
     }
 
     public Iterator begin() { return new Iterator(0); }

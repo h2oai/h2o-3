@@ -310,15 +310,14 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         double[] s = minfo.data_info()._normRespSub;
         double mul = m == null ? 1 : m[0];
         double sub = s == null ? 0 : s[0];
-        neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
+        neurons[neurons.length - 1]._a.add(0, ((offset - sub) * mul));
       }
 
       if (training) {
         // Compute the mini-batch gradient
-        neurons[neurons.length - 1].accumulateMiniBatchGradient(
-                minfo.get_params()._autoencoder ? Float.NaN //for auto-encoder, pass a dummy "response" (ignored)
-                        : (float)responses[0]               //this is either a class label or a regression target
-        );
+        // auto-encoder: pass a dummy "response" (ignored)
+        // otherwise: class label or regression target
+        neurons[neurons.length - 1].accumulateMiniBatchGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
 
         // Elastic Averaging - set up helpers needed during back-propagation
         if (consensus_minfo != null) {

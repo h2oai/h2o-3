@@ -115,13 +115,13 @@ public class DeepLearningModelInfo extends Iced {
     parameters = (DeepLearningParameters) p.clone();
   }
 
-  private float[] mean_rate;
-  private float[] rms_rate;
-  private float[] mean_bias;
-  private float[] rms_bias;
-  private float[] mean_weight;
-  public float[] rms_weight;
-  public float[] mean_a;
+  private double[] mean_rate;
+  private double[] rms_rate;
+  private double[] mean_bias;
+  private double[] rms_bias;
+  private double[] mean_weight;
+  public double[] rms_weight;
+  public double[] mean_a;
 
   private volatile boolean unstable = false;
   public boolean unstable() { return unstable; }
@@ -245,17 +245,17 @@ public class DeepLearningModelInfo extends Iced {
     // average activation (only for hidden layers)
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
       avg_activations = new Storage.DenseVector[layers];
-      mean_a = new float[layers];
+      mean_a = new double[layers];
       for (int i = 0; i < layers; ++i) avg_activations[i] = new Storage.DenseVector(units[i + 1]);
     }
     allocateHelperArrays();
     // for diagnostics
-    mean_rate = new float[units.length];
-    rms_rate = new float[units.length];
-    mean_bias = new float[units.length];
-    rms_bias = new float[units.length];
-    mean_weight = new float[units.length];
-    rms_weight = new float[units.length];
+    mean_rate = new double[units.length-1];
+    rms_rate = new double[units.length-1];
+    mean_bias = new double[units.length-1];
+    rms_bias = new double[units.length-1];
+    mean_weight = new double[units.length-1];
+    rms_weight = new double[units.length-1];
   }
 
   // deep clone all weights/biases
@@ -349,13 +349,13 @@ public class DeepLearningModelInfo extends Iced {
       }
       table.set(i, 4, neurons[i].params._l1);
       table.set(i, 5, neurons[i].params._l2);
-      table.set(i, 6, (get_params()._adaptive_rate ? mean_rate[i] : neurons[i].rate(get_processed_total())));
-      table.set(i, 7, (get_params()._adaptive_rate ? rms_rate[i] : 0));
+      table.set(i, 6, (get_params()._adaptive_rate ? mean_rate[i-1] : neurons[i].rate(get_processed_total())));
+      table.set(i, 7, (get_params()._adaptive_rate ? rms_rate[i-1] : 0));
       table.set(i, 8, get_params()._adaptive_rate ? 0 : neurons[i].momentum(get_processed_total()));
-      table.set(i, 9, mean_weight[i]);
-      table.set(i, 10, rms_weight[i]);
-      table.set(i, 11, mean_bias[i]);
-      table.set(i, 12, rms_bias[i]);
+      table.set(i, 9, mean_weight[i-1]);
+      table.set(i, 10, rms_weight[i-1]);
+      table.set(i, 11, mean_bias[i-1]);
+      table.set(i, 12, rms_bias[i-1]);
     }
     summaryTable = table;
     return summaryTable;
@@ -464,29 +464,29 @@ public class DeepLearningModelInfo extends Iced {
    * Multiply all weights/biases by a real-valued number
    * @param N
    */
-  protected void mult(float N) {
-    div(1f / N);
+  protected void mult(double N) {
+    div(1 / N);
   }
 
   /**
    * Divide all weights/biases by a real-valued number
    * @param N
    */
-  protected void div(float N) {
+  protected void div(double N) {
     for (int i = 0; i < dense_row_weights.length; ++i)
-      ArrayUtils.div(get_weights(i).raw(), N);
+      ArrayUtils.div(get_weights(i).raw(), (float)N);
     for (Storage.Vector bias : biases) ArrayUtils.div(bias.raw(), N);
     if (avg_activations != null)
       for (Storage.Vector avgac : avg_activations)
         ArrayUtils.div(avgac.raw(), N);
     if (has_momenta()) {
       for (int i = 0; i < dense_row_weights_momenta.length; ++i)
-        ArrayUtils.div(get_weights_momenta(i).raw(), N);
+        ArrayUtils.div(get_weights_momenta(i).raw(), (float)N);
       for (Storage.Vector bias_momenta : biases_momenta) ArrayUtils.div(bias_momenta.raw(), N);
     }
     if (adaDelta()) {
       for (int i = 0; i < dense_row_ada_dx_g.length; ++i) {
-        ArrayUtils.div(get_ada_dx_g(i).raw(), N);
+        ArrayUtils.div(get_ada_dx_g(i).raw(), (float)N);
       }
     }
   }
@@ -611,50 +611,46 @@ public class DeepLearningModelInfo extends Iced {
       }
     }
 
-    for (int y = 1; y < units.length; y++) {
+    for (int y = 0; y < units.length-1; y++) {
       mean_rate[y] = rms_rate[y] = 0;
       mean_bias[y] = rms_bias[y] = 0;
       mean_weight[y] = rms_weight[y] = 0;
-      for (int u = 0; u < biases[y - 1].size(); u++) {
-        mean_bias[y] += biases[y - 1].get(u);
+      for (int u = 0; u < biases[y].size(); u++) {
+        mean_bias[y] += biases[y].get(u);
       }
-      if (rate != null) rate[y - 1] = new float[get_weights(y - 1).raw().length];
-      for (int u = 0; u < get_weights(y - 1).raw().length; u++) {
-        mean_weight[y] += get_weights(y - 1).raw()[u];
+      if (rate != null) rate[y] = new float[get_weights(y).raw().length];
+      for (int u = 0; u < get_weights(y).raw().length; u++) {
+        mean_weight[y] += get_weights(y).raw()[u];
         if (rate != null) {
-//            final float RMS_dx = (float)Math.sqrt(ada[y-1][2*u]+(float)get_params().epsilon);
-//            final float invRMS_g = (float)(1/Math.sqrt(ada[y-1][2*u+1]+(float)get_params().epsilon));
-          final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y - 1).raw()[2 * u] + (float) get_params()._epsilon);
-          final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y - 1).raw()[2 * u + 1] + (float) get_params()._epsilon);
-          rate[y - 1][u] = RMS_dx * invRMS_g; //not exactly right, RMS_dx should be from the previous time step -> but close enough for diagnostics.
-          mean_rate[y] += rate[y - 1][u];
+//            final float RMS_dx = (float)Math.sqrt(ada[y][2*u]+(float)get_params().epsilon);
+//            final float invRMS_g = (float)(1/Math.sqrt(ada[y][2*u+1]+(float)get_params().epsilon));
+          final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y).raw()[2 * u] + (float) get_params()._epsilon);
+          final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y).raw()[2 * u + 1] + (float) get_params()._epsilon);
+          rate[y][u] = RMS_dx * invRMS_g; //not exactly right, RMS_dx should be from the previous time step -> but close enough for diagnostics.
+          mean_rate[y] += rate[y][u];
         }
       }
-
-
-      mean_bias[y] /= biases[y - 1].size();
-
-      mean_weight[y] /= get_weights(y - 1).size();
-      if (rate != null) mean_rate[y] /= rate[y - 1].length;
-
-      for (int u = 0; u < biases[y - 1].size(); u++) {
-        final double db = biases[y - 1].get(u) - mean_bias[y];
+      mean_bias[y] /= biases[y].size();
+      mean_weight[y] /= get_weights(y).size();
+      if (rate != null) mean_rate[y] /= rate[y].length;
+      for (int u = 0; u < biases[y].size(); u++) {
+        final double db = biases[y].get(u) - mean_bias[y];
         rms_bias[y] += db * db;
       }
-      for (int u = 0; u < get_weights(y - 1).size(); u++) {
-        final double dw = get_weights(y - 1).raw()[u] - mean_weight[y];
+      for (int u = 0; u < get_weights(y).size(); u++) {
+        final double dw = get_weights(y).raw()[u] - mean_weight[y];
         rms_weight[y] += dw * dw;
         if (rate != null) {
-          final double drate = rate[y - 1][u] - mean_rate[y];
+          final double drate = rate[y][u] - mean_rate[y];
           rms_rate[y] += drate * drate;
         }
       }
-      rms_bias[y] = MathUtils.approxSqrt(rms_bias[y] / biases[y - 1].size());
-      rms_weight[y] = MathUtils.approxSqrt(rms_weight[y] / get_weights(y - 1).size());
-      if (rate != null) rms_rate[y] = MathUtils.approxSqrt(rms_rate[y] / rate[y - 1].length);
-//        rms_bias[y] = (float)Math.sqrt(rms_bias[y]/biases[y-1].length);
-//        rms_weight[y] = (float)Math.sqrt(rms_weight[y]/weights[y-1].length);
-//        if (rate != null) rms_rate[y] = (float)Math.sqrt(rms_rate[y]/rate[y-1].length);
+      rms_bias[y] = MathUtils.approxSqrt(rms_bias[y] / biases[y].size());
+      rms_weight[y] = MathUtils.approxSqrt(rms_weight[y] / get_weights(y).size());
+      if (rate != null) rms_rate[y] = MathUtils.approxSqrt(rms_rate[y]/ rate[y].length);
+//        rms_bias[y] = (float)Math.sqrt(rms_bias[y]/biases[y].length);
+//        rms_weight[y] = (float)Math.sqrt(rms_weight[y]/weights[y].length);
+//        if (rate != null) rms_rate[y] = (float)Math.sqrt(rms_rate[y]/rate[y].length);
 
       // Abort the run if weights or biases are unreasonably large (Note that all input values are normalized upfront)
       // This can happen with Rectifier units when L1/L2/max_w2 are all set to 0, especially when using more than 1 hidden layer.
@@ -671,15 +667,16 @@ public class DeepLearningModelInfo extends Iced {
    */
   protected long checksum_impl() {
     computeStats();
-    long cs = parameters._seed;
+    Random rng = new Random(0xDECAFBBB);
+    double cs = Double.longBitsToDouble(get_params()._seed);
     cs += size() * get_processed_total();
-    cs *= (long) (2234.3424e10 * (ArrayUtils.sum(mean_bias)) + mean_bias[0]);
-    cs ^= (long) (9234.1343e10 * (ArrayUtils.sum(rms_bias)) * rms_bias[rms_bias.length-1]);
-    cs *= (long) (9723.9734e10 * (ArrayUtils.sum(mean_weight)) + mean_weight[0]);
-    cs += (long) (9234.1783e10 * (ArrayUtils.sum(rms_weight)) * rms_weight[rms_weight.length-1]);
-    cs *= (long) (4273.2344e10 * (float)(Math.E + ArrayUtils.sum(mean_rate) + mean_rate[0]));
-    cs ^= (long) (3378.1999e10 * (float)(Math.PI + ArrayUtils.sum(rms_rate)) - rms_rate[rms_rate.length-1]);
-    return cs;
+    for (double d : mean_bias) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : rms_bias) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : mean_weight) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : rms_weight) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : mean_rate) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : rms_rate) cs += (rng.nextDouble() * (d+123.23));
+    return Double.doubleToRawLongBits(cs);
   }
 
   /**
@@ -723,8 +720,8 @@ public class DeepLearningModelInfo extends Iced {
     int layer;
     int row;
     int col;
-    float gradient;
-    void apply(int l, int r, int c, float g) {
+    double gradient;
+    void apply(int l, int r, int c, double g) {
       if (r==row && c==col && l==layer)
         gradient=g;
     }

@@ -11,7 +11,6 @@ import java.util.Random;
 public class NeuronsTest extends water.TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Ignore
   @Test
   public void matrixVecTest() {
     int rows = 2048;
@@ -23,9 +22,9 @@ public class NeuronsTest extends water.TestUtil {
     float nnz_ratio_mat = 0.1f; //fraction of non-zeroes for matrix
 
     float [] a = new float[rows*cols];
-    float [] x = new float[cols];
-    float [] y = new float[rows];
-    float [] res = new float[rows];
+    double [] x = new double[cols];
+    double [] y = new double[rows];
+    double [] res = new double[rows];
     byte [] bits = new byte[rows];
 
     for (int row=0;row<rows;++row) {

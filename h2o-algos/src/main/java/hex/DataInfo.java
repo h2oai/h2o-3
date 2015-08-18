@@ -401,13 +401,13 @@ public class DataInfo extends Keyed {
    * @param in input values
    * @param out output values (can be the same as input)
    */
-  public final void unScaleNumericals(float[] in, float[] out) {
+  public final void unScaleNumericals(double[] in, double[] out) {
     if (_nums == 0) return;
     assert (in.length == out.length);
     assert (in.length == fullN());
     for (int k=numStart(); k < fullN(); ++k) {
-      float m = _normMul == null ? 1f : (float)_normMul[k-numStart()];
-      float s = _normSub == null ? 0f : (float)_normSub[k-numStart()];
+      double m = _normMul == null ? 1f : _normMul[k-numStart()];
+      double s = _normSub == null ? 0f : _normSub[k-numStart()];
       out[k] = in[k] / m + s;
     }
   }

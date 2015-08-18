@@ -175,8 +175,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(51, 176),
-                    ard(13, 140)),
+            ard(ard(50, 177),
+                ard(13, 140)),
             s("0", "1"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -244,8 +244,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(57, 170),
-                    ard(8, 145)),
+            ard(ard(58, 169),
+                ard(9, 144)),
             s("0", "1"),
             DeepLearningParameters.Activation.Maxout);
   }
@@ -278,7 +278,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            50.644808115120775,
+            50.64888427459188,
             DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -294,7 +294,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            43.23511220404915,
+            43.23221633974401,
             DeepLearningParameters.Activation.Tanh);
 
   }
@@ -310,7 +310,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        42.894661346549356,
+        42.89847877076094,
         DeepLearningParameters.Activation.Maxout);
 
   }
@@ -326,7 +326,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         5,
-        43.187341679697695,
+        43.18892905201482,
         DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -342,7 +342,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             50,
-            39.28708964178392,
+            39.28828141866821,
             DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -371,7 +371,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            0.012242754628809,
+            0.012637071389641636,
             DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -691,7 +691,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3189442010379401, mse, 1e-8);
+      assertEquals(0.3189562728439277, mse, 1e-8);
 
       Assert.assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
@@ -731,7 +731,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.31868918279790326, mse, 1e-8); //Note: better results than non-shuffled
+      assertEquals(0.318703980026072, mse, 1e-8); //Note: better results than non-shuffled
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5)); //PUBDEV-1900
       job.remove();
@@ -770,7 +770,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3720304832926737, mse, 1e-8);
+      assertEquals(0.37190384882022604, mse, 1e-8);
 
       Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
       job.remove();
@@ -810,7 +810,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7777777777777778, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.26629256850235067, mse, 1e-8);
+      assertEquals(0.2664527326336792, mse, 1e-8);
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5)); //PUBDEV-1900
       job.remove();
@@ -1002,7 +1002,7 @@ public class DeepLearningTest extends TestUtil {
       dl = job.trainModel().get();
 
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
-      Assert.assertEquals(0.07215951137362803, mm._MSE, 1e-8);
+      Assert.assertEquals(0.0722053993476808, mm._MSE, 1e-8);
 
       Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
 
