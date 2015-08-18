@@ -172,17 +172,39 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * @param grid grid object to save results
    */
   private void gridSearch(Grid<MP> grid) {
-    MP params = null;
     Model model = null;
     try {
-      while ((params = _hyperSpaceWalker.nextModelParameters(model)) != null) {
+      HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+      while (it.hasNext(model)) {
+        // Handle end-user cancel request
         if (!isRunning()) {
+          // FIXME: propagate cancellation event to sub jobs, block till they are cancelled
           cancel();
           return;
         }
-        // Sequential model building, should never propagate
-        // exception from underlying model builder
-        model = buildModel(params, grid);
+        MP params = null;
+        try {
+          // Get parameters for next model
+          params = it.nextModelParameters(model);
+          // Sequential model building, should never propagate
+          // exception up, just mark combination of model parameters as wrong
+          try {
+            model = buildModel(params, grid);
+          } catch (RuntimeException e) { // Catch everything
+            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+            grid.appendFailedModelParameters(params, e.getMessage());
+          }
+        } catch (IllegalArgumentException e) {
+          Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
+          // Model parameters cannot be constructed for some reason
+          Object[] rawParams = it.getCurrentRawParameters();
+          grid.appendFailedModelParameters(rawParams, e.getMessage());
+        } finally {
+          // Update progress by 1 increment
+          this.update(1L);
+          // Always update grid in DKV after model building attempt
+          grid.update(jobKey());
+        }
       }
       // Grid search is done
       done();
@@ -224,19 +246,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = null;
-    try {
-      m = (Model) (startBuildModel(params, grid).get());
-      grid.putModel(checksum, m._key);
-    } catch (RuntimeException e) {
-      Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
-      grid.appendFailedModelParameters(params, e.getMessage());
-    } finally {
-      // Update progress by 1 increment
-      this.update(1L);
-      // Always update grid in DKV after model building attempt
-      grid.update(jobKey());
-    }
+    Model m = (Model) (startBuildModel(params, grid).get());
+    grid.putModel(checksum, m._key);
     return m;
   }
 
