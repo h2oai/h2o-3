@@ -2,6 +2,7 @@ package water.currents;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import jsr166y.CountedCompleter;
 
 import water.*;
 import water.fvec.*;
@@ -295,7 +296,49 @@ class ASTRBind extends ASTPrim {
 
     RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc) { super(cc); _vecs = vecs; _v = v; _espc = espc; }
     @Override protected void compute2() {
-      throw H2O.unimpl();
+      addToPendingCount(_vecs.length-1);
+      int[][] emaps  = new int[_vecs.length][];
+
+      if( _vecs[0].isEnum() ) {
+        throw H2O.unimpl();
+      }
+      int offset=0;
+      for( int i=0; i<_vecs.length; i++ ) {
+        new RbindMRTask(this, emaps[i], _v, offset).asyncExec(_vecs[i]);
+        offset += _vecs[i].nChunks();
+      }
+    }
+    @Override public void onCompletion(CountedCompleter cc) {
+      _v.setDomain(_dom);
+      DKV.put(_v);
+    }
+  }
+
+  private static class RbindMRTask extends MRTask<RbindMRTask> {
+    private final int[] _emap;
+    private final int _chunkOffset;
+    private final Vec _v;
+    RbindMRTask(H2O.H2OCountedCompleter hc, int[] emap, Vec v, int offset) { super(hc); _emap = emap; _v = v; _chunkOffset = offset;}
+
+    @Override public void map(Chunk cs) {
+      int idx = _chunkOffset+cs.cidx();
+      Key ckey = Vec.chunkKey(_v._key, idx);
+      if (_emap != null) {
+        assert !cs.hasFloat(): "Input chunk ("+cs.getClass()+") has float, but is expected to be enum";
+        NewChunk nc = new NewChunk(_v, idx);
+        // loop over rows and update ints for new domain mapping according to vecs[c].domain()
+        for (int r=0;r < cs._len;++r) {
+          if (cs.isNA(r)) nc.addNA();
+          else nc.addNum(_emap[(int)cs.at8(r)], 0);
+        }
+        nc.close(_fs);
+      } else {
+        Chunk oc = (Chunk)cs.clone();
+        oc.setStart(-1);
+        oc.setVec(null);
+        oc.setBytes(cs.getBytes().clone()); // needless replication of the data, can do ref counting on byte[] _mem
+        DKV.put(ckey, oc, _fs, true);
+      }
     }
   }
 
