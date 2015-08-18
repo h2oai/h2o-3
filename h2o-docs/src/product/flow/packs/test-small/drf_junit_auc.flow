@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/auc.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/auc.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/auc.csv.gz\"]\n  destination_frame: \"auc3.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 2\n  single_quotes: false\n  column_names: [\"V1\",\"V2\"]\n  column_types: [\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 65536"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"auc3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"auc3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"auc3.hex\", [0.2], [\"auc_test.hex_0.20\",\"auc_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"drf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-5b36d37c-c12d-497f-a7a3-ff3b11b3d7b3\",\"training_frame\":\"auc_train.hex_0.80\",\"validation_frame\":\"auc_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"V2\",\"ntrees\":50,\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":8750513919441215000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-5b36d37c-c12d-497f-a7a3-ff3b11b3d7b3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-5b36d37c-c12d-497f-a7a3-ff3b11b3d7b3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-5b36d37c-c12d-497f-a7a3-ff3b11b3d7b3\", frame: \"auc_test.hex_0.20\", predictions_frame: \"prediction-c6b0e791-d168-48e5-a014-b076c4f344c8\""
+    }
+  ]
+}
