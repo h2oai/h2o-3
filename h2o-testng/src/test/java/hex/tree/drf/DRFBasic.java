@@ -137,18 +137,19 @@ public class DRFBasic extends TestNGUtil {
 				System.out.println("Testcase is passed.");
 			}
 		}
-		catch (IllegalArgumentException ex) {
+		catch (Exception ex) {
 			System.out.println("Testcase is failed");
 			ex.printStackTrace();
 			if (!isNegativeTestcase) {
 				Assert.fail("Testcase is failed", ex);
 			}
 		}
-		catch (Exception ex) {
+		catch (AssertionError ae) {
+			
 			System.out.println("Testcase is failed");
-			ex.printStackTrace();
+			ae.printStackTrace();
 			if (!isNegativeTestcase) {
-				Assert.fail("Testcase is failed", ex);
+				Assert.fail("Testcase is failed", ae);
 			}
 		}
 		finally {

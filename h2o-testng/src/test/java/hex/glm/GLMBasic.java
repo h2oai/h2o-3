@@ -245,6 +245,14 @@ public class GLMBasic extends TestNGUtil {
 				Assert.fail("Testcase is failed", ex);
 			}
 		}
+		catch (AssertionError ae) {
+			
+			System.out.println("Testcase is failed");
+			ae.printStackTrace();
+			if (!isNegativeTestcase) {
+				Assert.fail("Testcase is failed", ae);
+			}
+		}
 		finally {
 			if (betaConstraints != null) {
 				betaConstraints.delete();
