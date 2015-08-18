@@ -1014,7 +1014,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 int start_old = _activeData._catOffsets[i];
                 GLMCoordinateDescentTaskSeqNaive stupdate;
                 if(intercept)
-                  stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 4 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
+                  stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 4 , Arrays.copyOfRange(betaold, start_old, start_old+level_num),
                         new double [] {beta[p-1]}, _activeData._catLvls[i], null, null, null, null, null, skipFirstLevel).doAll(fr3);
                 else
                   stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 1 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
@@ -1085,7 +1085,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   varnew = new double [] {_activeData._normMul[_activeData._normMul.length-1]};
                   meannew = new double [] {_activeData._normSub[_activeData._normSub.length-1]};
                 }
-                iupdate = new GLMCoordinateDescentTaskSeqNaive(false, true, cat_num , new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }, null, null,
+                iupdate = new GLMCoordinateDescentTaskSeqNaive(false, true, cat_num ,
+                        new double [] {betaold[betaold.length-1]}, new double []{ beta[beta.length-2] }, null, null,
                         null, null, varnew, meannew , skipFirstLevel ).doAll(fr3);
               }
               if(_parms._intercept)
@@ -1134,7 +1135,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             wsum = gt.wsum;
             wsumu = gt.wsumu;
             int iter1 = 0;
-            double [] grads = Arrays.copyOfRange(gt._xy,0,gt._xy.length-1 ); // initialize to inner ps with observations
+            double [] grads = Arrays.copyOfRange(gt._xy,0,gt._xy.length );//-1 // initialize to inner ps with observations
             for(int i = 0; i < grads.length; ++i) {
               double ip = 0;
               for(int j = 0; j < beta.length; ++j)
@@ -1148,19 +1149,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
 
                 for(int j=0; j < level_num; ++j) // ST multiple ones at the same time.
-                 if(gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) !=0)
+                 if(gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) != 0)
                   beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage( grads[_activeData._catOffsets[i]+j]  / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
                           / (gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                  else
                   beta[_activeData._catOffsets[i]+j] = 0;
 
                 for(int j=0; j < level_num ; ++j) // update grads vector according to "cat levels " introduced.
-                  if( beta[_activeData._catOffsets[i]+j] !=0 )
+                  if( beta[_activeData._catOffsets[i]+j] != 0 )
                     doUpdateCD(grads, gt._gram, betaold, beta, _activeData._catOffsets[i] + j);
               }
 
               for (int i = 0; i < _activeData._nums; ++i) {
-                if(gt._gram.get(i+_activeData.numStart(),i+_activeData.numStart())!=0)
+                if(gt._gram.get(i+_activeData.numStart(),i+_activeData.numStart())!= 0)
                    beta[i+_activeData.numStart()] = ADMM.shrinkage(grads[_activeData.numStart() + i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
                           / (gt._gram.get(i+_activeData.numStart(),i+_activeData.numStart()) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                 else
@@ -1171,10 +1172,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               }
 
               if(_parms._intercept){
-                double sum=0;
-                for(int i=0; i < beta.length-1; i++)
-                 sum += ( beta[i]* gt._gram.get(beta.length-1,i) ); //gt._xw[i]
-                beta[beta.length - 1] = (gt._wz - sum)/ wsum;
+             //   double sum=0;
+             //   for(int i=0; i < beta.length-1; i++)
+             //    sum += ( beta[i]* gt._gram.get(beta.length-1,i) ); // gt._xw[i]
+                // beta[beta.length - 1] = (gt._wz - sum)/ wsum;
+
+                beta[beta.length-1] = grads[grads.length-1] / wsum;
+               if(beta[beta.length-1]!=0) // update all the grad entries
+                  doUpdateCD(grads, gt._gram, betaold, beta, beta.length-1);
+                  //      / (gt._gram.get(_activeData._nums+_activeData.numStart(),_activeData._nums+_activeData.numStart()) /
+
+                  //      wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+
               }
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);
@@ -1189,7 +1198,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             System.out.println();
             _taskInfo._beta = beta.clone();
             System.out.println("iter1 = " + iter1);
-
             if (linf < _parms._beta_epsilon)
               break;
 
