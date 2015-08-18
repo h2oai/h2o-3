@@ -8,6 +8,8 @@
 #
 #---------------------------------------------------------------------
 
+setwd("/Users/tomk/0xdata/ws/h2o-3/h2o-docs/src/booklets/v2_2015/source")
+
 library(h2o)
 h2o.init()
 
@@ -73,17 +75,23 @@ source("glm/glm_stopping_criteria.R", echo = T)
 h2o.removeAll()
 rm(list=ls())
 
+source("glm/glm_cross_validation.R", echo = T)
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+h2o.removeAll()
+rm(list=ls())
+
 source("glm/glm_grid_search_over_alpha.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-# Not supported right now.
-#
-# h2o.removeAll()
-# rm(list=ls())
-#
-# source("glm/glm_grid_search_over_lambda.R", echo = T)
+h2o.removeAll()
+rm(list=ls())
+
+source("glm/glm_grid_search_over_lambda.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
@@ -116,3 +124,11 @@ h2o.removeAll()
 rm(list=ls())
 
 source("glm/glm_download_pojo.R", echo = T)
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+h2o.removeAll()
+rm(list=ls())
+
+source("glm/glm_compare_cross_validation_folds.R", echo = T)

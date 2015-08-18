@@ -84,9 +84,7 @@ public class RequestServer extends NanoHTTPD {
   // (e.g., /foo/baz and /foo) you MUST register them in decreasing order of specificity.
   static {
     // Data
-
     // TODO: ImportFiles should be a POST!
-
     register("/3/CreateFrame","POST",CreateFrameHandler.class,"run"        , null,"Create a synthetic H2O Frame.");
     register("/3/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         , null,"Split a H2O Frame.");
     register("/3/Interaction","POST",InteractionHandler.class,"run"        , null,"Create interactions between categorical columns.");
@@ -177,8 +175,12 @@ public class RequestServer extends NanoHTTPD {
     // Model serialization - import/export calls
     register("/99/Models.bin/(?<model_id>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel", null,
             "Import given binary model into H2O.");
-    register("/99/Models.bin/(?<model_id>.*)"                        ,"GET"   ,ModelsHandler.class, "exportModel", null,
+    register("/99/Models.bin"           ,"GET"   ,ModelsHandler.class, "exportModel", null,
             "Export given model.");
+
+//    register("/3/Frames/(?<frame_id>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export", null,
+//            "Export a Frame to the given path with optional overwrite.");
+
 
     register("/99/Grids/(?<grid_id>.*)"                              ,"GET"   ,GridsHandler.class, "fetch", null,
             "Return the specified grid search result.");

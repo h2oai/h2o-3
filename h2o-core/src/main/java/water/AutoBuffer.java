@@ -1,5 +1,6 @@
 package water;
 
+import water.H2ONode.H2OSmallMessage;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -12,7 +13,9 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * A ByteBuffer backed mixed Input/OutputStream class.
@@ -58,6 +61,7 @@ public /* final */ class AutoBuffer {
   // asserts all over the place.
   private boolean _firstPage;
 
+
   // Total size written out from 'new' to 'close'.  Only updated when actually
   // reading or writing data, or after close().  For profiling only.
   int _size;
@@ -94,7 +98,6 @@ public /* final */ class AutoBuffer {
     }
     _size = _bb.position();
     _bb.flip();                 // Set limit=amount read, and position==0
-
     if( addr == null ) throw new RuntimeException("Unhandled socket type: " + sad);
     // Read Inet from socket, port from the stream, figure out H2ONode
     _h2o = H2ONode.intern(addr, getPort());
@@ -115,16 +118,17 @@ public /* final */ class AutoBuffer {
     // Read Inet from socket, port from the stream, figure out H2ONode
     _h2o = H2ONode.intern(sock.socket().getInetAddress(), getPort());
     _firstPage = true;          // Yes, must reset this.
-    assert _h2o != null && _h2o != H2O.SELF;
+//    assert _h2o != null && _h2o != H2O.SELF:"h2o = " + _h2o + " SELF = " + H2O.SELF;
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
   }
 
+  int _priority;
   // Make an AutoBuffer to write to an H2ONode.  Requests for full buffer will
   // open a TCP socket and roll through writing to the target.  Smaller
   // requests will send via UDP.
-  AutoBuffer( H2ONode h2o ) {
-    _bb = BBP_SML.make();       // Get a small / UDP-sized ByteBuffer
+  AutoBuffer( H2ONode h2o, int priority ) {
+    _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());//BBP_SML.make();
     _chan = null;               // Channel made lazily only if we write alot
     _h2o = h2o;
     _read = false;              // Writing by default
@@ -132,6 +136,7 @@ public /* final */ class AutoBuffer {
     assert _h2o != null;
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
+    _priority = priority;
   }
 
   // Spill-to/from-disk request.
@@ -154,6 +159,15 @@ public /* final */ class AutoBuffer {
     _firstPage = true;
     _chan = null;
     _h2o = H2ONode.intern(pack.getAddress(), getPort());
+    _persist = 0;               // No persistance
+  }
+
+  public AutoBuffer( H2ONode h2o, byte[] buf ) {
+    _h2o = h2o;
+    _bb = ByteBuffer.wrap(buf).order(ByteOrder.nativeOrder());
+    _chan = null;
+    _read = true;
+    _firstPage = true;
     _persist = 0;               // No persistance
   }
 
@@ -215,12 +229,16 @@ public /* final */ class AutoBuffer {
   // larger TCP-sized buffers.
   private static final boolean DEBUG = Boolean.getBoolean("h2o.find-ByteBuffer-leaks");
   private static long HWM=0;
+
   static class BBPool {
     long _made, _cached, _freed;
     long _numer, _denom, _goal=4*H2O.NUMCPUS, _lastGoal;
+    final boolean _direct;
     final ArrayList<ByteBuffer> _bbs = new ArrayList<>();
     final int _size;            // Big or small size of ByteBuffers
-    BBPool( int sz ) { _size=sz; }
+    BBPool( int sz, boolean direct) {
+      _size=sz; _direct = direct;
+    }
     public final int size() { return _size; }
 
     private ByteBuffer stats( ByteBuffer bb ) {
@@ -249,7 +267,7 @@ public /* final */ class AutoBuffer {
         if( bb != null ) return stats(bb);
         // Cache empty; go get one from C/Native memory
         try {
-          bb = ByteBuffer.allocateDirect(_size).order(ByteOrder.nativeOrder());
+          bb = _direct?ByteBuffer.allocateDirect(_size).order(ByteOrder.nativeOrder()):ByteBuffer.wrap(MemoryManager.malloc1(_size)).order(ByteOrder.nativeOrder());
           synchronized(this) { _made++; _denom++; _goal = Math.max(_goal,_made-_freed); _lastGoal=System.nanoTime(); } // Goal was too low, raise it
           return stats(bb);
         } catch( OutOfMemoryError oome ) {
@@ -285,16 +303,18 @@ public /* final */ class AutoBuffer {
       }
     }
     static int FREE( ByteBuffer bb ) {
-      (bb.capacity()==BBP_BIG._size ? BBP_BIG : BBP_SML).free(bb);
+      if(bb.isDirect())
+        (bb.capacity()==BBP_BIG._size ? BBP_BIG : BBP_SML).free(bb);
       return 0;                 // Flow coding
     }
   }
-  static BBPool BBP_SML = new BBPool( 2*1024); // Bytebuffer "common small size", for UDP
-  static BBPool BBP_BIG = new BBPool(64*1024); // Bytebuffer "common  big  size", for TCP
+  static BBPool BBP_SML = new BBPool(2*1024, true); // Bytebuffer "common small size", for UDP
+  static BBPool BBP_BIG = new BBPool(64*1024, true); // Bytebuffer "common  big  size", for TCP
   public static int TCP_BUF_SIZ = BBP_BIG.size();
 
   private int bbFree() {
-    if( _bb != null && _bb.isDirect() ) BBPool.FREE(_bb);
+    if(_bb != null && _bb.isDirect())
+      BBPool.FREE(_bb);
     _bb = null;
     return 0;                   // Flow-coding
   }
@@ -315,22 +335,25 @@ public /* final */ class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
+
+
   public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
     assert _h2o != null || _chan != null; // Byte-array backed should not be closed
+
     try {
       if( _chan == null ) {     // No channel?
         if( _read ) return 0;
         // For small-packet write, send via UDP.  Since nothing is sent until
         // now, this close() call trivially orders - since the reader will not
         // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU ) return udpSend();
+        if( _bb.position() < MTU) return udpSend();
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
-      if( hasTCP() ) {          // TCP connection?
+      if( hasTCP()) {          // TCP connection?
         try {
           if( _read ) {         // Reader?
             int x = get1U();    // Read 1 more byte
@@ -369,7 +392,7 @@ public /* final */ class AutoBuffer {
     } finally {
       bbFree();
       _time_close_ms = System.currentTimeMillis();
-      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+//      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
       assert isClosed();
     }
     return 0;
@@ -380,7 +403,7 @@ public /* final */ class AutoBuffer {
   private void tcpOpen() throws IOException {
     assert _firstPage && _bb.limit() >= 1+2+4; // At least something written
     assert _chan == null;
-    assert _bb.position()==0;
+//    assert _bb.position()==0;
     _chan = _h2o.getTCPSocket();
     raisePriority();
   }
@@ -403,7 +426,7 @@ public /* final */ class AutoBuffer {
     restorePriority();          // And if we raised priority, lower it back
     bbFree();
     _time_close_ms = System.currentTimeMillis();
-    TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+//    TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
     assert isClosed();
   }
 
@@ -471,26 +494,37 @@ public /* final */ class AutoBuffer {
     _oldPrior = -1;
   }
 
+  private H2OSmallMessage _sentMsg;
+
+  // essentially extra return value made available for resend logic
+  public H2OSmallMessage takeSentMessage(){return _sentMsg;}
+
   // Send via UDP socket.  Unlike eg TCP sockets, we only need one for sending
   // so we keep a global one.  Also, we do not close it when done, and we do
   // not connect it up-front to a target - but send the entire packet right now.
   private int udpSend() throws IOException {
     assert _chan == null;
     TimeLine.record_send(this,false);
-    _size += _bb.position();
+    assert _size == 0;
+    _size = _bb.position();
+    assert _size < AutoBuffer.BBP_SML.size();
     _bb.flip();                 // Flip for sending
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
-      water.init.NetworkInit.multicast(_bb);
+      water.init.NetworkInit.multicast(_bb, _priority);
     } else {                    // Else single-cast send
-      water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
+      if(H2O.ARGS.useUDP)
+        water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
+      else
+        _h2o.sendMessage(_sentMsg = H2OSmallMessage.make(_bb,_priority));
     }
     return 0;                   // Flow-coding
   }
 
   // Flip to write-mode
-  AutoBuffer clearForWriting() {
+  AutoBuffer clearForWriting(int priority) {
     assert _read;
     _read = false;
+    _priority = priority;
     _bb.clear();
     _firstPage = true;
     return this;
@@ -554,18 +588,21 @@ public /* final */ class AutoBuffer {
   /** Put as needed to keep from overflowing the ByteBuffer. */
   private ByteBuffer putSp( int sz ) {
     assert !_read;
-    if( sz <= _bb.remaining() ) return _bb;
-    return sendPartial();
+    while(sz > _bb.remaining())
+      sendPartial();
+    return _bb;
   }
   // Do something with partial results, because the ByteBuffer is full.
   // If we are byte[] backed, double the backing array size.
   // If we are doing I/O, ship the bytes we have now and flip the ByteBuffer.
   private ByteBuffer sendPartial() {
     // Writing into an expanding byte[]?
-    if( _h2o==null && _chan == null ) {
+    if( (_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < MTU)) {
       // This is a byte[] backed buffer; expand the backing byte[].
       byte[] ary = _bb.array();
       int newlen = ary.length<<1; // New size is 2x old size
+      if(_h2o != null && newlen > MTU)
+        newlen = MTU;
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newlen),oldpos,newlen-oldpos)
         .order(ByteOrder.nativeOrder());
@@ -574,7 +611,8 @@ public /* final */ class AutoBuffer {
     // Doing I/O with the full ByteBuffer - ship partial results
     _size += _bb.position();
     if( _chan == null )
-      TimeLine.record_send(this,true);
+      TimeLine.record_send(this, true);
+
     _bb.flip(); // Prep for writing.
     try {
       if( _chan == null )
@@ -596,7 +634,11 @@ public /* final */ class AutoBuffer {
       // declare (and then ignore) this exception.
       throw new AutoBufferException(e);
     }
-    if( _bb.capacity() < BBP_BIG._size ) { BBP_SML.free(_bb); _bb = BBP_BIG.make(); }
+    if( _bb.capacity() < BBP_BIG._size ) {
+      if(_bb.isDirect())
+        BBP_SML.free(_bb);
+      _bb = BBP_BIG.make();
+    }
     _firstPage = false;
     _bb.clear();
     return _bb;
@@ -843,7 +885,6 @@ public /* final */ class AutoBuffer {
     return sz;
   }
 
-
   // -----------------------------------------------
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
@@ -857,11 +898,10 @@ public /* final */ class AutoBuffer {
 
   // Set the ctrl, port, task.  Ready to write more bytes afterwards
   AutoBuffer putUdp (UDP.udp type) {
-    assert _bb.position()==0;
-    putSp(1+2);
+    assert _bb.position() == 0;
+    putSp(_bb.position()+1+2);
     _bb.put    ((byte)type.ordinal());
     _bb.putChar((char)H2O.H2O_PORT  ); // Outgoing port is always the sender's (me) port
-    assert _bb.position()==1+2;
     return this;
   }
 
@@ -869,8 +909,8 @@ public /* final */ class AutoBuffer {
     return putUdp(type).put4(tasknum);
   }
   AutoBuffer putTask(int ctrl, int tasknum) {
-    assert _bb.position()==0;
-    putSp(1+2+4);
+    assert _bb.position() == 0;
+    putSp(_bb.position()+1+2+4);
     _bb.put((byte)ctrl).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
@@ -1159,7 +1199,6 @@ public /* final */ class AutoBuffer {
   public AutoBuffer putA8( long[] ary ) {
     //_arys++;
     if( ary == null ) return putInt(-1);
-
     // Trim leading & trailing zeros.  Pass along the length of leading &
     // trailing zero sections, and the non-zero section in the middle.
     int x=0; for( ; x<ary.length; x++ ) if( ary[x  ]!=0 ) break;

@@ -249,7 +249,7 @@ based on features such as age and race.
 \lstinputlisting[style=R]{glm/glm_gaussian_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=R]{glm/glm_gaussian_example.py}
+\lstinputlisting[style=python]{glm/glm_gaussian_example.py}
 
 \subsubsection{Logistic regression (Binomial family)}
 Logistic regression can be used for a binary classification problem where the response is categorical with two
@@ -283,7 +283,7 @@ function. Change the regression by setting the family to binomial.
 \lstinputlisting[style=R]{glm/glm_binomial_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=R]{glm/glm_binomial_example.py}
+\lstinputlisting[style=python]{glm/glm_binomial_example.py}
 
 \subsubsection{Poisson models}
 Poisson regression is generally used in cases where the response represents counts and we assume errors have a
@@ -311,7 +311,7 @@ own (Group).
 \lstinputlisting[style=R]{glm/glm_poisson_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=R]{glm/glm_poisson_example.py}
+\lstinputlisting[style=python]{glm/glm_poisson_example.py}
 
 \subsubsection{Gamma models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
@@ -336,7 +336,7 @@ argument.
 \lstinputlisting[style=R]{glm/glm_gamma_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=R]{glm/glm_gamma_example.py}
+\lstinputlisting[style=python]{glm/glm_gamma_example.py}
 
 \subsubsection{Tweedie models}
 
@@ -346,7 +346,7 @@ TODO
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=R]{glm/glm_tweedie_example.py}
+\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -520,7 +520,7 @@ lower values of lambda, incorporate more predictors, and take a longer time to c
 \lstinputlisting[style=R]{glm/glm_stopping_criteria.R}
 
 \waterExampleInPython
-\lstinputlisting[style=R]{glm/glm_stopping_criteria.py}
+\lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
 
 You can also set the \texttt{nlambdas} parameter for a lambda search to fix the number of models attempted across
 the search.
@@ -545,7 +545,14 @@ Only advanced users should turn standardization off.
 All validation values can be computed using either the training data set (the default option) or using N-fold
 cross-validation (\texttt{nfolds $> 1$)}. When N-fold cross-validation is enabled, H2O randomly splits data into n
 equally-sized parts, trains each of the n models on n-1 parts, and computes validation on the part that was not
-used for training. The reported validation parameters are then obtained as follows:
+used for training.
+
+\bigskip
+\waterExampleInR
+\lstinputlisting[style=R]{glm/glm_cross_validation.R}
+
+You can also optionally control which rows are assigned to which fold with the \texttt{fold\_assignment}
+or \texttt{fold\_column} parameters.
 
 \subsubsection{Grid search over alpha}
 
@@ -566,16 +573,12 @@ safer to run with $alpha=1-\epsilon$ instead.
 
 \subsubsection{Grid search over lambda}
 
-% While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
-% by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
-% search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
+While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
+with lambda-search disabled.
 
-% \bigskip
-% \waterExampleInR
-% \lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
-
-Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the lambda
-search capability built in to GLM.
+\bigskip
+\waterExampleInR
+\lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
 
 \subsubsection{Offsets}
 
@@ -864,7 +867,7 @@ one and view it.  You can also access the POJO from the Flow Web UI.
 Here are a few rules of thumb to follow:
 
 \begin{itemize}
-\item IRLSQM solver works best on tall and skinny datasets
+\item IRLSM solver works best on tall and skinny datasets
 \item If you have a wide dataset, use L1 penalty to eliminate columns from the model
 \item If you have a wide dataset, try the L\_BFGS solver
 \item Try lambda search
@@ -874,7 +877,7 @@ Here are a few rules of thumb to follow:
       \end{itemize}
 \item Keep a little bit of L2 penalty (i.e. ridge regression) for numerical stability (i.e. don’t use \texttt{alpha} 1.0, use 0.95 instead)
 \item Use symmetric nodes in your H2O cluster
-\item For IRLSQM solver, bigger nodes can help the ADMM / Cholesky decomposition run faster
+\item For IRLSM solver, bigger nodes can help the ADMM / Cholesky decomposition run faster
 \item Impute if you need to before running GLM
 \end{itemize}
 
@@ -885,7 +888,8 @@ Here are some things to look for to double-check whether you got a good model:
 \begin{itemize}
 \item Look for suspiciously different cross-validation results between folds
 
-TODO: How?
+\waterExampleInR
+\lstinputlisting[style=R]{glm/glm_compare_cross_validation_folds.R}
 
 \item Look for explained deviance
 
