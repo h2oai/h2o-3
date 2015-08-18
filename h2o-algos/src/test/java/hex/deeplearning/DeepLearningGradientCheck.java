@@ -7,10 +7,8 @@ import hex.FrameTask;
 import hex.ModelMetricsRegression;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -19,6 +17,9 @@ import java.util.Random;
 
 public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  static final float MAX_TOLERANCE = 1.5e-2f;
+  static final float SAMPLE_RATE = 0.1f;
 
   @Test
   public void cancar() {
@@ -35,130 +36,194 @@ public class DeepLearningGradientCheck extends TestUtil {
       }
       DKV.put(tfr);
 
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._epochs = 100; //converge to a reasonable model to avoid too large gradients
-//      parms._l1 = 1e-2;
-//      parms._l2 = 1e-2;
-      parms._reproducible = true;
-      parms._hidden = new int[]{20,20,20};
-      parms._response_column = "Cost"; //regression
-//      parms._distribution = Distribution.Family.huber;
-      parms._seed = 0xdecaf+1;
-      parms._activation = DeepLearningParameters.Activation.Tanh;
+      Random rng = new Random(0xDECAF);
+      int count=0;
+      int failedcount=0;
+      double maxRelErr = 0;
+      double meanRelErr = 0;
+      for (Distribution.Family dist : new Distribution.Family[]{
+              Distribution.Family.gaussian,
+              Distribution.Family.laplace,
+              Distribution.Family.huber,
+              Distribution.Family.gamma,
+              Distribution.Family.poisson,
+              Distribution.Family.tweedie,
+              Distribution.Family.multinomial,
+      }) {
+        for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
+                DeepLearningParameters.Activation.Tanh,
+                DeepLearningParameters.Activation.Rectifier,
+//                DeepLearningParameters.Activation.Maxout, //FIXME - not correct
+        }) {
+          for (String response : new String[]{
+                  "Class", //classification
+                  "Cost", //regression
+          }) {
+            for (boolean adaptive : new boolean[]{true, false}) {
 
-      // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      dl = job.trainModel().get();
+              boolean classification = response.equals("Class");
+              if (classification && dist != Distribution.Family.multinomial) continue;
+              if (!classification && dist == Distribution.Family.multinomial) continue;
 
-      // set parameters for gradient checking
-//      long seed = new Random(0xdecaf).nextLong();
-      long seed = new Random(parms._seed).nextLong();
-      final Random rng = new Random(seed);
+              DeepLearningParameters parms = new DeepLearningParameters();
+              parms._train = tfr._key;
+              parms._epochs = 100; //converge to a reasonable model to avoid too large gradients
+//            parms._l1 = 1e-3; //FIXME
+//            parms._l2 = 1e-3; //FIXME
+              parms._reproducible = true;
+              parms._hidden = new int[]{10, 10, 10};
+              parms._fast_mode = false; //otherwise we introduce small bprop errors
+              parms._response_column = response;
+              parms._distribution = dist;
+              parms._max_w2 = 10;
+              parms._seed = 0xaaabbb;
+              parms._activation = act;
+              parms._adaptive_rate = adaptive;
+              parms._rate = 1e-4;
+              parms._momentum_start = 0.9;
+              parms._momentum_stable = 0.99;
 
-      dl.score(tfr);
-      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(dl, tfr);
-      double resdev = ((ModelMetricsRegression)mm)._mean_residual_deviance;
-      Log.info("Mean residual deviance: " + resdev);
+              // Build a first model; all remaining models should be equal
+              DeepLearning job = new DeepLearning(parms);
+              dl = job.trainModel().get();
 
-      DeepLearningModelInfo modelInfo = dl.model_info().deep_clone(); //golden version
-      long before = dl.model_info().checksum_impl();
+              if (!classification) {
+                dl.score(tfr);
+                hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(dl, tfr);
+                double resdev = ((ModelMetricsRegression) mm)._mean_residual_deviance;
+                Log.info("Mean residual deviance: " + resdev);
+              }
 
-      float maxRelErr = 0;
-      float meanLoss = 0;
-      for (int loop=0; loop<tfr.numRows(); ++loop) {
-        dl.set_model_info(modelInfo.deep_clone());
+              DeepLearningModelInfo modelInfo = dl.model_info().deep_clone(); //golden version
+              long before = dl.model_info().checksum_impl();
 
-        // pick one random row from the dataset
-        final DataInfo di = dl.model_info().data_info();
-        final int rId = loop; //rng.nextInt((int)tfr.numRows());
-        final DataInfo.Row myRow = new FrameTask.ExtractDenseRow(di, rId).doAll(di._adaptedFrame)._row;
+              float meanLoss = 0;
 
-        // do one forward propagation pass
-        Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
-        ((Neurons.Input)neurons[0]).setInput(-1, myRow.numVals, myRow.nBins, myRow.binIds);
-        DeepLearningTask.step(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, new double[]{myRow.response[0]}, myRow.offset);
-        long after = dl.model_info().checksum_impl();
-        assert(after==before);
+              // loop over every row in the dataset and check that the predictions
+              for (int rId = 0; rId < tfr.numRows(); ++rId) {
+                // start from scratch - with a clean model
+                dl.set_model_info(modelInfo.deep_clone());
 
-        // pick a random weight to compute the gradient for
-        int layer = 1 + rng.nextInt(parms._hidden.length);
-        int row = rng.nextInt(dl.model_info().get_weights(layer).rows());
-        int col = rng.nextInt(dl.model_info().get_weights(layer).cols());
+                final DataInfo di = dl.model_info().data_info();
+                final DataInfo.Row myRow = new FrameTask.ExtractDenseRow(di, rId).doAll(di._adaptedFrame)._row;
 
-        // record the gradient since gradientChecking is enabled
-        DeepLearningModelInfo.gradientCheck = new DeepLearningModelInfo.GradientCheck(layer, row, col); //tell it what gradient to collect
-        DeepLearningTask.applyModelUpdates(neurons); //actually record the gradient - THIS CHANGES THE MODEL
-        assert(before != dl.model_info().checksum_impl());
+                // loss at weight
+                long cs = dl.model_info().checksum_impl();
+                double loss = dl.loss(myRow);
+                assert(cs == before);
+                assert(before == dl.model_info().checksum_impl());
+                meanLoss += loss;
 
-        // reset the model back to the trained model
-        dl.set_model_info(modelInfo.deep_clone());
-        assert(before == dl.model_info().checksum_impl());
+                for (int layer = 0; layer <= parms._hidden.length; ++layer) {
+                  int rows = dl.model_info().get_weights(layer).rows();
+                  for (int row = 0; row < rows; ++row) {
+                    int cols = dl.model_info().get_weights(layer).cols();
+                    for (int col = 0; col < cols; ++col) {
+                      if (rng.nextFloat() >= SAMPLE_RATE) continue;
 
-        float bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
+                      // start from scratch - with a clean model
+                      dl.set_model_info(modelInfo.deep_clone());
 
-        // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
-//        double actualResponse=myRow.response[0];
-//        double predResponseLinkSpace = neurons[neurons.length-1]._a.get(0);
-//        if (di._normRespMul != null) {
-//          bpropGradient /= di._normRespMul[0]; //no shift for gradient
-//          actualResponse = (actualResponse / di._normRespMul[0] + di._normRespSub[0]);
-//          predResponseLinkSpace = (predResponseLinkSpace / di._normRespMul[0] + di._normRespSub[0]);
-//        }
-//        bpropGradient *= new Distribution(parms._distribution).gradient(actualResponse, predResponseLinkSpace);
+                      // do one forward propagation pass
+                      Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
+                      ((Neurons.Input) neurons[0]).setInput(-1, myRow.numVals, myRow.nBins, myRow.binIds);
+                      DeepLearningTask.step(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, new double[]{myRow.response[0]}, myRow.offset);
 
-        // Now change some weights
-        final float weight = dl.model_info().get_weights(layer).get(row, col);
+                      // check that we didn't change the model's weights/biases
+                      long after = dl.model_info().checksum_impl();
+                      assert (after == before);
 
-        float eps = 1e-2f*weight;
+                      // record the gradient since gradientChecking is enabled
+                      DeepLearningModelInfo.gradientCheck = new DeepLearningModelInfo.GradientCheck(layer, row, col); //tell it what gradient to collect
+                      DeepLearningTask.applyModelUpdates(neurons); //actually record the gradient - THIS CHANGES THE MODEL
+                      assert (before != dl.model_info().checksum_impl());
 
-        double loss = dl.loss(myRow);
-        meanLoss += loss;
+                      // reset the model back to the trained model
+                      dl.set_model_info(modelInfo.deep_clone());
+                      assert (before == dl.model_info().checksum_impl());
 
+                      double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
 
-        long cs = dl.model_info().checksum_impl();
-        dl.model_info().get_weights(layer).set(row, col, weight + eps);
-        assert(dl.model_info().get_weights(layer).get(row,col) != weight);
+                      // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
+//                    double actualResponse=myRow.response[0];
+//                    double predResponseLinkSpace = neurons[neurons.length-1]._a.get(0);
+//                    if (di._normRespMul != null) {
+//                      bpropGradient /= di._normRespMul[0]; //no shift for gradient
+//                      actualResponse = (actualResponse / di._normRespMul[0] + di._normRespSub[0]);
+//                      predResponseLinkSpace = (predResponseLinkSpace / di._normRespMul[0] + di._normRespSub[0]);
+//                    }
+//                    bpropGradient *= new Distribution(parms._distribution).gradient(actualResponse, predResponseLinkSpace);
 
-        assert(cs != dl.model_info().checksum_impl());
-        double up = dl.loss(myRow);
+                      final float weight = dl.model_info().get_weights(layer).get(row, col);
 
-        dl.model_info().get_weights(layer).set(row, col, weight - eps);
-        assert(dl.model_info().get_weights(layer).get(row,col) != weight);
-        assert(cs != dl.model_info().checksum_impl());
-        double down = dl.loss(myRow);
-        float gradient = (float) ((up - down) / (2. * (double)eps));
+                      double eps = 1e-4 * Math.abs(weight); //don't make the weight deltas too small, or the float weights "won't notice"
+                      if (eps == 0)
+                        eps = 1e-6;
 
-        gradient /=2; //HACK - since deviance and gradient are off by 2x
-        if (gradient < 1e-5) continue;
+                      // loss at weight + eps
+                      dl.model_info().get_weights(layer).set(row, col, (float)(weight + eps));
+                      double up = dl.loss(myRow);
 
-        float relError = (Math.abs(bpropGradient - gradient) / Math.abs(gradient));
+                      // loss at weight - eps
+                      dl.model_info().get_weights(layer).set(row, col, (float)(weight - eps));
+                      double down = dl.loss(myRow);
 
-        if (false) {
-          Log.info("\nRow: " + (loop + 1));
-          Log.info("loss: " + loss);
-          Log.info("weight (layer " + layer + ", row " + row + ", col " + col + "): " + weight + " +/- " + eps);
-          Log.info("losses up/down: " + up + " / " + down);
-          Log.info("=> Finite differences gradient: " + gradient);
-          Log.info("=> Back-propagation gradient  : " + bpropGradient);
-          Log.info("=> Relative error             : " + PrettyPrint.formatPct(relError));
-        }
+                      if (Math.abs(up-down)/Math.abs(up+down) < 1e-8) {
+                        continue; //relative change in loss function is too small -> skip
+                      }
 
-        maxRelErr = Math.max(maxRelErr, relError);
-      }
-      meanLoss /= tfr.numRows();
-      Log.info("Mean loss: " + meanLoss);
+                      double gradient = ((up - down) / (2. * eps));
 
-      // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
+                      double relError = 2 * Math.abs(bpropGradient - gradient) / (Math.abs(gradient) + Math.abs(bpropGradient));
+
+                      count++;
+
+                      // if either gradient is tiny, check if both are tiny
+                      if (Math.abs(gradient) < 1e-8 || Math.abs(bpropGradient) < 1e-8) {
+                        if (Math.abs(bpropGradient-gradient) < 1e-8) continue; //all good
+                      }
+
+                      meanRelErr += relError;
+
+                      // if both gradients are tiny - numerically unstable relative error computation is not needed, since absolute error is small
+
+                      if (relError > MAX_TOLERANCE) {
+                        Log.info("\nRow: " + rId);
+                        Log.info("weight (layer " + layer + ", row " + row + ", col " + col + "): " + weight + " +/- " + eps);
+                        Log.info("loss: " + loss);
+                        Log.info("losses up/down: " + up + " / " + down);
+                        Log.info("=> Finite differences gradient: " + gradient);
+                        Log.info("=> Back-propagation gradient  : " + bpropGradient);
+                        Log.info("=> Relative error             : " + PrettyPrint.formatPct(relError));
+                        failedcount++;
+                      }
+
+                      maxRelErr = Math.max(maxRelErr, relError);
+                      assert(!Double.isNaN(maxRelErr));
+                    }
+                  }
+                }
+              }
+              meanLoss /= tfr.numRows();
+              Log.info("Mean loss: " + meanLoss);
+
+              // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
 //      if (parms._l1 == 0 && parms._l2 == 0) {
 //        assert(Math.abs(meanLoss-resdev)/Math.abs(resdev) < 1e-5);
 //      }
 
+              job.remove();
+              if (dl != null) dl.delete();
+            }
+          }
+        }
+      }
+      Log.info("Number of tests: " + count);
+      Log.info("Number of failed tests: " + failedcount);
+      Log.info("Mean. relative error: " + meanRelErr/count);
       Log.info("Max. relative error: " + PrettyPrint.formatPct(maxRelErr));
-      float tol = 1e-2f;
-      Assert.assertTrue("Error too large: " + maxRelErr + " >= " + tol, maxRelErr < tol);
+      Assert.assertTrue("Error too large: " + maxRelErr + " >= " + MAX_TOLERANCE, maxRelErr < MAX_TOLERANCE);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (dl != null) dl.delete();
