@@ -78,6 +78,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _n_folds;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-5;
+    public double _obj_epsilon = 1e-8;
     public double _objective_epsilon = 1e-5;
     public double _gradient_epsilon = 1e-4;
 

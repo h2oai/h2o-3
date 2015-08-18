@@ -1125,6 +1125,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double[] beta =  _taskInfo._beta.clone(); // Warm start for vector with active columns only.
           double[] betaold = _taskInfo._beta.clone();
           int iter2=0; // total cd iters
+          double objold = _taskInfo._objVal;
 
           // new IRLS iteration
           while (iter2++ < 30) {
@@ -1132,6 +1133,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             GLMIterationTask gt = new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
                     false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
                     null).doAll(_activeData._adaptedFrame);
+            double objVal = objVal(gt._likelihood, gt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
             wsum = gt.wsum;
             wsumu = gt.wsumu;
             int iter1 = 0;
@@ -1172,33 +1174,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               }
 
               if(_parms._intercept){
-             //   double sum=0;
-             //   for(int i=0; i < beta.length-1; i++)
-             //    sum += ( beta[i]* gt._gram.get(beta.length-1,i) ); // gt._xw[i]
-                // beta[beta.length - 1] = (gt._wz - sum)/ wsum;
-
                 beta[beta.length-1] = grads[grads.length-1] / wsum;
                if(beta[beta.length-1]!=0) // update all the grad entries
                   doUpdateCD(grads, gt._gram, betaold, beta, beta.length-1);
-                  //      / (gt._gram.get(_activeData._nums+_activeData.numStart(),_activeData._nums+_activeData.numStart()) /
-
-                  //      wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
-
-              }
+               }
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);
               if (linf < _parms._beta_epsilon)
                 break;
             }
 
-            double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
+            double linf = Math.abs(objold-objVal); // ArrayUtils.linfnorm(ArrayUtils.subtract(  beta, _taskInfo._beta  ), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
+            objold=objVal;
             for (int i = 0 ; i < beta.length; ++i) {
               System.out.print(beta[i] + " ");
             }
             System.out.println();
             _taskInfo._beta = beta.clone();
             System.out.println("iter1 = " + iter1);
-            if (linf < _parms._beta_epsilon)
+            if (linf < _parms._obj_epsilon & iter2 >1 )
               break;
 
           }
