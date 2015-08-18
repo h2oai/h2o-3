@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/bestbuy_train_10k.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/bestbuy_train_10k.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/bestbuy_train_10k.csv.gz\"]\n  destination_frame: \"bestbuy_train_10k4.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 6\n  single_quotes: false\n  column_names: [\"user\",\"sku\",\"category\",\"query\",\"click_time\",\"query_time\"]\n  column_types: [\"Enum\",\"Numeric\",\"Enum\",\"Enum\",\"Time\",\"Time\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 65536"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"bestbuy_train_10k4.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"bestbuy_train_10k4.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"bestbuy_train_10k4.hex\", [0.2], [\"bestbuy_train_10k_test.hex_0.20\",\"bestbuy_train_10k_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"drf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-6aa98ec4-0464-43ce-911c-cc06af0f8c1e\",\"training_frame\":\"bestbuy_train_10k_train.hex_0.80\",\"validation_frame\":\"bestbuy_train_10k_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"query_time\",\"ntrees\":50,\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-7254145782830094000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-6aa98ec4-0464-43ce-911c-cc06af0f8c1e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-6aa98ec4-0464-43ce-911c-cc06af0f8c1e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-6aa98ec4-0464-43ce-911c-cc06af0f8c1e\", frame: \"bestbuy_train_10k_test.hex_0.20\", predictions_frame: \"prediction-1ddb8db5-866f-4573-a4c4-581490c013a0\""
+    }
+  ]
+}
