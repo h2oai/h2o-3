@@ -13,7 +13,7 @@ function() {
               "kvstore.R", "exec.R", "ops.R", "frame.R", "ast.R", "astfun.R", "import.R", 
               "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R", 
               "gbm.R", "deeplearning.R", "naivebayes.R", "randomForest.R", "svd.R", "locate.R")
-  require(rjson); require(RCurl)
+  require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }
 src()
