@@ -204,8 +204,11 @@ class ASTRBind extends ASTPrim {
       } else nchks++;  // One chunk per scalar
     }
     // No Frame, just a pile-o-scalars?
-    if( fr==null )              // Zero-length, 1-column, default name
-      fr = new Frame(new String[]{Frame.defaultColName(0)},new Vec[]{Vec.makeZero(0)});
+    Vec zz = null;              // The zero-length vec for the zero-frame frame
+    if( fr==null ) {            // Zero-length, 1-column, default name
+      fr = new Frame(new String[]{Frame.defaultColName(0)}, new Vec[]{zz=Vec.makeZero(0)});
+      if( asts.length == 1 ) return new ValFrame(fr);
+    }
 
     // Verify all Frames are the same columns, names, types, domains
     final Frame frs[] = new Frame[asts.length]; // Input frame
@@ -233,16 +236,17 @@ class ASTRBind extends ASTPrim {
 
       frs[i] = fr0;     // Save frame
 
-      // Roll up the ESCP row counts
+      // Roll up the ESPC row counts
       long roffset = espc[coffset];
       long[] espc2 = fr0.anyVec().get_espc();
       for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
         espc[coffset + j] = (roffset+=espc2[j]);
       coffset += espc2.length-1; // Chunk offset
     }
+    if( zz != null ) zz.remove();
 
     // Now make Keys for the new Vecs
-    Key[] keys = fr.anyVec().group().addVecs(fr.numCols());
+    Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
     Vec[] vecs = new Vec[keys.length];
     for (int i=0; i<vecs.length; ++i)
       vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
@@ -261,7 +265,7 @@ class ASTRBind extends ASTPrim {
   // all columns, even up to 100,000's should be fine.
   private static class ParallelRbinds extends H2O.H2OCountedCompleter{
     private final AtomicInteger _ctr;
-    private static int MAXP = 1; // 100;
+    private static int MAXP = 100;
 
     private Frame[] _frs;
     private long[] _espc;
