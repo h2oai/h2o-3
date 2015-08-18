@@ -892,6 +892,11 @@ public abstract class Neurons {
 
   /**
    * Maxout neurons
+   * FIXME: This NOT Maxout - instead, would need to implement k linear "Sub-Neurons" per Neuron (with k times as many weights/biases),
+   * FIXME: then pick the one with the max activation.  This would require a Tensor (3D matrix), similar to convolutions.
+   * http://arxiv.org/pdf/1302.4389v4.pdf
+   *
+   * What we have here is Max-Pooling (pick the largest incoming signal as activation value)
    */
   public static class Maxout extends Neurons {
     public Maxout(int units) { super(units); }

@@ -42,6 +42,21 @@ public class Storage {
   }
 
   /**
+   * Abstract tensor interface
+   */
+  public abstract interface Tensor {
+    abstract float get(int slice, int row, int col);
+    abstract void set(int slice, int row, int col, float val);
+    abstract void add(int slice, int row, int col, float val);
+    abstract int slices();
+    abstract int cols();
+    abstract int rows();
+    abstract long size();
+    abstract float[] raw();
+    public Frame toFrame(int slice, Key key);
+  }
+
+  /**
    * Dense vector implementation
    */
   public static class DenseVector extends Iced implements Vector {

@@ -233,6 +233,7 @@ public class DeepLearningTest extends TestUtil {
             DeepLearningParameters.Activation.TanhWithDropout);
   }
 
+  @Ignore
   @Test public void testCreditProstateMaxout() throws Throwable {
     basicDLTest_Classification(
             "./smalldata/logreg/prostate.csv", "prostateMaxout.hex",
