@@ -247,15 +247,20 @@ class ASTRBind extends ASTPrim {
       vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
 
 
+    // Do the row-binds column-by-column.
     // Switch to F/J thread for continuations
     ParallelRbinds t;
     H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs)).join();
     return new ValFrame(new Frame(fr.names(), t._vecs));
   }
 
-  public static class ParallelRbinds extends H2O.H2OCountedCompleter{
+
+  // Helper class to allow parallel column binds, up to MAXP in parallel at any
+  // point in time.  TODO: Not sure why this is here, should just spam F/J with
+  // all columns, even up to 100,000's should be fine.
+  private static class ParallelRbinds extends H2O.H2OCountedCompleter{
     private final AtomicInteger _ctr;
-    private static int MAXP = 1;
+    private static int MAXP = 1; // 100;
 
     private Frame[] _frs;
     private long[] _espc;
@@ -288,10 +293,10 @@ class ASTRBind extends ASTPrim {
 
   // RBind a single column across all vals
   private static class RbindTask extends H2O.H2OCountedCompleter<RbindTask> {
-    final transient Vec[] _vecs;
-    final Vec _v;
-    final long[] _espc;
-    String[] _dom;
+    final Vec[] _vecs;          // Input vecs to be row-bound
+    final Vec _v;               // Result vec
+    final long[] _espc;         // Result layout
+    String[] _dom;              // Domain; union of enums
 
     RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc) { super(cc); _vecs = vecs; _v = v; _espc = espc; }
     @Override protected void compute2() {
