@@ -1,25 +1,56 @@
 package hex.grid;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import hex.Model;
 import hex.ModelParametersBuilderFactory;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters> {
 
+  interface HyperSpaceIterator<MP extends Model.Parameters> {
+    /**
+     * Get next model parameters.
+     *
+     * <p>It should return model parameters for next point in hyper space.
+     * Throws {@link java.util.NoSuchElementException} if there is no remaining point in space
+     * to explore.</p>
+     *
+     * <p>The method can optimize based on previousModel, but should be
+     * able to handle null-value.</p>
+     *
+     * @param previousModel  model generated for the previous point in hyper space, can be null.
+     *
+     * @return model parameters for next point in hyper space or null if there is no such point.
+     *
+     * @throws IllegalArgumentException  when model parameters cannot be constructed
+     * @throws java.util.NoSuchElementException if the iteration has no more elements
+     */
+    MP nextModelParameters(Model previousModel);
+
+    /**
+     * Returns true if the iterator can continue.
+     * @param previousModel  optional parameter which helps to determine next step, can be null
+     * @return  true if the iterator can produce one more model parameters configuration.
+     */
+    boolean hasNext(Model previousModel);
+
+    /**
+     * Returns current "raw" state of iterator.
+     *
+     * The state is represented by a permutation of values of grid parameters.
+     *
+     * @return  array of "untyped" values representing configuration of grid parameters
+     */
+    Object[] getCurrentRawParameters();
+  }
+
   /**
-   * Get next model parameters.
+   * Returns an iterator to traverse this hyper-space.
    *
-   * It should return model parameters for next point in hyper space.
-   * Return null if there is no remaining point in space to walk.
-   *
-   * The method can optimize based on previousModel, but should be
-   * able to handle null-model.
-   * @param previousModel  model generated for the previous point in hyper space, can be null.
-   *
-   * @return model parameters for next point in hyper space or null if there is no such point.
+   * @return an iterator
    */
-  public MP nextModelParameters(Model previousModel);
+  HyperSpaceIterator<MP> iterator();
 
   /**
    * Returns hyper parameters names which are used for walking the hyper parameters space.
@@ -28,7 +59,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    *
    * @return names of used hyper parameters
    */
-  public String[] getHyperParamNames();
+  String[] getHyperParamNames();
 
   /**
    * Return estimated size of hyperspace.
@@ -37,13 +68,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    *
    * @return size of hyper space to explore
    */
-  public int getHyperSpaceSize();
+  int getHyperSpaceSize();
 
   /**
    * Return initial model parameters for search.
    * @return  return model parameters
    */
-  public MP getParams();
+  MP getParams();
 
   /**
    *
@@ -51,7 +82,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    * where the String is a valid field name in the corresponding Model.Parameter, and the Object is
    * the field value (boxed as needed).
    */
-  public static class CartesianWalker<MP extends Model.Parameters> implements HyperSpaceWalker<MP> {
+  class CartesianWalker<MP extends Model.Parameters> implements HyperSpaceWalker<MP> {
 
     /**
      * Parameters builder factory to create new instance of parameters.
@@ -75,10 +106,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     final private String[] _hyperParamNames;
 
     /**
-     * Hyper params permutation.
-     */
-    private int[] _hidx;
-    /**
      * Compute size of hyper space to walk. Includes duplicates (point in space specified multiple
      * times)
      */
@@ -96,21 +123,53 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
       _hyperParams = hyperParams;
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
-      _hidx = null;
       _hyperSpaceSize = computeSizeOfHyperSpace();
     }
 
     @Override
-    public synchronized MP nextModelParameters(Model previousModel) {
-      // The method is synchronized since it is changing internal state of the walker
-      Object[] hypers = new Object[_hyperParamNames.length];
-      _hidx = _hidx != null ? nextModel(_hidx) : new int[_hyperParamNames.length];
-      if (_hidx != null) {
-        MP params = getModelParams((MP) _params.clone(), hypers(_hidx, hypers));
-        return params;
-      } else {
-        return null;
-      }
+    public HyperSpaceIterator<MP> iterator() {
+
+      return new HyperSpaceIterator<MP>() {
+        /** Hyper params permutation.
+         */
+        private int[] _hidx = null;
+
+        @Override
+        public MP nextModelParameters(Model previousModel) {
+          _hidx = _hidx != null ? nextModel(_hidx) : new int[_hyperParamNames.length];
+          if (_hidx != null) {
+            // Fill array of hyper-values
+            Object[] hypers = hypers(_hidx, new Object[_hyperParamNames.length]);
+            // Get clone of parameters
+            MP commonModelParams = (MP) _params.clone();
+            // Fill model parameters
+            MP params = getModelParams(commonModelParams, hypers);
+            return params;
+          } else {
+            throw new NoSuchElementException("No more elements to explore in hyper-space!");
+          }
+        }
+
+        @Override
+        public boolean hasNext(Model previousModel) {
+          if (_hidx == null) {
+            return true;
+          }
+          int[] hidx = _hidx;
+          for (int i = 0; i < hidx.length; i++) {
+            if (hidx[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        @Override
+        public Object[] getCurrentRawParameters() {
+          Object[] hyperValues = new Object[_hyperParamNames.length];
+          return hypers(_hidx, hyperValues);
+        }
+      };
     }
 
     @Override

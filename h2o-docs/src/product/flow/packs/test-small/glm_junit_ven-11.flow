@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/ven-11.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/ven-11.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/ven-11.csv\"]\n  destination_frame: \"ven_11.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"ds1\",\"ds2\",\"ds3\",\"ds4\",\"ds5\"]\n  column_types: [\"Numeric\",\"Time\",\"Time\",\"Time\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"ven_11.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"ven_11.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"ven_11.hex\", [0.25], [\"ven_11_test\",\"ven_11_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-f96dc8c6-cb66-4283-8e18-c36f20feedcf\",\"training_frame\":\"ven_11_train\",\"validation_frame\":\"ven_11_test\",\"ignore_const_cols\":true,\"response_column\":\"ds1\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-f96dc8c6-cb66-4283-8e18-c36f20feedcf\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-f96dc8c6-cb66-4283-8e18-c36f20feedcf\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-f96dc8c6-cb66-4283-8e18-c36f20feedcf\", frame: \"ven_11_test\", predictions_frame: \"prediction-b6c1ba67-72be-4e7d-8dbe-a27044cd9756\""
+    }
+  ]
+}
