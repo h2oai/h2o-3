@@ -33,12 +33,16 @@ test <- function(h) {
                       training_frame = cancar) 
 	hh@model$training_metrics@metrics$mean_residual_deviance
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
-	expect_equal(mean_deviance,-4.315050372)
 	ph = as.data.frame(h2o.predict(hh,newdata = cancar))
 	summary(ph)
-	expect_equal(0.04425447709, mean(ph[,1]) )
-	expect_equal(0.02330179479, min(ph[,1]) )
-	expect_equal(0.0737829603, max(ph[,1]) )
+	print(mean_deviance)
+	print(mean(ph[,1]))
+	print(min(ph[,1]))
+	print(max(ph[,1]))
+	expect_equal(-4.315050372, mean_deviance, 1e-5)
+	expect_equal(0.04425461, mean(ph[,1]), 1e-5 )
+	expect_equal(0.0233321, min(ph[,1]), 1e-5 )
+	expect_equal(0.07379163, max(ph[,1]), 1e-5 )
 
 	#With weights
 	#gg = gbm(formula = Loss~Class+Merit + C1M3 + C4M3, distribution = "gamma",data = data,
@@ -53,13 +57,17 @@ test <- function(h) {
                       weights_column = "Insured",training_frame = cancar) 
 	hh@model$training_metrics@metrics$mean_residual_deviance  
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
-	expect_equal(mean_deviance,-5.16470054)
-	ph = as.data.frame(h2o.predict(hh,newdata = cancar)) #mean = 0.04399   mean = 0.04423 
+	ph = as.data.frame(h2o.predict(hh,newdata = cancar)) #mean = 0.04399   mean = 0.04423
 	summary(ph)
-	expect_equal(0.04396934846, mean(ph[,1]) )
-	expect_equal(0.02276827279, min(ph[,1]) )
-	expect_equal(0.07324964874, max(ph[,1]) )
-		
+	print(mean_deviance)
+	print(mean(ph[,1]))
+	print(min(ph[,1]))
+	print(max(ph[,1]))
+	expect_equal(-5.16470054, mean_deviance, 1e-5)
+	expect_equal(0.0439887, mean(ph[,1]), 1e-5 )
+	expect_equal(0.0227738, min(ph[,1]), 1e-5 )
+	expect_equal(0.07330359, max(ph[,1]), 1e-5 )
+
 	testEnd()
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for gamma distribution", test)
