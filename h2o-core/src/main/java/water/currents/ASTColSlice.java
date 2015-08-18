@@ -296,14 +296,14 @@ class ASTRBind extends ASTPrim {
 
     RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc) { super(cc); _vecs = vecs; _v = v; _espc = espc; }
     @Override protected void compute2() {
-      addToPendingCount(_vecs.length-1);
+      addToPendingCount(_vecs.length-1-1);
       int[][] emaps  = new int[_vecs.length][];
 
-      if( _vecs[0].isEnum() ) {
+      if( _vecs[1].isEnum() ) {
         throw H2O.unimpl();
       }
       int offset=0;
-      for( int i=0; i<_vecs.length; i++ ) {
+      for( int i=1; i<_vecs.length; i++ ) {
         new RbindMRTask(this, emaps[i], _v, offset).asyncExec(_vecs[i]);
         offset += _vecs[i].nChunks();
       }
