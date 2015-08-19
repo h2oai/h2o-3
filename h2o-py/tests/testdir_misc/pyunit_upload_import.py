@@ -13,8 +13,8 @@ def upload_import_small(ip, port):
         uploaded_frame = h2o.upload_file(h2o.locate(dataset))
         imported_frame = h2o.import_file(h2o.locate(dataset))
 
-        rows_u, cols_u = uploaded_frame.dim()
-        rows_i, cols_i = imported_frame.dim()
+        rows_u, cols_u = uploaded_frame.dim
+        rows_i, cols_i = imported_frame.dim
 
         assert rows_u == rows_i, "Expected same number of rows regardless of method. upload: {0}, import: " \
                                  "{1}.".format(rows_u, rows_i)

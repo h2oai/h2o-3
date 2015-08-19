@@ -20,7 +20,7 @@ Depends: R (>= 2.13.0),
          stats
 Imports: graphics,
          RCurl,
-         rjson,
+         jsonlite,
          tools,
          utils
 Suggests: devtools,

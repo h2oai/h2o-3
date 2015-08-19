@@ -38,7 +38,7 @@ def deeplearning_autoencoder(ip, port):
     # conver train_supervised with autoencoder to lower-dimensional space
     train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp]._frame(), 0)
 
-    assert train_supervised_features.ncol() == nfeatures, "Dimensionality of reconstruction is wrong!"
+    assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
 
     # Train DRF on extracted feature space
     drf_model = h2o.random_forest(x=train_supervised_features[0:20],

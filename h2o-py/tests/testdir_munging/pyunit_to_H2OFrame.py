@@ -93,35 +93,35 @@ def to_H2OFrame(ip,port):
     # python_obj = {"a":1, "b":"a", "c":2.5, "d":"bcd", "e":0}
     # the_frame = h2o.H2OFrame(python_obj=python_obj)
     # h2o.check_dims_values(python_obj, the_frame, rows=1, cols=5)
-    # assert set(the_frame.names()) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
-    #                                                "{1}".format(the_frame.names(), python_obj.keys())
+    # assert set(the_frame.names) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
+    #                                                "{1}".format(the_frame.names, python_obj.keys())
     #
     # python_obj = {"a":[1], "b":["a"], "c":[2.5], "d":["bcd"], "e":[0]}
     # the_frame = h2o.H2OFrame(python_obj=python_obj)
     # h2o.check_dims_values(python_obj, the_frame, rows=1, cols=5)
-    # assert set(the_frame.names()) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
-    #                                                "{1}".format(the_frame.names(), python_obj.keys())
+    # assert set(the_frame.names) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
+    #                                                "{1}".format(the_frame.names, python_obj.keys())
     #
     # #   b. single column
     # python_obj = {"foo":(1,2,3.7,8,9)}
     # the_frame = h2o.H2OFrame(python_obj=python_obj)
     # h2o.check_dims_values(python_obj, the_frame, rows=5, cols=1)
-    # assert set(the_frame.names()) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
-    #                                                "{1}".format(the_frame.names(), python_obj.keys())
+    # assert set(the_frame.names) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
+    #                                                "{1}".format(the_frame.names, python_obj.keys())
     #
     # #   c. multiple rows, columns
     # python_obj = {"foo":[6,7,8,9,10], "bar":(1,2,3,4,5), "baz":(3,2,2,2,2)}
     # the_frame = h2o.H2OFrame(python_obj=python_obj)
     # h2o.check_dims_values(python_obj, the_frame, rows=5, cols=3)
-    # assert set(the_frame.names()) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
-    #                                                "{1}".format(the_frame.names(), python_obj.keys())
+    # assert set(the_frame.names) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
+    #                                                "{1}".format(the_frame.names, python_obj.keys())
     #
     # #   d. jagged
     # python_obj = {"foo":(6,7), "bar":(1,2,3,4), "baz":(3,2,2)}
     # the_frame = h2o.H2OFrame(python_obj=python_obj)
     # # check_dims_values_jagged() TODO
-    # assert set(the_frame.names()) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
-    #                                                "{1}".format(the_frame.names(), python_obj.keys())
+    # assert set(the_frame.names) == set(python_obj.keys()), "H2OFrame header is hosed. Got {0}, but should have got " \
+    #                                                "{1}".format(the_frame.names, python_obj.keys())
 
     ## 5. numpy.ndarray
     #   a. single row

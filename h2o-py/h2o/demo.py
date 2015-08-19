@@ -144,7 +144,7 @@ def deeplearning_demo(interactive, echo, test):
                      '>>> train["CAPSULE"] = train["CAPSULE"].asfactor()',
                      '>>> test["CAPSULE"] = test["CAPSULE"].asfactor()\n',
                      '\n# Build a (classification) Deeplearning model',
-                     '>>> prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names())-set(["ID","CAPSULE"]))]'
+                     '>>> prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names)-set(["ID","CAPSULE"]))]'
                      ', y=train["CAPSULE"], activation="Tanh", hidden=[10, 10, 10], epochs=10000)\n',
                      '\n# Show the model',
                      '>>> prostate_dl.show()\n',
@@ -177,7 +177,7 @@ def deeplearning_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names())-set(["ID","CAPSULE"]))], y=train["CAPSULE"],
+    prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names)-set(["ID","CAPSULE"]))], y=train["CAPSULE"],
                                    activation="Tanh", hidden=[10, 10, 10], epochs=10000)
 
     echo_and_interact(demo_commands, interactive, echo)

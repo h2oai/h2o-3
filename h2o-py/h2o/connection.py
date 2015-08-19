@@ -525,7 +525,7 @@ class H2OConnection(object):
         raise ValueError("Unknown HTTP method " + method)
 
     except requests.ConnectionError as e:
-      raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}".format(e.message))
+      raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}".format(e))
 
     return http_result
 

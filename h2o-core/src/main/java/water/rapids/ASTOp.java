@@ -179,6 +179,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMad());
 
     // Misc
+    putPrefix(new ASTPop());
     putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
     putPrefix(new ASTRename());
@@ -699,6 +700,29 @@ class ASTSignif extends ASTUniPrefixOp {
   }
 }
 
+class ASTPop extends ASTUniPrefixOp {
+  int _idx;
+  public ASTPop() { super(new String[]{"ary","col_to_pop"}); }
+  @Override String opStr() { return "pop"; }
+  @Override ASTOp make() { return new ASTPop(); }
+  @Override ASTPop parse_impl(Exec E) {
+    AST fr = E.parse();
+    AST col = E.parse();
+    if( col instanceof ASTNum ) _idx = (int)((ASTNum)col)._d;
+    else throw new IllegalArgumentException("Expected a column index. Got: " + col.getClass());
+    ASTPop res = (ASTPop)clone();
+    res._asts = new AST[]{fr};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.popAry();
+    String[] name = new String[]{fr.names()[_idx]};
+    Vec[] v = new Vec[]{fr.remove(_idx)};
+    if( fr._key!=null ) DKV.put(fr);
+    env.pushAry(new Frame(name,v));
+  }
+}
+
 class ASTNrow extends ASTUniPrefixOp {
   public ASTNrow() { super(VARS1); }
   @Override String opStr() { return "nrow"; }
@@ -993,53 +1017,13 @@ class ASTScale extends ASTUniPrefixOp {
   }
   private void parseArg(Exec E, boolean center) {
     if( center ) {
-      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-      if (centers == null) {
-        // means `center` is boolean
-        AST a;
-        try {
-          AST e = E.parse();
-          a = E._env.lookup((ASTId) e);  // looking up TRUE / FALSE
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected %TRUE or %FALSE. Got: " + e.getClass());
-        }
-        try {
-          _center = ((ASTNum) a).dbl() == 1;
-          _centers = null;
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get a number for the `center` argument after the lookup. Got: " + a.getClass());
-        }
-      } else {
-        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
-        _centers = new double[centers.length];
-        for (int i = 0; i < centers.length; ++i) _centers[i] = Double.valueOf(centers[i]);
-      }
+      AST a = E.parse();
+      if( a instanceof ASTId )              _center  = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+      else if( a instanceof ASTDoubleList ) _centers = ((ASTDoubleList)a)._d;
     } else {
-      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-      if (centers == null) {
-        // means `scale` is boolean
-        AST a;
-        try {
-          a = E._env.lookup((ASTId) E.skipWS().parse());
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get an ASTId. Badly formed AST.");
-        }
-        try {
-          _scale = ((ASTNum) a).dbl() == 1;
-          _scales = null;
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get a number for the `scale` argument.");
-        }
-      } else {
-        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
-        _scales = new double[centers.length];
-        for (int i = 0; i < centers.length; ++i) _scales[i] = Double.valueOf(centers[i]);
-      }
+      AST a = E.parse();
+      if( a instanceof ASTId )              _scale  = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+      else if( a instanceof ASTDoubleList ) _scales = ((ASTDoubleList)a)._d;
     }
   }
 

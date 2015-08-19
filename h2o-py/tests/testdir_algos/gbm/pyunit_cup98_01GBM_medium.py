@@ -12,7 +12,7 @@ def cupMediumGBM(ip,port):
   train["TARGET_B"] = train["TARGET_B"].asfactor()
 
   # Train H2O GBM Model:
-  train_cols = train.names()
+  train_cols = train.names
   for c in ['C1', "TARGET_D", "TARGET_B", "CONTROLN"]:
     train_cols.remove(c)
   model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], distribution = "bernoulli", ntrees = 5)

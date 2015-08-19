@@ -205,7 +205,7 @@ function(testDesc, test) {
 
 installDepPkgs <- function(optional = FALSE) {
   myPackages = rownames(installed.packages())
-  myReqPkgs = c("RCurl", "rjson", "tools", "statmod")
+  myReqPkgs = c("RCurl", "jsonlite", "tools", "statmod")
   
   # For plotting clusters in h2o.kmeans demo
   if(optional)

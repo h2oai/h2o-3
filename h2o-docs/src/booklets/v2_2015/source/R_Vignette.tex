@@ -121,14 +121,15 @@ if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statm
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 \end{lstlisting}
 
 
 \begin{lstlisting}[style=R]
-# Now we download, install and initialize the H2O package for R (replacing#the * with the latest version number obtained from the H2O download page)
+# Now we download, install and initialize the H2O package for R (replacing
+#the * with the latest version number obtained from the H2O download page)
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/*/R")))
 library(h2o)
 localH2O = h2o.init(nthreads = -1)
@@ -143,8 +144,8 @@ After making the build, navigate to the top-level \texttt{h2o-3} directory using
 ./gradlew build
 $ cd target/Rcran
 $ R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz
-* installing to library Ô/Users/H2OUser/.RlibraryÕ
-* installing *source* package Ôh2oÕ ...
+* installing to library ï¿½/Users/H2OUser/.Rlibraryï¿½
+* installing *source* package ï¿½h2oï¿½ ...
 ** R
 ** demo
 ** inst
@@ -537,7 +538,7 @@ To transfer a data frame from the R environment to the H2O instance, use  {\text
 5            5.0         3.6          1.4         0.2     setosa
 6            5.4         3.9          1.7         0.4     setosa
 
-# Converts R object "iris" into H2O objectâ"iris.hex"
+# Converts R object "iris" into H2O objectï¿½"iris.hex"
 iris.hex = as.h2o(localH2O, iris, key= "iris.hex")
 |=============================================================| 100%
 IP Address: localhost 
