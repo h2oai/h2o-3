@@ -8,7 +8,6 @@ check.rf.grid.cars <- function(conn) {
   r <- h2o.runif(cars,seed=seed)
   train <- cars[r > 0.2,]
 
-  # TODO: PUBDEV-1844, generally fails when validation_frame is specified.
   validation_scheme = sample(1:3,1) # 1:none, 2:cross-validation, 3:validation set
   Log.info(paste0("Validation scheme (1:none, 2:cross-validation, 3:validation set): ", validation_scheme))
   if ( validation_scheme == 3 ) { valid <- cars[r <= 0.2,] }

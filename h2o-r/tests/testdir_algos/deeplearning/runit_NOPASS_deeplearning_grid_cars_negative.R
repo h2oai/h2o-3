@@ -8,7 +8,6 @@ check.deeplearning.grid.cars.negative <- function(conn) {
   r <- h2o.runif(cars,seed=seed)
   train <- cars[r > 0.2,]
 
-  # TODO: PUBDEV-1844, generally fails when validation_frame is specified.
   #validation_scheme = sample(1:3,1) # 1:none, 2:cross-validation, 3:validation set
   validation_scheme = 1
   Log.info(paste0("Validation scheme (1:none, 2:cross-validation, 3:validation set): ", validation_scheme))
@@ -48,7 +47,6 @@ check.deeplearning.grid.cars.negative <- function(conn) {
     train[,response_col] <- as.factor(train[,response_col])
     if ( validation_scheme == 3 ) { valid[,response_col] <- as.factor(valid[,response_col]) } }
 
-  # TODO: PUBDEV-1846, h2o.grid never returns when invalid deeplearning parameter passed.
   Log.info("Constructing the grid of deeplearning models with some invalid deeplearning parameters...")
   if ( validation_scheme == 1 ) {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
