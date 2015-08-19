@@ -5,7 +5,7 @@ source('../h2o-runit.R')
 test <- function(conn) {
   json_file <- locate("smalldata/jira/hex-1833.json")
 
-  print(fromJSON(file=json_file))
+  print(jsonlite::fromJSON(json_file))
  
   testEnd()
 }
