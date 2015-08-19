@@ -182,7 +182,7 @@ Install [Node.js](http://nodejs.org/download/) and add the installed directory `
 To install these packages from within an R session, enter:
 
     R> install.packages("RCurl")
-    R> install.packages("rjson")
+    R> install.packages("jsonlite")
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
@@ -197,7 +197,7 @@ To manually install packages, download the releases of the following R packages:
 - [digest](http://cran.r-project.org/package=digest)
 - [Rcpp](http://cran.r-project.org/package=Rcpp)
 - [RCurl](http://cran.r-project.org/package=RCurl)
-- [rjson](http://cran.r-project.org/package=rjson)
+- [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [roxygen2](http://cran.r-project.org/package=roxygen2)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [stringr](http://cran.r-project.org/package=stringr)
@@ -207,7 +207,7 @@ To manually install packages, download the releases of the following R packages:
     cd Downloads
     R CMD INSTALL bitops_x.x-x.zip
     R CMD INSTALL RCurl_x.xx-x.x.zip
-    R CMD INSTALL rjson_x.x.xx.zip
+    R CMD INSTALL jsonlite_x.x.xx.zip
     R CMD INSTALL statmod_x.x.xx.zip
     R CMD INSTALL Rcpp_x.xx.x.zip
     R CMD INSTALL digest_x.x.x.zip
@@ -271,7 +271,7 @@ Install [R](http://www.r-project.org/) and add the bin directory to your PATH if
 Install the following R packages: 
 
 - [RCurl](http://cran.r-project.org/package=RCurl)
-- [rjson](http://cran.r-project.org/package=rjson)
+- [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [devtools](http://cran.r-project.org/package=devtools)
 - [roxygen2](http://cran.r-project.org/package=roxygen2) 
@@ -281,7 +281,7 @@ Install the following R packages:
     cd Downloads
     R CMD INSTALL bitops_x.x-x.tgz
     R CMD INSTALL RCurl_x.xx-x.x.tgz
-    R CMD INSTALL rjson_x.x.xx.tgz
+    R CMD INSTALL jsonlite_x.x.xx.tgz
     R CMD INSTALL statmod_x.x.xx.tgz
     R CMD INSTALL Rcpp_x.xx.x.tgz
     R CMD INSTALL digest_x.x.x.tgz
@@ -293,7 +293,7 @@ Install the following R packages:
 To install these packages from within an R session:
 
     R> install.packages("RCurl")
-    R> install.packages("rjson")
+    R> install.packages("jsonlite")
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
