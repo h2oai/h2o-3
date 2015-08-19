@@ -175,7 +175,7 @@ public class RequestServer extends NanoHTTPD {
     // Model serialization - import/export calls
     register("/99/Models.bin/(?<model_id>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel", null,
             "Import given binary model into H2O.");
-    register("/99/Models.bin"           ,"GET"   ,ModelsHandler.class, "exportModel", null,
+    register("/99/Models.bin/(?<model_id>.*)"           ,"GET"   ,ModelsHandler.class, "exportModel", null,
             "Export given model.");
 
 //    register("/3/Frames/(?<frame_id>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export", null,
