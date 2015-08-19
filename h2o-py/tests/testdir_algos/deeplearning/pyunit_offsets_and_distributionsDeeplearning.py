@@ -5,7 +5,7 @@ import h2o
 def offsets_and_distributions(ip,port):
 
     # cars
-    cars = h2o.upload_frame(h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[cars["economy_20mpg"].isna() == 0]
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     offset = h2o.H2OFrame(python_obj=[[.5] for x in range(398)])
