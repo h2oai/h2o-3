@@ -262,7 +262,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
-  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD)))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
 
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
