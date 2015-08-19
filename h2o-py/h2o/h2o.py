@@ -589,7 +589,7 @@ def save_model(model, path="", force=False):
   :param force: Overwrite destination directory in case it exists or throw exception if set to false.
   :return: the path of the saved model (string)
   """
-  path=os.path.join(os.getcwd() if path=="" else oath,model._id)
+  path=os.path.join(os.getcwd() if path=="" else path, model._id)
   return H2OConnection.get_json("Models.bin",model_id=model._id,dir=path,force=force, _rest_version=99)["dir"]
 
 def load_model(path):
