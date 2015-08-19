@@ -111,7 +111,7 @@ function(cur.dir, root, root.parent = NULL) {
 src <-
 function(ROOT.PATH) {
   # , "/exec.R", "/ops.R", "/ast.R"
-  to_src <- c("/astfun.R", "/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R")
+  to_src <- c("/astfun.R", "/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R", "/grid.R")
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
@@ -121,7 +121,7 @@ function(ROOT.PATH) {
 #'
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
+  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R", "/gridR.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 

@@ -20,14 +20,20 @@
 #' @param standardize Logical, indicates whether the data should be
 #'        standardized before running k-means.
 #' @param init A character string that selects the initial set of k cluster
-#'        centers.  Possible values are "Random": for random initialization,
+#'        centers. Possible values are "Random": for random initialization,
 #'        "PlusPlus": for k-means plus initialization, or "Furthest": for
 #'        initialization at the furthest point from each successive center.
-#'        Additionally, the user may specify a the initial centers as a matrix,
-#'        data.frame, Frame, or list of vectors.  For matrices, data.frames,
-#'        and Frames, each row of the respective structure is an initial
-#'        center.  For lists of vectors, each vector is an initial center.
+#'        Additionally, the user may specify a the initial centers as a matrix, 
+#'        data.frame, Frame, or list of vectors. For matrices, 
+#'        data.frames, and Frames, each row of the respective structure
+#'        is an initial center. For lists of vectors, each vector is an 
+#'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
+#'        Must be "AUTO", "Random" or "Modulo"
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
@@ -44,7 +50,11 @@ h2o.kmeans <- function(training_frame, x, k,
                        max_iterations = 1000,
                        standardize = TRUE,
                        init = c("Furthest","Random", "PlusPlus"),
-                       seed)
+                       seed,
+                       nfolds = 0,
+                       fold_column = NULL,
+                       fold_assignment = c("AUTO","Random","Modulo"),
+                       keep_cross_validation_predictions = FALSE)
 {
   # Training_frame may be a key or an Frame object
   if( !is.Frame(training_frame) )
@@ -70,6 +80,11 @@ h2o.kmeans <- function(training_frame, x, k,
     parms$init <- init
   if(!missing(seed))
     parms$seed <- seed
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
   # Check if init is an acceptable set of user-specified starting points
   if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {

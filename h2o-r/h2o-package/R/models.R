@@ -198,6 +198,98 @@ h2o.getFutureModel <- function(object) {
   h2o.getModel(object@model_id)
 }
 
+.h2o.prepareModelParameters <- function(algo, params, is_supervised) {
+  if( !is.Frame(params$training_frame)) {
+   tryCatch(params$training_frame <- h2o.getFrame(params$training_frame),
+            error = function(err) {
+              stop("argument \"training_frame\" must be a valid Frame or ID")
+            })
+  }
+  # Check if specified model request is for supervised algo
+  isSupervised <- if (!is.null(is_supervised)) is_supervised else .isSupervised(algo, params)
+
+  if (isSupervised) {
+    if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
+    if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
+    args <- .verify_dataxy(params$training_frame, x, y)
+    if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+    if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+    params$ignored_columns <- args$x_ignore
+    params$response_column <- args$y
+  } else {
+    if (!is.null(params$x)) {
+      x <- params$x
+      params$x <- NULL
+      args <- .verify_datacols(params$training_frame, x)
+      params$ignored_columns <- args$cols_ignore
+    }
+  }
+
+  params
+}
+
+.h2o.getModelParameters <- function(algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  .h2o.__remoteSend(method = "GET", .h2o.__MODEL_BUILDERS(algo), h2oRestApiVersion = h2oRestApiVersion)$model_builders[[algo]]$parameters
+}
+
+.h2o.checkModelParameters <- function(algo, allParams, params, hyper_params = list()) {
+  error <- lapply(allParams, function(i) {
+    e <- ""
+    if (i$required && !((i$name %in% names(params)) || (i$name %in% names(hyper_params)))) {
+      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
+    } else if (i$name %in% names(params)) {
+      # changing Java types to R types
+      mapping <- .type.map[i$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
+      if (is.na(type))
+        stop("Cannot find type ", i$type, " in .type.map")
+      if (scalar) { # scalar == TRUE
+        if (type == "H2OModel")
+            type <-  "character"
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
+          e <- paste0("\"", i$name,"\" must be in")
+          for (fact in i$values)
+            e <- paste0(e, " \"", fact, "\",")
+          e <- paste(e, "but got", params[[i$name]])
+        }
+        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
+          params[[i$name]] <<- "Infinity"
+        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
+          params[[i$name]] <<- "-Infinity"
+      } else {      # scalar == FALSE
+        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (params[[i$name]][n] == Inf)
+              params[[i$name]][n] <<- "Infinity"
+            else
+              params[[i$name]][n] <<- "-Infinity"
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if (type == "character")
+          params[[i$name]] <<- .collapse.char(params[[i$name]])
+        else
+          params[[i$name]] <<- .collapse(params[[i$name]])
+      }
+    }
+    e
+  })
+
+  if(any(nzchar(error)))
+    stop(error)
+  
+  #---------- Create parameter list to pass ----------#
+  param_values <- lapply(params, function(i) {
+    if(is.Frame(i))  .eval.frame(i):eval
+    else             i
+  })
+
+  param_values
+}
+
 #' Predict on an H2O Model
 #'
 #' Obtains predictions from various fitted H2O model objects.
@@ -1238,4 +1330,20 @@ h2o.sdev <- function(object) {
 .warn.no.validation <- function() {
   warning("No validation metrics available.", call.=FALSE)
   NULL
+}
+
+.warn.no.cross.validation <- function() {
+  warning("No cross-validation metrics available.", call.=FALSE)
+  NULL
+}
+
+.isSupervised <- function(algo, params) {
+  if (algo == "kmeans" ||
+      algo == "glrm" ||
+      algo == "pca" ||
+      (algo == "deeplearning" && !is.null(params$autoencoder) && params$autoencoder)) {
+    FALSE
+  } else {
+    TRUE
+  }
 }

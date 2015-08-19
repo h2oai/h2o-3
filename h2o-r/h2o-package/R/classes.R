@@ -427,3 +427,42 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
 setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
+
+#' H2O Grid
+#'
+#' A class to contain the information about grid results
+#' @slot conn an \linkS4class{H2OConnection}
+#' @slot grid_id the final identifier of grid
+#' @slot model_ids  list of model IDs which are included in the grid object
+#' @slot hyper_names  list of parameter names used for grid search
+#' @slot failed_params  list of model parameters which caused a failure during model buiilding
+#' @slot failure_details  list of detailed messages which correspond to failed parameters field
+#' @seealso \linkS4class{H2OModel} for the final model types.
+#' @aliases H2OGrid
+#' @export
+setClass("H2OGrid", representation(conn = "H2OConnection",
+                                   grid_id = "character",
+                                   model_ids = "list",
+                                   hyper_names = "list",
+                                   failed_params = "list",
+                                   failure_details = "list"))
+
+#' Format grid object in user-friendly way
+#'
+#' @rdname H2OGrid-class
+#' @param object an \code{H2OGrid} object.
+#' @export
+setMethod("show", "H2OGrid", function(object) {
+  cat("H2O Grid Details\n")
+  cat("================\n\n")
+  cat("Grid ID:", object@grid_id, "\n")
+  cat("Used hyper parameters: \n")
+  lapply(object@hyper_names, function(name) { cat("  ", name, "\n") })
+  cat("Number of models:", length(object@model_ids), "\n")
+  cat("Number of failed models:", length(object@failed_params), "\n")
+  cat("Models:\n")
+  lapply(object@model_ids, function(model_id) {
+    cat("  ", model_id, "\n")
+  })
+})
+
