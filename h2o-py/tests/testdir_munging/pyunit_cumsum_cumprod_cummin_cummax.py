@@ -27,7 +27,7 @@ def cumsumminprodmax(ip,port):
                                                                                                     cummin2[9,0])
 
     cumprod1.show()
-    print cumprod1.dim()
+    print cumprod1.dim
     assert cumprod1[8,0] == cumprod2[8,0] == 362880, "expected cumprod to be 362880, but got {0} and " \
                                                      "{1}".format(cumprod1[8,0], cumprod2[8,0])
 

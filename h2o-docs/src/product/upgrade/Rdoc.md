@@ -75,7 +75,7 @@ The lines are reproduced below; however, you should not copy and paste them, as 
 	if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 	if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 	if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-	if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+	if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 	if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 
@@ -136,7 +136,7 @@ The build output is located a CRAN-like layout in the R directory.
 	if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 	if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 	if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-	if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+	if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 	if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 	```

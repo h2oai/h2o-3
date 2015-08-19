@@ -79,3 +79,12 @@ target
 ./h2o-py/docs/docs/.doctrees/
 ./h2o-py/docs/docs/_modules/
 ./h2o-py/docs/docs/objects.inv
+
+# Latex output
+*.bbl
+*.blg
+*.log
+*.aux
+*.toc
+*.synctex
+*.out

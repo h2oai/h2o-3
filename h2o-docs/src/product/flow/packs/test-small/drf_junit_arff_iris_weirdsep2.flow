@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+  
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/arff/iris_weirdsep2.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/arff/iris_weirdsep2.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/arff/iris_weirdsep2.arff\"]\n  destination_frame: \"iris_weirdsep2.hex\"\n  parse_type: \"ARFF\"\n  separator: 9\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_weirdsep2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_weirdsep2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_weirdsep2.hex\", [0.25], [\"iris_weirdsep2_test\",\"iris_weirdsep2_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"drf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-17c08b0e-a48e-47cf-beb5-cd0ca43b6a84\",\"training_frame\":\"iris_weirdsep2_train\",\"validation_frame\":\"iris_weirdsep2_test\",\"ignore_const_cols\":true,\"response_column\":\"class\",\"ntrees\":\"10\",\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-2627036766409939000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-17c08b0e-a48e-47cf-beb5-cd0ca43b6a84\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-17c08b0e-a48e-47cf-beb5-cd0ca43b6a84\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-17c08b0e-a48e-47cf-beb5-cd0ca43b6a84\", frame: \"iris_weirdsep2_test\", predictions_frame: \"prediction-6a62e9a0-ec9a-41d9-a275-4791a382ef7e\""
+    }
+  ]
+}

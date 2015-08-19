@@ -29,7 +29,7 @@ def vec_math_ops(ip,port):
     np_data4 = np.array(abs_data)
     np_data5 = np.array(zero_one_data)
 
-    row, col = h2o_data1.dim()
+    row, col = h2o_data1.dim
 
     c = random.randint(0,col-1)
     for d in range(1,6):
@@ -39,7 +39,7 @@ def vec_math_ops(ip,port):
         r = h2o_round[0]
         assert s == r, "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
     h2o_transposed = h2o_data1[c].transpose()
-    x, y = h2o_transposed.dim()
+    x, y = h2o_transposed.dim
     assert x == 1 and y == 10, "Expected 1 row and 10 columns, but got {0} rows and {1} columns".format(x,y)
     h2o.np_comparison_check(h2o_data1[:,c].cos(), np.cos(np_data1[:,c]), 10)
     h2o.np_comparison_check(h2o_data1[:,c].sin(), np.sin(np_data1[:,c]), 10)

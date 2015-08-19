@@ -7,14 +7,14 @@ def binop_pow(ip,port):
     
 
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
-    rows, cols = iris.dim()
+    rows, cols = iris.dim
     iris.show()
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
     res = 2 ** iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [2689.579, 659.6639, 439.1082, 97.49004]):
         assert abs(x - y) < 1e-2,  "expected same values"
@@ -63,11 +63,11 @@ def binop_pow(ip,port):
 
     # LHS: H2OFrame, RHS: H2OFrame
     res = iris ** iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] ** iris[1:3]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -92,7 +92,7 @@ def binop_pow(ip,port):
 
     # LHS: H2OFrame, RHS: scaler
     res = iris ** 2
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([res[c].sum() for c in range(cols-1)], [1800.33, 709.32, 382.69, 30.74]):
         assert abs(x - y) < 1e-2,  "expected same values"

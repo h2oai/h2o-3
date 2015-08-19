@@ -133,6 +133,6 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
   force <- as.integer(force)
   path <- file.path(path, object@model_id)
-  res <- .h2o.__remoteSend(object@conn, "Models.bin", model_id=object@model_id, h2oRestApiVersion = 99, dir=path, force=force)
+  res <- .h2o.__remoteSend(object@conn, paste0("Models.bin/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }

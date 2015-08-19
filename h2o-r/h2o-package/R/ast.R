@@ -7,7 +7,7 @@
 #'
 #' The AST visitor method.
 #'
-#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON
+#' This method represents a map between an AST S4 object and a regular R list, which is suitable for jsonlite::toJSON
 #'
 #' Given a node, the `visitor` function recursively Lisp'ifies the node's S4 slots and then returns the list.
 #'

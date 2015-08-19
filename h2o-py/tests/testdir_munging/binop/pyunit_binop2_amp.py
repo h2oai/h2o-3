@@ -7,20 +7,20 @@ def binop_amp(ip,port):
     
 
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
-    rows, cols = iris.dim()
+    rows, cols = iris.dim
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
     amp_res = 5 & iris
-    amp_rows, amp_cols = amp_res.dim()
+    amp_rows, amp_cols = amp_res.dim
     assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
 
     # LHS: scaler, RHS: H2OVec
     amp_res = 1 & iris[1]
-    amp_rows = amp_res.nrow()
+    amp_rows = amp_res.nrow
     assert amp_rows == rows, "dimension mismatch"
-    new_rows = iris[amp_res].nrow()
+    new_rows = iris[amp_res].nrow
     assert new_rows == rows, "wrong number of rows returned"
 
     ###################################################################
@@ -65,11 +65,11 @@ def binop_amp(ip,port):
 
     # LHS: H2OFrame, RHS: H2OFrame
     res = iris & iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] & iris[1:3]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -94,7 +94,7 @@ def binop_amp(ip,port):
 
     # LHS: H2OFrame, RHS: scaler
     res = iris & 0
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for c in range(cols-1):
         for r in range(rows):

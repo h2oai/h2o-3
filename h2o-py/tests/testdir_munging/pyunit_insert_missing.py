@@ -15,12 +15,12 @@ def insert_missing(ip,port):
     h2o_data = h2o.H2OFrame(python_obj=data)
 
     h2o_data.insert_missing_values(fraction = 0.0)
-    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol())])
+    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])
     assert num_nas == 0, "Expected no missing values inserted, but got {0}".format(num_nas)
 
     h2o_data.insert_missing_values(fraction = 1.0)
-    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol())])
-    assert num_nas == h2o_data.nrow()*h2o_data.ncol(), "Expected all missing values inserted, but got {0}".format(num_nas)
+    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])
+    assert num_nas == h2o_data.nrow*h2o_data.ncol, "Expected all missing values inserted, but got {0}".format(num_nas)
 
 
 if __name__ == "__main__":

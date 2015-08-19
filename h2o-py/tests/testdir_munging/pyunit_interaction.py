@@ -19,9 +19,9 @@ def interaction_check(ip,port):
 
     # create a frame of the two-way interactions
     two_way_interactions = h2o.interaction(iris, factors=[4,5,6], pairwise=True, max_factors=10000, min_occurrence=1)
-    assert two_way_interactions.nrow() == 150 and two_way_interactions.ncol() == 3, \
+    assert two_way_interactions.nrow == 150 and two_way_interactions.ncol == 3, \
         "Expected 150 rows and 3 columns, but got {0} rows and {1} " \
-        "columns".format(two_way_interactions.nrow(), two_way_interactions.ncol())
+        "columns".format(two_way_interactions.nrow, two_way_interactions.ncol)
     levels1 = two_way_interactions[0].levels()
     levels2 = two_way_interactions[1].levels()
     levels3 = two_way_interactions[2].levels()
@@ -38,9 +38,9 @@ def interaction_check(ip,port):
 
     # do the same thing, but set 'factors' arg to list of column names
     two_way_interactions = h2o.interaction(iris, factors=["C5","C6","C7"], pairwise=True, max_factors=10000, min_occurrence=1)
-    assert two_way_interactions.nrow() == 150 and two_way_interactions.ncol() == 3, \
+    assert two_way_interactions.nrow == 150 and two_way_interactions.ncol == 3, \
         "Expected 150 rows and 3 columns, but got {0} rows and {1} " \
-        "columns".format(two_way_interactions.nrow(), two_way_interactions.ncol())
+        "columns".format(two_way_interactions.nrow, two_way_interactions.ncol)
     levels1 = two_way_interactions[0].levels()
     levels2 = two_way_interactions[1].levels()
     levels3 = two_way_interactions[2].levels()

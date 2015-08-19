@@ -7,14 +7,14 @@ def rbind_check(ip,port):
     
 
     frame = h2o.import_file(path=h2o.locate("smalldata/junit/cars.csv"))
-    row_orig = frame.nrow()
+    row_orig = frame.nrow
 
     frame_2 = frame.rbind(frame)
-    row_2 = frame_2.nrow()
+    row_2 = frame_2.nrow
     assert 2*row_orig == row_2, "Expected 2*{0} rows, but got {1}".format(2*row_orig, row_2)
 
     frame_3 = frame_2.rbind(frame_2)
-    row_3 = frame_3.nrow()
+    row_3 = frame_3.nrow
     assert 4*row_orig == row_3, "Expected 4*{0} rows, but got {1}".format(4*row_orig, row_3)
 
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))

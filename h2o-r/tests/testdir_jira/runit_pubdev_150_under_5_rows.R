@@ -5,7 +5,7 @@ test_one_file <- function(localH2O, fnam, mins, maxs) {
 DF <- h2o.importFile(localH2O, h2o:::.h2o.locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
 raw_payload = h2o:::.h2o.doSafeREST(conn = localH2O, urlSuffix = paste0("Frames.json/",fnam,".hex/columns/B/summary"), method = "GET")
 # print(raw_payload)
-json = h2o:::.h2o.fromJSON(raw_payload)
+json = h2o:::.h2o.fromJSON(jsonlite::fromJSON(raw_payload, simplifyDataFrame=FALSE))
 expect_equal(as.vector(json$frames[[1]]$columns[[1]]$mins), mins)   # as.vector needs as type of $mins is matrix <5 but vector >=5
 expect_equal(as.vector(json$frames[[1]]$columns[[1]]$maxs), maxs)   #    since [,1] is type error on matrix, use as.vector instead.
 }

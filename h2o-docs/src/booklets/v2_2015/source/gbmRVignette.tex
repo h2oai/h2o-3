@@ -107,12 +107,13 @@ if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statm
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 \end{lstlisting}
 \begin{lstlisting}[style=R]
-# Now we download, install and initialize the H2O package for R (replacingthe * with the latest version number obtained from the H2O download page)
+# Now we download, install and initialize the H2O package for R (replacing
+the * with the latest version number obtained from the H2O download page)
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/*/R")))
 library(h2o)
 localH2O = h2o.init(nthreads = -1)
