@@ -3,7 +3,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 
 	set.seed(45541)
 	x=matrix(rnorm(100*20),100,20)
@@ -11,7 +11,7 @@ test <- function(h) {
 	#y=rnorm(100)
 	y = rbinom(100,1,prob = .3)
 	df = data.frame(x,x1,y)
-	hdf = as.h2o(object = df,conn = h,destination_frame = "hdf")
+	hdf = as.h2o(df,destination_frame = "hdf")
 	hdf$y = as.factor(hdf$y)
 	gg = gbm(formula = y~.+offset(x1),distribution = "bernoulli",data = df,n.trees = 1,interaction.depth = 1,n.minobsinnode = 1,shrinkage = 1,train.fraction = 1,bag.fraction = 1)
 	hh = h2o.gbm(x = 1:20,y = "y",training_frame = hdf,distribution = "bernoulli",ntrees = 1,max_depth = 1,min_rows = 1,learn_rate = 1,offset_column = "x1")

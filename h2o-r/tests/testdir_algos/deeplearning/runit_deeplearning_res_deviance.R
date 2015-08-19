@@ -2,7 +2,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 	Hexpend =  read.csv(locate("smalldata/glm_test/HealthExpend.csv"))
 	MEPS=subset(Hexpend,EXPENDIP>0)
 	hdata = as.h2o(MEPS,destination_frame = "MEPS")

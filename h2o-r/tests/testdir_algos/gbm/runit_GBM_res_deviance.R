@@ -2,7 +2,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 	
 	Hexpend =  read.csv(locate("smalldata/glm_test/HealthExpend.csv"))
 	MEPS=subset(Hexpend,EXPENDIP>0)
@@ -38,7 +38,7 @@ test <- function(h) {
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,149.4331681)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 	
-	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),conn = h,destination_frame = "fre")
+	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	#fren = as.data.frame(fre)
 	#fren$VehPower = as.factor(fren$VehPower)

@@ -1,14 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.simplex <- function(conn) {
+test.glrm.simplex <- function() {
   m <- 1000; n <- 100; k <- 10
   Log.info(paste("Uploading random uniform matrix with rows =", m, "and cols =", n))
   Y <- matrix(runif(k*n), nrow = k, ncol = n)
   X <- matrix(0, nrow = m, ncol = k)
   for(i in 1:nrow(X)) X[i,sample(1:ncol(X), 1)] <- 1
   train <- X %*% Y
-  train.h2o <- as.h2o(conn, train)
+  train.h2o <- as.h2o(train)
   
   Log.info("Run GLRM with quadratic mixtures (simplex) regularization on X")
   initY <- matrix(runif(k*n), nrow = k, ncol = n)

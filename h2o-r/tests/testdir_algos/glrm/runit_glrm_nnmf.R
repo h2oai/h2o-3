@@ -1,13 +1,13 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.nnmf <- function(conn) {
+test.glrm.nnmf <- function() {
   m <- 1000; n <- 100; k <- 10
   Log.info(paste("Uploading random uniform matrix with rows =", m, "and cols =", n))
   Y <- matrix(runif(k*n), nrow = k, ncol = n)
   X <- matrix(runif(m*k), nrow = m, ncol = k)
   train <- X %*% Y
-  train.h2o <- as.h2o(conn, train)
+  train.h2o <- as.h2o(train)
   
   Log.info("Run GLRM with non-negative regularization")
   # initY <- Y + 0.1*matrix(runif(k*n,-1,1), nrow = k, ncol = n)

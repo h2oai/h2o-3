@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.iris <- function(conn) {
+test.glrm.iris <- function() {
   Log.info("Importing iris_wheader.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
-  irisH2O <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"), destination_frame = "airH2O")
+  irisH2O <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"), destination_frame = "airH2O")
   print(summary(irisH2O))
   
   for(t in c("NONE", "DEMEAN", "DESCALE", "STANDARDIZE")) {

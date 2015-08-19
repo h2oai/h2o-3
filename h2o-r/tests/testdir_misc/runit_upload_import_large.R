@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.upload.import <- function(conn) {
-    uploaded_frame <- h2o.uploadFile(conn, locate("bigdata/laptop/mnist/train.csv.gz"))
-    imported_frame <- h2o.importFile(conn, locate("bigdata/laptop/mnist/train.csv.gz"))
+test.upload.import <- function() {
+    uploaded_frame <- h2o.uploadFile(locate("bigdata/laptop/mnist/train.csv.gz"))
+    imported_frame <- h2o.importFile(locate("bigdata/laptop/mnist/train.csv.gz"))
 
     rows_u <- nrow(uploaded_frame)
     rows_i <- nrow(imported_frame)

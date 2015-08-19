@@ -1,14 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.unitonesparse <- function(conn) {
+test.glrm.unitonesparse <- function() {
   m <- 1000; n <- 100; k <- 10
   Log.info(paste("Uploading random uniform matrix with rows =", m, "and cols =", n))
   Y <- matrix(runif(k*n), nrow = k, ncol = n)
   X <- matrix(0, nrow = m, ncol = k)
   for(i in 1:nrow(X)) X[i,sample(1:ncol(X), 1)] <- 1
   train <- X %*% Y
-  train.h2o <- as.h2o(conn, train)
+  train.h2o <- as.h2o(train)
   
   Log.info("Run GLRM with unit one-sparse regularization on X")
   # initY <- Y + 0.1*matrix(runif(k*n,-1,1), nrow = k, ncol = n)

@@ -3,7 +3,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 # TODO: Deduplicate code for lambda=0 and lambda>=0 cases
 
-test_weights_vs_glmnet <- function(conn) {
+test_weights_vs_glmnet <- function() {
   
   require(testthat)
   require(glmnet)
@@ -18,7 +18,7 @@ test_weights_vs_glmnet <- function(conn) {
   
   x1 <- rep(1, n)  #weight vector (all weights = 1.0)
   df <- data.frame(x, x1, y)  #design matrix with weight and outcome cols
-  hdf <- as.h2o(object = df, conn = conn, destination_frame = "hdf")  #for h2o
+  hdf <- as.h2o(df, destination_frame = "hdf")  #for h2o
   df <- as.matrix(df)  #for glmnet
   
   # create test data
@@ -28,17 +28,17 @@ test_weights_vs_glmnet <- function(conn) {
   
   x1 <- rep(1,100)
   valid1 <- data.frame(newx, x1, y = newy)
-  val1 <- as.h2o(valid1, conn = conn, destination_frame = "val1")
+  val1 <- as.h2o(valid1, destination_frame = "val1")
   valid1 <- as.matrix(valid1)
   
   x1 <- rep(100,100)
   valid2 <- data.frame(newx, x1, y = newy)
-  val2 <- as.h2o(valid2, conn = conn, destination_frame = "val2")
+  val2 <- as.h2o(valid2, destination_frame = "val2")
   valid2 <- as.matrix(valid2)
   
   x1 <- seq(1:100)
   valid3 <- data.frame(newx, x1, y = newy)
-  val3 <- as.h2o(valid3, conn = conn, destination_frame = "val3")
+  val3 <- as.h2o(valid3, destination_frame = "val3")
   valid3 <- as.matrix(valid3)
   
   #lambda=0

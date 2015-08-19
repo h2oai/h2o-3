@@ -3,7 +3,7 @@
 #' Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
 #'
 #' The default distribution function will guess the model type
-#' based on the response column typerun properly the response column must be an numeric for "gaussian" or an
+#' based on the response column type. In order to run properly, the response column must be an numeric for "gaussian" or an
 #' enum for "bernoulli" or "multinomial".
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GBM model.
@@ -13,12 +13,14 @@
 #' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param distribution A \code{character} string. The loss function to be implemented.
-#'        Must be "AUTO", "bernoulli", "multinomial", or "gaussian"
+#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+#' @param distribution A \code{character} string. The distribution function of the response.
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param learn_rate An \code{interger} from \code{0.0} to \code{1.0}
+#' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
 #' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
 #' @param validation_frame An \code{\link{Frame}} object indicating the validation dataset used to contruct the
@@ -30,7 +32,11 @@
 #' @param seed Seed for random numbers (affects sampling when balance_classes=T)
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty. **Currently not supported**
+#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
+#'        Must be "AUTO", "Random" or "Modulo"
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
@@ -51,7 +57,9 @@
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
-                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial"),
+                    checkpoint,
+                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
+                    tweedie_power = 1.5,
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
@@ -63,7 +71,10 @@ h2o.gbm <- function(x, y, training_frame,
                     max_after_balance_size = 1,
                     seed,
                     build_tree_one_node = FALSE,
-                    nfolds,
+                    nfolds = 0,
+                    fold_column = NULL,
+                    fold_assignment = c("AUTO","Random","Modulo"),
+                    keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -100,12 +111,17 @@ h2o.gbm <- function(x, y, training_frame,
   args <- .verify_dataxy(training_frame, x, y)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if (!missing(model_id))
     parms$model_id <- model_id
+  if(!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(tweedie_power))
+    parms$tweedie_power <- tweedie_power
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -128,12 +144,15 @@ h2o.gbm <- function(x, y, training_frame,
     parms$seed <- seed
   if(!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
-  if (!missing(nfolds) && nfolds > 1)
-    stop("Nfolds > 1 not currently implemented.", call. = FALSE)
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
   .h2o.modelJob('gbm', parms, do_future)
 }
