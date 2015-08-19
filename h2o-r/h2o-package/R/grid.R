@@ -84,15 +84,21 @@ h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })
   hyper_names <- lapply(json$hyper_names, function(name) { name })
-  failed_params <- json$failed_params
+  failed_params <- lapply(json$failed_params, function(param) { if (is.na(param)) NULL else param })
   failure_details <- lapply(json$failure_details, function(msg) { msg })
+  failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
+
+  #print(json$failed_raw_params)
+
+  #print(failed_params)
 
   new(class,
       grid_id = grid_id,
       model_ids = model_ids,
       hyper_names = hyper_names,
       failed_params = failed_params,
-      failure_details = failure_details)
+      failure_details = failure_details,
+      failed_raw_params = failed_raw_params)
 }
 
 
