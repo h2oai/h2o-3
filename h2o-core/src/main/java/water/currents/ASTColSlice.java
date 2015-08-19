@@ -1,7 +1,9 @@
 package water.currents;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
 import jsr166y.CountedCompleter;
 
 import water.*;
@@ -210,10 +212,9 @@ class ASTRBind extends ASTPrim {
       if( asts.length == 1 ) return new ValFrame(fr);
     }
 
-    // Verify all Frames are the same columns, names, types, domains
+    // Verify all Frames are the same columns, names, and types.  Domains can vary, and will be the union
     final Frame frs[] = new Frame[asts.length]; // Input frame
     final byte[] types = fr.types();  // Column types
-    final String[][] domains = fr.domains();
     final int ncols = fr.numCols();
     final long[] espc = new long[nchks+1];
     int coffset = 0;
@@ -231,8 +232,6 @@ class ASTRBind extends ASTPrim {
         throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
       if( !Arrays.equals(types,fr0.types()) )
         throw new IllegalArgumentException("rbind frames must have all the same column types, found "+Arrays.toString(types)+" and "+Arrays.toString(fr0.types()));
-      if( !Arrays.deepEquals(domains,fr0.domains()) )
-        throw new IllegalArgumentException("rbind frames must have all the same column domains, found "+Arrays.deepToString(domains)+" and "+Arrays.deepToString(fr0.domains()));
 
       frs[i] = fr0;     // Save frame
 
@@ -247,9 +246,9 @@ class ASTRBind extends ASTPrim {
 
     // Now make Keys for the new Vecs
     Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
-    Vec[] vecs = new Vec[keys.length];
-    for (int i=0; i<vecs.length; ++i)
-      vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
+    Vec[] vecs = new Vec[fr.numCols()];
+    for( int i=0; i<vecs.length; i++ )
+      vecs[i] = new Vec( keys[i], espc, null, types[i]);
 
 
     // Do the row-binds column-by-column.
@@ -264,12 +263,12 @@ class ASTRBind extends ASTPrim {
   // point in time.  TODO: Not sure why this is here, should just spam F/J with
   // all columns, even up to 100,000's should be fine.
   private static class ParallelRbinds extends H2O.H2OCountedCompleter{
-    private final AtomicInteger _ctr;
-    private static int MAXP = 100;
+    private final AtomicInteger _ctr; // Concurrency control
+    private static int MAXP = 100;    // Max number of concurrent columns
+    private Frame[] _frs;             // All frame args
+    private long[] _espc;             // Rolled-up final ESPC
 
-    private Frame[] _frs;
-    private long[] _espc;
-    private Vec[] _vecs;
+    private Vec[] _vecs;        // Output
     ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs) { _frs = frs; _espc = espc; _vecs = vecs; _ctr = new AtomicInteger(MAXP-1); }
 
     @Override protected void compute2() {
@@ -308,8 +307,23 @@ class ASTRBind extends ASTPrim {
       addToPendingCount(_vecs.length-1-1);
       int[][] emaps  = new int[_vecs.length][];
 
-      if( _vecs[1].isEnum() ) {
-        throw H2O.unimpl();
+      if( _vecs[1].isEnum() ) { // Enum domains in rbind need to be unified
+        // loop to create BIG domain
+        HashMap<String, Integer> dmap = new HashMap<>(); // probably should allocate something that's big enough (i.e. 2*biggest_domain)
+        int c = 0;
+        for( int i = 1; i < _vecs.length; i++ ) {
+          if( _vecs[i].get_type()==Vec.T_BAD ) continue;
+          emaps[i] = new int[_vecs[i].domain().length];
+          for( int j = 0; j < emaps[i].length; j++ ) {
+            String s = _vecs[i].domain()[j];
+            if (!dmap.containsKey(s))
+              dmap.put(s, emaps[i][j]=c++);
+            else emaps[i][j] = dmap.get(s);
+          }
+        }
+        _dom = new String[c];
+        for( Map.Entry<String, Integer> e : dmap.entrySet() )
+          _dom[e.getValue()] = e.getKey();
       }
       int offset=0;
       for( int i=1; i<_vecs.length; i++ ) {
@@ -342,11 +356,7 @@ class ASTRBind extends ASTPrim {
         }
         nc.close(_fs);
       } else {
-        Chunk oc = (Chunk)cs.clone();
-        oc.setStart(-1);
-        oc.setVec(null);
-        oc.setBytes(cs.getBytes().clone()); // needless replication of the data, can do ref counting on byte[] _mem
-        DKV.put(ckey, oc, _fs, true);
+        DKV.put(ckey, cs.deepCopy(), _fs, true);
       }
     }
   }

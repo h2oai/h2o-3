@@ -1369,6 +1369,14 @@ h2o.table <- function(x, y = NULL) {
 }
 
 #'
+#' String Split
+#'
+#' @param x The column whose strings must be split.
+#' @param split The pattern to split on.
+#' @export
+h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
+
+#'
 #' To Lower
 #'
 #' Mutates the input!

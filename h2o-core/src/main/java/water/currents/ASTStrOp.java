@@ -78,7 +78,7 @@ class ASTStrSplit extends ASTPrim {
     String[][] doms = new String[strs.size()][];
     int i=0;
     for (HashSet<String> h: strs)
-      doms[i++] = (String[])(h.toArray());
+      doms[i++] = h.toArray(new String[h.size()]);
     return doms;
   }
 }
