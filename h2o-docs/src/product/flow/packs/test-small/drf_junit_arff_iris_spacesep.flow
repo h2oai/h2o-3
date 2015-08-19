@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/arff/iris_spacesep.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/arff/iris_spacesep.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/arff/iris_spacesep.arff\"]\n  destination_frame: \"iris_spacesep.hex\"\n  parse_type: \"ARFF\"\n  separator: 32\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_spacesep.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_spacesep.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_spacesep.hex\", [0.2], [\"iris_spacesep_test\",\"iris_spacesep_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"drf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-c383dfd1-4891-4448-9e9e-496999d341b7\",\"training_frame\":\"iris_spacesep_train\",\"validation_frame\":\"iris_spacesep_test\",\"ignore_const_cols\":true,\"response_column\":\"class\",\"ntrees\":\"10\",\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":4905692000159129000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-c383dfd1-4891-4448-9e9e-496999d341b7\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-c383dfd1-4891-4448-9e9e-496999d341b7\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-c383dfd1-4891-4448-9e9e-496999d341b7\", frame: \"iris_spacesep_test\", predictions_frame: \"prediction-b7b4d768-8c01-4bdf-8b96-98500484f83a\""
+    }
+  ]
+}

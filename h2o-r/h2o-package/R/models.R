@@ -173,9 +173,12 @@ h2o.getFutureModel <- function(object) {
     params$ignored_columns <- args$x_ignore
     params$response_column <- args$y
   } else {
-    if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
-    args <- .verify_datacols(params$training_frame, x)
-    params$ignored_columns <- args$cols_ignore
+    if (!is.null(params$x)) {
+      x <- params$x
+      params$x <- NULL
+      args <- .verify_datacols(params$training_frame, x)
+      params$ignored_columns <- args$cols_ignore
+    }
   }
 
   params
@@ -1770,6 +1773,8 @@ h2o.sdev <- function(object) {
 
 .isSupervised <- function(algo, params) {
   if (algo == "kmeans" ||
+      algo == "glrm" ||
+      algo == "pca" ||
       (algo == "deeplearning" && !is.null(params$autoencoder) && params$autoencoder)) {
     FALSE
   } else {

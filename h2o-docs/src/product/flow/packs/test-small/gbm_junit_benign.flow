@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/benign.xls\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/benign.xls\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/benign.xls\"]\n  destination_frame: \"benign.hex\"\n  parse_type: \"XLS\"\n  separator: -1\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"STR\",\"OBS\",\"AGMT\",\"FNDX\",\"HIGD\",\"DEG\",\"CHK\",\"AGP1\",\"AGMN\",\"NLV\",\"LIV\",\"WT\",\"AGLP\",\"MST\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"benign.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"benign.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"benign.hex\", [0.3], [\"benign_test.hex_0.30\",\"benign_train.hex_0.70\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-6e239646-3ee1-4a78-a2aa-8e78dd70f6c2\",\"training_frame\":\"benign_train.hex_0.70\",\"validation_frame\":\"benign_test.hex_0.30\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"MST\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":6730619990342524000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-6e239646-3ee1-4a78-a2aa-8e78dd70f6c2\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-6e239646-3ee1-4a78-a2aa-8e78dd70f6c2\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-6e239646-3ee1-4a78-a2aa-8e78dd70f6c2\", frame: \"benign_test.hex_0.30\", predictions_frame: \"prediction-a58f7e27-f9af-4c93-b5b1-cd6463263696\""
+    }
+  ]
+}

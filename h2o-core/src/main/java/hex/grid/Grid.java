@@ -10,6 +10,7 @@ import water.H2O;
 import water.Key;
 import water.Lockable;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedLong;
 import water.util.PojoUtils;
@@ -43,6 +44,7 @@ public class Grid<MP extends Model.Parameters>
 
   /**
    * Failed model parameters - represents points in hyper space for which model generation failed.
+   * If the element is null, then look into
    */
   private MP[] _failed_params;
 
@@ -51,6 +53,13 @@ public class Grid<MP extends Model.Parameters>
    * <code>_failed_params</code>.
    */
   private String[] _failure_details;
+
+  /**
+   * Contains "raw" representation of parameters which fail The parameters are represented in
+   * textual form, since simple <code>java.lang.Object</code> cannot be serialized by H2O
+   * serialization.
+   */
+  private String[][] _failed_raw_params;
 
   /**
    * Name of model generated included in this grid.
@@ -65,19 +74,20 @@ public class Grid<MP extends Model.Parameters>
   /**
    * Construct a new grid object to store results of grid search.
    *
-   * @param key         reference to this object
-   * @param params      initial parameters used by grid search
-   * @param hyperNames  names of used hyper parameters
-   * @param modelName   name of model included in this object (e.g., "GBM")
+   * @param key        reference to this object
+   * @param params     initial parameters used by grid search
+   * @param hyperNames names of used hyper parameters
+   * @param modelName  name of model included in this object (e.g., "GBM")
    */
   protected Grid(Key key, MP params, String[] hyperNames, String modelName) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
     _modelName = modelName;
-     Class<MP> paramsClass = params != null ? (Class<MP>) params.getClass() : null;
+    Class<MP> paramsClass = params != null ? (Class<MP>) params.getClass() : null;
     _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
     _failure_details = new String[]{};
+    _failed_raw_params = new String[][]{};
   }
 
   /**
@@ -149,14 +159,12 @@ public class Grid<MP extends Model.Parameters>
    * <p> The failed parameters object represents a point in hyper space which cannot be used for
    * model building. </p>
    *
-   * <p> Should be used only from <code>GridSearch</code> job. It is synchronized since changing
-   * shared tate of this object. </p>
-   *
-   * @param params model parameters which caused model builder failure
+   * @param params    model parameters which caused model builder failure, can be null
+   * @param rawParams array of "raw" parameter values
    * @params failureDetails  textual description of model building failure
    */
-  /* package */
-  synchronized void appendFailedModelParameters(MP params, String failureDetails) {
+  private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails) {
+    assert rawParams != null : "API has to always pass rawParams";
     // Append parameter
     MP[] a = _failed_params;
     MP[] na = Arrays.copyOf(a, a.length + 1);
@@ -167,6 +175,44 @@ public class Grid<MP extends Model.Parameters>
     String[] nm = Arrays.copyOf(m, m.length + 1);
     nm[m.length] = failureDetails;
     _failure_details = nm;
+    // Append raw parames
+    String[][] rp = _failed_raw_params;
+    String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
+    nrp[rp.length] = rawParams;
+    _failed_raw_params = nrp;
+  }
+
+  /**
+   * This method appends a new item to the list of failed model parameters.
+   *
+   * <p> The failed parameters object represents a point in hyper space which cannot be used for
+   * model building.</p>
+   *
+   * <p> Should be used only from <code>GridSearch</code> job.</p>
+   *
+   * @param params model parameters which caused model builder failure
+   * @params failureDetails textual description of model building failure
+   */
+  void appendFailedModelParameters(MP params, String failureDetails) {
+    assert params != null : "Model parameters should be always != null !";
+    String[] rawParams = ArrayUtils.toString(getHyperValues(params));
+    appendFailedModelParameters(params, rawParams, failureDetails);
+  }
+
+  /**
+   * This method appends a new item to the list of failed hyper-parameters.
+   *
+   * <p> The failed parameters object represents a point in hyper space which cannot be used to
+   * construct a new model parameters.</p>
+   *
+   * <p> Should be used only from <code>GridSearch</code> job.</p>
+   *
+   * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
+   * @params failureDetails textual description of model building failure
+   */
+  /* package */ void appendFailedModelParameters(Object[] rawParams, String failureDetails) {
+    assert rawParams != null : "Raw parameters should be always != null !";
+    appendFailedModelParameters(null, ArrayUtils.toString(rawParams), failureDetails);
   }
 
   /**
@@ -211,8 +257,11 @@ public class Grid<MP extends Model.Parameters>
   /**
    * Returns an array of model parameters which caused model build failure.
    *
-   * Note: cannot return <code>MP[]</code> because of PUBDEV-1863
-   * See: https://0xdata.atlassian.net/browse/PUBDEV-1863
+   * The null-element in the array means, that model parameters cannot be constructed, and the
+   * client should use {@link #getFailedParameters()} to obtain "raw" model parameters.
+   *
+   * Note: cannot return <code>MP[]</code> because of PUBDEV-1863 See:
+   * https://0xdata.atlassian.net/browse/PUBDEV-1863
    */
   public Model.Parameters[] getFailedParameters() {
     return _failed_params;
@@ -223,6 +272,13 @@ public class Grid<MP extends Model.Parameters>
    */
   public String[] getFailureDetails() {
     return _failure_details;
+  }
+
+  /**
+   * Returns list of raw model parameters causing model building failure.
+   */
+  public String[][] getFailedRawParameters() {
+    return _failed_raw_params;
   }
 
   /**

@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/bestbuy_train_10k.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/bestbuy_train_10k.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/bestbuy_train_10k.csv.gz\"]\n  destination_frame: \"bestbuy_train_10k.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 6\n  single_quotes: false\n  column_names: [\"user\",\"sku\",\"category\",\"query\",\"click_time\",\"query_time\"]\n  column_types: [\"Enum\",\"Numeric\",\"Enum\",\"Enum\",\"Time\",\"Time\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 65536"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"bestbuy_train_10k.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"bestbuy_train_10k.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"bestbuy_train_10k.hex\", [0.3], [\"bestbuy_train_10k_test.hex_0.30\",\"bestbuy_train_10k_train.hex_0.70\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"deeplearning\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-205ab2eb-2265-4a0a-a0ee-051255ad9987\",\"training_frame\":\"bestbuy_train_10k_train.hex_0.70\",\"validation_frame\":\"bestbuy_train_10k_test.hex_0.30\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"query_time\",\"activation\":\"Rectifier\",\"hidden\":[200,200],\"epochs\":10,\"variable_importances\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":-2181763435004117000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"regression_stop\":0.000001,\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-205ab2eb-2265-4a0a-a0ee-051255ad9987\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-205ab2eb-2265-4a0a-a0ee-051255ad9987\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-205ab2eb-2265-4a0a-a0ee-051255ad9987\", frame: \"bestbuy_train_10k_test.hex_0.30\", predictions_frame: \"prediction-38780535-4d8a-45ee-ad5c-9b9516e2758c\""
+    }
+  ]
+}

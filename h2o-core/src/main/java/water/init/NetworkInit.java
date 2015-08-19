@@ -2,6 +2,7 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
+import water.H2ONode.H2OSmallMessage;
 import water.JettyHTTPD;
 import water.TCPReceiverThread;
 import water.util.Log;
@@ -306,6 +307,8 @@ public class NetworkInit {
   }
 
   public static DatagramChannel _udpSocket;
+  public static ServerSocketChannel _tcpSocketBig;
+  public static ServerSocketChannel _tcpSocketSmall;
   public static ServerSocket _apiSocket;
   // Default NIO Datagram channel
   public static DatagramChannel CLOUD_DGRAM;
@@ -345,10 +348,16 @@ public class NetworkInit {
         InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
         _udpSocket.socket().bind(isa);
         // Bind to the TCP socket also
-        TCPReceiverThread.SOCK = ServerSocketChannel.open();
-        TCPReceiverThread.SOCK.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
-        TCPReceiverThread.SOCK.socket().bind(isa);
+        _tcpSocketBig = ServerSocketChannel.open();
+        _tcpSocketBig.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+        _tcpSocketBig.socket().bind(isa);
 
+        if(!H2O.ARGS.useUDP) {
+          _tcpSocketSmall = ServerSocketChannel.open();
+          _tcpSocketBig.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+          InetSocketAddress isa2 = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT+1);
+          _tcpSocketSmall.socket().bind(isa2);
+        }
         _apiSocket.close();
         if (! H2O.ARGS.disable_web) {
           H2O.getJetty().start(H2O.ARGS.ip, H2O.API_PORT);
@@ -357,10 +366,12 @@ public class NetworkInit {
       } catch (Exception e) {
         if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
-        if( TCPReceiverThread.SOCK != null ) try { TCPReceiverThread.SOCK.close(); } catch( IOException ie ) { }
+        if( _tcpSocketBig != null ) try { _tcpSocketBig.close(); } catch( IOException ie ) { }
+        if( _tcpSocketSmall != null ) try { _tcpSocketSmall.close(); } catch( IOException ie ) { }
         _apiSocket = null;
         _udpSocket = null;
-        TCPReceiverThread.SOCK = null;
+        _tcpSocketBig = null;
+        _tcpSocketSmall = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
               " some of the required ports " + H2O.ARGS.port +
@@ -412,12 +423,12 @@ public class NetworkInit {
   // Multicast send-and-close.  Very similar to udp_send, except to the
   // multicast port (or all the individuals we can find, if multicast is
   // disabled).
-  public static void multicast( ByteBuffer bb ) {
-    try { multicast2(bb); }
+  public static void multicast( ByteBuffer bb , int priority) {
+    try { multicast2(bb, priority); }
     catch (Exception ie) {}
   }
 
-  static private void multicast2( ByteBuffer bb ) {
+  static private void multicast2( ByteBuffer bb, int priority ) {
     if( H2O.STATIC_H2OS == null ) {
       byte[] buf = new byte[bb.remaining()];
       bb.get(buf);
@@ -470,10 +481,15 @@ public class NetworkInit {
       HashSet<H2ONode> nodes = (HashSet<H2ONode>)H2O.STATIC_H2OS.clone();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
+      H2OSmallMessage msg = H2O.ARGS.useUDP?null:H2OSmallMessage.make(bb,priority);
       for( H2ONode h2o : nodes ) {
-        bb.reset();
         try {
-          CLOUD_DGRAM.send(bb, h2o._key);
+          if(H2O.ARGS.useUDP) {
+            bb.reset();
+            CLOUD_DGRAM.send(bb, h2o._key);
+          } else {
+            h2o.sendMessage(msg);
+          }
         } catch( IOException e ) {
           Log.warn("Multicast Error to "+h2o, e);
         }

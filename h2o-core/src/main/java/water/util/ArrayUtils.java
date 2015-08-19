@@ -354,6 +354,12 @@ public class ArrayUtils {
     for (int i=0; i<dom.length; i++) result[i] = String.valueOf(dom[i]);
     return result;
   }
+  public static String[] toString(Object[] ary) {
+    String[] result = new String[ary.length];
+    for (int i=0; i<ary.length; i++) result[i] = String.valueOf(ary[i]);
+    return result;
+  }
+
   public static boolean contains(String[] names, String name) {
     if (null == names) return false;
     for (String n : names) if (n.equals(name)) return true;

@@ -29,8 +29,8 @@ test <- function(h) {
 	#expect_equal(max(pr),max(ph[,1]),tolerance = 1e-6)
 	#expect_equal(mean(pr),mean(ph[,1]),tolerance = 1e-6)
 	expect_equal(-1.182827,hh@model$init_f,tolerance = 1e-6)
-	expect_equal( 0.262575,min(ph[,1]),tolerance = 1e-5)
-	expect_equal(0.3581305,max(ph[,1]),tolerance = 1e-5)
+	expect_equal( 0.262575,min(ph[,1]),tolerance = 1e-4)
+	expect_equal(0.3581305,max(ph[,1]),tolerance = 1e-4)
 	expect_equal( 0.3064352,mean(ph[,1]),tolerance = 1e-5)
 	
 	testEnd()

@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+  
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/arff/iris_weirdsep.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/arff/iris_weirdsep.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/arff/iris_weirdsep.arff\"]\n  destination_frame: \"iris_weirdsep.hex\"\n  parse_type: \"ARFF\"\n  separator: 32\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_weirdsep.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"iris_weirdsep.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"iris_weirdsep.hex\", [0.2], [\"iris_weirdsep_test\",\"iris_weirdsep_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-052ea0d7-630f-4b09-8041-5f37ff3d8a72\",\"training_frame\":\"iris_weirdsep_train\",\"validation_frame\":\"iris_weirdsep_test\",\"ignore_const_cols\":true,\"response_column\":\"sepal_len\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-052ea0d7-630f-4b09-8041-5f37ff3d8a72\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-052ea0d7-630f-4b09-8041-5f37ff3d8a72\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-052ea0d7-630f-4b09-8041-5f37ff3d8a72\", frame: \"iris_weirdsep_test\", predictions_frame: \"prediction-be8c9926-9f88-48ad-9f0f-c3e3cb68a15d\""
+    }
+  ]
+}
