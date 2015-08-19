@@ -62,7 +62,7 @@ def weights_check(ip,port):
         print "MSE (multinomial) no weights vs. weights: {0}, {1}".format(mul1_mse, mul2_mse)
 
         assert abs(reg1_mse - reg2_mse) < 1e-6 * reg1_mse, "Expected mse's to be the same, but got {0}, and {1}".format(reg1_mse, reg2_mse)
-        assert abs(bin1_auc - bin2_auc) < 1e-6 * bin1_auc, "Expected auc's to be the same, but got {0}, and {1}".format(bin1_auc, bin2_auc)
+        assert abs(bin1_auc - bin2_auc) < 3e-4 * bin1_auc, "Expected auc's to be the same, but got {0}, and {1}".format(bin1_auc, bin2_auc)
         assert abs(mul1_mse - mul1_mse) < 1e-6 * mul1_mse, "Expected auc's to be the same, but got {0}, and {1}".format(mul1_mse, mul2_mse)
 
     h2o_cars_data = h2o.import_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
