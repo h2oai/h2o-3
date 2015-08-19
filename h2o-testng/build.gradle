@@ -9,15 +9,20 @@ dependencies {
 }
 
 test {
+	def singleTest = rootProject.hasProperty("testNGSingleTest")
     def singleNode = rootProject.hasProperty("testNGSingleNode")
     def multipleNode = rootProject.hasProperty("testNGMultiNode")
-    enabled = singleNode || multipleNode
+    enabled = singleNode || multipleNode || singleTest
 
     if (multipleNode) { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
 
     useTestNG{
         useDefaultListeners = true
-        if (singleNode) { suites("src/test/resources/singleNode.xml") }
+        if (singleTest) {
+        	suites("src/test/resources/singleTest.xml")
+			systemProperty 'testcase', "$testNGSingleTest"
+        }
+        else if (singleNode) { suites("src/test/resources/singleNode.xml") }
         else { suites("src/test/resources/multipleNode.xml") }
     }
     //testLogging.setShowCauses(true)
