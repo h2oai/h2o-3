@@ -132,8 +132,8 @@ test <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv"
 
 
 # Convert R data.frames into H2O parsed data objects
-training_frame <- as.h2o(localH2O, train)
-validation_frame <- as.h2o(localH2O, test)
+training_frame <- as.h2o(train)
+validation_frame <- as.h2o(test)
 y <- "V1"
 x <- setdiff(names(training_frame), y)
 family <- "binomial"
@@ -164,13 +164,13 @@ labels <- as.data.frame(validation_frame[,c(y)])[,1]
 
 
 # Ensemble test AUC 
-AUC(predictions = predictions , labels = labels)
+cvAUC::AUC(predictions = predictions , labels = labels)
 # 0.7888723
 
 
 # Base learner test AUC (for comparison)
 L <- length(learner)
-auc <- sapply(seq(L), function(l) AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
+auc <- sapply(seq(L), function(l) cvAUC::AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
 data.frame(learner, auc)
 #                   learner       auc
 #1          h2o.glm.wrapper 0.6871288
@@ -181,6 +181,8 @@ data.frame(learner, auc)
 # Note that the ensemble results above are not reproducible since 
 # h2o.deeplearning is not reproducible when using multiple cores.
 
+# Additional note: In a future version, performance metrics will be 
+# computed automatically, as in the other H2O algos.
 
 # Here is an example of how to generate a custom learner library:
 h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) h2o.randomForest.wrapper(..., ntrees = ntrees, nbins = nbins, seed = seed)
