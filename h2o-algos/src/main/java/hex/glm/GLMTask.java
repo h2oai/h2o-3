@@ -1085,6 +1085,7 @@ public abstract class GLMTask  {
     double [] denums;
     double wsum,wsumu;
     DataInfo _dinfo;
+    double _likelihood;
 
     public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
       _params = glm;
@@ -1124,6 +1125,7 @@ public abstract class GLMTask  {
           z = eta + (y - mu) * d;
           w = r.weight / (var * d * d);
         }
+        _likelihood += _params.likelihood(y,mu);
         zTilda.set(i,eta-_betaw[_betaw.length-1]);
         assert w >= 0 || Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
         wChunk.set(i,w);
@@ -1148,6 +1150,7 @@ public abstract class GLMTask  {
       ArrayUtils.add(denums, git.denums);
       wsum+=git.wsum;
       wsumu += git.wsumu;
+      _likelihood += git._likelihood;
       super.reduce(git);
     }
 

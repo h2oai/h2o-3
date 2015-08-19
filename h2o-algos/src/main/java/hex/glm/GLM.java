@@ -856,11 +856,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
 
-    private void doUpdateCD(double [] grads, Gram gram, double [] betaold, double [] betanew , int variable) {
-
+    private void doUpdateCD(double [] grads, double [][] xx, double [] betaold, double [] betanew , int variable) {
+      double diff = betaold[variable] - betanew[variable];
+      double [] ary = xx[variable];
       for(int i = 0; i < grads.length; i++) {
         if (i != variable) {//variable is index of most recently updated
-          grads[i] += ((betaold[variable] - betanew[variable]) * gram.get(i,variable));
+          grads[i] += diff * ary[i];
         }
       }
 
@@ -964,10 +965,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           int p = _activeData.fullN()+ 1;
           double wsum,wsumu; // intercept denum
-          double[] denums;
+          double [] denums;
           boolean skipFirstLevel = !_activeData._useAllFactorLevels;
-          double[] beta =  _taskInfo._beta.clone(); // Warm start for vector with active columns only.
-          double[] betaold = _taskInfo._beta.clone();
+          double [] beta =  _taskInfo._beta.clone(); // Warm start for vector with active columns only.
+          double [] betaold = _taskInfo._beta.clone();
+          double objold = _taskInfo._objVal;
           int iter2=0; // total cd iters
 
           // get reweighted least squares vectors
@@ -975,6 +977,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec w = newVecs[0]; // fixed before each CD loop
           Vec z = newVecs[1]; // fixed before each CD loop
           Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
+          long startTimeTotalNaive = System.nanoTime();
 
           // generate new IRLS iteration
           while (iter2++ < 30) {
@@ -986,6 +989,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             fr.add("filter", _rowFilter); //rows with nas to be skipped
 
             GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(GLM.this._key, _activeData, _parms, beta).doAll(fr);
+            double objVal = objVal(gt._likelihood, gt._betaw, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
             denums = gt.denums;
             wsum = gt.wsum;
             wsumu = gt.wsumu;
@@ -1098,11 +1102,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 break;
             }
 
-            double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, _taskInfo._beta), false);
-            for (int i = 0 ; i < beta.length; ++i) {
-              System.out.print(beta[i] + " ");
-            }
-            System.out.println();
+            double linf = Math.abs(objold - objVal); // ArrayUtils.linfnorm(ArrayUtils.subtract(  beta, _taskInfo._beta  ), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
+            objold=objVal;
+            if (linf < _parms._obj_epsilon & iter2 >1 )
+              break;
+         //   for (int i = 0 ; i < beta.length; ++i) {
+         //     System.out.print(beta[i] + " ");
+         //   }
+         //   System.out.println();
             _taskInfo._beta = beta.clone();
             System.out.println("iter1 = " + iter1);
 
@@ -1112,6 +1119,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           System.out.println("iter2 = " + iter2);
 
+          long endTimeTotalNaive = System.nanoTime();
+          long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive);
+          System.out.println("Time to run Naive Coordinate Descent " + durationTotalNaive);
           _taskInfo._iter = iter2;
           for (Vec v : newVecs) v.remove();
           break;
@@ -1127,12 +1137,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           int iter2=0; // total cd iters
           double objold = _taskInfo._objVal;
 
+          long startTimeTotalCov = System.nanoTime();
+
           // new IRLS iteration
           while (iter2++ < 30) {
-
+            long startTimeCov = System.nanoTime();
             GLMIterationTask gt = new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
                     false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
                     null).doAll(_activeData._adaptedFrame);
+            long endTimeCov = System.nanoTime();
+            long durationCov = (endTimeCov - startTimeCov);
+            System.out.println("Time to compute cov matrix " + durationCov);
+
             double objVal = objVal(gt._likelihood, gt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
             wsum = gt.wsum;
             wsumu = gt.wsumu;
@@ -1144,60 +1160,65 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 ip += beta[j]*gt._gram.get(i,j);
               grads[i] = grads[i] - ip + beta[i]*gt._gram.get(i,i);
             }
+            long t1 = System.currentTimeMillis();
+            long startTimeCd = System.nanoTime();
+            double [][] XX = gt._gram.getXX();
             // CD loop
             while (iter1++ < 300) {
 
               for(int i=0; i < _activeData._cats; ++i) {
                 int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
+                int off = _activeData._catOffsets[i];
+                for(int j=off; j < off + level_num; ++j) { // ST multiple ones at the same time.
+                  if (gt._gram.get(j, j) != 0)
+                    beta[j] = ADMM.shrinkage(grads[j] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                            / (gt._gram.get(j, j) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                  else
+                    beta[j] = 0;
+                  if( beta[j] != 0 )
+                    doUpdateCD(grads, XX, betaold, beta, j);
+                }
 
-                for(int j=0; j < level_num; ++j) // ST multiple ones at the same time.
-                 if(gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) != 0)
-                  beta[_activeData._catOffsets[i]+j] = ADMM.shrinkage( grads[_activeData._catOffsets[i]+j]  / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
-                          / (gt._gram.get(_activeData._catOffsets[i]+j,_activeData._catOffsets[i]+j) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
-                 else
-                  beta[_activeData._catOffsets[i]+j] = 0;
-
-                for(int j=0; j < level_num ; ++j) // update grads vector according to "cat levels " introduced.
-                  if( beta[_activeData._catOffsets[i]+j] != 0 )
-                    doUpdateCD(grads, gt._gram, betaold, beta, _activeData._catOffsets[i] + j);
               }
 
-              for (int i = 0; i < _activeData._nums; ++i) {
-                if(gt._gram.get(i+_activeData.numStart(),i+_activeData.numStart())!= 0)
-                   beta[i+_activeData.numStart()] = ADMM.shrinkage(grads[_activeData.numStart() + i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
-                          / (gt._gram.get(i+_activeData.numStart(),i+_activeData.numStart()) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+              int off = _activeData.numStart();
+              for (int i = off; i < _activeData._nums + off; ++i) {
+                if(gt._gram.get(i,i)!= 0)
+                   beta[i+off] = ADMM.shrinkage(grads[i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                          / (gt._gram.get(i,i) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                 else
-                  beta[i+_activeData.numStart()]=0;
+                  beta[i]=0;
 
-                if(beta[i+_activeData.numStart()]!=0) // update all the grad entries
-                    doUpdateCD(grads, gt._gram, betaold, beta, _activeData.numStart() + i);
+                if(beta[i]!=0) // update all the grad entries
+                    doUpdateCD(grads, XX, betaold, beta, i);
               }
 
-              if(_parms._intercept){
-                beta[beta.length-1] = grads[grads.length-1] / wsum;
-               if(beta[beta.length-1]!=0) // update all the grad entries
-                  doUpdateCD(grads, gt._gram, betaold, beta, beta.length-1);
-               }
+              if(_parms._intercept) {
+                beta[beta.length - 1] = grads[grads.length - 1] / wsum;
+                if (beta[beta.length - 1] != 0) // update all the grad entries
+                  doUpdateCD(grads, XX, betaold, beta, beta.length - 1);
+              }
               double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);
               if (linf < _parms._beta_epsilon)
                 break;
             }
+            long endTimeCd = System.nanoTime();
+            long durationCd = (endTimeCd - startTimeCd);
+            System.out.println("Time to run inner CD " + durationCd);
+            System.out.println("inner loop done in " + iter1 + " iterations and " + (System.currentTimeMillis()-t1)/1000 + "s, iter2 = " + iter2);
 
             double linf = Math.abs(objold-objVal); // ArrayUtils.linfnorm(ArrayUtils.subtract(  beta, _taskInfo._beta  ), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
             objold=objVal;
-            for (int i = 0 ; i < beta.length; ++i) {
-              System.out.print(beta[i] + " ");
-            }
-            System.out.println();
             _taskInfo._beta = beta.clone();
-            System.out.println("iter1 = " + iter1);
             if (linf < _parms._obj_epsilon & iter2 >1 )
               break;
 
           }
-          System.out.println("iter2 = " + iter2);
 
+          long endTimeTotalCov = System.nanoTime();
+          long durationTotalCov = (endTimeTotalCov - startTimeTotalCov);
+          System.out.println("Time to run Cov Updates Coordinate Descent " + durationTotalCov);
           _taskInfo._iter = iter2;
           break;
         }
