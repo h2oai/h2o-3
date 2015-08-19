@@ -19,10 +19,10 @@
 #' @param is_supervised  if specified then override default heuristing which decide if given algorithm
 #'        name and parameters specify super/unsupervised algorithm.
 #' @param conn connection to H2O cluster
-#' @importFrom rjson toJSON
+#' @importFrom jsonlite toJSON
 #' @examples
 #' library(h2o)
-#' library(rjson)
+#' library(jsonlite)
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
 #' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex,
@@ -71,7 +71,7 @@ h2o.grid <- function(algorithm,
 #' @param conn  H2O connection
 #' @examples
 #' library(h2o)
-#' library(rjson)
+#' library(jsonlite)
 #' localH2O <- h2o.init()
 #' iris.hex <- as.h2o(iris)
 #' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5,

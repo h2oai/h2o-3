@@ -30,13 +30,13 @@ class GroupBy:
     self._computed=False        #
     self._res=None              # OUT: resulting group by frame
 
-    if isinstance(order_by,str):  # sanitize order_by if str
+    if isinstance(order_by,basestring):  # sanitize order_by if str
       idx = self._fr.index(order_by)  # must indirectly index into by columns
       try:               self._order_by=self._by.index(idx)
       except ValueError: print "Invalid order_by: Must be a group by column."
 
-    if isinstance(by,str):            self._by = [self._fr.index(by)]
-    elif isinstance(by,(tuple,list)): self._by = [self._fr.index(b) if isinstance(b, str) else b for b in by]
+    if isinstance(by,basestring):     self._by = [self._fr.index(by)]
+    elif isinstance(by,(tuple,list)): self._by = [self._fr.index(b) if isinstance(b, basestring) else b for b in by]
     else: self._by = [self._by]
 
   def min(  self,col=None,name="",na="all"): return self._add_agg("min",col,name,na)
@@ -93,7 +93,7 @@ class GroupBy:
       for i in range(self._fr.ncol):
         if i not in self._by: self._add_agg(op,i,name,na)
       return self
-    elif isinstance(col, (str,unicode)): cidx=self._fr.index(col)
+    elif isinstance(col, basestring):  cidx=self._fr.index(col)
     elif isinstance(col, int):         cidx=col
     elif isinstance(col, (tuple,list)):
       for i in col:

@@ -92,12 +92,13 @@ if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statm
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 \end{lstlisting}
 \begin{lstlisting}[style=R]
-# Now we download, install and initialize the H2O package for R (replacingthe * with the latest version number obtained from the H2O download page)
+# Now we download, install and initialize the H2O package for R (replacing
+the * with the latest version number obtained from the H2O download page)
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/*/R")))
 library(h2o)
 localH2O = h2o.init(nthreads = -1)
@@ -712,7 +713,8 @@ head(test_recon.hex)
 
 \textbf{{MNIST database}}  \href{http://yann.lecun.com/exdb/mnist/}{http://yann.lecun.com/exdb/mnist/}
 
-\textbf{Reducing the Dimensionality ofData with Neural Networks}.  {Hinton et al, 2006}. \\
+\textbf{Reducing the Dimensionality of
+Data with Neural Networks}.  {Hinton et al, 2006}. \\
  \href{http://www.cs.toronto.edu/~hinton/science.pdf}{http://www.cs.toronto.edu/~hinton/science.pdf}
 
 \textbf{Definitive Performance Tuning Guide for Deep Learning}. \href{http://h2o.ai/blog/2015/02/deep-learning-performance/}{http://h2o.ai/blog/2015/02/deep-learning-performance/}
