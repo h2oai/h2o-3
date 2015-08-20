@@ -522,13 +522,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 <h2>Use H<sub>2</sub>O directly from Python</h2>
 
                 <p>1. Prerequisite:    Python 2.7</p>
-                <p>2. Install dependencies:</p>
+                <p>2. Install dependencies (prepending with `sudo` if needed):</p>
                  <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
               <span class="octicon octicon-clippy"></span>
             </button>
                 <p class="terminal" id="to_copy8">
-                    pip install requests<br/>
-                    pip install tabulate
+                    [sudo] pip install requests<br/>
+                    [sudo] pip install tabulate
                 </p>
                 <p>At the command line, copy and paste these commands one line at a time:</p>
                   <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='to_copy2'>
@@ -536,10 +536,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                   </button>
                 <p class="terminal" id="to_copy2">
                     <em># The following command removes the H<sub>2</sub>O module for Python.</em><br/>
-                    pip uninstall h2o<br/>
+                    [sudo] pip uninstall h2o<br/>
                     <br/>
                     <em># Next, use pip to install this version of the  H<sub>2</sub>O Python module.</em><br/>
-                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_WHEEL_FILE_NAME<br/>
+                    [sudo] pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_WHEEL_FILE_NAME<br/>
             </div>
 
             <div id="quickstart-r" style="display:none">
