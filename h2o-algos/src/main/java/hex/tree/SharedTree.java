@@ -466,6 +466,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
+      training_r2 = ((ModelMetricsSupervised)mm).r2();
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
 
