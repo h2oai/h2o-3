@@ -197,17 +197,15 @@ public abstract class Neurons {
   protected abstract void bprop();
 
   /**
-   * Back-propagate accumulated mini-batch gradients (stored in _sumGrad)
-   * @param n actual mini-batch size (could be less than _parms._mini_batch_size at map() boundaries)
+   * Back-propagate gradient in output layer
    */
-  protected void bpropMiniBatch(int n) {
+  protected void bpropOutputLayer() {
     assert(_index == params._hidden.length);
     final int rows = _a.size();
     float m = _minfo.adaDelta() ? 0 : momentum();
     float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-    double scale = 1./n;
     for( int row = 0; row < rows; row++ ) {
-      final double g = _e.raw()[row] * scale;
+      final double g = _e.raw()[row];
       bprop(row, g, r, m);
     }
   }
@@ -216,13 +214,13 @@ public abstract class Neurons {
    * Accumulation of reconstruction errors for a generic Neurons class
    * (This is only used for AutoEncoders)
    */
-  protected void accumulateMiniBatchGradient(double ignored) {
+  protected void setOutputLayerGradient(double ignored) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     Distribution dist = new Distribution(params._distribution); //no need for tweedie power here
     final int rows = _a.size();
     if (_w instanceof Storage.DenseRowMatrix) {
       for (int row = 0; row < rows; row++) {
-        _e.add(row, autoEncoderGradient(dist, row));
+        _e.set(row, autoEncoderGradient(dist, row));
       }
     } else throw H2O.unimpl("Only DenseRowMatrix is implemented for AutoEncoder (Must have sparse=false and col_major=false).");
   }
@@ -938,10 +936,10 @@ public abstract class Neurons {
       }
       compute_sparsity();
     }
+
     @Override protected void bprop() {
-      assert (_index < _minfo.get_params()._hidden.length);
-      assert (!_minfo.get_params()._autoencoder);
-      float m = momentum();
+      assert(_index != params._hidden.length);
+      float m = _minfo.adaDelta() ? 0 : momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       if (_w instanceof Storage.DenseRowMatrix) {
         final int rows = _a.size();
@@ -954,6 +952,7 @@ public abstract class Neurons {
         bprop_sparse(r, m);
       }
     }
+
   }
 
   /**
@@ -1057,12 +1056,12 @@ public abstract class Neurons {
     }
 
     /**
-     * Backpropagation for classification
+     * Part of backpropagation for classification
      * Update every weight as follows: w += -rate * dE/dw
      * Compute dE/dw via chain rule: dE/dw = dE/dy * dy/dnet * dnet/dw, where net = sum(xi*wi)+b and y = activation function
      * @param target actual class label (integer)
      */
-    @Override protected void accumulateMiniBatchGradient(double target) {
+    @Override protected void setOutputLayerGradient(double target) {
       assert(target == (int)target);
       double g; //partial derivative dE/dy * dy/dnet
       final int rows = _a.size();
@@ -1103,7 +1102,7 @@ public abstract class Neurons {
           default:
             throw H2O.unimpl();
         }
-        _e.add(row, g);
+        _e.set(row, g);
       }
     }
   }
@@ -1123,12 +1122,12 @@ public abstract class Neurons {
      * Backpropagation for regression
      * @param target floating-point target value
      */
-    @Override protected void accumulateMiniBatchGradient(double target) {
+    @Override protected void setOutputLayerGradient(double target) {
       final int row = 0;
       final double t = target; //t is in response space for exponential family (no response standardization)
       final double y = _a.get(row);
       double g = new Distribution(params._distribution, params._tweedie_power).gradient(t, y); //y is in link space
-      _e.add(row, g);
+      _e.set(row, g);
     }
   }
 

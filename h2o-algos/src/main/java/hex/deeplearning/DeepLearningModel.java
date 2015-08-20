@@ -733,53 +733,67 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   /**
    * Compute the loss function
-   * @param myRow denseRow containing numerical/categorical predictor and response data (standardized)
+   * @param myRows Mini-Batch Array of denseRow's containing numerical/categorical predictor and response data (standardized)
    * @return loss
    */
-  public double loss(DataInfo.Row myRow) {
+  public double loss(DataInfo.Row[] myRows) {
+    double loss = 0;
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
-    long seed = -1; //ignored
-    ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
-    DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
+    for (DataInfo.Row myRow : myRows) {
+      if (myRow == null) continue;
+      long seed = -1; //ignored
+      // check that all non-last layer errors/gradients are empty
+      for (int i = 0; i<neurons.length-1;++i) {
+        Storage.DenseVector e = neurons[i]._e;
+        if (e==null) continue;
+        assert(ArrayUtils.sum(e.raw()) == 0);
+      }
+      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+      DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
+      // check that all non-last layer errors/gradients are empty
+      for (int i = 0; i<neurons.length-1;++i) {
+        Storage.DenseVector e = neurons[i]._e;
+        if (e==null) continue;
+        assert(ArrayUtils.sum(e.raw()) == 0);
+      }
 
-    //Now compute the loss
-    double loss;
-    if (model_info.get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
-      if (_parms._balance_classes) throw H2O.unimpl();
-      int actual = (int)myRow.response[0];
-      double pred = neurons[neurons.length - 1]._a.get(actual);
-      loss = -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
-    } else {
-      if (model_info.get_params()._autoencoder) throw H2O.unimpl();
+      if (model_info.get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
+        if (_parms._balance_classes) throw H2O.unimpl();
+        int actual = (int) myRow.response[0];
+        double pred = neurons[neurons.length - 1]._a.get(actual);
+        loss += -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
+      } else {
+        if (model_info.get_params()._autoencoder) throw H2O.unimpl();
 
-      //prediction and actual response in standardized response space
-      double pred = neurons[neurons.length - 1]._a.raw()[0];
-      double actual = myRow.response[0];
+        //prediction and actual response in standardized response space
+        double pred = neurons[neurons.length - 1]._a.get(0);
+        double actual = myRow.response[0];
 
-      // FIXME: re-enable this such that the loss is computed from the de-standardized prediction/response
-      //bring standardized prediction and actual response to real space
+        // FIXME: re-enable this such that the loss is computed from the de-standardized prediction/response
+        //bring standardized prediction and actual response to real space
 //      DataInfo di = model_info().data_info();
 //      if (di._normRespMul != null) { //either both are null or none
 //        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
 //        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
 //      }
-      Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
-      pred = dist.linkInv(pred);
-      loss = 0.5*dist.deviance(1 /*weight*/, actual, pred);
-    }
-
-    // add L1/L2 penalty of model coefficients (weights & biases)
-    for (int i = 0; i < _parms._hidden.length + 1; ++i) {
-      if (neurons[i]._w == null) continue;
-      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
-        for (int col = 0; col < neurons[i]._w.cols(); ++col) {
-          loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
-          loss += 0.5*_parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
-        }
+        Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
+        pred = dist.linkInv(pred);
+        loss += 0.5 * dist.deviance(1 /*weight*/, actual, pred);
       }
-      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
-        loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
-        loss += 0.5*_parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+
+      // add L1/L2 penalty of model coefficients (weights & biases)
+      for (int i = 0; i < _parms._hidden.length + 1; ++i) {
+        if (neurons[i]._w == null) continue;
+        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+          for (int col = 0; col < neurons[i]._w.cols(); ++col) {
+            loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
+            loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+          }
+        }
+        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+          loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
+          loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+        }
       }
     }
     return loss;

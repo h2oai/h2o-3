@@ -716,14 +716,16 @@ public class DeepLearningModelInfo extends Iced {
   }
 
   static public class GradientCheck {
-    GradientCheck(int l, int r, int c) { layer=l; row=r; col=c; }
+    GradientCheck(int l, int r, int c) { layer=l; row=r; col=c; gradient=0;}
     int layer;
     int row;
     int col;
     double gradient;
     void apply(int l, int r, int c, double g) {
-      if (r==row && c==col && l==layer)
-        gradient=g;
+      if (r==row && c==col && l==layer) {
+        assert(gradient == 0); //there can only be one match
+        gradient = g;
+      }
     }
   }
   static public GradientCheck gradientCheck = null;

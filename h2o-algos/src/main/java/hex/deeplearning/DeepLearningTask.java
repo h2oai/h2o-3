@@ -109,8 +109,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   @Override public void applyMiniBatchUpdate(int n) {
     assert(_training);
-    applyModelUpdates(_neurons, n);
-    clearGradients();
+    assert(n==1);
+    applyModelUpdates(_neurons);
   }
 
   /**
@@ -119,22 +119,15 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param neurons
    */
   static public void applyModelUpdates(Neurons[] neurons) {
-    applyModelUpdates(neurons,1);
-  }
-
-  static private void applyModelUpdates(Neurons[] neurons, int n) {
-    assert (n > 0);
-    // last layer: Apply mini batch (need to know mini-batch size n)
-    neurons[neurons.length - 1].bpropMiniBatch(n);
+    // last layer - just use gradient and push backwards
+    neurons[neurons.length - 1].bpropOutputLayer();
     // non-last layers: Apply mini batch (need to know mini-batch size n)
     for (int i = neurons.length - 2; i > 0; --i)
       neurons[i].bprop();
-  }
 
-  private void clearGradients() {
     // all errors are reset to 0
-    for (int i = 0; i<_neurons.length ;++i) {
-      Storage.DenseVector e = _neurons[i]._e;
+    for (int i = 0; i<neurons.length ;++i) {
+      Storage.DenseVector e = neurons[i]._e;
       if (e==null) continue;
       Arrays.fill(e.raw(), 0);
     }
@@ -143,7 +136,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   @Override
   protected int getMiniBatchSize() {
     return _localmodel.get_params()._mini_batch_size;
-//    return (int)Math.min(1+Math.log(1+_localmodel.get_processed_global()), _localmodel.get_params()._mini_batch_size); //smooth increase from 1 to _mini_batch_size
   }
 
   /**
@@ -314,10 +306,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
 
       if (training) {
-        // Compute the mini-batch gradient
+        // Compute the gradient at the output layer
         // auto-encoder: pass a dummy "response" (ignored)
         // otherwise: class label or regression target
-        neurons[neurons.length - 1].accumulateMiniBatchGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
+        neurons[neurons.length - 1].setOutputLayerGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
 
         // Elastic Averaging - set up helpers needed during back-propagation
         if (consensus_minfo != null) {
