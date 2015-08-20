@@ -186,4 +186,28 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     chunkDone(num_processed_rows);
   }
 
+  public static class ExtractDenseRow extends MRTask<ExtractDenseRow> {
+    final private DataInfo _di; //INPUT
+    final private long _gid; //INPUT
+    public DataInfo.Row _row; //OUTPUT
+    public ExtractDenseRow(DataInfo di, long globalRowId) { _di = di;  _gid = globalRowId; }
+
+    @Override
+    public void map(Chunk[] cs) {
+      // fill up _row with the data of row with global id _gid
+      if (cs[0].start() <= _gid && cs[0].start()+cs[0].len() > _gid) {
+        _row = _di.newDenseRow();
+        _di.extractDenseRow(cs, (int)(_gid-cs[0].start()), _row);
+      }
+    }
+
+    @Override
+    public void reduce(ExtractDenseRow mrt) {
+      if (mrt._row != null) {
+        assert(this._row == null); //only one thread actually filled the output _row
+        _row = mrt._row;
+      }
+    }
+  }
+
 }
