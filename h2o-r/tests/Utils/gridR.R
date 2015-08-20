@@ -47,6 +47,19 @@ makeRandomGridSpace <- function(algo,ncols=NULL) {
     if ( sample(0:1,1) ) { grid_space$init = sample(c('Random','PlusPlus','Furthest'), sample(2:3,1)) }
     grid_space$k <- sample(1:10, 1)
   }
+  if ( algo == "glm" ) {
+    lambda <- sample(0:1,1)
+    alpha <- sample(0:1,1)
+    if ( lambda ) { grid_space$lambda <- lapply(round(runif(sample(2:3,1)),4), function (x) x) }
+    if ( !lambda || alpha ) { grid_space$alpha <- lapply(round(runif(sample(2:3,1)),4), function (x) x) }
+    grid_space$family <- sample(c('binomial','gaussian','poisson','tweedie','gamma'), 1)
+    if ( grid_space$family == "tweedie" ) {
+      if ( sample(0:1,1) ) {
+        grid_space$tweedie_variance_power <- round(runif(sample(2:3,1))+1,4)
+        grid_space$tweedie_link_power <- 1 - grid_space$tweedie_variance_power
+      }
+    }
+  }
   grid_space
 }
 
