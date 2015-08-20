@@ -163,8 +163,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping )
+          if( training_r2 >= _parms._r2_stopping ) {
+            doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
             return;             // Stop when approaching round-off error
+          }
         }
 
         // Compute predictions and resulting residuals for trees built so far
