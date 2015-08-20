@@ -45,15 +45,16 @@ public class Storage {
    * Abstract tensor interface
    */
   public abstract interface Tensor {
-    abstract float get(int slice, int row, int col);
-    abstract void set(int slice, int row, int col, float val);
-    abstract void add(int slice, int row, int col, float val);
+    abstract float get(int minibatch, int slice, int row, int col);
+    abstract void set(int minibatch, int slice, int row, int col, float val);
+    abstract void add(int minibatch, int slice, int row, int col, float val);
+    abstract void setMatrix(int minibatch, int slice, Matrix m);
+    abstract Matrix getMatrix(int minibatch, int slice);
+    abstract int minibatches();
     abstract int slices();
     abstract int cols();
     abstract int rows();
     abstract long size();
-    abstract float[] raw();
-    public Frame toFrame(int slice, Key key);
   }
 
   /**
@@ -183,6 +184,39 @@ public class Storage {
     @Override public long size() { return (long)_rows*(long)_cols; }
     public float[] raw() { return _data; }
     @Override public Frame toFrame(Key key) { return Storage.toFrame(this, key); }
+  }
+
+  public final static class DenseTensor extends Iced implements Tensor {
+    private DenseRowMatrix[][] _data;
+    public DenseTensor(int minibatches, int slices) {
+      _data = new DenseRowMatrix[minibatches][slices];
+    }
+    public DenseTensor(int minibatches, int slices, int rows, int cols) {
+      this(minibatches, slices);
+      for (int i=0;i<minibatches();++i)
+        for (int j=0;j<slices();++j)
+          setMatrix(i,j,new DenseRowMatrix(rows, cols));
+    }
+    @Override public void setMatrix(int minibatch, int slice, Matrix m) {
+      _data[minibatch][slice] = (DenseRowMatrix)m;
+    }
+    @Override public DenseRowMatrix getMatrix(int minibatch, int slice) {
+      return _data[minibatch][slice];
+    }
+    @Override public float get(int minibatch, int slice, int row, int col) {
+      return getMatrix(minibatch, slice).get(row, col);
+    }
+    @Override public void set(int minibatch, int slice, int row, int col, float val) {
+      getMatrix(minibatch, slice).set(row, col, val);
+    }
+    @Override public void add(int minibatch, int slice, int row, int col, float val) {
+      getMatrix(minibatch, slice).add(row, col, val);
+    }
+    @Override public int minibatches() { return _data.length; }
+    @Override public int slices() { return _data[0].length; }
+    @Override public int cols() { return _data[0][0].cols(); }
+    @Override public int rows() { return _data[0][0].rows(); }
+    @Override public long size() { return minibatches()*slices()*_data[0][0].size(); }
   }
 
   /**

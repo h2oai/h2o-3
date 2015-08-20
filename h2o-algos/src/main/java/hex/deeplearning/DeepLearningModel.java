@@ -786,8 +786,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (neurons[i]._w == null) continue;
         for (int row = 0; row < neurons[i]._w.rows(); ++row) {
           for (int col = 0; col < neurons[i]._w.cols(); ++col) {
-            loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
-            loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+            loss += _parms._l1 * Math.abs(neurons[i]._w.getMatrix(0,0).get(row, col));
+            loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.getMatrix(0,0).get(row, col), 2);
           }
         }
         for (int row = 0; row < neurons[i]._w.rows(); ++row) {
