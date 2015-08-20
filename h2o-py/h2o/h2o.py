@@ -936,7 +936,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   The elastic-net penalty is defined to be:
   eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
   making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
-  :param Lambda: A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in the objective function. When lambda = 0, no elastic-net penalty is applied and ordinary generalized linear models are fit.
+  :param Lambda: A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in the objective function. When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear models are fit.
   :param prior: (Optional) A numeric specifying the prior probability of class 1 in the response when family = "binomial". The default prior is the observational frequency of class 1.
   :param lambda_search: A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given lambda is interpreted as lambda min.
   :param nlambdas: The number of lambda values to use when lambda_search = TRUE.
@@ -964,6 +964,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   matrices.
   """
   parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  if not isinstance(parms["alpha"], (list,tuple)): parms["alpha"] = [parms["alpha"]]
   parms["algo"]="glm"
   return h2o_model_builder.supervised(parms)
 

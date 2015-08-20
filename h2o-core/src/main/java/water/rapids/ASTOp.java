@@ -3804,13 +3804,24 @@ class ASTSdev extends ASTUniPrefixOp {
       env.poppush(1, new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();
-      if (fr.vecs().length > 1)
-        throw new IllegalArgumentException("sd does not apply to multiple cols.");
-      if (fr.vecs()[0].isEnum())
-        throw new IllegalArgumentException("sd only applies to numeric vector.");
-
-      double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
-      env.poppush(1, new ValNum(sig));
+      for( Vec v: fr.vecs())
+        if( v.isEnum() ) throw new IllegalArgumentException("sd only applies to numeric vector.");
+      if( fr.numCols() > 1) {
+        Futures fs = new Futures();
+        Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+        AppendableVec v = new AppendableVec(key);
+        NewChunk chunk = new NewChunk(v, 0);
+        for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).sigma());
+        chunk.close(0,fs);
+        Vec vec = v.close(fs);
+        fs.blockForPending();
+        Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+        DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+        env.pushAry(fr2);
+      } else {
+        double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
+        env.poppush(1, new ValNum(sig));
+      }
     }
   }
 }
@@ -4013,11 +4024,11 @@ class ASTMean extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     if (env.isNum()) return;
     Frame fr = env.popAry(); // get the frame w/o sub-reffing
-    if (fr.numCols() > 1 && fr.numRows() > 1)
-      throw new IllegalArgumentException("mean does not apply to multiple cols.");
+//    if (fr.numCols() > 1 && fr.numRows() > 1)
+//      throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
-      throw new IllegalArgumentException("mean only applies to numeric vector.");
-    if (fr.numCols() > 1) {
+      throw new IllegalArgumentException("mean only applies to numeric columns.");
+    if (fr.numCols() > 1 && fr.numRows()==1) {
       double mean=0;
       double rows=0;
       for(Vec v : fr.vecs()) {
@@ -4025,6 +4036,18 @@ class ASTMean extends ASTUniPrefixOp {
         if( !Double.isNaN(val)) {mean += v.at(0); rows++;}
       }
       env.push(new ValNum(mean/rows));
+    } else if( fr.numCols() > 1) {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).mean());
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
     } else {
       Vec v = fr.anyVec();
       if( _narm || v.naCnt()==0 ) env.push(new ValNum(v.mean()));
