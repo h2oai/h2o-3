@@ -37,6 +37,13 @@ h2o.grid <- function(algorithm,
 {
   # Extract parameters
   dots <- list(...)
+  model_param_names <- names(dots)
+  hyper_param_names <- names(hyper_params)
+  if (any(model_param_names %in% hyper_param_names)) {
+    overlapping_params <- intersect(model_param_names, hyper_param_names)
+    stop(paste0("The following parameters are defined as common model parameters and also as hyper parameters: ",
+                .collapse(overlapping_params), "! Please choose only one way!"))
+  }
   params <- .h2o.prepareModelParameters(algo = algorithm, params = dots, is_supervised = is_supervised)
   # FIXME: rename x to ignore, y to response
 
