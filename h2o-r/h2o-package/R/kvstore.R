@@ -151,15 +151,17 @@ h2o.getFrame <- function(id) .newFrame("getFrame",id)
 #'
 #' Returns a reference to an existing model in the H2O instance.
 #'
-#' @param id A string indicating the unique id of the model to retrieve.
+#' @param model_id A string indicating the unique model_id of the model to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #'
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
 #' model.retrieved <- h2o.getModel(model_id)
+#' }
 #' @export
 h2o.getModel <- function(model_id) {
   json <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, "/", model_id))$models[[1L]]
@@ -172,8 +174,10 @@ h2o.getModel <- function(model_id) {
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   MetricsClass <- paste0("H2O", model_category, "Metrics")
   # setup the metrics objects inside of model...
-  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
-  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
+  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
+  model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
+str(json$parameters)
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
