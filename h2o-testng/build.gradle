@@ -9,25 +9,31 @@ dependencies {
 }
 
 test {
-	def singleTest = rootProject.hasProperty("testNGSingleTest")
     def singleNode = rootProject.hasProperty("testNGSingleNode")
     def multipleNode = rootProject.hasProperty("testNGMultiNode")
-    enabled = singleNode || multipleNode || singleTest
+    enabled = singleNode || multipleNode
 
     if (multipleNode) { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
 
     useTestNG{
         useDefaultListeners = true
-        if (singleTest) {
-        	suites("src/test/resources/singleTest.xml")
-			systemProperty 'testcase', "$testNGSingleTest"
+        
+        if(rootProject.hasProperty("testcaseId")){
+        	systemProperty 'testcaseId', "$testcaseId"
+        	println("algorithm and size parameter will be ignored.");
         }
-        else if (singleNode) { suites("src/test/resources/singleNode.xml") }
+        else{
+	        if(rootProject.hasProperty("algorithm")){
+	        	systemProperty 'algorithm', "$algorithm"
+	        }
+	        if(rootProject.hasProperty("size")){
+	        	systemProperty 'size', "$size"
+	        }
+	    }
+        
+        if (singleNode) { suites("src/test/resources/singleNode.xml") }
         else { suites("src/test/resources/multipleNode.xml") }
     }
-    //testLogging.setShowCauses(true)
-    //testLogging.setShowStackTraces(true)
-    //testLogging.setShowStandardStreams(true)
 
     reports {
         html.enabled = false

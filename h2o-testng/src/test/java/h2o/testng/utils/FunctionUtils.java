@@ -3,7 +3,6 @@ package h2o.testng.utils;
 import hex.Distribution.Family;
 import hex.Model;
 import hex.glm.GLM;
-import hex.glm.GLMBasic;
 import hex.glm.GLMConfig;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
@@ -19,6 +18,7 @@ import hex.tree.gbm.GBMModel.GBMParameters;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -28,7 +28,9 @@ import org.testng.Assert;
 import water.Key;
 import water.Scope;
 import water.TestNGUtil;
+import water.fvec.FVecTest;
 import water.fvec.Frame;
+import water.parser.ParseDataset;
 
 public class FunctionUtils {
 
@@ -48,7 +50,7 @@ public class FunctionUtils {
 			result = "Dataset characteristic is not available";
 		}
 		else {
-			result = Param.validateAutoSetParams(params, input, tcHeaders);
+			result = Param.validateAutoSetParams(params, tcHeaders, input);
 		}
 
 		if (result != null) {
@@ -98,6 +100,57 @@ public class FunctionUtils {
 		return result;
 	}
 
+	/**
+	 * This function is only used for GLM algorithm.
+	 * 
+	 * @param tcHeaders
+	 * @param rawInput
+	 * @param trainFrame
+	 * @param responseColumn
+	 * @return null if testcase do not require betaconstraints otherwise return beta constraints frame
+	 */
+	private static Frame createBetaConstraints(List<String> tcHeaders, String[] rawInput, Frame trainFrame,
+			String responseColumn) {
+
+		Frame betaConstraints = null;
+		boolean isBetaConstraints = Param.parseBoolean(rawInput[tcHeaders.indexOf("betaConstraints")]);
+		String lowerBound = rawInput[tcHeaders.indexOf("lowerBound")];
+		String upperBound = rawInput[tcHeaders.indexOf("upperBound")];
+
+		if (!isBetaConstraints) {
+			return null;
+		}
+		// Here's an example of how to make the beta constraints frame.
+		// First, represent the beta constraints frame as a string, for example:
+
+		// "names, lower_bounds, upper_bounds\n"+
+		// "AGE, -.5, .5\n"+
+		// "RACE, -.5, .5\n"+
+		// "GLEASON, -.5, .5"
+		String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
+		List<String> predictorNames = Arrays.asList(trainFrame._names);
+		// predictorNames.remove(glmParams._response_column); // remove the response column name. we only want
+		// predictors
+		for (String name : predictorNames) {
+			if (!name.equals(responseColumn)) {
+				if (trainFrame.vec(name).isEnum()) { // need coefficient names for each level of a categorical
+														// column
+					for (String level : trainFrame.vec(name).domain()) {
+						betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
+					}
+				}
+				else { // numeric columns only need one coefficient name
+					betaConstraintsString += String.format("%s,%s,%s\n", name, lowerBound, upperBound);
+				}
+			}
+		}
+		Key betaConsKey = Key.make("beta_constraints");
+		FVecTest.makeByteVec(betaConsKey, betaConstraintsString);
+		betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+
+		return betaConstraints;
+	}
+
 	public static Model.Parameters toModelParameter(Param[] params, List<String> tcHeaders, String algorithm,
 			String train_dataset_id, String validate_dataset_id, Dataset train_dataset, Dataset validate_dataset,
 			String[] input) {
@@ -108,55 +161,55 @@ public class FunctionUtils {
 
 		switch (algorithm) {
 			case FunctionUtils.drf:
+
 				modelParameter = new DRFModel.DRFParameters();
 
 				// set distribution param
-				Family fDRF = (Family) DRFConfig.familyParams.getValue(input, tcHeaders);
+				Family drfFamily = (Family) DRFConfig.familyParams.getValue(input, tcHeaders);
 
-				if (fDRF != null) {
-					System.out.println("Set _distribution: " + fDRF);
-					modelParameter._distribution = fDRF;
+				if (drfFamily != null) {
+					System.out.println("Set _distribution: " + drfFamily);
+					modelParameter._distribution = drfFamily;
 				}
 				break;
+
 			case FunctionUtils.glm:
+
 				modelParameter = new GLMParameters();
 
-				hex.glm.GLMModel.GLMParameters.Family fGLM = (hex.glm.GLMModel.GLMParameters.Family) GLMConfig.familyOptionsParams
+				hex.glm.GLMModel.GLMParameters.Family glmFamily = (hex.glm.GLMModel.GLMParameters.Family) GLMConfig.familyOptionsParams
 						.getValue(input, tcHeaders);
 				Solver s = (Solver) GLMConfig.solverOptionsParams.getValue(input, tcHeaders);
 
-				if (fGLM != null) {
-					System.out.println("Set _family: " + fGLM);
-					((GLMParameters) modelParameter)._family = fGLM;
+				if (glmFamily != null) {
+					System.out.println("Set _family: " + glmFamily);
+					((GLMParameters) modelParameter)._family = glmFamily;
 				}
 				if (s != null) {
 					System.out.println("Set _solver: " + s);
 					((GLMParameters) modelParameter)._solver = s;
 				}
-				//TODO: do not implement beta constrainst
 				break;
+
 			case FunctionUtils.gbm:
+
 				modelParameter = new GBMParameters();
 
 				// set distribution param
-				Family f = (Family) GBMConfig.familyParams.getValue(input, tcHeaders);
+				Family gbmFamily = (Family) GBMConfig.familyParams.getValue(input, tcHeaders);
 
-				if (f != null) {
-					System.out.println("Set _distribution: " + f);
-					modelParameter._distribution = f;
+				if (gbmFamily != null) {
+					System.out.println("Set _distribution: " + gbmFamily);
+					modelParameter._distribution = gbmFamily;
 				}
 				break;
+
 			default:
-				// TODO: log is not clearly
-				System.out.println("do not implement for algorithm: " + algorithm);
+				System.out.println("can not parse to object parameter with algorithm: " + algorithm);
 		}
 
 		// set AutoSet params
-		for (Param p : params) {
-			if (p.isAutoSet) {
-				p.parseAndSet(modelParameter, input[tcHeaders.indexOf(p.name)]);
-			}
-		}
+		Param.setAutoSetParams(modelParameter, params, tcHeaders, input);
 
 		// set response_column param
 		modelParameter._response_column = train_dataset.getResponseColumn();
@@ -164,6 +217,7 @@ public class FunctionUtils {
 		// set train/validate params
 		Frame trainFrame = null;
 		Frame validateFrame = null;
+		Frame betaConstraints = null;
 
 		try {
 
@@ -174,6 +228,13 @@ public class FunctionUtils {
 				System.out.println("Create validate frame: " + train_dataset_id);
 				validateFrame = validate_dataset.getFrame();
 			}
+
+			if (algorithm.equals(FunctionUtils.glm)) {
+				betaConstraints = createBetaConstraints(tcHeaders, input, trainFrame, train_dataset.getResponseColumn());
+				if (betaConstraints != null) {
+					((GLMParameters) modelParameter)._beta_constraints = betaConstraints._key;
+				}
+			}
 		}
 		catch (Exception e) {
 			if (trainFrame != null) {
@@ -181,6 +242,9 @@ public class FunctionUtils {
 			}
 			if (validateFrame != null) {
 				validateFrame.remove();
+			}
+			if (betaConstraints != null) {
+				betaConstraints.remove();
 			}
 			throw e;
 		}
@@ -201,15 +265,16 @@ public class FunctionUtils {
 			String[] rawInput) {
 
 		Frame trainFrame = null;
+		Frame score = null;
+
 		DRF drfJob = null;
 		DRFModel drfModel = null;
-		Frame score = null;
 
 		Key modelKey = Key.make("model");
 		GLM glmJob = null;
 		GLMModel glmModel = null;
 		HashMap<String, Double> coef = null;
-		
+
 		GBM gbmJob = null;
 		GBMModel gbmModel = null;
 
@@ -219,6 +284,7 @@ public class FunctionUtils {
 			Scope.enter();
 			switch (algorithm) {
 				case FunctionUtils.drf:
+
 					System.out.println("Build model");
 					drfJob = new DRF((DRFModel.DRFParameters) parameter);
 
@@ -228,7 +294,9 @@ public class FunctionUtils {
 					System.out.println("Predict testcase");
 					score = drfModel.score(trainFrame);
 					break;
+
 				case FunctionUtils.glm:
+
 					System.out.println("Build model");
 					glmJob = new GLM(modelKey, "basic glm test", (GLMParameters) parameter);
 
@@ -240,9 +308,12 @@ public class FunctionUtils {
 					System.out.println("Predict testcase ");
 					score = glmModel.score(trainFrame);
 					break;
+
 				case FunctionUtils.gbm:
+
 					System.out.println("Build model ");
-					gbmJob = new GBM((GBMParameters)parameter);
+					gbmJob = new GBM((GBMParameters) parameter);
+
 					System.out.println("Train model");
 					gbmModel = gbmJob.trainModel().get();
 
@@ -280,6 +351,18 @@ public class FunctionUtils {
 			if (drfModel != null) {
 				drfModel.delete();
 			}
+			if (glmJob != null) {
+				glmJob.remove();
+			}
+			if (glmModel != null) {
+				glmModel.delete();
+			}
+			if (gbmJob != null) {
+				gbmJob.remove();
+			}
+			if (gbmModel != null) {
+				gbmModel.delete();
+			}
 			if (score != null) {
 				score.remove();
 				score.delete();
@@ -289,7 +372,7 @@ public class FunctionUtils {
 	}
 
 	public static Object[][] dataProvider(HashMap<String, Dataset> dataSetCharacteristic, List<String> tcHeaders,
-			String positiveTestcaseFilePath, String negativeTestcaseFilePath, int firstRow) {
+			String algorithm, String positiveTestcaseFilePath, String negativeTestcaseFilePath, int firstRow) {
 
 		Object[][] result = null;
 		Object[][] positiveData = null;
@@ -298,8 +381,10 @@ public class FunctionUtils {
 		int numCol = 0;
 		int r = 0;
 
-		positiveData = readTestcaseFile(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath, firstRow, false);
-		negativeData = readTestcaseFile(dataSetCharacteristic, tcHeaders, negativeTestcaseFilePath, firstRow, true);
+		positiveData = readTestcaseFile(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath, firstRow,
+				algorithm, false);
+		negativeData = readTestcaseFile(dataSetCharacteristic, tcHeaders, negativeTestcaseFilePath, firstRow,
+				algorithm, true);
 
 		if (positiveData != null && positiveData.length != 0) {
 			numRow += positiveData.length;
@@ -331,7 +416,7 @@ public class FunctionUtils {
 	}
 
 	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic, List<String> tcHeaders,
-			String fileName, int firstRow, boolean isNegativeTestcase) {
+			String fileName, int firstRow, String algorithm, boolean isNegativeTestcase) {
 
 		Object[][] result = null;
 		List<String> lines = null;
@@ -353,7 +438,7 @@ public class FunctionUtils {
 		// remove headers
 		lines.removeAll(lines.subList(0, firstRow));
 
-		result = new Object[lines.size()][8];
+		result = new Object[lines.size()][9];
 		int r = 0;
 		for (String line : lines) {
 			String[] variables = line.trim().split(",", -1);
@@ -364,8 +449,9 @@ public class FunctionUtils {
 			result[r][3] = variables[tcHeaders.indexOf(validate_dataset_id)];
 			result[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf(train_dataset_id)]);
 			result[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf(validate_dataset_id)]);
-			result[r][6] = isNegativeTestcase;
-			result[r][7] = variables;
+			result[r][6] = algorithm;
+			result[r][7] = isNegativeTestcase;
+			result[r][8] = variables;
 
 			r++;
 		}
@@ -418,6 +504,24 @@ public class FunctionUtils {
 		return result;
 	}
 
+	public static void removeDatasetInDatasetCharacteristic(HashMap<String, Dataset> mapDatasetCharacteristic,
+			String dataSetDirectory) {
+
+		if (StringUtils.isEmpty(dataSetDirectory)) {
+			return;
+		}
+
+		Dataset temp = null;
+		for (String key : mapDatasetCharacteristic.keySet()) {
+
+			temp = mapDatasetCharacteristic.get(key);
+			if (temp != null && dataSetDirectory.equals(temp.getDataSetDirectory())) {
+				temp.closeFrame();
+				mapDatasetCharacteristic.remove(key);
+			}
+		}
+	}
+
 	public static void closeAllFrameInDatasetCharacteristic(HashMap<String, Dataset> mapDatasetCharacteristic) {
 
 		for (String key : mapDatasetCharacteristic.keySet()) {
@@ -434,4 +538,7 @@ public class FunctionUtils {
 	public final static String glm = "glm";
 	public final static String gbm = "gbm";
 	public final static String drf = "drf";
+	
+	public final static String smalldata = "smalldata";
+	public final static String bigdata = "bigdata";
 }
