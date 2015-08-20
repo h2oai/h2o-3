@@ -70,8 +70,9 @@
 h2o.assign <- function(data, key) {
   .key.validate(key)
   if( !is.null(data:id) && key == data:id ) stop("Destination key must differ from input frame ", key)
-  # Eager evalute, copied from .eval.frame
+  # Eager evaluate, copied from .eval.frame
   exec_str <- .eval.impl(data,TRUE);
+  print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   .newFrame("h2o.assign",key)
@@ -177,7 +178,6 @@ h2o.getModel <- function(model_id) {
   model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
-str(json$parameters)
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {

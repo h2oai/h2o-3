@@ -340,7 +340,24 @@ NULL
 #' @export
 `[.Frame` <- function(data,row,col) {
   stopifnot( is.Frame(data) )
-  if( missing(col) && !is.Frame(row) ) {  # Have a row but not a column?
+
+  # This function is called with a huge variety of argument styles
+  # Here's the breakdown: 
+  # df[]           - both missing, identity with df
+  # df[,]          - both missing, identity with df
+  # df[2,]         - constant row, all cols
+  # df[1:150,]     - selection of rows, all cols
+  # df[3]          - constant column, not constant row
+  # df[,3]         - constant column
+  # df[,1:10]      - selection of columns
+  # df["colname"]  - single column by name, df$colname
+  # df[,"colname"] - single column by name
+  # df[2,"colname"]- row slice and column-by-name
+  # df[2,3]        - single element
+  # df[1:150,1:10] - rectangular slice
+  # df[a<b,]       - boolean row slice
+  browser()
+  if( missing(col) && !missing(row) && length(row)==1 && is.character(row) ) {  # Have a row but not a column?
     # Row is really column: cars.hex["cylinders"]  or cars.hex$cylinders
     col <- row
     row <- NA
