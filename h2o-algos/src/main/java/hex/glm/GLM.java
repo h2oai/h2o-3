@@ -857,10 +857,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
 
     private void doUpdateCD(double [] grads, double [][] xx, double [] betaold, double [] betanew , int variable) {
+
       double diff = betaold[variable] - betanew[variable];
       double [] ary = xx[variable];
+
       for(int i = 0; i < grads.length; i++) {
-        if (i != variable) {//variable is index of most recently updated
+        if (i != variable) {// variable is index of most recently updated
           grads[i] += diff * ary[i];
         }
       }
@@ -977,7 +979,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec w = newVecs[0]; // fixed before each CD loop
           Vec z = newVecs[1]; // fixed before each CD loop
           Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
-          long startTimeTotalNaive = System.nanoTime();
+          long startTimeTotalNaive = System.currentTimeMillis();
 
           // generate new IRLS iteration
           while (iter2++ < 30) {
@@ -1119,8 +1121,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           System.out.println("iter2 = " + iter2);
 
-          long endTimeTotalNaive = System.nanoTime();
-          long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive);
+          long endTimeTotalNaive = System.currentTimeMillis();
+          long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive)/1000;
           System.out.println("Time to run Naive Coordinate Descent " + durationTotalNaive);
           _taskInfo._iter = iter2;
           for (Vec v : newVecs) v.remove();
@@ -1137,16 +1139,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           int iter2=0; // total cd iters
           double objold = _taskInfo._objVal;
 
-          long startTimeTotalCov = System.nanoTime();
+          long startTimeTotalCov = System.currentTimeMillis();
 
           // new IRLS iteration
           while (iter2++ < 30) {
-            long startTimeCov = System.nanoTime();
+            long startTimeCov = System.currentTimeMillis();
             GLMIterationTask gt = new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
                     false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
                     null).doAll(_activeData._adaptedFrame);
-            long endTimeCov = System.nanoTime();
-            long durationCov = (endTimeCov - startTimeCov);
+            long endTimeCov = System.currentTimeMillis();
+            long durationCov = (endTimeCov - startTimeCov)/1000;
             System.out.println("Time to compute cov matrix " + durationCov);
 
             double objVal = objVal(gt._likelihood, gt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
@@ -1161,7 +1163,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               grads[i] = grads[i] - ip + beta[i]*gt._gram.get(i,i);
             }
             long t1 = System.currentTimeMillis();
-            long startTimeCd = System.nanoTime();
+            long startTimeCd = System.currentTimeMillis();
             double [][] XX = gt._gram.getXX();
             // CD loop
             while (iter1++ < 300) {
@@ -1184,7 +1186,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               int off = _activeData.numStart();
               for (int i = off; i < _activeData._nums + off; ++i) {
                 if(gt._gram.get(i,i)!= 0)
-                   beta[i+off] = ADMM.shrinkage(grads[i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                   beta[i] = ADMM.shrinkage(grads[i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
                           / (gt._gram.get(i,i) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                 else
                   beta[i]=0;
@@ -1203,9 +1205,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               if (linf < _parms._beta_epsilon)
                 break;
             }
-            long endTimeCd = System.nanoTime();
+            long endTimeCd = System.currentTimeMillis();
             long durationCd = (endTimeCd - startTimeCd);
-            System.out.println("Time to run inner CD " + durationCd);
+            System.out.println("Time to run inner CD " + durationCd/1000);
             System.out.println("inner loop done in " + iter1 + " iterations and " + (System.currentTimeMillis()-t1)/1000 + "s, iter2 = " + iter2);
 
             double linf = Math.abs(objold-objVal); // ArrayUtils.linfnorm(ArrayUtils.subtract(  beta, _taskInfo._beta  ), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
@@ -1216,8 +1218,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           }
 
-          long endTimeTotalCov = System.nanoTime();
-          long durationTotalCov = (endTimeTotalCov - startTimeTotalCov);
+          long endTimeTotalCov = System.currentTimeMillis();
+          long durationTotalCov = (endTimeTotalCov - startTimeTotalCov)/1000;
           System.out.println("Time to run Cov Updates Coordinate Descent " + durationTotalCov);
           _taskInfo._iter = iter2;
           break;
