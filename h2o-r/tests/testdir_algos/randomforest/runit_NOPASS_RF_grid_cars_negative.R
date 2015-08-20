@@ -43,7 +43,7 @@ check.drf.grid.cars.negative <- function(conn) {
   expected_grid_space$ntrees <- c(5,10)
   expected_grid_space$max_depth <- c(2,5)
   expected_grid_space$min_rows <- c(1,10)
-  Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", grid_space[n])))
+  Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   Log.info("Constructing the grid of drf models with some invalid drf parameters...")
   if ( validation_scheme == 1 ) {
