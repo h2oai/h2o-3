@@ -39,12 +39,12 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
   @Override void incr0( int b, double y, double w ) {
-    AtomicUtils.DoubleArray.add(_sums,b,(float)(w*y));
+    AtomicUtils.DoubleArray.add(_sums,b,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
     AtomicUtils.DoubleArray.add(_ssqs,b,(float)(w*y*y));
   }
   // Same, except square done by caller
   void incr1( int b, double y, double yy) {
-    AtomicUtils.DoubleArray.add(_sums,b,(float)y);
+    AtomicUtils.DoubleArray.add(_sums,b,(float)y); //See 'HistogramTest' JUnit for float-casting rationalization
     AtomicUtils.DoubleArray.add(_ssqs,b,(float)yy);
   }
 

@@ -430,6 +430,10 @@ public class DeepLearningParameters extends Model.Parameters {
     for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
     if (_mini_batch_size < 1)
       dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
+    if (_mini_batch_size > 1)
+      dl.error("_mini_batch_size", "Mini-batch size > 1 is not yet supported.");
+    if (!_diagnostics)
+      dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
 
     if (!_autoencoder) {
       if (_valid == null)
@@ -575,12 +579,18 @@ public class DeepLearningParameters extends Model.Parameters {
     if (classification && dl.hasOffsetCol())
       dl.error("_offset_column", "Offset is only supported for regression.");
 
+    if (_activation == Activation.Maxout || _activation == Activation.MaxoutWithDropout)
+      dl.error("_activation", "Maxout activation is not currently supported (implementation is in progress: PUBDEV-1928).");
+
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
       dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
     if (_max_categorical_features < 1)
       dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
-
+    if (_sparse)
+      dl.error("_sparse", "Deprecated: Sparse data handling not supported anymore - not faster.");
+    if (_col_major)
+      dl.error("_col_major", "Deprecated: Column major data handling not supported anymore - not faster.");
     if (!_sparse && _col_major) {
       dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
     }

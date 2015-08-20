@@ -67,7 +67,7 @@ public class DeepLearningIrisTest extends TestUtil {
                     for (int hidden : hiddens) {
                       for (int epoch : epochs) {
                         for (double rate : rates) {
-                          for (boolean sparse : new boolean[]{true, false}) {
+                          for (boolean sparse : new boolean[]{false}) {
                             for (boolean col_major : new boolean[]{false}) {
                               Scope.enter();
                               DeepLearningModel mymodel = null;
@@ -153,7 +153,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._momentum_ramp = 0; //do not change - not implemented in reference
                                 p._initial_weight_distribution = dist;
                                 p._initial_weight_scale = scale;
-                                p._diagnostics = true;
                                 p._valid = null;
                                 p._quiet_mode = true;
                                 p._fast_mode = false; //to be the same as reference
