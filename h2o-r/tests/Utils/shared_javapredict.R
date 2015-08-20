@@ -64,21 +64,21 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
   }
 
   tolerance = 1e-8
-  match <- all.equal(prediction1, prediction2, tolerance = tolerance)
+  match <- all.equal(prediction1, prediction2, tolerance = tolerance, check.names = FALSE)
   if (class(match) != "logical") {
     match <- FALSE
   }
   
   if (! match) {
     for (i in 1:nrow(prediction1)) {
-      rowmatch <- all.equal(prediction1[i,], prediction2[i,], tolerance = tolerance)
+      rowmatch <- all.equal(prediction1[i,], prediction2[i,], tolerance = tolerance, check.names = FALSE)
       if (class(rowmatch) != "logical") {
         rowmatch <- FALSE
       }
       if (! rowmatch) {
         print("----------------------------------------------------------------------")
         print("")
-        print(paste("Prediction mismatch on data row", i, "of test file", test))
+        print(paste("Prediction mismatch on data row", i, "of test file", test_file))
         print("")
         print(      "(Note: That is the 1-based data row number, not the file line number.")
         print(      "       If you have a header row, then the file line number is off by one.)")
