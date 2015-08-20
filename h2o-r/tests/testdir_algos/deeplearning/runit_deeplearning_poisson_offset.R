@@ -24,11 +24,15 @@ test <- function(h) {
                       training_frame = cc) 
 	hh@model$training_metrics@metrics$mean_residual_deviance #-407674.1
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
-	expect_equal(mean_deviance,-407656.252653641)
-	ph = as.data.frame(h2o.predict(hh,newdata = cc)) 
-	expect_equal(19949.4997158079, mean(ph[,1]) )
-	expect_equal(330.83082167763, min(ph[,1]) )
-	expect_equal(200851.947039858, max(ph[,1]) )
+	ph = as.data.frame(h2o.predict(hh,newdata = cc))
+	print(mean_deviance)
+	print(mean(ph[,1]))
+	print(min(ph[,1]))
+	print(max(ph[,1]))
+	expect_equal(-407814.9, mean_deviance, 1e-6)
+	expect_equal(19965.44, mean(ph[,1]), 1e-4 )
+	expect_equal(495.4575, min(ph[,1]), 1e-4 )
+	expect_equal(207137, max(ph[,1]), 1e-4 )
 	
 	#with offset
 	#gg = gbm(formula = Claims~factor(Class)+factor(Merit)+offset(log(Insured))  , distribution = "poisson",data = ca,
@@ -45,12 +49,16 @@ test <- function(h) {
                       offset_column = "logInsured",training_frame = cc) 
 	#hh@model$training_metrics@metrics$mean_residual_deviance 
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
-	expect_equal(mean_deviance,-408154.877874604)
-	ph = as.data.frame(h2o.predict(hh,newdata = cc)) 
+	ph = as.data.frame(h2o.predict(hh,newdata = cc))
 	summary(ph)
-	expect_equal(20218.7019284291, mean(ph[,1]) )
-	expect_equal(563.535820765981, min(ph[,1]) )
-	expect_equal(217887.618075763, max(ph[,1]) )
+	print(mean_deviance)
+	print(mean(ph[,1]))
+	print(min(ph[,1]))
+	print(max(ph[,1]))
+	expect_equal(-408154.8, mean_deviance, 1e-6)
+	expect_equal(20218.5, mean(ph[,1]), 1e-4 )
+	expect_equal(563.8004, min(ph[,1]), 1e-4 )
+	expect_equal(217891.6, max(ph[,1]), 1e-4 )
 
 	testEnd()
 }

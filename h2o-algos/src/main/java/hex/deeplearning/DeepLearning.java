@@ -364,7 +364,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           mp._shuffle_training_data = true;
         }
 
-        if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
+        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
