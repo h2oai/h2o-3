@@ -3,7 +3,6 @@ package water.fvec;
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.Categorical;
-import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.*;
 
@@ -1021,7 +1020,7 @@ public class Vec extends Keyed<Vec> {
         for (int r = 0; r < c0._len; r++) c0.set(r, vec.at(srow + r));
       }
     }.doAll(avec);
-    avec._domain = _domain;
+    avec._domain = vec._domain;
     return avec;
   }
 
