@@ -592,7 +592,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           System.out.println(modelUpsampled._output._training_metrics);
           for (int i = 0; i < cfs1.length; ++i) {
             System.out.println("cfs = " + cfs1[i]);
-            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-10:1e-6);
+            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-10:1e-4);
             boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
             assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-3:1e-4);//dec
           }

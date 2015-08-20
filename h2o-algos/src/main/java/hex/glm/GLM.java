@@ -1098,27 +1098,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               if(_parms._intercept)
                beta[beta.length - 1] = iupdate._temp[0] / wsum;
 
-              double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
+              double maxdiff = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);
-              if (linf < _parms._beta_epsilon)
+              if (maxdiff < _parms._beta_epsilon)
                 break;
             }
 
-            double linf = Math.abs(objold - objVal); // ArrayUtils.linfnorm(ArrayUtils.subtract(  beta, _taskInfo._beta  ), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
-            objold=objVal;
-            if (linf < _parms._obj_epsilon & iter2 >1 )
+            double percdiff = Math.abs((objold - objVal)/objold);
+            if (percdiff < _parms._obj_epsilon & iter2 >1 )
               break;
-         //   for (int i = 0 ; i < beta.length; ++i) {
-         //     System.out.print(beta[i] + " ");
-         //   }
-         //   System.out.println();
+            objold=objVal;
+
             _taskInfo._beta = beta.clone();
             System.out.println("iter1 = " + iter1);
 
-            if (linf < _parms._beta_epsilon)
-              break;
+            //   for (int i = 0 ; i < beta.length; ++i) {
+            //     System.out.print(beta[i] + " ");
+            //   }
+            //   System.out.println();
 
           }
+
           System.out.println("iter2 = " + iter2);
 
           long endTimeTotalNaive = System.currentTimeMillis();
@@ -1200,9 +1200,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 if (beta[beta.length - 1] != 0) // update all the grad entries
                   doUpdateCD(grads, XX, betaold, beta, beta.length - 1);
               }
-              double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
+              double maxdiff = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
               System.arraycopy(beta, 0, betaold, 0, beta.length);
-              if (linf < _parms._beta_epsilon)
+              if (maxdiff < _parms._beta_epsilon)
                 break;
             }
             long endTimeCd = System.currentTimeMillis();
@@ -1210,10 +1210,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             System.out.println("Time to run inner CD " + durationCd/1000);
             System.out.println("inner loop done in " + iter1 + " iterations and " + (System.currentTimeMillis()-t1)/1000 + "s, iter2 = " + iter2);
 
-            double linf = Math.abs(objold-objVal); // ArrayUtils.linfnorm(ArrayUtils.subtract(  beta, _taskInfo._beta  ), false); // CHANGE THIS TO OBJECTIVE  CONVERGENCE
+            double percdiff = Math.abs((objold-objVal)/objold);
             objold=objVal;
             _taskInfo._beta = beta.clone();
-            if (linf < _parms._obj_epsilon & iter2 >1 )
+            if (percdiff < _parms._obj_epsilon & iter2 >1 )
               break;
 
           }
