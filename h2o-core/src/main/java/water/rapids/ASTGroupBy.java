@@ -9,6 +9,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.Log;
 
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *  COUNT_DISTINCT
  *  FIRST
  *  LAST
+ *  MODE
  *  Aggregations on time and numeric columns only.
  */
   public class ASTGroupBy extends ASTUniPrefixOp {
@@ -94,8 +96,10 @@ import java.util.concurrent.atomic.AtomicInteger;
     // for delayed column lookups
     if( _gbCols==null ) _gbCols = _gbColsDelayed==null? findCols(fr, _gbColsDelayedByName): findCols(fr, _gbColsDelayed);
     computeCols(_agg,fr); // delayed column set
-
-    // do the group by work now
+    for(AGG a:_agg)
+      if( a._type==AGG.T_MODE )
+        a._domainsForMode = fr.domains()[a._c];
+    // do the groupby work now
     long s = System.currentTimeMillis();
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
@@ -104,8 +108,15 @@ import java.util.concurrent.atomic.AtomicInteger;
     while( tmpGrps[nGrps-1]==null ) nGrps--;
     final G[] grps = new G[nGrps];
     System.arraycopy(tmpGrps,0,grps,0,nGrps);
-    H2O.submitTask(new ParallelPostGlobal(grps,nGrps,_orderByCols)).join();
-
+    ParallelPostGlobal t;
+    H2O.submitTask(t = new ParallelPostGlobal(grps,nGrps,_orderByCols)).join();
+    final String[][] modeDomains=t._modeDomain==null?null:new String[t._modeDomain.length][];
+    if( t._modeDomain!=null ) {
+      for(int i=0;i<t._modeDomain.length;++i) {
+        modeDomains[i] = t._modeDomain[i].toArray(new String[t._modeDomain[i].size()]);
+        Arrays.sort(modeDomains[i]);
+      }
+    }
     // apply an ORDER by here...
     if( _orderByCols != null )
       Arrays.sort(grps);
@@ -122,6 +133,11 @@ import java.util.concurrent.atomic.AtomicInteger;
     for( int i=0;i<_gbCols.length;++i) {
       names[i] = fr.name((int) _gbCols[i]);
       domains[i] = fr.domains()[(int)_gbCols[i]];
+    }
+    if( modeDomains!=null ) {
+      int a=0;
+      for (int i = _gbCols.length; i < nCols; ++i)
+        domains[i] = _agg[a]._type==AGG.T_MODE?modeDomains[a++]:null;
     }
     System.arraycopy(AGG.names(_agg),0,names,_gbCols.length,_agg.length);
 
@@ -149,6 +165,9 @@ import java.util.concurrent.atomic.AtomicInteger;
               case AGG.T_ND: ncs[j++].addNum(g._ND[a]   );  break;
               case AGG.T_F:  ncs[j++].addNum(g._f[a]    );  break;
               case AGG.T_L:  ncs[j++].addNum(g._l[a]    );  break;
+              case AGG.T_MODE:
+                ncs[j++].addNum(Arrays.asList(modeDomains[a]).indexOf(g._mode[a]));
+                break;
               default:
                 throw new IllegalArgumentException("Unsupported aggregation type: " + type);
             }
@@ -229,18 +248,17 @@ import java.util.concurrent.atomic.AtomicInteger;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
+    @Override public void setupLocal() {_g=new IcedHashMap<>();}
     @Override public void map(Chunk[] c) {
-      _g = new IcedHashMap<>();
       long start = c[0].start();
-      byte[] naMethods = AGG.naMethods(_agg);
-      G g = new G(_gbCols.length,_agg.length,naMethods);
+      G g = new G(_gbCols.length,_agg);
       G gOld;  // fill this one in for all the CAS'ing
       for( int i=0;i<c[0]._len;++i ) {
         g.fill(i,c,_gbCols);
         String g_old = _g.putIfAbsent(g,"");
         if( g_old==null ) {  // won the race w/ this group
           gOld=g;
-          g=new G(_gbCols.length,_agg.length,naMethods); // need entirely new G
+          g=new G(_gbCols.length,_agg); // need entirely new G
         } else gOld=_g.getk(g);
         // cas in COUNT
         long r=gOld._N;
@@ -293,9 +311,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         // build up a long[] of vals, to handle the case when c is and isn't null.
         long bits=-1;
+        int domLvl=-1;
         if( c!=null ) {
           if( c[col].isNA(chkRow) ) continue;
           bits = Double.doubleToRawLongBits(c[col].atd(chkRow));
+          if( c[col].vec().isEnum() )
+            domLvl = (int)c[col].at8(chkRow);
         }
         if( type == AGG.T_ND ) {
 //          if( c==null ) g._nd._nd[i].addAll(that._nd._nd[i]);
@@ -305,21 +326,37 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         switch( type ) {  // ordered by "popularity"
           case AGG.T_AVG: /* fall through */
-          case AGG.T_SUM: setSum(g, c == null ? Double.doubleToRawLongBits(that._sum[i]) : bits, i);   break;
-          case AGG.T_MIN: setMin(  g,c==null ? Double.doubleToRawLongBits(that._min[i]) : bits,i);   break;
-          case AGG.T_MAX: setMax(  g,c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
+          case AGG.T_SUM: setSum(  g, c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits,i);   break;
+          case AGG.T_MIN: setMin(  g, c==null ? Double.doubleToRawLongBits(that._min[i]) : bits,i);   break;
+          case AGG.T_MAX: setMax(  g, c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
           case AGG.T_VAR:
-          case AGG.T_SD:  setSum(g, c == null ? Double.doubleToRawLongBits(that._sum[i]) : bits, i); /* fall through */
-          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i, c==null);   break;
-          case AGG.T_F:   setFirst(g,c==null ? that._f[i] : chkRow+rowOffset,i);   break;
-          case AGG.T_L:   setLast(g, c == null ? that._l[i] : chkRow + rowOffset, i);   break;
+          case AGG.T_SD:  setSum(  g, c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits,i); /* fall through */
+          case AGG.T_SS:  setSS(   g, c==null ? Double.doubleToRawLongBits(that._ss[i])  : bits,i, c==null);   break;
+          case AGG.T_F:   setFirst(g, c==null ? that._f[i] : chkRow+rowOffset,i);   break;
+          case AGG.T_L:   setLast(g,  c==null ? that._l[i] : chkRow + rowOffset,i); break;
+          case AGG.T_MODE: setMode(g, c==null ? that._m[i] : null, domLvl,i); break;
           default:
             throw new IllegalArgumentException("Unsupported aggregation type: " + type);
         }
       }
     }
-
     // all the CAS'ing helpers
+    private static void setMode(G g, long[] arr, int lvl, int c) {
+      if( arr==null && lvl==-1 ) throw new IllegalArgumentException("Trying to compute mode on a non-categorical column.");
+      long o;
+      if( arr==null ) {
+        o = g._m[c][lvl];
+        while(!G.CAS_m(g,c,lvl,o,o+1))
+          o=g._m[c][lvl];
+      } else {
+        for(int l=0;l<g._m[c].length;++l) {
+          o = g._m[c][l];
+          while(!G.CAS_m(g,c,l,o,o+arr[l]))
+            o = g._m[c][l];
+        }
+      }
+    }
+
     private static void setFirst(G g, long v, int c) {
       long o = g._f[c];
       while( v < o && !G.CAS_f(g,G.longRawIdx(c),o,v))
@@ -369,13 +406,16 @@ import java.util.concurrent.atomic.AtomicInteger;
   private static class GTask extends H2O.H2OCountedCompleter<GTask> {
     private final G _g;
     private final long[] _orderByCols;
-    GTask(H2O.H2OCountedCompleter cc, G g,long[] orderByCols) { super(cc); _g=g; _orderByCols=orderByCols; }
+    private NonBlockingHashSet<String>[] _modeDomain;
+    GTask(H2O.H2OCountedCompleter cc, G g,long[] orderByCols, NonBlockingHashSet<String>[] modeDomain) { super(cc); _g=g; _orderByCols=orderByCols; _modeDomain=modeDomain; }
     @Override protected void compute2() {
       _g.close();
       int[] orderByCols = _orderByCols==null?null:new int[_orderByCols.length];
       if( orderByCols != null )
         for(int i=0;i<orderByCols.length;++i) orderByCols[i]=(int)_orderByCols[i];
       _g._orderByCols=orderByCols;
+      if( _g._mode != null )
+        for(int i=0;i<_g._mode.length;++i) _modeDomain[i].add(_g._mode[i]);
       tryComplete();
     }
   }
@@ -386,15 +426,19 @@ import java.util.concurrent.atomic.AtomicInteger;
     private final long[] _orderByCols;
     private final int _maxP=50*1000; // burn 50K at a time
     private final AtomicInteger _ctr;
-    ParallelPostGlobal(G[] g, int ngrps, long[] orderByCols) { _g=g; _ctr=new AtomicInteger(_maxP-1); _ngrps=ngrps; _orderByCols = orderByCols; }
-
+    private NonBlockingHashSet<String>[] _modeDomain;
+    ParallelPostGlobal(G[] g, int ngrps, long[] orderByCols) { _g=g; _ctr=new AtomicInteger(_maxP-1); _ngrps=ngrps; _orderByCols = orderByCols;
+      _modeDomain=_g[0]._aggs==null ? null :new NonBlockingHashSet[_g[0]._aggs.length];
+      if( _modeDomain!=null )
+        for( int i=0;i<_modeDomain.length;++i ) _modeDomain[i] = new NonBlockingHashSet<>();
+    }
 
     @Override protected void compute2(){
       addToPendingCount(_g.length-1);
       for( int i=0;i<Math.min(_g.length,_maxP);++i) frkTsk(i);
     }
 
-    private void frkTsk(final int i) { new GTask(new Callback(), _g[i], _orderByCols).fork(); }
+    private void frkTsk(final int i) { new GTask(new Callback(), _g[i], _orderByCols, _modeDomain).fork(); }
 
     private class Callback extends H2O.H2OCallback {
       public Callback(){super(ParallelPostGlobal.this);}
@@ -442,6 +486,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     public int[] _orderByCols;  // set during the ParallelPostGlobal if there is to be any order by
     public final double _ds[];  // Array is final; contents change with the "fill"
     public int _hash;           // Hash is not final; changes with the "fill"
+    private AGG[] _aggs;        // the aggs
     public G fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
@@ -484,6 +529,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     public double[] _avs;       // means, computed in the close
     public double[] _vars;      // vars, computed in the close
     public double[] _sdevs;     // sds,  computed in the close
+    public long[/*aggs*/][/*level cnts*/] _m;       // atomically aggregate counts of each domain
+    public String[] _mode;      // finalize the _m array into _mode
 //    private NBHSAD _nd;         // count distinct helper data structure
     private byte[] _NAMethod;
 
@@ -513,6 +560,37 @@ import java.util.concurrent.atomic.AtomicInteger;
       fill(row, cs, cols);
     }
 
+    G(int len, AGG[] aggs) {
+      _aggs=aggs;
+      _ds=new double[len];
+      _NAMethod=AGG.naMethods(aggs);
+      _NA=new long[aggs.length];
+      byte[] types = AGG.types(aggs);
+      for(byte t: types) {
+        switch(t) {
+          case AGG.T_ND: _ND=new long[aggs.length]; break;
+          case AGG.T_F:  _f =new long[aggs.length]; break;
+          case AGG.T_L:  _l =new long[aggs.length]; break;
+          case AGG.T_MIN:
+            _min=new double[aggs.length];
+            for( int i=0; i<_min.length; ++i) _min[i]=Double.POSITIVE_INFINITY;
+            break;
+          case AGG.T_MAX:
+            _max=new double[aggs.length];
+            for( int i=0; i<_max.length; ++i) _max[i]=Double.NEGATIVE_INFINITY;
+            break;
+          case AGG.T_SUM:_sum=new double[aggs.length]; break;
+          case AGG.T_SS:  _ss=new double[aggs.length]; break;
+          case AGG.T_MODE:
+            _m=new long[aggs.length][];
+            for( int i=0;i<_m.length; ++i )
+              _m[i] = aggs[i]._domainsForMode==null?null:new long[aggs[i]._domainsForMode.length];
+            break;
+        }
+      }
+    }
+
+    // deprecated... much better to use above constructor
     G(int len, int aggs, byte[] naMethod) {
       _ds=new double[len];
       _NAMethod=naMethod;
@@ -528,6 +606,8 @@ import java.util.concurrent.atomic.AtomicInteger;
       _avs=new double[aggs];
       _vars=new double[aggs];
       _sdevs=new double[aggs];
+      _mode=new String[aggs];
+      _m=new long[aggs][];
       for( int i=0; i<_min.length; ++i) _min[i]=Double.POSITIVE_INFINITY;
       for( int i=0; i<_max.length; ++i) _max[i]=Double.NEGATIVE_INFINITY;
     }
@@ -537,19 +617,29 @@ import java.util.concurrent.atomic.AtomicInteger;
     G(double[] ds) { _ds=ds; }
 
     private void close() {
+      _avs  = _sum ==null?null:new double[_NAMethod.length];
+      _vars = (_sum ==null || _ss==null)?null:new double[_avs.length];
+      _sdevs=_vars ==null?null:new double[_vars.length];
       for( int i=0;i<_NAMethod.length;++i ) {
         long n = _NAMethod[i]==AGG.T_RM?_N-_NA[i]:_N;
-        _avs[i] = _sum[i]/n;
+        if(_avs!=null)    _avs[i] = _sum[i]/n;
 //        _ND[i] = _nd._nd[i]==null?0:_nd._nd[i].size(); _nd._nd[i]=null; // b free!
-        _vars[i] = (_ss[i] - (_sum[i]*_sum[i])/n)/n;
-        _sdevs[i]=Math.sqrt(_vars[i]);
+        if(_vars!=null)   _vars[i] = (_ss[i] - (_sum[i]*_sum[i])/n)/n;
+        if( _sdevs!=null) _sdevs[i]=Math.sqrt(_vars[i]);
+      }
+      if( _m!=null && _aggs!=null ) {
+        _mode = new String[_NAMethod.length];
+        for(int i=0; i < _m.length;++i )
+          if( _m[i]!=null)
+            _mode[i] = _aggs[i]._domainsForMode[ArrayUtils.maxIndex(_m[i])];
       }
     }
 
-    protected static boolean CAS_N (G g, long o, long n          ) { return U.compareAndSwapLong(g,_NOffset,o,n); }
+    protected static boolean CAS_N (G g, long o, long n        ) { return U.compareAndSwapLong(g,_NOffset,o,n); }
     private static boolean CAS_NA(G g, long off, long o, long n) { return U.compareAndSwapLong(g._NA,off,o,n);  }
     private static boolean CAS_f (G g, long off, long o, long n) { return U.compareAndSwapLong(g._f,off,o,n);   }
     private static boolean CAS_l (G g, long off, long o, long n) { return U.compareAndSwapLong(g._l,off,o,n);   }
+    private static boolean CAS_m (G g, int c, int lvl,  long o, long n) { return U.compareAndSwapLong(g._m[c], G.longRawIdx(lvl),o,n); }
 
     // doubles are toRawLongBits'ized, and passed as longs
     private static boolean CAS_min(G g, long off, long o, long n) { return U.compareAndSwapLong(g._min,off,o,n);}
@@ -584,17 +674,18 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     // Aggregate types
-    private static final byte T_N  = 0;
-    private static final byte T_ND = 1;
-    private static final byte T_F  = 2;
-    private static final byte T_L  = 3;
-    private static final byte T_MIN= 4;
-    private static final byte T_MAX= 5;
-    private static final byte T_AVG= 6;
-    private static final byte T_SD = 7;
-    private static final byte T_VAR= 8;
-    private static final byte T_SUM= 9;
-    private static final byte T_SS = 10;
+    private static final byte T_N   = 0;
+    private static final byte T_ND  = 1;
+    private static final byte T_F   = 2;
+    private static final byte T_L   = 3;
+    private static final byte T_MIN = 4;
+    private static final byte T_MAX = 5;
+    private static final byte T_AVG = 6;
+    private static final byte T_SD  = 7;
+    private static final byte T_VAR = 8;
+    private static final byte T_SUM = 9;
+    private static final byte T_SS  = 10;
+    private static final byte T_MODE= 11;
 
     // How to handle NAs
     private static final byte T_ALL = 0;
@@ -618,6 +709,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       TM.put("var",         (byte)8);
       TM.put("sum",         (byte)9);
       TM.put("ss",          (byte)10);
+      TM.put("mode",        (byte)11);
       // na handling
       TM.put("all"         ,(byte)0);
       TM.put("ignore"      ,(byte)1);
@@ -630,6 +722,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     private final byte _na_handle;
     private AST _delayedCol;
     private String _delayedColByName;
+    private String[] _domainsForMode;
     AGG() {_type=0;_c=-1;_name=null;_na_handle=0;}
     AGG(String s, Integer c, String na, String name, String delayedColByName, AST delayedCol) {  // big I Integer allows for nullness
       _type=TM.get(s.toLowerCase());
@@ -651,11 +744,32 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
 
     private static byte[] naMethods(AGG[] agg) {
-
       byte[] methods = new byte[agg.length];
       for(int i=0;i<agg.length;++i)
         methods[i]=agg[i]._na_handle;
       return methods;
+    }
+
+    private static byte[] types(AGG[] agg) {
+      HashSet<Byte> typesHS = new HashSet<>();
+      for(AGG a: agg) {
+        switch(a._type) {
+          case T_AVG: typesHS.add(T_SUM); break;
+          case T_VAR:
+            typesHS.add(T_SUM);
+            typesHS.add(T_SS);
+            break;
+          case T_SD:
+            typesHS.add(T_SUM);
+            typesHS.add(T_SS);
+            break;
+          default: typesHS.add(a._type);
+        }
+      }
+      byte[] types = new byte[typesHS.size()];
+      int i=0;
+      for( byte b: typesHS) types[i++]=b;
+      return types;
     }
 
     private boolean isIgnore() { return _na_handle == 0; }
