@@ -510,7 +510,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         }
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
-        if (get_params()._diagnostics) model_info().computeStats();
+        model_info().computeStats();
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -705,10 +705,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       new MRTask() {
         @Override public void map( Chunk chks[] ) {
           double tmp [] = new double[_output._names.length];
-          float preds[] = new float [len];
+          double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
-            float p[] = score_autoencoder(chks, row, tmp, preds, neurons);
+            double p[] = score_autoencoder(chks, row, tmp, preds, neurons);
             for( int c=0; c<preds.length; c++ )
               chks[_output._names.length+c].set(row,p[c]);
           }
@@ -733,54 +733,67 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   /**
    * Compute the loss function
-   * @param myRow denseRow containing numerical/categorical predictor and response data (standardized)
+   * @param myRows Mini-Batch Array of denseRow's containing numerical/categorical predictor and response data (standardized)
    * @return loss
    */
-  public double loss(DataInfo.Row myRow) {
+  public double loss(DataInfo.Row[] myRows) {
+    double loss = 0;
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
-    long seed = 0; //ignored
-    ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
-    DeepLearningTask.step(seed, neurons, model_info(), null,
-            false /*not training - no need to compute and store gradients*/, new double[]{myRow.response[0]}, 0);
-
-    //Now compute the loss
-    double loss;
-    if (_parms._loss == DeepLearningParameters.Loss.CrossEntropy) {
-      if (_parms._balance_classes) throw H2O.unimpl();
-      int actual = (int)myRow.response[0];
-      double pred = neurons[neurons.length - 1]._a.get(actual);
-      loss = -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
-    } else {
-      if (_parms._autoencoder) throw H2O.unimpl();
-
-      //prediction and actual response in standardized response space
-      double pred = neurons[neurons.length - 1]._a.raw()[0];
-      double actual = myRow.response[0];
-
-      //bring standardized prediction and actual response to real space
-      DataInfo di = model_info().data_info();
-      if (di._normRespMul != null) { //either both are null or none
-        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
-        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
+    for (DataInfo.Row myRow : myRows) {
+      if (myRow == null) continue;
+      long seed = -1; //ignored
+      // check that all non-last layer errors/gradients are empty
+      for (int i = 0; i<neurons.length-1;++i) {
+        Storage.DenseVector e = neurons[i]._e;
+        if (e==null) continue;
+        assert(ArrayUtils.sum(e.raw()) == 0);
       }
-      Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
+      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+      DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
+      // check that all non-last layer errors/gradients are empty
+      for (int i = 0; i<neurons.length-1;++i) {
+        Storage.DenseVector e = neurons[i]._e;
+        if (e==null) continue;
+        assert(ArrayUtils.sum(e.raw()) == 0);
+      }
 
-      // compute final deviance
-      loss = dist.deviance(1 /*weight*/, actual, dist.linkInv(pred));
-    }
+      if (model_info.get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
+        if (_parms._balance_classes) throw H2O.unimpl();
+        int actual = (int) myRow.response[0];
+        double pred = neurons[neurons.length - 1]._a.get(actual);
+        loss += -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
+      } else {
+        if (model_info.get_params()._autoencoder) throw H2O.unimpl();
 
-    // add L1/L2 penalty of model coefficients (weights & biases)
-    for (int i = 0; i < _parms._hidden.length + 1; ++i) {
-      if (neurons[i]._w == null) continue;
-      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
-        for (int col = 0; col < neurons[i]._w.cols(); ++col) {
-          loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
-          loss += 0.5*_parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+        //prediction and actual response in standardized response space
+        double pred = neurons[neurons.length - 1]._a.get(0);
+        double actual = myRow.response[0];
+
+        // FIXME: re-enable this such that the loss is computed from the de-standardized prediction/response
+        //bring standardized prediction and actual response to real space
+//      DataInfo di = model_info().data_info();
+//      if (di._normRespMul != null) { //either both are null or none
+//        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
+//        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
+//      }
+        Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
+        pred = dist.linkInv(pred);
+        loss += 0.5 * dist.deviance(1 /*weight*/, actual, pred);
+      }
+
+      // add L1/L2 penalty of model coefficients (weights & biases)
+      for (int i = 0; i < _parms._hidden.length + 1; ++i) {
+        if (neurons[i]._w == null) continue;
+        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+          for (int col = 0; col < neurons[i]._w.cols(); ++col) {
+            loss += _parms._l1 * Math.abs(neurons[i]._w.getMatrix(0,0).get(row, col));
+            loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.getMatrix(0,0).get(row, col), 2);
+          }
         }
-      }
-      for (int row = 0; row < neurons[i]._w.rows(); ++row) {
-        loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
-        loss += 0.5*_parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+          loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
+          loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+        }
       }
     }
     return loss;
@@ -801,7 +814,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
-    float[] out = neurons[neurons.length - 1]._a.raw();
+    double[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
@@ -896,7 +909,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             tmp[i] = chks[i].atd(row);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
           DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/);
-          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
+          double[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
@@ -913,7 +926,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
 
   // Make (potentially expanded) reconstruction
-  private float[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds, Neurons[] neurons) {
+  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons) {
     assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.length);
     for( int i=0; i<tmp.length; i++ )
@@ -928,7 +941,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param preds Reconstruction (potentially expanded)
    * @return reconstruction error
    */
-  private double score_autoencoder(double[] data, float[] preds, Neurons[] neurons) {
+  private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
@@ -936,8 +949,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
-    float[] in  = neurons[0]._a.raw(); //input (expanded)
-    float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
+    double[] in  = neurons[0]._a.raw(); //input (expanded)
+    double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
 
     // First normalize categorical reconstructions to be probabilities
@@ -1072,7 +1085,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
     // activation storage
     sb.i(1).p("// Storage for neuron activation values.").nl();
-    sb.i(1).p("public static final float[][] ACTIVATION = new float[][] {").nl();
+    sb.i(1).p("public static final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
       String colInfoClazz = mname + "_Activation_"+i;
       sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
@@ -1080,13 +1093,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
       fileContextSB.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, new float[layers[i]]);
+      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, new double[layers[i]]);
     }
     sb.i(1).p("};").nl();
 
     // biases
     sb.i(1).p("// Neuron bias values.").nl();
-    sb.i(1).p("public static final float[][] BIAS = new float[][] {").nl();
+    sb.i(1).p("public static final double[][] BIAS = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
       String colInfoClazz = mname + "_Bias_"+i;
       sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
@@ -1094,7 +1107,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
       fileContextSB.i().p("// Neuron bias values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-      float[] bias = i == 0 ? null : new float[model_info().get_biases(i-1).size()];
+      double[] bias = i == 0 ? null : new double[model_info().get_biases(i-1).size()];
       if (i>0) {
         for (int j=0; j<bias.length; ++j) bias[j] = model_info().get_biases(i-1).get(j);
       }
@@ -1140,7 +1153,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     final int cats = model_info().data_info()._cats;
     final int nums = model_info().data_info()._nums;
     // initialize input layer
-    if (nums > 0) bodySb.i().p("java.util.Arrays.fill(NUMS,0f);").nl();
+    if (nums > 0) bodySb.i().p("java.util.Arrays.fill(NUMS,0);").nl();
     if (cats > 0) bodySb.i().p("java.util.Arrays.fill(CATS,0);").nl();
     bodySb.i().p("int i = 0, ncats = 0;").nl();
     if (cats > 0) {
@@ -1167,11 +1180,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     bodySb.i().p("java.util.Arrays.fill(ACTIVATION[0],0);").nl();
     if (cats > 0) {
-      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1f;").nl();
+      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1;").nl();
     }
     if (nums > 0) {
       bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();
-      bodySb.i(1).p("ACTIVATION[0][CATOFFSETS[CATOFFSETS.length-1] + i] = Double.isNaN(NUMS[i]) ? 0f : (float) NUMS[i];").nl();
+      bodySb.i(1).p("ACTIVATION[0][CATOFFSETS[CATOFFSETS.length-1] + i] = Double.isNaN(NUMS[i]) ? 0 : NUMS[i];").nl();
       bodySb.i().p("}").nl();
     }
 
@@ -1183,17 +1196,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
     // make prediction: forward propagation
     bodySb.i().p("for (i=1; i<ACTIVATION.length; ++i) {").nl();
-    bodySb.i(1).p("java.util.Arrays.fill(ACTIVATION[i],0f);").nl();
+    bodySb.i(1).p("java.util.Arrays.fill(ACTIVATION[i],0);").nl();
     if (maxout) {
-      bodySb.i(1).p("float rmax = 0;").nl();
+      bodySb.i(1).p("double rmax = 0;").nl();
       bodySb.i(1).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
       bodySb.i(2).p("final int cols = ACTIVATION[i-1].length;").nl();
-      bodySb.i(2).p("float cmax = Float.NEGATIVE_INFINITY;").nl();
+      bodySb.i(2).p("double cmax = Float.NEGATIVE_INFINITY;").nl();
       bodySb.i(2).p("for (int c=0; c<cols; ++c) {").nl();
       bodySb.i(3).p("if " + stopping + " cmax = Math.max(ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c], cmax);").nl();
       bodySb.i(3).p("else ACTIVATION[i][r] += ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c];").nl();
       bodySb.i(2).p("}").nl();
-      bodySb.i(2).p("if "+ stopping +" ACTIVATION[i][r] = Float.isInfinite(cmax) ? 0f : cmax;").nl();
+      bodySb.i(2).p("if "+ stopping +" ACTIVATION[i][r] = Double.isInfinite(cmax) ? 0f : cmax;").nl();
       bodySb.i(2).p("ACTIVATION[i][r] += BIAS[i][r];").nl();
       bodySb.i(2).p("if " + stopping + " rmax = Math.max(rmax, ACTIVATION[i][r]);").nl();
       bodySb.i(1).p("}").nl();
@@ -1207,11 +1220,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       bodySb.i(1).p("int multiple = (cols/8)*8-1;").nl();
       bodySb.i(1).p("int idx = 0;").nl();
       bodySb.i(1).p("float[] a = WEIGHT[i];").nl();
-      bodySb.i(1).p("float[] x = ACTIVATION[i-1];").nl();
-      bodySb.i(1).p("float[] y = BIAS[i];").nl();
-      bodySb.i(1).p("float[] res = ACTIVATION[i];").nl();
+      bodySb.i(1).p("double[] x = ACTIVATION[i-1];").nl();
+      bodySb.i(1).p("double[] y = BIAS[i];").nl();
+      bodySb.i(1).p("double[] res = ACTIVATION[i];").nl();
       bodySb.i(1).p("for (int row=0; row<rows; ++row) {").nl();
-      bodySb.i(2).p("float psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
+      bodySb.i(2).p("double psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
       bodySb.i(2).p("for (int col = 0; col < multiple; col += 8) {").nl();
       bodySb.i(3).p("int off = idx + col;").nl();
       bodySb.i(3).p("psum0 += a[off    ] * x[col    ];").nl();
@@ -1234,9 +1247,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       bodySb.i(1).p("if " + stopping + " {").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
       if (tanh) {
-        bodySb.i(3).p("ACTIVATION[i][r] = 1f - 2f / (1f + (float)Math.exp(2*ACTIVATION[i][r]));").nl();
+        bodySb.i(3).p("ACTIVATION[i][r] = 1 - 2 / (1 + Math.exp(2*ACTIVATION[i][r]));").nl();
       } else if (relu) {
-        bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
+        bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0, ACTIVATION[i][r]);").nl();
       }
     }
     if (p._hidden_dropout_ratios != null) {
@@ -1250,17 +1263,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (_output.isClassifier()) {
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // softmax
-      bodySb.i(2).p("float max = ACTIVATION[i][0];").nl();
+      bodySb.i(2).p("double max = ACTIVATION[i][0];").nl();
       bodySb.i(2).p("for (int r=1; r<ACTIVATION[i].length; r++) {").nl();
       bodySb.i(3).p("if (ACTIVATION[i][r]>max) max = ACTIVATION[i][r];").nl();
       bodySb.i(2).p("}").nl();
-      bodySb.i(2).p("float scale = 0f;").nl();
+      bodySb.i(2).p("double scale = 0;").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; r++) {").nl();
-      bodySb.i(3).p("ACTIVATION[i][r] = (float) Math.exp(ACTIVATION[i][r] - max);").nl();
+      bodySb.i(3).p("ACTIVATION[i][r] = Math.exp(ACTIVATION[i][r] - max);").nl();
       bodySb.i(3).p("scale += ACTIVATION[i][r];").nl();
       bodySb.i(2).p("}").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; r++) {").nl();
-      bodySb.i(3).p("if (Float.isNaN(ACTIVATION[i][r]))").nl();
+      bodySb.i(3).p("if (Double.isNaN(ACTIVATION[i][r]))").nl();
       bodySb.i(4).p("throw new RuntimeException(\"Numerical instability, predicted NaN.\");").nl();
       bodySb.i(3).p("ACTIVATION[i][r] /= scale;").nl();
       bodySb.i(3).p("preds[r+1] = ACTIVATION[i][r];").nl();
@@ -1283,7 +1296,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     } else { //AutoEncoder
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; r++) {").nl();
-      bodySb.i(3).p("if (Float.isNaN(ACTIVATION[i][r]))").nl();
+      bodySb.i(3).p("if (Double.isNaN(ACTIVATION[i][r]))").nl();
       bodySb.i(4).p("throw new RuntimeException(\"Numerical instability, reconstructed NaN.\");").nl();
       bodySb.i(3).p("preds[r] = ACTIVATION[i][r];").nl();
       bodySb.i(2).p("}").nl();
@@ -1309,7 +1322,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         bodySb.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
     } else {
-      bodySb.ip("preds[0] = (float)preds[1];").nl();
+      bodySb.ip("preds[0] = preds[1];").nl();
     }
   }
 
