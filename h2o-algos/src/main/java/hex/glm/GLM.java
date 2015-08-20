@@ -1105,7 +1105,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
 
             double percdiff = Math.abs((objold - objVal)/objold);
-            if (percdiff < _parms._obj_epsilon & iter2 >1 )
+            if (percdiff < _parms._objective_epsilon & iter2 >1 )
               break;
             objold=objVal;
 
@@ -1213,7 +1213,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double percdiff = Math.abs((objold-objVal)/objold);
             objold=objVal;
             _taskInfo._beta = beta.clone();
-            if (percdiff < _parms._obj_epsilon & iter2 >1 )
+            if (percdiff < _parms._objective_epsilon & iter2 >1 )
               break;
 
           }
