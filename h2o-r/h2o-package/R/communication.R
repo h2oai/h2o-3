@@ -128,7 +128,7 @@
   tmp <- NULL
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
-    t <- basicTextGatherer()
+    t <- basicTextGatherer(.mapUnicode = FALSE)
     tmp <- tryCatch(curlPerform(url = url,
                                 customrequest = method,
                                 writefunction = t$update,
@@ -146,7 +146,7 @@
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
-    t = basicTextGatherer()
+    t = basicTextGatherer(.mapUnicode = FALSE)
     tmp = tryCatch(postForm(uri = url,
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
@@ -164,7 +164,7 @@
     }
   } else if (method == "POST") {
     h = basicHeaderGatherer()
-    t = basicTextGatherer()
+    t = basicTextGatherer(.mapUnicode = FALSE)
     tmp = tryCatch(curlPerform(url = url,
                                postfields = postBody,
                                writefunction = t$update,
