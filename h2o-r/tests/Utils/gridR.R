@@ -10,7 +10,7 @@ expect_model_param <- function(models, attribute_name, expected_values) {
 
 #' Constructs a named list of gridable parameters and their respective values, which will eventually be passed to
 #' h2o.grid as the hyper_params argument. The  grid parameters, and their associated values, are randomly selected.
-#' @param algo A string {"gbm", "drf", "deeplearning", "kmeans", "glm"}
+#' @param algo A string {"gbm", "drf", "deeplearning", "kmeans", "glm", "naiveBayes"}
 #' @param ncols Used for mtries selection
 #' @return A named list of gridable parameters and their respective values
 makeRandomGridSpace <- function(algo,ncols=NULL) {
@@ -28,7 +28,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL) {
   }
   if ( algo == "drf" ) {
     if ( sample(0:1,1) ) { grid_space$mtries <- sample(2:ncols, sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$sample_rate <- round(runif(sample(2:3,1)),6) }
+    grid_space$sample_rate <- round(runif(sample(2:3,1)),6)
   }
   if ( algo == "deeplearning" ) {
     if ( sample(0:1,1) ) { grid_space$activation <- sample(c("Rectifier", "Tanh", "TanhWithDropout",
@@ -59,6 +59,12 @@ makeRandomGridSpace <- function(algo,ncols=NULL) {
         grid_space$tweedie_link_power <- 1 - grid_space$tweedie_variance_power
       }
     }
+  }
+  if ( algo == "naiveBayes" ) {
+    grid_space$laplace <- 0
+    if ( sample(0:1,1) ) { grid_space$laplace <- round(runif(1)+sample(0:10,sample(2:3,1)),6) }
+    if ( sample(0:1,1) ) { grid_space$min_sdev <- round(runif(sample(2:3,1)),6) }
+    if ( sample(0:1,1) ) { grid_space$eps_sdev <- round(runif(sample(2:3,1)),6) }
   }
   grid_space
 }

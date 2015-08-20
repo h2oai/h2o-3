@@ -54,7 +54,7 @@ check.rf.grid.cars <- function(conn) {
 
   Log.info("Duplicate-entries-in-grid-space check")
   new_grid_space <- grid_space
-  for ( name in names(grid_space) ) { if ( name != "distribution" ) { new_grid_space[[name]] <- c(grid_space[[name]],grid_space[[name]]) } }
+  for ( name in names(grid_space) ) { new_grid_space[[name]] <- c(grid_space[[name]],grid_space[[name]]) }
   Log.info(lapply(names(new_grid_space), function(n) paste0("The new ",n," search space: ", new_grid_space[n])))
   Log.info("Constructing the new grid of drf models...")
   if ( validation_scheme == 1 ) {
