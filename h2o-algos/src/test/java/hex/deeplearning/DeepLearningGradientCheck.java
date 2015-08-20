@@ -53,7 +53,7 @@ public class DeepLearningGradientCheck extends TestUtil {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
                 DeepLearningParameters.Activation.Tanh,
                 DeepLearningParameters.Activation.Rectifier,
-//                DeepLearningParameters.Activation.Maxout, //FIXME - not correct
+//                DeepLearningParameters.Activation.Maxout,
         }) {
           for (String response : new String[]{
                   "Class", //classification

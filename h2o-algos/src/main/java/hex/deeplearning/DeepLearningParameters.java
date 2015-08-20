@@ -584,7 +584,10 @@ public class DeepLearningParameters extends Model.Parameters {
       dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
     if (_max_categorical_features < 1)
       dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
-
+    if (_sparse)
+      dl.error("_sparse", "Deprecated: Sparse data handling not supported anymore - not faster.");
+    if (_col_major)
+      dl.error("_col_major", "Deprecated: Column major data handling not supported anymore - not faster.");
     if (!_sparse && _col_major) {
       dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
     }

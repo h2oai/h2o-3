@@ -67,7 +67,7 @@ public class DeepLearningIrisTest extends TestUtil {
                     for (int hidden : hiddens) {
                       for (int epoch : epochs) {
                         for (double rate : rates) {
-                          for (boolean sparse : new boolean[]{true, false}) {
+                          for (boolean sparse : new boolean[]{false}) {
                             for (boolean col_major : new boolean[]{false}) {
                               Scope.enter();
                               DeepLearningModel mymodel = null;

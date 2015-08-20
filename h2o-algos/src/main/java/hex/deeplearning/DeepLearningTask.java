@@ -253,10 +253,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Rectifier(n) : new Neurons.RectifierDropout(n);
           break;
         case Maxout:
-          neurons[i+1] = new Neurons.Maxout(n);
+          neurons[i+1] = new Neurons.Maxout((short)2,n);
           break;
         case MaxoutWithDropout:
-          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Maxout(n) : new Neurons.MaxoutDropout(n);
+          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Maxout((short)2,n) : new Neurons.MaxoutDropout((short)2,n);
           break;
       }
     }
