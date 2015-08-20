@@ -113,6 +113,10 @@ Summary.Frame <- function(x,...,na.rm) {
   if( .Generic=="all" ) as.logical(res) else res
 }
 
+#' @rdname H2OS4groupGeneric
+#' @export
+is.na.Frame <- function(x) .newExpr("is.na", x)
+
 `!.Frame` <- function(x) .newExpr("!!",x)
 
 # True if this Node appears to be shared, and thus need a server-side temp
@@ -336,23 +340,27 @@ NULL
 #' @export
 `[.Frame` <- function(data,row,col) {
   stopifnot( is.Frame(data) )
-  # Have a column selector?
-  if( !missing(col) ) {
+  if( missing(col) && !is.Frame(row) ) {  # Have a row but not a column?
+    # Row is really column: cars.hex["cylinders"]  or cars.hex$cylinders
+    col <- row
+    row <- NA
+  }
+  if( !missing(col) ) {     # Have a column selector?
     if( is.logical(col) ) { # Columns by boolean choice
       print(col)
       stop("unimplemented1")
     } else if( is.character(col) ) { # Columns by name
-      col <- match(col,colnames(data))-1 # Match on name, then zero-based
+      idx <- match(col,colnames(data))-1 # Match on name, then zero-based
+      if( is.na(idx) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
     } else { # Generic R expression
-      col <- .row.col.selector(col)
+      idx <- .row.col.selector(col)
     }
-    data <- .newExpr("cols",data,col) # Column selector
+    data <- .newExpr("cols",data,idx) # Column selector
   }
   # Have a row selector?
-  if( !missing(row) ) {
-    if( !is.Frame(row) )  { # Generic R expression
+  if( !missing(row) && (is.Frame(row) || !is.na(row)) ) {
+    if( !is.Frame(row) )    # Generic R expression
       row <- .row.col.selector(row)
-    }
     data <- .newExpr("rows",data,row) # Row selector
   }
   data
