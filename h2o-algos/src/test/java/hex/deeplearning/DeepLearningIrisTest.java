@@ -186,7 +186,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 for (int o = 0; o < l._a.size(); o++) {
                                   for (int i = 0; i < l._previous._a.size(); i++) {
 //                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
-                                    ref._nn.ihWeights[i][o] = l._w.getMatrix(0,0).get(o, i);
+                                    ref._nn.ihWeights[i][o] = l._w.get(o, i);
                                   }
                                   ref._nn.hBiases[o] = l._b.get(o);
 //                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
@@ -195,7 +195,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 for (int o = 0; o < l._a.size(); o++) {
                                   for (int i = 0; i < l._previous._a.size(); i++) {
 //                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
-                                    ref._nn.hoWeights[i][o] = l._w.getMatrix(0,0).get(o, i);
+                                    ref._nn.hoWeights[i][o] = l._w.get(o, i);
                                   }
                                   ref._nn.oBiases[o] = l._b.get(o);
 //                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
@@ -228,7 +228,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 for (int o = 0; o < l._a.size(); o++) {
                                   for (int i = 0; i < l._previous._a.size(); i++) {
                                     double a = ref._nn.ihWeights[i][o];
-                                    double b = l._w.getMatrix(0,0).get(o, i);
+                                    double b = l._w.get(o, i);
                                     compareVal(a, b, abseps, releps);
 //                                System.out.println("weight[" + o + "]=" + b);
                                   }
@@ -245,7 +245,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 for (int o = 0; o < l._a.size(); o++) {
                                   for (int i = 0; i < l._previous._a.size(); i++) {
                                     double a = ref._nn.hoWeights[i][o];
-                                    double b = l._w.getMatrix(0,0).get(o, i);
+                                    double b = l._w.get(o, i);
                                     compareVal(a, b, abseps, releps);
                                   }
                                   double ba = ref._nn.oBiases[o];

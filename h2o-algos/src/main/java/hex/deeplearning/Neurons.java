@@ -58,9 +58,7 @@ public abstract class Neurons {
   public Neurons _previous;
   public Neurons _input;
   DeepLearningModelInfo _minfo; //reference to shared model info
-
-  public Storage.DenseTensor _w;
-//  public Storage.DenseRowMatrix _w;
+  public Storage.DenseRowMatrix _w;
   public Storage.DenseRowMatrix _wEA; //weights for elastic averaging
   public Storage.DenseVector _b;
   public Storage.DenseVector _bEA; //bias for elastic averaging
@@ -145,8 +143,7 @@ public abstract class Neurons {
     if (!(this instanceof Input)) {
       _previous = neurons[_index]; //incoming neurons
       _minfo = minfo;
-      _w = new Storage.DenseTensor(1,1);
-      _w.setMatrix(0,0, minfo.get_weights(_index)); //incoming weights
+      _w = minfo.get_weights(_index); //incoming weights
       _b = minfo.get_biases(_index); //bias for this layer (starting at hidden layer)
       if(params._autoencoder && params._sparsity_beta > 0 && _index < params._hidden.length) {
         _avg_a = minfo.get_avg_activations(_index);
@@ -231,7 +228,7 @@ public abstract class Neurons {
 
     double avg_grad2 = 0;
     for( int col = 0; col < cols; col++ ) {
-      final double weight = _w.getMatrix(0,0).get(row, col);
+      final double weight = _w.get(row,col);
       if( update_prev ) _previous._e.add(col, partial_grad * weight); // propagate the error dE/dnet to the previous layer, via connecting weights
       final double previous_a = _previous._a.get(col);
       if (fast_mode && previous_a == 0) continue;
@@ -239,7 +236,7 @@ public abstract class Neurons {
       //this is the actual gradient dE/dw
       final int w = idx + col;
       double grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
-      if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.getMatrix(0,0).raw()[w] -_wEA.raw()[w]);
+      if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
 
       // store the gradient (grad is the negative gradient)
       if (DeepLearningModelInfo.gradientCheck != null)
@@ -249,13 +246,13 @@ public abstract class Neurons {
         final double grad2 = grad*grad;
         avg_grad2 += grad2;
         float brate = computeAdaDeltaRateForWeight(grad, w, _ada_dx_g, rho, eps);
-        _w.getMatrix(0,0).raw()[w] += brate * grad;
+        _w.raw()[w] += brate * grad;
       } else {
         if (!nesterov) {
           final double delta = rate * grad;
-          _w.getMatrix(0,0).raw()[w] += delta;
+          _w.raw()[w] += delta;
           if( have_momenta ) {
-            _w.getMatrix(0,0).raw()[w] += momentum * _wm.raw()[w];
+            _w.raw()[w] += momentum * _wm.raw()[w];
             _wm.raw()[w] = (float)delta;
           }
         } else {
@@ -265,12 +262,12 @@ public abstract class Neurons {
             _wm.raw()[w] += tmp;
             tmp = _wm.raw()[w];
           }
-          _w.getMatrix(0,0).raw()[w] += rate * tmp;
+          _w.raw()[w] += rate * tmp;
         }
       }
     }
     if (max_w2 != Float.POSITIVE_INFINITY)
-      rescale_weights(_w.getMatrix(0,0), row, max_w2);
+      rescale_weights(_w, row, max_w2);
     if (have_ada) avg_grad2 /= cols;
     update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum);
   }
@@ -568,7 +565,7 @@ public abstract class Neurons {
   public static class Tanh extends Neurons {
     public Tanh(int units) { super(units); }
     @Override protected void fprop(long seed, boolean training) {
-      gemv(_a, _w.getMatrix(0,0), _previous._a, _b, _dropout != null ? _dropout.bits() : null);
+      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
       final int rows = _a.size();
       for( int row = 0; row < rows; row++ )
         _a.set(row, 1. - 2. / (1. + Math.exp(2*_a.get(row)))); //evals faster than tanh(x), but is slightly less numerically stable - OK
@@ -623,7 +620,7 @@ public abstract class Neurons {
           double mymax = Double.NEGATIVE_INFINITY;
           final int cols = _previous._a.size();
           for( int col = 0; col < cols; col++ ) {
-            double val = _w.getMatrix(0,0).get(row, col) * _previous._a.get(col);
+            double val = _w.get(row, col) * _previous._a.get(col);
             if (val > mymax) {
               mymax = val;
               _maxIncoming[row] = col;
@@ -677,7 +674,7 @@ public abstract class Neurons {
   public static class Rectifier extends Neurons {
     public Rectifier(int units) { super(units); }
     @Override protected void fprop(long seed, boolean training) {
-      gemv(_a, _w.getMatrix(0,0), _previous._a, _b, _dropout != null ? _dropout.bits() : null);
+      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
       final int rows = _a.size();
       for( int row = 0; row < rows; row++ ) {
         _a.set(row, 0.5f* (_a.get(row) + Math.abs(_a.get(row)))); //faster than max(a, 0)
@@ -731,7 +728,7 @@ public abstract class Neurons {
   public static class Softmax extends Output {
     public Softmax(int units) { super(units); }
     protected void fprop(long seed, boolean training) {
-      gemv(_a, _w.getMatrix(0,0), _previous._a, _b, null);
+      gemv(_a, _w, _previous._a, _b, null);
       final double max = ArrayUtils.maxValue(_a.raw());
       double scaling = 0;
       final int rows = _a.size();
@@ -808,7 +805,7 @@ public abstract class Neurons {
       super(1);
     }
     protected void fprop(long seed, boolean training) {
-      gemv(_a, _w.getMatrix(0,0), _previous._a, _b, _dropout != null ? _dropout.bits() : null);
+      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
     }
 
     /**
