@@ -57,7 +57,7 @@ h2o.grid <- function(algorithm,
   # TODO: Validate hyper parameters
 
   # Append grid parameters
-  params$hyper_parameters <- toJSON(hyper_params)
+  params$hyper_parameters <- toJSON(hyper_params, digits=99)
 
   # Append grid_id if it is specified
   if (!missing(grid_id)) params$grid_id <- grid_id
