@@ -18,7 +18,7 @@ check.kmeans.grid.iris <- function(conn) {
 
   Log.info("Duplicate-entries-in-grid-space check")
   new_grid_space <- grid_space
-  for ( name in names(grid_space) ) { if ( name != "distribution" ) { new_grid_space[[name]] <- c(grid_space[[name]],grid_space[[name]]) } }
+  for ( name in names(grid_space) ) { new_grid_space[[name]] <- c(grid_space[[name]],grid_space[[name]]) }
   Log.info(lapply(names(new_grid_space), function(n) paste0("The new ",n," search space: ", new_grid_space[n])))
   Log.info("Constructing the new grid of kmeans models...")
   iris_kmeans_grid2 = h2o.grid("kmeans", grid_id="kmeans_grid_iris_test2", x=1:4, training_frame=iris, hyper_params=grid_space)
