@@ -1,5 +1,6 @@
 package hex.svd;
 
+import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import hex.*;
@@ -132,6 +133,26 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       uvecs[k] = tmp.vec(0);   // Save output column of U
       tmp.unlock(self());
       return model._output._d[k];
+    }
+
+    // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
+    private Frame directSVD(DataInfo  aqinfo, DataInfo qinfo, SVDModel model) {
+      // 1) Form the matrix B = Q'A
+      SMulTask stsk = new SMulTask(_train.numCols(), _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels).doAll(aqinfo._adaptedFrame);
+      double[][] qta = stsk._qta;
+
+      // 2) Compute SVD of small matrix B = WDV'
+      Matrix qtaJ = new Matrix(qta);
+      SingularValueDecomposition svdJ = qtaJ.svd();
+
+      // 3) Form orthonormal matrix U = QW
+      double[][] utilde = svdJ.getU().getArray();
+      BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(utilde)).doAll(_parms._nv, qinfo._adaptedFrame);
+      Frame u = btsk.outputFrame(model._output._u_key, null, null);
+
+      model._output._d = svdJ.getSingularValues();
+      model._output._v = svdJ.getV().getArray();
+      return u;
     }
 
     @Override protected void compute2() {
@@ -392,6 +413,73 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double x = row.innerProduct(_yt[p]);
         outputs[p].addNum(x);
       }
+    }
+  }
+
+  // Computes Q'A where A is n by p and Q is n by k
+  private static class SMulTask extends MRTask<SMulTask> {
+    final int _ncolA;     // Number of cols in A
+    final int _ncolExp;   // Number of cols in A with categoricals expanded
+    final int _ncats;     // Number of categorical cols in A
+    final int _ncolQ;     // Number of cols in Q
+    final double[] _normSub;  // For standardizing A
+    final double[] _normMul;
+    final int[] _catOffsets;  // Categorical offsets for A
+    final int _numStart;      // Beginning of numeric cols when categorical cols expanded
+    boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
+
+    double[][] _qta;    // Output: Q'A is k by p_exp = number of cols in A with categoricals expanded
+
+    public SMulTask(int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
+      assert normSub != null && normSub.length == ncats;
+      assert normMul != null && normMul.length == ncats;
+
+      _ncolA = ncolA;
+      _ncolExp = ncolExp;
+      _ncats = ncats;
+      _ncolQ = ncolQ;
+      _normSub = normSub;
+      _normMul = normMul;
+      _catOffsets = catOffsets;
+      _numStart = _catOffsets[_catOffsets.length-1];
+      _use_all_factor_levels = use_all_factor_levels;
+    }
+
+    @Override public void map(Chunk cs[]) {
+      assert (_ncolA + _ncolQ) == cs.length;
+      _qta = new double[_ncolQ][_ncolExp];
+
+      for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
+        // Categorical columns
+        for(int p = 0; p < _ncats; p++) {
+          for(int row = 0; row < cs[0]._len; row++) {
+            double q = cs[k].atd(row);
+            double a = cs[p].atd(row);
+            if (Double.isNaN(a)) continue;
+
+            int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
+            int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
+            if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
+            _qta[k][_catOffsets[p] + level] += q;
+          }
+        }
+
+        // Numeric columns
+        int pexp = _numStart;
+        int pnum = 0;
+        for(int p = _ncats; p < _ncolA; p++) {
+          for(int row = 0; row  < cs[0]._len; row++) {
+            double q = cs[k].atd(row);
+            double a = cs[p].atd(row);
+            _qta[k][pexp] += q * (a - _normSub[pnum]) * _normMul[pnum];
+          }
+          pexp++; pnum++;
+        }
+      }
+    }
+
+    @Override public void reduce(SMulTask other) {
+      ArrayUtils.add(_qta, other._qta);
     }
   }
 }
