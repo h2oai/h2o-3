@@ -1,10 +1,12 @@
 package hex.genmodel;
 
 import water.genmodel.IGeneratedModel;
+import hex.genmodel.prediction.*;
 import hex.ModelCategory;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 /** This is a helper class to support Java generated models. */
@@ -343,6 +345,113 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public static double GLM_logitInv( double x ) { return 1.0 / (Math.exp(-x) + 1.0); }
   public static double GLM_logInv( double x ) { return Math.exp(x); }
   public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
-  public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
+  public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1 / tweedie_link_power); }
 
+  // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  //
+  // EasyGenModel
+  //
+  // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  public BinomialModelPrediction predictBinomial(RowData data) {
+    AbstractPrediction p = predict(data);
+    return (BinomialModelPrediction) p;
+  }
+
+  public MultinomialModelPrediction predictMultinomial(RowData data) {
+    AbstractPrediction p = predict(data);
+    return (MultinomialModelPrediction) p;
+  }
+
+  public RegressionModelPrediction predictRegression(RowData data) {
+    AbstractPrediction p = predict(data);
+    return (RegressionModelPrediction) p;
+  }
+
+  public ClusteringModelPrediction predictClustering(RowData data) {
+    AbstractPrediction p = predict(data);
+    return (ClusteringModelPrediction) p;
+  }
+
+  public AutoEncoderModelPrediction predictAutoencoder(RowData data) {
+    AbstractPrediction p = predict(data);
+    return (AutoEncoderModelPrediction) p;
+  }
+
+  private AbstractPrediction predict(RowData data) {
+
+    //    System.out.println("COLS " + model.getNumCols());
+//    // Create map of input variable domain information.
+//    // This contains the categorical string to numeric mapping.
+//    HashMap<Integer,HashMap<String,Integer>> domainMap = new HashMap<>();
+//    for (int i = 0; i < model.getNumCols(); i++) {
+//      String[] domainValues = model.getDomainValues(i);
+//      if (domainValues != null) {
+//        HashMap<String,Integer> m = new HashMap<>();
+//        for (int j = 0; j < domainValues.length; j++) {
+//          System.out.println("Putting ("+ i +","+ j +","+ domainValues[j] +")");
+//          m.put(domainValues[j], j);
+//        }
+//
+//        domainMap.put(i, m);
+//      }
+//    }
+
+//
+//
+//
+//
+//
+//    if (domainValues != null) {
+//      HashMap m = domainMap.get(j);
+//      assert (m != null);
+//      Integer cellOrdinalValue = (Integer) m.get(cellString);
+//      if (cellOrdinalValue == null) {
+//        System.out.println("WARNING: Line " + lineno + " column ("+ model.getNames()[j] + " == " + j +") has unknown categorical value (" + cellString + ")");
+//        row[j] = Double.NaN;
+//      }
+//      else {
+//        row[j] = (double) cellOrdinalValue;
+//      }
+//    } else {
+//      try {
+//        double value = Double.parseDouble(cellString);
+//        row[j] = value;
+//      } catch (java.lang.NumberFormatException e) {
+//        row[j] = Double.NaN;
+//      }
+//    }
+
+
+//    // Emit the result to the output file.
+//    for (int i = 0; i < preds.length; i++) {
+//      if (i == 0 && model.isClassifier()) {
+//        // See if there is a domain to map this output value to.
+//        String[] domainValues = model.getDomainValues(model.getResponseIdx());
+//        if (domainValues != null) {
+//          // Classification.
+//          double value = preds[i];
+//          int valueAsInt = (int)value;
+//          if (value != valueAsInt) {
+//            System.out.println("ERROR: Line " + lineno + " has non-integer output for classification (" + value + ")");
+//            System.exit(1);
+//          }
+//
+//          String predictedOutputClassLevel = domainValues[valueAsInt];
+//          output.write(predictedOutputClassLevel);
+//        }
+//      } else {
+//        if (i > 0) output.write(",");
+//        output.write(Double.toHexString(preds[i]));
+//        if (!model.isClassifier() && !model.isAutoEncoder()) break;
+//      }
+//    }
+//    output.write("\n");
+//
+
+    return null;
+  }
 }
