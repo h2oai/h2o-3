@@ -710,6 +710,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       TM.put("sum",         (byte)9);
       TM.put("ss",          (byte)10);
       TM.put("mode",        (byte)11);
+      TM.put("most",        (byte)11);
       // na handling
       TM.put("all"         ,(byte)0);
       TM.put("ignore"      ,(byte)1);
