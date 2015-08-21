@@ -54,6 +54,7 @@ public class PredictCsv {
     }
 
     if (haveHeaders != 1) {
+      System.out.println("ERROR: header not specified");
       usage();
     }
 
@@ -71,6 +72,35 @@ public class PredictCsv {
       System.out.println("ERROR: output not specified");
       usage();
     }
+  }
+
+  private static String[] parseHeaderRow(String line) {
+    return line.trim().split(",");
+  }
+
+  private static RowData parseDataRow(String line, String[] inputColumnNames) {
+    String trimmedLine = line.trim();
+    String[] inputData = trimmedLine.split(",");
+
+    // Assemble the input values for the row.
+    RowData row = new RowData();
+    for (int i = 0; i < inputColumnNames.length; i++) {
+      String columnName = inputColumnNames[i];
+      String cellData = inputData[i];
+
+      switch (cellData) {
+        case "":
+        case "NA":
+        case "N/A":
+        case "-":
+          continue;
+
+        default:
+          row.put(columnName, cellData);
+      }
+    }
+
+    return row;
   }
 
   public static void main(String[] args) throws Exception{
@@ -105,38 +135,20 @@ public class PredictCsv {
     while ((line = input.readLine()) != null) {
       lineNum++;
       if (lineNum == 1) {
-        inputColumnNames = line.trim().split(",");
+        inputColumnNames = parseHeaderRow(line);
         continue;
       }
 
       // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
-      String trimmedLine = line.trim();
-      String[] inputData = trimmedLine.split(",");
-
-      // Assemble the input values for the row.
-      RowData row = new RowData();
-      for (int i = 0; i < inputColumnNames.length; i++) {
-        String columnName = inputColumnNames[i];
-        String cellData = inputData[i];
-
-        switch (cellData) {
-          case "":
-          case "NA":
-          case "N/A":
-          case "-":
-            break;
-
-          default:
-            row.put(columnName, cellData);
-        }
-      }
+      RowData row = parseDataRow(line, inputColumnNames);
 
       // Do the prediction.
       // Emit the result to the output file.
       ModelCategory category = model.getModelCategory();
       if (category == ModelCategory.Binomial) {
         BinomialModelPrediction p = model.predictBinomial(row);
-        output.write(p.labelName);
+
+        output.write(p.label);
         output.write(",");
         for (int i = 0; i < p.classProbabilities.length; i++) {
           if (i > 0) {
@@ -147,7 +159,8 @@ public class PredictCsv {
       }
       else if (category == ModelCategory.Multinomial) {
         MultinomialModelPrediction p = model.predictMultinomial(row);
-        output.write(p.labelName);
+
+        output.write(p.label);
         output.write(",");
         for (int i = 0; i < p.classProbabilities.length; i++) {
           if (i > 0) {
@@ -158,10 +171,12 @@ public class PredictCsv {
       }
       else if (category == ModelCategory.Regression) {
         RegressionModelPrediction p = model.predictRegression(row);
+
         output.write(Double.toHexString(p.value));
       }
       else if (category == ModelCategory.Clustering) {
         ClusteringModelPrediction p = model.predictClustering(row);
+
         output.write(Integer.toHexString(p.cluster));
       }
       else {
