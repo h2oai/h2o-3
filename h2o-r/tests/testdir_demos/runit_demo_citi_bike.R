@@ -70,8 +70,8 @@ summary(bpd)
 split_fit_predict <- function(data) {
   r <- h2o.runif(data$day)
   train <- data[r < 0.6,]
-  test  <- data[(0.6 >= r) & (r < 0.9),]
-  hold  <- data[0.9 >= r,]
+  test  <- data[(r >= 0.6) & (r < 0.9),]
+  hold  <- data[r >= 0.9,]
   print(paste("Training data has", ncol(train), "columns and", nrow(train), "rows, test has",
               nrow(test), "rows, holdout has", nrow(hold)))
   
@@ -105,21 +105,24 @@ split_fit_predict <- function(data) {
                  family            = "poisson")
 
   # 4- Score on holdout set & report
-  train_r2_gbm <- h2o.r2(gbm)
-  test_r2_gbm  <- h2o.r2(gbm, valid = TRUE)
-  hold_r2_gbm  <- h2o.r2(gbm, newdata = hold)
+  train_r2_gbm  <- h2o.r2(gbm, train = TRUE)
+  test_r2_gbm   <- h2o.r2(gbm, valid = TRUE)
+  hold_perf_gbm <- h2o.performance(model = gbm, data = hold) 
+  hold_r2_gbm   <- h2o.r2(object = hold_perf_gbm)
   print(paste0("GBM R2 TRAIN = ", train_r2_gbm, ", R2 TEST = ", test_r2_gbm, ", R2 HOLDOUT = ",
                hold_r2_gbm))
 
-  train_r2_drf <- h2o.r2(drf)
-  test_r2_drf  <- h2o.r2(drf, valid = TRUE)
-  hold_r2_drf  <- h2o.r2(drf, newdata = hold)
+  train_r2_drf  <- h2o.r2(drf, train = TRUE)
+  test_r2_drf   <- h2o.r2(drf, valid = TRUE)
+  hold_perf_drf <- h2o.performance(model = drf, data = hold)
+  hold_r2_drf   <- h2o.r2(object = hold_perf_drf)
   print(paste0("DRF R2 TRAIN = ", train_r2_drf, ", R2 TEST = ", test_r2_drf, ", R2 HOLDOUT = ",
                hold_r2_drf))
 
-  train_r2_glm <- h2o.r2(glm)
-  test_r2_glm  <- h2o.r2(glm, valid = TRUE)
-  hold_r2_glm  <- h2o.r2(glm, newdata = hold)
+  train_r2_glm  <- h2o.r2(glm, train = TRUE)
+  test_r2_glm   <- h2o.r2(glm, valid = TRUE)
+  hold_perf_glm <- h2o.performance(model = glm, data = hold)
+  hold_r2_glm   <- h2o.r2(hold_perf_glm)
   print(paste0("GLM R2 TRAIN = ", train_r2_glm, ", R2 TEST = ", test_r2_glm, ", R2 HOLDOUT = ",
                hold_r2_glm))
 }
