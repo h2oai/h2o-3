@@ -3264,8 +3264,25 @@ class ASTSetDomain extends ASTUniPrefixOp {
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
     Vec v = f.anyVec();
     if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
-    if( _domains!=null && _domains.length != v.domain().length)
-      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + _domains.length);
+    if( _domains!=null && _domains.length != v.domain().length) {
+      // in this case we want to recollect the domain and check that number of levels matches _domains
+      Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
+      t.doAll(v);
+      final long[] dom = t.domain();
+      if( dom.length != _domains.length)
+        throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + _domains.length);
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for(int i=0;i<c._len;++i) {
+            if( !c.isNA(i) ) {
+              long num = Arrays.binarySearch(dom, c.at8(i));
+              if( num < 0 ) throw new IllegalArgumentException("Could not find the enum value!");
+              c.set(i,num);
+            }
+          }
+        }
+      }.doAll(v);
+    }
     v.setDomain(_domains);
     DKV.put(v);
   }

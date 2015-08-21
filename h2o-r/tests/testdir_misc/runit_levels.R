@@ -1,5 +1,5 @@
 ##
-# Generate lots of keys then remove them
+# Check factor levels of numeric and enum columns
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -10,8 +10,8 @@ test <- function(conn) {
   iris.hex = as.h2o(iris)
   
   Log.info("Find the factor levels h2o and R frame...")
-  levels1 = sort(h2o.levels(iris.hex$Species))
-  levels2 = sort(levels(iris$Species))
+  levels1 <- sort(h2o.levels(iris.hex$Species))
+  levels2 <- sort(levels(iris$Species))
   print("Factor levels for Species column for H2OFrame...")
   print(levels1)
   print("Factor levels for Species column for dataframe...")
@@ -23,13 +23,13 @@ test <- function(conn) {
   }
   
   Log.info("Try printing the levels of a numeric column...")
-  levels1 = levels(iris$Sepal.Length)
-  levels2 = h2o.levels(iris.hex$Sepal.Length)
+  levels1 <- levels(iris$Sepal.Length)
+  levels2 <- h2o.levels(iris.hex$Sepal.Length)
   print("Factor levels for Sepal.Length column for H2OFrame...")
   print(levels1)
   print("Factor levels for Sepal.Length column for dataframe...")
   print(levels2)  
-  if(!is.null(levels1)) stop("Numeric Column should not have any factor levels...")
+  if(!is.null(levels2)) stop("Numeric Column should not have any factor levels...")
 
   testEnd()
 }
