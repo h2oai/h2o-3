@@ -137,9 +137,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame directSVD(DataInfo  aqinfo, DataInfo qinfo, SVDModel model) {
-      // 1) Form the matrix B = Q'A
+      // 1) Form the matrix B = Q'A = (A'Q)'
       SMulTask stsk = new SMulTask(_train.numCols(), _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels).doAll(aqinfo._adaptedFrame);
-      double[][] qta = stsk._qta;
+      double[][] qta = ArrayUtils.transpose(stsk._atq);
 
       // 2) Compute SVD of small matrix B = WDV'
       Matrix qtaJ = new Matrix(qta);
@@ -416,7 +416,83 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
   }
 
-  // Computes Q'A where A is n by p and Q is n by k
+  // Given Cholesky L from A'A = LL', compute Q from A = QR decomposition, where R = L'
+  private static class QRfromChol extends MRTask<QRfromChol> {
+    final int _ncolA;     // Number of cols in A
+    final int _ncolExp;   // Number of cols in A with categoricals expanded
+    final int _ncats;     // Number of categorical cols in A
+    final int _ncolQ;     // Number of cols in Q
+    final double[] _normSub;  // For standardizing A
+    final double[] _normMul;
+    final int[] _catOffsets;  // Categorical offsets for A
+    final int _numStart;      // Beginning of numeric cols when categorical cols expanded
+    boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
+    final double[][] _L;
+
+    public QRfromChol( CholeskyDecomposition chol, int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
+      _ncolA = ncolA;
+      _ncolExp = ncolExp;
+      _ncats = ncats;
+      _ncolQ = ncolQ;
+      _normSub = normSub;
+      _normMul = normMul;
+      _catOffsets = catOffsets;
+      _numStart = _catOffsets[_ncats-1];
+      _use_all_factor_levels = use_all_factor_levels;
+      _L = chol.getL().getArray();
+    }
+
+    public final void forwardSolve(double[][] L, double[] b) {
+      assert L != null && L.length == L[0].length && L.length == b.length;
+
+      for(int i = 0; i < b.length; i++) {
+        double sum = 0;
+        for(int j = 0; j < i; j++)
+          sum += L[i][j] * b[j];
+        b[i] = (b[i] - sum) / L[i][i];
+      }
+    }
+
+    // Input frame is [A,Q] where we write to Q
+    @Override public void map(Chunk cs[]) {
+      assert (_ncolA + _ncolQ) == cs.length;
+      double[] qrow = new double[_ncolQ];
+
+      for(int row = 0; row < cs[0]._len; row++) {
+        // 1) Extract single expanded row of A
+        // Categorical columns
+        for(int p = 0; p < _ncats; p++) {
+          double a = cs[p].atd(row);
+          if(Double.isNaN(a)) continue;
+
+          int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
+          int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
+          if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
+          qrow[_catOffsets[p] + level] = 1;
+        }
+
+        // Numeric columns
+        int pnum = 0;
+        int pexp = _numStart;
+        for(int p = _ncats; p < _ncolA; p++) {
+          double a = cs[p].atd(row);
+          qrow[pexp] = (a - _normSub[pnum]) * _normMul[pnum];
+          pexp++; pnum++;
+        }
+
+        // 2) Solve for single row of Q using forward substitution
+        forwardSolve(_L, qrow);
+
+        // 3) Save row of solved values into Q
+        int i = 0;
+        for(int d = _ncolA; d < _ncolA+_ncolQ; d++)
+          cs[d].set(row, qrow[i]);
+        assert i == qrow.length;
+      }
+    }
+  }
+
+  // Computes A'Q where A is n by p and Q is n by k
   private static class SMulTask extends MRTask<SMulTask> {
     final int _ncolA;     // Number of cols in A
     final int _ncolExp;   // Number of cols in A with categoricals expanded
@@ -428,11 +504,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     final int _numStart;      // Beginning of numeric cols when categorical cols expanded
     boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
 
-    double[][] _qta;    // Output: Q'A is k by p_exp = number of cols in A with categoricals expanded
+    double[][] _atq;    // Output: A'Q is p_exp by k, where p_exp = number of cols in A with categoricals expanded
 
     public SMulTask(int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
       assert normSub != null && normSub.length == ncats;
       assert normMul != null && normMul.length == ncats;
+      assert catOffsets != null && (catOffsets.length-1) == ncats;
 
       _ncolA = ncolA;
       _ncolExp = ncolExp;
@@ -441,13 +518,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       _normSub = normSub;
       _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets[_catOffsets.length-1];
+      _numStart = _catOffsets[_ncats-1];
       _use_all_factor_levels = use_all_factor_levels;
     }
 
+    // Input frame is [A,Q]
     @Override public void map(Chunk cs[]) {
       assert (_ncolA + _ncolQ) == cs.length;
-      _qta = new double[_ncolQ][_ncolExp];
+      _atq = new double[_ncolExp][_ncolQ];
 
       for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
         // Categorical columns
@@ -460,18 +538,18 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
             int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
             if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
-            _qta[k][_catOffsets[p] + level] += q;
+            _atq[_catOffsets[p] + level][k] += q;
           }
         }
 
         // Numeric columns
-        int pexp = _numStart;
         int pnum = 0;
+        int pexp = _numStart;
         for(int p = _ncats; p < _ncolA; p++) {
           for(int row = 0; row  < cs[0]._len; row++) {
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
-            _qta[k][pexp] += q * (a - _normSub[pnum]) * _normMul[pnum];
+            _atq[pexp][k] += q * (a - _normSub[pnum]) * _normMul[pnum];
           }
           pexp++; pnum++;
         }
@@ -479,7 +557,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     @Override public void reduce(SMulTask other) {
-      ArrayUtils.add(_qta, other._qta);
+      ArrayUtils.add(_atq, other._atq);
     }
   }
 }
