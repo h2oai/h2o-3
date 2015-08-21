@@ -69,13 +69,9 @@ check.gbm.grid.cars.negative <- function(conn) {
   # TODO: Check error messages for cases with invalid gbm parameters
 
   ## Non-gridable parameter passed as grid parameter
-  non_gridable_parameter <- sample(1:3, 1)
-  if ( non_gridable_parameter == 1 ) { grid_space$balance_classes <- c(TRUE, FALSE) }
-  if ( non_gridable_parameter == 2 ) { grid_space$r2_stopping <- c(0.1, 0.5, 0.7) }
-  if ( non_gridable_parameter == 3 ) { grid_space$seed <- c(1, 100, 12345) }
+  grid_space$build_tree_one_node <- c(TRUE, FALSE)
 
-  Log.info(paste0("Constructing the grid of gbm models with non-gridable parameter: ", non_gridable_parameter ,
-                  " (1:balance_classes, 2:r2_stopping, 3:seed). Expecting failure..."))
+  Log.info(paste0("Constructing the grid of gbm models with non-gridable parameter build_tree_one_node"))
   if ( validation_scheme == 1 ) {
     expect_error(cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, hyper_params=grid_space))
