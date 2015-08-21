@@ -172,6 +172,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); prin
 #    .eval.frame(hex):eval
 # Always yields the cluster's name for the evaluated results.
 .eval.frame <- function(x) {
+  browser()
   stopifnot(is.Frame(x))
   if( !is.character(x:eval) ) {
     exec_str <- .eval.impl(x,TRUE)
@@ -343,22 +344,24 @@ NULL
 
   # This function is called with a huge variety of argument styles
   # Here's the breakdown: 
-  # df[]           - both missing, identity with df
-  # df[,]          - both missing, identity with df
-  # df[2,]         - constant row, all cols
-  # df[1:150,]     - selection of rows, all cols
-  # df[3]          - constant column, not constant row
-  # df[,3]         - constant column
-  # df[,1:10]      - selection of columns
-  # df["colname"]  - single column by name, df$colname
-  # df[,"colname"] - single column by name
-  # df[2,"colname"]- row slice and column-by-name
-  # df[2,3]        - single element
-  # df[1:150,1:10] - rectangular slice
-  # df[a<b,]       - boolean row slice
-  browser()
-  if( missing(col) && !missing(row) && length(row)==1 && is.character(row) ) {  # Have a row but not a column?
-    # Row is really column: cars.hex["cylinders"]  or cars.hex$cylinders
+  #   Style          Type #args  Description
+  # df[]           - na na 2    both missing, identity with df
+  # df[,]          - na na 3    both missing, identity with df
+  # df[2,]         - r  na 3    constant row, all cols
+  # df[1:150,]     - r  na 3    selection of rows, all cols
+  # df[3]          - c  na 2    constant column, not constant row
+  # df[,3]         - na c  3    constant column
+  # df[,1:10]      - na c  3    selection of columns
+  # df["colname"]  - c  na 2    single column by name, df$colname
+  # df[,"colname"] - na c  3    single column by name
+  # df[2,"colname"]- r  c  3    row slice and column-by-name
+  # df[2,3]        - r  c  3    single element
+  # df[1:150,1:10] - r  c  3    rectangular slice
+  # df[a<b,]       - f  na 3    boolean row slice
+  # df[a<b,c]      - f  c  3    boolean row slice
+
+  if( nargs() == 2 ) {      # Only row, no column; nargs==2 distiguishes "df[2,]" (row==2) from "df[2]" (col==2)
+    # Row is really column: cars[3] or cars["cylinders"] or cars$cylinders
     col <- row
     row <- NA
   }
@@ -427,18 +430,20 @@ NULL
     stop("`value` can only be an Frame object or a numeric or character vector")
 
   # Row arg is missing, means "all the rows"
-  if(allRow) rows <- paste0("[0:",nrow(data),"]")
+  if(allRow) rows <- paste0("[]")
   else       rows <- .row.col.selector(row)
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
-    cols <- paste0("[0:",ncol(data),"]")
+    cols <- paste0("[]")
   } else {
-    idx <- match(col, colnames(data))
-    if( any(is.na(idx)) ) {
-      idx <- if( is.numeric(col) ) col else ncol(data)+1
-      if( !is.numeric(col) ) name <- col
-    } else name <- col
+    if( is.character(col) ) {
+      idx <- match(col, colnames(data))
+      if( any(is.na(idx)) ) { # Any unknown names?
+        if( length(col) > 1 ) stop("unknown column names")
+        else { idx <- ncol(data)+1; name <- col } # Append 1 unknown column
+      }
+    } else idx <- col
     cols <- .row.col.selector(idx)
   }
 
