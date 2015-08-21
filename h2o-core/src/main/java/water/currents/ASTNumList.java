@@ -76,6 +76,12 @@ class ASTNumList extends AST {
     _strides= new double[]{1};
     _cnts   = new long  []{1};
   }
+  // A simple dense range ASTNumList
+  ASTNumList( long lo, long hi_exclusive ) {
+    _bases  = new double[]{lo};
+    _strides= new double[]{1};
+    _cnts   = new long  []{hi_exclusive-lo};
+  }
 
 
   // This is a special syntatic form; the number-list never executes and hits

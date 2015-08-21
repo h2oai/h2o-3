@@ -172,7 +172,6 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); prin
 #    .eval.frame(hex):eval
 # Always yields the cluster's name for the evaluated results.
 .eval.frame <- function(x) {
-  browser()
   stopifnot(is.Frame(x))
   if( !is.character(x:eval) ) {
     exec_str <- .eval.impl(x,TRUE)
@@ -430,12 +429,12 @@ NULL
     stop("`value` can only be an Frame object or a numeric or character vector")
 
   # Row arg is missing, means "all the rows"
-  if(allRow) rows <- paste0("[]")
+  if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
   else       rows <- .row.col.selector(row)
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
-    cols <- paste0("[]")
+    cols <- paste0("[]") # Shortcut for "all cols"
   } else {
     if( is.character(col) ) {
       idx <- match(col, colnames(data))
