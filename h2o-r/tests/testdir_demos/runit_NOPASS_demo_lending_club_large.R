@@ -38,4 +38,4 @@ test.lendingclub.demo <- function(conn) {
   testEnd()
 }
 
-doTest("Test out Citibike Demo", test.citibike.demo)
+doTest("Test out Lending Club Demo", test.lendingclub.demo)
