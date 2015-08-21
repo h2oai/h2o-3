@@ -1301,6 +1301,151 @@ h2o.rbind <- function(...) {
 #' @export
 h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
 
+#' Group and Apply by Column
+#'
+#' Performs a group by and apply similar to ddply.
+#'
+#' In the case of \code{na.methods} within \code{gb.control}, there are three possible settings.
+#' \code{"all"} will include \code{NAs} in computation of functions. \code{"rm"} will completely
+#' remove all \code{NA} fields. \code{"ignore"} will remove \code{NAs} from the numerator but keep
+#' the rows for computational purposes. If a list smaller than the number of columns groups is
+#' supplied, the list will be padded by \code{"ignore"}.
+#'
+#' Similar to \code{na.methods}, \code{col.names} will pad the list with the default column names if
+#' the length is less than the number of colums groups supplied.
+#' @param data an \linkS4class{Frame} object.
+#' @param by a list of column names
+#' @param \dots any supported aggregate function.
+#' @param order.by Takes a vector column names or indices specifiying how to order the group by result.
+#' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
+#'        output columns. See \code{Details:} for more help.
+#' @return Returns a new \linkS4class{Frame} object with columns equivalent to the number of
+#'         groups created
+#' @export
+h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
+  chk.Frame(data)  
+
+  # handle the columns
+  # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
+  if(is.character(by)) {
+    vars <- match(by, colnames(data))
+    if (any(is.na(vars)))
+      stop('No column named ', by, ' in ', substitute(data), '.')
+  } else if(is.integer(by)) {
+    vars <- by
+  } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)
+    vars <- as.integer(by)
+  }
+  if(vars <= 0L || vars > ncol(data))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+
+  a <- substitute(list(...))
+  a[[1]] <- NULL  # drop the wrapping list()
+  nAggs <- length(a)  # the number of aggregates
+  # for each aggregate, build this list: (agg,col.idx,na.method,col.name)
+  agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
+  col.idxs    <- unlist(lapply(a, function(agg, envir) {
+    # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
+    # if numeric, then eval it and return
+    # otherwise, as.character the *name* and look it up in colnames(data) and fail/return appropriately
+    agg[[2]] <- eval(agg[[2]], envir)
+    if( is.numeric(agg[[2]]) || is.integer(agg[[2]]) ) { return(eval(agg[[2]])) }
+    col.name <- eval(as.character(agg[[2]]), parent.frame())
+    col.idx <- match(col.name, colnames(data))
+
+    # no such column, stop!
+    if( is.na(col.idx) ) stop('No column named ', col.name, ' in ', substitute(data), '.')
+
+    # got a good column index, return it.
+    col.idx
+  }, parent.frame()))
+
+  # default to "all" na.method
+  na.methods.defaults <- rep("all", nAggs)
+
+  # default to agg_col.name for the column names
+  col.names.defaults  <- paste0(agg.methods, "_", colnames(data)[col.idxs])
+
+  # 1 -> 0 based indexing of columns
+  col.idxs <- col.idxs - 1
+
+  ### NA handling ###
+
+  # go with defaults
+  if( is.null(gb.control$na.methods) ) {
+    gb.control$na.methods <- na.methods.defaults
+
+  # have fewer na.methods passed in than aggregates to compute -- pad with defaults
+  } else if( length(gb.control$na.methods) < nAggs ) {
+
+    # special case where only 1 method was passed, and so that is the method for all aggregates
+    if( length(gb.control$na.methods) == 1L ) {
+      gb.control$na.methods <- rep(gb.control$na.methods, nAggs)
+    } else {
+      n.missing <- nAggs - length(gb.control$na.methods)
+      gb.control$na.methods <- c(gb.control$na.methods, rep("all", n.missing))
+    }
+
+  # have more na.methods than aggregates -- rm extras
+  } else if( length(gb.control$na.methods) > nAggs ) {
+    gb.control$na.methods <- gb.control$na.methods[1:nAggs]
+  } else {
+    # no problem...
+  }
+
+  ### End NA handling ###
+
+  ### Column Name Handling ###
+
+  # go with defaults
+  if( is.null(gb.control$col.names) ) {
+    gb.control$col.names <- col.names.defaults
+
+  # have fewer col.names passed in than aggregates -- pad with defaults
+  } else if( length(gb.control$col.names) < nAggs ) {
+
+    # no special case for only 1 column!
+    n.missing <- nAggs - length(gb.control$col.names)
+    gb.control$col.names <- c(gb.control$col.names, col.names.defaults[(nAggs-n.missing+1):nAggs])
+
+  # have more col.names than aggregates -- rm extras
+  } else if( length(gb.control$col.names) > nAggs ) {
+    gb.control$col.names <- gb.control$col.names[1:nAggs]
+  }
+
+  ### End Column Name handling ###
+
+
+  # Build the aggregates! reminder => build this list: (agg,col.idx,na.method,col.name)
+  aggs <- unlist(recursive=F, lapply(1:nAggs, function(idx) {
+    list(agg.methods[idx], eval(col.idxs[idx]), gb.control$na.methods[idx], gb.control$col.names[idx])
+  }))
+
+
+  ### ORDER BY ###
+  vars2 <- NULL
+  if( !is.null(order.by) ) {
+    if(is.character(order.by)) {
+        vars2 <- match(order.by, by)
+        if (any(is.na(vars2)))
+          stop('No column named ', order.by, ' in ', by, '.')
+    } else if(is.integer(order.by)) {
+      vars2 <- order.by
+    } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
+      vars2 <- as.integer(order.by)
+    }
+    if(vars2 < 1L || vars2 > ncol(data)) stop('Column ', vars2, ' out of range for frame columns ', ncol(data), '.')
+  }
+
+  ### END ORDER BY ###
+
+  # create the AGG AST
+  AGG <- .newExprList("agg",aggs)
+
+  # create the group by AST
+  .newExpr("groupby",data,.row.col.selector(vars),AGG,.row.col.selector(vars2))
+}
+
 #' Produce a Vector of Random Uniform Numbers
 #'
 #' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
