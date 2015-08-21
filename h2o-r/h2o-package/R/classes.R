@@ -771,7 +771,7 @@ setMethod("show", "H2OGrid", function(object) {
                     })
     names(params_ok) <- hyper_names # Assign correct names to items in params list
     status_ok <- rep("OK", length(object@model_ids))
-    df_ok <- data.frame(params_ok, status_ok, model_ids)
+    df_ok <- if ( length(params_ok) > 0 ) data.frame(params_ok, status_ok, model_ids) else data.frame(status_ok, model_ids)
     cat("Generated models\n")
     cat("----------------\n")
     print(df_ok, row.names = FALSE)
