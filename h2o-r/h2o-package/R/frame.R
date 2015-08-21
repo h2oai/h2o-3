@@ -1343,11 +1343,7 @@ h2o.levels <- function(x, i) {
     i <- 1
   } else if( is.character(i) ) i <- match(i, colnames(x))
   if( is.na(i) ) stop("no such column found")
-  col_idx <- i
-  if (col_idx <= 0) col_idx <- 1
-  if (col_idx >= ncol(x)) col_idx <- ncol(x)
-  res <- .h2o.__remoteSend(x@conn, .h2o.__COL_DOMAIN(x@frame_id, colnames(x)[col_idx]), method="GET")
-  res$domain[[1]]
+  return( as.data.frame(.h2o.nary_frame_op("levels", x[,i]))[,1] )
 }
 
 #'
