@@ -9,6 +9,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
+import water.util.TwoDimTable;
 
 import java.util.Random;
 
@@ -347,7 +348,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _step_size;
 
     // SVD of output XY
-    public double[/*feature*/][/*k*/] _eigenvectors;
+    public double[/*feature*/][/*k*/] _eigenvectors_raw;
+    public TwoDimTable _eigenvectors;
     public double[] _singular_vals;
 
     // Frame key of X matrix

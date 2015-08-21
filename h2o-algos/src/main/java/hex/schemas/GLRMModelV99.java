@@ -25,7 +25,7 @@ public class GLRMModelV99 extends ModelSchema<GLRMModel, GLRMModelV99, GLRMModel
     public double[] singular_vals;
 
     @API(help = "Eigenvectors of XY matrix")
-    public double[][] eigenvectors;
+    public TwoDimTableBase eigenvectors;
 
     @API(help = "Frame key for X matrix")
     public KeyV3.FrameKeyV3 loading_key;
