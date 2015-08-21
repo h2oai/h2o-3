@@ -429,7 +429,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
     final double[][] _L;
 
-    public QRfromChol( CholeskyDecomposition chol, int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
+    public QRfromChol( CholeskyDecomposition chol, double nobs, int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
       _ncolA = ncolA;
       _ncolExp = ncolExp;
       _ncats = ncats;
@@ -439,7 +439,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       _catOffsets = catOffsets;
       _numStart = _catOffsets[_ncats-1];
       _use_all_factor_levels = use_all_factor_levels;
+
       _L = chol.getL().getArray();
+      ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
     }
 
     public final void forwardSolve(double[][] L, double[] b) {

@@ -211,6 +211,11 @@ public class ArrayUtils {
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
+  public static double[][] mult(double[][] ary, double n) {
+    if(ary == null) return null;
+    for (int i=0; i<ary.length; i++) mult(ary[i], n);
+    return ary;
+  }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
     if(ary == null || nums == null) return null;
