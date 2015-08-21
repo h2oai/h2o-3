@@ -52,5 +52,5 @@ check.naiveBayes.grid.cars <- function(conn) {
   testEnd()
 }
 
-doTest("GBM Grid Search using cars dataset", check.naiveBayes.grid.cars)
+doTest("Naive Bayes Grid Search using cars dataset", check.naiveBayes.grid.cars)
 

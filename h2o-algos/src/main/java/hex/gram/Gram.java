@@ -77,7 +77,12 @@ public final class Gram extends Iced<Gram> {
   }
 
   public double get(int i, int j) {
-    if(j > i) throw new IllegalArgumentException("Gram stored as lower diagnoal matrix, j must be < i");
+    if(j > i) {
+      int k = i;
+      i = j;
+      j = k;
+//      throw new IllegalArgumentException("Gram stored as lower diagnoal matrix, j must be < i");
+    }
     if(i < _diagN)
       return(j == i)?_diag[i]:0;
     return _xx[i-_diagN][j];

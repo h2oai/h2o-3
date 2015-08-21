@@ -10,10 +10,11 @@ expect_model_param <- function(models, attribute_name, expected_values) {
 
 #' Constructs a named list of gridable parameters and their respective values, which will eventually be passed to
 #' h2o.grid as the hyper_params argument. The  grid parameters, and their associated values, are randomly selected.
-#' @param algo A string {"gbm", "drf", "deeplearning", "kmeans", "glm", "naiveBayes"}
-#' @param ncols Used for mtries selection
+#' @param algo A string {"gbm", "drf", "deeplearning", "kmeans", "glm", "naiveBayes", "pca"}
+#' @param ncols Used for mtries selection or k (pca)
+#' @param nrows Used for k (pca)
 #' @return A named list of gridable parameters and their respective values
-makeRandomGridSpace <- function(algo,ncols=NULL) {
+makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
   grid_space <- list()
   if ( algo == "gbm" || algo == "drf" ) {
     if ( sample(0:1,1) ) { grid_space$ntrees <- sample(1:5, sample(2:3,1)) }
@@ -65,6 +66,11 @@ makeRandomGridSpace <- function(algo,ncols=NULL) {
     if ( sample(0:1,1) ) { grid_space$laplace <- round(runif(1)+sample(0:10,sample(2:3,1)),6) }
     if ( sample(0:1,1) ) { grid_space$min_sdev <- round(runif(sample(2:3,1)),6) }
     if ( sample(0:1,1) ) { grid_space$eps_sdev <- round(runif(sample(2:3,1)),6) }
+  }
+  if ( algo == "pca" ) {
+    if ( sample(0:1,1) ) { grid_space$max_iterations <- sample(1:1000, sample(2:3,1)) }
+    if ( sample(0:1,1) ) { grid_space$transform = sample(c("NONE","STANDARDIZE","NORMALIZE","DEMEAN","DESCALE"), sample(2:3,1)) }
+    grid_space$k <- sample(1:min(ncols,nrows), sample(2:3,1))
   }
   grid_space
 }
