@@ -16,8 +16,10 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Singular Value Decomposition
@@ -135,8 +137,30 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       return model._output._d[k];
     }
 
+    // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
+    private void randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
+      // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR decomposition
+      double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
+      RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
+      rtsk.doAll(dinfo._adaptedFrame);
+      Frame yinit = rtsk.outputFrame(Key.make(), null, null);
+
+      DataInfo yinfo = new DataInfo(Key.make(), yinit, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+      DKV.put(yinfo._key, yinfo);
+      GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
+      gtsk.doAll(yinfo._adaptedFrame);
+      // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
+      Matrix ygram = new Matrix(gtsk._gram.getXX());
+      CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
+
+      for(int q = 0; q < iters; q++) {
+        // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
+        // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
+      }
+    }
+
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame directSVD(DataInfo  aqinfo, DataInfo qinfo, SVDModel model) {
+    private Frame directSVD(DataInfo aqinfo, DataInfo qinfo, SVDModel model) {
       // 1) Form the matrix B = Q'A = (A'Q)'
       SMulTask stsk = new SMulTask(_train.numCols(), _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels).doAll(aqinfo._adaptedFrame);
       double[][] qta = ArrayUtils.transpose(stsk._atq);
@@ -412,6 +436,23 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       for(int p = 0; p < _yt.length; p++) {
         double x = row.innerProduct(_yt[p]);
         outputs[p].addNum(x);
+      }
+    }
+  }
+
+  // Compute Y = AG where A is n by p and G is a p by k standard Gaussian matrix
+  private static class RandSubInit extends FrameTask<RandSubInit> {
+    final double[][] _gaus;   // G' is k by p for convenient multiplication
+
+    public RandSubInit(Key jobKey, DataInfo dinfo, double[][] gaus) {
+      super(jobKey, dinfo);
+      _gaus = gaus;
+    }
+
+    @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
+      for(int k = 0; k < _gaus.length; k++) {
+        double y = row.innerProduct(_gaus[k]);
+        outputs[k].addNum(y);
       }
     }
   }

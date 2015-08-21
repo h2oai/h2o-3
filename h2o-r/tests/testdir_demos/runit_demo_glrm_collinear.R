@@ -68,7 +68,7 @@ test.glrm.collinear <- function(conn) {
   Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))
   fitY <- as.matrix(fitH2O@model$archetypes)
   
-  # Note: This method is slower (SVD) and doesn't identify subsets of collinear cols
+  # Note: This method is slower (SVD) and doesn't identify subsets of collinear columns
   Log.info("Identify collinear columns from eigenvectors and eigenvalues")
   train_ccol  <- collinear_cols_r(train)
   fitY_ccol   <- collinear_cols_r(fitY)
