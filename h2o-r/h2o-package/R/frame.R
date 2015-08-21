@@ -2873,7 +2873,9 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #' Compute A Histgram
 #'
 #' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
-#' in computing bin width.
+#' in computing bin width. Note that we do not beautify the breakpoints as R does.
+#'
+#'
 #'
 #' @param x A single numeric column from an H2OFrame.
 #' @param breaks Can be one of the following:
