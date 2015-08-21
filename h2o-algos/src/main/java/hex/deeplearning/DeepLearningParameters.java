@@ -3,6 +3,7 @@ package hex.deeplearning;
 import hex.Distribution;
 import hex.Model;
 import water.H2O;
+import static water.H2O.technote;
 import water.Key;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -511,7 +512,7 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_autoencoder && _loss == Loss.CrossEntropy)
         dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
       if (!classification && _loss == Loss.CrossEntropy)
-        dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
+        dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
     }
     if (!classification && _loss == Loss.CrossEntropy)
       dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
@@ -523,7 +524,7 @@ public class DeepLearningParameters extends Model.Parameters {
         case tweedie:
         case gamma:
         case poisson:
-          dl.error("_distribution", _distribution  + " distribution is not allowed for classification.");
+          dl.error("_distribution", technote(2, _distribution  + " distribution is not allowed for classification."));
           break;
         case AUTO:
         case bernoulli:
@@ -536,7 +537,7 @@ public class DeepLearningParameters extends Model.Parameters {
       switch(_distribution) {
         case multinomial:
         case bernoulli:
-          dl.error("_distribution", _distribution  + " distribution is not allowed for regression.");
+          dl.error("_distribution", technote(2, _distribution  + " distribution is not allowed for regression."));
           break;
         case tweedie:
         case gamma:
