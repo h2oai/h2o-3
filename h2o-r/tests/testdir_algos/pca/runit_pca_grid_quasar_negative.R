@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.pca.grid.cars.negative <- function(conn) {
+check.pca.grid.quasar.negative <- function(conn) {
   quasar <- h2o.importFile(conn, locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
   quasar <- quasar[,-1]
 
@@ -17,16 +17,16 @@ check.pca.grid.cars.negative <- function(conn) {
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   Log.info("Constructing the grid of pca models with some invalid pca parameters...")
-  cars_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space)
-  print(cars_pca_grid)
+  quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space)
+  print(quasar_pca_grid)
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
-  expect_equal(length(cars_pca_grid@model_ids), 4)
+  expect_equal(length(quasar_pca_grid@model_ids), 4)
 
   Log.info("Check that the hyper_params that were passed to grid, were used to construct the models...")
   # Get models
-  grid_models <- lapply(cars_pca_grid@model_ids, function(mid) { model = h2o.getModel(mid) })
+  grid_models <- lapply(quasar_pca_grid@model_ids, function(mid) { model = h2o.getModel(mid) })
   # Check expected number of models
   expect_equal(length(grid_models), 4)
   # Check parameters coverage
@@ -42,12 +42,10 @@ check.pca.grid.cars.negative <- function(conn) {
 
   Log.info(paste0("Constructing the grid of pca models with non-gridable parameter: ", non_gridable_parameter ,
                   " (1:pca_method, 2:seed, 3:use_all_factor_levels). Expecting failure..."))
-
-  Log.info(paste0("Constructing the grid of pca models with non-gridable parameter build_tree_one_node"))
-  expect_error(cars_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space))
+  expect_error(quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space))
 
   testEnd()
 }
 
-doTest("PCA Grid Search using bad parameters", check.pca.grid.cars.negative)
+doTest("PCA Grid Search using bad parameters", check.pca.grid.quasar.negative)
 
