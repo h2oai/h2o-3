@@ -57,7 +57,7 @@ Now, parse the imported data:
 
 0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `K-means` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
-0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
+0. If the parsed seeds_dataset.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 7 (the a priori known clusters for this dataset). 
 0. In the **K** field, specify the number of clusters. For this example, enter `3`.  
 0. In the **Max_iterations** field, specify the maximum number of iterations. For this example, enter `100`. 
