@@ -2,8 +2,10 @@ package hex.tree;
 
 import hex.*;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,8 +13,6 @@ import java.util.List;
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
-    /** Maximal number of supported levels in response. */
-    static final int MAX_SUPPORTED_LEVELS = 1000;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -28,22 +28,54 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
 
-    // TRUE: Continue extending an existing checkpointed model
-    // FALSE: Overwrite any prior model
-    public boolean _checkpoint;
-
     public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
 
     public boolean _build_tree_one_node = false;
 
-    /** Distribution functions.  Note: AUTO will select gaussian for
-     *  continuous, and multinomial for categorical response
-     *
-     *  <p>TODO: Replace with drop-down that displays different distributions
-     *  depending on cont/cat response
+    public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
+
+    public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
+
+    /** Fields which can be modified if checkpoint is specified.
+     * FIXME: should be defined in Schema API annotation
      */
-    public Distributions.Family _distribution = Distributions.Family.AUTO;
-    public float _tweedie_power=1.5f;
+    private static String[] MODIFIABLE_BY_CHECKPOINT_FIELDS = new String[] { "_ntrees", "_max_depth", "_min_rows", "_r2_stopping"};
+
+    protected String[] getCheckpointModifiableFields() {
+      return MODIFIABLE_BY_CHECKPOINT_FIELDS;
+    }
+
+    /** This method will take actual parameters and validate them with parameters of
+     * requested checkpoint. In case of problem, it throws an API exception.
+     *
+     * @param checkpointParameters checkpoint parameters
+     */
+    public void validateWithCheckpoint(SharedTreeParameters checkpointParameters) {
+      String[] fieldNames = getCheckpointModifiableFields();
+      Field[] allFields = this.getClass().getDeclaredFields();
+      for (Field f : allFields) {
+        for (String modifiableFieldName : fieldNames) {
+          // Skip modifiable fields
+          if (modifiableFieldName.equals(f.getName())) {
+            continue;
+          }
+          // Make sure that value in fields are same!
+
+          try {
+            if (!PojoUtils.equals(this, f, checkpointParameters, checkpointParameters.getClass().getDeclaredField(f.getName()))) {
+              throw new H2OIllegalArgumentException(f.getName(), "TreeBuilder", "Field cannot be modified if checkpoint is specified!");
+            }
+          } catch (NoSuchFieldException e) {
+            throw new H2OIllegalArgumentException(f.getName(), "TreeBuilder", "Field is not supported by checkpoint!");
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  public double deviance(double w, double y, double f) {
+    return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
   }
 
   final public VarImp varImp() { return _output._varimp; }

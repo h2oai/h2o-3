@@ -364,6 +364,8 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(model.parts$tm) ) print(model.parts$tm)
   cat("\n")
   if( !is.null(model.parts$vm) ) print(model.parts$vm)
+  cat("\n")
+  if( !is.null(model.parts$xm) ) print(model.parts$xm)
 })
 
 #'
@@ -398,7 +400,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   cat("\n")
 
   # VI could be real, true variable importances or GLM coefficients
-  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficients_magnitude)
+  haz_varimp <- !is.null(m$variable_importances) || !is.null(m$standardized_coefficient_magnitudes)
   if( haz_varimp ) {
     cat("Variable Importances: (Extract with `h2o.varimp`) \n")
     cat("=================================================\n\n")
@@ -408,24 +410,25 @@ setMethod("summary", "H2OModel", function(object, ...) {
 
 .showMultiMetrics <- function(o, which="Training") {
   arg <- "train"
-  if( which == "Validation" ) arg <- "valid"
+  if( which == "Validation" ) { arg <- "valid"
+  } else if ( which == "Cross-Validation" ) { arg <- "xval" }
   tm <- o@metrics
   cat(which, "Set Metrics: \n")
   cat("=====================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
-  if( !is.null(tm$frame) && !is.null(tm$frame$name) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
-  if( !is.null(tm$MSE)                              )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
-  if( !is.null(tm$r2)                               )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
-  if( !is.null(tm$logloss)                          )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
-  if( !is.null(tm$AUC)                              )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
-  if( !is.null(tm$Gini)                             )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
-  if( !is.null(tm$null_deviance)                    )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
-  if( !is.null(tm$residual_deviance)                )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
-  if( !is.null(tm$AIC)                              )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
-  if( !is.null(tm$cm)                               )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
-  if( !is.null(tm$cm)                               )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
-  if( !is.null(tm$hit_ratio_table)                  )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table)                  )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
+  if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
+  if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
+  if( !is.null(tm$r2)                                              )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
+  if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
+  if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
+  if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
+  if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
+  if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
+  if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
+  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n")); } }
+  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) } }
+  if( !is.null(tm$hit_ratio_table)                                 )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
+  if( !is.null(tm$hit_ratio_table)                                 )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
   invisible(tm)
 }
@@ -550,8 +553,8 @@ setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@mod
 #' @aliases H2OModelMetrics
 #' @export
 setClass("H2OModelMetrics",
-         representation(algorithm="character", on_train="logical", metrics="listOrNull"),
-         prototype(algorithm=NA_character_, on_train=FALSE, metrics=NULL),
+         representation(algorithm="character", on_train="logical", on_valid="logical", on_xval="logical", metrics="listOrNull"),
+         prototype(algorithm=NA_character_, on_train=FALSE, on_valid=FALSE, on_xval=FALSE, metrics=NULL),
          contains="VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
@@ -560,7 +563,8 @@ setClass("H2OModelMetrics",
 setMethod("show", "H2OModelMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n", sep="")
     if( object@on_train ) cat("** Reported on training data. **\n")
-    else                  cat("** Reported on validation data. **\n")
+    if( object@on_valid ) cat("** Reported on validation data. **\n")
+    if( object@on_xval ) cat("** Reported on cross-validation data. **\n")
     if( !is.null(object@metrics$description) ) cat("Description: ", object@metrics$description, "\n\n", sep="")
     else                                       cat("\n")
 })
@@ -606,7 +610,8 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)  # call super
     if( object@on_train ) .showMultiMetrics(object, "Training")
-    else                  .showMultiMetrics(object, "Validation")
+    if( object@on_valid ) .showMultiMetrics(object, "Validation")
+    if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
@@ -618,6 +623,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   callNextMethod(object)
   cat("MSE:  ", object@metrics$MSE, "\n", sep="")
   cat("R2 :  ", h2o.r2(object), "\n", sep="")
+  cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
   null_dev <- h2o.null_deviance(object)
   res_dev  <- h2o.residual_deviance(object)
   null_dof <- h2o.null_dof(object)
@@ -657,7 +663,8 @@ setMethod("show", "H2OAutoEncoderMetrics", function(object) {
     callNextMethod(object)  # call super
     object@metrics$frame$name <- NULL
     if( object@on_train ) .showMultiMetrics(object, "Training")
-    else                  .showMultiMetrics(object, "Validation")
+    if( object@on_valid ) .showMultiMetrics(object, "Validation")
+    if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
@@ -711,3 +718,76 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
     }
   }
 }
+#' H2O Grid
+#'
+#' A class to contain the information about grid results
+#' @slot conn an \linkS4class{H2OConnection}
+#' @slot grid_id the final identifier of grid
+#' @slot model_ids  list of model IDs which are included in the grid object
+#' @slot hyper_names  list of parameter names used for grid search
+#' @slot failed_params  list of model parameters which caused a failure during model building, 
+#'                      it can contain a null value
+#' @slot failure_details  list of detailed messages which correspond to failed parameters field
+#' @slot failed_raw_params list of failed raw parameters
+#' @seealso \linkS4class{H2OModel} for the final model types.
+#' @aliases H2OGrid
+#' @export
+setClass("H2OGrid", representation(conn = "H2OConnection",
+                                   grid_id = "character",
+                                   model_ids = "list",
+                                   hyper_names = "list",
+                                   failed_params = "list",
+                                   failure_details = "list",
+                                   failed_raw_params = "matrix"))
+
+#' Format grid object in user-friendly way
+#'
+#' @rdname H2OGrid-class
+#' @param object an \code{H2OGrid} object.
+#' @export
+setMethod("show", "H2OGrid", function(object) {
+  cat("H2O Grid Details\n")
+  cat("================\n\n")
+  cat("Grid ID:", object@grid_id, "\n")
+  cat("Used hyper parameters: \n")
+  lapply(object@hyper_names, function(name) { cat("  ", name, "\n") })
+  cat("Number of models:", length(object@model_ids), "\n")
+  cat("Number of failed models:", length(object@failed_params), "\n\n")
+  hyper_names <- object@hyper_names
+  model_ids <- sapply(object@model_ids, function(model_id) { model_id })
+  if (length(object@model_ids) > 0) {
+    # Fetch all models
+    all_models <- lapply(object@model_ids, function(model_id) { h2o.getModel(model_id) })
+    # Extract hyper parameters from models
+    params_ok <- lapply(hyper_names, function(name) {
+                      sapply(all_models, function(model) {
+                             v <- model@allparameters[[name]]
+                             if ((is.list(v) || is.array(v) || is.vector(v)) && length(v) > 1) {
+                               .collapse(v)
+                             } else {
+                               v
+                             }
+                      })
+                    })
+    names(params_ok) <- hyper_names # Assign correct names to items in params list
+    status_ok <- rep("OK", length(object@model_ids))
+    df_ok <- data.frame(params_ok, status_ok, model_ids)
+    cat("Generated models\n")
+    cat("----------------\n")
+    print(df_ok, row.names = FALSE)
+  }
+  if (length(object@failed_params) > 0) {
+    # Extract failed parameters info
+    params_failed <- lapply(1:length(hyper_names), function(idx) {
+                      apply(object@failed_raw_params, 1, function(fp) { fp[idx] })
+                    })
+    names(params_failed) <- hyper_names
+    status_failed <- rep("FAIL", length(object@failed_params))
+    msgs_failed <- sapply(object@failure_details, function(msg) { paste0("\"", msg, "\"") })
+    df_failed <- data.frame(params_failed, status_failed, msgs_failed)
+    cat("Failed models\n")
+    cat("-------------\n")
+    print(df_failed, row.names = FALSE)
+  }
+})
+

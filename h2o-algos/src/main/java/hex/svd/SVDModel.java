@@ -79,7 +79,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
         _work = new double[dims];
       }
 
-      @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+      @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
       @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
         return m._output.addModelMetrics(new ModelMetricsSVD(m, f));
@@ -136,14 +136,6 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
       }
     }
     return preds;
-  }
-
-  @Override public Frame score(Frame fr, String destination_key) {
-    Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true, false);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
-    cleanup_adapt( adaptFr, fr );
-    return output;
   }
 
   @Override protected SB toJavaInit(SB sb, SB fileContextSB) {

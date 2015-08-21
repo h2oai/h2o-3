@@ -4,7 +4,7 @@ import h2o
 
 def offset_bernoulli_cars(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[cars["economy_20mpg"].isna() == 0]

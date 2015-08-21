@@ -23,6 +23,8 @@ import water.H2O.H2OCountedCompleter;
  */
 public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
   protected DTask(){}
+
+
   public DTask(H2OCountedCompleter completer){super(completer);}
 
   protected boolean _modifiesInputs = false;

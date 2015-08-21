@@ -3,10 +3,10 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def anyfactor(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # frame (positive example)
     assert iris.anyfactor(), "Expected true, but got false. Column 5 is a factor."

@@ -179,6 +179,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMad());
 
     // Misc
+    putPrefix(new ASTPop());
     putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
     putPrefix(new ASTRename());
@@ -245,6 +246,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTNLevels());
     putPrefix(new ASTLevels());
     putPrefix(new ASTHist());
+    putPrefix(new ASTNAOmit());
     // string mungers
     putPrefix(new ASTGSub());
     putPrefix(new ASTStrSplit());
@@ -698,6 +700,29 @@ class ASTSignif extends ASTUniPrefixOp {
   }
 }
 
+class ASTPop extends ASTUniPrefixOp {
+  int _idx;
+  public ASTPop() { super(new String[]{"ary","col_to_pop"}); }
+  @Override String opStr() { return "pop"; }
+  @Override ASTOp make() { return new ASTPop(); }
+  @Override ASTPop parse_impl(Exec E) {
+    AST fr = E.parse();
+    AST col = E.parse();
+    if( col instanceof ASTNum ) _idx = (int)((ASTNum)col)._d;
+    else throw new IllegalArgumentException("Expected a column index. Got: " + col.getClass());
+    ASTPop res = (ASTPop)clone();
+    res._asts = new AST[]{fr};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.popAry();
+    String[] name = new String[]{fr.names()[_idx]};
+    Vec[] v = new Vec[]{fr.remove(_idx)};
+    if( fr._key!=null ) DKV.put(fr);
+    env.pushAry(new Frame(name,v));
+  }
+}
+
 class ASTNrow extends ASTUniPrefixOp {
   public ASTNrow() { super(VARS1); }
   @Override String opStr() { return "nrow"; }
@@ -898,29 +923,39 @@ class ASTAny extends ASTUniPrefixOp {
     if( env.isNum() ) { any = env.popDbl()!=0; }  // got a number on the stack... if 0 then all is FALSE, otherwise TRUE
     else {
       Frame fr = env.popAry();
-      if( fr.numCols() != 1 ) throw new IllegalArgumentException("must only have 1 column for `all`");
-      Vec v = fr.anyVec();
-      if( !v.isInt() ) throw new IllegalArgumentException("column must be a column of 1s and 0s.");
-      if( v.isConst() )
-        if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
-      else
-        if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("column must be a column of 1s and 0s");
-      any = new AllTask().doAll(fr.anyVec()).any;
+      for(int i=0;i<fr.numCols();i++) {
+        Vec v = fr.vec(i);
+        if( !v.isInt() ) throw new IllegalArgumentException("all columns must be a columns of 1s and 0s.");
+        if( v.isConst() )
+          if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
+        else
+          if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
+      }
+      any = new AnyTask(_narm).doAll(fr).any;
     }
     env.push(new ValStr(any?"TRUE":"FALSE"));
   }
 
-  private static class AllTask extends MRTask<AllTask> {
+  private static class AnyTask extends MRTask<AnyTask> {
     private boolean any=false;
-    @Override public void map(Chunk c) {
-      for(int i=0;i<c._len;++i) {
-        if( !any ) {
-          if( c.isNA(i) ) { any = false; break; }
-          any |= c.atd(i)==1;
-        } else break;
+    private final boolean _narm;
+    AnyTask(boolean narm) { _narm=narm; }
+    @Override public void map(Chunk[] c) {
+      int j=0;
+      for (Chunk aC : c) {
+        for( j=0; j<c[0]._len;++j ) {
+          if( !any ) {
+            if(aC.isNA(j) && !_narm) {
+              any = false;
+              break;
+            }
+            any |= aC.atd(j) == 1;
+          } else break;
+        }
+        if( j!=c[0]._len) break;
       }
     }
-    @Override public void reduce(AllTask t) { any &= t.any; }
+    @Override public void reduce(AnyTask t) { any &= t.any; }
   }
 }
 
@@ -982,53 +1017,13 @@ class ASTScale extends ASTUniPrefixOp {
   }
   private void parseArg(Exec E, boolean center) {
     if( center ) {
-      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-      if (centers == null) {
-        // means `center` is boolean
-        AST a;
-        try {
-          AST e = E.parse();
-          a = E._env.lookup((ASTId) e);  // looking up TRUE / FALSE
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected %TRUE or %FALSE. Got: " + e.getClass());
-        }
-        try {
-          _center = ((ASTNum) a).dbl() == 1;
-          _centers = null;
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get a number for the `center` argument after the lookup. Got: " + a.getClass());
-        }
-      } else {
-        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
-        _centers = new double[centers.length];
-        for (int i = 0; i < centers.length; ++i) _centers[i] = Double.valueOf(centers[i]);
-      }
+      AST a = E.parse();
+      if( a instanceof ASTId )              _center  = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+      else if( a instanceof ASTDoubleList ) _centers = ((ASTDoubleList)a)._d;
     } else {
-      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-      if (centers == null) {
-        // means `scale` is boolean
-        AST a;
-        try {
-          a = E._env.lookup((ASTId) E.skipWS().parse());
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get an ASTId. Badly formed AST.");
-        }
-        try {
-          _scale = ((ASTNum) a).dbl() == 1;
-          _scales = null;
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get a number for the `scale` argument.");
-        }
-      } else {
-        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
-        _scales = new double[centers.length];
-        for (int i = 0; i < centers.length; ++i) _scales[i] = Double.valueOf(centers[i]);
-      }
+      AST a = E.parse();
+      if( a instanceof ASTId )              _scale  = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+      else if( a instanceof ASTDoubleList ) _scales = ((ASTDoubleList)a)._d;
     }
   }
 
@@ -1785,6 +1780,10 @@ abstract class ASTReducerOp extends ASTOp {
         if( E._env.tryLookup((ASTId)a) ) break;
         else dblarys.add(a);
       } else if( a instanceof ASTAssign || a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
+      else if( a instanceof ASTList ) {
+        if( a instanceof ASTLongList ) for(long l: ((ASTLongList)a)._l) dblarys.add(new ASTNum(l));
+        else for( double d: ((ASTDoubleList)a)._d) dblarys.add(new ASTNum(d));
+      }
       else break;
     } while( !E.isEnd() );
 
@@ -1913,7 +1912,7 @@ class ASTSum extends ASTReducerOp {
 }
 
 class ASTProd extends ASTReducerOp {
-  ASTProd() {super(0);}
+  ASTProd() {super(1);}
   @Override String opStr(){ return "prod";}
   @Override ASTOp make() {return new ASTProd();}
   @Override double op(double d0, double d1) { return d0*d1;}
@@ -1938,7 +1937,7 @@ class ASTProd extends ASTReducerOp {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
 //        assert C.vec().isNumeric();
-        double prod=_d;
+        double prod=1.;
         if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) prod *= d; }
         else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        prod *= d; }
         _d = prod;
@@ -2039,13 +2038,13 @@ class ASTCumProd extends ASTUniPrefixOp {
     CumProdTask(int nchks) { _nchks = nchks; }
     @Override public void setupLocal() { _chkProds = new double[_nchks]; }
     @Override public void map(Chunk c, NewChunk nc) {
-      double sum=0;
+      double prod=1;
       for(int i=0;i<c._len;++i) {
-        sum *= c.isNA(i) ? Double.NaN : c.atd(i);
-        if( Double.isNaN(sum) ) nc.addNA();
-        else                    nc.addNum(sum);
+        prod *= c.isNA(i) ? Double.NaN : c.atd(i);
+        if( Double.isNaN(prod) ) nc.addNA();
+        else                    nc.addNum(prod);
       }
-      _chkProds[c.cidx()] = sum;
+      _chkProds[c.cidx()] = prod;
     }
     @Override public void reduce(CumProdTask t) { if( _chkProds != t._chkProds ) ArrayUtils.add(_chkProds, t._chkProds); }
     @Override public void postGlobal() {
@@ -3000,6 +2999,16 @@ class ASTRange extends ASTUniPrefixOp {
   @Override String opStr() { return "range"; }
   ASTRange() { super( new String[]{"x"}); }
   @Override ASTOp make() { return new ASTRange(); }
+  @Override ASTRange parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the na.rm
+    AST a = E.parse();  // just dropped on the floor
+    E.eatEnd(); // eat the ending ')'
+    ASTRange res = (ASTRange) clone();
+    res._asts = new AST[]{ary}; // in reverse order so they appear correctly on the stack.
+    return res;
+  }
   @Override void apply(Env env) {
     Frame f = env.popAry();
 
@@ -3022,7 +3031,8 @@ class ASTRange extends ASTUniPrefixOp {
 
 class ASTMatch extends ASTUniPrefixOp {
   double _nomatch;
-  String[] _matches;
+  String[] _strsTable;
+  double[] _dblsTable;
   @Override String opStr() { return "match"; }
   ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
   @Override ASTOp make() { return new ASTMatch(); }
@@ -3032,10 +3042,13 @@ class ASTMatch extends ASTUniPrefixOp {
 
     // The `table` arg
     AST a = E.parse();
-    if( a instanceof ASTString ) _matches = new String[]{((ASTString)a)._s};
-    else if( a instanceof ASTStringList ) _matches = ((ASTStringList)a)._s;
+    if( a instanceof ASTString ) _strsTable = new String[]{((ASTString)a)._s};
+    else if( a instanceof ASTStringList ) _strsTable = ((ASTStringList)a)._s;
+    else if( a instanceof ASTNum ) _dblsTable = new double[]{((ASTNum)a)._d};
+    else if( a instanceof ASTDoubleList ) _dblsTable = ((ASTDoubleList)a)._d;
     else throw new IllegalArgumentException("`table` expected to be either a String or an slist. Got: " + a.getClass());
-    Arrays.sort(_matches);
+    if(_strsTable!=null) Arrays.sort(_strsTable);
+    else Arrays.sort(_dblsTable);
 
     // `nomatch` is just a number in case no match
     AST nm = E.parse();
@@ -3055,16 +3068,41 @@ class ASTMatch extends ASTUniPrefixOp {
     Frame fr = e.popAry();
     if (fr.numCols() != 1 && !fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
     Key tmp = Key.make();
-    final String[] matches = _matches;
+    final String[] strsTable = _strsTable;
+    final double[] dblsTable = _dblsTable;
     Frame rez = new MRTask() {
       @Override public void map(Chunk c, NewChunk n) {
         int rows = c._len;
-        for (int r = 0; r < rows; ++r) n.addNum(in(matches, c.vec().domain()[(int)c.at8(r)]));
+        if(strsTable==null)
+          for (int r = 0; r < rows; ++r) n.addNum(in(dblsTable, c.atd(r)),0);
+        else
+          for (int r = 0; r < rows; ++r) n.addNum(in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
     e.pushAry(rez);
   }
   private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0;}
+  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0;}
+
+  private static int binarySearchDoublesUlp(double[] a, int from, int to, double key) {
+    int lo = from;
+    int hi = to-1;
+    while( lo <= hi ) {
+      int mid = (lo + hi) >>> 1;
+      double midVal = a[mid];
+      if( MathUtils.equalsWithinOneSmallUlp(midVal,key) ) return mid;
+      if (midVal < key)      lo = mid + 1;
+      else if (midVal > key) hi = mid - 1;
+      else {
+        long midBits = Double.doubleToLongBits(midVal);
+        long keyBits = Double.doubleToLongBits(key);
+        if (midBits == keyBits) return mid;
+        else if (midBits < keyBits) lo = mid + 1;
+        else                        hi = mid - 1;
+      }
+    }
+    return -(lo + 1);  // key not found.
+  }
 }
 
 // R like binary operator ||
@@ -3272,8 +3310,8 @@ class ASTRepLen extends ASTUniPrefixOp {
         // this is equivalent to what R does, but by additionally calling "as.data.frame"
         String[] col_names = new String[(int)_length];
         for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
-        Frame f = new Frame(col_names, new Vec[(int)_length]);
-        for (int i = 0; i < f.numCols(); ++i)
+        Frame f = new Frame();
+        for (int i = 0; i < _length; ++i)
           f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
         env.pushAry(f);
       }
@@ -3505,6 +3543,34 @@ class ASTHist extends ASTUniPrefixOp {
   }
 }
 
+class ASTNAOmit extends ASTUniPrefixOp {
+  @Override String opStr() { return "na.omit"; }
+  public ASTNAOmit() { super(new String[]{"x"}); }
+  @Override ASTNAOmit make() { return new ASTNAOmit(); }
+  @Override void apply(Env e) {
+    Frame fr = e.popAry();
+    Frame f2 = new MRTask() {
+      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+        for(int i=0;i<cs.length;++i) {
+          if( cs[i] instanceof CStrChunk ) ncs[i].addStr(cs[i],row);
+          else if( cs[i] instanceof C16Chunk ) ncs[i].addUUID(cs[i],row);
+          else if( cs[i].hasFloat() ) ncs[i].addNum(cs[i].atd(row));
+          else ncs[i].addNum(cs[i].at8(row),0);
+        }
+      }
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        int col;
+        for(int row=0;row<cs[0]._len;++row) {
+          for( col = 0; col < cs.length; ++col)
+            if( cs[col].isNA(row) ) break;
+          if( col==cs.length ) copyRow(row,cs,ncs);
+        }
+      }
+    }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
+   e.pushAry(f2);
+  }
+}
+
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
   double[] _probs = null;  // if probs is null, pop the _probs frame etc.
@@ -3668,6 +3734,11 @@ class ASTRemoveVecs extends ASTUniPrefixOp {
     AST ary = E.parse();
     AST a = E.parse();
     if( a instanceof ASTLongList ) _rmVecs = ((ASTLongList)a)._l;
+    else if( a instanceof ASTDoubleList ) {
+      double [] dlist = ((ASTDoubleList)a)._d;
+      _rmVecs=new long[dlist.length];
+      for(int i=0;i<dlist.length;++i) _rmVecs[i]=(long)dlist[i];
+    }
     else if( a instanceof ASTNum ) _rmVecs = new long[]{(long)((ASTNum)a)._d};
     else throw new IllegalArgumentException("Expected to get an `llist` or `num`. Got: " + a.getClass());
     E.eatEnd(); // eat the ending ')'
@@ -3705,6 +3776,7 @@ class ASTRunif extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
+    if( !env.isAry() ) throw new IllegalArgumentException("Frame not found: " + env.pop().value());
     Vec rnd = env.popAry().anyVec().makeRand(seed);
     Frame f = new Frame(new String[]{"rnd"}, new Vec[]{rnd});
     env.pushAry(f);
@@ -4615,11 +4687,7 @@ class ASTAsNumeric extends ASTUniPrefixOp {
             case Vec.T_ENUM:
             case Vec.T_TIME: nc.addNum(c.atd(i)); break;
             default:
-              if (_type > Vec.T_TIME && _type <= Vec.T_TIMELAST)
-                nc.addNum(c.atd(i));
-              else
                 throw new IllegalArgumentException("Unsupported vector type: " + _type);
-              break;
           }
         }
       }
@@ -4628,6 +4696,7 @@ class ASTAsNumeric extends ASTUniPrefixOp {
 }
 
 class ASTFactor extends ASTUniPrefixOp {
+  private static int LEVELSCAP = 50000000;
   ASTFactor() { super(new String[]{"", "ary"});}
   @Override String opStr() { return "as.factor"; }
   @Override ASTOp make() {return new ASTFactor();}
@@ -4635,13 +4704,54 @@ class ASTFactor extends ASTUniPrefixOp {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
+
+    if( v0.isString() ) {
+      // rollup a String column into an enum; no cap on number of unique levels
+      StringCollectDomain t = new StringCollectDomain().doAll(ary.anyVec());
+      if( t.size() > LEVELSCAP ) throw new IllegalArgumentException("More than" + LEVELSCAP + " unique levels found. Too many levels.");
+      final String[] dom = t.domain();
+      String[][] doms = new String[1][];
+      doms[0]=dom;
+      Vec v1 = new MRTask() {
+        @Override public void map(Chunk oc, NewChunk nc) {
+          ValueString v = new ValueString();
+          for (int i = 0; i < oc._len; ++i)
+            nc.addNum(Arrays.binarySearch(dom, oc.atStr(v, i).toString()), 0);
+        }
+      }.doAll(1,v0).outputFrame(ary._names,doms).anyVec();
+      env.pushAry(new Frame(ary._names, new Vec[]{v1}));
+      return;
+    }
     if( v0.isEnum() ) {
       env.pushAry(ary);
       return;
     }
-    Vec v1 = v0.toEnum();
-    Frame fr = new Frame(ary._names, new Vec[]{v1});
-    env.pushAry(fr);
+    env.pushAry(new Frame(ary._names, new Vec[]{v0.toEnum()}));
+  }
+
+  private static class StringCollectDomain extends MRTask<StringCollectDomain> {
+    private IcedHashMap<String,String> _dom;
+    @Override public void setupLocal() { _dom = new IcedHashMap();}
+    @Override public void map(Chunk c) {
+      ValueString v = new ValueString();
+      for( int i=0;i<c._len;++i) _dom.putIfAbsent(c.atStr(v, i).toString(),"");
+    }
+    @Override public void reduce(StringCollectDomain t) {
+      if( _dom!=t._dom ) {
+        IcedHashMap<String,String> l = _dom;
+        IcedHashMap<String,String> r = t._dom;
+        if( l.size() > r.size() ) { l=r; r=_dom; } // smaller on the left
+        for( String s: l.keySet() ) r.putIfAbsent(s,"");
+        _dom=r;
+        t._dom=null;
+      }
+    }
+    private String[] domain() {
+      String[] d=_dom.keySet().toArray(new String[size()]);
+      Arrays.sort(d);
+      return d;
+    }
+    private int size() { return _dom.size(); }
   }
 }
 

@@ -121,13 +121,25 @@ class RapidsHandler extends Handler {
           }
         }
       }
-      if (e != null) e.printStackTrace();
-      if (e != null)
-        rapids.error = e.getMessage() == null ? e.toString() : e.getMessage();
-      if (e != null && e instanceof ArrayIndexOutOfBoundsException)
-        rapids.error = e.toString();
-      if (e != null)
-        throw new H2OIllegalArgumentException(rapids.error);
+
+      // Handle any exception:
+      if (e != null) {
+        e.printStackTrace();
+        rapids.error = e.getMessage();
+
+        if (rapids.error == null || e instanceof ArrayIndexOutOfBoundsException) {
+          rapids.error = e.toString();
+        }
+
+        H2OIllegalArgumentException hiae = new H2OIllegalArgumentException(rapids.error);
+
+        // A hack, but it simplifies handling by avoiding "cause":
+        hiae.setStackTrace(e.getStackTrace());
+
+        throw hiae;
+      }
+
+      // No exceptions:
       return rapids;
     }
   }

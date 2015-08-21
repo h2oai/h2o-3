@@ -3,10 +3,10 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def iris_ignore(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris2.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris2.csv"))
   
     for maxx in range(4):
       model = h2o.random_forest(y=iris[4], x=iris[range(maxx+1)], ntrees=50, max_depth=100)

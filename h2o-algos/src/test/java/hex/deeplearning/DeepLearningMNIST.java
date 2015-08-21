@@ -66,14 +66,15 @@ public class DeepLearningMNIST extends TestUtil {
         p._valid = vframe._key;
         p._response_column = "C785"; // last column is the response
         p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-        p._hidden = new int[]{1024, 1024, 2048};
-        p._train_samples_per_iteration = -2;
+        p._hidden = new int[]{800,800};
+        p._train_samples_per_iteration = -1;
         p._input_dropout_ratio = 0.2;
-//        p._score_interval = 0;
-//        p._score_duty_cycle = 1;
-        p._l1= 1e-5;
-        p._max_w2= 10;
-        p._epochs = 1000;
+        p._mini_batch_size = 1;
+//        p._train_samples_per_iteration = -1;
+        p._shuffle_training_data = true;
+//        p._l1= 1e-5;
+//        p._max_w2= 10;
+        p._epochs = 500;
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
@@ -86,7 +87,6 @@ public class DeepLearningMNIST extends TestUtil {
         p._adaptive_rate = true; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)
         p._replicate_training_data = true; //avoid extra communication cost upfront, got enough data on each node for load balancing
         p._overwrite_with_best_model = true; //no need to keep the best model around
-        p._diagnostics = false; //no need to compute statistics during training
         p._classification_stop = -1;
         p._score_interval = 60; //score and print progress report (only) every 20 seconds
         p._score_training_samples = 10000; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)

@@ -4,10 +4,10 @@ import h2o
 
 def impute(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    prostate.dim()
+    prostate.dim
 
     #print "Summary of the data in iris_missing.csv"
     #print "Each column has 50 missing observations (at random)"

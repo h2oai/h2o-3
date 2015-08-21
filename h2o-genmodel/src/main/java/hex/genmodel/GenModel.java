@@ -117,7 +117,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   @Override
   public float[] predict(double[] data, float[] preds, int maxIters) {
-    throw new UnsupportedOperationException("Unsupported operation - uses score0 method!");
+    throw new UnsupportedOperationException("Unsupported operation - use score0 method!");
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
@@ -161,7 +161,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     for( int c=1; c<scored.length; c++ ) {
       final double original_fraction = priorClassDist[c-1];
       final double oversampled_fraction = modelClassDist[c-1];
-      assert(!Double.isNaN(scored[c]));
+      assert(!Double.isNaN(scored[c])) : "Predicted NaN class probability";
       if (original_fraction != 0 && oversampled_fraction != 0) scored[c] *= original_fraction / oversampled_fraction;
       probsum += scored[c];
     }

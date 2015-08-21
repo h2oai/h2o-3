@@ -2,7 +2,6 @@ package water;
 
 import water.api.CloudV3;
 import water.api.H2OErrorV3;
-import water.api.TutorialsV3;
 import water.api.TypeaheadV3;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
@@ -44,7 +43,6 @@ public class TypeMap {
     hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
     water.api.Schema.class.getName(),
     water.api.Schema.Meta.class.getName(),
-    TutorialsV3.class.getName(),
     TypeaheadV3.class.getName(),    // Allow typeahead without locking
     water.Key.class.getName(),
 

@@ -4,12 +4,12 @@ import h2o
 
 def match_check(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    hex = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    hex = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     print "doing the match: h2o.match(hex$Species, [\"Iris-setosa\", \"Iris-versicolor\"]"
-    sub_h2o_match = h2o.match(hex[4], ["Iris-setosa", "Iris-versicolor"])
+    sub_h2o_match = hex[4].match(["Iris-setosa", "Iris-versicolor"])
 
     print "Printing out the subset bit vec from the match call"
     sub_h2o_match.show()
@@ -21,16 +21,16 @@ def match_check(ip,port):
     hh_match.show()
 
     print "print the dim of the subsetted frame"
-    rows, cols = hh_match.dim()
+    rows, cols = hh_match.dim
     print "rows: {0}".format(rows)
     print "cols: {0}".format(cols)
 
     print "check that the number of rows in the subsetted h2o frames match r"
     assert rows == 100 and cols == 5, "Unexpected dimensions. Got {0} rows and {1} cols.".format(rows,cols)
 
-    # TODO: bug here
+    # TODO: PUBDEV-1400
     print "doing the match: h2o.match(hex$Species, 5.1)"
-    sub_h2o_match = h2o.match(hex[4], 5.1)
+    sub_h2o_match = hex[4].match(5.1)
 
     print "Printing out the subset bit vec from the match call"
     sub_h2o_match.show()
@@ -42,7 +42,7 @@ def match_check(ip,port):
     hh_match.show()
 
     print "print the dim of the subsetted frame"
-    rows, cols = hh_match.dim()
+    rows, cols = hh_match.dim
     print "rows: {0}".format(rows)
     print "cols: {0}".format(cols)
 

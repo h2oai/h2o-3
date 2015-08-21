@@ -1,14 +1,20 @@
 package water.api;
 
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
+
 import hex.Model;
-import water.*;
+import hex.grid.Grid;
+import water.DKV;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.Keyed;
+import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ReflectionUtils;
-
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
 
 /**
  * <p>
@@ -31,7 +37,9 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public String URL;
 
   public KeyV3() {
-    __meta.schema_type = "Key<" + getKeyedClassType() + ">";
+    // NOTE: this is a bit of a hack; without this we won't have the type parameter.
+    // We'll be able to remove this once we have proper typed Key subclasses, like FrameKey.
+    get__meta().setSchema_type("Key<" + getKeyedClassType() + ">");
   }
 
   // need versioned
@@ -85,6 +93,8 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
       return KeyV3.make(ModelKeyV3.class, key);
     else if (Vec.class.isAssignableFrom(keyed_class))
       return KeyV3.make(VecKeyV3.class, key);
+    else if (Grid.class.isAssignableFrom(keyed_class))
+      return KeyV3.make(GridKeyV3.class, key);
     else
       return KeyV3.make(KeyV3.class, key);
   }
@@ -113,6 +123,15 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     }
 
     public VecKeyV3(Key<Vec> key) {
+      super(key);
+    }
+  }
+
+  public static class GridKeyV3 extends KeyV3<Iced, GridKeyV3, Grid> {
+    public GridKeyV3() {
+    }
+
+    public GridKeyV3(Key<Grid> key) {
       super(key);
     }
   }

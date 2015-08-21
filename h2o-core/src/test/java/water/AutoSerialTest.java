@@ -18,7 +18,7 @@ public class AutoSerialTest extends Iced {
   Key _key;
 
   static AutoBuffer _ab = new AutoBuffer(new byte[1000]);
-  static AutoBuffer abw() { return _ab.clearForWriting(); }
+  static AutoBuffer abw() { return _ab.clearForWriting(0); }
   static AutoBuffer abr() { return _ab. flipForReading(); }
 
 
@@ -267,5 +267,21 @@ public class AutoSerialTest extends Iced {
     Assert.assertTrue(_aaa[0][0].length == 1);
     Assert.assertTrue(((IcedSerTest)_aaa[0][0][0]).x == Math.PI);
     _aaa = null;
+  }
+
+  enum TestEnum {
+    A, B, C;
+  }
+
+  TestEnum[] _ea;
+
+  @Ignore("PUBDEV-1914")
+  public void testArrayOfEnums() {
+    _ea = new TestEnum[] { TestEnum.A, TestEnum.B, TestEnum.C};
+    this.write(abw());
+    this.read(abr());
+    Assert.assertTrue(_ea.length == 3);
+    Assert.assertTrue(Arrays.deepEquals(_ea, new TestEnum[] { TestEnum.A, TestEnum.B, TestEnum.C}));
+    _ea = null;
   }
 }

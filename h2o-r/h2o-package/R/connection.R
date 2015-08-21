@@ -8,7 +8,7 @@
 #'
 #' Once connected, the method checks to see if the local H2O R package version matches the version of H2O running on the server. If there is a mismatch and the user indicates she wishes to upgrade, it will remove the local H2O R package and download/install the H2O R package from the server.
 #'
-#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
+#' @param ip Object of class \code{character} representing the hostname or IP address of the server where H2O is running.
 #' @param port Object of class \code{numeric} representing the port number of the H2O server.
 #' @param startH2O (Optional) A \code{logical} value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if \code{ip = "localhost"} or \code{ip = "127.0.0.1"}.  If an existing connection is detected, R does not start H2O.
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.
@@ -31,7 +31,7 @@
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
 #' @seealso \href{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with the default settings.
 #' localH2O = h2o.init()
@@ -42,10 +42,6 @@
 #'
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with 5 gigabytes of memory.
-#' localH2O = h2o.init(max_mem_size = "5g")
-#'
-#' # Try to connect to a local H2O instance that is already running.
-#' # If not found, start a local H2O instance from R that uses 5 gigabytes of memory.
 #' localH2O = h2o.init(max_mem_size = "5g")
 #' }
 #' @export
@@ -257,14 +253,16 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 #'        and port of the server running H2O.
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
+#' \donttest{
 #' localH2O <- h2o.init()
 #' h2o.clusterStatus(localH2O)
+#' }
 #' @export
 h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
 
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
@@ -289,7 +287,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 #
 # Get a session ID at init
 .init.session_id <- function(conn) {
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID"))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID")))
   res$session_key
 }
 
@@ -353,7 +351,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   port_ <- 54321
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
-  if( url.exists(myURL) ) {
+  if( .h2o.startedH2O() && url.exists(myURL) ) {
     tryCatch(h2o.shutdown(conn=new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
@@ -423,8 +421,11 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   args <- mem_args
   ltrs <- paste0(sample(letters,3, replace = TRUE), collapse="")
   nums <- paste0(sample(0:9, 3,  replace = TRUE),     collapse="")
-  name <- paste0("H2O_started_from_R_", Sys.info()["user"],"_",ltrs,nums)
+  name <- paste0("H2O_started_from_R_",gsub(" ","_",Sys.info()["user"]),"_",ltrs,nums)
   if(assertion) args <- c(args, "-ea")
+  args <- c(args, "-verbose:gc")
+  args <- c(args, "-XX:+PrintGCDetails")
+  args <- c(args, "-XX:+PrintGCTimeStamps")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)
   args <- c(args, "-ip", "127.0.0.1")

@@ -1,0 +1,62 @@
+
+%----------------------------------------------------------------------
+% Definition for "lstlisting" blocks
+%----------------------------------------------------------------------
+% --- USAGE ---
+%
+% \begin{lstlisting}[style=R}
+% ...
+% \end{lstlisting}
+%
+% % \begin{lstlisting}[style=output}
+% ...
+% \end{lstlisting}
+%----------------------------------------------------------------------
+
+% By default, make listings all black so it's easy to spot the ones that aren't set to a style.
+% This is just a debugging technique.
+\lstset{backgroundcolor=\color{black}}
+
+\lstdefinestyle{R}{
+  language=R,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  commentstyle=\color{gray},% comment style
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{white}
+}
+
+\lstdefinestyle{python}{
+  language=python,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  commentstyle=\color{gray},% comment style
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{white}
+}
+
+\definecolor{mygray}{rgb}{0.92,0.92,0.92}
+
+\lstdefinestyle{output}{
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{mygray}
+}
+
+\newcommand{\waterExampleInR} {
+\textbf{Example in R} \\
+}
+
+\newcommand{\waterExampleInPython} {
+\textbf{Example in Python} \\
+}

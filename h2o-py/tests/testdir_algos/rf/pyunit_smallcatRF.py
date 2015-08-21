@@ -12,11 +12,11 @@ def smallcatRF(ip,port):
     # Categories A, C, E, G, ... are perfect predictors of y = 1
     # Categories B, D, F, H, ... are perfect predictors of y = 0
 
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     #Log.info("Importing alphabet_cattest.csv data...\n")
-    alphabet = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
+    alphabet = h2o.import_file(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
     alphabet["y"] = alphabet["y"].asfactor()
     #Log.info("Summary of alphabet_cattest.csv from H2O:\n")
     #alphabet.summary()

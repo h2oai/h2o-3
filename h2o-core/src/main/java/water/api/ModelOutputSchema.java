@@ -22,7 +22,10 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public String[][] domains;
 
   @API(help="Cross-validation models (model ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)
-  public KeyV3[] cross_validation_models;
+  public KeyV3.ModelKeyV3[] cross_validation_models;
+
+  @API(help="Cross-validation predictions (frame ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public KeyV3.FrameKeyV3[] cross_validation_predictions;
 
   @API(help="Category of the model (e.g., Binomial)", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
   public ModelCategory model_category;
@@ -41,6 +44,18 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
 
   @API(help="Cross-validation model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   ModelMetricsBase cross_validation_metrics;
+
+  @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public String status;
+
+  @API(help="Start time in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public long start_time;
+
+  @API(help="End time in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public long end_time;
+
+  @API(help="Runtime in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public long run_time;
 
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
   public IcedHashMap.IcedHashMapStringString help;

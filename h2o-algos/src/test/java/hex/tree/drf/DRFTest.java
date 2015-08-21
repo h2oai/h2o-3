@@ -654,6 +654,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -692,6 +693,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -730,6 +732,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 2; //in terms of weighted rows
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -806,6 +809,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);

@@ -5,7 +5,6 @@ import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV3;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesOutput;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
-import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -38,8 +37,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   public boolean isSupervised(){return true;}
 
   @Override
-  public Job<NaiveBayesModel> trainModelImpl(long work) {
-    return start(new NaiveBayesDriver(), work);
+  public Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new NaiveBayesDriver(), work, restartTimer);
   }
 
   @Override
@@ -209,7 +208,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         init(true);   // Initialize parameters
         _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
-        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
@@ -232,6 +231,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
           throw t;
         }
       } finally {
+        updateModelOutput();
         _train.unlock(_key);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();

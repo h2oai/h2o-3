@@ -143,6 +143,15 @@ Syncing smalldata is not required after each pull, but if tests fail due to miss
     pip install tabulate
     pip install wheel
 
+Python tests require:
+
+    pip install sklearn
+    pip install numpy
+    pip install scipy
+    pip install pandas
+    pip install statsmodles
+    pip install patsy
+
 ### 4.3. Setup on Windows
 
 ##### Step 1: Download and install [WinPython](https://winpython.github.io). 
@@ -173,7 +182,7 @@ Install [Node.js](http://nodejs.org/download/) and add the installed directory `
 To install these packages from within an R session, enter:
 
     R> install.packages("RCurl")
-    R> install.packages("rjson")
+    R> install.packages("jsonlite")
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
@@ -188,7 +197,7 @@ To manually install packages, download the releases of the following R packages:
 - [digest](http://cran.r-project.org/package=digest)
 - [Rcpp](http://cran.r-project.org/package=Rcpp)
 - [RCurl](http://cran.r-project.org/package=RCurl)
-- [rjson](http://cran.r-project.org/package=rjson)
+- [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [roxygen2](http://cran.r-project.org/package=roxygen2)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [stringr](http://cran.r-project.org/package=stringr)
@@ -198,7 +207,7 @@ To manually install packages, download the releases of the following R packages:
     cd Downloads
     R CMD INSTALL bitops_x.x-x.zip
     R CMD INSTALL RCurl_x.xx-x.x.zip
-    R CMD INSTALL rjson_x.x.xx.zip
+    R CMD INSTALL jsonlite_x.x.xx.zip
     R CMD INSTALL statmod_x.x.xx.zip
     R CMD INSTALL Rcpp_x.xx.x.zip
     R CMD INSTALL digest_x.x.x.zip
@@ -262,7 +271,7 @@ Install [R](http://www.r-project.org/) and add the bin directory to your PATH if
 Install the following R packages: 
 
 - [RCurl](http://cran.r-project.org/package=RCurl)
-- [rjson](http://cran.r-project.org/package=rjson)
+- [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [devtools](http://cran.r-project.org/package=devtools)
 - [roxygen2](http://cran.r-project.org/package=roxygen2) 
@@ -272,7 +281,7 @@ Install the following R packages:
     cd Downloads
     R CMD INSTALL bitops_x.x-x.tgz
     R CMD INSTALL RCurl_x.xx-x.x.tgz
-    R CMD INSTALL rjson_x.x.xx.tgz
+    R CMD INSTALL jsonlite_x.x.xx.tgz
     R CMD INSTALL statmod_x.x.xx.tgz
     R CMD INSTALL Rcpp_x.xx.x.tgz
     R CMD INSTALL digest_x.x.x.tgz
@@ -284,7 +293,7 @@ Install the following R packages:
 To install these packages from within an R session:
 
     R> install.packages("RCurl")
-    R> install.packages("rjson")
+    R> install.packages("jsonlite")
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
@@ -377,7 +386,8 @@ For users of Eclipse, generate project files with:
 
 Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
 
-To build H2O with Hadoop support yourself, enter the following from the top-level h2o-3 directory:
+To build H2O with Hadoop support yourself, first install sphinx for python: `pip install sphinx`
+Then start the build by entering  the following from the top-level h2o-3 directory:
 
     (export BUILD_HADOOP=1; ./gradlew build -x test)
     ./gradlew dist

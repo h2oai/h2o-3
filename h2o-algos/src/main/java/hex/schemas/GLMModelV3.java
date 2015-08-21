@@ -21,7 +21,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
     TwoDimTableBase coefficients_table;
 
     @API(help="Standardized Coefficient Magnitudes")
-    TwoDimTableBase standardized_coefficients_magnitude;
+    TwoDimTableBase standardized_coefficient_magnitudes;
 
 
     @Override
@@ -70,8 +70,8 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
           tdt.set(i, 0, magnitudes[indices[i]]);
           tdt.set(i, 1, beta[indices[i]] < 0?"NEG":"POS");
         }
-        standardized_coefficients_magnitude = new TwoDimTableBase();
-        standardized_coefficients_magnitude.fillFromImpl(tdt);
+        standardized_coefficient_magnitudes = new TwoDimTableBase();
+        standardized_coefficient_magnitudes.fillFromImpl(tdt);
       } else {
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double"};

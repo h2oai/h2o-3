@@ -21,7 +21,7 @@ public class SplitFrame extends Transformer<SplitFrame> {
   /** Output destination keys. */
   public Key<Frame>[] destination_frames;
 
-  public SplitFrame() { this(Key.make()); }
+  public SplitFrame() { this(Key.<SplitFrame>make()); }
   public SplitFrame(Key<SplitFrame> dest) { this(dest, "SplitFrame job"); }
   public SplitFrame(Key<SplitFrame> dest, String desc) { super(dest, desc); }
 
@@ -42,8 +42,11 @@ public class SplitFrame extends Transformer<SplitFrame> {
     if (ratios.length > 1) {
       double sum = ArrayUtils.sum(ratios);
       if (sum <= 0.0) throw new IllegalArgumentException("Ratios sum has to be > 0!");
-      computedRatios = new double[ratios.length-1];
-      for (int i=0; i < ratios.length-1; i++) computedRatios[i] = ratios[i] / sum;
+      if( sum < 1 ) computedRatios = ratios;
+      else {
+        computedRatios = new double[ratios.length - 1];
+        for (int i = 0; i < ratios.length - 1; i++) computedRatios[i] = ratios[i] / sum;
+      }
     } else {
       computedRatios = ratios;
     }
@@ -76,6 +79,6 @@ public class SplitFrame extends Transformer<SplitFrame> {
       }
     };
 
-    return (SplitFrame) start(hcc, computedRatios.length + 1);
+    return (SplitFrame) start(hcc, computedRatios.length + 1, true);
   }
 }

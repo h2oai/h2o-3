@@ -5,11 +5,11 @@ import random
 
 def covtype(ip,port):
 
-  # Connect to h2o
-  h2o.init(ip,port)
+  
+  
 
   # Log.info("Importing covtype.20k.data...\n")
-  covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
+  covtype = h2o.import_file(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
   #
   myY = 54
   myX = [x for x in range(0,54) if x not in [20,28]]

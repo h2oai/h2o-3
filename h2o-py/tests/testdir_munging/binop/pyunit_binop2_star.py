@@ -3,22 +3,22 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def binop_star(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    rows, cols = iris.dim()
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    rows, cols = iris.dim
     iris.show()
 
     #frame/scaler
     res = iris * 99
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([res[c].sum() for c in range(cols-1)], [86773.5, 45351.9, 55816.2, 17800.2]):
         assert abs(x - y) < 1e-7,  "unexpected column sums."
 
     res = 5 * iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     #frame/vec
@@ -47,11 +47,11 @@ def binop_star(ip,port):
 
     # frame/frame
     res = iris * iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] * iris[1:3]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:

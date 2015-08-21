@@ -10,7 +10,9 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.Exec;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
 
 import java.util.concurrent.ExecutionException;
 
@@ -37,11 +39,11 @@ public class PCATest extends TestUtil {
 
     Frame train = null;
     try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");   // TODO: Move this outside loop
       for (DataInfo.TransformType std : new DataInfo.TransformType[] {
               DataInfo.TransformType.DEMEAN,
               DataInfo.TransformType.STANDARDIZE }) {
         PCAModel model = null;
-        train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");   // TODO: Move this outside loop
         try {
           PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
           parms._train = train._key;
@@ -71,11 +73,7 @@ public class PCATest extends TestUtil {
           t.printStackTrace();
           throw new RuntimeException(t);
         } finally {
-          if( model != null ) {
-            if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-              model._output._loading_key.get().delete();
-            model.delete();
-          }
+          if( model != null ) model.delete();
         }
       }
     } finally {
@@ -127,11 +125,7 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -183,11 +177,7 @@ public class PCATest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -199,7 +189,7 @@ public class PCATest extends TestUtil {
 
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      SplitFrame sf = new SplitFrame(Key.make());
+      SplitFrame sf = new SplitFrame();
       sf.dataset = fr;
       sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
@@ -235,11 +225,49 @@ public class PCATest extends TestUtil {
       if( fr2 != null ) fr2.delete();
       if( tr  != null ) tr .delete();
       if( te  != null ) te .delete();
-      if (model != null) {
-        if (model._parms._keep_loading && model._parms._pca_method == PCAParameters.Method.Power)
-          model._output._loading_key.get().delete();
-        model.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  @Test public void testImputeMissing() throws InterruptedException, ExecutionException {
+    Frame train = null;
+    double missing_fraction = 0.75;
+    long seed = 12345;
+
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      // Add missing values to the training data
+      if (missing_fraction > 0) {
+        Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+        DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
+        FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
+        j.execImpl();
+        j.get(); // MissingInserter is non-blocking, must block here explicitly
+        DKV.remove(frtmp._key); // Delete the frame header (not the data)
       }
+
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
+      parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
+      parms._seed = seed;
+
+      PCAModel pca = null;
+      PCA job = null;
+      try {
+        job = new PCA(parms);
+        pca = job.trainModel().get();
+      } finally {
+        if (job != null) job.remove();
+        if (pca != null) pca.remove();
+      }
+    } catch(Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
     }
   }
 

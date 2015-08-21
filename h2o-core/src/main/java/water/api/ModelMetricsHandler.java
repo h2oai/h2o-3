@@ -5,7 +5,6 @@ import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -115,7 +114,7 @@ class ModelMetricsHandler extends Handler {
       // Shouldn't need to do this manually. . .
       this.model = (mml._model == null ? null : new KeyV3.ModelKeyV3(mml._model._key));
       this.frame = (mml._frame == null ? null : new KeyV3.FrameKeyV3(mml._frame._key));
-      this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.make(mml._predictions_name)));
+      this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.<Frame>make(mml._predictions_name)));
       this.reconstruction_error = mml._reconstruction_error;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 
@@ -250,47 +249,4 @@ class ModelMetricsHandler extends Handler {
     }
     return mm;
   }
-
-  /*
-  NOTE: copy-pasted from Models, not yet munged for ModelMetrics:
-
-  // Remove an unlocked model.  Fails if model is in-use
-  public Schema delete(int version, Models models) {
-    Model model = getFromDKV(models.key);
-    if (null == model)
-      throw new IllegalArgumentException("Model key not found: " + models.key);
-    model.delete();             // lock & remove
-    // TODO: Hm, which Schema should we use here?  Surely not a hardwired InspectV1. . .
-    InspectV1 s = new InspectV1();
-    s.key = models.key;
-    return s;
-  }
-
-  // Remove ALL an unlocked models.  Throws IAE for all deletes that failed
-  // (perhaps because the Models were locked & in-use).
-  public Schema deleteAll(int version, Models models) {
-    final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override public boolean filter(KeySnapshot.KeyInfo k) {
-          return Value.isSubclassOf(k._type, Model.class);
-        }
-      }).keys();
-
-    String err=null;
-    Futures fs = new Futures();
-    for( int i = 0; i < modelKeys.length; i++ ) {
-      try {
-        getFromDKV(modelKeys[i]).delete(null,fs);
-      } catch( IllegalArgumentException iae ) {
-        err += iae.getMessage();
-      }
-    }
-    fs.blockForPending();
-    if( err != null ) throw new IllegalArgumentException(err);
-
-    // TODO: Hm, which Schema should we use here?  Surely not a hardwired InspectV1. . .
-    InspectV1 s = new InspectV1();
-    return s;
-  }
-  */
-
 }

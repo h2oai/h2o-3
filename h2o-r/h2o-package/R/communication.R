@@ -7,7 +7,6 @@
 #' @import methods
 #' @import RCurl
 #' @importFrom graphics barplot lines
-#' @importFrom rjson fromJSON
 #' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
@@ -127,18 +126,22 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  if (method == "GET") {
-    h = basicHeaderGatherer()
-    tmp = tryCatch(getURL(url = url,
-                          headerfunction = h$update,
-                          useragent = R.version.string,
-                          timeout = timeout_secs,
-                          .opts = opts),
-                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if ((method == "GET") || (method == "DELETE")) {
+    h <- basicHeaderGatherer()
+    t <- basicTextGatherer()
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
-      payload = tmp
+      payload = t$value()
     }
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
@@ -177,25 +180,7 @@
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
-  } else if (method == "DELETE") {
-    h <- basicHeaderGatherer()
-    t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url,
-                                customrequest = method,
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                verbose = FALSE,
-                                timeout = timeout_secs,
-                                .opts = opts),
-                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    if (! .__curlError) {
-      httpStatusCode = as.numeric(h$value()["status"])
-      httpStatusMessage = h$value()["statusMessage"]
-      payload = t$value()
-    }
-  }
-  else {
+  } else {
     message = sprintf("Unknown HTTP method %s", method)
     stop(message)
   }
@@ -329,7 +314,7 @@
     cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
     cat("\n")
 
-    jsonObject = fromJSON(rv$payload)
+    jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
 
     exceptionType = jsonObject$exception_type
     if (! is.null(exceptionType)) {
@@ -460,11 +445,7 @@
     }
     x
   }
-  # hack that counters the fact that RCurl will escape already escaped string
-  txt <- gsub("\\\"","\"",txt); 
-  txt <- gsub("\\\\,","\\,",txt);
-
-  res <- processMatrices(fromJSON(txt, ...))
+  res <- processMatrices(txt, ...)
   processTables(res)
 }
 
@@ -487,10 +468,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
-
-  for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%f"
-    xx[[j]] <- .format.helper(x[[j]], formats[j])
+  if( !is.null(formats) ) {  # might be NULL if resulted from slicing H2OTable (no need for full blown slice method on H2OTable... allow to be data frame at that point)
+    for (j in seq_along(x)) {
+#      if( formats[j] == "%d" ) formats[j] <- "%f"
+      xx[[j]] <- .format.helper(x[[j]], formats[j])
+    }
   }
   # drop empty columns
   nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
@@ -546,7 +528,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   else                    rawREST <- .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
 
   if( raw ) rawREST
-  else      .h2o.fromJSON(rawREST)
+  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
 }
 
 
@@ -606,7 +588,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   nodeInfo <- res$nodes
   numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -616,7 +598,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     # to post its information yet.
     threeSeconds = 3L
     Sys.sleep(threeSeconds)
-    res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+    res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   }
 
   nodeInfo <- res$nodes
@@ -625,7 +607,12 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
   clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
-  cat("R is connected to H2O cluster:\n")
+  is.client <- res$is_client
+  assign("IS_CLIENT", is.client, .pkg.env)
+  m <- ": \n"
+  if( is.client ) m <- " (in client mode): \n"
+
+  cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
@@ -646,7 +633,6 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 #' Warn if there are sick nodes.
 .h2o.__checkConnectionHealth <- function(conn = h2o.getConnection()) {
   rv <- .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
-
   if (rv$curlError) {
     ip = conn@ip
     port = conn@port
@@ -661,7 +647,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
          sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
   }
 
-  cloudStatus <- .h2o.fromJSON(rv$payload)
+  cloudStatus <- .h2o.fromJSON(jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE))
   nodes = cloudStatus$nodes
   overallHealthy = TRUE
   for (i in 1:length(nodes)) {
@@ -677,10 +663,13 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
     warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
   }
-
-  0L
 }
 
+#'
+#' Check Client Mode Connection
+#'
+#' @export
+h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   Job Polling
@@ -690,13 +679,12 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   if (progressBar) {
     pb <- txtProgressBar(style = 3L)
   }
-
   keepRunning <- TRUE
   tryCatch({
     while (keepRunning) {
       myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
       rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
-      jsonObject <- .h2o.fromJSON(rawResponse)
+      jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
       jobs <- jsonObject$jobs
       if (length(jobs) > 1) {
         stop("Job list has more than 1 entry")
@@ -707,6 +695,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
       job = jobs[[1]]
 
       status = job$status
+#      print(paste0("Job status: ", status))
       stopifnot(is.character(status))
 
       # check failed up front...

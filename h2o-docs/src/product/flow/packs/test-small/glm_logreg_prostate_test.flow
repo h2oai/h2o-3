@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/prostate_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/prostate_test.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/prostate_test.csv\"]\n  destination_frame: \"prostate_test3.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 8\n  single_quotes: false\n  column_names: [\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate_test3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/prostate_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/prostate_train.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/prostate_train.csv\"]\n  destination_frame: \"prostate_train3.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 8\n  single_quotes: false\n  column_names: [\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate_train3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"prostate_train3.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-6d5b5e2a-5579-4c07-9718-ad7073923606\",\"training_frame\":\"prostate_train3.hex\",\"validation_frame\":\"prostate_test3.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"CAPSULE\",\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[0],\"lambda\":[1],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":\"1E-2\",\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-6d5b5e2a-5579-4c07-9718-ad7073923606\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-6d5b5e2a-5579-4c07-9718-ad7073923606\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-6d5b5e2a-5579-4c07-9718-ad7073923606\", frame: \"prostate_test3.hex\", predictions_frame: \"prediction-136371fc-cb72-4542-87d2-1e9bb2fc95b3\""
+    }
+  ]
+}

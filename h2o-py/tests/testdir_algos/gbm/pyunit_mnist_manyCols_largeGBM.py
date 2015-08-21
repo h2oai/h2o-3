@@ -3,11 +3,11 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def mnist_manyCols_largeGBM(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     #Log.info("Importing mnist train data...\n")
-    train = h2o.import_frame(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    train = h2o.import_file(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
     #Log.info("Check that tail works...")
     train.tail()
 

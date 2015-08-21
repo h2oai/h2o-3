@@ -62,7 +62,7 @@ public class NewChunk extends Chunk {
   private int _nzCnt;                   // Count of non-zero's appended
   private int _uuidCnt;                 // Count of UUIDs
 
-  public final int _timCnt[] = new int[ParseTime.TIME_PARSE.length]; // Count of successful time parses
+  public int _timCnt = 0;
   protected static final int MIN_SPARSE_RATIO = 32;
   private int _sparseRatio = MIN_SPARSE_RATIO;
 
@@ -226,9 +226,8 @@ public class NewChunk extends Chunk {
     // UUIDs?
     if( _uuidCnt > 0 ) return AppendableVec.UUID;
     // Larger of time & numbers
-    int timCnt=0; for( int t : _timCnt ) timCnt+=t;
-    int nums = _len -_naCnt-timCnt;
-    return timCnt >= nums ? AppendableVec.TIME : AppendableVec.NUMBER;
+    int nums = _len -_naCnt-_timCnt;
+    return _timCnt >= nums ? AppendableVec.TIME : AppendableVec.NUMBER;
   }
 
   //what about sparse reps?

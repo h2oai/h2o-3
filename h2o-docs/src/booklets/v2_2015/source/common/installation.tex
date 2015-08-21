@@ -1,0 +1,86 @@
+\section{Installation} 
+
+The easiest way to directly install H2O is  via an R or Python package.
+
+({\bf{Note}}: This document was created with H2O version \waterVersion.)
+
+\subsection{Installation in R}
+
+To load a recent H2O package from CRAN, run:
+
+\begin{lstlisting}[style=R]
+install.packages("h2o")
+\end{lstlisting}
+
+({\bf{Note}}: The version of H2O in CRAN is often one release behind the current version.
+
+Alternatively, you can (and should for this tutorial) download the
+latest stable H2O-3 build from the H2O download page:
+
+\begin{enumerate}
+\item Go to {\url{http://h2o.ai/download}}.
+\item Choose the latest stable H2O-3 build.
+\item Click the "Install in R" tab.
+\item Copy and paste the commands into your R session.
+\end{enumerate}
+
+\bigskip
+After H2O is installed on your system, verify the installation:
+
+\begin{lstlisting}[style=R]
+library(h2o)
+
+# Start H2O on your local machine using all available cores.
+# By default, CRAN policies limit use to only 2 cores.
+h2o.init(nthreads = -1)
+
+# Get help
+?h2o.glm
+
+# Show a demo
+demo(h2o.glm)
+\end{lstlisting}
+
+\subsection{Installation in Python}
+
+To load a recent H2O package from PyPI, run:
+
+\begin{lstlisting}[style=python]
+pip install h2o
+\end{lstlisting}
+
+Alternatively, you can (and should for this tutorial) download the
+latest stable H2O-3 build from the H2O download page:
+
+\begin{enumerate}
+\item Go to {\url{http://h2o.ai/download}}.
+\item Choose the latest stable H2O-3 build.
+\item Click the "Install in Python" tab.
+\item Copy and paste the commands into your Python session.
+\end{enumerate}
+
+\bigskip
+After H2O is installed, verify the installation:
+
+\begin{lstlisting}[style=python]
+import h2o
+
+# Start H2O on your local machine
+h2o.init()
+
+# Get help
+help(h2o.glm)
+
+# Show a demo
+h2o.demo("glm")
+\end{lstlisting}
+
+\subsection{Pointing to a different H2O cluster}
+
+Following the instructions in the previous sections create a one-node H2O cluster on your local machine. 
+
+To connect to an established H2O cluster (in a multi-node Hadoop environment, for example) specify the IP address and port number for the established cluster using the \texttt{ip} and \texttt{port} parameters in the \texttt{h2o.init()} command: 
+
+\begin{lstlisting}[style=R]
+h2o.init(ip=123.45.67.89, port=54321)
+\end{lstlisting}

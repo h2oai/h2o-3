@@ -5,7 +5,6 @@ import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV99;
-import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -36,8 +35,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return new SVDV99();
   }
 
-  @Override public Job<SVDModel> trainModelImpl(long work) {
-    return start(new SVDDriver(), work);
+  @Override public Job<SVDModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new SVDDriver(), work, restartTimer);
   }
 
   @Override
@@ -137,8 +136,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model.delete_and_lock(self());
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE,
-                            /* skipMissing */ true, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ true, /* imputeMissing */ false, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -227,7 +225,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // 4) Normalize output frame columns by singular values to get left singular vectors
         // TODO: Make sure model building consistent if algo cancelled midway
         model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
-        if(!_parms._only_v && _parms._keep_u) {
+
+        if(!_parms._only_v && !_parms._keep_u) {   // Delete U vecs if computed, but user does not want it returned
+          for(int i = 0; i < uvecs.length; i++) uvecs[i].remove();
+        } else if(!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
           u = new Frame(model._output._u_key, null, uvecs);
           DKV.put(u._key, u);
 
@@ -255,6 +256,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         if( dinfo != null ) dinfo.remove();
         if( u != null & !_parms._keep_u ) u.delete();

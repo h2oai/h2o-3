@@ -55,7 +55,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double [] beta() { return _output._global_beta;}
   public String [] names(){ return _output._names;}
 
-
+  @Override
+  public double deviance(double w, double y, double f) {
+    if (w == 0) {
+      return 0;
+    } else if (w == 1) {
+      return _parms.deviance(y, f);
+    } else {
+      return Double.NaN; //TODO: add deviance(w, y, f)
+    }
+  }
 
   public static class GLMParameters extends Model.Parameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
@@ -76,7 +85,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
     public boolean _intercept = true;
-    public double _beta_epsilon = 1e-4;
+    public double _beta_epsilon = 1e-5;
     public double _objective_epsilon = 1e-5;
     public double _gradient_epsilon = 1e-4;
 
@@ -88,6 +97,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
+        if (glm.nFoldCV())
+          glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
         if(_nlambdas == -1)
           _nlambdas = 100;
         else
@@ -126,7 +137,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
           }
         }
+      } else if (glm.nclasses() > 2 ) {
+        glm.error("_response_column", "Illegal response for " + _family + " family, cannot be categorical with more than 2 levels");
       }
+
       if(!_lambda_search) {
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");
@@ -359,7 +373,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log,inverse, tweedie}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -441,6 +455,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         assert domains.length == 2;
         binomialClassNames = domains[domains.length - 1];
       }
+    }
+
+    public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta) {
+      this(dinfo,column_names,domains,coefficient_names,binomial);
+      _global_beta=beta;
     }
 
     public GLMOutput() {_isSupervised = true;}
@@ -735,7 +754,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
     body.p(");").nl();
     if( _parms._family == Family.binomial ) {
-      body.ip("preds[0] = mu > ").p(_output._threshold).p(" ? 1 : 0); // threshold given by ROC").nl();
+      body.ip("preds[0] = (mu > ").p(_output._threshold).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
       body.ip("preds[1] = 1.0 - mu; // class 0").nl();
       body.ip("preds[2] =       mu; // class 1").nl();
     } else {

@@ -48,8 +48,11 @@ public class ASTMerge extends ASTOp {
   }
   @Override void exec(Env e, AST[] args) {throw H2O.fail();}
   @Override void apply(Env env) {
-    Frame l = env.popAry();
-    Frame r = env.popAry();
+    Frame _l = env.popAry();
+    Frame _r = env.popAry();
+
+    Frame l = new Frame(_l.names().clone(),_l.vecs().clone());
+    Frame r = new Frame(_r.names().clone(),_r.vecs().clone());
 
     // Look for the set of columns in common; resort left & right to make the
     // leading prefix of column names match.  Bail out if we find any weird
