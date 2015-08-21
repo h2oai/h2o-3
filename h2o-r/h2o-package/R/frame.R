@@ -35,8 +35,8 @@
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
 
-is.Frame <- function(fr) class(fr)[1]=="Frame"
-#.isFr <- function(fr) is(fr,"Frame")
+is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
+chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
 # Horrible internal shortcut to get at our fields in Frame environments via
 # "frame:id".  Using "$" calls the overloaded dataframe column resolution - and
@@ -154,7 +154,7 @@ is.na.Frame <- function(x) .newExpr("is.na", x)
 }
 
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
-pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),e); .clearvisit(x); invisible() }
+pfr <- function(x) { chk.Frame(x); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),e); .clearvisit(x); invisible() }
 
 .eval.impl <- function(x, toplevel) {
   if( is.character(xchild<-x:eval) ) return( if(is.data.frame(x:data) || is.null(x:data) ) xchild else x:data )
@@ -172,7 +172,7 @@ pfr <- function(x) { stopifnot(is.Frame(x)); e<-new.env(); .set(e,"cnt",0); prin
 #    .eval.frame(hex):eval
 # Always yields the cluster's name for the evaluated results.
 .eval.frame <- function(x) {
-  stopifnot(is.Frame(x))
+  chk.Frame(x)
   if( !is.character(x:eval) ) {
     exec_str <- .eval.impl(x,TRUE)
     print(paste0("EXPR: ",exec_str))
@@ -210,6 +210,42 @@ colnames <- function(x, do.NULL=TRUE, prefix = "col") {
 
 #` Length - number of columns
 length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
+h2o.length <- length.Frame
+
+#'
+#' Return the levels from the column requested column.
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @param i The index of the column whose domain is to be returned.
+#' @seealso \code{\link[base]{levels}} for the base R method.
+#' @examples
+#' iris.hex <- as.h2o(iris)
+#' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
+#' @export
+h2o.levels <- function(x, i) {
+  chk.Frame(x)
+  if( missing(i) ) {
+    if( ncol(x) > 1 ) return( .newExpr("levels", x) )
+    i <- 1
+  } else if( is.character(i) ) i <- match(i, colnames(x))
+  if( is.na(i) ) stop("no such column found")
+  col_idx <- i
+  if (col_idx <= 0) col_idx <- 1
+  if (col_idx >= ncol(x)) col_idx <- ncol(x)
+  res <- .h2o.__remoteSend(.h2o.__COL_DOMAIN(x:eval, colnames(x)[col_idx]), method="GET")
+  res$domain[[1]]
+}
+
+#'
+#' Set Levels of H2O Factor Column
+#'
+#' Works on a single categorical vector. New domains must be aligned with the old domains.
+#' This call has SIDE EFFECTS and mutates the column in place (does not make a copy).
+#'
+#' @param x A single categorical column.
+#' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
+#' @export
+h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.Frame(x), levels)
 
 #'
 #' Return the Head or Tail of an H2O Dataset.
@@ -339,7 +375,7 @@ NULL
 #' @rdname Frame-Extract
 #' @export
 `[.Frame` <- function(data,row,col) {
-  stopifnot( is.Frame(data) )
+  chk.Frame(data)
 
   # This function is called with a huge variety of argument styles
   # Here's the breakdown: 
@@ -409,7 +445,7 @@ NULL
 #' @rdname Frame-Extract
 #' @export
 `[<-.Frame` <- function(data,row,col,...,value) {
-  stopifnot( is.Frame(data) )
+  chk.Frame(data)
   allRow <- missing(row)
   allCol <- missing(col)
   if( !allCol && is.na(col) ) col <- as.list(match.call())$col
@@ -424,9 +460,11 @@ NULL
     stop("`row` must be missing or a numeric vector")
   if(!allCol && !is.numeric(col) && !is.character(col))
     stop("`col` must be missing or a numeric or character vector")
-  if( !is.Frame(value) && is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
-  if( !is.Frame(value) && !is.numeric(value) && !is.character(value))
-    stop("`value` can only be an Frame object or a numeric or character vector")
+  if( !is.null(value) && !is.Frame(value) ) {
+    if( is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
+    else if( !is.numeric(value) && !is.character(value) )
+      stop("`value` can only be an Frame object or a numeric or character vector")
+  }
 
   # Row arg is missing, means "all the rows"
   if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
@@ -443,10 +481,10 @@ NULL
         else { idx <- ncol(data)+1; name <- col } # Append 1 unknown column
       }
     } else idx <- col
+    if( is.null(value) ) return(`[.Frame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
     cols <- .row.col.selector(idx)
   }
 
-  if( !is.Frame(value) && is.na(value) ) value <- "%NA"
   if( is.character(value) ) value <- .quote(value)
   res <- .newExpr("=", data, value, cols, rows)
   # Set col name and return updated frame
@@ -462,10 +500,7 @@ NULL
 
 #' @rdname Frame-Extract
 #' @export
-`[[<-.Frame` <- function(data,name,value) {
-  if( !is.Frame(value )) stop("Can only append a Frame to a Frame")
-  `[<-`(data, row=name,value=value)
-}
+`[[<-.Frame` <- function(data,name,value) `[<-`(data, row=name,value=chk.Frame(value))
 
 `names<-.Frame` <- function(x, value) {
   .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), .str.list(value))
@@ -790,6 +825,156 @@ sd <- function(x, na.rm=FALSE) {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Time & Date
+#-----------------------------------------------------------------------------------------------------------------------
+
+#' Convert Milliseconds to Years in H2O Datasets
+#'
+#' Convert the entries of a \linkS4class{Frame} object from milliseconds to years, indexed
+#' starting from 1900.
+#'
+# is this still true?
+#' This method calls the function of the MutableDateTime class in Java.
+#' @param x An \linkS4class{Frame} object.
+#' @return A \linkS4class{Frame} object containig the entries of \code{x} converted to years
+#'         starting from 1900, e.g. 69 corresponds to the year 1969.
+#' @seealso \code{\link{h2o.month}}
+#' @export
+h2o.year <- function(x) .newExpr("-",.newExpr("year", chk.Frame(x)),1900)
+
+#' Convert Milliseconds to Months in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{Frame} object from milliseconds to months (on a 0 to
+#' 11 scale).
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @return A \linkS4class{Frame} object containing the entries of \code{x} converted to months of
+#'         the year.
+#' @seealso \code{\link{h2o.year}}
+#' @export
+h2o.month <- function(x) .newExpr("month", chk.Frame(x))
+
+#' Convert Milliseconds to Week of Week Year in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{Frame} object from milliseconds to weeks of the week
+#' year (starting from 1).
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @return A \linkS4class{Frame} object containing the entries of \code{x} converted to weeks of
+#'         the week year.
+#' @seealso \code{\link{h2o.month}}
+#' @export
+h2o.week <- function(x) .newExpr("week", chk.Frame(x))
+
+#' Convert Milliseconds to Day of Month in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{Frame} object from milliseconds to days of the month
+#' (on a 1 to 31 scale).
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @return A \linkS4class{Frame} object containing the entries of \code{x} converted to days of
+#'         the month.
+#' @seealso \code{\link{h2o.month}}
+#' @export
+h2o.day <- function(x) .newExpr("day", chk.Frame(x))
+
+#' Convert Milliseconds to Day of Week in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{Frame} object from milliseconds to days of the week
+#' (on a 0 to 6 scale).
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @return A \linkS4class{Frame} object containing the entries of \code{x} converted to days of
+#'         the week.
+#' @seealso \code{\link{h2o.day}, \link{h2o.month}}
+#' @export
+h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.Frame(x))
+
+#' Convert Milliseconds to Hour of Day in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{Frame} object from milliseconds to hours of the day
+#' (on a 0 to 23 scale).
+#'
+#' @param x An \linkS4class{Frame} object.
+#' @return A \linkS4class{Frame} object containing the entries of \code{x} converted to hours of
+#'         the day.
+#' @seealso \code{\link{h2o.day}}
+#' @export
+h2o.hour <- function(x) .newExpr("hour", chk.Frame(x))
+
+#' @rdname h2o.year
+#' @export
+year <- function(x) UseMethod('year', x)
+#' @rdname h2o.year
+#' @export
+year.Frame <- h2o.year
+
+#' @rdname h2o.month
+#' @export
+month <- function(x) UseMethod('month', x)
+#' @rdname h2o.month
+#' @export
+month.Frame <- h2o.month
+
+#' @rdname h2o.week
+#' @export
+week <- function(x) UseMethod('week', x)
+#' @rdname h2o.week
+#' @export
+week.Frame <- h2o.week
+
+#' @rdname h2o.day
+#' @export
+day <- function(x) UseMethod('day', x)
+#' @rdname h2o.day
+#' @export
+day.Frame <- h2o.day
+
+#' @rdname h2o.dayOfWeek
+#' @export
+dayOfWeek <- function(x) UseMethod('dayOfWeek', x)
+#' @rdname h2o.dayOfWeek
+#' @export
+dayOfWeek.Frame <- h2o.dayOfWeek
+
+#' @rdname h2o.hour
+#' @export
+hour <- function(x) UseMethod('hour', x)
+#' @rdname h2o.hour
+#' @export
+hour.Frame <- h2o.hour
+
+#' @export
+as.Date.Frame <- function(x, format, ...) {
+  if(!is.character(format)) stop("format must be a string")
+  .newExpr("as.Date", chk.Frame(x), .quote(format), ...)
+}
+
+#' Set the Time Zone on the H2O Cloud
+#'
+#' @param tz The desired timezone.
+#' @export
+h2o.setTimezone <- function(tz) .newExpr("setTimeZone",.quote(tz))
+
+#' Get the Time Zone on the H2O Cloud
+#'
+#' @export
+h2o.getTimezone <- function() {
+  ret <- .fetch.data(gtz <- .newExpr("getTimeZone"))
+  h2o.rm(gtz:eval)
+  ret
+}
+
+#' List all of the Time Zones Acceptable by the H2O Cloud.
+#'
+#' @export
+h2o.listTimezones <- function() {
+  ret <- .fetch.data(gtz <- .newExpr("listTimeZones"))
+  h2o.rm(gtz:eval)
+  ret
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -979,7 +1164,7 @@ as.numeric <- function(x) {
 #' @param cols The columns to remove.
 #' @export
 h2o.removeVecs <- function(data, cols) {
-  if( !is.Frame(data) ) stop("`data` must be an Frame.")
+  chk.Frame(data)
   if( missing(cols) ) stop("`cols` must be specified")
   del.cols <- cols
   if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
@@ -1059,7 +1244,7 @@ h2o.cbind <- function(...) {
     li <- li[[1]]
     use.args <- TRUE
   } else li <- list(...)
-  lapply(li, function(l) if( !is.Frame(l) ) stop("`h2o.cbind` accepts only of Frame objects"))
+  lapply(li, function(l) chk.Frame(l) )
   .newExprList("cbind",li)
 }
 
@@ -1139,10 +1324,9 @@ h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y
 #' nrow(prostate.train) + nrow(prostate.test)
 #' @export
 h2o.runif <- function(x, seed = -1) {
-  stopifnot( is.Frame(x) )
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
-  .newExpr("h2o.runif", x, seed)
+  .newExpr("h2o.runif", chk.Frame(x), seed)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1338,9 +1522,8 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
 #' summary(iris.split[[1]])
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  if( !is.Frame(data)) stop("`data` must be an Frame object")
   params <- list()
-  params$dataset <- .eval.frame(data):eval
+  params$dataset <- .eval.frame(chk.Frame(data)):eval
   params$ratios <- .collapse(ratios)
   if (!missing(destination_frames))
     params$destination_frames <- .collapse.char(destination_frames)
@@ -1392,8 +1575,8 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #' h2o.table(prostate.hex[,c(3,4)])
 #' @export
 h2o.table <- function(x, y = NULL) {
-  if( !is.Frame(x) ) stop("`x` must be an Frame object")
-  if( !is.null(y) && !is.Frame(y)) stop("`y` must be an Frame object")
+  chk.Frame(x)
+  if( !is.null(y) ) chk.Frame(y)
   if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
 }
 
