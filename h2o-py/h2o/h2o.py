@@ -964,7 +964,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   matrices.
   """
   parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
-  if not isinstance(parms["alpha"], (list,tuple)): parms["alpha"] = [parms["alpha"]]
+  if "alpha" in parms and not isinstance(parms["alpha"], (list,tuple)): parms["alpha"] = [parms["alpha"]]
   parms["algo"]="glm"
   return h2o_model_builder.supervised(parms)
 
