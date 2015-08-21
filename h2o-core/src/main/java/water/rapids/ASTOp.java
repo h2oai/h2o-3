@@ -3821,8 +3821,6 @@ class ASTSdev extends ASTUniPrefixOp {
       env.poppush(1, new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();
-      for( Vec v: fr.vecs())
-        if( v.isEnum() ) throw new IllegalArgumentException("sd only applies to numeric vector.");
       if( fr.numCols() > 1) {
         Futures fs = new Futures();
         Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
@@ -4113,7 +4111,7 @@ class ASTMean extends ASTUniPrefixOp {
 //     }
    }
     @Override public void map(Chunk c) {
-      if (c.vec().isEnum() || c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
+      if (c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
       if (_narm) {
         for (int r = 0; r < c._len; r++)
           if (!c.isNA(r)) { _sum += c.atd(r); _rowcnt++;}
