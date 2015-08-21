@@ -353,7 +353,8 @@ str.Frame <- function(x, cols=FALSE, ...) {
   if( is.numeric(sel) ) { # number list for column selection; zero based
     sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
     .num.list(sel2) 
-  } else as.character(sel)
+  } else if( is.null(sel) ) "[]"  # Empty selector
+  else as.character(sel)
 }
 
 
@@ -1395,30 +1396,9 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   ### End NA handling ###
 
-  ### Column Name Handling ###
-
-  # go with defaults
-  if( is.null(gb.control$col.names) ) {
-    gb.control$col.names <- col.names.defaults
-
-  # have fewer col.names passed in than aggregates -- pad with defaults
-  } else if( length(gb.control$col.names) < nAggs ) {
-
-    # no special case for only 1 column!
-    n.missing <- nAggs - length(gb.control$col.names)
-    gb.control$col.names <- c(gb.control$col.names, col.names.defaults[(nAggs-n.missing+1):nAggs])
-
-  # have more col.names than aggregates -- rm extras
-  } else if( length(gb.control$col.names) > nAggs ) {
-    gb.control$col.names <- gb.control$col.names[1:nAggs]
-  }
-
-  ### End Column Name handling ###
-
-
-  # Build the aggregates! reminder => build this list: (agg,col.idx,na.method,col.name)
+  # Build the aggregates! reminder => build this list: (agg,col.idx,na.method)
   aggs <- unlist(recursive=F, lapply(1:nAggs, function(idx) {
-    list(agg.methods[idx], eval(col.idxs[idx]), gb.control$na.methods[idx], gb.control$col.names[idx])
+    list(agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx]))
   }))
 
 
@@ -1440,10 +1420,10 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   ### END ORDER BY ###
 
   # create the AGG AST
-  AGG <- .newExprList("agg",aggs)
+  AGG <- .newExprList("AGG",aggs)
 
   # create the group by AST
-  .newExpr("groupby",data,.row.col.selector(vars),AGG,.row.col.selector(vars2))
+  .newExpr("GB",data,.row.col.selector(vars),.row.col.selector(vars2),AGG)
 }
 
 #' Produce a Vector of Random Uniform Numbers

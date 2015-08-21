@@ -70,10 +70,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTNLevels());
     init(new ASTLevels());
 
-    // Factor Level Setting
-    init(new ASTSetLevel());
-    init(new ASTSetDomain());
-
     // Math binary ops
     init(new ASTAnd ());
     init(new ASTDiv ());
@@ -136,26 +132,32 @@ abstract public class AST extends Iced<AST> {
     init(new ASTMktime());
 
     // Complex Math
+    init(new ASTHist());
     init(new ASTImpute());
+    init(new ASTRunif());
     init(new ASTTable());
     init(new ASTVariance());
-    init(new ASTHist());
 
     // Generic data mungers
     init(new ASTAsFactor());
     init(new ASTAsNumeric());
-    init(new ASTAssign());
     init(new ASTCBind());
     init(new ASTColNames());
     init(new ASTColSlice());
     init(new ASTFilterNACols());
     init(new ASTFlatten());
     init(new ASTIsFactor());
-    init(new ASTMerge());
     init(new ASTRBind());
     init(new ASTRowSlice());
-    init(new ASTRunif());
     init(new ASTTmpAssign());
+    init(new ASTSetLevel());
+    init(new ASTSetDomain());
+
+    // Complex data mungers
+    init(new ASTAssign());
+    init(new ASTCut());
+    init(new ASTGroup());
+    init(new ASTMerge());
 
     // String Ops
     init(new ASTStrSplit());
@@ -164,7 +166,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTTrim());
     init(new ASTToLower());
     init(new ASTToUpper());
-
 
     // Functional data mungers
     init(new ASTApply());
@@ -176,8 +177,6 @@ abstract public class AST extends Iced<AST> {
     // Model Calls
     init(new ASTQtile());
 
-    // Cut
-    init(new ASTCut());
 
     // Repeaters
     init(new ASTRepLen());
