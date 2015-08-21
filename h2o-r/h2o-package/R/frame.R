@@ -1343,7 +1343,7 @@ h2o.levels <- function(x, i) {
     i <- 1
   } else if( is.character(i) ) i <- match(i, colnames(x))
   if( is.na(i) ) stop("no such column found")
-  return( .h2o.nary_frame_op("levels", x[,i]) )
+  return( as.data.frame(.h2o.nary_frame_op("levels", x[,i]))[,1] )
 }
 
 #'
