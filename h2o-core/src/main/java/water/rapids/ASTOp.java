@@ -3074,9 +3074,9 @@ class ASTMatch extends ASTUniPrefixOp {
       @Override public void map(Chunk c, NewChunk n) {
         int rows = c._len;
         if(strsTable==null)
-          for (int r = 0; r < rows; ++r) n.addNum(in(dblsTable, c.atd(r)),0);
+          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(dblsTable, c.atd(r)),0);
         else
-          for (int r = 0; r < rows; ++r) n.addNum(in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
+          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
     e.pushAry(rez);
