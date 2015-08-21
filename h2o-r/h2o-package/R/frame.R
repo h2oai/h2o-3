@@ -1618,7 +1618,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       df.domains.subset <- df.domains[1L:factors,]      # subset to the top `factors` (default is 6)
 
       # if there are any missing levels, plonk them down here now after we've subset.
-      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
+      if( !is.null(missing.count) && !is.na(missing.count) && missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
 
       # fish out the domains
       domains <- as.character(df.domains.subset[,1L])
