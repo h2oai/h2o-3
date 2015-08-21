@@ -161,6 +161,12 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
       PojoUtils
           .copyProperties(params, paramsSchema, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, null,
                           fields.toArray(new String[fields.size()]));
+      // FIXME: handle these train/valid fields in different way
+      // See: ModelParametersSchema#fillImpl
+      if (params._valid == null && paramsSchema.validation_frame != null) {
+        params._valid = Key.make(paramsSchema.validation_frame.name);
+      }
+
       return params;
     }
   }
