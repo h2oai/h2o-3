@@ -71,14 +71,12 @@ check.drf.grid.cars.negative <- function(conn) {
   # TODO: Check error messages for cases with invalid drf parameters
 
   ## Non-gridable parameter passed as grid parameter
-  non_gridable_parameter <- sample(1:4, 1)
-  if ( non_gridable_parameter == 1 ) { grid_space$balance_classes <- c(TRUE, FALSE) }
+  non_gridable_parameter <- sample(1:2, 1)
+  if ( non_gridable_parameter == 1 ) { grid_space$build_tree_one_node <- c(TRUE, FALSE) }
   if ( non_gridable_parameter == 2 ) { grid_space$binomial_double_trees <- c(TRUE, FALSE) }
-  if ( non_gridable_parameter == 3 ) { grid_space$r2_stopping <- c(0.1, 0.5, 0.7) }
-  if ( non_gridable_parameter == 4 ) { grid_space$seed <- c(1, 100, 12345) }
 
   Log.info(paste0("Constructing the grid of drf models with non-gridable parameter: ", non_gridable_parameter ,
-                  " (1:balance_classes, 2:binomial_double_trees, 3:r2_stopping, 4:seed). Expecting failure..."))
+                  " (1:build_tree_one_node, 2:binomial_double_trees). Expecting failure..."))
   if ( validation_scheme == 1 ) {
     expect_error(cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, hyper_params=grid_space))

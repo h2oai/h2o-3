@@ -49,6 +49,7 @@ class GroupBy:
   def first(self,col=None,name="",na="all"): return self._add_agg("first",col,name,na)
   def last( self,col=None,name="",na="all"): return self._add_agg("last",col,name,na)
   def ss(self,col=None,name="",na="all"):    return self._add_agg("ss",col,name,na)
+  def mode(self,col=None,name="",na="all"):  return self._add_agg("mode",col,name,na)
 
   def get_frame(self):
     """
@@ -56,6 +57,13 @@ class GroupBy:
     """
     self._eager()
     return self._res
+
+  @property
+  def frame(self):
+    """
+    :return: the result of the group by
+    """
+    return self.get_frame()
 
   def remove(self,name=None,regex=None):
     """

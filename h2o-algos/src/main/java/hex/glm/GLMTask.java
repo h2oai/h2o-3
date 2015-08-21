@@ -212,7 +212,7 @@ public abstract class GLMTask  {
             skip[r] = true;
             continue;
           }
-          int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
+          int off = _dinfo.getCategoricalId(i,(int)c.at8(r)); // get pos in beta vector.
           if(off != -1) {
             double t = pk[off] * _initStep;
             double b = beta[off];
@@ -631,7 +631,7 @@ public abstract class GLMTask  {
       }
       // numerics
       for (int i = 0; i < _dinfo._nums; ++i) {
-        Chunk c = chks[i + _dinfo._cats];
+        Chunk c = chks[i + _dinfo._cats]; //not expanded
         for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
           if(skp[r] || c.isNA(r))
             continue;
@@ -647,63 +647,63 @@ public abstract class GLMTask  {
 
 
 
-  public static class GLMCoordinateDescentTask extends MRTask<GLMCoordinateDescentTask> {
-    final double [] _betaUpdate;
-    final double [] _beta;
-    final double _xOldSub;
-    final double _xOldMul;
-    final double _xNewSub;
-    final double _xNewMul;
-
-    double [] _xy;
-
-    public GLMCoordinateDescentTask(double [] betaUpdate, double [] beta, double xOldSub, double xOldMul, double xNewSub, double xNewMul) {
-      _betaUpdate = betaUpdate;
-      _beta = beta;
-      _xOldSub = xOldSub;
-      _xOldMul = xOldMul;
-      _xNewSub = xNewSub;
-      _xNewMul = xNewMul;
-    }
-
-    public void map(Chunk [] chks) {
-      Chunk xOld = chks[0];
-      Chunk xNew = chks[1];
-      if(xNew.vec().isEnum()){
-        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
-      } else
-      _xy = new double[1];
-      Chunk eta = chks[2];
-      Chunk weights = chks[3];
-      Chunk res = chks[4];
-      for(int i = 0; i < eta._len; ++i) {
-        double w = weights.atd(i);
-        double e = eta.atd(i);
-        if(_betaUpdate != null) {
-          if (xOld.vec().isEnum()) {
-            int cid = (int) xOld.at8(i);
-            e = +_betaUpdate[cid];
-          } else
-            e += _betaUpdate[0] * (xOld.atd(i) - _xOldSub) * _xOldMul;
-          eta.set(i, e);
-        }
-        int cid = 0;
-        double x = w;
-        if(xNew.vec().isEnum()) {
-          cid = (int) xNew.at8(i);
-          e -= _beta[cid];
-        } else {
-          x = (xNew.atd(i) - _xNewSub) * _xNewMul;
-          e -= _beta[0] * x;
-          x *= w;
-        }
-        _xy[cid] += x * (res.atd(i) - e);
-      }
-    }
-    @Override public void reduce(GLMCoordinateDescentTask t) {
-      ArrayUtils.add(_xy, t._xy);
-    }
-  }
+//  public static class GLMCoordinateDescentTask extends MRTask<GLMCoordinateDescentTask> {
+//    final double [] _betaUpdate;
+//    final double [] _beta;
+//    final double _xOldSub;
+//    final double _xOldMul;
+//    final double _xNewSub;
+//    final double _xNewMul;
+//
+//    double [] _xy;
+//
+//    public GLMCoordinateDescentTask(double [] betaUpdate, double [] beta, double xOldSub, double xOldMul, double xNewSub, double xNewMul) {
+//      _betaUpdate = betaUpdate;
+//      _beta = beta;
+//      _xOldSub = xOldSub;
+//      _xOldMul = xOldMul;
+//      _xNewSub = xNewSub;
+//      _xNewMul = xNewMul;
+//    }
+//
+//    public void map(Chunk [] chks) {
+//      Chunk xOld = chks[0];
+//      Chunk xNew = chks[1];
+//      if(xNew.vec().isEnum()){
+//        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
+//      } else
+//      _xy = new double[1];
+//      Chunk eta = chks[2];
+//      Chunk weights = chks[3];
+//      Chunk res = chks[4];
+//      for(int i = 0; i < eta._len; ++i) {
+//        double w = weights.atd(i);
+//        double e = eta.atd(i);
+//        if(_betaUpdate != null) {
+//          if (xOld.vec().isEnum()) {
+//            int cid = (int) xOld.at8(i);
+//            e = +_betaUpdate[cid];
+//          } else
+//            e += _betaUpdate[0] * (xOld.atd(i) - _xOldSub) * _xOldMul;
+//          eta.set(i, e);
+//        }
+//        int cid = 0;
+//        double x = w;
+//        if(xNew.vec().isEnum()) {
+//          cid = (int) xNew.at8(i);
+//          e -= _beta[cid];
+//        } else {
+//          x = (xNew.atd(i) - _xNewSub) * _xNewMul;
+//          e -= _beta[0] * x;
+//          x *= w;
+//        }
+//        _xy[cid] += x * (res.atd(i) - e);
+//      }
+//    }
+//    @Override public void reduce(GLMCoordinateDescentTask t) {
+//      ArrayUtils.add(_xy, t._xy);
+//    }
+//  }
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *
@@ -712,9 +712,10 @@ public abstract class GLMTask  {
   public static class GLMIterationTask extends FrameTask2<GLMIterationTask> {
     final GLMParameters _params;
     final double [] _beta;
-    protected Gram  _gram;
-    double [] _xy;
-    double    _yy;
+    protected Gram  _gram; // wx%*%x
+    double [] _xy; // wx^t%*%z,
+    double _wz;
+    double _yy;
     GLMValidation _val; // validation of previous model
     final double _ymu;
     long _nobs;
@@ -722,8 +723,9 @@ public abstract class GLMTask  {
     int [] _ti;
     public double _likelihood;
     final double _lambda;
-
-    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
+    double wsum, wsumu;
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate,
+                             double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
       _beta = beta;
@@ -764,7 +766,7 @@ public abstract class GLMTask  {
     }
 
     @Override
-    protected void processRow(Row r) {
+    protected void processRow(Row r) { // called for every row in the chunk
       if(r.bad || r.weight == 0) return;
       ++_nobs;
       final double y = r.response(0);
@@ -790,10 +792,14 @@ public abstract class GLMTask  {
         _val.add(y, mu, r.weight, r.offset);
       _likelihood += r.weight*_params.likelihood(y,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
+      wsum+=w;
+      wsumu+=r.weight; // just add the user observation weight for the scaling.
       double wz = w * z;
+      _wz += wz;
       _yy += wz * z;
-      for(int i = 0; i < r.nBins; ++i)
+      for(int i = 0; i < r.nBins; ++i) {
         _xy[r.binIds[i]] += wz;
+      }
       for(int i = 0; i < r.nNums; ++i){
         int id = r.numIds == null?(i + numStart):r.numIds[i];
         double val = r.numVals[i];
@@ -810,6 +816,9 @@ public abstract class GLMTask  {
       _gram.add(git._gram);
       _yy += git._yy;
       _nobs += git._nobs;
+      _wz += git._wz;
+      wsum += git.wsum;
+      wsumu += git.wsumu;
       if (_validate) _val.reduce(git._val);
       _likelihood += git._likelihood;
       super.reduce(git);
@@ -835,8 +844,9 @@ public abstract class GLMTask  {
             interceptRow[j] -= nobs * _dinfo._normSub[j-ns]*_dinfo._normMul[j-ns];
         }
         // and the xy vec as well
-        for(int i = ns; i < _dinfo.fullN(); ++i)
-          _xy[i] -= _xy[_xy.length-1]*_dinfo._normSub[i-ns]*_dinfo._normMul[i-ns];
+        for(int i = ns; i < _dinfo.fullN(); ++i) {
+          _xy[i] -= _xy[_xy.length - 1] * _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
+      }
       }
       if(_val != null){
         _val.computeAIC();
@@ -847,6 +857,347 @@ public abstract class GLMTask  {
       return ArrayUtils.hasNaNsOrInfs(_xy) || _gram.hasNaNsOrInfs();
     }
   }
+
+ /* public static class GLMCoordinateDescentTask extends FrameTask2<GLMCoordinateDescentTask> {
+    final GLMParameters _params;
+    final double [] _betaw;
+    final double [] _betacd;
+    public double [] _temp;
+    public double [] _varsum;
+    public double _ws=0;
+    long _nobs;
+    public double _likelihood;
+    public  GLMCoordinateDescentTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] betaw,
+                                     double [] betacd, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
+      super(cmp,dinfo,jobKey,rowFilter);
+      _params = glm;
+      _betaw = betaw;
+      _betacd = betacd;
+    }
+
+
+    @Override public boolean handlesSparseData(){return false;}
+
+
+    @Override
+    public void chunkInit() {
+      _temp=MemoryManager.malloc8d(_dinfo.fullN()+1); // using h2o memory manager
+      _varsum=MemoryManager.malloc8d(_dinfo.fullN());
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      if(r.bad || r.weight == 0) return;
+      ++_nobs;
+      final double y = r.response(0);
+      assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+      assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+      final double w, eta, mu, var, z;
+      final int numStart = _dinfo.numStart();
+      double d = 1;
+      if( _params._family == Family.gaussian && _params._link == Link.identity){
+        w = r.weight;
+        z = y - r.offset;
+        mu = 0;
+        eta = mu;
+      } else {
+        eta = r.innerProduct(_betaw);
+        mu = _params.linkInv(eta + r.offset);
+        var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+        d = _params.linkDeriv(mu);
+        z = eta + (y-mu)*d;
+        w = r.weight/(var*d*d);
+      }
+      _likelihood += r.weight*_params.likelihood(y,mu);
+      assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
+
+      _ws+=w;
+      double xb = r.innerProduct(_betacd);
+      for(int i = 0; i < r.nBins; ++i)  { // go over cat variables
+        _temp[r.binIds[i]] += (z - xb + _betacd[r.binIds[i]])  *w;
+        _varsum[r.binIds[i]] += w ;
+      }
+      for(int i = 0; i < r.nNums; ++i){ // num vars
+        int id = r.numIds == null?(i + numStart):r.numIds[i];
+        _temp[id] += (z- xb + r.get(id)*_betacd[id] )*(r.get(id)*w);
+        _varsum[id] += w*r.get(id)*r.get(id);
+      }
+        _temp[_temp.length-1] += w*(z-r.innerProduct(_betacd)+_betacd[_betacd.length-1]);
+    }
+
+    @Override
+    public void reduce(GLMCoordinateDescentTask git){ // adding contribution of all the chunks
+      ArrayUtils.add(_temp, git._temp);
+      ArrayUtils.add(_varsum, git._varsum);
+      _ws+= git._ws;
+      _nobs += git._nobs;
+      _likelihood += git._likelihood;
+      super.reduce(git);
+    }
+
+  }
+*/
+
+  public static class GLMCoordinateDescentTaskSeqNaive extends MRTask<GLMCoordinateDescentTaskSeqNaive> {
+    public double [] _normMulold;
+    public double [] _normSubold;
+    public double [] _normMulnew;
+    public double [] _normSubnew;
+    final double [] _betaold; // current old value at j
+    final double [] _betanew; // global beta @ j-1 that was just updated.
+    final int [] _catLvls_new; // sorted list of indices of active levels only for one categorical variable
+    final int [] _catLvls_old;
+    public double [] _temp;
+    boolean _skipFirst;
+    long _nobs;
+    int _cat_num; // 1: c and p categorical, 2:c numeric and p categorical, 3:c and p numeric , 4: c categorical and previous num.
+    boolean _interceptnew;
+    boolean _interceptold;
+
+    public  GLMCoordinateDescentTaskSeqNaive(boolean interceptold, boolean interceptnew, int cat_num ,
+                                        double [] betaold, double [] betanew, int [] catLvlsold, int [] catLvlsnew,
+                                        double [] normMulold, double [] normSubold, double [] normMulnew, double [] normSubnew,
+                                             boolean skipFirst ){ // pass it norm mul and norm sup - in the weights already done. norm
+      //mul and mean will be null without standardization.
+      _normMulold = normMulold;
+      _normSubold = normSubold;
+      _normMulnew = normMulnew;
+      _normSubnew = normSubnew;
+      _cat_num = cat_num;
+      _betaold = betaold;
+      _betanew = betanew;
+      _interceptold = interceptold; // if updating beta_1, then the intercept is the previous column
+      _interceptnew = interceptnew; // if currently updating the intercept value
+      _catLvls_old = catLvlsold;
+      _catLvls_new = catLvlsnew;
+      _skipFirst = skipFirst;
+    }
+
+    @Override
+    public void map(Chunk [] chunks) {
+      int cnt = 0;
+      Chunk wChunk = chunks[cnt++];
+      Chunk zChunk = chunks[cnt++];
+      Chunk ztildaChunk = chunks[cnt++];
+      Chunk filterChunk = chunks[cnt++];
+      Chunk xpChunk=null, xChunk=null;
+
+      _temp = new double[_betaold.length];
+      if (_interceptnew) {
+        xChunk = new C0DChunk(1,chunks[0]._len);
+        xpChunk = chunks[cnt++];
+      } else {
+        if (_interceptold) {
+          xChunk = chunks[cnt++];
+          xpChunk = new C0DChunk(1,chunks[0]._len);
+        }
+        else {
+          xChunk = chunks[cnt++];
+          xpChunk = chunks[cnt++];
+        }
+      }
+
+      // For each observation, add corresponding term to temp - or if categorical variable only add the term corresponding to its active level and the active level
+      // of the most recently updated variable before it (if also cat). If for an obs the active level corresponds to an inactive column, we just dont want to include
+      // it - same if inactive level in most recently updated var. so set these to zero ( Wont be updating a betaj which is inactive) .
+      for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+        double betanew = 0; // most recently updated prev variable
+        double betaold = 0; // old value of current variable being updated
+
+        ++_nobs;
+        if (filterChunk.atd(i) == 1) continue;
+        int observation_level = 0, observation_level_p = 0;
+        double val = 1, valp = 1;
+        if(_cat_num == 1) {
+          observation_level = (int) xChunk.at8(i); // only need to change one temp value per observation.
+          if (_catLvls_old != null)
+            observation_level = Arrays.binarySearch(_catLvls_old, observation_level);
+
+          observation_level_p = (int) xpChunk.at8(i); // both cat
+          if (_catLvls_new != null)
+            observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
+
+          if(_skipFirst){
+            observation_level--;
+            observation_level_p--;
+          }
+        }
+        else if(_cat_num == 2){
+          val = xChunk.atd(i); // current num and previous cat
+          if (_normMulold != null && _normSubold != null)
+            val = (val - _normSubold[0]) * _normMulold[0];
+
+          observation_level_p = (int) xpChunk.at8(i);
+          if (_catLvls_new != null)
+            observation_level_p = Arrays.binarySearch(_catLvls_new, observation_level_p);
+
+          if(_skipFirst){
+            observation_level_p--;
+          }
+        }
+        else if(_cat_num == 3){
+          val = xChunk.atd(i); // both num
+          if (_normMulold != null && _normSubold != null)
+            val = (val - _normSubold[0]) * _normMulold[0];
+          valp = xpChunk.atd(i);
+          if (_normMulnew != null && _normSubnew != null)
+            valp = (valp - _normSubnew[0]) * _normMulnew[0];
+        }
+        else if(_cat_num == 4){
+          observation_level = (int) xChunk.at8(i); // current cat
+          if (_catLvls_old != null)
+            observation_level = Arrays.binarySearch(_catLvls_old, observation_level); // search to see if this level is active.
+          if(_skipFirst){
+            observation_level--;
+          }
+
+          valp = xpChunk.atd(i); //prev numeric
+          if (_normMulnew != null && _normSubnew != null)
+            valp = (valp - _normSubnew[0]) * _normMulnew[0];
+        }
+
+        if(observation_level >= 0)
+         betaold = _betaold[observation_level];
+        if(observation_level_p >= 0)
+         betanew = _betanew[observation_level_p];
+
+        if (_interceptnew) {
+            ztildaChunk.set(i, ztildaChunk.atd(i) - betaold + valp * betanew); //
+            _temp[0] += wChunk.atd(i) * (zChunk.atd(i) - ztildaChunk.atd(i));
+          } else {
+            ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
+            if(observation_level >=0 ) // if the active level for that observation is an "inactive column" don't want to add contribution to temp for that observation
+            _temp[observation_level] += wChunk.atd(i) * val * (zChunk.atd(i) - ztildaChunk.atd(i));
+         }
+
+       }
+
+    }
+
+    @Override
+    public void reduce(GLMCoordinateDescentTaskSeqNaive git){
+      ArrayUtils.add(_temp, git._temp);
+      _nobs += git._nobs;
+      super.reduce(git);
+    }
+
+  }
+
+
+  public static class GLMCoordinateDescentTaskSeqIntercept extends MRTask<GLMCoordinateDescentTaskSeqIntercept> {
+    final double [] _betaold;
+    public double _temp;
+    DataInfo _dinfo;
+
+    public  GLMCoordinateDescentTaskSeqIntercept( double [] betaold, DataInfo dinfo) {
+      _betaold = betaold;
+      _dinfo = dinfo;
+    }
+
+    @Override
+    public void map(Chunk [] chunks) {
+      int cnt = 0;
+      Chunk wChunk = chunks[cnt++];
+      Chunk zChunk = chunks[cnt++];
+      Chunk filterChunk = chunks[cnt++];
+      Row r = _dinfo.newDenseRow();
+      for(int i = 0; i < chunks[0]._len; ++i) {
+        if(filterChunk.atd(i)==1) continue;
+        _dinfo.extractDenseRow(chunks,i,r);
+        _temp = wChunk.at8(i)* (zChunk.atd(i)- r.innerProduct(_betaold) );
+      }
+
+    }
+
+    @Override
+    public void reduce(GLMCoordinateDescentTaskSeqIntercept git){
+      _temp+= git._temp;
+      super.reduce(git);
+    }
+
+  }
+
+
+  public static class GLMGenerateWeightsTask extends MRTask<GLMGenerateWeightsTask> {
+    final GLMParameters _params;
+    final double [] _betaw;
+    double [] denums;
+    double wsum,wsumu;
+    DataInfo _dinfo;
+    double _likelihood;
+
+    public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
+      _params = glm;
+      _betaw = betaw;
+      _dinfo = dinfo;
+    }
+
+    @Override
+    public void map(Chunk [] chunks) {
+      Chunk wChunk = chunks[chunks.length-4];
+      Chunk zChunk = chunks[chunks.length-3];
+      Chunk zTilda = chunks[chunks.length-2];
+      Chunk fChunk = chunks[chunks.length-1];
+      chunks = Arrays.copyOf(chunks,chunks.length-4);
+      denums = new double[_dinfo.fullN()+1]; // full N is expanded variables with categories
+
+      Row r = _dinfo.newDenseRow();
+      for(int i = 0; i < chunks[0]._len; ++i) {
+        if(fChunk.at8(i) == 1) continue;
+        _dinfo.extractDenseRow(chunks,i,r);
+        if (r.bad || r.weight == 0) return;
+        final double y = r.response(0);
+        assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+        assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+        final double w, eta, mu, var, z;
+        final int numStart = _dinfo.numStart();
+        double d = 1;
+        eta = r.innerProduct(_betaw);
+        if (_params._family == Family.gaussian && _params._link == Link.identity) {
+          w = r.weight;
+          z = y - r.offset;
+          mu = 0;
+        } else {
+          mu = _params.linkInv(eta + r.offset);
+          var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+          d = _params.linkDeriv(mu);
+          z = eta + (y - mu) * d;
+          w = r.weight / (var * d * d);
+        }
+        _likelihood += _params.likelihood(y,mu);
+        zTilda.set(i,eta-_betaw[_betaw.length-1]);
+        assert w >= 0 || Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
+        wChunk.set(i,w);
+        zChunk.set(i,z);
+
+        wsum+=w;
+        wsumu+=r.weight; // just add the user observation weight for the scaling.
+
+        for(int j = 0; j < r.nBins; ++j)  { // go over cat variables
+          denums[r.binIds[j]] +=  w; // binIds skips the zeros.
+        }
+        for(int j = 0; j < r.nNums; ++j){ // num vars
+          int id = r.numIds == null?(j + numStart):r.numIds[j];
+          denums[id]+= w*r.get(id)*r.get(id);
+        }
+
+      }
+    }
+
+    @Override
+    public void reduce(GLMGenerateWeightsTask git){ // adding contribution of all the chunks
+      ArrayUtils.add(denums, git.denums);
+      wsum+=git.wsum;
+      wsumu += git.wsumu;
+      _likelihood += git._likelihood;
+      super.reduce(git);
+    }
+
+
+  }
+
+
+
 
 //  public static class GLMValidationTask<T extends GLMValidationTask<T>> extends MRTask<T> {
 //    protected final GLMModel _model;
