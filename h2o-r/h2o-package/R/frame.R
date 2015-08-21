@@ -1344,7 +1344,7 @@ h2o.levels <- function(x, i) {
   } else if( is.character(i) ) i <- match(i, colnames(x))
   if( is.na(i) ) stop("no such column found")
   levels <- as.data.frame(.h2o.nary_frame_op("levels", x[,i]))[,1]
-  if( length(levels2)) {return(NULL)} else {return(levels)}
+  if( length(levels) == 0 ) {return(NULL)} else {return(levels)}
 }
 
 #'
