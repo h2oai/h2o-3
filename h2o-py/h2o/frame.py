@@ -1158,9 +1158,14 @@ class H2OFrame:
 
   # flow-coding result methods
   def _scalar(self):
-    res = self.as_data_frame(False)
-    if res[1] == []: return float("nan")
-    res = res[1][0]
+    res = self.as_data_frame(False)[1:]
+    if len(res)==1: return H2OFrame._get_scalar(res)
+    else:
+      return [H2OFrame._get_scalar(r) for r in res]
+  @staticmethod
+  def _get_scalar(res):
+    if res[0] == []: return float("nan")
+    res = res[0][0]
     if res == "TRUE": return True
     if res == "FALSE":return False
     try:    return float(res)
