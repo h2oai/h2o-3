@@ -29,7 +29,7 @@ test <- function(conn) {
   print(levels1)
   print("Factor levels for Sepal.Length column for dataframe...")
   print(levels2)  
-  if(!is.null(levels1)) stop("Numeric Column should not have any factor levels...")
+  if(!is.null(levels2)) stop("Numeric Column should not have any factor levels...")
 
   testEnd()
 }
