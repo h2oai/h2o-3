@@ -103,7 +103,15 @@ public class PredictCsv {
     return row;
   }
 
-  public static void main(String[] args) throws Exception{
+  private static String h2oDoubleToString(double d) {
+    if (Double.isNaN(d)) {
+      return "NA";
+    }
+
+    return Double.toHexString(d);
+  }
+
+  public static void main(String[] args) throws Exception {
     parseArgs(args);
 
     hex.genmodel.GenModel model;
@@ -132,59 +140,63 @@ public class PredictCsv {
     String[] inputColumnNames = new String[0];
 
     // An array to store predicted values
-    while ((line = input.readLine()) != null) {
-      lineNum++;
-      if (lineNum == 1) {
-        inputColumnNames = parseHeaderRow(line);
-        continue;
-      }
-
-      // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
-      RowData row = parseDataRow(line, inputColumnNames);
-
-      // Do the prediction.
-      // Emit the result to the output file.
-      ModelCategory category = model.getModelCategory();
-      if (category == ModelCategory.Binomial) {
-        BinomialModelPrediction p = model.predictBinomial(row);
-
-        output.write(p.label);
-        output.write(",");
-        for (int i = 0; i < p.classProbabilities.length; i++) {
-          if (i > 0) {
-            output.write(",");
-          }
-          output.write(Double.toHexString(p.classProbabilities[i]));
+    try {
+      while ((line = input.readLine()) != null) {
+        lineNum++;
+        if (lineNum == 1) {
+          inputColumnNames = parseHeaderRow(line);
+          continue;
         }
-      }
-      else if (category == ModelCategory.Multinomial) {
-        MultinomialModelPrediction p = model.predictMultinomial(row);
 
-        output.write(p.label);
-        output.write(",");
-        for (int i = 0; i < p.classProbabilities.length; i++) {
-          if (i > 0) {
-            output.write(",");
+        // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
+        RowData row = parseDataRow(line, inputColumnNames);
+
+        // Do the prediction.
+        // Emit the result to the output file.
+        ModelCategory category = model.getModelCategory();
+        if (category == ModelCategory.Binomial) {
+          BinomialModelPrediction p = model.predictBinomial(row);
+
+          output.write(p.label);
+          output.write(",");
+          for (int i = 0; i < p.classProbabilities.length; i++) {
+            if (i > 0) {
+              output.write(",");
+            }
+            output.write(h2oDoubleToString(p.classProbabilities[i]));
           }
-          output.write(Double.toHexString(p.classProbabilities[i]));
+        } else if (category == ModelCategory.Multinomial) {
+          MultinomialModelPrediction p = model.predictMultinomial(row);
+
+          output.write(p.label);
+          output.write(",");
+          for (int i = 0; i < p.classProbabilities.length; i++) {
+            if (i > 0) {
+              output.write(",");
+            }
+            output.write(h2oDoubleToString(p.classProbabilities[i]));
+          }
+        } else if (category == ModelCategory.Regression) {
+          RegressionModelPrediction p = model.predictRegression(row);
+
+          output.write(h2oDoubleToString(p.value));
+        } else if (category == ModelCategory.Clustering) {
+          ClusteringModelPrediction p = model.predictClustering(row);
+
+          output.write(h2oDoubleToString(p.cluster));
+        } else {
+          System.out.println("Unknown model category: " + category.toString());
+          System.exit(1);
         }
-      }
-      else if (category == ModelCategory.Regression) {
-        RegressionModelPrediction p = model.predictRegression(row);
 
-        output.write(Double.toHexString(p.value));
+        output.write("\n");
       }
-      else if (category == ModelCategory.Clustering) {
-        ClusteringModelPrediction p = model.predictClustering(row);
-
-        output.write(Integer.toHexString(p.cluster));
-      }
-      else {
-        System.out.println("Unknown model category: " + category.toString());
-        System.exit(1);
-      }
-
-      output.write("\n");
+    }
+    catch (Exception e) {
+      System.out.println("Caught exception on line " + lineNum);
+      System.out.println("");
+      e.printStackTrace();
+      System.exit(1);
     }
 
     // Clean up.

@@ -2,6 +2,7 @@ package hex.genmodel;
 
 import water.genmodel.IGeneratedModel;
 import hex.genmodel.prediction.*;
+import hex.genmodel.exception.*;
 import hex.ModelCategory;
 
 import java.io.Serializable;
@@ -356,102 +357,160 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   // --------------------------------------------------------------------------
   // --------------------------------------------------------------------------
   // --------------------------------------------------------------------------
-  public BinomialModelPrediction predictBinomial(RowData data) {
-    AbstractPrediction p = predict(data);
-    return (BinomialModelPrediction) p;
+  public BinomialModelPrediction predictBinomial(RowData data) throws AbstractPredictException {
+    if (getModelCategory() != ModelCategory.Binomial) {
+      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + getModelCategory());
+    }
+
+    double[] preds = new double[getPredsSize()];
+    preds = predict(data, preds);
+
+    BinomialModelPrediction p = new BinomialModelPrediction();
+    p.classProbabilities = new double[getNumResponseClasses()];
+    double d = preds[0];
+    p.labelIndex = (int) d;
+    String[] domainValues = getDomainValues(getResponseIdx());
+    p.label = domainValues[p.labelIndex];
+    for (int i = 0; i < p.classProbabilities.length; i++) {
+      p.classProbabilities[i] = preds[i + 1];
+    }
+
+    return p;
   }
 
-  public MultinomialModelPrediction predictMultinomial(RowData data) {
-    AbstractPrediction p = predict(data);
-    return (MultinomialModelPrediction) p;
+  public MultinomialModelPrediction predictMultinomial(RowData data) throws AbstractPredictException {
+    if (getModelCategory() != ModelCategory.Multinomial) {
+      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + getModelCategory());
+    }
+
+    double[] preds = new double[getPredsSize()];
+    preds = predict(data, preds);
+
+    MultinomialModelPrediction p = new MultinomialModelPrediction();
+    p.classProbabilities = new double[getNumResponseClasses()];
+    p.labelIndex = (int) preds[0];
+    String[] domainValues = getDomainValues(getResponseIdx());
+    p.label = domainValues[p.labelIndex];
+    for (int i = 0; i < p.classProbabilities.length; i++) {
+      p.classProbabilities[i] = preds[i + 1];
+    }
+
+    return p;
   }
 
-  public RegressionModelPrediction predictRegression(RowData data) {
-    AbstractPrediction p = predict(data);
-    return (RegressionModelPrediction) p;
+  public RegressionModelPrediction predictRegression(RowData data) throws AbstractPredictException {
+    if (getModelCategory() != ModelCategory.Regression) {
+      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + getModelCategory());
+    }
+
+    double[] preds = new double[getPredsSize()];
+    preds = predict(data, preds);
+
+    RegressionModelPrediction p = new RegressionModelPrediction();
+    p.value = preds[0];
+
+    return p;
   }
 
-  public ClusteringModelPrediction predictClustering(RowData data) {
-    AbstractPrediction p = predict(data);
-    return (ClusteringModelPrediction) p;
+  public ClusteringModelPrediction predictClustering(RowData data) throws AbstractPredictException {
+    if (getModelCategory() != ModelCategory.Clustering) {
+      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + getModelCategory());
+    }
+
+    double[] preds = new double[getPredsSize()];
+    preds = predict(data, preds);
+
+    ClusteringModelPrediction p = new ClusteringModelPrediction();
+    p.cluster = (int) preds[0];
+
+    return p;
   }
 
-  public AutoEncoderModelPrediction predictAutoencoder(RowData data) {
-    AbstractPrediction p = predict(data);
-    return (AutoEncoderModelPrediction) p;
+  public AutoEncoderModelPrediction predictAutoencoder(RowData data) throws AbstractPredictException {
+    if (getModelCategory() != ModelCategory.AutoEncoder) {
+      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + getModelCategory());
+    }
+
+    throw new RuntimeException("Unimplemented");
   }
 
-  private AbstractPrediction predict(RowData data) {
+  private double[] predict(RowData data, double[] preds) throws AbstractPredictException {
+    String[] modelColumnNames = getNames();
 
-    //    System.out.println("COLS " + model.getNumCols());
-//    // Create map of input variable domain information.
-//    // This contains the categorical string to numeric mapping.
-//    HashMap<Integer,HashMap<String,Integer>> domainMap = new HashMap<>();
-//    for (int i = 0; i < model.getNumCols(); i++) {
-//      String[] domainValues = model.getDomainValues(i);
-//      if (domainValues != null) {
-//        HashMap<String,Integer> m = new HashMap<>();
-//        for (int j = 0; j < domainValues.length; j++) {
-//          System.out.println("Putting ("+ i +","+ j +","+ domainValues[j] +")");
-//          m.put(domainValues[j], j);
-//        }
-//
-//        domainMap.put(i, m);
-//      }
-//    }
+    // Create map of column names to index number.
+    HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<String, Integer>();
+    for (int i = 0; i < modelColumnNames.length; i++) {
+      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
+    }
 
-//
-//
-//
-//
-//
-//    if (domainValues != null) {
-//      HashMap m = domainMap.get(j);
-//      assert (m != null);
-//      Integer cellOrdinalValue = (Integer) m.get(cellString);
-//      if (cellOrdinalValue == null) {
-//        System.out.println("WARNING: Line " + lineno + " column ("+ model.getNames()[j] + " == " + j +") has unknown categorical value (" + cellString + ")");
-//        row[j] = Double.NaN;
-//      }
-//      else {
-//        row[j] = (double) cellOrdinalValue;
-//      }
-//    } else {
-//      try {
-//        double value = Double.parseDouble(cellString);
-//        row[j] = value;
-//      } catch (java.lang.NumberFormatException e) {
-//        row[j] = Double.NaN;
-//      }
-//    }
+    // Create map of input variable domain information.
+    // This contains the categorical string to numeric mapping.
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new HashMap<>();
+    for (int i = 0; i < getNumCols(); i++) {
+      String[] domainValues = getDomainValues(i);
+      if (domainValues != null) {
+        HashMap<String, Integer> m = new HashMap<>();
+        for (int j = 0; j < domainValues.length; j++) {
+          m.put(domainValues[j], j);
+        }
 
+        domainMap.put(i, m);
+      }
+    }
 
-//    // Emit the result to the output file.
-//    for (int i = 0; i < preds.length; i++) {
-//      if (i == 0 && model.isClassifier()) {
-//        // See if there is a domain to map this output value to.
-//        String[] domainValues = model.getDomainValues(model.getResponseIdx());
-//        if (domainValues != null) {
-//          // Classification.
-//          double value = preds[i];
-//          int valueAsInt = (int)value;
-//          if (value != valueAsInt) {
-//            System.out.println("ERROR: Line " + lineno + " has non-integer output for classification (" + value + ")");
-//            System.exit(1);
-//          }
-//
-//          String predictedOutputClassLevel = domainValues[valueAsInt];
-//          output.write(predictedOutputClassLevel);
-//        }
-//      } else {
-//        if (i > 0) output.write(",");
-//        output.write(Double.toHexString(preds[i]));
-//        if (!model.isClassifier() && !model.isAutoEncoder()) break;
-//      }
-//    }
-//    output.write("\n");
-//
+    double[] rawdata = new double[nfeatures()];
+    for (int i = 0; i < rawdata.length; i++) {
+      rawdata[i] = Double.NaN;
+    }
 
-    return null;
+    for (String dataColumnName : data.keySet()) {
+      Integer index = modelColumnNameToIndexMap.get(dataColumnName);
+
+      // Skip column names that are not known.
+      if (index == null) {
+        continue;
+      }
+
+      String[] domainValues = getDomainValues(index);
+      if (domainValues == null) {
+        // Column has numeric value.
+        double value;
+        Object o = data.get(dataColumnName);
+        if (o instanceof String) {
+          String s = (String) o;
+          value = Double.parseDouble(s);
+        }
+        else if (o instanceof Double) {
+          Double d = (Double) o;
+          value = d;
+        }
+        else {
+          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+        }
+
+        rawdata[index] = value;
+      }
+      else {
+        // Column has categorical value.
+        Object o = data.get(dataColumnName);
+        if (o instanceof String) {
+          String levelName = (String) o;
+          HashMap<String, Integer> columnDomainMap = domainMap.get(index);
+          Integer levelIndex = columnDomainMap.get(levelName);
+          if (levelIndex == null) {
+            throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")");
+          }
+          double value = levelIndex;
+
+          rawdata[index] = value;
+        }
+        else {
+          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+        }
+      }
+    }
+
+    preds = score0(rawdata, preds);
+    return preds;
   }
 }
