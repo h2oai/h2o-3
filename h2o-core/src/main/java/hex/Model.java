@@ -833,7 +833,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (_parms._balance_classes)
           GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
         //assign label at the very end (after potentially correcting probabilities)
-        scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp, defaultThreshold());
+        scored[0] = hex.genmodel.GenModel.getPrediction(scored, _output._priorClassDist, tmp, defaultThreshold());
       }
     }
     return scored;

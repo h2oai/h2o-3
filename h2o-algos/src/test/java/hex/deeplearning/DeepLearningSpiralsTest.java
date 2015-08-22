@@ -24,7 +24,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
 
     Key dest = Key.make("spirals2");
 
-    for (boolean sparse : new boolean[]{true,false}) {
+    for (boolean sparse : new boolean[]{false}) {
       for (boolean col_major : new boolean[]{false}) {
         if (!sparse && col_major) continue;
 
@@ -55,7 +55,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._fast_mode = true;
           p._ignore_const_cols = true;
           p._nesterov_accelerated_gradient = true;
-          p._diagnostics = true;
           p._score_training_samples = 1000;
           p._score_validation_samples = 10000;
           p._shuffle_training_data = false;

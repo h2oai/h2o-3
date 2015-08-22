@@ -22,11 +22,15 @@ test <- function(h) {
                       seed = -8224042382692318000,score_training_samples = 0,score_validation_samples = 0,
                       weights_column="Exposure" ,training_frame = fre) 
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
-	expect_equal(mean_deviance,1.996524205)
-	ph = as.data.frame(h2o.predict(hh,newdata = fre)) 
-	expect_equal(1.065718154, mean(ph[,1]) )
-	expect_equal(0.8968355341, min(ph[,1]) )
-	expect_equal(1.325415826, max(ph[,1]) )
+	ph = as.data.frame(h2o.predict(hh,newdata = fre))
+  print(mean_deviance)
+  print(mean(ph[,1]))
+  print(min(ph[,1]))
+  print(max(ph[,1]))
+	expect_equal(1.996517,mean_deviance, 1e-5)
+	expect_equal(1.066273, mean(ph[,1]), 1e-5 )
+	expect_equal(0.8973423, min(ph[,1]), 1e-5 )
+	expect_equal(1.328029, max(ph[,1]), 1e-5 )
 		
 	testEnd()
 }

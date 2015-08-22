@@ -720,7 +720,7 @@ public class DeepLearningMLPReference {
         // convert to float and do the same tie-breaking as H2O
         double[] preds = new double[yValues.length+1];
         for (int j=0; j<yValues.length; ++j) preds[j+1] = (float)yValues[j];
-        preds[0] = hex.genmodel.GenModel.getPrediction(preds, xValues, 0.5);
+        preds[0] = hex.genmodel.GenModel.getPrediction(preds, null, xValues, 0.5);
 
         if( tValues[(int)preds[0]] == 1.0 ) // ugly. consider AreEqual(double x, double y)
           ++numCorrect;

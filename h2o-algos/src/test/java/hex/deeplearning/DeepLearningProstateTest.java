@@ -101,8 +101,8 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.TanhWithDropout,
                           DeepLearningParameters.Activation.Rectifier,
                           DeepLearningParameters.Activation.RectifierWithDropout,
-                          DeepLearningParameters.Activation.Maxout,
-//                      DeepLearningParameters.Activation.MaxoutWithDropout
+//                          DeepLearningParameters.Activation.Maxout,
+//                          DeepLearningParameters.Activation.MaxoutWithDropout,
                   }) {
                     boolean reproducible=false;
                     switch (dist) {

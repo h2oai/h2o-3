@@ -380,7 +380,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
-                int treePred = getPrediction(rpred, data_row(chks, row, rowdata), _threshold);
+                int treePred = getPrediction(rpred, _model._output._priorClassDist, data_row(chks, row, rowdata), _threshold);
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression
