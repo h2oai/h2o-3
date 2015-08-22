@@ -64,7 +64,8 @@ Printed in the United States of America.
 \newpage
 
 \section{Introduction}
-This document introduces the reader to Gradient Boosted Machines with H2O.  Examples are written in R and python.
+This document introduces the reader to Gradient Boosted Machines (GBM) with H2O.  
+Examples are written in R and Python.
 The reader is walked through the installation of H2O, basic GBM concepts, building GBM models in H2O, how to
 interpret model output, how to make predictions, and various implementation details.
 
@@ -80,7 +81,6 @@ interpret model output, how to make predictions, and various implementation deta
 
 \newcommand{\waterVersion}{3.0.1.4}
 
-%---- TODO add parameter for algo can be passed into installation.tex file
 \input{common/installation.tex}
 
 \subsection{Example code}
@@ -106,7 +106,7 @@ Both are forward-learning ensemble methods that obtain predictive results throug
 Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees.
 By sequentially applying weak classification algorithms to the incrementally changed data,
 a series of decision trees are created that produce an ensemble of weak prediction models.
-While boosting trees increases their accuracy, it also decreases speed and interpretability.
+While boosting trees increases their accuracy, it also decreases speed and human interpretability.
 The gradient boosting method generalizes tree boosting to minimize these issues.
 
 \subsection{Summary of features}
@@ -122,28 +122,45 @@ H2O's GBM functionalities include:
 \item additional parameters for model tuning
 \end{itemize}
 
-\subsection{Common Model Parameters}
+\subsection{ Model Parameters}
 
-This section describes the functions of the parameters for GBM:
+This section describes the functions of the parameters for GBM (TODO, lots of params, maybe copy to appendix and only put most important ones here):
 
-% --- TODO: Update this section (reuse GLM Appendix)
 \begin{itemize}
-\item {\texttt{x}}: The names or indices of the predictor variables for use in building the gradient boosted model.
-\item {\texttt{y}}: The name or index of the response variable (must be an integer or a categorical variable). If the data does not contain a header, {\texttt{y}} is the column index number starting at 0 and increasing from left to right.
-\item {\texttt{key}}: The unique hex key assigned to the generated model. If left blank, a key is automatically generated.
-\item \texttt{distribution}: Enter {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}} to select the distribution function. The default is {\texttt{AUTO}}.
+\item {\texttt{x}}: A vector containing the names of the predictors to use while building the GBM model. No default.
+\item {\texttt{y}}: A character string or index that represents the response variable in the model. No default.
+\item {\texttt{training\_frame}}: An \texttt{H2OFrame} object containing the variables in the model. 
+\item {\texttt{validation\_frame}}: An \texttt{H2OParsedData} object containing the validation dataset used to construct confusion matrix. If  blank, the training data is used by default.
+\item {\texttt{nfolds}}: Number of folds for cross-validation. If \texttt{nfolds >=2}, then \texttt{validation\_frame} must remain blank. Default is 0. %%validation_frame = correct? just says "validation" in R doc...
+\item {\texttt{ignore\_const\_cols}}: A boolean indicating if constant columns should be ignored.  Default is True.
 \item {\texttt{ntrees}}: A non-negative integer that defines the number of trees. The default is 50.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
+\item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point The default is 20.
+\item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024
+\item {\texttt{seed}}: Seed for random numbers that affect sampling.
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
-\item {\texttt{nbins}}: The number of bins to use for building the histogram. The default is 20.
-\item {\texttt{validation\_frame}}: An {\texttt{H2OFrame}} object that defines the validation dataset used to construct the confusion matrix. If left blank and {\texttt{nfolds = 0}}, the default is the training dataset.
+\item {\texttt{distribution}}: Enter {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}} to select the distribution function. The default is {\texttt{AUTO}}.
+\item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  Default is false.
+\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item \texttt{fold\_column}:  Column with cross-validation fold index assignment per observation. 
+\item \texttt{offset\_column}: Specify the offset column. Note: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+\item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item {\texttt{balance\_classes}}: Balance training data class counts via over or undersampling for imbalanced data. The default is {\texttt{FALSE}}.
+\item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number classes) for confusion matrices to be printed in the H2O logs.  Default it 20.
+\item {\texttt{max\_hit\_ratio\_k}}: Maximum number (top K) of predictions to use for hit ratio computation.  Use for multi-class only, 0 to disable.  Default is 10.
+\item {\texttt{r2\_stopping}}: Stop making trees when the $R^2$ metric equals or exceeds this value.  Default is 0.999999.
+\item {\texttt{build\_tree\_one\_node}}: Boolean indicating if GBM will be run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.  Default is False.
+\item {\texttt{tweedie\_power}}: A numeric specifying the power for the tweedie function when \texttt{distribution = "tweedie"}.  Default is 1.5.
+\item {\texttt{checkpoint}}: TODO
+\item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   Default is False.
+\item {\texttt{class\_sampling\_factors}}: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires \texttt{balance\_classes}.
 \item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5.
-\item {\texttt{seed}}: Seed for random numbers that affects sampling.
-\item {\texttt{data}}: An {\texttt{H2OFrame}} object that contains the variables in the model.
-\item {\texttt{nfolds}}: Number of folds for cross-validation. If {\texttt{nfolds >= 2}}, then {\texttt{validation}} must be blank.
+\item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
+\item \texttt{model\_id}: The unique ID assigned to the generated model. If not specified, an ID is generated automatically.
 \end{itemize}
+
+
 
 \subsection{Theory and framework}
 
@@ -227,7 +244,7 @@ Since H2O does the per-level compute in parallel, which requires sending histogr
 of data can become very large for a very deep tree.
 
 High max-bin sizes slow down generation of deep trees, but this is not a problem for GBM tree depths as GBM
-typically uses very shallow trees. Bin limits over 20 have been shown to provide very little improvement on
+typically uses very shallow trees. (TODO: Check, this probably isn't true anymore)  Bin limits over 20 have been shown to provide very little improvement on
 the quality of the GBM model.
 
 For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report
