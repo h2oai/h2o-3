@@ -3074,9 +3074,9 @@ class ASTMatch extends ASTUniPrefixOp {
       @Override public void map(Chunk c, NewChunk n) {
         int rows = c._len;
         if(strsTable==null)
-          for (int r = 0; r < rows; ++r) n.addNum(in(dblsTable, c.atd(r)),0);
+          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(dblsTable, c.atd(r)),0);
         else
-          for (int r = 0; r < rows; ++r) n.addNum(in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
+          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
     e.pushAry(rez);
@@ -3264,8 +3264,25 @@ class ASTSetDomain extends ASTUniPrefixOp {
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
     Vec v = f.anyVec();
     if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
-    if( _domains!=null && _domains.length != v.domain().length)
-      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + _domains.length);
+    if( _domains!=null && _domains.length != v.domain().length) {
+      // in this case we want to recollect the domain and check that number of levels matches _domains
+      Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
+      t.doAll(v);
+      final long[] dom = t.domain();
+      if( dom.length != _domains.length)
+        throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + _domains.length);
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for(int i=0;i<c._len;++i) {
+            if( !c.isNA(i) ) {
+              long num = Arrays.binarySearch(dom, c.at8(i));
+              if( num < 0 ) throw new IllegalArgumentException("Could not find the enum value!");
+              c.set(i,num);
+            }
+          }
+        }
+      }.doAll(v);
+    }
     v.setDomain(_domains);
     DKV.put(v);
   }
@@ -3804,13 +3821,22 @@ class ASTSdev extends ASTUniPrefixOp {
       env.poppush(1, new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();
-      if (fr.vecs().length > 1)
-        throw new IllegalArgumentException("sd does not apply to multiple cols.");
-      if (fr.vecs()[0].isEnum())
-        throw new IllegalArgumentException("sd only applies to numeric vector.");
-
-      double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
-      env.poppush(1, new ValNum(sig));
+      if( fr.numCols() > 1) {
+        Futures fs = new Futures();
+        Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+        AppendableVec v = new AppendableVec(key);
+        NewChunk chunk = new NewChunk(v, 0);
+        for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).sigma());
+        chunk.close(0,fs);
+        Vec vec = v.close(fs);
+        fs.blockForPending();
+        Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+        DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+        env.pushAry(fr2);
+      } else {
+        double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
+        env.poppush(1, new ValNum(sig));
+      }
     }
   }
 }
@@ -4013,11 +4039,11 @@ class ASTMean extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     if (env.isNum()) return;
     Frame fr = env.popAry(); // get the frame w/o sub-reffing
-    if (fr.numCols() > 1 && fr.numRows() > 1)
-      throw new IllegalArgumentException("mean does not apply to multiple cols.");
+//    if (fr.numCols() > 1 && fr.numRows() > 1)
+//      throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
-      throw new IllegalArgumentException("mean only applies to numeric vector.");
-    if (fr.numCols() > 1) {
+      throw new IllegalArgumentException("mean only applies to numeric columns.");
+    if (fr.numCols() > 1 && fr.numRows()==1) {
       double mean=0;
       double rows=0;
       for(Vec v : fr.vecs()) {
@@ -4025,6 +4051,18 @@ class ASTMean extends ASTUniPrefixOp {
         if( !Double.isNaN(val)) {mean += v.at(0); rows++;}
       }
       env.push(new ValNum(mean/rows));
+    } else if( fr.numCols() > 1) {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).mean());
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
     } else {
       Vec v = fr.anyVec();
       if( _narm || v.naCnt()==0 ) env.push(new ValNum(v.mean()));
@@ -4073,7 +4111,7 @@ class ASTMean extends ASTUniPrefixOp {
 //     }
    }
     @Override public void map(Chunk c) {
-      if (c.vec().isEnum() || c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
+      if (c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
       if (_narm) {
         for (int r = 0; r < c._len; r++)
           if (!c.isNA(r)) { _sum += c.atd(r); _rowcnt++;}

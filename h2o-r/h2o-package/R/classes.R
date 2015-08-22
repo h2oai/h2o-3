@@ -771,10 +771,11 @@ setMethod("show", "H2OGrid", function(object) {
                     })
     names(params_ok) <- hyper_names # Assign correct names to items in params list
     status_ok <- rep("OK", length(object@model_ids))
-    df_ok <- data.frame(params_ok, status_ok, model_ids)
     cat("Generated models\n")
     cat("----------------\n")
-    print(df_ok, row.names = FALSE)
+    if ( length(params_ok) > 0 ) { print(data.frame(params_ok, status_ok, model_ids), row.names = FALSE)
+    } else {                       print(data.frame(           status_ok, model_ids), row.names = FALSE) }
+
   }
   if (length(object@failed_params) > 0) {
     # Extract failed parameters info

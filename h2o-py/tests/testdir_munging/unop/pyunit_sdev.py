@@ -30,11 +30,7 @@ def sdev(ip,port):
   except EnvironmentError:
     assert True
 
-  try:
-    iris_h2o[0:2].sd()
-    assert False, "expected an error. more than one column."
-  except EnvironmentError:
-    assert True
+  iris_h2o[0:2].sd()
   
 if __name__ == "__main__":
   h2o.run_test(sys.argv, sdev)

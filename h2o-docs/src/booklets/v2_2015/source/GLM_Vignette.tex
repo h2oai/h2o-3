@@ -331,7 +331,7 @@ argument.
 
 Tweedie models are a class of distributiions which include Gamma, Normal, Poisson and their combination. It is especially usefull for modelling of variables which have 0s combined with continuous non-zero values (e.g. Gamma distribution).
 
-Tweedie is parametrized by variance power which can be one of the following:
+Tweedie is parametrized by variance power p which can be one of the following:
 
 \begin{itemize}
 \item  0	Normal
@@ -342,12 +342,13 @@ Tweedie is parametrized by variance power which can be one of the following:
 \item $>$ 2	Stable, with support on the positive reals
 \end{itemize}
 
+
 TODO fit in likelihood 
-Deviance is:
 
-\[D = -2\sum\limits_{i=1}\limits^{N}{log({y_i \over \hat{y}_i}) - {y_i - \hat{y}_i \over\hat{y}_i }}\]
-
-
+Deviance for variance p ($p != 1$ and $p != 2$) is :
+\[
+D = -2\sum\limits_{i=1}\limits^{N}{ y_i  (y_i^{1-p} - \hat{y_i}^{1-p}) - {(y^{2 - p} - \hat{y}^{2 - p})\over(2 - p)}}
+\]
 
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
@@ -889,11 +890,11 @@ To determine the accuracy of your model:
       lambda that interests you (performing all the iterations probably means the solution is not good).  This is
       controlled by the \texttt{max\_iterations} parameter.
 \item Too many NAs in your training data is bad (GLM discards rows with NA values)
-
-TODO: How to tell how many training rows were used to build the model?
+     You should always check degrees of freedom of the output model. Degress of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
 
       \begin{itemize}
-      \item If you have a really bad column, you might accidentally be losing all your rows.
+      \item If you have few columns with many NAs, you might accidentally be losing all your rows and it's better to exclude them.
+      \item If you have many columns with small fraction of uniformly distributed missing values, every row is lkely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modelling.
       \end{itemize}
 \end{itemize}
 
