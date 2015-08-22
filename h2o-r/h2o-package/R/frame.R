@@ -1418,10 +1418,8 @@ h2o.head <- function(x, n = 6L, ...) {
     data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   } else {
     tmp_head <- x[1:n,]  # seq_len unimpl
-    x.slice <- as.data.frame(tmp_head)
-   # x.slice <- tmp_head
-    h2o.rm(tmp_head@frame_id, tmp_head@conn)
-    x.slice
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=tmp_head@mutable$ast, frame_id=tmp_head@frame_id)
+    tmp_head
   }
 }
 
@@ -1438,10 +1436,12 @@ h2o.tail <- function(x, n = 6L, ...) {
     startidx <- max(1L, endidx - n + 1)
     idx <- startidx:endidx
     tmp_tail <- x[startidx:endidx,]
-    x.slice <- as.data.frame(tmp_tail)
-    h2o.rm(tmp_tail@frame_id, tmp_tail@conn)
-    rownames(x.slice) <- idx
-    x.slice
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=tmp_tail@mutable$ast, frame_id=tmp_tail@frame_id)
+    tmp_tail
+#    x.slice <- as.data.frame(tmp_tail)
+#    h2o.rm(tmp_tail@frame_id, tmp_tail@conn)
+#    rownames(x.slice) <- idx
+#    x.slice
   }
 }
 
