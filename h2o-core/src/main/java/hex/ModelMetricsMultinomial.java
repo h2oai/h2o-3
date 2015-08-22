@@ -50,6 +50,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
   public static void updateHits(double w, int iact, double[] ds, double[] hits) {
+    updateHits(w, iact,ds,hits,null);
+  }
+
+  public static void updateHits(double w, int iact, double[] ds, double[] hits, double[] priorClassDistribution) {
     if (iact == ds[0]) { hits[0]++; return; }
     double before = ArrayUtils.sum(hits);
     // Use getPrediction logic to see which top K labels we would have predicted
@@ -57,7 +61,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
     ds_copy[1+(int)ds[0]] = 0;
     for (int k=1; k<hits.length; ++k) {
-      final int pred_labels = GenModel.getPrediction(ds_copy, ds, 0.5 /*ignored*/); //use tie-breaking of getPrediction
+      final int pred_labels = GenModel.getPrediction(ds_copy, priorClassDistribution, ds, 0.5 /*ignored*/); //use tie-breaking of getPrediction
       ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
       if (pred_labels==iact) {
         hits[k]+=w;
@@ -122,7 +126,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _cm[iact][(int)ds[0]]++; // actual v. predicted
 
       // Compute hit ratio
-      if( _K > 0 && iact < ds.length-1) updateHits(w,iact,ds,_hits);
+      if( _K > 0 && iact < ds.length-1) updateHits(w,iact,ds,_hits,m._output._priorClassDist);
 
       // Compute log loss
       final double eps = 1e-15;
