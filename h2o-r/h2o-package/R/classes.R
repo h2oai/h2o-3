@@ -265,7 +265,7 @@ setMethod("show", "H2OFrame", function(object) {
   if (!is.na(nr)) {
     if (nr > 10L)
       cat("\nFirst 10 rows:\n")
-    print(head(object, 10L))
+    print(as.data.frame(head(object, 10L)))
   }
   invisible(object)
 })
