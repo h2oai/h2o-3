@@ -108,7 +108,7 @@ public class PredictCsv {
     return row;
   }
 
-  private static String h2oDoubleToString(double d) {
+  private static String myDoubleToString(double d) {
     if (Double.isNaN(d)) {
       return "NA";
     }
@@ -174,7 +174,7 @@ public class PredictCsv {
             if (i > 0) {
               output.write(",");
             }
-            output.write(h2oDoubleToString(p.classProbabilities[i]));
+            output.write(myDoubleToString(p.classProbabilities[i]));
           }
         } else if (category == ModelCategory.Multinomial) {
           MultinomialModelPrediction p = model.predictMultinomial(row);
@@ -185,16 +185,16 @@ public class PredictCsv {
             if (i > 0) {
               output.write(",");
             }
-            output.write(h2oDoubleToString(p.classProbabilities[i]));
+            output.write(myDoubleToString(p.classProbabilities[i]));
           }
         } else if (category == ModelCategory.Regression) {
           RegressionModelPrediction p = model.predictRegression(row);
 
-          output.write(h2oDoubleToString(p.value));
+          output.write(myDoubleToString(p.value));
         } else if (category == ModelCategory.Clustering) {
           ClusteringModelPrediction p = model.predictClustering(row);
 
-          output.write(h2oDoubleToString(p.cluster));
+          output.write(myDoubleToString(p.cluster));
         } else {
           System.out.println("Unknown model category: " + category.toString());
           System.exit(1);
