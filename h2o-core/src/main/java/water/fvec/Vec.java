@@ -1215,7 +1215,7 @@ public class Vec extends Keyed<Vec> {
     private final int _s;
     private boolean[] _u;
     private long[] _d;
-    CollectDomainFast(int s) { _s=s; }
+    public CollectDomainFast(int s) { _s=s; }
     @Override protected void setupLocal() { _u=MemoryManager.mallocZ(_s+1); }
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )

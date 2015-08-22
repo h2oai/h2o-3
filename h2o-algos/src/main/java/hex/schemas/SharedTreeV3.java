@@ -55,7 +55,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point", gridable = true)
     public int nbins;
 
-    @API(help = "For numerical columns (real/int), build a histogram of (at least) this many bins at the root level, then decrease by factor of two per level", level = API.Level.expert, gridable = true)
+    @API(help = "For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level", level = API.Level.expert, gridable = true)
     public int nbins_top_level;
 
     @API(help="For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
