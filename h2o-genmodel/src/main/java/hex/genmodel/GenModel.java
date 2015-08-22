@@ -438,7 +438,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     String[] modelColumnNames = getNames();
 
     // Create map of column names to index number.
-    HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<String, Integer>();
+    HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<>();
     for (int i = 0; i < modelColumnNames.length; i++) {
       modelColumnNameToIndexMap.put(modelColumnNames[i], i);
     }
@@ -481,8 +481,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           value = Double.parseDouble(s);
         }
         else if (o instanceof Double) {
-          Double d = (Double) o;
-          value = d;
+          value = (Double) o;
         }
         else {
           throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
