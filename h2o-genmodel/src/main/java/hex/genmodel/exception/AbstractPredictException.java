@@ -1,7 +1,10 @@
 package hex.genmodel.exception;
 
+/**
+ * All generated model exceptions that can occur on the various predict methods derive from this.
+ */
 public abstract class AbstractPredictException extends Exception {
-  public AbstractPredictException(String s) {
-    super(s);
+  public AbstractPredictException(String message) {
+    super(message);
   }
 }
