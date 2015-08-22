@@ -79,13 +79,21 @@ public class PredictCsv {
     }
   }
 
+  /**
+   * This CSV header row parser is as bare bones as it gets.
+   * Doesn't handle funny quoting, spacing, or other issues.
+   */
   private static String[] parseHeaderRow(String line) {
     return line.trim().split(",");
   }
 
+  /**
+   * This CSV parser is as bare bones as it gets.
+   * Our test data doesn't have funny quoting, spacing, or other issues.
+   * Can't handle cases where the number of data columns is less than the number of header columns.
+   */
   private static RowData parseDataRow(String line, String[] inputColumnNames) {
-    String trimmedLine = line.trim();
-    String[] inputData = trimmedLine.split(",");
+    String[] inputData = line.trim().split(",");
 
     // Assemble the input values for the row.
     RowData row = new RowData();
