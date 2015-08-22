@@ -5,6 +5,11 @@ import hex.ModelCategory;
 import java.io.*;
 import hex.genmodel.prediction.*;
 
+/**
+ * Simple driver program for reading a CSV file and making predictions.
+ *
+ * This driver program is used as a test harness by several tests in the testdir_javapredict directory.
+ */
 public class PredictCsv {
   private static String modelClassName;
   private static String inputCSVFileName;
@@ -111,6 +116,12 @@ public class PredictCsv {
     return Double.toHexString(d);
   }
 
+  /**
+   * CSV reader and predictor test program.
+   *
+   * @param args Command-line args.
+   * @throws Exception
+   */
   public static void main(String[] args) throws Exception {
     parseArgs(args);
 
