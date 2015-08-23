@@ -175,7 +175,7 @@ public class PredictCsv {
     // Loop over inputCSV one row at a time.
     int lineNum = 0;
     String line;
-    String[] inputColumnNames = new String[0];
+    String[] inputColumnNames = null;
     try {
       while ((line = input.readLine()) != null) {
         lineNum++;
