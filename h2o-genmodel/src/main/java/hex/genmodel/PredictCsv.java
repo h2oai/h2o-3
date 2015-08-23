@@ -133,22 +133,40 @@ public class PredictCsv {
   public static void main(String[] args) throws Exception {
     parseArgs(args);
 
-    hex.genmodel.GenModel model;
-    model = (hex.genmodel.GenModel) Class.forName(modelClassName).newInstance();
+    hex.genmodel.GenModel rawModel;
+    rawModel = (hex.genmodel.GenModel) Class.forName(modelClassName).newInstance();
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
+    ModelCategory category = model.getModelCategory();
 
     BufferedReader input = new BufferedReader(new FileReader(inputCSVFileName));
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
 
     // Print outputCSV column names.
-    if (model.isAutoEncoder()) {
-      output.write(model.getHeader());
-    }
-    else {
-      output.write("predict");
-      for (int i = 0; model.isClassifier() && i < model.getNumResponseClasses(); i++) {
-        output.write(",");
-        output.write(model.getDomainValues(model.getResponseIdx())[i]);
-      }
+    switch (category) {
+      case AutoEncoder:
+        output.write(model.getHeader());
+        break;
+
+      case Binomial:
+      case Multinomial:
+        output.write("predict");
+        String[] responseDomainValues = model.getResponseDomainValues();
+        for (String s : responseDomainValues) {
+          output.write(",");
+          output.write(s);
+        }
+        break;
+
+      case Clustering:
+        output.write("cluster");
+        break;
+
+      case Regression:
+        output.write("predict");
+        break;
+
+      default:
+        throw new Exception("Unknown model category " + category);
     }
     output.write("\n");
 
@@ -172,40 +190,53 @@ public class PredictCsv {
 
         // Do the prediction.
         // Emit the result to the output file.
-        ModelCategory category = model.getModelCategory();
-        if (category == ModelCategory.Binomial) {
-          BinomialModelPrediction p = model.predictBinomial(row);
-
-          output.write(p.label);
-          output.write(",");
-          for (int i = 0; i < p.classProbabilities.length; i++) {
-            if (i > 0) {
-              output.write(",");
-            }
-            output.write(myDoubleToString(p.classProbabilities[i]));
+        switch (category) {
+          case AutoEncoder: {
+            AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
+            throw new Exception("TODO");
+            // break;
           }
-        } else if (category == ModelCategory.Multinomial) {
-          MultinomialModelPrediction p = model.predictMultinomial(row);
 
-          output.write(p.label);
-          output.write(",");
-          for (int i = 0; i < p.classProbabilities.length; i++) {
-            if (i > 0) {
-              output.write(",");
+          case Binomial: {
+            BinomialModelPrediction p = model.predictBinomial(row);
+            output.write(p.label);
+            output.write(",");
+            for (int i = 0; i < p.classProbabilities.length; i++) {
+              if (i > 0) {
+                output.write(",");
+              }
+              output.write(myDoubleToString(p.classProbabilities[i]));
             }
-            output.write(myDoubleToString(p.classProbabilities[i]));
+            break;
           }
-        } else if (category == ModelCategory.Regression) {
-          RegressionModelPrediction p = model.predictRegression(row);
 
-          output.write(myDoubleToString(p.value));
-        } else if (category == ModelCategory.Clustering) {
-          ClusteringModelPrediction p = model.predictClustering(row);
+          case Multinomial: {
+            MultinomialModelPrediction p = model.predictMultinomial(row);
+            output.write(p.label);
+            output.write(",");
+            for (int i = 0; i < p.classProbabilities.length; i++) {
+              if (i > 0) {
+                output.write(",");
+              }
+              output.write(myDoubleToString(p.classProbabilities[i]));
+            }
+            break;
+          }
 
-          output.write(myDoubleToString(p.cluster));
-        } else {
-          System.out.println("Unknown model category: " + category.toString());
-          System.exit(1);
+          case Clustering: {
+            ClusteringModelPrediction p = model.predictClustering(row);
+            output.write(myDoubleToString(p.cluster));
+            break;
+          }
+
+          case Regression: {
+            RegressionModelPrediction p = model.predictRegression(row);
+            output.write(myDoubleToString(p.value));
+            break;
+          }
+
+          default:
+            throw new Exception("Unknown model category " + category);
         }
 
         output.write("\n");
