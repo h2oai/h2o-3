@@ -24,12 +24,6 @@ def sdev(ip,port):
     sd_h2o = iris_h2o[i].sd()
     assert abs(sd_np[i] - sd_h2o) < 1e-10, "expected standard deviations to be the same"
 
-  try:
-    iris_h2o[4].sd()
-    assert False, "expected an error. column is categorical."
-  except EnvironmentError:
-    assert True
-
   iris_h2o[0:2].sd()
   
 if __name__ == "__main__":

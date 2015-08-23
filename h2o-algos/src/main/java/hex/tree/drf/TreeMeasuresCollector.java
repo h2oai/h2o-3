@@ -111,7 +111,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
         score0(data, preds, _trees[tidx]);
         // - derive a prediction
         if (_classification) {
-          int pred = getPrediction(preds, data, _threshold);
+          int pred = getPrediction(preds, null /*FIXME: should use model's _priorClassDistribution*/, data, _threshold);
           int actu = (int) cresp.at8(row);
           // assert preds[pred] > 0 : "There should be a vote for at least one class.";
           // - collect only correct votes

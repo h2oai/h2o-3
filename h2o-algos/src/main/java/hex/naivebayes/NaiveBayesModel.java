@@ -101,7 +101,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     }
 
     // Select class with highest conditional probability
-    preds[0] = GenModel.getPrediction(preds, data, defaultThreshold());
+    preds[0] = GenModel.getPrediction(preds, _output._priorClassDist, data, defaultThreshold());
     return preds;
   }
 
@@ -161,6 +161,6 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     bodySb.i().p("}").nl();
     fileCtxSb.p(model);
 
-    bodySb.i().p("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
+    bodySb.i().p("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold()+");").nl();
   }
 }
