@@ -20,14 +20,14 @@ public class PredictCsv {
 
   private static void usage() {
     System.out.println("");
-    System.out.println("usage:  java [...java args...] PredictCSV --header --model modelClassName --input inputCSVFileName --output outputCSVFileName");
+    System.out.println("usage:  java [...java args...] PredictCsv --header --model modelClassName --input inputCSVFileName --output outputCSVFileName");
     System.out.println("");
     System.out.println("        model class name is something like GBMModel_blahblahblahblah.");
     System.out.println("");
-    System.out.println("        inputCSV is the test data set.");
+    System.out.println("        inputCSVFileName is the test data set.");
     System.out.println("        Specifying --header is required for h2o-3.");
     System.out.println("");
-    System.out.println("        outputCSV is the prediction data set (one row per test data set row).");
+    System.out.println("        outputCSVFieName is the prediction data set (one row per test data set row).");
     System.out.println("");
     System.exit(1);
   }
