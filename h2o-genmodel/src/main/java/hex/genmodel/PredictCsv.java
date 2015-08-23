@@ -9,6 +9,8 @@ import hex.genmodel.prediction.*;
  * Simple driver program for reading a CSV file and making predictions.
  *
  * This driver program is used as a test harness by several tests in the testdir_javapredict directory.
+ * <p></p>
+ * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
   private static String modelClassName;
@@ -141,7 +143,7 @@ public class PredictCsv {
     BufferedReader input = new BufferedReader(new FileReader(inputCSVFileName));
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
 
-    // Print outputCSV column names.
+    // Emit outputCSV column names.
     switch (category) {
       case AutoEncoder:
         output.write(model.getHeader());
@@ -173,13 +175,12 @@ public class PredictCsv {
     // Loop over inputCSV one row at a time.
     int lineNum = 0;
     String line;
-
     String[] inputColumnNames = new String[0];
-
-    // An array to store predicted values
     try {
       while ((line = input.readLine()) != null) {
         lineNum++;
+
+        // Handle the header.
         if (lineNum == 1) {
           inputColumnNames = parseHeaderRow(line);
           continue;

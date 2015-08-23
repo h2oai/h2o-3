@@ -75,7 +75,7 @@
  *
  *   <p></p>
  *   <li>A user-defined-function called directly from hive</li>
- *   See <a href="https://github.com/h2oai/h2o-3-training">H2O-3 training github repository</a>
+ *   See <a href="https://github.com/h2oai/h2o-3-training" target="_blank">H2O-3 training github repository</a>
  * </ul>
  */
 package hex.genmodel;
