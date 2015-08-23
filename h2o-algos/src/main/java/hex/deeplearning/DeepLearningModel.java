@@ -814,7 +814,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
-    double[] out = neurons[neurons.length - 1]._a.raw();
+    float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
@@ -909,7 +909,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             tmp[i] = chks[i].atd(row);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
           DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/);
-          double[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
+          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
@@ -949,8 +949,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
-    double[] in  = neurons[0]._a.raw(); //input (expanded)
-    double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
+    float[] in  = neurons[0]._a.raw(); //input (expanded)
+    float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
 
     // First normalize categorical reconstructions to be probabilities

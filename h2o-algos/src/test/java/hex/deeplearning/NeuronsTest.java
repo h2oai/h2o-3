@@ -22,9 +22,9 @@ public class NeuronsTest extends water.TestUtil {
     float nnz_ratio_mat = 0.1f; //fraction of non-zeroes for matrix
 
     float [] a = new float[rows*cols];
-    double [] x = new double[cols];
-    double [] y = new double[rows];
-    double [] res = new double[rows];
+    float [] x = new float[cols];
+    float [] y = new float[rows];
+    float [] res = new float[rows];
     byte [] bits = new byte[rows];
 
     for (int row=0;row<rows;++row) {
@@ -45,13 +45,9 @@ public class NeuronsTest extends water.TestUtil {
       }
     }
     Storage.DenseRowMatrix dra = new Storage.DenseRowMatrix(a, rows, cols);
-    Storage.DenseColMatrix dca = new Storage.DenseColMatrix(dra, rows, cols);
-    Storage.SparseRowMatrix sra = new Storage.SparseRowMatrix(dra, rows, cols);
-    Storage.SparseColMatrix sca = new Storage.SparseColMatrix(dca, rows, cols);
     Storage.DenseVector dx = new Storage.DenseVector(x);
     Storage.DenseVector dy = new Storage.DenseVector(y);
     Storage.DenseVector dres = new Storage.DenseVector(res);
-    Storage.SparseVector sx = new Storage.SparseVector(x);
 
     /**
      * warmup

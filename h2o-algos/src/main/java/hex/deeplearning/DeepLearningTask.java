@@ -302,7 +302,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         double[] s = minfo.data_info()._normRespSub;
         double mul = m == null ? 1 : m[0];
         double sub = s == null ? 0 : s[0];
-        neurons[neurons.length - 1]._a.add(0, ((offset - sub) * mul));
+        neurons[neurons.length - 1]._a.add(0, (float)((offset - sub) * mul));
       }
 
       if (training) {

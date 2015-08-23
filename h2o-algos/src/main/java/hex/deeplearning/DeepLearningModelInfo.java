@@ -460,14 +460,14 @@ public class DeepLearningModelInfo extends Iced {
   protected void div(double N) {
     for (int i = 0; i < dense_row_weights.length; ++i)
       ArrayUtils.div(get_weights(i).raw(), (float)N);
-    for (Storage.Vector bias : biases) ArrayUtils.div(bias.raw(), N);
+    for (Storage.Vector bias : biases) ArrayUtils.div(bias.raw(), (float)N);
     if (avg_activations != null)
       for (Storage.Vector avgac : avg_activations)
-        ArrayUtils.div(avgac.raw(), N);
+        ArrayUtils.div(avgac.raw(), (float)N);
     if (has_momenta()) {
       for (int i = 0; i < dense_row_weights_momenta.length; ++i)
         ArrayUtils.div(get_weights_momenta(i).raw(), (float)N);
-      for (Storage.Vector bias_momenta : biases_momenta) ArrayUtils.div(bias_momenta.raw(), N);
+      for (Storage.Vector bias_momenta : biases_momenta) ArrayUtils.div(bias_momenta.raw(), (float)N);
     }
     if (adaDelta()) {
       for (int i = 0; i < dense_row_ada_dx_g.length; ++i) {
