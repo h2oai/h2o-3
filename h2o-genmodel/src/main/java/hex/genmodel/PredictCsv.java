@@ -27,7 +27,7 @@ public class PredictCsv {
     System.out.println("        inputCSVFileName is the test data set.");
     System.out.println("        Specifying --header is required for h2o-3.");
     System.out.println("");
-    System.out.println("        outputCSVFieName is the prediction data set (one row per test data set row).");
+    System.out.println("        outputCSVFileName is the prediction data set (one row per test data set row).");
     System.out.println("");
     System.exit(1);
   }
