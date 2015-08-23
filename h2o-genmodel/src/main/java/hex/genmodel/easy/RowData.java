@@ -1,4 +1,4 @@
-package hex.genmodel;
+package hex.genmodel.easy;
 
 import java.util.HashMap;
 
@@ -22,13 +22,13 @@ import java.util.HashMap;
  *   For categorical (aka factor, enum) columns, the value Object must be a String with the same names as seen
  *   in the training data.
  *   It is not allowed to use new categorical (aka factor, enum) levels unseen during training (this will result
- *   in a {@link hex.genmodel.exception.PredictUnknownCategoricalLevelException} when one of the predict methods
+ *   in a {@link hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException} when one of the predict methods
  *   is called).
  * </li>
  * </ul>
  *
  * <p></p>
- * Incorrect use of data types will result in a {@link hex.genmodel.exception.PredictUnknownTypeException}
+ * Incorrect use of data types will result in a {@link hex.genmodel.easy.exception.PredictUnknownTypeException}
  * when one of the predict methods is called.
  *
  * <p></p>

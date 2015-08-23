@@ -1,4 +1,4 @@
-package hex.genmodel.exception;
+package hex.genmodel.easy.exception;
 
 /**
  * Wrong model category exception.

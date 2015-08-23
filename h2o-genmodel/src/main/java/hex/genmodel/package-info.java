@@ -1,5 +1,5 @@
 /**
- * <em>START HERE</em> for information about using H2O-generated POJO models.
+ * <em>START HERE</em> for information about using generated POJO models.
  *
  * <h1>About generated models</h1>
  * <p></p>
@@ -66,7 +66,7 @@
  * The following use cases are demonstrated with code examples:
  * <ul>
  *   <li>Reading new data from a CSV file and predicting on it</li>
- *   The {@link hex.genmodel.PredictCsv} class is used by the H2O test harness to make
+ *   The {@link hex.genmodel.tools.PredictCsv} class is used by the H2O test harness to make
  *   predictions on new data points.
  *
  *   <p></p>

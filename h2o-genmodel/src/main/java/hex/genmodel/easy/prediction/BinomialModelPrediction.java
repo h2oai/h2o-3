@@ -1,4 +1,4 @@
-package hex.genmodel.prediction;
+package hex.genmodel.easy.prediction;
 
 /**
  * Binomial classification model prediction.

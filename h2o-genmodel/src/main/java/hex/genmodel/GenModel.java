@@ -1,8 +1,6 @@
 package hex.genmodel;
 
 import water.genmodel.IGeneratedModel;
-import hex.genmodel.prediction.*;
-import hex.genmodel.exception.*;
 import hex.ModelCategory;
 
 import java.io.Serializable;

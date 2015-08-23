@@ -1,8 +1,9 @@
-package hex.genmodel;
+package hex.genmodel.easy;
 
 import hex.ModelCategory;
-import hex.genmodel.exception.*;
-import hex.genmodel.prediction.*;
+import hex.genmodel.GenModel;
+import hex.genmodel.easy.exception.*;
+import hex.genmodel.easy.prediction.*;
 
 import java.util.HashMap;
 

@@ -1,16 +1,19 @@
-package hex.genmodel;
+package hex.genmodel.tools;
 
 import hex.ModelCategory;
 
 import java.io.*;
-import hex.genmodel.prediction.*;
+
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.prediction.*;
 
 /**
  * Simple driver program for reading a CSV file and making predictions.
  *
  * This driver program is used as a test harness by several tests in the testdir_javapredict directory.
  * <p></p>
- * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/PredictCsv.java" target="_blank">here on github</a>.
+ * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
   private static String modelClassName;

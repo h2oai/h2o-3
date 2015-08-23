@@ -1,4 +1,4 @@
-package hex.genmodel.exception;
+package hex.genmodel.easy.exception;
 
 /**
  * All generated model exceptions that can occur on the various predict methods derive from this.

@@ -1,4 +1,4 @@
-package hex.genmodel.prediction;
+package hex.genmodel.easy.prediction;
 
 /**
  * Predictions from generated models for individual new data points derive from this class.
