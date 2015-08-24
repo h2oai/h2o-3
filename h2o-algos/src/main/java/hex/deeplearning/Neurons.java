@@ -16,6 +16,7 @@ import java.util.*;
  * The weights connecting the neurons are in a separate class (DeepLearningModel.DeepLearningModelInfo), and will be shared per node.
  */
 public abstract class Neurons {
+  Distribution _dist;
   protected int units;
 
   /**
@@ -128,6 +129,8 @@ public abstract class Neurons {
     params = (DeepLearningParameters)p.clone();
     params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
+    params._distribution = minfo.get_params()._distribution;
+    _dist = new Distribution(params._distribution, params._tweedie_power);
     _a = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {
       _e = new Storage.DenseVector(units);
@@ -195,10 +198,9 @@ public abstract class Neurons {
    */
   protected void setOutputLayerGradient(double ignored) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    Distribution dist = new Distribution(params._distribution); //no need for tweedie power here
     final int rows = _a.size();
     for (int row = 0; row < rows; row++) {
-      _e.set(row, autoEncoderGradient(dist, row));
+      _e.set(row, autoEncoderGradient(row));
     }
   }
 
@@ -288,11 +290,11 @@ public abstract class Neurons {
    * @param row neuron index
    * @return difference between the output (auto-encoder output layer activation) and the target (input layer activation)
    */
-  protected double autoEncoderGradient(Distribution dist, int row) {
+  protected double autoEncoderGradient(int row) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final double t = _input._origa != null ? _input._origa.get(row) : _input._a.get(row);
     final double y = _a.get(row);
-    return dist.gradient(t, y);
+    return _dist.gradient(t, y);
   }
 
   /**
@@ -308,9 +310,10 @@ public abstract class Neurons {
   private static float computeAdaDeltaRateForWeight(final double grad, final int w,
                                                   final Storage.DenseRowMatrix ada_dx_g,
                                                   final float rho, final float eps) {
-    ada_dx_g.raw()[2*w+1] = (float)(rho * ada_dx_g.raw()[2*w+1] + (1 - rho) * grad * grad);
+    final double grad2 = grad*grad;
+    ada_dx_g.raw()[2*w+1] = (float)(rho * ada_dx_g.raw()[2*w+1] + (1 - rho) * grad2);
     final float rate = MathUtils.approxSqrt((ada_dx_g.raw()[2*w] + eps)/(ada_dx_g.raw()[2*w+1] + eps));
-    ada_dx_g.raw()[2*w  ] = (float)(rho * ada_dx_g.raw()[2*w]   + (1 - rho) * rate * rate * grad * grad);
+    ada_dx_g.raw()[2*w  ] = (float)(rho * ada_dx_g.raw()[2*w]   + (1 - rho) * rate * rate * grad2);
     return rate;
   }
 
@@ -815,7 +818,7 @@ public abstract class Neurons {
     @Override protected void setOutputLayerGradient(double target) {
       final int row = 0;
       final double y = _a.get(row);
-      double g = new Distribution(params._distribution, params._tweedie_power).gradient(target, y); //y is in link space
+      double g = _dist.gradient(target, y); //y is in link space
       _e.set(row, g);
     }
   }
