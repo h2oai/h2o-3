@@ -1619,7 +1619,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       df.domains.subset <- df.domains[1L:factors,]      # subset to the top `factors` (default is 6)
 
       # if there are any missing levels, plonk them down here now after we've subset.
-      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
+      if( !is.null(missing.count) && !is.na(missing.count) && missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
 
       # fish out the domains
       domains <- as.character(df.domains.subset[,1L])
@@ -2873,7 +2873,9 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #' Compute A Histgram
 #'
 #' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
-#' in computing bin width.
+#' in computing bin width. Note that we do not beautify the breakpoints as R does.
+#'
+#'
 #'
 #' @param x A single numeric column from an H2OFrame.
 #' @param breaks Can be one of the following:

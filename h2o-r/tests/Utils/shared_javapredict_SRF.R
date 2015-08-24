@@ -38,13 +38,11 @@ check.srf <- function(conn) {
     colnames(iris_test_without_response) <- x
   }
   write.csv(iris_test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
-  cmd <- sprintf("cp PredictCSV.java %s", tmpdir_name)
-  safeSystem(cmd)
-  cmd <- sprintf("javac -cp %s/h2o-model.jar -J-Xmx4g -J-XX:MaxPermSize=256m %s/PredictCSV.java %s/%s.java", H2O_JAR_DIR, tmpdir_name, tmpdir_name, model_key)
+  cmd <- sprintf("javac -cp %s/h2o-model.jar -J-Xmx4g -J-XX:MaxPermSize=256m %s/%s.java", H2O_JAR_DIR, tmpdir_name, model_key)
   safeSystem(cmd)
 
   heading("Predicting with Java POJO")
-  cmd <- sprintf("java -ea -cp %s/h2o-model.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model %s --input %s/in.csv --output %s/out_pojo.csv", H2O_JAR_DIR, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
+  cmd <- sprintf("java -ea -cp %s/h2o-model.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", H2O_JAR_DIR, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
   heading(cmd)
   safeSystem(cmd)
 

@@ -28,7 +28,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
 
-    public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
+    public int _nbins_top_level = 1<<10; //hardcoded maximum top-level number of bins for real-valued columns
 
     public boolean _build_tree_one_node = false;
 

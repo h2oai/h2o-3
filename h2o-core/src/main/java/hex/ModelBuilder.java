@@ -680,7 +680,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   transient double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
-    return _parms._balance_classes;
+    return isClassifier();
   }
 
   @Override
