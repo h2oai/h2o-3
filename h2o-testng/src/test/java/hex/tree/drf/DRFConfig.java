@@ -79,17 +79,9 @@ public class DRFConfig {
 			// testcase description
 			"distribution",
 			"regression_balanced_unbalanced",
-			"rows",
-			"columns",
-			"train_rows_after_split",
-			"validation_rows_after_split",
-			"categorical",
 			"sparse",
 			"dense",
-			"high-dimensional data",
-			"correlated",
-			"collinear_cols",
-
+			
 			// dataset files & ids
 			FunctionUtils.train_dataset_id,
 			FunctionUtils.validate_dataset_id,

@@ -2,6 +2,7 @@ package h2o.testng.utils;
 
 import hex.Distribution.Family;
 import hex.Model;
+import hex.ModelMetrics;
 import hex.glm.GLM;
 import hex.glm.GLMConfig;
 import hex.glm.GLMModel;
@@ -41,10 +42,10 @@ public class FunctionUtils {
 		String result = null;
 
 		if (StringUtils.isEmpty(train_dataset_id)) {
-			result = "Dataset files is empty";
+			result = "In testcase, train dataset id is empty";
 		}
 		else if (train_dataset == null) {
-			result = "Dataset characteristic file is empty";
+			result = String.format("Dataset id %s do not have in dataset characteristic", train_dataset_id);
 		}
 		else if (!train_dataset.isAvailabel()) {
 			result = "Dataset characteristic is not available";
@@ -269,6 +270,7 @@ public class FunctionUtils {
 
 		DRF drfJob = null;
 		DRFModel drfModel = null;
+		ModelMetrics modelMetrics = null;
 
 		Key modelKey = Key.make("model");
 		GLM glmJob = null;
@@ -293,6 +295,9 @@ public class FunctionUtils {
 
 					System.out.println("Predict testcase");
 					score = drfModel.score(trainFrame);
+
+					modelMetrics = drfModel._output._training_metrics;
+
 					break;
 
 				case FunctionUtils.glm:
@@ -307,6 +312,8 @@ public class FunctionUtils {
 
 					System.out.println("Predict testcase ");
 					score = glmModel.score(trainFrame);
+
+					modelMetrics = glmModel._output._training_metrics;
 					break;
 
 				case FunctionUtils.gbm:
@@ -319,6 +326,8 @@ public class FunctionUtils {
 
 					System.out.println("Predict testcase ");
 					score = gbmModel.score(trainFrame);
+
+					modelMetrics = gbmModel._output._training_metrics;
 					break;
 			}
 
@@ -327,6 +336,13 @@ public class FunctionUtils {
 			}
 			else {
 				System.out.println("Testcase is passed.");
+				System.out.println("MSE: " + modelMetrics._MSE);
+				if (modelMetrics.auc() != null) {
+					System.out.println("AUC: " + modelMetrics.auc()._auc);
+				}
+				else {
+					System.out.println("AUC: NA");
+				}
 			}
 		}
 		catch (Exception ex) {
@@ -538,7 +554,7 @@ public class FunctionUtils {
 	public final static String glm = "glm";
 	public final static String gbm = "gbm";
 	public final static String drf = "drf";
-	
+
 	public final static String smalldata = "smalldata";
 	public final static String bigdata = "bigdata";
 }

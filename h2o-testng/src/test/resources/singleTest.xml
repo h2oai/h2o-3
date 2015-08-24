@@ -1,8 +1,0 @@
-<suite name="Single Testcase" verbose="5">
-    <test name="Basic (S)">
-        <classes>
-            <parameter name="numNodes" value="1"/>
-            <class name="h2o.testng.SingleTestcase" />
-        </classes>
-    </test>
-</suite>
