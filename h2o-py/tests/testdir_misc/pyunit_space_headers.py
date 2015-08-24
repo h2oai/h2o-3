@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def space_headers(ip,port):
     
@@ -17,4 +17,4 @@ def space_headers(ip,port):
     assert h2o_median == 444, "Expected median for \"start station id\" to be 444, but got {0}".format(h2o_median)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, space_headers)
+    tests.run_test(sys.argv, space_headers)

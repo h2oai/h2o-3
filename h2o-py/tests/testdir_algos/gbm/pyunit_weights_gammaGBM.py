@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def weights_gamma(ip,port):
 
@@ -22,4 +22,4 @@ def weights_gamma(ip,port):
     assert abs(8121.98-ph[0].mean()) < 1e-4*8121.98
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_gamma)
+    tests.run_test(sys.argv, weights_gamma)

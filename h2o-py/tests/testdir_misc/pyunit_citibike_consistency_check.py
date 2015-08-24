@@ -1,7 +1,7 @@
 # Check to make sure the small and large citibike demos have not diverged
 import sys, os
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def consistency_check(ip,port):
 
@@ -15,8 +15,8 @@ def consistency_check(ip,port):
     except ValueError:
         large = h2o.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
-    h2o.ipy_notebook_exec(small, save_and_norun=True)
-    h2o.ipy_notebook_exec(large, save_and_norun=True)
+    tests.ipy_notebook_exec(small, save_and_norun=True)
+    tests.ipy_notebook_exec(large, save_and_norun=True)
 
     s = os.path.basename(small).split('.')[0]+".py"
     l = os.path.basename(large).split('.')[0]+".py"
@@ -33,4 +33,4 @@ def consistency_check(ip,port):
                 "Citibike large: {1}".format(s,l)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, consistency_check)
+    tests.run_test(sys.argv, consistency_check)

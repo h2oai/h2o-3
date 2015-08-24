@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def ascharacter(ip,port):
     h2oframe =  h2o.import_file(path=h2o.locate("smalldata/junit/cars.csv"))
@@ -11,4 +11,4 @@ def ascharacter(ip,port):
     assert not h2oframe["cylinders"].isstring(), "expected the column to not be a string"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, ascharacter)
+    tests.run_test(sys.argv, ascharacter)

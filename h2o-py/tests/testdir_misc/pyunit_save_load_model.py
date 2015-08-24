@@ -1,6 +1,6 @@
 import sys, os, shutil
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 from h2o.model.binomial import H2OBinomialModel
 
 def save_load_model(ip,port):
@@ -18,4 +18,4 @@ def save_load_model(ip,port):
     assert isinstance(the_model, H2OBinomialModel), "Expected and H2OBinomialModel, but got {0}".format(the_model)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, save_load_model)
+    tests.run_test(sys.argv, save_load_model)

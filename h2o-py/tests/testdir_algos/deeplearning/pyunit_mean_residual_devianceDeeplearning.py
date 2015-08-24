@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 def deeplearning_mean_residual_deviance(ip,port):
 
@@ -24,4 +24,4 @@ def deeplearning_mean_residual_deviance(ip,port):
                                               "{0}".format(type(dl_mrd['xval']))
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, deeplearning_mean_residual_deviance)
+    tests.run_test(sys.argv, deeplearning_mean_residual_deviance)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 import string
 
@@ -87,4 +87,4 @@ def baddataKmeans(ip,port):
     assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
 
 if __name__ == "__main__":
-   h2o.run_test(sys.argv, baddataKmeans)
+   tests.run_test(sys.argv, baddataKmeans)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def swpredsGBM(ip,port):
   # Training set has two predictor columns
@@ -34,4 +34,4 @@ def swpredsGBM(ip,port):
   h2o_auc2 = h2o_gbm_perf2.auc()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, swpredsGBM)
+  tests.run_test(sys.argv, swpredsGBM)

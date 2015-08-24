@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def headers(ip,port):
     
@@ -15,4 +15,4 @@ def headers(ip,port):
         format(headers.names, headers_and.names)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, headers)
+    tests.run_test(sys.argv, headers)

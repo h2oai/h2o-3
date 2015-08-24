@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def metric_accessors(ip,port):
 
@@ -567,4 +567,4 @@ def metric_accessors(ip,port):
     size = km.size(train=False, valid=False, xval=False) # default: return training metrics
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, metric_accessors)
+    tests.run_test(sys.argv, metric_accessors)

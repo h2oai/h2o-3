@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 
 def expr_as_list(ip,port):
@@ -29,4 +29,4 @@ def expr_as_list(ip,port):
     assert float(frm[2][1]) == 5, "incorrect values"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, expr_as_list)
+    tests.run_test(sys.argv, expr_as_list)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import random
 import numpy as np
@@ -51,4 +51,4 @@ def emptyclusKmeans(ip,port):
     print km_h2o.centers()
 
 if __name__ == "__main__":
-   h2o.run_test(sys.argv, emptyclusKmeans)
+   tests.run_test(sys.argv, emptyclusKmeans)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def link_functions_tweedie_vpow(ip,port):
     
@@ -35,5 +35,5 @@ def link_functions_tweedie_vpow(ip,port):
                                                                    "{1}".format(h2ofit.null_deviance(), r_null[ridx])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, link_functions_tweedie_vpow)
+    tests.run_test(sys.argv, link_functions_tweedie_vpow)
 

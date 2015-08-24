@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def tweedie_offset(ip,port):
 
@@ -44,4 +44,4 @@ def tweedie_offset(ip,port):
     assert abs(397.328758591-predictions[0].max()) < 1e-6, "Expected max of predictions to be 397.328758591, but got " \
                                                           "{0}".format(predictions[0].max())
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, tweedie_offset)
+    tests.run_test(sys.argv, tweedie_offset)

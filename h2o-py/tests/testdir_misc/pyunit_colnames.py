@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def col_names_check(ip,port):
     
@@ -16,4 +16,4 @@ def col_names_check(ip,port):
                                                            "{1}".format(["C1","C2","C3","C4","C5"], iris.col_names)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, col_names_check)
+    tests.run_test(sys.argv, col_names_check)
