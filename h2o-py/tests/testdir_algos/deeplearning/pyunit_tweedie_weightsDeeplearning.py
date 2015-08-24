@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def tweedie_weights(ip,port):
 
@@ -31,4 +31,4 @@ def tweedie_weights(ip,port):
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, tweedie_weights)
+    tests.run_test(sys.argv, tweedie_weights)

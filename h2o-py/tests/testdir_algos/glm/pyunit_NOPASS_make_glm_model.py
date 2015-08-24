@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def pyunit_make_glm_model(ip,port):
     # TODO: PUBDEV-1717
@@ -18,5 +18,5 @@ def pyunit_make_glm_model(ip,port):
     res = h2o.H2OConnection.post_json("MakeGLMModel",model=model._id,names=names,beta=betas)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pyunit_make_glm_model)
+    tests.run_test(sys.argv, pyunit_make_glm_model)
 

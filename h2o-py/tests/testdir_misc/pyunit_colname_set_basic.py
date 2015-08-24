@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def colname_set_basic(ip,port):
     
@@ -19,4 +19,4 @@ def colname_set_basic(ip,port):
         format(no_headers.names, headers_and.names)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, colname_set_basic)
+    tests.run_test(sys.argv, colname_set_basic)

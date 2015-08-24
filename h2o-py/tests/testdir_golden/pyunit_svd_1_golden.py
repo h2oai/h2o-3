@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 
 def svd_1_golden(ip, port):
@@ -45,4 +45,4 @@ def svd_1_golden(ip, port):
         for r, h in zip(rl, hl): assert abs(abs(r) - abs(float(h))) < 1e-5, "H2O got {0}, but R got {1}".format(h, r)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, svd_1_golden)
+    tests.run_test(sys.argv, svd_1_golden)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def frame_slicing(ip,port):
     
@@ -37,4 +37,4 @@ def frame_slicing(ip,port):
     assert abs(res5[0,0] - 6) < 1e-10 and abs(res5[1,1] - 0) < 1e-10 and abs(res5[2,2] - 61) < 1e-10, "incorrect values"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, frame_slicing)
+    tests.run_test(sys.argv, frame_slicing)

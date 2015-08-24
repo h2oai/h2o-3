@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def strsplit_check(ip,port):
     # Connect to a pre-existing cluster
@@ -23,4 +23,4 @@ def strsplit_check(ip,port):
                                "{3}".format(result[0,0], result[0,1], result[0,2], result[0,3])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, strsplit_check)
+    tests.run_test(sys.argv, strsplit_check)

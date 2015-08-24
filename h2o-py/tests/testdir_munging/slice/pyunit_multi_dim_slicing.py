@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def multi_dim_slicing(ip,port):
     # Connect to a pre-existing cluster
@@ -54,4 +54,4 @@ def multi_dim_slicing(ip,port):
     assert pros[2,2] == 1, "Incorrect slicing result"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, multi_dim_slicing)
+    tests.run_test(sys.argv, multi_dim_slicing)

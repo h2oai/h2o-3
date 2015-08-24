@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 
 def user(ip, port):
@@ -67,4 +67,4 @@ def user(ip, port):
     sliced.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, user)
+    tests.run_test(sys.argv, user)

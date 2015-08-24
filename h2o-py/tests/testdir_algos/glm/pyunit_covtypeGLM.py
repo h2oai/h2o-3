@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def covtype(ip,port):
@@ -34,5 +34,5 @@ def covtype(ip,port):
   covtype_mod3.show()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, covtype)
+  tests.run_test(sys.argv, covtype)
 

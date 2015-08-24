@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 
 def minmax_basic(ip,port):
@@ -41,4 +41,4 @@ def minmax_basic(ip,port):
     assert h2o_max == mx, "Expected the same max value. H2O got {0}, but python got {1}".format(h2o_max, mx)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, minmax_basic)
+    tests.run_test(sys.argv, minmax_basic)

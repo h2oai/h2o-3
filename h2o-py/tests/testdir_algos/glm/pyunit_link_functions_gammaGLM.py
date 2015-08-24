@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import pandas as pd
 import zipfile
 import statsmodels.api as sm
@@ -44,6 +44,6 @@ def link_functions_gamma(ip,port):
 	assert h2o_deviance_log - sm_deviance_log < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 if __name__ == "__main__":
-	h2o.run_test(sys.argv, link_functions_gamma)
+	tests.run_test(sys.argv, link_functions_gamma)
 
 

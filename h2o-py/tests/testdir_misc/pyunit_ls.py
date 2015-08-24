@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def ls_test(ip,port):
     
@@ -11,4 +11,4 @@ def ls_test(ip,port):
     h2o.ls()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, ls_test)
+    tests.run_test(sys.argv, ls_test)

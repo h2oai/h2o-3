@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def score_history_test(ip,port):
     
@@ -15,4 +15,4 @@ def score_history_test(ip,port):
     print score_history
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, score_history_test)
+    tests.run_test(sys.argv, score_history_test)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def pyunit_types(ip,port):
 
@@ -15,4 +15,4 @@ def pyunit_types(ip,port):
   print types2
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, pyunit_types)
+  tests.run_test(sys.argv, pyunit_types)
