@@ -90,14 +90,15 @@ class ASTToLower extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("tolower only takes a single column of data. Got "+ fr.numCols()+" columns.");
-    if( !fr.anyVec().isEnum() ) throw new IllegalArgumentException("expected categorical column.");
-    String[] dom = fr.anyVec().domain();
+    Vec vec = fr.anyVec();   assert vec != null;
+    if( !vec.isEnum() ) throw new IllegalArgumentException("expected categorical column.");
+    String[] dom = vec.domain();
 
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
 
     // COW
-    Vec v = fr.anyVec().makeCopy(dom);
+    Vec v = vec.makeCopy(dom);
     return new ValFrame(new Frame(v));
   }
 }
@@ -108,14 +109,15 @@ class ASTToUpper extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("toupper only takes a single column of data. Got "+ fr.numCols()+" columns.");
-    if( !fr.anyVec().isEnum() ) throw new IllegalArgumentException("expected categorical column.");
-    String[] dom = fr.anyVec().domain();
+    Vec vec = fr.anyVec();   assert vec != null;
+    if( !vec.isEnum() ) throw new IllegalArgumentException("expected categorical column.");
+    String[] dom = vec.domain();
 
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
 
     // COW
-    Vec v = fr.anyVec().makeCopy(dom);
+    Vec v = vec.makeCopy(dom);
     return new ValFrame(new Frame(v));
   }
 }
@@ -130,14 +132,15 @@ class ASTStrSub extends ASTPrim {
     boolean ignoreCase = asts[4].exec(env).getNum()==1;
 
     if (fr.numCols() != 1) throw new IllegalArgumentException("sub works on a single column at a time.");
-    String[] doms = fr.anyVec().domain();
+    Vec vec = fr.anyVec();   assert vec != null;
+    String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
               ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
               : doms[i].replaceFirst(pattern, replacement);
 
     // COW
-    Vec v = fr.anyVec().makeCopy(doms);
+    Vec v = vec.makeCopy(doms);
     return new ValFrame(new Frame(v));
   }
 }
@@ -152,14 +155,15 @@ class ASTGSub extends ASTPrim {
     boolean ignoreCase = asts[4].exec(env).getNum()==1;
 
     if (fr.numCols() != 1) throw new IllegalArgumentException("sub works on a single column at a time.");
-    String[] doms = fr.anyVec().domain();
+    Vec vec = fr.anyVec();   assert vec != null;
+    String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
               ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
               : doms[i].replaceAll(pattern, replacement);
 
     // COW
-    Vec v = fr.anyVec().makeCopy(doms);
+    Vec v = vec.makeCopy(doms);
     return new ValFrame(new Frame(v));
   }
 }
@@ -170,12 +174,13 @@ class ASTTrim extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("trim works on a single column at a time.");
-    if( !fr.anyVec().isEnum() ) throw new IllegalArgumentException("column must be character.");
-    String[] doms = fr.anyVec().domain();
+    Vec vec = fr.anyVec();   assert vec != null;
+    if( !vec.isEnum() ) throw new IllegalArgumentException("column must be character.");
+    String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
 
     // COW
-    Vec v = fr.anyVec().makeCopy(doms);
+    Vec v = vec.makeCopy(doms);
     return new ValFrame(new Frame(v));
   }
 }

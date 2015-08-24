@@ -86,15 +86,6 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 #'
 
 
-#' @param x,y H2O Frame objects.
-#' @param digits number of digits to be used in \code{round} or \code{signif}
-#' @param \dots further arguments passed to or from methods
-#' @param na.rm logical: should missing values be removed?
-#' @name H2OS3GroupGeneric
-NULL
-
-#' @rdname H2OS3GroupGeneric
-#' @export
 Ops.Frame <- function(x,y) 
   .newExpr(.Generic,
            if( is.character(x) ) .quote(x) else x,
@@ -113,8 +104,6 @@ Summary.Frame <- function(x,...,na.rm) {
   if( .Generic=="all" ) as.logical(res) else res
 }
 
-#' @rdname H2OS4groupGeneric
-#' @export
 is.na.Frame <- function(x) .newExpr("is.na", x)
 
 `!.Frame` <- function(x) .newExpr("!!",x)
@@ -1324,21 +1313,40 @@ h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y
 #'         groups created
 #' @export
 h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
-  chk.Frame(data)  
+  # Build the argument list: (GB data, [group.by] [order.by] {agg col "na"}...)
+  args <- list(chk.Frame(data))
 
-  # handle the columns
+  ### handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
   if(is.character(by)) {
-    vars <- match(by, colnames(data))
-    if (any(is.na(vars)))
+    group.cols <- match(by, colnames(data))
+    if (any(is.na(group.cols)))
       stop('No column named ', by, ' in ', substitute(data), '.')
   } else if(is.integer(by)) {
-    vars <- by
+    group.cols <- by
   } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)
-    vars <- as.integer(by)
+    group.cols <- as.integer(by)
   }
-  if(vars <= 0L || vars > ncol(data))
-    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+  if(group.cols <= 0L || group.cols > ncol(data))
+    stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
+  args <- c(args,.row.col.selector(group.cols))
+
+  ### ORDER BY ###
+  order.by.cols <- NULL
+  if( !is.null(order.by) ) {
+    if(is.character(order.by)) {
+        order.by.cols <- match(order.by, by)
+        if (any(is.na(order.by.cols)))
+          stop('No column named ', order.by, ' in ', by, '.')
+    } else if(is.integer(order.by)) {
+      order.by.cols <- order.by
+    } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
+      order.by.cols <- as.integer(order.by)
+    }
+    if(order.by.cols < 1L || order.by.cols > ncol(data)) stop('Column ', order.by.cols, ' out of range for frame columns ', ncol(data), '.')
+  }
+  args <- c(args,.row.col.selector(order.by.cols))
+
 
   a <- substitute(list(...))
   a[[1]] <- NULL  # drop the wrapping list()
@@ -1396,34 +1404,13 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   ### End NA handling ###
 
-  # Build the aggregates! reminder => build this list: (agg,col.idx,na.method)
-  aggs <- unlist(recursive=F, lapply(1:nAggs, function(idx) {
-    list(agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx]))
-  }))
-
-
-  ### ORDER BY ###
-  vars2 <- NULL
-  if( !is.null(order.by) ) {
-    if(is.character(order.by)) {
-        vars2 <- match(order.by, by)
-        if (any(is.na(vars2)))
-          stop('No column named ', order.by, ' in ', by, '.')
-    } else if(is.integer(order.by)) {
-      vars2 <- order.by
-    } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
-      vars2 <- as.integer(order.by)
-    }
-    if(vars2 < 1L || vars2 > ncol(data)) stop('Column ', vars2, ' out of range for frame columns ', ncol(data), '.')
+  # Append the aggregates!  Append triples: aggregate, column, na-handling
+  for( idx in 1:nAggs ) {
+    args <- c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx])) 
   }
 
-  ### END ORDER BY ###
-
-  # create the AGG AST
-  AGG <- .newExprList("AGG",aggs)
-
-  # create the group by AST
-  .newExpr("GB",data,.row.col.selector(vars),.row.col.selector(vars2),AGG)
+  # Create the group by AST
+  .newExprList("GB",args)
 }
 
 #' Produce a Vector of Random Uniform Numbers
