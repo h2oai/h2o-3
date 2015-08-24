@@ -4,8 +4,7 @@ import water.genmodel.IGeneratedModel;
 import hex.ModelCategory;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
 /** This is a helper class to support Java generated models. */
 public abstract class GenModel implements IGenModel, IGeneratedModel, Serializable {
@@ -117,7 +116,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   @Override
   public float[] predict(double[] data, float[] preds, int maxIters) {
-    throw new UnsupportedOperationException("Unsupported operation - uses score0 method!");
+    throw new UnsupportedOperationException("Unsupported operation - use score0 method!");
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
@@ -161,7 +160,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     for( int c=1; c<scored.length; c++ ) {
       final double original_fraction = priorClassDist[c-1];
       final double oversampled_fraction = modelClassDist[c-1];
-      assert(!Double.isNaN(scored[c]));
+      assert(!Double.isNaN(scored[c])) : "Predicted NaN class probability";
       if (original_fraction != 0 && oversampled_fraction != 0) scored[c] *= original_fraction / oversampled_fraction;
       probsum += scored[c];
     }
@@ -170,17 +169,21 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   /** Utility function to get a best prediction from an array of class
-   *  prediction distribution.  It returns index of max value if predicted
-   *  values are unique.  In the case of tie, the implementation solve it in
-   *  pseudo-random way.
+   *  prediction distribution.  It returns the index of the max. probability (if that exists).
+   *  In the case of ties, the prior probabilities are used, and if they are the same, resort to a
+   *  pseudo-random way (using the test data).
    *  @param preds an array of prediction distribution.  Length of arrays is equal to a number of classes+1.
+   *  @param priorClassDist prior class probabilities (used to break ties)
+   *  @param data Test data
    *  @param threshold threshold for binary classifier
    * @return the best prediction (index of class, zero-based)
    */
-  public static int getPrediction(double[] preds, double data[], double threshold) {
+  public static int getPrediction(double[] preds, double[] priorClassDist, double data[], double threshold) {
     if (preds.length == 3) {
       return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
     }
+    List<Integer> ties = new ArrayList<>();
+    ties.add(0);
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {
       if( preds[best] < preds[c] ) {
@@ -188,14 +191,36 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
         tieCnt=0;               // No ties
       } else if (preds[best] == preds[c]) {
         tieCnt++;               // Ties
+        ties.add(c-1);
       }
     }
     if( tieCnt==0 ) return best-1; // Return zero-based best class
-    // Tie-breaking logic
-    double res = preds[best];    // One of the tied best results
+
     long hash = 0;              // hash for tie-breaking
     if( data != null )
       for( double d : data ) hash ^= Double.doubleToRawLongBits(d) >> 6; // drop 6 least significants bits of mantisa (layout of long is: 1b sign, 11b exp, 52b mantisa)
+
+    if (priorClassDist!=null) {
+      // Tie-breaking based on prior probabilities
+      // Example: probabilities are 0.4, 0.2, 0.4 for a 3-class problem with priors 0.7, 0.1, 0.2
+      // Probability of predicting class 1 should be higher than for class 3 based on the priors
+      double sum = 0;
+      for (Integer i : ties) { //ties = [0, 2]
+        sum += priorClassDist[i]; //0.7 + 0.2
+      }
+      // sum is now 0.9
+      Random rng = new Random(hash);
+      double tie = rng.nextDouble(); //for example 0.4135 -> should pick the first of the ties, since it occupies 0.7777 = 0.7/0.9 of the 0...1 range, and 0.4135 < 0.7777
+      double partialSum = 0;
+      for (Integer i : ties) {
+        partialSum += priorClassDist[i] / sum; //0.7777 at first iteration, 1.0000 at second iteration
+        if (tie <= partialSum)
+          return i;
+      }
+    }
+
+    // Tie-breaking logic (should really never be triggered anymore)
+    double res = preds[best];    // One of the tied best results
     int idx = (int)hash%(tieCnt+1);  // Which of the ties we'd like to keep
     for( best=1; best<preds.length; best++)
       if( res == preds[best] && --idx < 0 )
@@ -344,5 +369,4 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public static double GLM_logInv( double x ) { return Math.exp(x); }
   public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
   public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
-
 }

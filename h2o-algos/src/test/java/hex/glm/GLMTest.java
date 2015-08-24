@@ -13,6 +13,7 @@ import hex.glm.GLMTask.GLMLineSearchTask;
 import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import hex.glm.GLMModel.GLMParameters;
@@ -23,6 +24,8 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
+import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -227,7 +230,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless", fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       DKV.put(dinfo._key, dinfo);
 
       double[] beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
@@ -292,7 +295,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless", fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       DKV.put(dinfo._key,dinfo);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       Random rnd = new Random(987654321);
@@ -309,7 +312,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       params._use_all_factor_levels = false;
       dinfo.remove();
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       DKV.put(dinfo._key,dinfo);
       beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       rnd = new Random(1987654321);
@@ -327,7 +330,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._use_all_factor_levels = true;
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       DKV.put(dinfo._key,dinfo);
       beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       rnd = new Random(987654321);
@@ -541,7 +544,7 @@ public class GLMTest  extends TestUtil {
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       // now check the gradient
-      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
@@ -560,6 +563,124 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       betaConstraints.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  @Test
+  public void testCoordinateDescent_airlines() {
+    GLMModel model = null;
+
+    Key parsed = Key.make("airlines_parsed");
+    Key modelKey = Key.make("airlines_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = new String[]{"IsDepDelayed_REC"};
+      params._train = fr._key;
+      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println(model._output._training_metrics);
+
+    } finally {
+      fr.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  @Test
+  public void testCoordinateDescent_airlines_CovUpdates() {
+    GLMModel model = null;
+
+    Key parsed = Key.make("airlines_parsed");
+    Key modelKey = Key.make("airlines_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._solver = Solver.COORDINATE_DESCENT;
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = new String[]{"IsDepDelayed_REC"};
+      params._train = fr._key;
+      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println(model._output._training_metrics);
+
+    } finally {
+      fr.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+
+  @Test @Ignore
+  public void testCoordinateDescent_anomaly() {
+    GLMModel model = null;
+    Key parsed = Key.make("anomaly_parsed");
+    Key modelKey = Key.make("anomaly_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.gaussian;
+      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._response_column = "C1";
+      params._train = fr._key;
+      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println(model._output._training_metrics);
+
+    } finally {
+      fr.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+
+  @Test
+  public void testCoordinateDescent_anomaly_CovUpdates() {
+    GLMModel model = null;
+    Key parsed = Key.make("anomaly_parsed");
+    Key modelKey = Key.make("anomaly_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.gaussian;
+      params._solver = Solver.COORDINATE_DESCENT;
+      params._response_column = "C1";
+      params._train = fr._key;
+      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println(model._output._training_metrics);
+
+    } finally {
+      fr.delete();
       if (model != null) model.delete();
     }
   }
@@ -610,7 +731,7 @@ public class GLMTest  extends TestUtil {
       model = DKV.get(modelKey).get();
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the gradient
-      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       // todo: remove, result from h2o.1
       // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, 0, beta_1, 1.0 / 380.0, null).doAll(dinfo._adaptedFrame);
@@ -807,7 +928,7 @@ public class GLMTest  extends TestUtil {
     Key k = Key.make("TestData");
     Frame f = new Frame(v01,v02,v03,v04,v05,v05,v06,v07,v08,v09,v10,v11,v12);
     DKV.put(k,f);
-    DataInfo dinfo = new DataInfo(Key.make(),f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false);
+    DataInfo dinfo = new DataInfo(Key.make(),f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);
     final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, null, null).setSparse(true).doAll(dinfo._adaptedFrame);
     final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, null, null).setSparse(false).doAll(dinfo._adaptedFrame);
@@ -880,7 +1001,7 @@ public class GLMTest  extends TestUtil {
       params._train = frMM._key;
       params._use_all_factor_levels = true;
       // test the gram
-      DataInfo dinfo = new DataInfo(Key.make(),frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false);
+      DataInfo dinfo = new DataInfo(Key.make(),frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0,null, null).doAll(dinfo._adaptedFrame);
       for(int i = 0; i < glmt._xy.length; ++i) {
         for(int j = 0; j <= i; ++j ) {
@@ -963,6 +1084,154 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
+
+
+  // test categorical autoexpansions, run on airlines which has several categorical columns,
+  // once on explicitly expanded data, once on h2o autoexpanded and compare the results
+  @Test
+  public void test_COD_Airlines_SingleLambda() {
+    GLM job = null;
+    GLMModel model1 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._valid = fr._key;
+      params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
+      params._alpha = new double[]{1};
+      params._standardize = false;
+      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._lambda_search = true;
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
+      model1 = job.trainModel().get();
+      double [] beta = model1.beta();
+      double l1pen = ArrayUtils.l1norm(beta,true);
+      double l2pen = ArrayUtils.l2norm(beta,true);
+      //System.out.println( " lambda min " + params._lambda[params._lambda.length-1] );
+      //System.out.println( " lambda_max " + model1._lambda_max);
+      //System.out.println(" intercept " + beta[beta.length-1]);
+      double objective = job.likelihood()/model1._nobs +
+              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      System.out.println( " objective value " + objective);
+      assertEquals(0.670921, objective,1e-4);
+    } finally {
+      fr.delete();
+      if (model1 != null) model1.delete();
+      if (job != null) job.remove();
+    }
+  }
+
+
+  @Test
+  public void test_COD_Airlines_SingleLambda_CovUpdates() {
+    GLM job = null;
+    GLMModel model1 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._valid = fr._key;
+      params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
+      params._alpha = new double[]{1};
+      params._standardize = false;
+      params._solver = Solver.COORDINATE_DESCENT;
+      params._lambda_search = true;
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
+      model1 = job.trainModel().get();
+      double [] beta = model1.beta();
+      double l1pen = ArrayUtils.l1norm(beta,true);
+      double l2pen = ArrayUtils.l2norm(beta,true);
+      double objective = job.likelihood()/model1._nobs +
+              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      System.out.println( " objective value " + objective);
+      assertEquals(0.670921, objective,1e-2);
+    } finally {
+      fr.delete();
+      if (model1 != null) model1.delete();
+      if (job != null) job.remove();
+    }
+  }
+
+
+  @Test
+  public void test_COD_Airlines_LambdaSearch() {
+    GLM job = null;
+    GLMModel model1 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._valid = fr._key;
+      params._lambda = null; // new double [] {0.25};
+      params._alpha = new double[]{1};
+      params._standardize = false;
+      params._solver = Solver.COORDINATE_DESCENT_NAIVE;//IRLSM
+      params._lambda_search = true;
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
+      model1 = job.trainModel().get();
+      GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
+      double [] beta = sm.beta;
+      System.out.println("lambda " + sm.lambda_value);
+      double l1pen = ArrayUtils.l1norm(beta,true);
+      double l2pen = ArrayUtils.l2norm(beta,true);
+      double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
+              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      assertEquals(0.65689, objective,1e-4);
+    } finally {
+      fr.delete();
+      if (model1 != null) model1.delete();
+      if (job != null) job.remove();
+    }
+  }
+
+
+  @Test
+  public void test_COD_Airlines_LambdaSearch_CovUpdates() {
+    GLM job = null;
+    GLMModel model1 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
+    String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._valid = fr._key;
+      params._lambda = null; // new double [] {0.25};
+      params._alpha = new double[]{1};
+      params._standardize = false;
+      params._solver = Solver.COORDINATE_DESCENT;
+      params._lambda_search = true;
+      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
+      model1 = job.trainModel().get();
+      GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
+      double [] beta = sm.beta;
+      System.out.println("lambda " + sm.lambda_value);
+      double l1pen = ArrayUtils.l1norm(beta,true);
+      double l2pen = ArrayUtils.l2norm(beta,true);
+      double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
+              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
+      assertEquals(0.65689, objective,1e-4);
+    } finally {
+      fr.delete();
+      if (model1 != null) model1.delete();
+      if (job != null) job.remove();
+    }
+  }
+
 
   @Test
   public void testYmuTsk() {
@@ -1208,7 +1477,7 @@ public class GLMTest  extends TestUtil {
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       fr.remove("ID").remove();
       DKV.put(fr._key,fr);
-      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false);
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
       score = model3.score(fr);
       mm3 = ModelMetrics.getFromDKV(model3,fr);
@@ -1277,6 +1546,32 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Ignore("PUBDEV-1839")
+  public void testCitibikeReproPUBDEV1839() throws Exception {
+    GLM job = null;
+    GLMModel model = null;
+    Frame tfr = parse_test_file("smalldata/jira/pubdev_1839_repro_train.csv");
+    Frame vfr = parse_test_file("smalldata/jira/pubdev_1839_repro_test.csv");
+
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.poisson);
+      params._response_column = "bikes";
+      params._train = tfr._key;
+      params._valid = vfr._key;
+      params._lambda = new double[]{1e-5};
+      job = new GLM(Key.make("glm_model"), "glm test PUBDEV-1839", params);
+      model = job.trainModel().get();
+
+    } finally {
+      tfr.remove();
+      vfr.remove();
+      if(model != null)model.delete();
+      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
+
 
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
@@ -1296,16 +1591,6 @@ public class GLMTest  extends TestUtil {
       Scope.enter();
       // test LBFGS with l1 pen
       GLMParameters params = new GLMParameters(Family.gaussian);
-      params._solver = Solver.L_BFGS;
-      params._response_column = fr._names[0];
-      params._train = parsed;
-      params._alpha = new double[]{0};
-
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
-      model.delete();
-      params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
       params._response_column = fr._names[0];
@@ -1316,7 +1601,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 215;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{/*Solver.L_BFGS,*/ Solver.IRLSM}) { // LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{ Solver.IRLSM}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
         params._solver = s;
         job = new GLM(modelKey, "glm test simple poisson", params);
         job.trainModel().get();

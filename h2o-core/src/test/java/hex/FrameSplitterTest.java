@@ -125,7 +125,7 @@ public class FrameSplitterTest extends TestUtil {
     Assert.assertEquals(150, numRows);
     // Perform frame split via API
     try {
-      SplitFrame sf = new SplitFrame(Key.make());
+      SplitFrame sf = new SplitFrame();
       sf.dataset = f;
       sf.ratios = new double[] { 0.5, 0.5 };
       sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};

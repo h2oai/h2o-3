@@ -69,6 +69,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
+  @Override
+  public double deviance(double w, double y, double f) {
+    // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(get_params()._distribution != Distribution.Family.AUTO);
+    return new Distribution(get_params()._distribution, get_params()._tweedie_power).deviance(w,y,f);
+  }
+
   // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
@@ -82,6 +89,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private long start_time;
 
   public long actual_train_samples_per_iteration;
+  public long tspiGuess;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
@@ -111,15 +119,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   // Lower is better
   public float error() {
-    return (float) (_output.isClassifier() ? cm().err() : mse());
-//    boolean valid = _parms.valid() != null;
-//    if (!_output.isClassifier()) {
-//      return (float)(valid ? _output._validation_metrics._MSE : _output._training_metrics._MSE);
-//    } else if (_output.nclasses() == 2){
-//      return -(float)(valid ? ((ModelMetricsBinomial)_output._validation_metrics)._auc._auc : ((ModelMetricsBinomial)_output._training_metrics)._auc._auc);
-//    } else {
-//      return -(float)(valid ? ((ModelMetricsMultinomial)_output._validation_metrics)._logloss : ((ModelMetricsMultinomial)_output._training_metrics)._logloss);
-//    }
+    return (float) (_output.isClassifier() ? classification_error() : deviance());
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -139,41 +139,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   public static class DeepLearningScoring extends Iced {
-//    static final int API_WEAVER = 1;
-//    static public DocGen.FieldDoc[] DOC_FIELDS;
-
     public double epoch_counter;
     public double training_samples;
     public long training_time_ms;
-
-    //training/validation sets
     boolean validation;
-    int num_folds;
     public long score_training_samples;
     public long score_validation_samples;
-
     public boolean classification;
-
     VarImp variable_importances;
-
-    // classification
     ScoreKeeper scored_train = new ScoreKeeper();
     ScoreKeeper scored_valid = new ScoreKeeper();
-    public ConfusionMatrix train_confusion_matrix;
-    public ConfusionMatrix valid_confusion_matrix;
-//    public double train_err = Double.NaN;
-//    public double valid_err = Double.NaN;
-//    public double train_logloss = Double.NaN;
-//    public double valid_logloss = Double.NaN;
     public AUC2 training_AUC;
     public AUC2 validation_AUC;
-
-    // regression
-//    public double training_MSE = Double.NaN;
-//    public double validation_MSE = Double.NaN;
-//    public double training_R2 = Double.NaN;
-//    public double validation_R2 = Double.NaN;
-
     public long scoring_time;
 
     DeepLearningScoring deep_clone() {
@@ -182,38 +159,26 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       ab.flipForReading();
       return (DeepLearningScoring) new DeepLearningScoring().read(ab);
     }
-
-    @Override public String toString() {
-      StringBuilder sb = new StringBuilder();
-      if (scored_train!=null) sb.append("Training " + scored_train.toString());
-      if (classification) sb.append("Training " + train_confusion_matrix.table().toString(1));
-      if (validation || num_folds>0) {
-        if (num_folds > 0) sb.append("\nDoing " + num_folds + "-fold cross-validation:");
-        if (scored_valid!=null) sb.append("Validation " + scored_valid.toString());
-        if (classification) sb.append("Validation " + valid_confusion_matrix.table().toString(1));
-      }
-      sb.append("\n");
-      return sb.toString();
-    }
   }
 
-  public ConfusionMatrix cm() {
-    final DeepLearningScoring lasterror = last_scored();
-    if (lasterror == null) return null;
-    ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
-            lasterror.valid_confusion_matrix :
-            lasterror.train_confusion_matrix;
-    return cm;
+  public double classification_error() {
+    if (errors == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
   }
 
   public double mse() {
     if (errors == null) return Double.NaN;
-    return last_scored().validation || last_scored().num_folds > 0 ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double deviance() {
+    if (errors == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
   }
 
   public double logloss() {
     if (errors == null) return Double.NaN;
-    return last_scored().validation || last_scored().num_folds > 0 ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
@@ -227,6 +192,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
+    if (_output.getModelCategory() == ModelCategory.Regression) {
+      colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%.5f");
     }
@@ -241,6 +209,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     if (get_params()._valid != null) {
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+      if (_output.getModelCategory() == ModelCategory.Regression) {
+        colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+      }
       if (!_output.autoencoder) {
         colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%.5f");
       }
@@ -289,6 +260,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
+      if (_output.getModelCategory() == ModelCategory.Regression) {
+        table.set(row, col++, e.scored_train != null ? e.scored_train._mean_residual_deviance : Double.NaN);
+      }
       if (!_output.autoencoder) {
         table.set(row, col++, e.scored_train != null ? e.scored_train._r2 : Double.NaN);
       }
@@ -303,6 +277,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       if (get_params()._valid != null) {
         table.set(row, col++, e.scored_valid != null ? e.scored_valid._mse : Double.NaN);
+        if (_output.getModelCategory() == ModelCategory.Regression) {
+          table.set(row, col++, e.scored_valid != null ? e.scored_valid._mean_residual_deviance : Double.NaN);
+        }
         if (!_output.autoencoder) {
           table.set(row, col++, e.scored_valid != null ? e.scored_valid._r2 : Double.NaN);
         }
@@ -406,17 +383,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param output
    * @param train
    * @param valid
+   * @param nClasses
    */
-  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
+  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
-    boolean classification = train.lastVec().isEnum();
     final DataInfo dinfo = makeDataInfo(train, valid, _parms);
     _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo);
-    model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
+    model_info = new DeepLearningModelInfo(parms, dinfo, nClasses, train, valid);
     model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms._nfolds != 0) actual_best_model_key = null;
@@ -424,7 +401,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
-      errors[0].num_folds = parms._nfolds;
       _output.errors = last_scored();
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
@@ -482,18 +458,27 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // Note: actual communication time is estimated by the NetworkTest's collective test.
       if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2) {
         Log.info("Auto-tuning train_samples_per_iteration.");
+        double correction = 1;
         if (time_for_communication_us > 1e4) {
           Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
           Log.info("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_last_iter_millis, true));
           final double comm_to_work_ratio = (time_for_communication_us * 1e-3) / time_last_iter_millis;
-          Log.info("  Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
+          Log.info("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
           Log.info("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
-          final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
           Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-          actual_train_samples_per_iteration /= correction;
-          actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
-          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-        } else if (time_for_communication_us <= 1e4) {
+          correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
+          correction = Math.max(0.1,Math.min(2, correction)); //it's ok to train up to 10x more training rows per iteration, but not fewer than half.
+          if (actual_train_samples_per_iteration/correction <= 10*tspiGuess && actual_train_samples_per_iteration/correction >= 0.1*tspiGuess) { //stay within 10x of original guess
+            if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
+              actual_train_samples_per_iteration /= correction;
+              actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+              Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+            }
+          }
+          if (correction == 1) {
+            Log.info("Keeping value of train_samples_per_iteration the same : " + actual_train_samples_per_iteration);
+          }
+        } else {
           Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
         }
       }
@@ -525,7 +510,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         }
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
-        if (get_params()._diagnostics) model_info().computeStats();
+        model_info().computeStats();
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -539,8 +524,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           // training
           {
             final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make());
-            final Vec l2 = mse_frame.anyVec();
-            Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             mse_frame.delete();
             ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain); //updated by model.score
             _output._training_metrics = mtrain;
@@ -548,8 +531,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
-            final Vec l2 = mse_frame.anyVec();
-            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
             mse_frame.delete();
             ModelMetrics mtest = ModelMetrics.getFromDKV(this,ftest); //updated by model.score
             _output._validation_metrics = mtest;
@@ -572,11 +553,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
             err.training_AUC = mm._auc;
-            err.train_confusion_matrix = mm.cm();
-          }
-          else if (mm1 instanceof ModelMetricsMultinomial) {
-            ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
-            err.train_confusion_matrix = mm.cm();
           }
           if (ftrain.numRows() != training_rows) {
             _output._training_metrics._description = "Metrics reported on temporary training frame with " + ftrain.numRows() + " samples";
@@ -598,10 +574,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
               if (mtest instanceof ModelMetricsBinomial) {
                 ModelMetricsBinomial mm = (ModelMetricsBinomial)mtest;
                 err.validation_AUC = mm._auc;
-                err.valid_confusion_matrix = mm.cm();
-              } else if (mtest instanceof ModelMetricsMultinomial) {
-                ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mtest;
-                err.valid_confusion_matrix = mm.cm();
               }
               if (ftest.numRows() != validation_rows) {
                 _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + ftest.numRows() + " samples";
@@ -689,11 +661,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //          }
 //        }
 
-          // print the freshly scored model to ASCII
-          if (keep_running && printme)
-            for (String s : toString().split("\n")) Log.info(s);
-          if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
+        // print the freshly scored model to ASCII
+        if (keep_running && printme)
+          Log.info(toString());
+        if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
       }
       if (model_info().unstable()) {
         Log.warn(unstable_msg);
@@ -712,11 +684,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     return keep_running;
  }
-
-  @Override public String toString() {
-    return _output.toString();
-  }
-
   /** Make either a prediction or a reconstruction.
    * @param orig Test dataset
    * @param adaptedFr Test dataset, adapted to the model
@@ -738,10 +705,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       new MRTask() {
         @Override public void map( Chunk chks[] ) {
           double tmp [] = new double[_output._names.length];
-          float preds[] = new float [len];
+          double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
-            float p[] = score_autoencoder(chks, row, tmp, preds, neurons);
+            double p[] = score_autoencoder(chks, row, tmp, preds, neurons);
             for( int c=0; c<preds.length; c++ )
               chks[_output._names.length+c].set(row,p[c]);
           }
@@ -765,6 +732,74 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   /**
+   * Compute the loss function
+   * @param myRows Mini-Batch Array of denseRow's containing numerical/categorical predictor and response data (standardized)
+   * @return loss
+   */
+  public double loss(DataInfo.Row[] myRows) {
+    double loss = 0;
+    Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
+    for (DataInfo.Row myRow : myRows) {
+      if (myRow == null) continue;
+      long seed = -1; //ignored
+      // check that all non-last layer errors/gradients are empty
+      for (int i = 0; i<neurons.length-1;++i) {
+        Storage.DenseVector e = neurons[i]._e;
+        if (e==null) continue;
+        assert(ArrayUtils.sum(e.raw()) == 0);
+      }
+      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+      DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
+      // check that all non-last layer errors/gradients are empty
+      for (int i = 0; i<neurons.length-1;++i) {
+        Storage.DenseVector e = neurons[i]._e;
+        if (e==null) continue;
+        assert(ArrayUtils.sum(e.raw()) == 0);
+      }
+
+      if (model_info.get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
+        if (_parms._balance_classes) throw H2O.unimpl();
+        int actual = (int) myRow.response[0];
+        double pred = neurons[neurons.length - 1]._a.get(actual);
+        loss += -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
+      } else {
+        if (model_info.get_params()._autoencoder) throw H2O.unimpl();
+
+        //prediction and actual response in standardized response space
+        double pred = neurons[neurons.length - 1]._a.get(0);
+        double actual = myRow.response[0];
+
+        // FIXME: re-enable this such that the loss is computed from the de-standardized prediction/response
+        //bring standardized prediction and actual response to real space
+//      DataInfo di = model_info().data_info();
+//      if (di._normRespMul != null) { //either both are null or none
+//        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
+//        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
+//      }
+        Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
+        pred = dist.linkInv(pred);
+        loss += 0.5 * dist.deviance(1 /*weight*/, actual, pred);
+      }
+
+      // add L1/L2 penalty of model coefficients (weights & biases)
+      for (int i = 0; i < _parms._hidden.length + 1; ++i) {
+        if (neurons[i]._w == null) continue;
+        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+          for (int col = 0; col < neurons[i]._w.cols(); ++col) {
+            loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
+            loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+          }
+        }
+        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+          loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
+          loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+        }
+      }
+    }
+    return loss;
+  }
+
+  /**
    * Predict from raw double values representing the data
    * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
@@ -779,7 +814,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
-    float[] out = neurons[neurons.length - 1]._a.raw();
+    double[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
@@ -789,10 +824,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // label assignment happens later - explicitly mark it as invalid here
       preds[0] = -1;
     } else {
-      if (model_info().data_info()._normRespMul != null)
+      if (model_info().data_info()._normRespMul != null) //either both are null or none
         preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
         preds[0] = (double)out[0];
+      // transform prediction to response space
+      preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
       if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
@@ -830,20 +867,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean()));
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean() /*mean MSE*/));
     return res;
-  }
-
-  @Override public Frame score(Frame fr, String destination_key) {
-    if (!_parms._autoencoder)
-      return super.score(fr, destination_key);
-    else {
-      Frame adaptFr = new Frame(fr);
-      adaptTestForTrain(adaptFr, true, adaptFr.find(_output.responseName()) != -1);   // Adapt
-      Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
-      cleanup_adapt( adaptFr, fr );
-      return output;
-    }
   }
 
    /**
@@ -871,7 +896,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
 
     Scope.enter();
-    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
@@ -884,7 +909,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             tmp[i] = chks[i].atd(row);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
           DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/);
-          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
+          double[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
@@ -901,7 +926,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
 
   // Make (potentially expanded) reconstruction
-  private float[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds, Neurons[] neurons) {
+  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons) {
     assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.length);
     for( int i=0; i<tmp.length; i++ )
@@ -916,7 +941,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param preds Reconstruction (potentially expanded)
    * @return reconstruction error
    */
-  private double score_autoencoder(double[] data, float[] preds, Neurons[] neurons) {
+  private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
@@ -924,8 +949,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
-    float[] in  = neurons[0]._a.raw(); //input (expanded)
-    float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
+    double[] in  = neurons[0]._a.raw(); //input (expanded)
+    double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
 
     // First normalize categorical reconstructions to be probabilities
@@ -1060,7 +1085,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
     // activation storage
     sb.i(1).p("// Storage for neuron activation values.").nl();
-    sb.i(1).p("public static final float[][] ACTIVATION = new float[][] {").nl();
+    sb.i(1).p("public static final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
       String colInfoClazz = mname + "_Activation_"+i;
       sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
@@ -1068,13 +1093,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
       fileContextSB.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, new float[layers[i]]);
+      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, new double[layers[i]]);
     }
     sb.i(1).p("};").nl();
 
     // biases
     sb.i(1).p("// Neuron bias values.").nl();
-    sb.i(1).p("public static final float[][] BIAS = new float[][] {").nl();
+    sb.i(1).p("public static final double[][] BIAS = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
       String colInfoClazz = mname + "_Bias_"+i;
       sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
@@ -1082,7 +1107,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
       fileContextSB.i().p("// Neuron bias values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-      float[] bias = i == 0 ? null : new float[model_info().get_biases(i-1).size()];
+      double[] bias = i == 0 ? null : new double[model_info().get_biases(i-1).size()];
       if (i>0) {
         for (int j=0; j<bias.length; ++j) bias[j] = model_info().get_biases(i-1).get(j);
       }
@@ -1128,7 +1153,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     final int cats = model_info().data_info()._cats;
     final int nums = model_info().data_info()._nums;
     // initialize input layer
-    if (nums > 0) bodySb.i().p("java.util.Arrays.fill(NUMS,0f);").nl();
+    if (nums > 0) bodySb.i().p("java.util.Arrays.fill(NUMS,0);").nl();
     if (cats > 0) bodySb.i().p("java.util.Arrays.fill(CATS,0);").nl();
     bodySb.i().p("int i = 0, ncats = 0;").nl();
     if (cats > 0) {
@@ -1155,11 +1180,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     bodySb.i().p("java.util.Arrays.fill(ACTIVATION[0],0);").nl();
     if (cats > 0) {
-      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1f;").nl();
+      bodySb.i().p("for (i=0; i<ncats; ++i) ACTIVATION[0][CATS[i]] = 1;").nl();
     }
     if (nums > 0) {
       bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();
-      bodySb.i(1).p("ACTIVATION[0][CATOFFSETS[CATOFFSETS.length-1] + i] = Double.isNaN(NUMS[i]) ? 0f : (float) NUMS[i];").nl();
+      bodySb.i(1).p("ACTIVATION[0][CATOFFSETS[CATOFFSETS.length-1] + i] = Double.isNaN(NUMS[i]) ? 0 : NUMS[i];").nl();
       bodySb.i().p("}").nl();
     }
 
@@ -1171,17 +1196,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
     // make prediction: forward propagation
     bodySb.i().p("for (i=1; i<ACTIVATION.length; ++i) {").nl();
-    bodySb.i(1).p("java.util.Arrays.fill(ACTIVATION[i],0f);").nl();
+    bodySb.i(1).p("java.util.Arrays.fill(ACTIVATION[i],0);").nl();
     if (maxout) {
-      bodySb.i(1).p("float rmax = 0;").nl();
+      bodySb.i(1).p("double rmax = 0;").nl();
       bodySb.i(1).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
       bodySb.i(2).p("final int cols = ACTIVATION[i-1].length;").nl();
-      bodySb.i(2).p("float cmax = Float.NEGATIVE_INFINITY;").nl();
+      bodySb.i(2).p("double cmax = Float.NEGATIVE_INFINITY;").nl();
       bodySb.i(2).p("for (int c=0; c<cols; ++c) {").nl();
       bodySb.i(3).p("if " + stopping + " cmax = Math.max(ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c], cmax);").nl();
       bodySb.i(3).p("else ACTIVATION[i][r] += ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c];").nl();
       bodySb.i(2).p("}").nl();
-      bodySb.i(2).p("if "+ stopping +" ACTIVATION[i][r] = Float.isInfinite(cmax) ? 0f : cmax;").nl();
+      bodySb.i(2).p("if "+ stopping +" ACTIVATION[i][r] = Double.isInfinite(cmax) ? 0f : cmax;").nl();
       bodySb.i(2).p("ACTIVATION[i][r] += BIAS[i][r];").nl();
       bodySb.i(2).p("if " + stopping + " rmax = Math.max(rmax, ACTIVATION[i][r]);").nl();
       bodySb.i(1).p("}").nl();
@@ -1195,11 +1220,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       bodySb.i(1).p("int multiple = (cols/8)*8-1;").nl();
       bodySb.i(1).p("int idx = 0;").nl();
       bodySb.i(1).p("float[] a = WEIGHT[i];").nl();
-      bodySb.i(1).p("float[] x = ACTIVATION[i-1];").nl();
-      bodySb.i(1).p("float[] y = BIAS[i];").nl();
-      bodySb.i(1).p("float[] res = ACTIVATION[i];").nl();
+      bodySb.i(1).p("double[] x = ACTIVATION[i-1];").nl();
+      bodySb.i(1).p("double[] y = BIAS[i];").nl();
+      bodySb.i(1).p("double[] res = ACTIVATION[i];").nl();
       bodySb.i(1).p("for (int row=0; row<rows; ++row) {").nl();
-      bodySb.i(2).p("float psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
+      bodySb.i(2).p("double psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
       bodySb.i(2).p("for (int col = 0; col < multiple; col += 8) {").nl();
       bodySb.i(3).p("int off = idx + col;").nl();
       bodySb.i(3).p("psum0 += a[off    ] * x[col    ];").nl();
@@ -1222,9 +1247,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       bodySb.i(1).p("if " + stopping + " {").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
       if (tanh) {
-        bodySb.i(3).p("ACTIVATION[i][r] = 1f - 2f / (1f + (float)Math.exp(2*ACTIVATION[i][r]));").nl();
+        bodySb.i(3).p("ACTIVATION[i][r] = 1 - 2 / (1 + Math.exp(2*ACTIVATION[i][r]));").nl();
       } else if (relu) {
-        bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
+        bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0, ACTIVATION[i][r]);").nl();
       }
     }
     if (p._hidden_dropout_ratios != null) {
@@ -1238,17 +1263,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (_output.isClassifier()) {
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // softmax
-      bodySb.i(2).p("float max = ACTIVATION[i][0];").nl();
+      bodySb.i(2).p("double max = ACTIVATION[i][0];").nl();
       bodySb.i(2).p("for (int r=1; r<ACTIVATION[i].length; r++) {").nl();
       bodySb.i(3).p("if (ACTIVATION[i][r]>max) max = ACTIVATION[i][r];").nl();
       bodySb.i(2).p("}").nl();
-      bodySb.i(2).p("float scale = 0f;").nl();
+      bodySb.i(2).p("double scale = 0;").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; r++) {").nl();
-      bodySb.i(3).p("ACTIVATION[i][r] = (float) Math.exp(ACTIVATION[i][r] - max);").nl();
+      bodySb.i(3).p("ACTIVATION[i][r] = Math.exp(ACTIVATION[i][r] - max);").nl();
       bodySb.i(3).p("scale += ACTIVATION[i][r];").nl();
       bodySb.i(2).p("}").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; r++) {").nl();
-      bodySb.i(3).p("if (Float.isNaN(ACTIVATION[i][r]))").nl();
+      bodySb.i(3).p("if (Double.isNaN(ACTIVATION[i][r]))").nl();
       bodySb.i(4).p("throw new RuntimeException(\"Numerical instability, predicted NaN.\");").nl();
       bodySb.i(3).p("ACTIVATION[i][r] /= scale;").nl();
       bodySb.i(3).p("preds[r+1] = ACTIVATION[i][r];").nl();
@@ -1264,13 +1289,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       else {
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
+      bodySb.i(2).p("preds[1] = " + new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInvString("preds[1]")+";").nl();
       bodySb.i(2).p("if (Double.isNaN(preds[1])) throw new RuntimeException(\"Predicted regression target NaN!\");").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();
     } else { //AutoEncoder
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; r++) {").nl();
-      bodySb.i(3).p("if (Float.isNaN(ACTIVATION[i][r]))").nl();
+      bodySb.i(3).p("if (Double.isNaN(ACTIVATION[i][r]))").nl();
       bodySb.i(4).p("throw new RuntimeException(\"Numerical instability, reconstructed NaN.\");").nl();
       bodySb.i(3).p("preds[r] = ACTIVATION[i][r];").nl();
       bodySb.i(2).p("}").nl();
@@ -1294,9 +1320,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (_output.isClassifier()) {
       if (_parms._balance_classes)
         bodySb.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
+      bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold()+");").nl();
     } else {
-      bodySb.ip("preds[0] = (float)preds[1];").nl();
+      bodySb.ip("preds[0] = preds[1];").nl();
     }
   }
 

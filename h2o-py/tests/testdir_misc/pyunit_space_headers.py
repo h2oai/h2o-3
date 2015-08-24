@@ -3,12 +3,12 @@ sys.path.insert(1, "../../")
 import h2o
 
 def space_headers(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
-    f = h2o.import_frame(path=h2o.locate("smalldata/jira/citibike_head.csv"))
+    f = h2o.import_file(path=h2o.locate("smalldata/jira/citibike_head.csv"))
 
-    print f.names()
+    print f.names
 
     f["starttime"].show()
 

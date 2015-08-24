@@ -24,7 +24,7 @@ class UDPRebooted extends UDP {
 
     void send(H2ONode target) {
       assert this != none;
-      new AutoBuffer(target).putUdp(udp.rebooted).put1(ordinal()).close();
+      new AutoBuffer(target,udp.rebooted._prior).putUdp(udp.rebooted).put1(ordinal()).close();
     }
     void broadcast() { send(H2O.SELF); }
   }
@@ -45,7 +45,7 @@ class UDPRebooted extends UDP {
       Log.info("Orderly shutdown command from "+killer);
       H2O.exit(0);
       return;
-    case oom:      m = "Out of Memory and no swap space left";                                                   break;
+    case oom:      m = "Out of Memory, Heap Space exceeded, increase Heap Size,";                                break;
     case error:    m = "Error leading to a cloud kill";                                                          break;
     case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
     case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
@@ -65,7 +65,9 @@ class UDPRebooted extends UDP {
   private static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
-    try { TCPReceiverThread.SOCK.close(); } catch( IOException ignore ) { }
+    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
+    if(!H2O.ARGS.useUDP)
+      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }

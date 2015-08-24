@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/40k_categoricals.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/40k_categoricals.csv.gz\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/40k_categoricals.csv.gz\"]\n  destination_frame: \"X40k_categoricals4.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 4\n  single_quotes: false\n  column_types: [\"String\",\"Numeric\",\"Enum\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 65536"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"X40k_categoricals4.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"X40k_categoricals4.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"X40k_categoricals4.hex\", [0.3], [\"X40k_categoricals_test.hex_0.30\",\"X40k_categoricals_train.hex_0.70\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"drf\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-05bd437e-b7c7-48a6-89c4-2815156199d9\",\"training_frame\":\"X40k_categoricals_train.hex_0.70\",\"validation_frame\":\"X40k_categoricals_test.hex_0.30\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C2\",\"ntrees\":50,\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":7146259029682654000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false,\"binomial_double_trees\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"drf-05bd437e-b7c7-48a6-89c4-2815156199d9\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-05bd437e-b7c7-48a6-89c4-2815156199d9\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-05bd437e-b7c7-48a6-89c4-2815156199d9\", frame: \"X40k_categoricals_test.hex_0.30\", predictions_frame: \"prediction-423975c1-2cd8-4650-9bc0-38b1f598204e\""
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import h2o
 import numpy as np
 
 def kmeans_mllib(ip, port):
-    h2o.init(ip, port)
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
@@ -20,8 +20,8 @@ def kmeans_mllib(ip, port):
 
         print "Import BigCross.data from HDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_cross_file)
-        cross_h2o = h2o.import_frame(url)
-        n = cross_h2o.nrow()
+        cross_h2o = h2o.import_file(url)
+        n = cross_h2o.nrow
 
         err_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
         ncent = [int(err_mllib[r][0]) for r in range(len(err_mllib))]

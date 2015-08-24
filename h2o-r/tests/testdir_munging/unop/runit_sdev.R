@@ -20,8 +20,7 @@ test.sdev <- function(conn) {
     Log.info(paste("Column", i, ":", "sd in R:", iris_Rsd, "\tsd in H2O:", iris_H2Osd))
     expect_equal(iris_Rsd, iris_H2Osd)
   }
-  
-  expect_error(sd(iris.hex[,5]))   # Error if column is categorical
+
   expect_error(sd(iris.hex[,1:2]))   # Error if more than one column
   
   testEnd()

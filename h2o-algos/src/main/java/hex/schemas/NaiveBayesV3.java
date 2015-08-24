@@ -29,14 +29,6 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
 				"compute_metrics"
 		};
 
-    // supervised Schema
-
-    // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
-    // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
-    // column names are related to training_frame.
-    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 response_column;
-
   /*Imbalanced Classes*/
     /**
      * For imbalanced data, balance training data class counts via
@@ -74,22 +66,22 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
 
     //
 
-    @API(help = "Laplace smoothing parameter")
+    @API(help = "Laplace smoothing parameter", gridable = true)
     public double laplace;
 
-    @API(help = "Min. standard deviation to use for observations with not enough data")
+    @API(help = "Min. standard deviation to use for observations with not enough data", gridable = true)
     public double min_sdev;
 
-    @API(help = "Cutoff below which standard deviation is replaced with min_sdev")
+    @API(help = "Cutoff below which standard deviation is replaced with min_sdev", gridable = true)
     public double eps_sdev;
 
-    @API(help = "Min. probability to use for observations with not enough data")
+    @API(help = "Min. probability to use for observations with not enough data", gridable = true)
     public double min_prob;
 
-    @API(help = "Cutoff below which probability is replaced with min_prob")
+    @API(help = "Cutoff below which probability is replaced with min_prob", gridable = true)
     public double eps_prob;
 
-    @API(help = "Compute metrics on training data")
+    @API(help = "Compute metrics on training data", gridable = true)
     public boolean compute_metrics;
   }
 }

@@ -1,12 +1,12 @@
 package water;
 
+import com.brsanthu.googleanalytics.GoogleAnalytics;
 import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.eclipse.jetty.util.Jetty;
 import org.reflections.Reflections;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
@@ -14,13 +14,15 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
-import water.util.DocGen.HTML;
 import water.util.GAUtils;
 import water.util.Log;
-import water.util.PrettyPrint;
 import water.util.OSUtils;
+import water.util.PrettyPrint;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -30,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
+import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -43,13 +45,14 @@ final public class H2O {
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
 
+
   /**
    * Print help about command line arguments.
    */
   public static void printHelp() {
     String defaultFlowDirMessage;
     if (DEFAULT_FLOW_DIR() == null) {
-      // If you start h2o on hadoop, you must set -flow_dir.
+      // If you start h2o on Hadoop, you must set -flow_dir.
       // H2O doesn't know how to guess a good one.
       // user.home doesn't make sense.
       defaultFlowDirMessage =
@@ -96,7 +99,11 @@ final public class H2O {
             "    -ice_root <fileSystemPath>\n" +
             "          The directory where H2O spills temporary data to disk.\n" +
             "\n" +
-            "    -flow_dir <server side directory or hdfs directory>\n" +
+            "    -log_dir <fileSystemPath>\n" +
+            "          The directory where H2O writes logs to disk.\n" +
+            "          (This usually has a good default that you need not change.)\n" +
+            "\n" +
+            "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
             defaultFlowDirMessage +
             "\n" +
@@ -142,7 +149,8 @@ final public class H2O {
   /**
    * A class containing all of the arguments for H2O.
    */
-  public static class OptArgs {
+  public static class
+    OptArgs {
     //-----------------------------------------------------------------------------------
     // Help and info
     //-----------------------------------------------------------------------------------
@@ -176,6 +184,9 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** -user_name=user_name; Set user name */
+    public String user_name = System.getProperty("user.name");
+
     //-----------------------------------------------------------------------------------
     // Node configuration
     //-----------------------------------------------------------------------------------
@@ -185,8 +196,14 @@ final public class H2O {
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
+    /** -log_dir=/path/to/dir; directory to save logs in */
+    public String log_dir;
+
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
+
+    /** -disable_web; disable web API port (used by Sparkling Water) */
+    public boolean disable_web = false;
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -194,16 +211,16 @@ final public class H2O {
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
-    /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
 
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
-    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for hadoop */
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
-    /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
+    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
     public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
@@ -223,6 +240,7 @@ final public class H2O {
 
     /** -beta, -experimental */
     public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
+    public boolean useUDP = false;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -355,13 +373,24 @@ final public class H2O {
       else if (s.matches("client")) {
         ARGS.client = true;
       }
+      else if (s.matches("user_name")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.user_name = args[i];
+      }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
         ARGS.ice_root = args[i];
       }
+      else if (s.matches("log_dir")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.log_dir = args[i];
+      }
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
         ARGS.flow_dir = args[i];
+      }
+      else if (s.matches("disable_web")) {
+        ARGS.disable_web = true;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
@@ -405,8 +434,9 @@ final public class H2O {
       }
       else if (s.matches("experimental")) {
         ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
-      }
-      else {
+      } else if(s.matches("useUDP")) {
+          ARGS.useUDP = true;
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
@@ -415,6 +445,7 @@ final public class H2O {
   //Google analytics performance measurement
   public static GoogleAnalytics GA;
   public static int CLIENT_TYPE_GA_CUST_DIM = 1;
+  public static int CLIENT_ID_GA_CUST_DIM = 2;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -432,7 +463,7 @@ final public class H2O {
   /**
    * Tell the embedding software that this H2O instance belongs to
    * a cloud of a certain size.
-   * This may be nonblocking.
+   * This may be non-blocking.
    *
    * @param ip IP address this H2O can be reached at.
    * @param port Port this H2O can be reached at (for REST API and browser).
@@ -508,6 +539,10 @@ final public class H2O {
     p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
     PropertyConfigurator.configure(p);
     System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+
+    // Log jetty stuff to stdout for now.
+    // TODO:  figure out how to wire this into log4j.
+    System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StrErrLog");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -616,7 +651,7 @@ final public class H2O {
     apisRegistered = true;
 
     long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered REST APIs in: " + registerApisMillis + "mS");
+    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "mS");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -677,7 +712,10 @@ final public class H2O {
       StringBuilder ua = new StringBuilder();
 
       if (source.contains("Safari")) {
-        ua.append("Safari");
+        ua.append("safari");
+      }
+      else if (source.contains("Python")) {
+        ua.append("python");
       }
       else {
         for (int i = 0; i < source.length(); i++) {
@@ -772,6 +810,44 @@ final public class H2O {
    */
   public static H2OFailException fail(String msg) { return H2O.fail(msg, null); }
 
+  /**
+   * Return an error message with an accompanying URL to help the user get more detailed information.
+   *
+   * @param number H2O tech note number.
+   * @param message Message to present to the user.
+   * @return A longer message including a URL.
+   */
+  public static String technote(int number, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n")
+            .append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number));
+
+    return sb.toString();
+  }
+
+  /**
+   * Return an error message with an accompanying list of URLs to help the user get more detailed information.
+   *
+   * @param numbers H2O tech note numbers.
+   * @param message Message to present to the user.
+   * @return A longer message including a list of URLs.
+   */
+  public static String technote(int[] numbers, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n");
+
+    for (int number : numbers) {
+      sb.append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number)).append("\n");
+    }
+
+    return sb.toString();
+  }
 
 
   // --------------------------------------------------------------------------
@@ -961,14 +1037,13 @@ final public class H2O {
     // The serialization flavor / delegate.  Lazily set on first use.
     private transient short _ice_id;
 
-    /** Find the serializatoin delegate for a subclass of this class */
+    /** Find the serialization delegate for a subclass of this class */
     protected Icer<T> icer() {
       int id = _ice_id;
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
     }
     @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(T)this); }
     @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(T)this); }
-    @Override final public HTML       writeHTML(HTML       ab) { return icer().writeHTML(ab,(T)this); }
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
@@ -976,7 +1051,6 @@ final public class H2O {
     @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
-    @Override       public HTML writeHTML_impl( HTML ab ) { return ab; }
   }
 
 
@@ -1159,7 +1233,7 @@ final public class H2O {
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
-    // down. Started soon, so we can start parsing multicast UDP packets
+    // down. Started soon, so we can start parsing multi-cast UDP packets
     new MultiReceiverThread().start();
 
     // Start the Persistent meta-data cleaner thread, which updates the K/V
@@ -1169,24 +1243,20 @@ final public class H2O {
     Cleaner.THE_CLEANER.start();
 
     // Start a UDP timeout worker thread. This guy only handles requests for
-    // which we have not recieved a timely response and probably need to
+    // which we have not received a timely response and probably need to
     // arrange for a re-send to cover a dropped UDP packet.
     new UDPTimeOutThread().start();
     new H2ONode.AckAckTimeOutThread().start();
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread().start();
+    new TCPReceiverThread(NetworkInit._tcpSocketBig).start();
     // Register the default Requests
     Object x = water.api.RequestServer.class;
   }
 
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
-  static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu, String summary ) {
-    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth,summary),base_url,label,menu);
-  }
 
   static public void registerGET( String url_pattern, Class hclass, String hmeth, String summary ) {
     registerGET(url_pattern, hclass, hmeth, null, summary);
@@ -1199,7 +1269,7 @@ final public class H2O {
 
   static public void registerPOST( String url_pattern, Class hclass, String hmeth, String summary ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.register(url_pattern,"POST",hclass,hmeth,summary);
+    RequestServer.register(url_pattern,"POST",hclass,hmeth,null,summary);
   }
 
   public static void registerResourceRoot(File f) {
@@ -1483,6 +1553,7 @@ final public class H2O {
     }
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
+    Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
     // Register with GA
     if((new File(".h2o_no_collect")).exists()
@@ -1493,6 +1564,18 @@ final public class H2O {
     } else {
       try {
         GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
+        DefaultRequest defReq = GA.getDefaultRequest();
+        try {
+          String bakedGaId;
+          BufferedReader index = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream("gaid")));
+          while ((bakedGaId = index.readLine()) != null) {
+            if (!(bakedGaId.equals("index") || bakedGaId.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))) {
+              defReq.clientId(bakedGaId);
+            }
+          }
+        } catch (Exception ignore) {}
+        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
+        GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
         Log.POST(11, t.toString());
         StackTraceElement[] stes = t.getStackTrace();
@@ -1509,14 +1592,12 @@ final public class H2O {
     try {
       String logDir = Log.getLogDir();
       Log.info("Log dir: '" + logDir + "'");
-
-      Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
     }
     catch (Exception e) {
-      System.err.println("ERROR: Log.getLogDir() failed, exiting now.");
-      e.printStackTrace();
-      H2O.exit(1);
+      Log.info("Log dir: (Log4j configuration inherited)");
     }
+
+    Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
 
     //Print extra debug info now that logs are setup
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();

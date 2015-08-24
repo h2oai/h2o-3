@@ -34,13 +34,20 @@ public class GetLogsFromNode extends Iced {
    * Do the work.
    */
   public void doIt() {
-    H2ONode node = H2O.CLOUD._memary[nodeidx];
-    GetLogsTask ggt = new GetLogsTask();
-    Log.trace("GetLogsTask starting to node " + nodeidx + "...");
-    // Synchronous RPC call to get ticks from remote (possibly this) node.
-    new RPC<>(node, ggt).call().get();
-    Log.trace("GetLogsTask completed to node " + nodeidx);
-    bytes = ggt._bytes;
+    if (nodeidx == -1) {
+      GetLogsTask t = new GetLogsTask();
+      t.doIt();
+      bytes = t._bytes;
+    }
+    else {
+      H2ONode node = H2O.CLOUD._memary[nodeidx];
+      GetLogsTask t = new GetLogsTask();
+      Log.trace("GetLogsTask starting to node " + nodeidx + "...");
+      // Synchronous RPC call to get ticks from remote (possibly this) node.
+      new RPC<>(node, t).call().get();
+      Log.trace("GetLogsTask completed to node " + nodeidx);
+      bytes = t._bytes;
+    }
   }
 
   private static class GetLogsTask extends DTask<GetLogsTask> {
@@ -50,11 +57,10 @@ public class GetLogsFromNode extends Iced {
       _bytes = null;
     }
 
-    @Override public void compute2() {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ZipOutputStream zos = new ZipOutputStream(baos);
-
+    public void doIt() {
       try {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ZipOutputStream zos = new ZipOutputStream(baos);
         zipDir(Log.LOG_DIR, baos, zos);
         zos.close();
         baos.close();
@@ -63,9 +69,11 @@ public class GetLogsFromNode extends Iced {
       catch (Exception e) {
         _bytes = e.toString().getBytes();
       }
-      finally {
-        tryComplete();
-      }
+    }
+
+    @Override public void compute2() {
+      doIt();
+      tryComplete();
     }
 
     //here is the code for the method
@@ -92,6 +100,13 @@ public class GetLogsFromNode extends Iced {
             //loop again
             continue;
           }
+
+          // In the Sparkling Water case, when running in the local-cluster configuration,
+          // there are jar files in the log directory too.  Ignore them.
+          if (f.toString().endsWith(".jar")) {
+            continue;
+          }
+
           //if we reached here, the File object f was not a directory
           //create a FileInputStream on top of f
           FileInputStream fis = new FileInputStream(f);

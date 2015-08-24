@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/logreg/prostate_missing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/logreg/prostate_missing.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/logreg/prostate_missing.csv\"]\n  destination_frame: \"prostate_missing1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate_missing1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"prostate_missing1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"prostate_missing1.hex\", [0.2], [\"prostate_missing1_test.hex_0.20\",\"prostate_missing1_train.hex_0.80\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-5c11d40e-15ff-44dc-aa31-6e8c47b1635c\",\"training_frame\":\"prostate_missing1_train.hex_0.80\",\"validation_frame\":\"prostate_missing1_test.hex_0.20\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"GLEASON\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":4965634264843449000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-5c11d40e-15ff-44dc-aa31-6e8c47b1635c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-5c11d40e-15ff-44dc-aa31-6e8c47b1635c\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-5c11d40e-15ff-44dc-aa31-6e8c47b1635c\", frame: \"prostate_missing1_test.hex_0.20\", predictions_frame: \"prediction-17aee000-a989-41ef-a1f4-a0fdce09e9b7\""
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/cars_20mpg.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/cars_20mpg.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/cars_20mpg.csv\"]\n  destination_frame: \"cars_20mpg.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"name\",\"economy\",\"cylinders\",\"displacement\",\"power\",\"weight\",\"acceleration\",\"year\",\"economy_20mpg\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"cars_20mpg.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"cars_20mpg.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"cars_20mpg.hex\", [0.3], [\"cars_20mpg_test.hex_0.30\",\"cars_20mpg_train.hex_0.70\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"gbm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-d6a2e5b0-3df3-45be-b4f7-7299bc15e7f4\",\"training_frame\":\"cars_20mpg_train.hex_0.70\",\"validation_frame\":\"cars_20mpg_test.hex_0.30\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"economy_20mpg\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-7369187444014344000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"build_tree_one_node\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm-d6a2e5b0-3df3-45be-b4f7-7299bc15e7f4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-d6a2e5b0-3df3-45be-b4f7-7299bc15e7f4\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"gbm-d6a2e5b0-3df3-45be-b4f7-7299bc15e7f4\", frame: \"cars_20mpg_test.hex_0.30\", predictions_frame: \"prediction-7a323ffb-9943-431b-9401-cc34cd50c838\""
+    }
+  ]
+}

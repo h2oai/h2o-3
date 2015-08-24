@@ -25,9 +25,9 @@ The following data sources are supported:
  
   .. code-block:: python
 
-    >>> trainFrame = h2o.import_frame(path="hdfs://192.168.1.10/user/data/data_test.csv")
+    >>> trainFrame = h2o.import_file(path="hdfs://192.168.1.10/user/data/data_test.csv")
     #or
-    >>> trainFrame = h2o.import_frame(path="~/data/data_test.csv")
+    >>> trainFrame = h2o.import_file(path="~/data/data_test.csv")
 
 Loading Data From A Python Object
 ---------------------------------
@@ -186,9 +186,9 @@ collections.OrderedDict preserves the order of the key-value pairs in which they
     :undoc-members:
     :show-inheritance:
 
-:mod:`H2OVec`
+:mod:`GroupBy`
 --------------
-.. autoclass:: h2o.frame.H2OVec
+.. autoclass:: h2o.group_by.GroupBy
     :members:
     :undoc-members:
     :show-inheritance:

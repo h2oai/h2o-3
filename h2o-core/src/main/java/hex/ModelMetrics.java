@@ -42,6 +42,16 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _scoring_time = System.currentTimeMillis();
   }
 
+  @Override public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Model Metrics Type: " + this.getClass().getSimpleName().substring(12) + "\n");
+    sb.append(" Description: " + (_description == null ? "N/A" : _description) + "\n");
+    sb.append(" model id: " + _modelKey + "\n");
+    sb.append(" frame id: " + _frameKey + "\n");
+    sb.append(" MSE: " + (float)_MSE + "\n");
+    return sb.toString();
+  }
+
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 

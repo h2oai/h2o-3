@@ -130,7 +130,6 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-
         // mavenLocal()
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
@@ -159,7 +158,10 @@ subprojects {
         apply from: "$rootDir/gradle/cp.gradle"
 	if (applyFindbugsPlugin) {
             apply from: "$rootDir/gradle/findbugs.gradle"
-	}
+        }
+        if (project.hasProperty("doCheckStyle")) {
+            apply from: "$rootDir/gradle/checkstyle.gradle"
+        }
     }
 
     // Configure Scala projects
@@ -256,6 +258,8 @@ clean.dependsOn cleanTarget
 apply from: "gradle/profiles.gradle"
 
 //
-// Import Jacoco code coverage tasks
+// Import Jacoco code coverage tasks if property exists.
 //
-apply from: "gradle/jacoco.gradle"
+if (project.hasProperty("jacocoCoverage")) {
+   apply from: "gradle/jacoco.gradle"
+}

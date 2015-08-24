@@ -46,16 +46,12 @@ Now, parse the imported data:
 
 0. Click the **Parse these files...** button. 
 
-  **Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
+  >**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
 
 0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
 0. If the data uses a separator, select it from the drop-down **Separator** list. 
 0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. To have H2O automatically determine if the first row of the dataset contains column names or data, select the **Auto** radio button. 
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
-0. To delete the imported dataset after parsing, check the **Delete on done** checkbox. 
-
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
-
 0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/GLM_Parse.png)
@@ -68,13 +64,12 @@ Now, parse the imported data:
 0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `Generalized Linear Model` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
 0. If the parsed Abalone .hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
-0. In the **Ignored_Columns** field, select all columns except columns 1 and 9 from the *Available* section to move them into the *Selected* section.
-**Note**: You must include at least 2 columns. 
-0. In the **Response** field, select the column associated with the Whole Weight variable (`C1`).
-0. Uncheck the **Standardize** checkbox.
+0. To generate a scoring history, select the abalone.hex file from the **Validation_frame** drop-down list.  
+0. In the **Response** field, select the column associated with the Whole Weight variable (`C9`).
 0. From the drop-down **Family** menu, select `gaussian`. 
 0. Enter `0.3` in the **Alpha** field. The alpha parameter is the mixing parameter for the L1 and L2 penalty.
-0. Enter `.002` in the **Lambda** field. 
+0. Enter `.002` in the **Lambda** field.
+0. Check the **Lambda_search** checkbox.  
 0. Click the **Build Model** button.
 
  ![Building Models](../images/GLM_BuildModel.png)

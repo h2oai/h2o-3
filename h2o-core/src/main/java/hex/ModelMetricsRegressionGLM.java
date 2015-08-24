@@ -12,8 +12,8 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression {
   public final double _nullDev;
   public final double _AIC;
 
-  public ModelMetricsRegressionGLM(Model model, Frame frame, double mse, double sigma, double resDev, double nullDev, double aic, long nDof, long rDof) {
-    super(model, frame, mse, sigma);
+  public ModelMetricsRegressionGLM(Model model, Frame frame, double mse, double sigma, double resDev, double meanResDev, double nullDev, double aic, long nDof, long rDof) {
+    super(model, frame, mse, sigma, meanResDev);
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;
@@ -21,7 +21,16 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression {
     _residualDegressOfFreedom = rDof;
   }
 
-  public String toString(){
-    return "DOF = " + _residualDegressOfFreedom + " (" + _nullDegressOfFreedom + "), dev = " + _resDev + " (" + _nullDev + ")";
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" null DOF: " + (float)_nullDegressOfFreedom + "\n");
+    sb.append(" residual DOF: " + (float)_residualDegressOfFreedom + "\n");
+    sb.append(" null deviance: " + (float)_nullDev + "\n");
+    sb.append(" residual deviance: " + (float)_resDev + "\n");
+    sb.append(" AIC: " + (float)_AIC + "\n");
+    return sb.toString();
   }
+
 }

@@ -1,6 +1,5 @@
 package water;
 
-import water.util.DocGen.HTML;
 import java.io.*;
 
 /**
@@ -50,10 +49,6 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
    *  is in the delegate {@link Icer} classes.
    *  @return Returns the original {@link AutoBuffer} for flow-coding. */
   @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(D)this); }
-  /** Standard "write thyself into the AutoBuffer" call, using HTML.  Real work
-   *  is in the delegate {@link Icer} classes.
-   *  @return Returns the original {@link AutoBuffer} for flow-coding. */
-  @Override final public HTML writeHTML(HTML sb) { return icer().writeHTML(sb,(D)this); }
   /** Standard "read thyself from the AutoBuffer" call, using the fast Iced protocol.  Real work
    *  is in the delegate {@link Icer} classes.
    *  @return Returns the original {@link AutoBuffer} for flow-coding. */
@@ -78,6 +73,10 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
 
+  ///////////////////////////////////
+  // TODO: make all of these protected!
+  ///////////////////////////////////
+
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
@@ -98,11 +97,6 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
   @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   *  auto-genned code.  Not intended to be called by user code.  Override only
-   *  for custom Iced serializers. */
-  //noninspection UnusedDeclaration
-  @Override public HTML writeHTML_impl( HTML ab ) { return ab; }
 
   // Java serializers use H2Os Icing
   @Override public void readExternal( ObjectInput ois )  throws IOException, ClassNotFoundException {

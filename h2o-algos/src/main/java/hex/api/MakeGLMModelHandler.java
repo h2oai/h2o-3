@@ -9,7 +9,6 @@ import hex.schemas.MakeGLMModelV3;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
-import water.api.KeyV3.ModelKeyV3;
 
 import java.util.Map;
 
@@ -32,7 +31,7 @@ public class MakeGLMModelHandler extends Handler {
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
-    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, model._output.coefficientNames(), model._output._binomial);
+    m._output = new GLMOutput(model.dinfo(),model._output._names, model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);

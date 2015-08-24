@@ -58,9 +58,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   /** Start the KMeans training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<KMeansModel> trainModelImpl(long work) {
-    return start(new KMeansDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<KMeansModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new KMeansDriver(), work, restartTimer);
   }
 
   @Override
@@ -81,8 +82,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       error("_user_points","Must specify initial cluster centers");
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       Frame user_points = _parms._user_points.get();
-      if( user_points.numCols() != _train.numCols() ) {
-        error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      if( user_points.numCols() != _train.numCols() - numSpecialCols()) {
+        error("_user_points","The user-specified points must have the same number of columns (" + (_train.numCols() - numSpecialCols()) + ") as the training observations");
       } else if( user_points.numRows() != _parms._k)
         error("_user_points","The number of rows in the user-specified points is not equal to k = " + _parms._k);
     }
@@ -109,7 +110,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       if( null != _parms._user_points ) { // User-specified starting points
         Frame user_points = _parms._user_points.get();
         int numCenters = (int)user_points.numRows();
-        int numCols = user_points.numCols();
+        int numCols = model._output.nfeatures();
         centers = new double[numCenters][numCols];
         Vec[] centersVecs = user_points.vecs();
         // Get the centers and standardize them if requested
@@ -123,20 +124,21 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       else { // Random, Furthest, or PlusPlus initialization
         if (_parms._init == Initialization.Random) {
           // Initialize all cluster centers to random rows
-          centers = new double[_parms._k][_train.numCols()];
+          centers = new double[_parms._k][model._output.nfeatures()];
           for (double[] center : centers)
             randomRow(vecs, rand, center, means, mults);
         } else {
-          centers = new double[1][vecs.length];
+          centers = new double[1][model._output.nfeatures()];
           // Initialize first cluster center to random row
           randomRow(vecs, rand, centers[0], means, mults);
 
+          model._output._iterations = 0;
           while (model._output._iterations < 5) {
             // Sum squares distances to cluster center
             SumSqr sqr = new SumSqr(centers, means, mults, _isCats).doAll(vecs);
 
             // Sample with probability inverse to square distance
-            Sampler sampler = new Sampler(centers, means, mults, _isCats, sqr._sqr, _parms._k * 3, _parms._seed).doAll(vecs);
+            Sampler sampler = new Sampler(centers, means, mults, _isCats, sqr._sqr, _parms._k * 3, _parms._seed, hasWeightCol()).doAll(vecs);
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
@@ -150,7 +152,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand, _parms._k, _parms._init, _isCats);
-          model._output._iterations = -1; // Reset iteration count
+          model._output._iterations = 0; // Reset iteration count
         }
       }
       return centers;
@@ -192,12 +194,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Compute all interesting KMeans stats (errors & variances of clusters,
     // etc).  Return new centers.
-    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
+    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
       if (model._parms._standardize) {
-        model._output._centers_std_raw = centers;
+        model._output._centers_std_raw = task._cMeans;
       }
-      model._output._centers_raw = destandardize(centers, _isCats, means, mults);
+      model._output._centers_raw = destandardize(task._cMeans, _isCats, means, mults);
       model._output._size = task._size;
       model._output._withinss = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -210,7 +212,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model._output._totss = model._output._tot_withinss;
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults, _parms.train().domains()).doAll(vecs);
+        TotSS totss = new TotSS(means,mults, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
         model._output._totss = totss._tss;
       }
       model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
@@ -235,7 +237,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
       if( !isRunning() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
-      if( model._output._iterations > _parms._max_iterations) return true;
+      if( model._output._iterations >= _parms._max_iterations) return true;
 
       // Compute average change in standardized cluster centers
       if( oldCenters==null ) return false; // No prior iteration, not stopping
@@ -282,8 +284,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // ---
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or average_change < TOLERANCE
+        model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
         while( !isDone(model,centers,oldCenters) ) {
-          Lloyds task = new Lloyds(centers,means,mults,_isCats, _parms._k).doAll(vecs);
+          Lloyds task = new Lloyds(centers,means,mults,_isCats, _parms._k, hasWeightCol()).doAll(vecs);
           // Pick the max categorical level for cluster center
           max_cats(task._cMeans,task._cats,_isCats);
 
@@ -293,7 +296,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
           // Compute model stats; update standardized cluster centers
           oldCenters = centers;
-          centers = computeStatsFillModel(task, model, vecs, centers, means, mults);
+          centers = computeStatsFillModel(task, model, vecs, means, mults);
 
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -342,6 +345,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(KMeans.this);
       }
@@ -352,6 +356,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       List<String> colHeaders = new ArrayList<>();
       List<String> colTypes = new ArrayList<>();
       List<String> colFormat = new ArrayList<>();
+      colHeaders.add("Number of Rows"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Clusters"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Categorical Columns"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
@@ -369,6 +374,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               "");
       int row = 0;
       int col = 0;
+      table.set(row, col++, Math.round(_train.numRows() * (hasWeightCol() ? _train.lastVec().mean() : 1)));
       table.set(row, col++, output._centers_raw.length);
       table.set(row, col++, output._categorical_column_count);
       table.set(row, col++, output._iterations);
@@ -455,31 +461,34 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // IN
     final double[] _means, _mults;
     final String[][] _isCats;
+    final int[] _card;
 
     // OUT
     double _tss;
+    double[] _gc; // Grand center (mean of cols)
 
-    TotSS(double[] means, double[] mults, String[][] isCats) {
+    TotSS(double[] means, double[] mults, String[][] isCats, int[] card) {
       _means = means;
       _mults = mults;
       _tss = 0;
       _isCats = isCats;
+      _card = card;
+
+      // Mean of numeric col is zero when standardized
+      _gc = mults!=null ? new double[means.length] : Arrays.copyOf(means, means.length);
+      for(int i=0; i<means.length; i++) {
+        if(isCats[i] != null)
+          _gc[i] = Math.min(Math.round(means[i]), _card[i]-1);  // TODO: Should set to majority class of categorical column
+      }
     }
 
     @Override public void map(Chunk[] cs) {
-      // de-standardize the cluster means
-      double[] means = Arrays.copyOf(_means, _means.length);
-
-      if (_mults!=null)
-        for (int i=0; i<means.length; ++i)
-          means[i] = (means[i] - _means[i])/_mults[i];
-
       for( int row = 0; row < cs[0]._len; row++ ) {
         double[] values = new double[cs.length];
         // fetch the data - using consistent NA and categorical data handling (same as for training)
         data(values, cs, row, _means, _mults);
         // compute the distance from the (standardized) cluster centroids
-        _tss += hex.genmodel.GenModel.KMeans_distance(means, values, _isCats, null, null);
+        _tss += hex.genmodel.GenModel.KMeans_distance(_gc, values, _isCats, null, null);
       }
     }
 
@@ -529,11 +538,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     final double _sqr;           // Min-square-error
     final double _probability;   // Odds to select this point
     final long _seed;
+    boolean _hasWeight;
 
     // OUT
     double[][] _sampled;   // New cluster centers
 
-    Sampler( double[][] centers, double[] means, double[] mults, String[][] isCats, double sqr, double prob, long seed ) {
+    Sampler( double[][] centers, double[] means, double[] mults, String[][] isCats, double sqr, double prob, long seed, boolean hasWeight ) {
       _centers = centers;
       _means = means;
       _mults = mults;
@@ -541,10 +551,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       _sqr = sqr;
       _probability = prob;
       _seed = seed;
+      _hasWeight = hasWeight;
     }
 
     @Override public void map(Chunk[] cs) {
-      double[] values = new double[cs.length];
+      int N = cs.length - (_hasWeight?1:0);
+      double[] values = new double[N];
       ArrayList<double[]> list = new ArrayList<>();
       Random rand = RandomUtils.getRNG(_seed + cs[0].start());
       ClusterDist cd = new ClusterDist();
@@ -580,6 +592,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     double[] _means, _mults;      // Standardization
     final int _k;
     final String[][] _isCats;
+    boolean _hasWeight;
 
     // OUT
     double[][] _cMeans;         // Means for each cluster
@@ -589,16 +602,17 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     long _worst_row;            // Row with max err
     double _worst_err;          // Max-err-row's max-err
 
-    Lloyds( double[][] centers, double[] means, double[] mults, String[][] isCats, int k ) {
+    Lloyds( double[][] centers, double[] means, double[] mults, String[][] isCats, int k, boolean hasWeight ) {
       _centers = centers;
       _means = means;
       _mults = mults;
       _isCats = isCats;
       _k = k;
+      _hasWeight = hasWeight;
     }
 
     @Override public void map(Chunk[] cs) {
-      int N = cs.length;
+      int N = cs.length - (_hasWeight ? 1:0);
       assert _centers[0].length==N;
       _cMeans = new double[_k][N];
       _cSqr = new double[_k];
@@ -614,6 +628,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       double[] values = new double[N]; // Temp data to hold row as doubles
       ClusterDist cd = new ClusterDist();
       for( int row = 0; row < cs[0]._len; row++ ) {
+        double weight = _hasWeight ? cs[N].atd(row) : 1;
+        if (weight == 0) continue; //skip holdout rows
+        assert(weight == 1); //K-Means only works for weight 1 (or weight 0 for holdout)
         data(values, cs, row, _means, _mults); // Load row as doubles
         closest(_centers, values, _isCats, cd); // Find closest cluster center
         int clu = cd._cluster;

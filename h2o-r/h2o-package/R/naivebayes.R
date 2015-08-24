@@ -32,7 +32,7 @@
 #' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels, 
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'  localH2O <- h2o.init()
 #'  votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
 #'  votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)

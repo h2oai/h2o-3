@@ -67,7 +67,7 @@ public class DeepLearningIrisTest extends TestUtil {
                     for (int hidden : hiddens) {
                       for (int epoch : epochs) {
                         for (double rate : rates) {
-                          for (boolean sparse : new boolean[]{true, false}) {
+                          for (boolean sparse : new boolean[]{false}) {
                             for (boolean col_major : new boolean[]{false}) {
                               Scope.enter();
                               DeepLearningModel mymodel = null;
@@ -153,7 +153,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._momentum_ramp = 0; //do not change - not implemented in reference
                                 p._initial_weight_distribution = dist;
                                 p._initial_weight_scale = scale;
-                                p._diagnostics = true;
                                 p._valid = null;
                                 p._quiet_mode = true;
                                 p._fast_mode = false; //to be the same as reference
@@ -274,7 +273,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                     // do the same as H2O here (compare float values and break ties based on row number)
                                     double[] preds = new double[ref_preds.length + 1];
                                     for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = ref_preds[j];
-                                    preds[0] = GenModel.getPrediction(preds, xValues, 0.5);
+                                    preds[0] = GenModel.getPrediction(preds, null, xValues, 0.5);
 
                                     // compare predicted label
                                     Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));

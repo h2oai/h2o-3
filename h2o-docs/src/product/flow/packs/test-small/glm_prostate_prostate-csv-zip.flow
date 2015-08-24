@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "cells": [
+   
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/prostate/prostate.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/prostate/prostate.csv.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/prostate/prostate.csv.zip\"]\n  destination_frame: \"prostate.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"ID\",\"CAPSULE\",\"AGE\",\"RACE\",\"DPROS\",\"DCAPS\",\"PSA\",\"VOL\",\"GLEASON\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 262144"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"prostate.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"prostate.hex\", [0.25], [\"prostate_test\",\"prostate_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-868fc0bc-a04a-4082-8c03-6812ee50bbe1\",\"training_frame\":\"prostate_train\",\"validation_frame\":\"prostate_test\",\"ignore_const_cols\":true,\"response_column\":\"ID\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-868fc0bc-a04a-4082-8c03-6812ee50bbe1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-868fc0bc-a04a-4082-8c03-6812ee50bbe1\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-868fc0bc-a04a-4082-8c03-6812ee50bbe1\", frame: \"prostate_test\", predictions_frame: \"prediction-40c02c92-1cf7-41e8-9422-3d823097acfe\""
+    }
+  ]
+}

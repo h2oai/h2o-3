@@ -1,8 +1,6 @@
 package hex.deeplearning;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
@@ -53,10 +51,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   /** Start the DeepLearning training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<DeepLearningModel> trainModelImpl(long work) {
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<DeepLearningModel> trainModelImpl(long work, boolean restartTimer) {
     // We look at _train before init(true) is called, so step around that here:
-    return start(new DeepLearningDriver(), work);
+    return start(new DeepLearningDriver(), work, restartTimer);
   }
 
   @Override
@@ -88,6 +87,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
    * @return
    */
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms) {
+    double x = 0.782347234;
+    boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
     return new DataInfo(
             Key.make(), //dest key
             train,
@@ -95,11 +96,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE, //transform response (only used if nResponses > 0)
+            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
-            parms._offset_column != null
+            parms._offset_column != null,
+            parms._fold_column != null
       );
   }
 
@@ -184,6 +187,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw t;
         }
       } finally {
+        updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
       }
@@ -199,7 +203,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       Scope.enter();
       DeepLearningModel cp = null;
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid);
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         cp.model_info().initializeMembers();
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -224,7 +228,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           cp.write_lock(self());
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
-            throw new IllegalArgumentException("Predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns.");
+            throw new IllegalArgumentException("Number of (non-constant) predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
           }
           if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
             throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
@@ -238,7 +242,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           assert (actualNewP != previous.model_info().get_params());
           assert (actualNewP != newP);
           assert (actualNewP != oldP);
-          DeepLearningParameters.Sanity.update(actualNewP, newP, isClassifier());
+          DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
 
           actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
@@ -360,7 +364,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           mp._shuffle_training_data = true;
         }
 
-        if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
+        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
@@ -484,7 +488,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
 
         final long model_size = model.model_info().size();
-        int[] msg_sizes = new int[]{ (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
+        int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
         double[] microseconds_collective = new double[msg_sizes.length];
         NetworkTest.NetworkTester nt = new NetworkTest.NetworkTester(msg_sizes,null,microseconds_collective,model_size>1e6 ? 1 : 5 /*repeats*/,false,true /*only collectives*/);
         nt.compute2();
@@ -501,10 +505,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
 
         // target fraction of comm vs cpu time: 5%
-        double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : 0.05; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
+        double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : mp._target_ratio_comm_to_comp; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
 
         // estimate the time for communication (network) and training (compute)
-        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[0];
+        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[1];
         double time_per_row_us  = flops_overhead_per_row * model_size / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
 
         // compute the optimal number of training rows per iteration
@@ -516,6 +520,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         // If the number is close to a multiple of epochs, use that -> prettier scoring
         if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi = tspi - tspi % numRows;
         tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
+        if (H2O.CLOUD.size() == 1 || mp._single_node_mode) {
+          tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
+        }
         tspi = Math.max(1, tspi); //at least 1 point
 
         if (!mp._quiet_mode) {
@@ -532,6 +539,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         tspi = Math.max(1, Math.min(tspi, (long) (mp._epochs * numRows)));
       }
       assert(tspi != 0 && tspi != -1 && tspi != -2 && tspi >= 1);
+      model.tspiGuess = tspi;
       return tspi;
     }
 

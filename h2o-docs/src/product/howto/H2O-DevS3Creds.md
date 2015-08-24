@@ -55,6 +55,53 @@ When running H2O in standalone mode using the simple Java launch command, we can
         `h2o.import_frame(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
   
 ---
+<a name="Multi"></a>
+##Multi-Node Instance
+
+>[Python](http://www.amazon.com/Python-and-AWS-Cookbook-ebook/dp/B005ZTO0UW/ref=sr_1_1?ie=UTF8&qid=1379879111&sr=8-1&keywords=python+aws) and the [`boto`](http://boto.readthedocs.org/en/latest/) Python library are required to launch a multi-node instance of H2O on EC2. Confirm these dependencies are installed before proceeding. 
+
+For more information, refer to the [H2O EC2 repo](https://github.com/h2oai/h2o-3/tree/master/ec2). 
+
+Build a cluster of EC2 instances by running the following commands on the host that can access the nodes using a public DNS name. 
+
+0. Edit `h2o-cluster-launch-instances.py` to include your SSH key name and security group name, as well as any other environment-specific variables. 
+
+	```
+ 	./h2o-cluster-launch-instances.py
+ 	./h2o-cluster-distribute-h2o.sh  
+ 
+	``` 
+ 
+   --OR--
+   
+ 	```
+ 	./h2o-cluster-launch-instances.py
+ 	./h2o-cluster-download-h2o.sh
+	```
+   >**Note**: The second method may be faster than the first, since download pulls from S3. 
+
+
+0. Distribute the credentials using `./h2o-cluster-distribute-aws-credentials.sh`. 
+  >**Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key. 
+
+  >**Caution**: Distributing the AWS credentials copies the Amazon `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud. 
+
+0. Start H2O by launching one H2O node per EC2 instance: 
+  `./h2o-cluster-start-h2o.sh`
+  
+  Wait 60 seconds after entering the command before entering it on the next node. 
+  
+0. In your internet browser, substitute any of the public DNS node addresses for `IP_ADDRESS` in the following example:
+  `http://IP_ADDRESS:54321`
+
+  - To start H2O: `./h2o-cluster-start-h2o.sh`
+  - To stop H2O: `./h2o-cluster-stop-h2o.sh`
+  - To shut down the cluster, use your [Amazon AWS console](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html) to shut down the cluster manually. 
+
+
+
+---
+
 
 <a name="Example"></a>
 ##Core-site.xml Example

@@ -6,7 +6,6 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
-import water.api.FrameV3.ColSpecifierV3;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.ModelParametersSchema;
 
@@ -20,9 +19,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "model_id",
             "training_frame",
             "validation_frame",
-            "response_column",
             "nfolds",
-            "keep_cross_validation_splits",
+            "keep_cross_validation_predictions",
+            "fold_assignment",
+            "fold_column",
+            "response_column",
             "ignored_columns",
             "ignore_const_cols",
             "score_each_iteration",
@@ -56,35 +57,24 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_hit_ratio_k",
     };
 
-    @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 response_column;
-
-    // todo move this up in the hierarchy when there is weights support?
-    @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 weights_column;
-
-    // todo move this up in the hierarchy when there is offset support?
-    @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
-    public ColSpecifierV3 offset_column;
-
     // Input fields
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
-    @API(help = "Tweedie variance power", level = Level.critical)
+    @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
 
-    @API(help = "Tweedie link power", level = Level.critical)
+    @API(help = "Tweedie link power", level = Level.critical, gridable = true)
     public double tweedie_link_power;
 
-    @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
+    @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS","COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"}, level = Level.critical)
     public Solver solver;
 
-    @API(help = "distribution of regularization between L1 and L2.", level = Level.critical)
+    @API(help = "distribution of regularization between L1 and L2.", level = Level.critical, gridable = true)
     public double[] alpha;
 
-    @API(help = "regularization strength", required = false, level = Level.critical)
+    @API(help = "regularization strength", required = false, level = Level.critical, gridable = true)
     public double[] lambda;
 
     @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)

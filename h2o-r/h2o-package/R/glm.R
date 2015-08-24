@@ -39,14 +39,19 @@
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
 #'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
-#'        in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower
-#'        and upper bounds of beta, and "beta_given" is some supplied starting values for the
+#'        in the GLM. "names" contains the predictor names, "lower_bounds" and "upper_bounds" are the lower
+#'        and upper bounds of beta, and "beta_given" is some supplied starting values for beta.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
+#'        Must be "AUTO", "Random" or "Modulo"
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
+#' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -74,7 +79,7 @@
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
 #'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
-#' \dontrun{
+#' \donttest{
 #'  # GLM variable importance
 #'  # Also see:
 #'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
@@ -103,11 +108,15 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     lambda_search = FALSE,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
-                    nfolds,
+                    nfolds = 0,
+                    fold_column = NULL,
+                    fold_assignment = c("AUTO","Random","Modulo"),
+                    keep_cross_validation_predictions = FALSE,
                     beta_constraints = NULL,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
+                    max_active_predictors = -1,
                     ...
                     )
 {
@@ -134,6 +143,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   args <- .verify_dataxy(training_frame, x, y)
   if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
@@ -155,6 +165,10 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(intercept) )                 parms$intercept              <- intercept
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
@@ -175,17 +189,15 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   m
 }
 
-#TODO Rename this function for clarity
-#' Remake an H2O GLM Model
+#' Set betas of an existing H2O GLM Model
 #'
-#' This function allows the usage of new beta constraints to create an GLM model, from an existing
-#' model.
+#' This function allows setting betas of an existing glm model.
 #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
-#' @param beta a new set of beta_constraints
+#' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model_id=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -197,7 +209,6 @@ h2o.makeGLMModel <- function(model,beta) {
 #' Creates a background H2O GLM job.
 #' @inheritParams h2o.glm
 #' @return Returns a \linkS4class{H2OModelFuture} class object.
-#' @seealso \code{\link{h2o.getGLMModel}} for resolving the \code{H2OModelFuture} object.
 #' @export
 h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
                     #AUTOGENERATED Params
@@ -276,20 +287,4 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
       parms$nfolds <- nfolds
 
     .h2o.startModelJob(training_frame@conn, 'glm', parms)
-}
-
-# TODO: make this possible for all model types
-#' Resolve a GLM H2O Futures Model
-#'
-#' Turns an \linkS4class{H2OModelFuture} into a model of the correct type.
-#' @param keys an \linkS4class{H2OModelFuture} or correct job key.
-#' @param conn a corresponding \linkS4class{H2OConnection} class object.
-#' @return Returns the correct \linkS4class{H2OModel} for the created model.
-#' @export
-h2o.getGLMModel <- function(keys, conn) {
-  if(missing(conn)) conn <- h2o.getConnection()
-  job_key  <- keys[[1]]
-  dest_key <- keys[[1]]
-  .h2o.__waitOnJob(conn, job_key)
-  model <- h2o.getModel(dest_key, conn)
 }

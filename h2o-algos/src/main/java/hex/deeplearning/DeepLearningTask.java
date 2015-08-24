@@ -91,7 +91,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param seed Seed is only used if reproducible mode is enabled
    * @param r Row (must be dense for now)
    */
-  @Override public final void processRow(long seed, DataInfo.Row r){
+  @Override public final void processRow(long seed, DataInfo.Row r) {
     assert !r.isSparse():"Deep learning does not support sparse rows.";
     if (_localmodel.get_params()._reproducible) {
       seed += _localmodel.get_processed_global(); //avoid periodicity
@@ -101,6 +101,41 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _localmodel.checkMissingCats(r.binIds);
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
     step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
+  }
+
+  /**
+   * Apply the gradient to update the weights
+   * @param n number of trained examples in this last mini batch
+   */
+  @Override public void applyMiniBatchUpdate(int n) {
+    assert(_training);
+    assert(n==1);
+    applyModelUpdates(_neurons);
+  }
+
+  /**
+   * Helper to apply back-propagation without clearing out the gradients afterwards
+   * Used for gradient checking
+   * @param neurons
+   */
+  static public void applyModelUpdates(Neurons[] neurons) {
+    // last layer - just use gradient and push backwards
+    neurons[neurons.length - 1].bpropOutputLayer();
+    // non-last layers: Apply mini batch (need to know mini-batch size n)
+    for (int i = neurons.length - 2; i > 0; --i)
+      neurons[i].bprop();
+
+    // all errors are reset to 0
+    for (int i = 0; i<neurons.length ;++i) {
+      Storage.DenseVector e = neurons[i]._e;
+      if (e==null) continue;
+      Arrays.fill(e.raw(), 0);
+    }
+  }
+
+  @Override
+  protected int getMiniBatchSize() {
+    return _localmodel.get_params()._mini_batch_size;
   }
 
   /**
@@ -218,10 +253,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Rectifier(n) : new Neurons.RectifierDropout(n);
           break;
         case Maxout:
-          neurons[i+1] = new Neurons.Maxout(n);
+          neurons[i+1] = new Neurons.Maxout((short)2,n);
           break;
         case MaxoutWithDropout:
-          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Maxout(n) : new Neurons.MaxoutDropout(n);
+          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Maxout((short)2,n) : new Neurons.MaxoutDropout((short)2,n);
           break;
       }
     }
@@ -229,7 +264,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       if (minfo._classification)
         neurons[neurons.length - 1] = new Neurons.Softmax(minfo.units[minfo.units.length - 1]);
       else
-        neurons[neurons.length - 1] = new Neurons.Linear(1);
+        neurons[neurons.length - 1] = new Neurons.Linear();
     }
 
     //copy parameters from NN, and set previous/input layer links
@@ -244,72 +279,44 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   /**
-   * Forward/Backward propagation
+   * Forward propagation
    * assumption: layer 0 has _a filled with (horizontalized categoricals) double values
    * @param seed
    * @param neurons
    * @param minfo
    * @param consensus_minfo
    * @param training
-   * @param responses
+   * @param responses Standardized response(s)
    */
   public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
                           DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double offset) {
     try {
-      for (int i=1; i<neurons.length-1; ++i) {
+      // Forward propagation
+      for (int i=1; i<neurons.length; ++i)
         neurons[i].fprop(seed, training);
+
+      // Add offset (in link space) if applicable
+      if (offset > 0) {
+        assert (!minfo._classification); // Regression
+        double[] m = minfo.data_info()._normRespMul;
+        double[] s = minfo.data_info()._normRespSub;
+        double mul = m == null ? 1 : m[0];
+        double sub = s == null ? 0 : s[0];
+        neurons[neurons.length - 1]._a.add(0, ((offset - sub) * mul));
       }
-      if (minfo.get_params()._autoencoder) {
-        neurons[neurons.length - 1].fprop(seed, training);
-        if (training) {
-          for (int i=neurons.length-1; i>0; --i) {
-            neurons[i].bprop();
-          }
-        }
-      } else {
+
+      if (training) {
+        // Compute the gradient at the output layer
+        // auto-encoder: pass a dummy "response" (ignored)
+        // otherwise: class label or regression target
+        neurons[neurons.length - 1].setOutputLayerGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
+
+        // Elastic Averaging - set up helpers needed during back-propagation
         if (consensus_minfo != null) {
           for (int i = 1; i < neurons.length; i++) {
             neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
             neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
           }
-        }
-        if (minfo._classification) {
-          ((Neurons.Softmax) neurons[neurons.length - 1]).fprop();
-          if (training) {
-            for (int i = 1; i < neurons.length - 1; i++)
-              Arrays.fill(neurons[i]._e.raw(), 0);
-            assert ((double) (int) responses[0] == responses[0]);
-            final int target_label;
-            if (Double.isNaN(responses[0])) { //missing response
-              target_label = Neurons.missing_int_value;
-            } else {
-              assert ((double) (int) responses[0] == responses[0]); //classification -> integer labels expected
-              target_label = (int) responses[0];
-            }
-            ((Neurons.Softmax) neurons[neurons.length - 1]).bprop(target_label);
-          }
-        } else {
-          ((Neurons.Linear) neurons[neurons.length - 1]).fprop();
-          if (offset > 0) {
-            double mul = minfo.data_info()._normRespMul[0];
-            double sub = minfo.data_info()._normRespSub[0];
-            neurons[neurons.length - 1]._a.add(0, (float) ((offset - sub) * mul));
-          }
-          if (training) {
-            for (int i = 1; i < neurons.length - 1; i++)
-              Arrays.fill(neurons[i]._e.raw(), 0);
-            float target_value;
-            if (Double.isNaN(responses[0])) { //missing response
-              target_value = Neurons.missing_real_value;
-            } else {
-              target_value = (float) responses[0];
-            }
-            ((Neurons.Linear) neurons[neurons.length - 1]).bprop(target_value);
-          }
-        }
-        if (training) {
-          for (int i = neurons.length - 2; i > 0; --i)
-            neurons[i].bprop();
         }
       }
     }

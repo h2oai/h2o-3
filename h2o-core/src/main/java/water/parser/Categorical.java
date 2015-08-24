@@ -4,7 +4,6 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
-import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -118,5 +117,4 @@ public final class Categorical extends Iced {
     throw H2O.unimpl();
   }
   @Override public Categorical readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
-  @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.unimpl(); }
 }

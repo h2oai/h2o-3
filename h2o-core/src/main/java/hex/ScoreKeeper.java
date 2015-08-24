@@ -1,11 +1,7 @@
 package hex;
 
-import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import water.Iced;
-import water.util.ArrayUtils;
 import water.util.MathUtils;
-
-import java.util.Arrays;
 
 /**
  * Low-weight keeper of scores
@@ -14,6 +10,7 @@ import java.util.Arrays;
  */
 public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
+  public double _mean_residual_deviance = Double.NaN;
   public double _mse = Double.NaN;
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
@@ -30,6 +27,9 @@ public class ScoreKeeper extends Iced {
     if (m instanceof ModelMetricsSupervised) {
       _r2 = ((ModelMetricsSupervised)m).r2();
     }
+    if (m instanceof ModelMetricsRegression) {
+      _mean_residual_deviance = ((ModelMetricsRegression)m)._mean_residual_deviance;
+    }
     if (m instanceof ModelMetricsBinomial) {
       _logloss = ((ModelMetricsBinomial)m)._logloss;
       if (((ModelMetricsBinomial)m)._auc != null) {
@@ -42,21 +42,6 @@ public class ScoreKeeper extends Iced {
       _classError = ((ModelMetricsMultinomial)m)._cm.err();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
     }
-  }
-
-  /**
-   * Light-weight print of metrics to a String, meant to take least amount of lines possible
-   * @return String containing metrics printed for human consumption
-   */
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("r2 is " + String.format("%5f",_r2) + ", MSE is " + String.format("%5f",_mse));
-    if (!Double.isNaN(_logloss)) sb.append(", logloss is " + String.format("%5f",_logloss));
-    if (!Double.isNaN(_AUC)) sb.append(", AUC is " + String.format("%5f",_AUC));
-    if (!Double.isNaN(_classError)) sb.append(", classification error is " + String.format("%5f",_classError));
-    if (_hitratio != null) sb.append("\n" + getHitRatioTable(_hitratio));
-    return sb.toString();
-
   }
 
   /**
@@ -76,6 +61,7 @@ public class ScoreKeeper extends Iced {
       }
     }
     return MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
+            && MathUtils.compare(_mean_residual_deviance, o._mean_residual_deviance, 1e-6, 1e-6)
             && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
             && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6);

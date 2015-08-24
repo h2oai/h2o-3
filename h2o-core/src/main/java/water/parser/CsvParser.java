@@ -29,6 +29,7 @@ class CsvParser extends Parser {
     boolean firstChunk = true;  // Have not rolled into the 2nd chunk
     byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
     int state;
+    boolean isNa = false;
     // If handed a skipping offset, then it points just past the prior partial line.
     if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
     else {
@@ -113,16 +114,21 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
-                  && _setup._na_strings.length < colIdx
+                  && _setup._na_strings.length > colIdx
                   && _setup._na_strings[colIdx] != null) {
             for (String s : _setup._na_strings[colIdx]) {
               if (str.equals(s)) {
-                dout.addInvalidCol(colIdx);
+                isNa = true;
                 break;
               }
             }
-          } else
+          }
+          if (!isNa)
             dout.addStrCol(colIdx, str);
+          else {
+            dout.addInvalidCol(colIdx);
+            isNa = false;
+          }
           str.set(null, 0, 0);
           ++colIdx;
           state = SEPARATOR_OR_EOL;

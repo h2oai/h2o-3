@@ -27,6 +27,7 @@ final class Route extends Iced {
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
   public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
   /* package */ HandlerFactory _handler_factory;
+  public Handler _handler;
 
   public Route() { }
 
@@ -50,6 +51,11 @@ final class Route extends Iced {
     _doc_method = doc_method;
     _path_params = path_params;
     _handler_factory = handler_factory;
+    try {
+      _handler = _handler_factory.create(_handler_class);
+    } catch (Exception e) {
+      throw H2O.fail("Could not create handler", e);
+    }
   }
 
   /**

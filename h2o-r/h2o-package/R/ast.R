@@ -7,7 +7,7 @@
 #'
 #' The AST visitor method.
 #'
-#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON
+#' This method represents a map between an AST S4 object and a regular R list, which is suitable for jsonlite::toJSON
 #'
 #' Given a node, the `visitor` function recursively Lisp'ifies the node's S4 slots and then returns the list.
 #'
@@ -97,7 +97,10 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   sub <- as.integer(sub_one)
   if (length(expr) == 1L) {
     if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
-    if (is.numeric(expr[[1L]])) return(paste0('#', eval(expr[[1L]], envir=envir) - sub))
+    if (is.numeric(expr[[1L]])) {
+      if( expr < 0 ) sub <- 0
+      return(paste0('#', eval(expr[[1L]], envir=envir) - sub))
+    }
     if (is.character(expr[[1L]])) return(deparse(expr[[1L]]))
     if (is.character(expr)) return(deparse(expr))
   }

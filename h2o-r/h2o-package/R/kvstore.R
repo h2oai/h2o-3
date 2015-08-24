@@ -34,11 +34,13 @@
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' h2o.ls(localH2O)
+#' }
 #' @export
 h2o.ls <- function(conn = h2o.getConnection()) {
   gc()
@@ -60,6 +62,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
@@ -67,6 +70,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.ls(localH2O)
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
+#' }
 #' @export
 h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
   tryCatch(
@@ -168,12 +172,14 @@ h2o.getFrame <- function(frame_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #'        from the H2O cluster when the R proxy object is garbage collected.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #'
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
 #' model.retrieved <- h2o.getModel(model_id, localH2O)
+#' }
 #' @export
 h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(model_id, "H2OConnection")) {
@@ -191,8 +197,9 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   MetricsClass <- paste0("H2O", model_category, "Metrics")
   # setup the metrics objects inside of model...
-  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, metrics=model$training_metrics)
-  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE,metrics=model$validation_metrics)  # default is on_train=FALSE
+  model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
+  model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
+  model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
@@ -266,6 +273,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' @return If path is "", then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h <- h2o.init(nthreads=-1)
 #' fr <- as.h2o(iris)
@@ -276,6 +284,8 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' #                                         directory, NOT RUN
 #' # h2o.download_pojo(my_model, getwd(), getjar = FALSE )  # save only the POJO to the current
 #' #                                                           working directory, NOT RUN
+#' h2o.download_pojo(my_model, getwd())  # save to the current working directory
+#' }
 #' @export
 h2o.download_pojo <- function(model, path="", conn=h2o.getConnection(), getjar=TRUE) {
   model_id <- model@model_id
@@ -293,7 +303,7 @@ h2o.download_pojo <- function(model, path="", conn=h2o.getConnection(), getjar=T
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
       if (! .__curlError) {
         jar.path <- paste0(path, "/h2o-genmodel.jar")
-        writeBin(tmp, jar.path, useBytes = TRUE);
+        writeBin(tmp, jar.path, useBytes = TRUE)
       }
     }
   }

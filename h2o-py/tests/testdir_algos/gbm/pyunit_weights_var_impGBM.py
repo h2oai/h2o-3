@@ -4,8 +4,8 @@ import h2o
 import random
 
 def weights_var_imp(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     def check_same(data1, data2, min_rows_scale):
         gbm1_regression = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
@@ -69,7 +69,7 @@ def weights_var_imp(ip,port):
         for bvi1, bvi2 in zip(bin1_vi, bin2_vi): assert bvi1 == bvi1, "Expected vi's (binomial)    to be the same, but got {0}, and {1}".format(bvi1, bvi2)
         for mvi1, mvi2 in zip(mul1_vi, mul2_vi): assert mvi1 == mvi1, "Expected vi's (multinomial) to be the same, but got {0}, and {1}".format(mvi1, mvi2)
 
-    h2o_cars_data = h2o.import_frame(h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    h2o_cars_data = h2o.import_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     h2o_cars_data["economy_20mpg"] = h2o_cars_data["economy_20mpg"].asfactor()
     h2o_cars_data["cylinders"] = h2o_cars_data["cylinders"].asfactor()
 

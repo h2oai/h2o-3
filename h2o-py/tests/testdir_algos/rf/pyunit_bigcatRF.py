@@ -3,15 +3,15 @@ sys.path.insert(1, "../../../")
 import h2o
 
 def bigcatRF(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     # Training set has 100 categories from cat001 to cat100
     # Categories cat001, cat003, ... are perfect predictors of y = 1
     # Categories cat002, cat004, ... are perfect predictors of y = 0
 
     #Log.info("Importing bigcat_5000x2.csv data...\n")
-    bigcat = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
+    bigcat = h2o.import_file(path=h2o.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
     bigcat["y"] = bigcat["y"].asfactor()
 
     #Log.info("Summary of bigcat_5000x2.csv from H2O:\n")

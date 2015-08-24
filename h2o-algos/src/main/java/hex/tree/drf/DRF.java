@@ -1,6 +1,6 @@
 package hex.tree.drf;
 
-import hex.Distributions;
+import hex.Distribution;
 import hex.ModelCategory;
 import hex.schemas.DRFV3;
 import hex.tree.*;
@@ -46,9 +46,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public DRFV3 schema() { return new DRFV3(); }
 
   /** Start the DRF training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work) {
-    return start(new DRFDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new DRFDriver(), work, restartTimer);
   }
 
 
@@ -69,13 +70,18 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols))
         error("_mtries","Computed mtries should be -1 or in interval <1,#cols> but it is " + _parms._mtries);
     }
-    if (_parms._distribution != Distributions.Family.AUTO)
-      error("_distribution", "Only AUTO distribution is implemented so far.");
+    if (_parms._distribution == Distribution.Family.AUTO) {
+      if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
+      if (_nclass >= 2) _parms._distribution = Distribution.Family.multinomial;
+    }
+    if (expensive) {
+      _initialPrediction = isClassifier() ? 0 : getInitialValue();
+    }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
-    if (hasOffset())
+    if (hasOffsetCol())
       error("_offset_column", "Offsets are not yet supported for DRF.");
-    if (hasOffset() && isClassifier()) {
+    if (hasOffsetCol() && isClassifier()) {
       error("_offset_column", "Offset is only supported for regression.");
     }
   }
@@ -124,8 +130,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
   // ----------------------
   private class DRFDriver extends Driver {
-    protected int _ntreesFromCheckpoint;
-
 
     // --- Private data handled only on master node
     // Classification or Regression:
@@ -165,6 +169,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
               ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
+      // How many trees was in already in provided checkpointed model
+      int ntreesFromCheckpoint = _parms.hasCheckpoint() ?
+              ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees : 0;
+
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,#cols> but it is " + _mtry);
       // Initialize TreeVotes for classification, MSE arrays for regression
       initTreeMeasurements();
@@ -174,10 +182,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       new SetWrkTask().doAll(_train);
       // If there was a check point recompute tree_<_> and oob columns based on predictions from previous trees
       // but only if OOB validation is requested.
-      if (_parms._checkpoint) {
+      if (_parms.hasCheckpoint()) {
         Timer t = new Timer();
         // Compute oob votes for each output level
-        new OOBScorer(_ncols, _nclass, (hasWeights() ? 1 : 0) + (hasOffset() ? 1 : 0), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
+        new OOBScorer(_ncols, _nclass, numSpecialCols(), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
         Log.info("Reconstructing oob stats from checkpointed model took " + t);
       }
 
@@ -185,17 +193,19 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Random rand = createRNG(_parms._seed);
       // To be deterministic get random numbers for previous trees and
       // put random generator to the same state
-      for (int i=0; i<_ntreesFromCheckpoint; i++) rand.nextLong();
+      for (int i = 0; i < ntreesFromCheckpoint; i++) rand.nextLong();
 
       int tid;
-      DTree[] ktrees = null;
+
       // Prepare tree statistics
       // Build trees until we hit the limit
-      for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
-        if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
+      for( tid=0; tid < _ntrees; tid++) { // Building tid-tree
+        if (tid!=0 || !_parms.hasCheckpoint()) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, true, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping )
+          if( training_r2 >= _parms._r2_stopping ) {
+            doScoringAndSaveModel(true, true, _parms._build_tree_one_node);
             return;             // Stop when approaching round-off error
+          }
         }
         // At each iteration build K trees (K = nclass = response column domain size)
 
@@ -280,7 +290,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new DRFLeafNode(tree, -1, 0);
-                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : responseMean());
+                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
               }
               continue;
             }
@@ -370,7 +380,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
-                int treePred = getPrediction(rpred, data_row(chks, row, rowdata), _threshold);
+                int treePred = getPrediction(rpred, _model._output._priorClassDist, data_row(chks, row, rowdata), _threshold);
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression

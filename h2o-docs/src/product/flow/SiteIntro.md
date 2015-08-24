@@ -17,6 +17,13 @@ We welcome your feedback! Please let us know if you have any questions or commen
 If you're just getting started with H2O, here are some links to help you learn more: 
 
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+  At a minimum, we recommend the following for compatibility with H2O: 
+  
+  - Operating Systems: Windows 7 or later; OS X 10.9 or later, Ubuntu 12.04, or RHEL/CentOS 6 or later
+  - Languages: Java 7 or later; Scala v 2.10 or later; R v.3 or later; Python 2.7.x or later (Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required)
+  - Browsers: Latest version of Chrome, Firefox, Safari, or Internet Explorer (An internet browser is required to use H2O's web UI, Flow)
+  - Hadoop: Cloudera CDH 4 or later (5.3 is recommended); MapR v.3.0 or later; Hortonworks HDP 2.1 or later (Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster)
+  - Spark v 1.3 or later (Spark is not required unless you want to run Sparkling Water)
 
 - <a href="http://h2o.ai/download/" target="_blank">Downloads page</a>: First things first - download a copy of H2O <a href="http://h2o.ai/download/" target="_blank">here</a> by selecting a build under "Download H2O" (the "Bleeding Edge" build contains the latest changes, while the latest alpha release represents a more stable build), then use the installation instruction tabs to install H2O on your client of choice ([standalone](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html), [R](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R), [Python](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Python), [Hadoop](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Hadoop), or [Maven](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Maven)) . 
 
@@ -162,6 +169,9 @@ The following video provides step-by-step instructions on how to start H2O using
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-py/docs/index.html" target="_blank">Python docs</a>: This document represents the definitive guide to using Python with H2O. 
 
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md" target="_blank">Python Parity</a>: This document is is a list of Python capabilities that were previously available only through the H2O R interface but are now available in H2O using the Python interface. 
+
 ---
 
 <a name="R"></a>
@@ -170,6 +180,8 @@ The following video provides step-by-step instructions on how to start H2O using
 Don't worry, R users - we still provide R support in the latest version of H2O, just as before. The R components of H2O have been cleaned up, simplified, and standardized, so the command format is easier and more intuitive. Due to these improvements, be aware that any scripts created with previous versions of H2O will need some revision to be compatible with the latest version. 
 
 We have provided the following helpful resources to assist R users in upgrading to the latest version, including a document that outlines the differences between versions and a tool that reviews scripts for deprecated or renamed parameters. 
+
+Currently, the only version of R that is known to be incompatible with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using that version, we recommend upgrading the R version before using H2O. 
 
 The following video provides step-by-step instructions on how to start H2O in R:
 
@@ -193,6 +205,8 @@ REST APIs are generated immediately out of the code, allowing users to implement
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#route-reference" target="_blank">REST API Reference</a>: This document represents the definitive guide to the H2O REST API. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#schema-reference" target="_blank">REST API Schema Reference</a>: This document represents the definitive guide to the H2O REST API schemas. 
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/api/REST/h2o_3_rest_api_overview.md" target="_blank">H2O 3 REST API Overview</a>: This document provides an overview of how APIs are used in H2O, including versioning, URLs, HTTP verbs, status codes, formats, schemas, and examples. 
 
 ---
 
@@ -220,7 +234,10 @@ The Java API is generated and accessible from the [download page](http://h2o.ai/
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references. 
 
-For IDEA IntelliJ support, run `gradle idea`, then **Import Project** within IDEA and point it to the <a href="https://github.com/h2oai/h2o-3.git" target="_blank">h2o-3 directory</a>. 
+For the latest version of IDEA IntelliJ, run `./gradlew idea`, then click **File > Open** within IDEA. Select the `.ipr` file in the repository and click the **Choose** button.  
+
+For older versions of IDEA IntelliJ, run `./gradlew idea`, then **Import Project** within IDEA and point it to the <a href="https://github.com/h2oai/h2o-3.git" target="_blank">h2o-3 directory</a>. 
+ >**Note**: This process will take longer, so we recommend using the first method if possible. 
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters: 
 
@@ -250,7 +267,7 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="http://0xdata.com/blog/2014/05/kv-store-memory-analytics-part-2-2/" target="_blank">KV Store Guide</a>: Learn more about performance characteristics when implementing new algorithms. 
 
 
-- <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. 
+- <a href="https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md" target="_blank">Contributing code</a>: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. **Note**: To access this link, you must have an [Atlassian account](https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com). 
 
 ---
 #Downloading H2O

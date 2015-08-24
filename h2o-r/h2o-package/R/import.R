@@ -51,11 +51,13 @@
 #'        synchronously instead of polling.  This can be faster for small
 #'        datasets but loses the progress bar.
 #' @examples
+#' \donttest{
 #' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate.hex = h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
 #' class(prostate.hex)
 #' summary(prostate.hex)
+#' }
 #' @name h2o.importFile
 #' @export
 h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "",
@@ -180,7 +182,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), destination_frame =
 #'         built.
 #' @seealso \code{\link{h2o.saveModel}, \linkS4class{H2OModel}}
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # library(h2o)
 #' # localH2O = h2o.init()
 #' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")

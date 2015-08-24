@@ -1,7 +1,6 @@
 package water.util;
 
 import water.*;
-import water.util.DocGen.HTML;
 
 import java.util.ArrayList;
 
@@ -30,9 +29,7 @@ public class IcedArrayList<T extends Iced> extends ArrayList<T> implements Freez
   @Override public IcedArrayList<T> read_impl( AutoBuffer ab ) { throw H2O.fail(); }
   @Override public AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab; }
   @Override public IcedArrayList<T> readJSON_impl(AutoBuffer ab) {throw H2O.fail(); }
-  @Override public HTML writeHTML_impl( HTML html ) { throw H2O.fail(); }
 
-  @Override public HTML writeHTML( HTML html ) { throw H2O.fail(); }
   @Override public AutoBuffer writeJSON(AutoBuffer ab) { throw H2O.fail(); }
   @Override public T readJSON(AutoBuffer ab) { throw H2O.fail(); }
 

@@ -32,7 +32,7 @@ public class CreateFrame extends Job<Frame> {
   public boolean has_response = false;
 
   public CreateFrame(Key<Frame> dest, String desc) { super(dest, (desc == null ? "CreateFrame" : desc)); }
-  public CreateFrame() { super(Key.make(), "CreateFrame"); }
+  public CreateFrame() { super(Key.<Frame>make(), "CreateFrame"); }
 
   public Job<Frame> execImpl() {
     if (integer_fraction + binary_fraction + categorical_fraction > 1) throw new IllegalArgumentException("Integer, binary and categorical fractions must add up to <= 1.");
@@ -66,10 +66,10 @@ public class CreateFrame extends Job<Frame> {
       if (value != 0)
         throw new IllegalArgumentException("Cannot set data to a constant value if randomize=true.");
     }
-    if (_dest == null) throw new IllegalArgumentException("Destination key cannot be null.");
+    if (_dest == null) throw new IllegalArgumentException("Destination frame name cannot be null.");
 
     FrameCreator fc = new FrameCreator(this, this._key);
-    start(fc, fc.nChunks()*5);
+    start(fc, fc.nChunks()*5, true);
     return this;
   }
 }
