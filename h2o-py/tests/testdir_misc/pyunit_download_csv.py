@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import random
 
 def download_csv(ip,port):
@@ -21,4 +21,4 @@ def download_csv(ip,port):
                                                                                 "".format(iris1[rand_row, rand_col],
                                                                                           iris2[rand_row, rand_col])
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, download_csv)
+    tests.run_test(sys.argv, download_csv)

@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 def deeplearning_basic(ip, port):
     
@@ -12,4 +12,4 @@ def deeplearning_basic(ip, port):
     hh.show()
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, deeplearning_basic)
+    tests.run_test(sys.argv, deeplearning_basic)

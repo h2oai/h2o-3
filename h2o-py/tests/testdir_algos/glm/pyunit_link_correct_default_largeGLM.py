@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def link_correct_default(ip,port):
 	
@@ -35,4 +35,4 @@ def link_correct_default(ip,port):
 		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
 
 if __name__ == "__main__":
-	h2o.run_test(sys.argv, link_correct_default)
+	tests.run_test(sys.argv, link_correct_default)

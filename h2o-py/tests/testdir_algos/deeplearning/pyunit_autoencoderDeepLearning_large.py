@@ -1,6 +1,6 @@
 import os, sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 def deeplearning_autoencoder(ip, port):
     
@@ -59,5 +59,5 @@ def deeplearning_autoencoder(ip, port):
     assert abs(cm.cell_values[10][10] - 0.082) < 0.001, "Error. Expected 0.082, but got {0}".format(cm.cell_values[10][10])
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, deeplearning_autoencoder)
+    tests.run_test(sys.argv, deeplearning_autoencoder)
 

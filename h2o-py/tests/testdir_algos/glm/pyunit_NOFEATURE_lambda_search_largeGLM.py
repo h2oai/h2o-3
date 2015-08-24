@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def lambda_search(ip,port):
@@ -37,4 +37,4 @@ def lambda_search(ip,port):
     assert best_model.model() == prostate_search.model(), "expected models to be equal"
   
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, lambda_search)
+    tests.run_test(sys.argv, lambda_search)

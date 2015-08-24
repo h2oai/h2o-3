@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def download_pojo(ip,port):
   hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
@@ -69,4 +69,4 @@ def download_pojo(ip,port):
   hdf10 = hdf10.as_date("%Y_%m_%d")
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, download_pojo)
+  tests.run_test(sys.argv, download_pojo)

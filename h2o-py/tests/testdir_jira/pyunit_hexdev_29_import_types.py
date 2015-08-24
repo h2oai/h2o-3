@@ -5,7 +5,7 @@
 ################################################################################
 import sys, os
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def continuous_or_categorical(ip, port):
   fraw = h2o.lazy_import(h2o.locate("smalldata/jira/hexdev_29.csv"))
@@ -23,4 +23,4 @@ def continuous_or_categorical(ip, port):
   assert (df_hex['h3'].isfactor())
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, continuous_or_categorical)
+    tests.run_test(sys.argv, continuous_or_categorical)

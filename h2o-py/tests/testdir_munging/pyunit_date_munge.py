@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def refine_date_col(data, col, pattern):
   data[col]         = data[col].as_date(pattern)
@@ -28,4 +28,4 @@ def date_munge(ip,port):
   crimes.describe()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, date_munge)
+  tests.run_test(sys.argv, date_munge)

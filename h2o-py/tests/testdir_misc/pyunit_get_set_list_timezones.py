@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import random
 
 def get_set_list_timezones(ip,port):
@@ -24,4 +24,4 @@ def get_set_list_timezones(ip,port):
     h2o.set_timezone(origTZ)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, get_set_list_timezones)
+    tests.run_test(sys.argv, get_set_list_timezones)

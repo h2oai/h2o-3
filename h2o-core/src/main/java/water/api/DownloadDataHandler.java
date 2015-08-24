@@ -3,6 +3,7 @@ package water.api;
 import water.DKV;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.H2O; 
 
 import java.io.InputStream;
 
@@ -13,7 +14,6 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
 
     if (DKV.get(server.frame_id.key()) == null) throw new H2OKeyNotFoundArgumentException("key", server.frame_id.key());
     Frame value = server.frame_id.key().get();
-
     InputStream is = value.toCSV(true, server.hex_string);
     java.util.Scanner scanner = new java.util.Scanner(is).useDelimiter("\\A");
     server.csv = (scanner.hasNext() ? scanner.next() : "");
@@ -34,5 +34,10 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
       suggested_fname = suggested_fname+".csv";
     server.filename = suggested_fname;
     return server;
+  }
+
+  @SuppressWarnings("unused")
+  public DownloadDataV3 fetchStreaming(int version, DownloadDataV3 server) {
+    throw H2O.fail("Function fetchStreaming should never be called.");
   }
 }

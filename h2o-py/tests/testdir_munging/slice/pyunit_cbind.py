@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def cbind(ip,port):
   # Connect to a pre-existing cluster
@@ -114,5 +114,5 @@ def cbind(ip,port):
   assert hdf_names == ['colgroup', 'colgroup2'], "expected column names to be the same"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, cbind)
+  tests.run_test(sys.argv, cbind)
 
