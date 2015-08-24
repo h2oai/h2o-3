@@ -1320,7 +1320,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (_output.isClassifier()) {
       if (_parms._balance_classes)
         bodySb.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold()+");").nl();
+      bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold()+");").nl();
     } else {
       bodySb.ip("preds[0] = preds[1];").nl();
     }

@@ -66,7 +66,7 @@ public class CreateFrame extends Job<Frame> {
       if (value != 0)
         throw new IllegalArgumentException("Cannot set data to a constant value if randomize=true.");
     }
-    if (_dest == null) throw new IllegalArgumentException("Destination key cannot be null.");
+    if (_dest == null) throw new IllegalArgumentException("Destination frame name cannot be null.");
 
     FrameCreator fc = new FrameCreator(this, this._key);
     start(fc, fc.nChunks()*5, true);
