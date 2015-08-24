@@ -369,5 +369,4 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public static double GLM_logInv( double x ) { return Math.exp(x); }
   public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
   public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
-
 }
