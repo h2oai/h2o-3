@@ -17,7 +17,7 @@ Classification Balanced Dense Data,Classification_Balanced_data_Auto_Balance_cla
 ,Classification_Balanced_data_Multinomial_Balance_classes_disabled_Dense,gbm_testcase_13,,x,,,,x,,,,,,,,,,,,,,,,,,,,,,Multinomial,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
 Classification Unbalanced Dense Data,Classification_UnBalanced_data_Auto_Balance_classes_disabled_Dense,gbm_testcase_14,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,Auto,Unbalanced,,x,airquality_train2,airquality_validation2,,x,x,,,,,,
 ,Classification_UnBalanced_data_Binomial_Balance_classes_disabled_Dense,gbm_testcase_15,,x,,,x,,,,,,,,,,,,,,,,,,,,,,,Binomial,Unbalanced,,x,airquality_train2,airquality_validation2,,x,x,,,,,,
-,Classification_UnBalanced_data_Multinomial_Balance_classes_disabled_Dense,gbm_testcase_16,,x,,,,x,,,,,,,,,,,,,,,,,,,,,,Multinomial,Unbalanced,,x,airquality_train2,airquality_validation2,,x,x,,,,,,
+,Classification_UnBalanced_data_Multinomial_Balance_classes_disabled_Dense,gbm_testcase_16,,x,,,,x,,,,,,,,,,,,,,,,,,,,,,Multinomial,Unbalanced,,x,covtype_small_dense_multiclass_unbalanced_train,covtype_small_dense_multiclass_unbalanced_test,,x,x,,,,,,
 Classification Balanced Sparse Data,Classification_Balanced_data_Auto_Balance_classes_disabled_Sparse,gbm_testcase_17,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,Auto,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,
 ,Classification_Balanced_data_Binomial_Balance_classes_disabled_Sparse,gbm_testcase_18,,x,,,x,,,,,,,,,,,,,,,,,,,,,,,Binomial,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,
 ,Classification_Balanced_data_Multinomial_Balance_classes_disabled_Sparse,gbm_testcase_19,,x,,,,x,,,,,,,,,,,,,,,,,,,,,,Multinomial,Balanced,x,,mnist_multinomial_train,mnist_multinomial_test,,x,x,,,,,,
