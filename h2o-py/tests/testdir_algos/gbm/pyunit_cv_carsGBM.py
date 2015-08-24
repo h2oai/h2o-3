@@ -36,7 +36,7 @@ def cv_carsGBM(ip,port):
                    fold_assignment="Modulo")
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Modulo")
-    h2o.check_models(gbm1, gbm2, True)
+    tests.check_models(gbm1, gbm2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
@@ -45,7 +45,7 @@ def cv_carsGBM(ip,port):
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Random")
     try:
-        h2o.check_models(gbm1, gbm2, True)
+        tests.check_models(gbm1, gbm2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -99,7 +99,7 @@ def cv_carsGBM(ip,port):
     gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=0, distribution=distribution, ntrees=5)
     # check that this is equivalent to no nfolds
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution, ntrees=5)
-    h2o.check_models(gbm1, gbm2)
+    tests.check_models(gbm1, gbm2)
 
     # 3. cross-validation and regular validation attempted
     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col], ntrees=5,

@@ -29,27 +29,27 @@ def op_precedence(ip,port):
 
     print "Check A + B * C"
     S1 = A + B * C
-    h2o.np_comparison_check(S1, s1, 10)
+    tests.np_comparison_check(S1, s1, 10)
 
     print "Check A - B - C"
     S2 = A - B - C
-    h2o.np_comparison_check(S2, s2, 10)
+    tests.np_comparison_check(S2, s2, 10)
 
     print "Check A ^ 2 ^ 3"
     S3 = A ** 1 ** 2
-    h2o.np_comparison_check(S3, s3, 10)
+    tests.np_comparison_check(S3, s3, 10)
 
     print "Check A == B & C"
     S4 = A == B & C
-    h2o.np_comparison_check(S4, s4, 10)
+    tests.np_comparison_check(S4, s4, 10)
 
     print "Check A == B + C"
     S5 = A == B + C
-    h2o.np_comparison_check(S5, s5, 10)
+    tests.np_comparison_check(S5, s5, 10)
 
     print "Check A | B & C"
     S6 = A | B & C
-    h2o.np_comparison_check(S6, s6, 10)
+    tests.np_comparison_check(S6, s6, 10)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, op_precedence)

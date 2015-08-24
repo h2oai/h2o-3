@@ -27,7 +27,7 @@ def frame_reducers(ip,port):
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    #h2o.np_comparison_check(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1), 10)
+    #tests.np_comparison_check(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1), 10)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, frame_reducers)

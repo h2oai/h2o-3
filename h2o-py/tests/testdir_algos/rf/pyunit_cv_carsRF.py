@@ -30,14 +30,14 @@ def cv_carsRF(ip,port):
     nfolds = random.randint(3,10)
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
-    h2o.check_models(rf1, rf2, True)
+    tests.check_models(rf1, rf2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     try:
-        h2o.check_models(rf1, rf2, True)
+        tests.check_models(rf1, rf2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -76,7 +76,7 @@ def cv_carsRF(ip,port):
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=0, seed=1234)
     # check that this is equivalent to no nfolds
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], seed=1234)
-    h2o.check_models(rf1, rf2)
+    tests.check_models(rf1, rf2)
 
     # 3. cross-validation and regular validation attempted
     rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10),

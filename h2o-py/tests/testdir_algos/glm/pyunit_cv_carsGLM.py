@@ -32,14 +32,14 @@ def cv_carsGLM(ip,port):
     nfolds = random.randint(3,10)
     glm1 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Modulo")
     glm2 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Modulo")
-    h2o.check_models(glm1, glm2, True)
+    tests.check_models(glm1, glm2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
     glm1 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Random")
     glm2 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Random")
     try:
-        h2o.check_models(glm1, glm2, True)
+        tests.check_models(glm1, glm2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -94,7 +94,7 @@ def cv_carsGLM(ip,port):
     glm1 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=0, family=family)
     # check that this is equivalent to no nfolds
     glm2 = h2o.glm(y=cars[response_col], x=cars[predictors], family=family)
-    h2o.check_models(glm1, glm2)
+    tests.check_models(glm1, glm2)
 
     # 3. cross-validation and regular validation attempted
     glm = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col],

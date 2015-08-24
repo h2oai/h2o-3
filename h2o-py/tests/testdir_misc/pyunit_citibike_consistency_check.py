@@ -15,8 +15,8 @@ def consistency_check(ip,port):
     except ValueError:
         large = h2o.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
-    h2o.ipy_notebook_exec(small, save_and_norun=True)
-    h2o.ipy_notebook_exec(large, save_and_norun=True)
+    tests.ipy_notebook_exec(small, save_and_norun=True)
+    tests.ipy_notebook_exec(large, save_and_norun=True)
 
     s = os.path.basename(small).split('.')[0]+".py"
     l = os.path.basename(large).split('.')[0]+".py"
