@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def imbalanced(ip,port):
     
@@ -34,4 +34,4 @@ def imbalanced(ip,port):
     assert class_6_err_imbalanced >= 0.9*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, imbalanced)
+  tests.run_test(sys.argv, imbalanced)

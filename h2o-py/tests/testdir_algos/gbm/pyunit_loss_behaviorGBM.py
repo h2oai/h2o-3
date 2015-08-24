@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def distribution_behaviorGBM(ip,port):
   
@@ -65,5 +65,5 @@ def distribution_behaviorGBM(ip,port):
   assert isinstance(eco_model,h2o.model.multinomial.H2OMultinomialModel)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, distribution_behaviorGBM)
+    tests.run_test(sys.argv, distribution_behaviorGBM)
 

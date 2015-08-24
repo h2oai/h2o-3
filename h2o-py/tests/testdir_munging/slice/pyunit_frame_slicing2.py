@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def expr_slicing(ip,port):
     
@@ -37,4 +37,4 @@ def expr_slicing(ip,port):
            abs(res6[3,3] - 0.4) < 1e-10, "incorrect values"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, expr_slicing)
+    tests.run_test(sys.argv, expr_slicing)

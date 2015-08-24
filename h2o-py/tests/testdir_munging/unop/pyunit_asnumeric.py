@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def asnumeric(ip,port):
     
@@ -23,4 +23,4 @@ def asnumeric(ip,port):
     assert h2oframe.nrow == rows, "expected the same number of rows as before {0}, but got {1}".format(rows, h2oframe.nrow)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, asnumeric)
+    tests.run_test(sys.argv, asnumeric)

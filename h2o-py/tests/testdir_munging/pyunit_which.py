@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def pyunit_which(ip,port):
 
@@ -14,4 +14,4 @@ def pyunit_which(ip,port):
     assert sum(range(100,150)) == virginica.sum()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pyunit_which)
+    tests.run_test(sys.argv, pyunit_which)

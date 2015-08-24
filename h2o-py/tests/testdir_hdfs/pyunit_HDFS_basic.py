@@ -4,7 +4,7 @@
 
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def hdfs_basic(ip, port):
     
@@ -53,4 +53,4 @@ def hdfs_basic(ip, port):
         print "Not running on H2O internal network.  No access to HDFS."
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, hdfs_basic)
+    tests.run_test(sys.argv, hdfs_basic)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def pubdev_1421(ip, port):
     
@@ -17,4 +17,4 @@ def pubdev_1421(ip, port):
         air_test = h2o.import_file(url)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pubdev_1421)
+    tests.run_test(sys.argv, pubdev_1421)

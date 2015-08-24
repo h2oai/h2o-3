@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 import random
 import math
@@ -86,4 +86,4 @@ def expr_math_ops(ip,port):
         "math".format(h2o_val,num_val)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, expr_math_ops)
+    tests.run_test(sys.argv, expr_math_ops)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def iris_get_model(ip,port):
     
@@ -15,4 +15,4 @@ def iris_get_model(ip,port):
     model.show()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, iris_get_model)
+  tests.run_test(sys.argv, iris_get_model)

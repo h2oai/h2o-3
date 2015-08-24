@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def as_python_test(ip,port):
   
@@ -22,4 +22,4 @@ def as_python_test(ip,port):
   print h2o.as_list(airlines)
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, as_python_test)
+  tests.run_test(sys.argv, as_python_test)

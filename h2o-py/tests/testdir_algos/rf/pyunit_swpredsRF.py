@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def swpredsRF(ip,port):
     # Training set has two predictor columns
@@ -32,4 +32,4 @@ def swpredsRF(ip,port):
     print(perf2.auc())
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, swpredsRF)
+  tests.run_test(sys.argv, swpredsRF)

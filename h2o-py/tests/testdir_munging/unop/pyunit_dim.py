@@ -7,7 +7,7 @@
 
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 
 def dim_checks(ip,port):
@@ -46,4 +46,4 @@ def dim_checks(ip,port):
   assert h2oColAmpFive.nrow == h2o_rows, "expected the number of rows to remain unchanged"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, dim_checks)
+  tests.run_test(sys.argv, dim_checks)

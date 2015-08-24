@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def pyunit_assign(ip,port):
 
@@ -14,4 +14,4 @@ def pyunit_assign(ip,port):
     assert PSA_outliers._id == "PSA.outliers", "Expected frame id to be PSA.outliers, but got {0}".format(PSA_outliers._id)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pyunit_assign)
+    tests.run_test(sys.argv, pyunit_assign)

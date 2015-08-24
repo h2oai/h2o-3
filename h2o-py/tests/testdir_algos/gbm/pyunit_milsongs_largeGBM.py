@@ -1,6 +1,6 @@
 import sys, shutil
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def milsong_checkpoint(ip,port):
@@ -40,4 +40,4 @@ def milsong_checkpoint(ip,port):
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, milsong_checkpoint)
+    tests.run_test(sys.argv, milsong_checkpoint)

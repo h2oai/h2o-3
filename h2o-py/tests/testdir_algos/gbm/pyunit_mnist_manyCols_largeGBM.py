@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def mnist_manyCols_largeGBM(ip,port):
     
@@ -16,4 +16,4 @@ def mnist_manyCols_largeGBM(ip,port):
     gbm_mnist.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, mnist_manyCols_largeGBM)
+    tests.run_test(sys.argv, mnist_manyCols_largeGBM)

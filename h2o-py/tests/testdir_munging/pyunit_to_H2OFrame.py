@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import numpy as np
 import pandas as pd
 
@@ -167,4 +167,4 @@ def to_H2OFrame(ip,port):
     # # check_dims_values_jagged() TODO
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, to_H2OFrame)
+    tests.run_test(sys.argv, to_H2OFrame)

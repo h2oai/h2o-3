@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def cv_carsGBM(ip,port):
@@ -140,4 +140,4 @@ def cv_carsGBM(ip,port):
         assert True
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, cv_carsGBM)
+    tests.run_test(sys.argv, cv_carsGBM)
