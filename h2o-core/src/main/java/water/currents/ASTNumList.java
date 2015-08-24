@@ -116,6 +116,17 @@ class ASTNumList extends AST {
     return vals;
   }
 
+  int[] expand4() {
+    // Count total values
+    int nrows=(int)cnt(), r=0;
+    // Fill in values
+    int[] vals = new int[nrows];
+    for( int i=0; i<_bases.length; i++ )
+      for( double d = _bases[i]; d<_bases[i]+_cnts[i]*_strides[i]; d+=_strides[i] )
+        vals[r++] = (int)d;
+    return vals;
+  }
+
   double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
   double min() { return _bases[0]; }
   long cnt() { return water.util.ArrayUtils.sum(_cnts); }

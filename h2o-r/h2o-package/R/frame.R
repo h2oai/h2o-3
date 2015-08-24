@@ -53,8 +53,10 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
-  if( !exists("id",envir=x) && is.character(x:eval) )
+  if( !exists("id",envir=x) && is.character(x:eval) ) {
+    cat("=== Finalizer on ",x:eval,"\n")
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x:eval), method = "DELETE")
+  }
 }
 
 # Make a raw named data frame.  The key will exist on the server, and will be
@@ -146,29 +148,46 @@ is.na.Frame <- function(x) .newExpr("is.na", x)
 pfr <- function(x) { chk.Frame(x); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),e); .clearvisit(x); invisible() }
 
 .eval.impl <- function(x, toplevel) {
-  if( is.character(xchild<-x:eval) ) return( if(is.data.frame(x:data) || is.null(x:data) ) xchild else x:data )
+  if( is.character(xchild<-x:eval ) ) return( if(is.data.frame(x:data) || is.null(x:data) ) xchild else x:data )
+  if( exists("eval2",x,inherits=FALSE) ) return( get("eval2",envir=x,inherits=FALSE) )
   res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child,F) else child }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
-  .set(x,"eval", xchild <- .key.make("RTMP")) # Flag as code-emitted
+  .set(x,"eval2", xchild <- .key.make("RTMP")) # Flag as code-emitted
   if( .shared(x) && !toplevel) 
     res <- paste0("(tmp= ",xchild," ",res,")")
   res
 }
+.clear.impl <- function(x) {
+  if( !is.Frame(x) ) return()
+  if( !exists("eval2",x,inherits=FALSE) ) return()
+  lapply(x:eval, function(child) .clear.impl(child))
+  .set(x,"eval",get("eval2",envir=x,inherits=FALSE))
+  rm("eval2",envir=x)
+}
 
-# Evaluate this Frame on demand.  The EVAL field is used as a flag to
-# signal that the node has already been executed.  Once evaluted
-# the EVAL field holds the cluster name; thus:
+# Evaluate this Frame on demand.  The EVAL field is used as a flag to signal
+# that the node has already been executed.  Once evaluted the EVAL field holds
+# the cluster name; thus:
 #    .eval.frame(hex):eval
 # Always yields the cluster's name for the evaluated results.
+#
+# Because of GC, this algo requires 2 passes over the DAG.  The first pass
+# builds the expression string - but it cannot let any of the sub-parts go
+# dead, lest GC delete frames on last use... before the expression string is
+# shipped over the wire.  During the 2nd pass the internal DAG pointers are
+# wiped out, replaced with TMP result keys, and allowed to go dead (hence can
+# be nuked by GC).
 .eval.frame <- function(x) {
   chk.Frame(x)
   if( !is.character(x:eval) ) {
     exec_str <- .eval.impl(x,TRUE)
-    print(paste0("EXPR: ",exec_str))
     # Execute the AST on H2O
-    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:eval, method = "POST")
+    print(paste0("EXPR: ",exec_str))
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:eval2, method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
     if( !is.null(res$scalar) ) .set(x,"data",res$scalar)
+    # Now clear all internal DAG nodes, allowing GC
+    .clear.impl(x)
   }
   x
 }
