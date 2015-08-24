@@ -106,9 +106,14 @@ public class DataInfo extends Keyed {
     _imputeMissing = false;
     _catLvls = null;
   }
+
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
+  public DataInfo(Key selfKey, Frame train, Frame valid, boolean useAllFactorLevels, TransformType predictor_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket) {
+    this(selfKey, train, valid, 0, useAllFactorLevels, predictor_transform, TransformType.NONE, skipMissing, imputeMissing, missingBucket, false, false, false);
+  }
+
   public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
     super(selfKey);
     _valid = false;
