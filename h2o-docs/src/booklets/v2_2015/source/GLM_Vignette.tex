@@ -185,15 +185,14 @@ Lasso (least absolute shrinkage and selection operator). Ridge regression provid
 \subsubsection{Lasso and Ridge regression}
 
 Lasso represents the L1 penalty and is an alternative regularized least squares method that uses the constraint
-$||B||_1$. The penalty is configured using the \texttt{alpha} parameter. The main difference between Lasso and
+$||B||_1$. The main difference between Lasso and
 ridge regression is that as the penalty for ridge regression increases, the parameters are reduced to non-zero
 values. With Lasso, if the penalty is increased, the parameters can be reduced to zero values. Since reducing
-parameters to zero removes them from the model, the Lasso method provides only the relevant data. Ridge regression
-never removes any data.
+parameters to zero removes them from the model, the Lasso method only relies on the relevant data (discards the noise). Ridge regression never removes any predictors.
 
 \subsubsection{Elastic net penalty}
 
-H2O supports elastic net regularization, which is parametrized by \texttt{alpha} and \texttt{lambda} arguments
+H2O supports elastic net regularization, which is a combination of L1 and L2 penalties and is parametrized by \texttt{alpha} and \texttt{lambda} arguments
 (similar to \citetalias{glmnet}).
 
 The \texttt{alpha} argument controls the elastic net penalty distribution to L1 and L2 norms. It can have any value
@@ -206,8 +205,7 @@ The \texttt{lambda} argument controls the penalty strength; the range is any pos
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ s.t. the solution is
 empty model (all zeros except for intercept). %%this needs to be clarified - it doesn't really make sense to me. 
 
-Elastic net combines the two and adds another parameter, $\alpha$, which controls the distribution of the penalty
-between L1 and L2. The combination of the two penalties is beneficial, since L1 gives sparsity while L2 gives
+The combination of L1 and L2 penalties is beneficial, since L1 gives sparsity while L2 gives
 stability and encourages the grouping effect (where a group of correlated variables tends to be dropped or added
 into the model all at once). One possible use of the $\alpha$ argument is for Lasso with very little L2 penalty
 ($\alpha$ almost 1) to stabilize the computation and improve convergence speed.
@@ -331,7 +329,26 @@ argument.
 
 \subsubsection{Tweedie models}
 
-TODO
+Tweedie models are a class of distributiions which include Gamma, Normal, Poisson and their combination. It is especially usefull for modelling of variables which have 0s combined with continuous non-zero values (e.g. Gamma distribution).
+
+Tweedie is parametrized by variance power p which can be one of the following:
+
+\begin{itemize}
+\item  0	Normal
+\item  1	Poisson
+\item (1, 2)	Compound Poisson, non-negative with mass at zero
+\item 2	Gamma
+\item 3	Inverse-Gaussian
+\item $>$ 2	Stable, with support on the positive reals
+\end{itemize}
+
+
+TODO fit in likelihood 
+
+Deviance for variance p ($p != 1$ and $p != 2$) is :
+\[
+D = -2\sum\limits_{i=1}\limits^{N}{ y_i  (y_i^{1-p} - \hat{y_i}^{1-p}) - {(y^{2 - p} - \hat{y}^{2 - p})\over(2 - p)}}
+\]
 
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
@@ -395,7 +412,7 @@ classification, so the response column may only have two levels.
 
 Categorical predictor columns may have more than two levels.
 
-We recommend letting GLM expand categorical columns itself, as it can take advantage of the categorical
+We recommend letting GLM handle categorical columns itself, as it can take advantage of the categorical
 column for better performance and memory utilization.
 
 We strongly recommend avoidance of one-hot encoding categorical columns with many levels into many binary columns, as this is very inefficient.  This is especially true for Python users who are used to expanding their categorical variables
@@ -406,12 +423,7 @@ manually for other frameworks.
 Family and Link are both optional parameters. The default family is \texttt{Gaussian} and the default link is a
 canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link = `log'}.
 While it is possible to select something other than a canonical link, doing so can lead to an unstable
-computation. Recommended combinations are:
-
-\begin{itemize}
-\item \texttt{Gaussian} and \texttt{Log}
-\item \texttt{Inverse, Gamma,} and \texttt{Log}
-\end{itemize} 
+computation. 
 
 \subsection{Regularization parameters}
 
@@ -419,7 +431,7 @@ Refer to \nameref{regularization} above for a detailed explanation.
 
 To get the best possible model, we need to find the optimal values of the regularization parameters $\alpha$ and
 $\lambda$.  To find the optimal values, H2O provides grid search over $\alpha$ and a special form of grid search
-called ``lambda search over $\lambda$". The recommended way to find optimal regularization settings on H2O is to do
+called ``lambda search" over $\lambda$. The recommended way to find optimal regularization settings on H2O is to do
 a grid search over a few $\alpha$ values with an automatic lambda search for each $\alpha$. Both are described
 below in greater detail.
 
@@ -433,17 +445,22 @@ regularization is applied, and the \texttt{alpha} parameter is ignored.  The def
 calculated by H2O using a heuristic based on the training data.  If you let H2O calculate \texttt{lambda}, you can
 see the chosen value in the model output.
 
-\subsubsection{lambda search}
+\subsubsection{Lambda Search}
+Lambda search enables efficient and automatic search for optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization strength and then keep decreasing it until overfitting. The resulting model will be based on the best \texttt{lambda} value. When looking for sparse solution (\texttt{alpha} $>$ 0), lambda serach can also be used to efficiently handle very wide datasets as it can filter out inactive predictors (noise) and only build models for a small subset of predictors. Common use of lambda search is to run on a dataset with many predictors but limit the number of active predictors to relatively small value.  
 
-Lambda search is a special case of automatic and efficient grid search over lambda argument and is described in its
-own section. Lambda search can be enabled by using the \texttt{lambda\_search = T} option. It can be further
-parametrized by the \texttt{nlambdas} and \texttt{lambda\_min\_ratio} parameters.
-\texttt{nlambdas} specifies the number of lambda values on the regularization path and \texttt{lambda\_min\_ratio} 
-specifies the minimal lambda value to be computed as a ration of $\lambda_{max}$.
+Lambda search can be turned on by setting \texttt{lambda\_search} and can be further customized by following arguments:
 
-When this option is enabled, H2O performs a specialized grid search over the list of \texttt{nlambdas} $\lambda$ values, producing one model for each $\lambda$ value.
+\begin{itemize}
+\item \texttt{alpha} - regularization distribution between L1 and L2
+\item \texttt{validation\_frame} and\/or \texttt{n\_folds}:
+The best lambda is selected based on performance on the cross-validation or validation or training data. If available, cross-validation performance takes preference. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed as GLM can not overfit on a trainign dataset.
+ 
+\textbf{Note:} If running lambda search with validation dataset and no cross-validation, validation data set is used to select the lambda value, validation dataset is thus contaminated and performance should be evaluated on another independent dataset.
 
-The $\lambda$-list is automatically generated as an exponentially decreasing sequence, going from $\lambda_{max}$,
+
+\item \texttt{lambda\_min\_ratio} and \texttt{nlambdas}: 
+
+The sequence of $\lambda$-s is automatically generated as an exponentially decreasing sequence, going from $\lambda_{max}$,
 the smallest $\lambda$ such that the solution is a model with all 0s, to $\lambda_{min} =
 $ \textit{lambda\_min\_ratio} * $ \lambda_{max}$.
 
@@ -454,11 +471,17 @@ only a few iterations per $\lambda$ (typically two or three). We also achieve gr
 with a higher penalty are easier to compute, so we start with an easy problem and then keep making only small
 changes to it.
 
+
 \textbf{Note:} \texttt{nlambda} and \texttt{lambda\_min\_ratio} also specify the relative distance of any two
  lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the
 neighboring lambdas are ``close" to each other. The default values are \texttt{nlambda} = 100 and $\lambda_{min}
 = \lambda_{max} 1e^{-4}$, which gives us the ratio of 0.912.  For best results when using strong rules, keep the
 ratio close to the default.
+
+\item \texttt{max\_active\_predictors}: Limit the number of active predictors (the actual number of non-zero predictors in the model is going to be slightly lower), usefull when obtaining a sparse solution to avoid costly computation of models with too many predictors.
+
+\end{itemize}
+
 
 \subsection{Handling wide data and building sparse models}
 
@@ -471,26 +494,18 @@ Quick recommendations:
       \texttt{alpha} greater than 0.0 (so you get at least some L1 penalty) and enable \texttt{lambda\_search}.
 
 \item For a dense solution (i.e. all predictors are in the final model), use the L\_BFGS solver with
-      \texttt{alpha} of 1.0 so there is no L1 penalty, only L2 penalty.
+      \texttt{alpha} of 0 so there is no L1 penalty, only L2 penalty.
+\item If not sure whether the solution should be sparse or dense, try both cases and pick the better one based on validation (cross-validation) data.      
 \end{itemize}
 
 \subsubsection{Solver selection}
 
 The two solvers provided in H2O are Iterative Reweighted Least Squares Method (IRLSM) and Limited-memory Broyden-Fletcher-Goldfarb-Shanno (L\_BFGS).  IRLSM uses
-a Gram Matrix approach underneath the hood, which is very efficient for tall and narrow datasets.  For wider 
+a Gram Matrix approach underneath the hood, which is very efficient for tall and narrow datasets and when running lambda search with sparse solution.  For wider and dense
 datasets (thousands of predictors and up), the L\_BFGS solver scales better.
 
 For performance reasons, we recommend not using any L1 penalty when using the L\_BFGS solver, since
-model building can be slower.
-
-\texttt{lambda\_search} can be used with both the IRLSM and L\_BFGS solvers.
-
-\subsubsection{L1 regularization (Lasso)}
-
-GLM can build sparse models (i.e., models with fewer coefficients than input predictors) when L1 penalty is
-enabled (i.e. \texttt{alpha} is less than 1.0).
-
-Strong rules for L1 (refer to the \nameref{strongrules} section) are a performance optimization that is enabled automatically by H2O. There is no parameter for strong rules.  Generally, they are only effective when \texttt{lambda\_search} is enabled.
+model building can be slower. It is often better to run lambda search with IRLSM solver instead.
 
 \subsubsection{Stopping criteria}
 
@@ -570,8 +585,6 @@ search capability in GLM.
 \subsubsection{Row weights}
 
 \texttt{weights\_column} is an optional column name or index referring to a column in the training frame. This column specifies on a per-row basis the weight of that row.  If no weight column is specified, a default value of 1 is used for each row. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
-
-
 
 \subsubsection{Coefficient constraints}
 
@@ -729,22 +742,19 @@ RACE       RACE     0.093423  NEG
 
 Various model statistics are available:
 
-\texttt{MSE} is the mean squared error.  TODO
+\texttt{MSE} is the mean squared error: $MSE = {1 \over N} \sum_{i=1}^N (actual_i - prediction_i)^2$
 
-\texttt{R\textasciicircum2} is the R squared.  TODO
+\texttt{R\textasciicircum2} is the R squared: $R^2 = 1 - {MSE \over \sigma_y^2}$
 
-\texttt{LogLoss} is the log loss.  TODO
+\texttt{LogLoss} is the log loss.  $LogLoss = {−1 \over N} \sum_i^N \sum_j^C y_{i}log(p_{i,j})$
 
-\texttt{AUC} is based on ROC curve build  by summing up confusion matrices built for all n-models.
-For each threshold, we get a confusion matrix that includes all the rows from the training set. However, each row
-is classified exclusively by the model that did not contain that row in its training set. The computation of AUC is
-the same as for a model without cross-validation.
+\texttt{AUC} is available only for binomial models and is defined the area under ROC curve.
 
 \texttt{Gini}  TODO
 
-\texttt{Null deviance} is sum of null deviances of n-models (each uses null model based on the subset of the data)
+\texttt{Null deviance} Deviance (defined by selected family) computed for the null model. 
 
-\texttt{Residual deviance} is sum of residual deviances of all n-models
+\texttt{Residual deviance} Deviance of the built model
 
 \texttt{AIC} is based on log-likelihood, which is summed up similarly to deviance
 
@@ -866,10 +876,7 @@ To determine the accuracy of your model:
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_compare_cross_validation_folds.R}
 
-\item Look for explained deviance
-
-TODO: How?
-
+\item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$)  
       \begin{itemize}
       \item Too close to 0:  model doesn’t predict well
       \item Too close to 1:  model predicts “too” well (one of your input columnss is probably a cheating column)
@@ -883,11 +890,11 @@ TODO: How?
       lambda that interests you (performing all the iterations probably means the solution is not good).  This is
       controlled by the \texttt{max\_iterations} parameter.
 \item Too many NAs in your training data is bad (GLM discards rows with NA values)
-
-TODO: How to tell how many training rows were used to build the model?
+     You should always check degrees of freedom of the output model. Degress of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
 
       \begin{itemize}
-      \item If you have a really bad column, you might accidentally be losing all your rows.
+      \item If you have few columns with many NAs, you might accidentally be losing all your rows and it's better to exclude them.
+      \item If you have many columns with small fraction of uniformly distributed missing values, every row is lkely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modelling.
       \end{itemize}
 \end{itemize}
 
@@ -985,38 +992,22 @@ cost grows as the cube of the number of predictors (which is a computational cos
 work around these limitations due to its handling of categoricals and by employing strong rules to filter out
 inactive predictors.
 
-\subsubsection{L\_BFGS solver}
-
-TODO
+\subsubsection{L-BFGS solver}
+In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. The cost of the coefficient update is k*N, where N is number of predictors and k is a constant, the cost of gradient computation is $M*N\over pn$ where M is number of observations in the dataset and pnis the number of cpu cores in the cluster. Since k is a (small) constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully paralellized and L-BFGS thus scales almost linearly. 
 
 \subsection{Data corner cases}
 
-TODO
-
 \begin{itemize}
-\item What if: the training data has an NA?
+\item What if: the training data has an NA? All rows conatining (any) missing value are omitted form the training set. 
 
-\item What if: the test data has an NA?
+\item What if: the test data has an NA? The prediction for that observation is NA.
 
 \item What if: a predictor column is categorical, you are making predictions on test data, and the predictor is
-a level that wasn't seen during training?
+a level that wasn't seen during training? The value is zero for all predictors associated with the particular categorical vairable.
 
 \item What if: the response column is categorical, you are making predictions on test data, and the response is
-a level that wasn't seen during training?
+a level that wasn't seen during training? Only binomial model is supported, any extra levels in test-response will trigger an error.
 \end{itemize}
-
-\subsection{Strong rules for L1} \label{strongrules}
-
-H2O's GLM employs strong rules (as described in \citetalias{strong}) to discard predictors that are likely to have
-0 coefficients prior to model building. According to \citetalias{strong}, we can identify these predictors based on
-a gradient with great accuracy. This provides very few false negatives and virtually no false positives in
-practice, greatly reducing the computational complexity of model fitting and enabling it to run on wide datasets
-with tens of thousands of predictors, provided that there is a limited number of active predictors.
-
-When applying the strong rules, we evaluate the gradient at the starting solution, filter out inactive
-coefficients, and fit a model using only a subset of the available predictors. Since strong rules may have false
-positives (which are extremely rare in practice), we need to check the solution by testing the kkt conditions and
-verify that all discarded predictors indeed have 0 coefficients.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
