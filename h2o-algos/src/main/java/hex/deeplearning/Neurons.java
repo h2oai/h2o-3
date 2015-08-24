@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.Distribution;
 import water.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.nio.ByteBuffer;
@@ -225,18 +226,16 @@ public abstract class Neurons {
     final boolean update_prev = _previous._e != null;
     final boolean fast_mode = params._fast_mode;
     final int cols = _previous._a.size();
-    final int idx = row * cols;
-
 
     double avg_grad2 = 0;
     for( int col = 0; col < cols; col++ ) {
-      final double weight = _w.get(row,col);
+      final int w = linearIndexMatrix(row, col);
+      final double weight = _w.raw()[w];
       if( update_prev ) _previous._e.add(col, partial_grad * weight); // propagate the error dE/dnet to the previous layer, via connecting weights
       final double previous_a = _previous._a.get(col);
       if (fast_mode && previous_a == 0) continue;
 
       //this is the actual gradient dE/dw
-      final int w = idx + col;
       double grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
       if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
 
@@ -274,14 +273,15 @@ public abstract class Neurons {
     update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum);
   }
 
-  private static void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2) {
-    final int cols = w.cols();
-    final int idx = row * cols;
-    float r2 = MathUtils.sumSquares(w.raw(), idx, idx + cols);
+  private void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2) {
+    final int start = linearIndexMatrix(row, 0);
+    final int end = linearIndexMatrix(row, w.cols()-1);
+    float r2 = MathUtils.sumSquares(w.raw(), start, end);
 //    float r2 = MathUtils.approxSumSquares(w.raw(), idx, idx + cols);
     if( r2 > max_w2) {
       final float scale = MathUtils.approxSqrt(max_w2 / r2);
-      for( int c = 0; c < cols; c++ ) w.raw()[idx + c] *= scale;
+      for( int c = start; c < end; c++ )
+        w.raw()[c] *= scale;
     }
   }
 
@@ -364,37 +364,38 @@ public abstract class Neurons {
     final boolean have_ada = _minfo.adaDelta();
     final float l1 = (float)params._l1;
     final float l2 = (float)params._l2;
-    final double bias = _b.get(row);
+    final int b = linearIndexVector(row);
+    final double bias = _b.get(b);
 
     partial_grad -= Math.signum(bias) * l1 + bias * l2;
-    if (_bEA != null) partial_grad -= (bias - _bEA.get(row)) * params._elastic_averaging_regularization;
+    if (_bEA != null) partial_grad -= (bias - _bEA.get(b)) * params._elastic_averaging_regularization;
 
     if (have_ada) {
       final float rho = (float)params._rho;
       final float eps = (float)params._epsilon;
-      rate = computeAdaDeltaRateForBias(avg_grad2, row, _bias_ada_dx_g, rho, eps);
+      rate = computeAdaDeltaRateForBias(avg_grad2, b, _bias_ada_dx_g, rho, eps);
     }
     if (!params._nesterov_accelerated_gradient) {
       final double delta = rate * partial_grad;
-      _b.add(row, delta);
+      _b.add(b, delta);
       if (have_momenta) {
-        _b.add(row, momentum * _bm.get(row));
-        _bm.set(row, delta);
+        _b.add(b, momentum * _bm.get(b));
+        _bm.set(b, delta);
       }
     } else {
       double d = partial_grad;
       if (have_momenta) {
-        _bm.set(row, _bm.get(row) * momentum);
-        _bm.add(row, d);
-        d = _bm.get(row);
+        _bm.set(b, _bm.get(b) * momentum);
+        _bm.add(b, d);
+        d = _bm.get(b);
       }
-      _b.add(row, rate * d);
+      _b.add(b, rate * d);
     }
     //update for sparsity constraint
     if (params._autoencoder && params._sparsity_beta > 0 && !(this instanceof Output) && !(this instanceof Input) && (_index != params._hidden.length)) {
-      _b.add(row, -(rate * params._sparsity_beta * (_avg_a.raw()[row] - params._average_activation)));
+      _b.add(b, -(rate * params._sparsity_beta * (_avg_a.raw()[b] - params._average_activation)));
     }
-    if (Double.isInfinite(_b.get(row))) _minfo.set_unstable();
+    if (Double.isInfinite(_b.get(b))) _minfo.set_unstable();
   }
 
 
@@ -562,6 +563,16 @@ public abstract class Neurons {
 
   }
 
+  protected int linearIndexMatrix(int row, int col) {
+    final int cols = _previous._a.size();
+    final int idx = row * cols;
+    return idx + col;
+  }
+
+  protected int linearIndexVector(int row) {
+    return row;
+  }
+
   /**
    * Tanh neurons - most common, most stable
    */
@@ -612,29 +623,54 @@ public abstract class Neurons {
    */
   public static class Maxout extends Neurons {
     final short _k; //number of parallel channels
-    int[] _maxIncoming; //index of largest incoming signal (out of k channels)
+    final int[] _maxIncoming; //index of largest incoming signal (out of k channels)
 
-    public Maxout(short k, int units) { super(units); _k = k; _maxIncoming=new int[units]; }
+    // return the "winning" linear index into the matrix
+    // (of the input that "won" the maxout contest)
+    @Override protected int linearIndexMatrix(int row, int col) {
+      final int cols = _previous._a.size();
+      final int idx = row * cols + col;
+      assert(_maxIncoming[row]==0 || _maxIncoming[row]==1);
+      assert(_maxIncoming[row]==0); //FIXME hardcoded
+//      if (col==0)
+//        Log.info("Winner2 weight: " + row + " -> " + _maxIncoming[row]);
+      return _k*idx + _maxIncoming[row];
+    }
+
+    // return the "winning" linear index into the vector
+    // (of the input that "won" the maxout contest)
+    @Override protected int linearIndexVector(int row) {
+//      Log.info("Winner2 bias: " + row + " -> " + _maxIncoming[row]);
+      return _k*row+_maxIncoming[row];
+    }
+
+    public Maxout(short k, int units) { super(units);
+      _k = k;
+      _maxIncoming=new int[units];
+      assert(_k==2);
+    }
     @Override protected void fprop(long seed, boolean training) {
+      assert(_b.size() == _a.size() * _k);
+      assert(_w.size() == _a.size() * _previous._a.size() * _k);
       final int rows = _a.size();
       for( int row = 0; row < rows; row++ ) {
         _a.set(row, 0);
         if( !training || _dropout == null || _dropout.unit_active(row) ) {
-          double mymax = Double.NEGATIVE_INFINITY;
           final int cols = _previous._a.size();
-          for( int col = 0; col < cols; col++ ) {
-            double val = _w.get(row, col) * _previous._a.get(col);
-            if (val > mymax) {
-              mymax = val;
-              _maxIncoming[row] = col;
+          double[] activations = new double[_k];
+          // For each neuron in the previous layer, there's k channels
+          // Each channel has its own weight and bias values
+          // The channel leading to the highest incoming value (W*x + b) is the "winner" and will activate this neuron
+          for( short k = 0; k < _k; k++ ) {
+            activations[k] = 0;
+            for( int col = 0; col < cols; col++ ) {
+              activations[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a.get(col);
             }
+            activations[k] += _b.raw()[_k*row+k];
           }
-          _a.set(row, mymax);
-          if (Double.isInfinite(-_a.get(row))) {
-            _maxIncoming[row] = -1;
-            _a.set(row, 0); //catch the case where there is dropout (and/or input sparsity) -> no max found!
-          }
-          _a.add(row, _b.get(row));
+          _maxIncoming[row] = 0; //ArrayUtils.maxIndex(activations);
+          _a.set(row, activations[_maxIncoming[row]]);
+//          Log.info("Winner: " + row + " -> " + _maxIncoming[row]);
         }
       }
       compute_sparsity();
@@ -650,7 +686,6 @@ public abstract class Neurons {
         bprop(row, g, r, m);
       }
     }
-
   }
 
   /**
