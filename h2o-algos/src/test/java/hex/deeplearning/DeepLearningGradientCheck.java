@@ -102,6 +102,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 }
 
                 DeepLearningModelInfo modelInfo = dl.model_info().deep_clone(); //golden version
+//                Log.info(modelInfo.toStringAll());
                 long before = dl.model_info().checksum_impl();
 
                 float meanLoss = 0;

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def center_scale(ip,port):
     
@@ -37,4 +37,4 @@ def center_scale(ip,port):
     foo = iris[3].scale(center=False, scale=False)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, center_scale)
+    tests.run_test(sys.argv, center_scale)

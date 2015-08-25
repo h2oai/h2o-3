@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def test_any_all(ip,port):
 
@@ -17,4 +17,4 @@ def test_any_all(ip,port):
     assert any and not all, "expected any to be True and all to be False but but got {0} and {1}".format(any, all)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, test_any_all)
+    tests.run_test(sys.argv, test_any_all)

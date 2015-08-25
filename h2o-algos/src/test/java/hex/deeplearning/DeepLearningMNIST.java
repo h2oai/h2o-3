@@ -65,8 +65,9 @@ public class DeepLearningMNIST extends TestUtil {
         p._train = frame._key;
         p._valid = vframe._key;
         p._response_column = "C785"; // last column is the response
-        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-        p._hidden = new int[]{800,800};
+//        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+        p._activation = DeepLearningParameters.Activation.MaxoutWithDropout;
+        p._hidden = new int[]{80,80};
         p._train_samples_per_iteration = -1;
         p._input_dropout_ratio = 0.2;
         p._mini_batch_size = 1;

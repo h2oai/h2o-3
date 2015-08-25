@@ -1,6 +1,6 @@
 import sys
-sys.path.insert(1, "../")
-import h2o
+sys.path.insert(1, "..")
+import tests
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv,None)
+    tests.run_test(sys.argv,None)

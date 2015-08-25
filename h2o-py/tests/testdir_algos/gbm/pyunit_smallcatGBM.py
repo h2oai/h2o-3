@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn import ensemble
@@ -36,4 +36,4 @@ def smallcatGBM(ip,port):
   gbm_sci.fit(trainDataFeatures[:,np.newaxis],trainDataResponse)
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, smallcatGBM)
+  tests.run_test(sys.argv, smallcatGBM)

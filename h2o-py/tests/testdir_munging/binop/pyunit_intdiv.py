@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def intdiv(ip,port):
 
@@ -56,5 +56,5 @@ def intdiv(ip,port):
       pass
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, intdiv)
+    tests.run_test(sys.argv, intdiv)
 

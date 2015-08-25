@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def rbind_check(ip,port):
     # Connect to a pre-existing cluster
@@ -26,4 +26,4 @@ def rbind_check(ip,port):
         pass
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, rbind_check)
+    tests.run_test(sys.argv, rbind_check)

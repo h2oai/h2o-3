@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def get_model_test(ip,port):
     
@@ -61,4 +61,4 @@ def get_model_test(ip,port):
                          "".format(r, p1, p2)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, get_model_test)
+    tests.run_test(sys.argv, get_model_test)

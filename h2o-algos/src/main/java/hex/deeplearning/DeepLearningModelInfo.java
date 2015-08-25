@@ -225,22 +225,28 @@ public class DeepLearningModelInfo extends Iced {
       }
     }
 
+    int[] mult = new int[layers + 1];
+    for (int i=0;i<layers;++i) {
+      mult[i] = (get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout) ? 2 : 1;
+    }
+    mult[layers]=1; //Output is never Maxout
+
     // weights (to connect layers)
     dense_row_weights = new Storage.DenseRowMatrix[layers + 1];
-
-    // decide format of weight matrices row-major or col-major
-    dense_row_weights[0] = new Storage.DenseRowMatrix(units[1], units[0]);
+    dense_row_weights[0] = new Storage.DenseRowMatrix(mult[0]*units[1], units[0]);
     for (int i = 1; i <= layers; ++i)
-      dense_row_weights[i] = new Storage.DenseRowMatrix(units[i + 1] /*rows*/, units[i] /*cols*/);
+      dense_row_weights[i] = new Storage.DenseRowMatrix(mult[i] * units[i + 1] /*rows*/, units[i] /*cols*/);
 
     // biases (only for hidden layers and output layer)
     biases = new Storage.DenseVector[layers + 1];
-    for (int i = 0; i <= layers; ++i) biases[i] = new Storage.DenseVector(units[i + 1]);
+    for (int i = 0; i <= layers; ++i)
+      biases[i] = new Storage.DenseVector(mult[i] * units[i+1]);
     // average activation (only for hidden layers)
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
       avg_activations = new Storage.DenseVector[layers];
       mean_a = new double[layers];
-      for (int i = 0; i < layers; ++i) avg_activations[i] = new Storage.DenseVector(units[i + 1]);
+      for (int i = 0; i < layers; ++i)
+        avg_activations[i] = new Storage.DenseVector(mult[i] * units[i + 1]);
     }
     allocateHelperArrays();
     // for diagnostics
@@ -264,24 +270,31 @@ public class DeepLearningModelInfo extends Iced {
    * Allocate helper arrays for momentum/learning rate, etc.
    */
   void allocateHelperArrays() {
+    int[] mult = new int[units.length-1];
+    for (int i=0;i<units.length-1;++i) {
+      mult[i] = (get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout) ? 2 : 1;
+    }
+    mult[units.length-2]=1; //Output is never Maxout
+
     if (has_momenta()) {
       dense_row_weights_momenta = new Storage.DenseRowMatrix[dense_row_weights.length];
       if (dense_row_weights[0] != null)
-        dense_row_weights_momenta[0] = new Storage.DenseRowMatrix(units[1], units[0]);
+        dense_row_weights_momenta[0] = new Storage.DenseRowMatrix(mult[0]*units[1], units[0]);
       for (int i = 1; i < dense_row_weights_momenta.length; ++i)
-        dense_row_weights_momenta[i] = new Storage.DenseRowMatrix(units[i + 1], units[i]);
+        dense_row_weights_momenta[i] = new Storage.DenseRowMatrix(mult[i]*units[i + 1], units[i]);
       biases_momenta = new Storage.DenseVector[biases.length];
-      for (int i = 0; i < biases_momenta.length; ++i) biases_momenta[i] = new Storage.DenseVector(units[i + 1]);
+      for (int i = 0; i < biases_momenta.length; ++i)
+        biases_momenta[i] = new Storage.DenseVector(mult[i]*units[i + 1]);
     } else if (adaDelta()) {
       dense_row_ada_dx_g = new Storage.DenseRowMatrix[dense_row_weights.length];
       //AdaGrad
-      dense_row_ada_dx_g[0] = new Storage.DenseRowMatrix(units[1], 2 * units[0]);
+      dense_row_ada_dx_g[0] = new Storage.DenseRowMatrix(mult[0]*2*units[1], units[0]);
       for (int i = 1; i < dense_row_ada_dx_g.length; ++i) {
-        dense_row_ada_dx_g[i] = new Storage.DenseRowMatrix(units[i + 1], 2 * units[i]);
+        dense_row_ada_dx_g[i] = new Storage.DenseRowMatrix(mult[i]*units[i + 1], 2 * units[i]);
       }
       biases_ada_dx_g = new Storage.DenseVector[biases.length];
       for (int i = 0; i < biases_ada_dx_g.length; ++i) {
-        biases_ada_dx_g[i] = new Storage.DenseVector(2 * units[i + 1]);
+        biases_ada_dx_g[i] = new Storage.DenseVector(mult[i]*2* units[i + 1]);
       }
     }
   }

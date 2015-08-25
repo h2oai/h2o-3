@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def weights_api(ip,port):
     
@@ -100,4 +100,4 @@ def weights_api(ip,port):
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_api)
+    tests.run_test(sys.argv, weights_api)

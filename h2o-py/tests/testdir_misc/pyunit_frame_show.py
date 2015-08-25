@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def frame_show(ip,port):
     
@@ -15,4 +15,4 @@ def frame_show(ip,port):
     airlines.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, frame_show)
+    tests.run_test(sys.argv, frame_show)

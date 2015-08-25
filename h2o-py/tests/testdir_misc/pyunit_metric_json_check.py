@@ -2,7 +2,7 @@
 # accessors require _metric_json to have a particular form.
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def metric_json_check(ip, port):
     
@@ -175,4 +175,4 @@ def metric_json_check(ip, port):
                                                                             clus_metric_diff)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, metric_json_check)
+    tests.run_test(sys.argv, metric_json_check)

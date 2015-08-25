@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 import copy
 
@@ -94,4 +94,4 @@ def weights_vi(ip,port):
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_vi)
+    tests.run_test(sys.argv, weights_vi)

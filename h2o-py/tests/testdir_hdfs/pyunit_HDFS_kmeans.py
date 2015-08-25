@@ -4,17 +4,17 @@
 
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def hdfs_kmeans(ip, port):
     
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    running_inside_h2o = h2o.is_running_internal_to_h2o()
+    running_inside_h2o = tests.is_running_internal_to_h2o()
 
     if running_inside_h2o:
-        hdfs_name_node = h2o.get_h2o_internal_hdfs_name_node()
+        hdfs_name_node = tests.get_h2o_internal_hdfs_name_node()
         hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
         hdfs_covtype_file = "/datasets/runit/covtype.data"
 
@@ -44,4 +44,4 @@ def hdfs_kmeans(ip, port):
         print "Not running on H2O internal network.  No access to HDFS."
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, hdfs_kmeans)
+    tests.run_test(sys.argv, hdfs_kmeans)

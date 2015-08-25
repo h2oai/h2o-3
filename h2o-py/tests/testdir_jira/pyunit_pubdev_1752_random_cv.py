@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def pubdev_random_cv(ip,port):
 
@@ -20,4 +20,4 @@ def pubdev_random_cv(ip,port):
                          "first to be different from the second.".format(mse1, mse2)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pubdev_random_cv)
+    tests.run_test(sys.argv, pubdev_random_cv)

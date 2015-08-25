@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def rep_len_check(ip,port):
     # Connect to a pre-existing cluster
@@ -18,4 +18,4 @@ def rep_len_check(ip,port):
     assert fr.nrow == 150 and fr.ncol == 7, "Expected an H2OFrame with 150 rows and 7 columns, but got {0} rows and {1} cols".format(fr.nrow, fr.ncol)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, rep_len_check)
+    tests.run_test(sys.argv, rep_len_check)

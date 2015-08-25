@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def cupMediumGBM(ip,port):
   
@@ -18,4 +18,4 @@ def cupMediumGBM(ip,port):
   model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], distribution = "bernoulli", ntrees = 5)
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, cupMediumGBM)
+  tests.run_test(sys.argv, cupMediumGBM)

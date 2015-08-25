@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def offset_gamma(ip,port):
     # Connect to a pre-existing cluster
@@ -30,4 +30,4 @@ def offset_gamma(ip,port):
         format(392.6667, predictions.max())
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, offset_gamma)
+    tests.run_test(sys.argv, offset_gamma)
