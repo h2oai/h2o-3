@@ -96,6 +96,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       }
     }
     public String toString(){
+      if(_wcount == 0) return "empty, no rows";
       return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
     }
   }
