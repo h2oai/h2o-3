@@ -452,9 +452,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     double _ymuLink;
     double _yMin;
     double _yMax;
-    GLMGradientTask _gtNull;
-    GLMGradientTask _gtNullTest;
-    GLMGradientTask _gtBetaStart;
+    private GLMGradientTask _gtNull;
+    private GLMGradientTask _gtNullTest;
+    private GLMGradientTask _gtBetaStart;
+
+    private GLMMultinomialGradientTask _gtNullMultinomial;
+    private GLMMultinomialGradientTask _gtNullTestMultinomial;
+    private GLMMultinomialGradientTask _gtBetaStartMultinomial;
+
+    public double [] getNullGradient() {
+      return _gtNull._gradient;
+    }
+    public double [] getStartGradient() { return _gtBetaStart == null?_gtNull._gradient:_gtBetaStart._gradient;
+    }
 
     private transient double _likelihood = Double.POSITIVE_INFINITY;
     private transient int _iter;
@@ -639,6 +649,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final double    _ymu;        // actual mean of the response
     final double    _lambdaMax;  // lambda max of the current dataset
     double []       _beta;       // full - solution at previous lambda (or null)
+    double [][]     _beta_multinomial;
     int    []       _activeCols;
     GLMGradientInfo _ginfo;      // gradient and penalty of glm + L2 pen.transient double [] _activeBeta;
     double          _objVal;     // full objective value including L1 pen
@@ -651,6 +662,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     double          _resDevTest = Double.NaN;
     int             _stopCnt; // count of subsequent lambdas with worsening deviance
     boolean         _scoredAndUpdated;
+    int _numClasses;
 
     // these are not strictly state variables
     // I put them here to have all needed info in state object (so I only need to keep State[] info when doing xval)
@@ -821,6 +833,32 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //    });
 //  }
 
+  /**
+   * Objective value computation multinomial
+   * @param likelihood
+   * @param beta
+   * @param lambda
+   * @param nobs
+   * @param intercept
+   * @return
+   */
+  double objVal(double likelihood, double[][] beta, double lambda, long nobs, boolean intercept) {
+    double alpha = _parms._alpha[0];
+    double proximalPen = 0;
+    if (_bc._betaGiven != null) {
+      throw H2O.unimpl();
+    }
+    double l1normSum = 0;
+    double l2normSum = 0;
+    for(double [] b:beta){
+      l1normSum += ArrayUtils.l1norm(b, intercept);
+      l2normSum += ArrayUtils.l2norm(b, intercept);
+    }
+    return likelihood / nobs
+            + proximalPen
+            + lambda * (alpha * l1normSum)
+            + (1 - alpha) * .5 * l2normSum;
+  }
   double objVal(double likelihood, double[] beta, double lambda, long nobs, boolean intercept) {
     double alpha = _parms._alpha[0];
     double proximalPen = 0;
@@ -848,6 +886,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     DataInfo _activeData;
     GLMTaskInfo _taskInfo;
     long _start_time;
+    private int _c;
 
     public GLMSingleLambdaTsk(H2OCountedCompleter cmp, GLMTaskInfo state) {
       super(cmp);
@@ -1185,14 +1224,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // new IRLS iteration
           while (iter2++ < 30) {
             long startTimeCov = System.currentTimeMillis();
-            GLMIterationTask gt = new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
-                    false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
-                    null).doAll(_activeData._adaptedFrame);
+
+            GLMIterationTask gt = _parms._family == Family.multinomial
+                    ? new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
+                            false, _taskInfo._beta_multinomial, _c,  _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
+                            null).doAll(_activeData._adaptedFrame)
+                    : new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId], _parms,
+                            false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter,
+                            null).doAll(_activeData._adaptedFrame);
             long endTimeCov = System.currentTimeMillis();
             long durationCov = (endTimeCov - startTimeCov)/1000;
             System.out.println("Time to compute cov matrix " + durationCov);
 
-            double objVal = objVal(gt._likelihood, gt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
+            double objVal;
+            if(_parms._family == Family.multinomial)
+              objVal = objVal(gt._likelihood, gt._beta_multinomial, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
+            else
+               objVal =  objVal(gt._likelihood, gt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
             wsum = gt.wsum;
             wsumu = gt.wsumu;
             int iter1 = 0;
@@ -1208,7 +1256,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double [][] XX = gt._gram.getXX();
             // CD loop
             while (iter1++ < 300) {
-
               for(int i=0; i < _activeData._cats; ++i) {
                 int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
                 int off = _activeData._catOffsets[i];
@@ -1221,9 +1268,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   if( beta[j] != 0 )
                     doUpdateCD(grads, XX, betaold, beta, j);
                 }
-
               }
-
               int off = _activeData.numStart();
               for (int i = off; i < _activeData._nums + off; ++i) {
                 if(gt._gram.get(i,i)!= 0)
@@ -1250,15 +1295,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             long durationCd = (endTimeCd - startTimeCd);
             System.out.println("Time to run inner CD " + durationCd/1000);
             System.out.println("inner loop done in " + iter1 + " iterations and " + (System.currentTimeMillis()-t1)/1000 + "s, iter2 = " + iter2);
-
             double percdiff = Math.abs((objold-objVal)/objold);
             objold=objVal;
-            _taskInfo._beta = beta.clone();
+            if(_parms._family == Family.multinomial){
+              _taskInfo._beta_multinomial[_c] = beta.clone();
+            } else
+              _taskInfo._beta = beta.clone();
             if (percdiff < _parms._objective_epsilon & iter2 >1 )
               break;
-
           }
-
           long endTimeTotalCov = System.currentTimeMillis();
           long durationTotalCov = (endTimeTotalCov - startTimeTotalCov)/1000;
           System.out.println("Time to run Cov Updates Coordinate Descent " + durationTotalCov);
@@ -1454,19 +1499,37 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(!isRunning(_key)) throw new JobCancelledException();
       assert _rowFilter != null;
       _start_time = System.currentTimeMillis();
+      // if multinomial
+      // for all classes
+      // set solver for class a
+      // call solve()
+      if(_parms._family == Family.multinomial && _parms._solver == Solver.COORDINATE_DESCENT) {
+        double oldObj = Double.MAX_VALUE;
 
-      if(Math.abs(_parms._lambda[_lambdaId] - 0.0207 ) < 0.001) // 0.030035459652215813) < 0.001) //    0.02494
-              System.out.println();
-     // _taskInfo._allIn = true;
-      int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1], _taskInfo._ginfo._gradient);
-      _taskInfo._activeCols = activeCols;
-      _activeData = _dinfo.filterExpandedColumns(activeCols);
-      assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
-      _taskInfo._ginfo = new GLMGradientInfo(_taskInfo._ginfo._likelihood, _taskInfo._ginfo._objVal,contractVec(_taskInfo._ginfo._gradient,activeCols));
-      _taskInfo._beta = contractVec(_taskInfo._beta,activeCols);
-      assert  activeCols == null || _activeData.fullN() == activeCols.length : LogInfo("mismatched number of cols, got " + activeCols.length + " active cols, but data info claims " + _activeData.fullN());
-      assert DKV.get(_activeData._key) != null;
-      solve(false);
+        while(_taskInfo._objVal < (oldObj - oldObj*1e-4)) {
+          oldObj = _taskInfo._objVal;
+          for (int c = 0; c < _taskInfo._numClasses; ++c) {
+            _taskInfo._beta = _taskInfo._beta_multinomial[c];
+
+            solve(false);
+
+          }
+        }
+      } else {
+
+        if (Math.abs(_parms._lambda[_lambdaId] - 0.0207) < 0.001) // 0.030035459652215813) < 0.001) //    0.02494
+          System.out.println();
+        // _taskInfo._allIn = true;
+        int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0 ? _taskInfo._lambdaMax : _parms._lambda[_lambdaId - 1], _taskInfo._ginfo._gradient);
+        _taskInfo._activeCols = activeCols;
+        _activeData = _dinfo.filterExpandedColumns(activeCols);
+        assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
+        _taskInfo._ginfo = new GLMGradientInfo(_taskInfo._ginfo._likelihood, _taskInfo._ginfo._objVal, contractVec(_taskInfo._ginfo._gradient, activeCols));
+        _taskInfo._beta = contractVec(_taskInfo._beta, activeCols);
+        assert activeCols == null || _activeData.fullN() == activeCols.length : LogInfo("mismatched number of cols, got " + activeCols.length + " active cols, but data info claims " + _activeData.fullN());
+        assert DKV.get(_activeData._key) != null;
+        solve(false);
+      }
     }
     private class Iteration extends H2O.H2OCallback<GLMIterationTask> {
       public final long _iterationStartTime;

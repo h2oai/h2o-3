@@ -264,6 +264,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 //          return res;
 //          double res = -yr * eta - Math.log(1 - ym);
 //          return res;
+
         case poisson:
           if( yr == 0 ) return 2 * ym;
           return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
@@ -367,7 +368,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // supported families
     public enum Family {
       gaussian(Link.identity), binomial(Link.logit), poisson(Link.log),
-      gamma(Link.inverse), tweedie(Link.tweedie);
+      gamma(Link.inverse), multinomial(Link.logit), tweedie(Link.tweedie);
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }

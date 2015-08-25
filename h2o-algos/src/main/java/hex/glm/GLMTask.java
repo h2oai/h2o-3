@@ -274,6 +274,70 @@ public abstract class GLMTask  {
       _nobs += glt._nobs;
     }
   }
+
+  static class GLMMultinomialGradientTask extends MRTask<GLMMultinomialGradientTask> {
+    double [][] _beta;
+    final DataInfo _dinfo;
+    final double _currentLambda;
+    final double _reg;
+    double [] _gradient;
+
+    public GLMMultinomialGradientTask(DataInfo dinfo, double lambda, double reg) {
+      _dinfo = dinfo;
+      _currentLambda = lambda;
+      _reg = reg;
+    }
+    public void map(Chunk [] chks) {
+      Row row = _dinfo.newDenseRow();
+      final int P = _beta[0].length;
+      double [] exps = MemoryManager.malloc8d(_beta.length);
+      double [] grad = new double[_beta.length*P];
+
+      for(int r = 0; r < chks[0]._len; ++r) {
+        _dinfo.extractDenseRow(chks,r,row);
+        if(row.bad) continue;
+        double sumExp = 0;
+        for(int c = 0; c < _beta.length; ++c) {
+          exps[c] = Math.exp(row.innerProduct(_beta[c]));
+          sumExp += exps[c];
+        }
+        double reg = 1.0/sumExp;
+        for(int c = 0; c < _beta.length; ++c) {
+          double val = exps[c]*reg;
+          for(int i = 0; i < _dinfo._cats; ++i) {
+            int id = row.binIds[i];
+            grad[c*P+id] -= val;
+          }
+          int off = _dinfo.numStart();
+          for(int i = 0; i < _dinfo._nums; ++i) {
+            grad[c*P+i+off] -= row.numVals[i]*val;
+          }
+        }
+        int c = (int)row.response(0);
+        for(int i = 0; i < _dinfo._cats; ++i) {
+          int id = row.binIds[i];
+          grad[c*P+id] += 1;
+        }
+        int off = _dinfo.numStart();
+        for(int i = 0; i < _dinfo._nums; ++i) {
+          grad[c*P+i+off] += row.numVals[i];
+        }
+      }
+      _gradient = grad;
+    }
+    @Override
+    public void reduce(GLMMultinomialGradientTask gmgt){
+      ArrayUtils.add(_beta,gmgt._beta);
+    }
+
+    @Override public void postGlobal(){
+      ArrayUtils.mult(_gradient,_reg);
+      int P = (int)_beta[0].length;
+      for(int c = 0; c < _beta.length; ++c)
+        for(int j = 0; j < _beta[c].length - (_dinfo._intercept?1:0); ++j)
+          _gradient[c*P+j] += _currentLambda * _beta[c][j];
+    }
+  }
   static class GLMGradientTask extends MRTask<GLMGradientTask> {
     final GLMParameters _params;
     GLMValidation _val;
@@ -711,7 +775,9 @@ public abstract class GLMTask  {
    */
   public static class GLMIterationTask extends FrameTask2<GLMIterationTask> {
     final GLMParameters _params;
-    final double [] _beta;
+    final double [][]_beta_multinomial;
+    final double []_beta;
+    final int _c;
     protected Gram  _gram; // wx%*%x
     double [] _xy; // wx^t%*%z,
     double _wz;
@@ -724,11 +790,26 @@ public abstract class GLMTask  {
     public double _likelihood;
     final double _lambda;
     double wsum, wsumu;
+
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate,
+                             double [][] beta, int c, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
+      super(cmp,dinfo,jobKey,rowFilter);
+      _params = glm;
+      _beta = beta[c];
+      _beta_multinomial = beta;
+      _c = c;
+      _ymu = ymu;
+      _validate = validate;
+      _lambda = lambda;
+    }
+
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate,
                              double [] beta, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
       _beta = beta;
+      _beta_multinomial = null;
+      _c = -1;
       _ymu = ymu;
       _validate = validate;
       _lambda = lambda;
@@ -782,7 +863,16 @@ public abstract class GLMTask  {
         eta = mu;
       } else {
         eta = r.innerProduct(_beta);
-        mu = _params.linkInv(eta + r.offset);
+        if(_params._family == Family.multinomial) {
+          double sumExp = 0;
+          for(int c = 0; c < _beta.length; ++c)
+            sumExp += Math.exp(r.innerProduct(_beta_multinomial[c]));
+          mu = Math.exp(eta) / sumExp;
+          _likelihood += r.innerProduct(_beta_multinomial[(int)y]) - Math.log(sumExp);
+        } else {
+          mu = _params.linkInv(eta + r.offset);
+          _likelihood += r.weight*_params.likelihood(y,mu);
+        }
         var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
         d = _params.linkDeriv(mu);
         z = eta + (y-mu)*d;
@@ -790,7 +880,7 @@ public abstract class GLMTask  {
       }
       if(_validate)
         _val.add(y, mu, r.weight, r.offset);
-      _likelihood += r.weight*_params.likelihood(y,mu);
+
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       wsum+=w;
       wsumu+=r.weight; // just add the user observation weight for the scaling.
