@@ -20,18 +20,16 @@ class ASTColSlice extends ASTPrim {
       // Work down the list of columns, picking out the keepers
       ASTNumList nums =(ASTNumList)asts[2];
       if( nums.min() >= 0 ) {   // Positive (inclusion) list
-        for( double dcol : nums.expand() ) {
-          int col = (int)dcol;
-          if( col!=dcol || col < 0 || col >= fr.numCols() ) 
+        for( int col : nums.expand4Sort() ) {
+          if( col < 0 || col >= fr.numCols() ) 
             throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
           fr2.add(fr.names()[col],fr.vecs()[col]);
         }
       } else {                  // Negative (exclusion) list
         fr2 = new Frame(fr);    // All of them at first
         // This loop depends on ASTNumList return values in sorted order
-        for( double dcol : nums.expand() ) {
-          int col = (int)dcol;
-          if( col!=dcol || col < -fr.numCols() || col >= 0 ) 
+        for( int col : nums.expand4Sort() ) {
+          if( col < -fr.numCols() || col >= 0 ) 
             throw new IllegalArgumentException("Column must be an integer from "+(-fr.numCols())+" to -1");
           fr2.remove(-col-1);   // Remove named column
         }
@@ -69,13 +67,14 @@ class ASTRowSlice extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
     if( asts[2] instanceof ASTNumList ) {
-      final ASTNumList nums = (ASTNumList)asts[2];
+      ASTNumList nums = (ASTNumList)asts[2];
+      final long[] ls = nums.expand8Sort();
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-          if( nums.isEmpty() ) return;
+          if( ls.length > 0 ) return;
           long start = cs[0].start();
           long end   = start + cs[0]._len;
-          double min = nums.min(), max = nums.max()-1; // exclusive max to inclusive max when stride == 1
+          long min = ls[0], max = ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
           //     [ start, ...,  end ]     the chunk
           //1 []                          nums out left:  nums.max() < start
           //2                         []  nums out rite:  nums.min() > end
@@ -85,14 +84,15 @@ class ASTRowSlice extends ASTPrim {
           if( !(max<start || min>end) ) {   // not situation 1 or 2 above
             long startOffset = (min > start ? (long)min : start);  // situation 4 and 5 => min > start;
             for( int i=(int)(startOffset-start); i<cs[0]._len; ++i) {
-              if( nums.has(start+i) ) {
-                for(int c=0;c<cs.length;++c) {
-                  if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
-                  else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);
-                  else if( cs[c].isNA(i)              ) ncs[c].addNA();
-                  else                                  ncs[c].addNum(cs[c].atd(i));
-                }
-              }
+              throw H2O.unimpl(); // must sort 'nums'; have sorted list in ls[], need binary search
+              //if( nums.has(start+i) ) {
+              //  for(int c=0;c<cs.length;++c) {
+              //    if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
+              //    else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);
+              //    else if( cs[c].isNA(i)              ) ncs[c].addNA();
+              //    else                                  ncs[c].addNum(cs[c].atd(i));
+              //  }
+              //}
             }
           }
         }

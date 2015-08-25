@@ -100,7 +100,7 @@ class ASTNumList extends AST {
   // Strange count of args, due to custom parsing
   @Override int nargs() { return -1; }
 
-  // Expand the compressed form into an array of doubles
+  // Expand the compressed form into an array of doubles.
   double[] expand() {
     // Count total values
     int nrows=(int)cnt(), r=0;
@@ -121,6 +121,27 @@ class ASTNumList extends AST {
       for( double d = _bases[i]; d<_bases[i]+_cnts[i]*_strides[i]; d+=_strides[i] )
         vals[r++] = (int)d;
     return vals;
+  }
+  int[] expand4Sort() {
+    int[] is = expand4();
+    Arrays.sort(is);
+    return is;
+  }
+
+  long[] expand8() {
+    // Count total values
+    int nrows=(int)cnt(), r=0;
+    // Fill in values
+    long[] vals = new long[nrows];
+    for( int i=0; i<_bases.length; i++ )
+      for( double d = _bases[i]; d<_bases[i]+_cnts[i]*_strides[i]; d+=_strides[i] )
+        vals[r++] = (long)d;
+    return vals;
+  }
+  long[] expand8Sort() {
+    long[] is = expand8();
+    Arrays.sort(is);
+    return is;
   }
 
   double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
