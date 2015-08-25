@@ -1,5 +1,5 @@
 # View the specified parameters of your GBM model
-air.model@model$params
+air_model.params
 
 # Examine the performance of the trained model
-air.model
+air_model

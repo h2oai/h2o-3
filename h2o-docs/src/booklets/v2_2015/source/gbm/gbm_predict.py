@@ -1,7 +1,7 @@
 # Perform classification on the held out data
-prediction = h2o.predict(air.model, newdata=air_test.hex)
+prediction = air_model.predict(air_test_hex)
 
-# Copy predictions from H2O to R
-pred = as.data.frame(prediction)
+# Copy predictions from H2O to Python
+pred = prediction.as_data_frame()
 
-head(pred)
+pred.head()
