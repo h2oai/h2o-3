@@ -1546,7 +1546,7 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Ignore("PUBDEV-1839")
+  @Test //PUBDEV-1839
   public void testCitibikeReproPUBDEV1839() throws Exception {
     GLM job = null;
     GLMModel model = null;
@@ -1559,7 +1559,6 @@ public class GLMTest  extends TestUtil {
       params._response_column = "bikes";
       params._train = tfr._key;
       params._valid = vfr._key;
-      params._lambda = new double[]{1e-5};
       job = new GLM(Key.make("glm_model"), "glm test PUBDEV-1839", params);
       model = job.trainModel().get();
 
