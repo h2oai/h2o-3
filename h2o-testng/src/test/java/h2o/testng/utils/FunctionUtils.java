@@ -73,14 +73,8 @@ public class FunctionUtils {
 		System.out.println("check modelParameter object with testcase: " + input[tcHeaders.indexOf(testcase_id)]);
 		String result = null;
 
-		if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_offset_column")].trim())) {
-			result = "offset_column is not implemented";
-		}
-		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_weights_column")].trim())) {
+		if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_weights_column")].trim())) {
 			result = "weights_column is not implemented";
-		}
-		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_nfolds")].trim())) {
-			result = "nfolds is not implemented";
 		}
 		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("fold_column")].trim())) {
 			result = "fold_column is not implemented";

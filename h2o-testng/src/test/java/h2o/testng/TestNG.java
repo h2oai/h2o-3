@@ -172,17 +172,9 @@ public class TestNG extends TestNGUtil {
 		int r = 0;
 		int i = 0;
 
-		Object[][] drfTestcase = FunctionUtils.dataProvider(dataSetCharacteristic, DRFConfig.tcHeaders,
-				FunctionUtils.drf, DRFConfig.positiveTestcaseFilePath, DRFConfig.negativeTestcaseFilePath,
-				DRFConfig.firstRow);
-
-		Object[][] gbmTestcase = FunctionUtils.dataProvider(dataSetCharacteristic, GBMConfig.tcHeaders,
-				FunctionUtils.gbm, GBMConfig.positiveTestcaseFilePath, GBMConfig.negativeTestcaseFilePath,
-				GBMConfig.firstRow);
-
-		Object[][] glmTestcase = FunctionUtils.dataProvider(dataSetCharacteristic, GLMConfig.tcHeaders,
-				FunctionUtils.glm, GLMConfig.positiveTestcaseFilePath, GLMConfig.negativeTestcaseFilePath,
-				GLMConfig.firstRow);
+		Object[][] drfTestcase = readAllTestcaseOneAlgorithm(FunctionUtils.drf);
+		Object[][] gbmTestcase = readAllTestcaseOneAlgorithm(FunctionUtils.gbm);
+		Object[][] glmTestcase = readAllTestcaseOneAlgorithm(FunctionUtils.glm);
 
 		if (drfTestcase != null && drfTestcase.length != 0) {
 			nrows = drfTestcase[0].length;
