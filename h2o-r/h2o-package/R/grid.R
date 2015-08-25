@@ -39,6 +39,7 @@ h2o.grid <- function(algorithm,
 {
   # Extract parameters
   dots <- list(...)
+  algorithm <- .h2o.unifyAlgoName(algorithm)
   model_param_names <- names(dots)
   hyper_param_names <- names(hyper_params)
   # Reject overlapping definition of parameters

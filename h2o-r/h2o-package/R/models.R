@@ -1881,3 +1881,12 @@ h2o.sdev <- function(object) {
     TRUE
   }
 }
+
+# Transform given name to
+# expected values ("gbm", "drf")
+# It allows for having algorithm name aliases
+.h2o.unifyAlgoName <- function(algo) {
+  result <- if (algo == "randomForest") "drf" else algo
+  result
+}
+
