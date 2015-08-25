@@ -310,97 +310,101 @@ $\nu$ and $M$ are inversely related when the error is  fixed.
 However, despite the greater rate of training error with small values of $\nu$, very small values ($\nu < 0.1$)
 typically lead to better generalization and performance on test data.
 
-%---- TODO: Keep making changes
 \section{Use case: Classification with Airline data}
 
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. Before running the Airline demo, review how to load data with H2O.
 
 \subsection{Loading data}
 
-Loading a dataset in R for use with H2O is slightly different from the usual methodology, as we must convert our datasets into \texttt{H2OParsedData} objects. For this example, download the toy weather dataset from {\url{https://raw.githubusercontent.com/h2oai/h2o/master/smalldata/weather.csv}}.  Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
-\begin{lstlisting}[style=R]
-weather.hex = h2o.uploadFile(h2o_server, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
-\end{lstlisting}
-\bigskip
-\noindent
-To see a brief summary of the data, run the following command.
-\begin{lstlisting}[style=R]
-summary(weather.hex)
-\end{lstlisting}
+Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert
+our datasets into \texttt{H2OParsedData} objects. For this example, download the toy weather dataset from
+{\url{https://raw.githubusercontent.com/h2oai/h2o/master/smalldata/weather.csv}}.
+
+\waterExampleInR
+Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
+% TODO Check this
+\lstinputlisting[style=R]{gbm/gbm_uploadfile_example.R}
+
+% TODO Check this
+\waterExampleInPython
+\lstinputlisting[style=python]{gbm/gbm_uploadfile_example.py}
 
 
 \subsection{Performing a trial run}
-Returning to the Airline dataset, load the dataset with H2O and select the variables to use to predict a chosen response. For example, model whether flights are delayed based on the departure's scheduled day of the week and day of the month.
+Returning to the Airline dataset, load the dataset with H2O and select the variables to use to predict a chosen
+response. For example, model whether flights are delayed based on the departure's scheduled day of the week and day of
+the month.
 
-\begin{lstlisting}[style=R]
-# Load the data and prepare for modeling
-air_train.hex = h2o.uploadFile(h2o_server, path = "AirlinesTrain.csv", header = TRUE, sep = ",", key = "airline_train.hex")
+\waterExampleInR
+\lstinputlisting[style=R]{gbm/gbm_examplerun.R}
 
-air_test.hex = h2o.uploadFile(h2o_server, path = "AirlinesTest.csv", header = TRUE, sep = ",", key = "airline_test.hex")
+\waterExampleInPython
+\lstinputlisting[style=python]{gbm/gbm_examplerun.py}
 
-myX <- c("fDayofMonth", "fDayOfWeek")
-
-\end{lstlisting}
-
-Now, train the GBM model:
-
-\begin{lstlisting}[style=R]
-air.model <- h2o.gbm(y = "IsDepDelayed", x = myX, distribution="multinomial", data = air_train.hex, n.trees=100, interaction.depth=4, shrinkage=0.1, importance=TRUE)
-\end{lstlisting}
 
 \noindent
-Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify, for example, \texttt{nfolds=5}.
+Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was
+specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify, for example,
+\texttt{nfolds=5}.
 
 \subsection{Extracting and handling the results}
 
 Now, extract the parameters of the model, examine the scoring process, and make predictions on the new data.
 
-\begin{lstlisting}[style=R]
-# View the specified parameters of your GBM model
-air.model@model$params
+\waterExampleInR
+\lstinputlisting[style=R]{gbm/gbm_extractmodelparams.R}
 
-# Examine the performance of the trained model
-air.model
+\waterExampleInPython
+\lstinputlisting[style=python]{gbm/gbm_extractmodelparams.py}
 
-\end{lstlisting}
 \noindent
-The second command ({\texttt{air.model}}) returns the trained model's training and validation errors.
+The first command ({\texttt{air.model}}) returns the trained model's training and validation errors.
 \\
 \\
-After generating a satisfactory model, use the \texttt{h2o.predict()} command to compute and store predictions on the new data, which can then be used for further tasks in the interactive modeling process.
-\begin{lstlisting}[style=R]
-# Perform classification on the held out data
-prediction = h2o.predict(air.model, newdata=air_test.hex)
+After generating a satisfactory model, use the \texttt{h2o.predict()} command to compute and store predictions on the
+new data, which can then be used for further tasks in the interactive modeling process.
 
-# Copy predictions from H2O to R
-pred = as.data.frame(prediction)
+\waterExampleInR
+\lstinputlisting[style=R]{gbm/gbm_predict.R}
 
-head(pred)
-
-\end{lstlisting}
+\waterExampleInPython
+\lstinputlisting[style=python]{gbm/gbm_predict.py}
 
 
 \subsection{Web interface}
 
-H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345) to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames.
+TODO update this next paragraph
+
+H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After
+loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345)
+to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details
+about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames.
 
 \subsection{Variable importances}
 
-To enable the variable importances option, use the additional argument \texttt{importance=TRUE}. This displays the absolute and relative predictive strength of each feature in the prediction task. From R, access these strengths using the command \texttt{air.model@model\$varimp}. You can also view a visualization of the variable
+GBM algorithm will automatically calculate variable importances. The display includes the
+the absolute and relative predictive strength of each feature in the prediction task. From R, access these strengths
+using the command \texttt{h2o.varimp(air.model)} to extract the variable importances from the model;
+from Python, access these strengths using the command
+\texttt{TODO PUT SOME PYTHON HERE}.  You can also view a visualization of the variable
 importances on the web interface.
 
 \subsection{Supported Output}
 
 The following algorithm outputs are supported:
 \begin{itemize}
+% --- TODO not just MSE, different error for each distribution
 \item {\bf{Regression}}: Mean Squared Error (MSE), with an option to output variable importances or a Java POJO model
-\item {\bf{Binary Classification}}: Confusion Matrix or Area Under Curve (AUC), with an option to output variable importances or a Java POJO model
+\item {\bf{Binary Classification}}: Confusion Matrix or Area Under Curve (AUC), with an option to output variable
+importances or a Java POJO model
 \item {\bf{Classification}}: Confusion Matrix (with an option to output variable importances or a Java POJO model)
 \end{itemize}
 
 \subsection{Java model}
 
-To access Java (POJO) code to use to build the current model in Java, click the \textsc{Preview POJO} button at the bottom of the model results. If the model is small enough, the code for the model displays within the GUI; larger models can be inspected after downloading the model.
+To access Java (POJO) code to use to build the current model in Java, click the \textsc{Preview POJO} button at the
+bottom of the model results. If the model is small enough, the code for the model displays within the GUI; larger
+models can be inspected after downloading the model.
 \\
 \\
 To download the model:
@@ -411,33 +415,32 @@ To download the model:
 \item Follow the curl and java compile commands displayed in the instructions at the top of the Java model.
 \end{enumerate}
 
+
 \subsection{Grid search for model comparison}
 
-To support grid search capabilities for model tuning,  specify sets of values for parameter arguments to tweak certain parameters and observe changes in model behavior. The following is an example of a grid search:
+To support grid search capabilities for model tuning,  specify sets of values for parameter arguments to tweak
+certain parameters and observe changes in model behavior. The following is an example of a grid search:
 
-\begin{lstlisting}[style=R]
-air.grid <- h2o.gbm(y = "IsDepDelayed", x = myX, distribution="multinomial", data = air_train.hex, n.trees=c(5,10,15), interaction.depth=c(2,3,4), shrinkage=c(0.1,0.2))
-\end{lstlisting}
-\noindent
-This example specifies three different tree numbers, three different tree sizes, and two different shrinkage values. This grid search model effectively trains eighteen different models over the possible combinations of these parameters. Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to the beginning section for parameter descriptions and suggested values.
+%--- TODO grid search doesn't work on latest nightly in R
+\waterExampleInR
+\lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
 
-\begin{lstlisting}[style=R]
-# print out all prediction errors and run times of the models
-air.grid
-air.grid@model
+\waterExampleInPython
+\lstinputlisting[style=python]{gbm/gbm_gridsearch.py}
 
-# print out a *short* summary of each of the models (indexed by parameter)
-air.grid@sumtable
+This example specifies three different tree numbers, three different tree sizes, and two different shrinkage values.
+This grid search model effectively trains eighteen different models over the possible combinations of these parameters.
+Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle
+insights in the model tuning and selection process, especially during inspection and comparison of the trained
+models after the grid search process is complete. To decide how and when to choose different parameter configurations
+in a grid search, refer to the beginning section for parameter descriptions and suggested values.
 
-# print out *full* summary of each of the models
-all_params = lapply(air.grid@model, function(x) { x@model$params })
-all_params
+\waterExampleInR
+\lstinputlisting[style=R]{gbm/gbm_gridsearch_result.R}
 
-# access a particular parameter across all models
-shrinkages = lapply(air.grid@model, function(x) { x@model$params$shrinkage })
+\waterExampleInPython
+\lstinputlisting[style=python]{gbm/gbm_gridsearch_result.py}
 
-shrinkages
-\end{lstlisting}
 
 \section{Conclusion}
 
