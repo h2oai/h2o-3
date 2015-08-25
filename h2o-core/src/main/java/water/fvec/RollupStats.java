@@ -442,7 +442,7 @@ class RollupStats extends Iced {
       int nbins=MAX_SIZE;
       if( rs._isInt && span < Integer.MAX_VALUE ) {
         nbins = (int)span+1;      // 1 bin per int
-        int lim = vec.isEnum() ? Categorical.MAX_ENUM_SIZE : MAX_SIZE;
+        int lim = vec.isEnum() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels
       }
       addToPendingCount(1);
