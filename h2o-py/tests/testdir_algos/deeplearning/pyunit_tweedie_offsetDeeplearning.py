@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o, tests
+import h2o
 
 def tweedie_offset(ip,port):
 
-    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
     insurance["offset"] = insurance["Holders"].log()
     insurance["Group"] = insurance["Group"].asfactor()
     insurance["Age"] = insurance["Age"].asfactor()
@@ -44,4 +44,4 @@ def tweedie_offset(ip,port):
     assert abs(397.328758591-predictions[0].max()) < 1e-6, "Expected max of predictions to be 397.328758591, but got " \
                                                           "{0}".format(predictions[0].max())
 if __name__ == "__main__":
-    tests.run_test(sys.argv, tweedie_offset)
+    h2o.run_test(sys.argv, tweedie_offset)
