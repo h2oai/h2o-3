@@ -349,7 +349,7 @@ public class SVDTest extends TestUtil {
     }
   }
 
-  @Test public void testArrestsRand() throws InterruptedException, ExecutionException {
+  @Test public void testArrestsProb() throws InterruptedException, ExecutionException {
     SVDModel model = null;
     Frame train = null;
     try {
@@ -358,7 +358,7 @@ public class SVDTest extends TestUtil {
       parms._train = train._key;
       parms._nv = 4;
       parms._seed = 1234;
-      parms._only_v = false;
+      parms._keep_u = false;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.Probabilistic;
 

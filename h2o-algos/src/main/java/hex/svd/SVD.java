@@ -10,7 +10,8 @@ import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
-import org.apache.commons.math3.analysis.function.Power;
+import hex.util.LinearAlgebraUtils;
+import hex.util.LinearAlgebraUtils.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -18,10 +19,8 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.RandomUtils;
 
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Singular Value Decomposition
@@ -141,25 +140,23 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
-      Frame ybig = null, qfrm = null;
+      Frame yinit = null, ybig = null, qfrm = null;
       DataInfo yinfo = null;
       Key yinfo_key = Key.make(), ykey = Key.make();
       final int ncolA = dinfo._adaptedFrame.numCols();
 
       try {
         // 0) Make input frame [A,Q], where A = read-only training data, Q = matrix from each QR factorization
-        Vec[] vecs = new Vec[ncolA + _parms._nv];
-        for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
-        for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = dinfo._adaptedFrame.anyVec().makeZero();
-        Frame aqfrm = new Frame(vecs);
+        Frame aqfrm = new Frame(dinfo._adaptedFrame);
+        for (int i = 0; i < _parms._nv; i++) aqfrm.add("qcol_" + i, aqfrm.anyVec().makeZero());
 
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
-        ybig = rtsk.outputFrame(ykey, null, null);
+        yinit = rtsk.outputFrame(ykey, null, null);
 
-        yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+        yinfo = new DataInfo(yinfo_key, yinit, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
         gtsk.doAll(yinfo._adaptedFrame);
@@ -179,9 +176,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           double[][] ysmall_q = ysmall_qr.getQ().getArray();
 
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-          BMulTask btsk = new BMulTask(self(), dinfo, ArrayUtils.transpose(ysmall_q));
-          btsk.doAll(_parms._nv, dinfo._adaptedFrame);
-          ybig = btsk.outputFrame(ykey, null, null);
+          BMulInPlaceTask tsk = new BMulInPlaceTask(ncolA, ArrayUtils.transpose(ysmall_q));
+          tsk.doAll(aqfrm);     // Reuse [A,Q] frame and write Y_j into old Q_{j-1}
+          ybig = aqfrm.subframe(ncolA, aqfrm.numCols());
+          ybig = new Frame(ykey, ybig.names(), ybig.vecs());
+          DKV.put(ybig);
 
           yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
           DKV.put(yinfo._key, yinfo);
@@ -196,7 +195,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
         qrtsk.doAll(aqfrm);
         qfrm = aqfrm.extractFrame(ncolA, aqfrm.numCols());
-        DKV.put(Key.make(), qfrm);
+        qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
+        DKV.put(qfrm);   // TODO: Pull this out otherwise Q frame gets deleted
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
@@ -208,6 +208,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
       } finally {
         if( yinfo != null ) yinfo.remove();
+        if( yinit != null ) yinit.delete();
         if( ybig != null ) ybig.delete();
       }
       return qfrm;
@@ -215,18 +216,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame directSVD(DataInfo dinfo, Frame qfrm, SVDModel model) {
-      // Make input frame [A,Q], where A = read-only training data, Q = matrix from randomized subspace iteration
-      final int ncolA = dinfo._adaptedFrame.numCols();
-      Vec[] vecs = new Vec[ncolA + _parms._nv];
-      for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
-      for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = dinfo._adaptedFrame.anyVec().makeZero();
-      Frame aqfrm = new Frame(vecs);
-
       DataInfo qinfo = null;
       Frame u = null;
+      final int ncolA = dinfo._adaptedFrame.numCols();
+
       try {
-        qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
-        DKV.put(qinfo._key, qinfo);
+        // 0) Make input frame [A,Q], where A = read-only training data, Q = matrix from randomized subspace iteration
+        Vec[] vecs = new Vec[ncolA + _parms._nv];
+        for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
+        for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = qfrm.vec(i);
+        Frame aqfrm = new Frame(vecs);
 
         // 1) Form the matrix B = Q'A = (A'Q)'
         SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
@@ -241,6 +240,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if (!_parms._only_v && _parms._keep_u) {
           model._output._u_key = Key.make(_parms._u_name);
           double[][] svdJ_u = svdJ.getU().getArray();
+
+          qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
+          DKV.put(qinfo._key, qinfo);
           BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(svdJ_u));
           btsk.doAll(_parms._nv, qinfo._adaptedFrame);
           u = btsk.outputFrame(model._output._u_key, null, null);
@@ -392,7 +394,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
           // TODO: Calculate optimal number of iters for randomized subspace iteration
-          qfrm = randSubIter(dinfo, model, 0, _parms._seed);
+          qfrm = randSubIter(dinfo, model, 1, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
@@ -513,23 +515,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
   }
 
-  // Computes XY where X is n by k and Y is k by p
-  private static class BMulTask extends FrameTask<BMulTask> {
-    final double[][] _yt;   // _yt = Y' (transpose of Y)
-
-    public BMulTask(Key jobKey, DataInfo dinfo, double[][] yt) {
-      super(jobKey, dinfo);
-      _yt = yt;
-    }
-
-    @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
-      for(int p = 0; p < _yt.length; p++) {
-        double x = row.innerProduct(_yt[p]);
-        outputs[p].addNum(x);
-      }
-    }
-  }
-
   // Compute Y = AG where A is n by p and G is a p by k standard Gaussian matrix
   private static class RandSubInit extends FrameTask<RandSubInit> {
     final double[][] _gaus;   // G' is k by p for convenient multiplication
@@ -544,153 +529,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double y = row.innerProduct(_gaus[k]);
         outputs[k].addNum(y);
       }
-    }
-  }
-
-  // Given Cholesky L from A'A = LL', compute Q from A = QR decomposition, where R = L'
-  private static class QRfromChol extends MRTask<QRfromChol> {
-    final int _ncolA;     // Number of cols in A
-    final int _ncolExp;   // Number of cols in A with categoricals expanded
-    final int _ncats;     // Number of categorical cols in A
-    final int _ncolQ;     // Number of cols in Q
-    final double[] _normSub;  // For standardizing A
-    final double[] _normMul;
-    final int[] _catOffsets;  // Categorical offsets for A
-    final int _numStart;      // Beginning of numeric cols when categorical cols expanded
-    boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
-    final double[][] _L;
-
-    public QRfromChol( CholeskyDecomposition chol, double nobs, int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
-      _ncolA = ncolA;
-      _ncolExp = ncolExp;
-      _ncats = ncats;
-      _ncolQ = ncolQ;
-      _normSub = normSub;
-      _normMul = normMul;
-      _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats];
-      _use_all_factor_levels = use_all_factor_levels;
-
-      _L = chol.getL().getArray();
-      ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
-    }
-
-    public final void forwardSolve(double[][] L, double[] b) {
-      assert L != null && L.length == L[0].length && L.length == b.length;
-
-      for(int i = 0; i < b.length; i++) {
-        double sum = 0;
-        for(int j = 0; j < i; j++)
-          sum += L[i][j] * b[j];
-        b[i] = (b[i] - sum) / L[i][i];
-      }
-    }
-
-    // Input frame is [A,Q] where we write to Q
-    @Override public void map(Chunk cs[]) {
-      assert (_ncolA + _ncolQ) == cs.length;
-      double[] qrow = new double[_ncolQ];
-
-      for(int row = 0; row < cs[0]._len; row++) {
-        // 1) Extract single expanded row of A
-        // Categorical columns
-        for(int p = 0; p < _ncats; p++) {
-          double a = cs[p].atd(row);
-          if(Double.isNaN(a)) continue;
-
-          int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
-          int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
-          if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
-          qrow[_catOffsets[p] + level] = 1;
-        }
-
-        // Numeric columns
-        int pnum = 0;
-        int pexp = _numStart;
-        for(int p = _ncats; p < _ncolA; p++) {
-          double a = cs[p].atd(row);
-          qrow[pexp] = (a - _normSub[pnum]) * _normMul[pnum];
-          pexp++; pnum++;
-        }
-
-        // 2) Solve for single row of Q using forward substitution
-        forwardSolve(_L, qrow);
-
-        // 3) Save row of solved values into Q
-        int i = 0;
-        for(int d = _ncolA; d < _ncolA+_ncolQ; d++)
-          cs[d].set(row, qrow[i]);
-        assert i == qrow.length;
-      }
-    }
-  }
-
-  // Computes A'Q where A is n by p and Q is n by k
-  private static class SMulTask extends MRTask<SMulTask> {
-    final int _ncolA;     // Number of cols in A
-    final int _ncolExp;   // Number of cols in A with categoricals expanded
-    final int _ncats;     // Number of categorical cols in A
-    final int _ncolQ;     // Number of cols in Q
-    final double[] _normSub;  // For standardizing A
-    final double[] _normMul;
-    final int[] _catOffsets;  // Categorical offsets for A
-    final int _numStart;      // Beginning of numeric cols when categorical cols expanded
-    boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
-
-    double[][] _atq;    // Output: A'Q is p_exp by k, where p_exp = number of cols in A with categoricals expanded
-
-    public SMulTask(int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
-      assert normSub != null && normSub.length == ncats;
-      assert normMul != null && normMul.length == ncats;
-      assert catOffsets != null && (catOffsets.length-1) == ncats;
-
-      _ncolA = ncolA;
-      _ncolExp = ncolExp;
-      _ncats = ncats;
-      _ncolQ = ncolQ;
-      _normSub = normSub;
-      _normMul = normMul;
-      _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats];
-      _use_all_factor_levels = use_all_factor_levels;
-    }
-
-    // Input frame is [A,Q]
-    @Override public void map(Chunk cs[]) {
-      assert (_ncolA + _ncolQ) == cs.length;
-      _atq = new double[_ncolExp][_ncolQ];
-
-      for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
-        // Categorical columns
-        for(int p = 0; p < _ncats; p++) {
-          for(int row = 0; row < cs[0]._len; row++) {
-            double q = cs[k].atd(row);
-            double a = cs[p].atd(row);
-            if (Double.isNaN(a)) continue;
-
-            int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
-            int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
-            if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
-            _atq[_catOffsets[p] + level][k-_ncolA] += q;
-          }
-        }
-
-        // Numeric columns
-        int pnum = 0;
-        int pexp = _numStart;
-        for(int p = _ncats; p < _ncolA; p++) {
-          for(int row = 0; row  < cs[0]._len; row++) {
-            double q = cs[k].atd(row);
-            double a = cs[p].atd(row);
-            _atq[pexp][k-_ncolA] += q * (a - _normSub[pnum]) * _normMul[pnum];
-          }
-          pexp++; pnum++;
-        }
-      }
-    }
-
-    @Override public void reduce(SMulTask other) {
-      ArrayUtils.add(_atq, other._atq);
     }
   }
 }
