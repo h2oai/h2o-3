@@ -55,10 +55,10 @@ h2o.grid <- function(algorithm,
   # Get model builder parameters for this model
   allParams <- .h2o.getModelParameters(algo = algorithm)
   # Verify and unify the parameters
-  params <- .h2o.checkAndTransformModelParameters(algo = algorithm, allParams = allParams,
+  params <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = allParams,
                                                   params = params, hyper_params = hyper_params)
   # Validate and unify hyper parameters
-  hyper_values <- .h2o.checkAndTransformHyperParameters(algo = algorithm,
+  hyper_values <- .h2o.checkAndUnifyHyperParameters(algo = algorithm,
                                                         allParams = allParams, hyper_params = hyper_params,
                                                         do_hyper_params_check = do_hyper_params_check)
 

@@ -103,7 +103,7 @@
   # R treats integer as not numeric
   params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
   #---------- Check user parameter types ----------#
-  param_values <- .h2o.checkAndTransformModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
+  param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
@@ -156,19 +156,11 @@ h2o.getFutureModel <- function(object) {
 }
 
 .h2o.prepareModelParameters <- function(algo, params, is_supervised) {
-  if (!inherits(params$training_frame, "H2OFrame")) {
-   tryCatch(params$training_frame <- h2o.getFrame(params$training_frame),
-            error = function(err) {
-              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
-            })
+  if (!is.null(params$training_frame)) {
+    params$training_frame <- .h2o.checkFrameParam(params$training_frame, "training_frame")
   }
   if (!is.null(params$validation_frame)) {
-    if (!inherits(params$validation_frame, "H2OFrame")) {
-        tryCatch(params$validation_frame <- h2o.getFrame(params$validation_frame),
-                 error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
-                 })
-    }
+    params$validation_frame <- .h2o.checkFrameParam(params$validation_frame, "validation_frame")
   }
 
   # Check if specified model request is for supervised algo
@@ -200,7 +192,7 @@ h2o.getFutureModel <- function(object) {
   allParameters
 }
 
-.h2o.checkAndTransformModelParameters <- function(algo, allParams, params, hyper_params = list()) {
+.h2o.checkAndUnifyModelParameters <- function(algo, allParams, params, hyper_params = list()) {
   # First verify all parameters
   error <- lapply(allParams, function(i) {
     e <- ""
@@ -297,7 +289,7 @@ h2o.getFutureModel <- function(object) {
 # against algorithm definition.
 # Transform all parameters in the same way as normal algorithm
 # would do.
-.h2o.checkAndTransformHyperParameters <- function(algo, allParams, hyper_params, do_hyper_params_check) {
+.h2o.checkAndUnifyHyperParameters <- function(algo, allParams, hyper_params, do_hyper_params_check) {
 
   errors <- lapply(allParams, function(paramDef) {
       e <- ""
@@ -309,7 +301,7 @@ h2o.getFutureModel <- function(object) {
       } else if (name %in% hyper_names) { # Check all specified hyper parameters
         # Hyper values for `name` parameter
         hyper_vals <- hyper_params[[name]]
-        # Collect all possible errors
+        # Collect all possible verification errors
         if (do_hyper_params_check) {
           he <- lapply(hyper_vals, function(hv) {
                   # Transform all integer values to numeric
@@ -327,14 +319,10 @@ h2o.getFutureModel <- function(object) {
                                       }
                                       mapping <- .type.map[paramDef$type,]
                                       type <- mapping[1L, 1L]
-                                      # Force evaluation of frames and fetch frame_id as 
+                                      # Force evaluation of frames and fetch frame_id as
                                       # a side effect
                                       if (type == "H2OFrame") {
-                                        id <- if (is(hv, "H2OFrame")) hv@frame_id else hv
-                                        tryCatch(hv <- h2o.getFrame(id)@frame_id,
-                                                 error = function(err) {
-                                                   stop(cat("Argument", paramDef$name , "has to be frame!" ))
-                                                 })
+                                        hv <- .h2o.checkFrameParam(hv, name)@frame_id
                                       }
                                       .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
                                 })

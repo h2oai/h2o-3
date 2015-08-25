@@ -171,6 +171,9 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
       if (params._valid == null && paramsSchema.validation_frame != null) {
         params._valid = Key.make(paramsSchema.validation_frame.name);
       }
+      if (params._train == null && paramsSchema.training_frame != null) {
+        params._train = Key.make(paramsSchema.training_frame.name);
+      }
 
       return params;
     }
