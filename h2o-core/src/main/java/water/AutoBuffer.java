@@ -13,9 +13,8 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.LinkedBlockingDeque;
+import com.google.common.base.Charsets;
 
 /**
  * A ByteBuffer backed mixed Input/OutputStream class.
@@ -645,7 +644,7 @@ public /* final */ class AutoBuffer {
   }
 
   @SuppressWarnings("unused")  public String getStr(int off, int len) {
-    return new String(_bb.array(), _bb.arrayOffset()+off, len);
+    return new String(_bb.array(), _bb.arrayOffset()+off, len, Charsets.UTF_8);
   }
 
   // -----------------------------------------------
@@ -1135,7 +1134,7 @@ public /* final */ class AutoBuffer {
 
   public String getStr( ) {
     int len = getInt();
-    return len == -1 ? null : new String(getA1(len));
+    return len == -1 ? null : new String(getA1(len), Charsets.UTF_8);
   }
 
   public Enum getEnum(Enum[] values ) {
@@ -1268,7 +1267,7 @@ public /* final */ class AutoBuffer {
     return this;
   }
 
-  @SuppressWarnings("unused")  AutoBuffer putAA1( byte[][] ary ) {
+  public AutoBuffer putAA1( byte[][] ary ) {
     //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
@@ -1353,11 +1352,7 @@ public /* final */ class AutoBuffer {
   // Put a String as bytes (not chars!)
   public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
-    // Use the explicit getBytes instead of the default no-arg one, to avoid
-    // the overhead of going in an out of a charset decoder.
-    byte[] buf = MemoryManager.malloc1(s.length());
-    s.getBytes(0,buf.length,buf,0);
-    return putA1(buf);
+    return putA1(s.getBytes(Charsets.UTF_8));
   }
 
   @SuppressWarnings("unused")  public AutoBuffer putEnum( Enum x ) {
