@@ -10,6 +10,7 @@ import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
+import org.apache.commons.math3.analysis.function.Power;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -140,68 +141,88 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
-      // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR decomposition
-      double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
-      RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-      rtsk.doAll(dinfo._adaptedFrame);
-      Frame yinit = rtsk.outputFrame(Key.make(), null, null);
+      Frame ybig = null, aqfrm = null, qfrm = null;
+      DataInfo yinfo = null;
+      final int ncolA = dinfo._adaptedFrame.numCols();
 
-      DataInfo yinfo = new DataInfo(Key.make(), yinit, null, true, DataInfo.TransformType.NONE, true, false, false);
-      DKV.put(yinfo._key, yinfo);
-      GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
-      gtsk.doAll(yinfo._adaptedFrame);
-      // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
-      Matrix ygram = new Matrix(gtsk._gram.getXX());
-      CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
+      try {
+        // 0) Make input frame [A,Q], where A = read-only training data, Q = matrix from each QR factorization
+        Vec[] vecs = new Vec[ncolA + _parms._nv];
+        for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
+        for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = dinfo._adaptedFrame.anyVec().makeZero();
+        aqfrm = new Frame(vecs);
 
-      // Make input frame [A,Q], where A = read-only training data, Q = matrix from each QR decomposition
+        // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
+        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
+        RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
+        rtsk.doAll(dinfo._adaptedFrame);
+        ybig = rtsk.outputFrame(Key.make(), null, null);
+
+        yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+        DKV.put(yinfo._key, yinfo);
+        GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
+        gtsk.doAll(yinfo._adaptedFrame);
+        // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
+        Matrix ygram = new Matrix(gtsk._gram.getXX());
+        CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
+
+        for (int q = 0; q < iters; q++) {
+          // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
+          QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+          qrtsk.doAll(aqfrm);
+          SMulTask stsk = new SMulTask(ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+          stsk.doAll(aqfrm);
+
+          Matrix ysmall = new Matrix(stsk._atq);
+          QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
+          double[][] ysmall_q = ysmall_qr.getQ().getArray();
+
+          // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
+          BMulTask btsk = new BMulTask(self(), dinfo, ArrayUtils.transpose(ysmall_q));
+          btsk.doAll(dinfo._adaptedFrame);
+          ybig = btsk.outputFrame(Key.make(), null, null);
+
+          yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+          DKV.put(yinfo._key, yinfo);
+          gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
+          gtsk.doAll(yinfo._adaptedFrame);
+          // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
+          ygram = new Matrix(gtsk._gram.getXX());
+          chol = new CholeskyDecomposition(ygram);
+        }
+
+        // 4) Compute Q_j from updated R_j at the end of final iteration
+        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+        qrtsk.doAll(aqfrm);
+        qfrm = aqfrm.extractFrame(ncolA, aqfrm.numCols());
+      } catch( Throwable t ) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
+      } finally {
+        if( aqfrm != null ) aqfrm.delete();
+        if( ybig != null ) ybig.delete();
+        if( yinfo != null ) yinfo.remove();
+      }
+      return qfrm;
+    }
+
+    // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
+    private Frame directSVD(DataInfo dinfo, Frame qfrm, SVDModel model) {
+      // Make input frame [A,Q], where A = read-only training data, Q = matrix from randomized subspace iteration
       final int ncolA = dinfo._adaptedFrame.numCols();
       Vec[] vecs = new Vec[ncolA + _parms._nv];
       for(int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
       for(int i = 0; i < _parms._nv; i++) vecs[ncolA+i] = dinfo._adaptedFrame.anyVec().makeZero();
       Frame aqfrm = new Frame(vecs);
 
-      for(int q = 0; q < iters; q++) {
-        // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
-        qrtsk.doAll(aqfrm);
-        SMulTask stsk = new SMulTask(ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
-        stsk.doAll(aqfrm);
-
-        Matrix ysmall = new Matrix(stsk._atq);
-        QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
-        double[][] ysmall_q = ysmall_qr.getQ().getArray();
-
-        // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-        BMulTask btsk = new BMulTask(self(), dinfo, ArrayUtils.transpose(ysmall_q));
-        btsk.doAll(dinfo._adaptedFrame);
-        Frame ybig = btsk.outputFrame(Key.make(), null, null);
-
-        yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
-        DKV.put(yinfo._key, yinfo);
-        gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
-        gtsk.doAll(yinfo._adaptedFrame);
-        // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
-        ygram = new Matrix(gtsk._gram.getXX());
-        chol = new CholeskyDecomposition(ygram);
-      }
-
-      // Extract and return frame Q
-      Frame qfrm = aqfrm.extractFrame(ncolA, aqfrm.numCols());
-      return qfrm;
-    }
-
-    // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame directSVD(DataInfo dinfo, Frame qfrm, SVDModel model) {
-      // Make input frame [A,Q], where A = read-only training data, Q = matrix from each QR decomposition
-      final int ncolA = dinfo._adaptedFrame.numCols();
-      Vec[] vecs = new Vec[ncolA + _parms._nv];
-      for(int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
-      for(int i = 0; i < _parms._nv; i++) vecs[ncolA+i] = dinfo._adaptedFrame.anyVec().makeZero();
-      Frame aqFr = new Frame(vecs);
-
       // 1) Form the matrix B = Q'A = (A'Q)'
-      SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels).doAll(aqFr);
+      SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels).doAll(aqfrm);
       double[][] qta = ArrayUtils.transpose(stsk._atq);
 
       // 2) Compute SVD of small matrix B = WDV'
@@ -288,7 +309,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             BMulTask tsk = new BMulTask(self(), dinfo, vt).doAll(_parms._nv, dinfo._adaptedFrame);
             u = tsk.outputFrame(model._output._u_key, null, null);
           }
-        } else {
+        } else if(_parms._svd_method == SVDParameters.Method.Power) {
           // 1) Run one iteration of power method
           // 1a) Initialize right singular vector v_1
           model._output._v = new double[_parms._nv][_ncolExp];  // Store V' for ease of use and transpose back at end
@@ -346,7 +367,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             DivideU utsk = new DivideU(model._output._d);
             utsk.doAll(u);
           }
-        }
+        } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
+          // TODO: Calculate optimal number of iters for randomized subspace iteration
+          Frame qfrm = randSubIter(dinfo, model, 0, _parms._seed);
+          u = directSVD(dinfo, qfrm, model);
+        } else
+          error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
         model.update(self());
         done();
       } catch( Throwable t ) {

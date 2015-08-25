@@ -24,7 +24,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public boolean _impute_missing = false;   // Should missing numeric values be imputed with the column mean?
 
     public enum Method {
-      GramSVD, Power
+      GramSVD, Power, Probabilistic
     }
   }
 
