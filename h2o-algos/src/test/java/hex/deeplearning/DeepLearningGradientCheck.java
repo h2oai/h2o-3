@@ -43,25 +43,25 @@ public class DeepLearningGradientCheck extends TestUtil {
       double meanRelErr = 0;
       for (Distribution.Family dist : new Distribution.Family[]{
               Distribution.Family.gaussian,
-//              Distribution.Family.laplace,
-//              Distribution.Family.huber,
-//              Distribution.Family.gamma,
-//              Distribution.Family.poisson,
-//              Distribution.Family.tweedie,
-//              Distribution.Family.multinomial,
+              Distribution.Family.laplace,
+              Distribution.Family.huber,
+              Distribution.Family.gamma,
+              Distribution.Family.poisson,
+              Distribution.Family.tweedie,
+              Distribution.Family.multinomial,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
-//                DeepLearningParameters.Activation.Tanh,
-//                DeepLearningParameters.Activation.Rectifier,
-                DeepLearningParameters.Activation.Maxout,
+                DeepLearningParameters.Activation.Tanh,
+                DeepLearningParameters.Activation.Rectifier,
+//                DeepLearningParameters.Activation.Maxout,
         }) {
           for (String response : new String[]{
-//                  "Class", //classification
+                  "Class", //classification
                   "Cost", //regression
           }) {
             for (boolean adaptive : new boolean[]{
                     true,
-//                    false
+                    false
             }) {
               for (int miniBatchSize : new int[]{
                       1,
@@ -77,12 +77,11 @@ public class DeepLearningGradientCheck extends TestUtil {
 //            parms._l1 = 1e-3; //FIXME
 //            parms._l2 = 1e-3; //FIXME
                 parms._reproducible = true;
-                //parms._hidden = new int[]{10, 10, 10};
-                parms._hidden = new int[]{3};
+                parms._hidden = new int[]{10, 10, 10};
                 parms._fast_mode = false; //otherwise we introduce small bprop errors
                 parms._response_column = response;
                 parms._distribution = dist;
-//                parms._max_w2 = 10;
+                parms._max_w2 = 10;
                 parms._seed = 0xaaabbb;
                 parms._activation = act;
                 parms._adaptive_rate = adaptive;
@@ -207,7 +206,7 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                         // if both gradients are tiny - numerically unstable relative error computation is not needed, since absolute error is small
 
-                        if (true || relError > MAX_TOLERANCE) {
+                        if (relError > MAX_TOLERANCE) {
                           Log.info("\nRow: " + rId);
                           Log.info("weight (layer " + layer + ", row " + row + ", col " + col + "): " + weight + " +/- " + eps);
                           Log.info("loss: " + loss);
