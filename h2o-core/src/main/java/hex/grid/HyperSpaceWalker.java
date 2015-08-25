@@ -76,6 +76,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    */
   MP getParams();
 
+  ModelParametersBuilderFactory<MP> getParametersBuilderFactory();
+
   /**
    *
    * The external Grid API uses a HashMap<String,Object> to describe a set of hyperparameter values,
@@ -185,6 +187,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     @Override
     public MP getParams() {
       return _params;
+    }
+
+    @Override
+    public ModelParametersBuilderFactory<MP> getParametersBuilderFactory() {
+      return _paramsBuilderFactory;
     }
 
     // Dumb iteration over the hyper-parameter space.

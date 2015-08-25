@@ -31,7 +31,7 @@ public class DRFGridSearchHandler extends GridSearchHandler<DRFGridSearchHandler
   public static class DRFGrid extends Grid<DRFModel.DRFParameters> {
 
     public DRFGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

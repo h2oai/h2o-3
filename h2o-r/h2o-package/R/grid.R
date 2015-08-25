@@ -48,16 +48,16 @@ h2o.grid <- function(algorithm,
     stop(paste0("The following parameters are defined as common model parameters and also as hyper parameters: ",
                 .collapse(overlapping_params), "! Please choose only one way!"))
   }
-  # Prepare parameters
+  # Prepare model parameters
   params <- .h2o.prepareModelParameters(algo = algorithm, params = dots, is_supervised = is_supervised)
   # Validation of input key
   .key.validate(params$key_value)
   # Get model builder parameters for this model
   allParams <- .h2o.getModelParameters(algo = algorithm)
-  # Verify the parameters
+  # Verify and unify the parameters
   params <- .h2o.checkAndTransformModelParameters(algo = algorithm, allParams = allParams,
                                                   params = params, hyper_params = hyper_params)
-  # TODO: Validate hyper parameters
+  # Validate and unify hyper parameters
   hyper_values <- .h2o.checkAndTransformHyperParameters(algo = algorithm,
                                                         allParams = allParams, hyper_params = hyper_params,
                                                         do_hyper_params_check = do_hyper_params_check)

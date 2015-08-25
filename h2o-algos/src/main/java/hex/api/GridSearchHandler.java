@@ -118,6 +118,11 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
     public ModelParametersBuilder<MP> get(MP initialParams) {
       return new ModelParametersFromSchemaBuilder<MP, PS>(initialParams);
     }
+
+    @Override
+    public PojoUtils.FieldNaming getFieldNamingStrategy() {
+      return PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES;
+    }
   }
 
   /**

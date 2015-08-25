@@ -163,11 +163,12 @@ h2o.getFutureModel <- function(object) {
             })
   }
   if (!is.null(params$validation_frame)) {
-    if (!inherits(params$validation_frame, "H2OFrame"))
+    if (!inherits(params$validation_frame, "H2OFrame")) {
         tryCatch(params$validation_frame <- h2o.getFrame(params$validation_frame),
                  error = function(err) {
                    stop("argument \"validation_frame\" must be a valid H2OFrame or key")
                  })
+    }
   }
 
   # Check if specified model request is for supervised algo

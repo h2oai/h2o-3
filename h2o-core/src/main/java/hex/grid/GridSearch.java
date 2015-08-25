@@ -116,7 +116,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
           new Grid<>(dest(),
                      _hyperSpaceWalker.getParams(),
                      _hyperSpaceWalker.getHyperParamNames(),
-                     _modelFactory.getModelName());
+                     _modelFactory.getModelName(),
+                     _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(jobKey());
     }
     // Java trick
@@ -390,6 +391,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     @Override
     public ModelParametersBuilder<MP> get(MP initialParams) {
       return new SimpleParamsBuilder<>(initialParams);
+    }
+
+    @Override
+    public PojoUtils.FieldNaming getFieldNamingStrategy() {
+      return PojoUtils.FieldNaming.CONSISTENT;
     }
 
     /**

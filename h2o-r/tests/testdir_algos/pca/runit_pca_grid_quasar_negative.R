@@ -17,7 +17,7 @@ check.pca.grid.quasar.negative <- function(conn) {
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   Log.info("Constructing the grid of pca models with some invalid pca parameters...")
-  quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space)
+  quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check = F)
   print(quasar_pca_grid)
 
   Log.info("Performing various checks of the constructed grid...")
