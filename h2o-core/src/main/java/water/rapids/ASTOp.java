@@ -30,6 +30,8 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static water.util.RandomUtils.getRNG;
+
 /**
  * Parse a generic R string and build an AST, in the context of an H2O Cloud
  */
@@ -179,6 +181,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMad());
 
     // Misc
+    putPrefix(new ASTKFold());
     putPrefix(new ASTPop());
     putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
@@ -2217,9 +2220,38 @@ class ASTUnique extends ASTUniPrefixOp {
   }
 }
 
+class ASTKFold extends ASTUniPrefixOp {
+  int _nfolds;
+  long _seed;
+  @Override String opStr() { return "kfold_column"; }
+  @Override ASTOp make() { return new ASTKFold(); }
+  public ASTKFold() { super(new String[]{"x","nfolds", "seed"});}
+  ASTKFold parse_impl(Exec E) {
+    AST ary = E.parse();
+    _nfolds = (int)E.nextDbl();
+    _seed = (long)E.nextDbl();
+    E.eatEnd();
+    ASTKFold res = (ASTKFold)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Vec foldVec = e.popAry().anyVec().makeZero();
+    if( _seed == -1 ) _seed = new Random().nextLong();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        long start = c.start();
+        for (int i = 0; i < c._len; ++i) {
+          int fold = Math.abs(getRNG(start + _seed + i).nextInt()) % _nfolds;
+          c.set(i, fold);
+        }
+      }
+    }.doAll(foldVec);
+    e.pushAry(new Frame(foldVec));
+  }
+}
 
 class ASTKappa extends ASTUniPrefixOp {
-
   int _nclass;
   @Override String opStr() { return "kappa"; }
   @Override ASTOp make() { return new ASTKappa(); }
@@ -3834,7 +3866,9 @@ class ASTSdev extends ASTUniPrefixOp {
         DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
         env.pushAry(fr2);
       } else {
-        double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
+        double sig;
+        if( fr.anyVec().isEnum() ) sig = Double.NaN;
+        else                       sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
         env.poppush(1, new ValNum(sig));
       }
     }
