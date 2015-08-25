@@ -1,7 +1,6 @@
 package water.currents;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
 import water.*;
 import water.util.*;
 import water.fvec.*;
@@ -27,19 +26,23 @@ class ASTGroup extends ASTPrim {
   enum FCN {
     count() { 
       @Override double op( double d0, double d1 ) { return d0+ 1; } 
-      @Override double postPass( double ds[], int a ) { return ds[a]; }
+      @Override double postPass( double d, long n ) { return d; }
     },
-    nrow () { 
+    nrow() { 
       @Override double op( double d0, double d1 ) { return d0+ 1; }
-      @Override double postPass( double ds[], int a ) { return ds[a]; }
+      @Override double postPass( double d, long n ) { return d; }
     },
-    mean () { 
+    mean() { 
       @Override double op( double d0, double d1 ) { return d0+d1; }
-      @Override double postPass( double ds[], int a ) { return ds[a]/ds[ds.length-1/*last col is nrow*/]; }
+      @Override double postPass( double d, long n ) { return d/n; }
+    },
+    sum() { 
+      @Override double op( double d0, double d1 ) { return d0+d1; }
+      @Override double postPass( double d, long n ) { return d; }
     },
     ;
     abstract double op( double d0, double d1 );
-    abstract double postPass( double ds[], int a );
+    abstract double postPass( double d, long n );
   }
 
   @Override int nargs() { return -1; } // (GB data [group-by-cols] [order-by-cols] {fcn col "na"}...)
@@ -56,7 +59,10 @@ class ASTGroup extends ASTPrim {
     else throw H2O.unimpl();
     final int[] ordCols = orderby.expand4();
 
-    final AGG[] aggs = new AGG[(asts.length-1)/3];
+    // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...),
+    // then count by triples.
+    int naggs = (asts.length-4)/3;
+    final AGG[] aggs = new AGG[naggs];
     for( int idx = 4; idx < asts.length; idx += 3 ) {
       FCN fcn = FCN.valueOf(asts[idx].exec(env).getFun().str());
       ASTNumList col = check(ncols,asts[idx+1]);
@@ -64,8 +70,6 @@ class ASTGroup extends ASTPrim {
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
       aggs[(idx-4)/3] = new AGG(fcn,(int)col.min(),na);
     }
-    // Last aggregate is always NROW
-    aggs[aggs.length-1] = new AGG(FCN.nrow,0,NAHandling.ALL);
 
     // do the group by work now
     long start = System.currentTimeMillis();
@@ -93,12 +97,12 @@ class ASTGroup extends ASTPrim {
       });
 
     // build the output
-    final int nCols = gbCols.length+aggs.length;
+    final int nCols = gbCols.length+naggs;
 
     // the names of columns
     String[] names = new String[nCols];
     String[][] domains = new String[nCols][];
-    for( int i=0;i<gbCols.length;i++) {
+    for( int i=0;i<gbCols.length; i++ ) {
       names[i] = fr.name(gbCols[i]);
       domains[i] = fr.domains()[gbCols[i]];
     }
@@ -116,12 +120,11 @@ class ASTGroup extends ASTPrim {
           int j;
           for( j=0; j<g._gs.length; j++ ) // The Group Key, as a row
             ncs[j].addNum(g._gs[j]);
-          for( int a=0; a<aggs.length-1; a++ )
-            ncs[j++].addNum(aggs[a]._fcn.postPass(g._ds,a));
+          for( int a=0; a<aggs.length; a++ )
+            ncs[j++].addNum(aggs[a]._fcn.postPass(g._ds[a],g._ns[a]));
         }
       }
     }.doAll(nCols,v).outputFrame(names,domains);
-    f.remove(nCols-1).remove(); // Remove nrow col
     v.remove();
 
     return new ValFrame(f);
@@ -145,10 +148,14 @@ class ASTGroup extends ASTPrim {
     final int _col;
     final NAHandling _na;
     AGG( FCN fcn, int col, NAHandling na ) { _fcn = fcn; _col = col; _na = na; }
-    double op( double d0, Chunk[] cs, int row ) {
-      double d1 = cs[_col].atd(row);
-      if( Double.isNaN(d1) ) throw H2O.unimpl(); // nan handling for all ops
-      return _fcn.op(d0,d1);
+    // Update the array pair {ds[i],ns[i]}.
+    // ds is the reduction
+    // ns is the element count
+    void op( double[] ds, long[] ns, int i, double d1 ) {
+      // Normal number or ALL   : call op()
+      if( !Double.isNaN(d1) || _na==NAHandling.ALL    ) ds[i] = _fcn.op(ds[i],d1);
+      // Normal number or IGNORE: bump count; RM: do not bump count
+      if( !Double.isNaN(d1) || _na==NAHandling.IGNORE ) ns[i]++; 
     }
   }
 
@@ -175,7 +182,7 @@ class ASTGroup extends ASTPrim {
         } else gOld=gs.getk(gWork);         // Else get existing group
 
         for( int i=0; i<_aggs.length; i++ )
-          gOld._ds[i] = _aggs[i].op(gOld._ds[i],cs,row);
+          _aggs[i].op(gOld._ds,gOld._ns,i,cs[_aggs[i]._col].atd(row));
       }
       reduce(_gss,gs);          // Atomically merge Group stats
     }
@@ -199,9 +206,10 @@ class ASTGroup extends ASTPrim {
     final double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
-    final double _ds[];         // Aggregates
+    final double _ds[];         // Aggregates: usually sum or sum*2
+    final long   _ns[];         // row counts per aggregate, varies by NA handling and column
 
-    G( int ncols, int naggs ) { _gs = new double[ncols]; _ds = new double[naggs]; }
+    G( int ncols, int naggs ) { _gs = new double[ncols]; _ds = new double[naggs]; _ns = new long[naggs]; }
     G fill(int row, Chunk chks[], int cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _gs[c] = chks[cols[c]].atd(row); // Load into working array
