@@ -6,6 +6,7 @@ import hex.DataInfo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.glrm.EmbeddedGLRM;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
@@ -14,6 +15,7 @@ import hex.schemas.ModelBuilderSchema;
 import hex.schemas.PCAV3;
 
 import hex.pca.PCAModel.PCAParameters;
+import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
@@ -339,58 +341,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     Key self() {
       return _key;
-    }
-  }
-
-  public class EmbeddedSVD extends SVD {
-    final private Key sharedProgressKey;
-    final private Key pcaJobKey;
-
-    public EmbeddedSVD(Key pcaJobKey, Key sharedProgressKey, SVDModel.SVDParameters parms) {
-      super(parms);
-      this.sharedProgressKey = sharedProgressKey;
-      this.pcaJobKey = pcaJobKey;
-    }
-
-    @Override
-    protected Key createProgressKey() {
-      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-    }
-
-    @Override
-    protected boolean deleteProgressKey() {
-      return false;
-    }
-
-    @Override
-    public boolean isRunning() {
-      return super.isRunning() && ((Job) pcaJobKey.get()).isRunning();
-    }
-  }
-
-  public class EmbeddedGLRM extends GLRM {
-    final private Key sharedProgressKey;
-    final private Key glrmJobKey;
-
-    public EmbeddedGLRM(Key glrmJobKey, Key sharedProgressKey, GLRMModel.GLRMParameters parms) {
-      super(parms);
-      this.sharedProgressKey = sharedProgressKey;
-      this.glrmJobKey = glrmJobKey;
-    }
-
-    @Override
-    protected Key createProgressKey() {
-      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-    }
-
-    @Override
-    protected boolean deleteProgressKey() {
-      return false;
-    }
-
-    @Override
-    public boolean isRunning() {
-      return super.isRunning() && ((Job) glrmJobKey.get()).isRunning();
     }
   }
 }

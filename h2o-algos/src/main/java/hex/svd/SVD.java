@@ -143,6 +143,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     private Frame randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
       Frame ybig = null, qfrm = null;
       DataInfo yinfo = null;
+      Key yinfo_key = Key.make(), ykey = Key.make();
       final int ncolA = dinfo._adaptedFrame.numCols();
 
       try {
@@ -156,9 +157,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
-        ybig = rtsk.outputFrame(Key.make(), null, null);
+        ybig = rtsk.outputFrame(ykey, null, null);
 
-        yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+        yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
         gtsk.doAll(yinfo._adaptedFrame);
@@ -180,9 +181,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
           BMulTask btsk = new BMulTask(self(), dinfo, ArrayUtils.transpose(ysmall_q));
           btsk.doAll(_parms._nv, dinfo._adaptedFrame);
-          ybig = btsk.outputFrame(Key.make(), null, null);
+          ybig = btsk.outputFrame(ykey, null, null);
 
-          yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+          yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
           DKV.put(yinfo._key, yinfo);
           gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
           gtsk.doAll(yinfo._adaptedFrame);
@@ -206,8 +207,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           throw t;
         }
       } finally {
-        if( ybig != null ) ybig.delete();
         if( yinfo != null ) yinfo.remove();
+        if( ybig != null ) ybig.delete();
       }
       return qfrm;
     }
@@ -223,7 +224,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       DataInfo qinfo = null;
       Frame u = null;
-
       try {
         qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
         DKV.put(qinfo._key, qinfo);
@@ -266,7 +266,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     @Override protected void compute2() {
       SVDModel model = null;
       DataInfo dinfo = null;
-      Frame u = null;
+      Frame u = null, qfrm = null;
       Vec[] uvecs = null;
 
       try {
@@ -392,7 +392,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
           // TODO: Calculate optimal number of iters for randomized subspace iteration
-          Frame qfrm = randSubIter(dinfo, model, 0, _parms._seed);
+          qfrm = randSubIter(dinfo, model, 0, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
@@ -412,6 +412,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( model != null ) model.unlock(_key);
         if( dinfo != null ) dinfo.remove();
         if( u != null & !_parms._keep_u ) u.delete();
+        if( qfrm != null ) qfrm.delete();
         _parms.read_unlock_frames(SVD.this);
       }
 

@@ -9,10 +9,12 @@ import hex.*;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
 import hex.gram.Gram.*;
+import hex.kmeans.EmbeddedKMeans;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
 import hex.schemas.GLRMV99;
 import hex.schemas.ModelBuilderSchema;
+import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 
@@ -277,7 +279,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         SVDModel svd = null;
         SVD job = null;
         try {
-          job = new SVD(parms);
+          job = new EmbeddedSVD(_key, _progressKey, parms);
           svd = job.trainModel().get();
 
           // Ensure SVD centers align with adapted training frame cols
@@ -325,7 +327,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         KMeansModel km = null;
         KMeans job = null;
         try {
-          job = new KMeans(parms);
+          job = new EmbeddedKMeans(_key, _progressKey, parms);
           km = job.trainModel().get();
 
           // Score only if clusters well-defined and closed-form solution does not exist
