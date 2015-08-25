@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def interaction_check(ip,port):
     # Connect to a pre-existing cluster
@@ -57,4 +57,4 @@ def interaction_check(ip,port):
     #TODO: allow factors to be list of lists
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, interaction_check)
+    tests.run_test(sys.argv, interaction_check)

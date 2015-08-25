@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def vi_toy_test(ip,port):
     
@@ -18,4 +18,4 @@ def vi_toy_test(ip,port):
     assert tuple(ranking) == tuple(["V3","V2","V6","V5","V1","V4"]), "expected specific variable importance ranking"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, vi_toy_test)
+  tests.run_test(sys.argv, vi_toy_test)

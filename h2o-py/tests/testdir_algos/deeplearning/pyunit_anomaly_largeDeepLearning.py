@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 def anomaly(ip, port):
     
@@ -38,4 +38,4 @@ def anomaly(ip, port):
     # In python, the visualization could be done with tools like numpy/matplotlib or numpy/PIL
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, anomaly)
+    tests.run_test(sys.argv, anomaly)

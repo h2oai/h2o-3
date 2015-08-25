@@ -1050,8 +1050,8 @@ public class Vec extends Keyed<Vec> {
     int min = (int) min(), max = (int) max();
     // try to do the fast domain collection
     long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-    if (dom.length > Categorical.MAX_ENUM_SIZE)
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
+    if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
     return copyOver(dom);
   }
 

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def km_num_iterations(ip,port):
     # Connect to a pre-existing cluster
@@ -13,4 +13,4 @@ def km_num_iterations(ip,port):
     assert num_iterations <= 4, "Expected 4 iterations, but got {0}".format(num_iterations)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, km_num_iterations)
+    tests.run_test(sys.argv, km_num_iterations)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def impute2(ip,port):
     # Connect to a pre-existing cluster
@@ -79,4 +79,4 @@ def impute2(ip,port):
     assert imputed2 == 9.5, "Wrong value imputed. Expected imputed value of 9.5, but got {0}".format(imputed2)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, impute2)
+    tests.run_test(sys.argv, impute2)

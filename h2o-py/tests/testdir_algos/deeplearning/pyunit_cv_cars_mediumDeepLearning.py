@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def cv_carsDL(ip,port):
@@ -34,7 +34,7 @@ def cv_carsDL(ip,port):
     dl1 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     dl2 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     try:
-        h2o.check_models(dl1, dl2, True)
+        tests.check_models(dl1, dl2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -109,4 +109,4 @@ def cv_carsDL(ip,port):
     #     assert True
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, cv_carsDL)
+    tests.run_test(sys.argv, cv_carsDL)

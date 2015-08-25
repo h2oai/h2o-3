@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 
 def levels_nlevels_setlevel_setLevels_test(ip,port):
@@ -96,4 +96,4 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert one_column_frame[0,0] == 'c'
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)
+    tests.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def insert_missing(ip,port):
     # Connect to a pre-existing cluster
@@ -24,4 +24,4 @@ def insert_missing(ip,port):
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, insert_missing)
+    tests.run_test(sys.argv, insert_missing)

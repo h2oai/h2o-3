@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def vec_scaler_comparisons(ip,port):
     # Connect to a pre-existing cluster
@@ -69,4 +69,4 @@ def vec_scaler_comparisons(ip,port):
     assert (l_rows + G_rows) == rows and l_cols == G_cols == cols, "expected equal number of rows and cols"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, vec_scaler_comparisons)
+    tests.run_test(sys.argv, vec_scaler_comparisons)

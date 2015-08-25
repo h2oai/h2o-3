@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"../../")
-import h2o
+import h2o, tests
 
 
 def bmp_unicode_chars(ip,port):
@@ -22,4 +22,4 @@ def bmp_unicode_chars(ip,port):
 
 
 if __name__ == "__main__":
-   h2o.run_test(sys.argv, bmp_unicode_chars)
+   tests.run_test(sys.argv, bmp_unicode_chars)

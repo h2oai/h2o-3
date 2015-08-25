@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def init_err_casesKmeans(ip,port):
@@ -78,4 +78,4 @@ def init_err_casesKmeans(ip,port):
     h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start))
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, init_err_casesKmeans)
+  tests.run_test(sys.argv, init_err_casesKmeans)

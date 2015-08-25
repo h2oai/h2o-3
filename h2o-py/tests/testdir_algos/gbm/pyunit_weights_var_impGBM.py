@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def weights_var_imp(ip,port):
@@ -115,4 +115,4 @@ def weights_var_imp(ip,port):
     check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_var_imp)
+    tests.run_test(sys.argv, weights_var_imp)

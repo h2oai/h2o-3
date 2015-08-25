@@ -32,7 +32,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         {
           DeepLearningParameters p = new DeepLearningParameters();
           p._seed = 0xbabe;
-          p._epochs = 500;
+          p._epochs = 600;
           p._hidden = new int[]{100};
           p._sparse = sparse;
           p._col_major = col_major;
@@ -83,8 +83,8 @@ public class DeepLearningSpiralsTest extends TestUtil {
           ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
           double error = mm._auc.defaultErr();
           Log.info("Error: " + error);
-          if (error >= 0.025) {
-            Assert.fail("Classification error is not less than 0.025, but " + error + ".");
+          if (error > 0) {
+            Assert.fail("Classification error is not 0, but " + error + ".");
           }
           pred.delete();
           mymodel.delete();

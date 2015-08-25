@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def random_attack(ip,port):
@@ -101,4 +101,4 @@ def random_attack(ip,port):
         attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, random_attack)
+    tests.run_test(sys.argv, random_attack)
