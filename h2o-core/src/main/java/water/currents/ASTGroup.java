@@ -23,15 +23,19 @@ import water.nbhm.NonBlockingHashMap;
 class ASTGroup extends ASTPrim {
   enum NAHandling { ALL, RM, IGNORE }
 
+  // Functions handled by GroupBy
   enum FCN {
-    count() { @Override double op( double d0, double d1 ) { return d0+ 1; } 
-      @Override double postPass( double ds[], int a ) { throw H2O.unimpl(); }
+    count() { 
+      @Override double op( double d0, double d1 ) { return d0+ 1; } 
+      @Override double postPass( double ds[], int a ) { return ds[a]; }
     },
-    nrow () { @Override double op( double d0, double d1 ) { return d0+ 1; }
-      @Override double postPass( double ds[], int a ) { throw H2O.unimpl(); }
+    nrow () { 
+      @Override double op( double d0, double d1 ) { return d0+ 1; }
+      @Override double postPass( double ds[], int a ) { return ds[a]; }
     },
-    mean () { @Override double op( double d0, double d1 ) { return d0+d1; }
-      @Override double postPass( double ds[], int a ) { throw H2O.unimpl(); }
+    mean () { 
+      @Override double op( double d0, double d1 ) { return d0+d1; }
+      @Override double postPass( double ds[], int a ) { return ds[a]/ds[ds.length-1/*last col is nrow*/]; }
     },
     ;
     abstract double op( double d0, double d1 );
@@ -43,18 +47,25 @@ class ASTGroup extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
+
     ASTNumList groupby = check(ncols, asts[2]);
     int[] gbCols = groupby.expand4();
+
     ASTNumList orderby = check(ncols, asts[3]);
-    final AGG[] aggs = new AGG[asts.length/3];
-    aggs[0] = new AGG(FCN.nrow,0,NAHandling.ALL);
+    if( orderby.isEmpty() ) orderby = new ASTNumList(0,gbCols.length); // If missing, sort by groups in-order
+    else throw H2O.unimpl();
+    final int[] ordCols = orderby.expand4();
+
+    final AGG[] aggs = new AGG[(asts.length-1)/3];
     for( int idx = 4; idx < asts.length; idx += 3 ) {
       FCN fcn = FCN.valueOf(asts[idx].exec(env).getFun().str());
       ASTNumList col = check(ncols,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
-      aggs[idx/3] = new AGG(fcn,(int)col.min(),na);
+      aggs[(idx-4)/3] = new AGG(fcn,(int)col.min(),na);
     }
+    // Last aggregate is always NROW
+    aggs[aggs.length-1] = new AGG(FCN.nrow,0,NAHandling.ALL);
 
     // do the group by work now
     long start = System.currentTimeMillis();
@@ -63,8 +74,23 @@ class ASTGroup extends ASTPrim {
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
 
     // apply an ORDER by here...
-    if( !orderby.isEmpty() )
-      Arrays.sort(grps);
+    Arrays.sort(grps,new java.util.Comparator<G>() {
+        // compare 2 groups
+        // iterate down _gs, stop when _gs[i] > that._gs[i], or _gs[i] < that._gs[i]
+        // order by various columns specified by _orderByCols
+        // NaN is treated as least
+        @Override public int compare( G g1, G g2 ) {
+          for( int i : ordCols ) {
+            if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
+            if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
+            if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
+          }
+          return 0;
+        }
+        @Override public boolean equals( Object o ) {
+          throw H2O.unimpl();
+        }
+      });
 
     // build the output
     final int nCols = gbCols.length+aggs.length;
@@ -88,13 +114,15 @@ class ASTGroup extends ASTPrim {
         for( int i=0;i<c[0]._len;++i) {
           G g = grps[i+start];  // One Group per row
           int j;
-          for( j=0; j<g._ds.length; j++ ) // The Group Key, as a row
-            ncs[j].addNum(g._ds[j]);
-          for( int a=0; a<aggs.length; a++ )
+          for( j=0; j<g._gs.length; j++ ) // The Group Key, as a row
+            ncs[j].addNum(g._gs[j]);
+          for( int a=0; a<aggs.length-1; a++ )
             ncs[j++].addNum(aggs[a]._fcn.postPass(g._ds,a));
         }
       }
     }.doAll(nCols,v).outputFrame(names,domains);
+    f.remove(nCols-1).remove(); // Remove nrow col
+    v.remove();
 
     return new ValFrame(f);
   }
@@ -163,8 +191,11 @@ class ASTGroup extends ASTPrim {
     }
   }
 
-  
-  static class G extends Iced implements Comparable<G> {
+  // Groups!  Contains a Group Key - an array of doubles (often just 1 entry
+  // long) that defines the Group.  Also contains an array of doubles for the
+  // aggregate results, one per aggregate.
+
+  static class G extends Iced {
     final double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
@@ -189,20 +220,5 @@ class ASTGroup extends ASTPrim {
       return o instanceof G && Arrays.equals(_gs, ((G) o)._gs); }
     @Override public int hashCode() { return _hash; }
     @Override public String toString() { return Arrays.toString(_gs); }
-
-    // compare 2 groups
-    // iterate down _gs, stop when _gs[i] > that._gs[i], or _gs[i] < that._gs[i]
-    // order by various columns specified by _orderByCols
-    // NaN is treated as least
-    @Override public int compareTo(G g) {
-      throw H2O.unimpl(); // Sort-order for order-by on groups
-      // TODO: this code is incorrect for comparing 2 NaNs....
-      //for( int i : _orderByCols )
-      //  if(      Double.isNaN(  _gs[i]) || _gs[i] < g._gs[i] ) return -1;
-      //  else if( Double.isNaN(g._gs[i]) || _gs[i] > g._gs[i] ) return  1;
-      //return 0;
-    }
-
   }
-
 }

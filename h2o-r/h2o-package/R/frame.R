@@ -1370,7 +1370,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   a <- substitute(list(...))
   a[[1]] <- NULL  # drop the wrapping list()
   nAggs <- length(a)  # the number of aggregates
-  # for each aggregate, build this list: (agg,col.idx,na.method,col.name)
+  # for each aggregate, build this list: (agg,col.idx,na.method)
   agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
   col.idxs    <- unlist(lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
@@ -1390,9 +1390,6 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   # default to "all" na.method
   na.methods.defaults <- rep("all", nAggs)
-
-  # default to agg_col.name for the column names
-  col.names.defaults  <- paste0(agg.methods, "_", colnames(data)[col.idxs])
 
   # 1 -> 0 based indexing of columns
   col.idxs <- col.idxs - 1
