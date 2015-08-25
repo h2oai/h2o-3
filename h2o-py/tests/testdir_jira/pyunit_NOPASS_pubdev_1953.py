@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def pubdev_XXXX(ip, port):
+def pubdev_1953(ip, port):
 
     # small_test = [h2o.locate("bigdata/laptop/citibike-nyc/2013-10.csv")]
     # data = h2o.import_file(path=small_test)
@@ -38,4 +38,4 @@ def pubdev_XXXX(ip, port):
     glm0 = h2o.glm(x=train[predictors], y=train["bikes"], validation_x=test[predictors], validation_y=test["bikes"], family="poisson")
 
 if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_XXXX)
+    tests.run_test(sys.argv, pubdev_1953)
