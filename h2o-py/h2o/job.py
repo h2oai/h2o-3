@@ -32,7 +32,7 @@ class H2OJob:
   def poll(self):
     sleep = 0.1
     running = True
-    print  # create a new line for distinguished progress bar
+    if h2o.__PROGRESS_BAR__: print  # create a new line for distinguished progress bar
     while running:
       self._update_progress()
       time.sleep(sleep)
@@ -40,7 +40,7 @@ class H2OJob:
       self._refresh_job_view()
       running = self._is_running()
     self._update_progress()
-    print
+    if h2o.__PROGRESS_BAR__: print
 
     # check if failed... and politely print relevant message
     if self.status == "CANCELLED":
@@ -64,7 +64,7 @@ class H2OJob:
     if progress == 1:
       self._100_percent = True
 
-    if h2o.__PROGRESS_BAR__ or self._100_percent:
+    if h2o.__PROGRESS_BAR__:  # or self._100_percent:
       p = int(self._progress_bar_width * progress)
       sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
                        ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))

@@ -463,3 +463,15 @@ class ModelBase(object):
   @staticmethod
   def _has(dictionary, key):
     return key in dictionary and dictionary[key] is not None
+
+  @staticmethod
+  def _check_targets(y_actual, y_predicted):
+    """
+    Check that y_actual and y_predicted have the same length.
+
+    :param y_actual: An H2OFrame
+    :param y_predicted: An H2OFrame
+    :return: None
+    """
+    if len(y_actual) != len(y_predicted):
+      raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))

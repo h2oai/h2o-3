@@ -21,10 +21,9 @@ class H2OScaler(H2OTransformer):
                    the dataset. Each column is scaled by the respective value in this array.
     :return: An instance of H2OScaler.
     """
-    if center is None or scale is None:
-      raise ValueError("centers and scales must not be None.")
-    self.center=center
-    self.scale=scale
+    self.parms = locals()
+    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
+    if center is None or scale is None: raise ValueError("centers and scales must not be None.")
     self._means=None
     self._stds=None
 
@@ -44,10 +43,12 @@ class H2OScaler(H2OTransformer):
     :param params: Ignored
     :return: This H2OScaler instance
     """
-    if isinstance(self.center,(tuple,list)): self._means = self.center
-    if isinstance(self.scale, (tuple,list)): self._stds  = self.scale
-    if self.means is None and self.center:   self._means = X.mean()
-    if self.stds  is None and self.scale:    self._stds  = X.sd()
+    if isinstance(self.parms["center"],(tuple,list)): self._means = self.parms["center"]
+    if isinstance(self.parms["scale"], (tuple,list)): self._stds  = self.parms["scale"]
+    if self.means is None and self.parms["center"]:   self._means = X.mean()
+    else:                                             self._means = False
+    if self.stds  is None and self.parms["scale"]:    self._stds  = X.sd()
+    else:                                             self._stds  = False
     return self
 
   def transform(self,X,y=None,**params):
