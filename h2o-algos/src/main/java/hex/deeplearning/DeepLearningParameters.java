@@ -229,7 +229,7 @@ public class DeepLearningParameters extends Model.Parameters {
   /**
    * A maximum on the sum of the squared incoming weights into
    * any one neuron. This tuning parameter is especially useful for unbound
-   * activation functions such as Maxout or Rectifier.
+   * activation functions such as Rectifier.
    */
   public float _max_w2 = Float.POSITIVE_INFINITY;
 

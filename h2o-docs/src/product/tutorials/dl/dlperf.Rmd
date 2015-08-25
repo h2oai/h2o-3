@@ -15,7 +15,7 @@ Summary of our findings (much more at the end of part 1):
 Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. Don't forget to read the [KDNuggets interview](http://www.kdnuggets.com/2015/01/interview-arno-candel-0xdata-deep-learning.html), which covers a lot of the ideas and use cases for H2O and H2O Deep Learning in particular. This tutorial does not attempt to explain the many potential hyper-parameters of H2O Deep Learning.
 
 ### Getting Started
-To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd) ([here's the raw version](https://raw.githubusercontent.com/h2oai/h2o-dev/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd)). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments. 
+To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd) ([here's the raw version](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd)). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments. 
 
 The full logs of the run that created this blog post are available [for download here](../../../2015_02_deep-learning-performance/deeplearning-perf.log). **Note: _results updated as of March 4 (now on Windows 8.1, system wasn't overclocked in previous post)_**
 
@@ -33,9 +33,9 @@ Due to the complexity involved, we refer to a later blog on distributed benchmar
 For simplicity, we start with some single-node experiments quantifying the raw training speed. Of course, many of the parameters we'll change affect the predictive accuracy of a model, but for this first part, and to get an idea of how H2O Deep Learning works, we only look at the raw training speed (number of processed training samples per second).
 
 ### Establish Connection to H2O
-For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). The numerical performance of H2O Deep Learning in h2o-dev is very similar to the performance of its equivalent in [h2o](http://github.com/h2oai/h2o). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
+For this study, we use the latest version of H2O, [h2o-3](http://github.com/h2oai/h2o-3). The numerical performance of H2O Deep Learning in h2o-3 is very similar to the performance of its equivalent in [h2o-2](http://github.com/h2oai/h2o-2). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
 
-We use nightly build 1097 of h2o-dev, but you should be able to use any future nightly or stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
+We use nightly build 1097 of h2o-3, but you should be able to use any future nightly or stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
 
 The following two commands remove any previously installed H2O packages for R.
 ```{r}
@@ -50,13 +50,15 @@ if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statm
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
 if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 ```
 Now we download, install and initialize the H2O package for R.
 ```{r}
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1097/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-simons/7/R")))
+#install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/3137/R")))
 library(h2o)
 library('stringr')
 ```
@@ -68,7 +70,7 @@ h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="4g", nthreads=-1
 
 We will need to set the path to a scratch directory that will contain the downloaded datasets and the CSV files containing the results. Please adjust at your will.
 ```{r}
-workdir="/tmp"
+workdir="~/Downloads"
 ```
 
 ###Load Benchmark Dataset into H2O's Memory
@@ -79,14 +81,10 @@ We are well aware that this is small data for today's standards, but since H2O D
         
 We upload the MNIST datasets (train and test sets) into H2O's memory. Keep in mind that R just serves as a remote control for this entire experiment and never does any actual computation. All the heavy lifting is done by the fully parallelized H2O in-memory engine.
 ```{r}
-download.file("https://s3.amazonaws.com/h2o-training/mnist/train.csv.gz",
-              file.path(workdir,"train.csv.gz"), "wget", quiet = T)
-download.file("https://s3.amazonaws.com/h2o-training/mnist/test.csv.gz",
-              file.path(workdir,"test.csv.gz"), "wget", quiet = T)
-train_hex <- h2o.importFile(h2oServer, path = file.path(workdir,"train.csv.gz"),
-                            header = F, sep = ',', key = 'train.hex')
-test_hex <- h2o.importFile(h2oServer, path = file.path(workdir,"test.csv.gz"),
-                           header = F, sep = ',', key = 'test.hex')
+train_hex <- h2o.importFile(h2oServer, path = "https://s3.amazonaws.com/h2o-training/mnist/train.csv.gz",
+                            header = F, sep = ',', dest = 'train.hex')
+test_hex <- h2o.importFile(h2oServer, path = "https://s3.amazonaws.com/h2o-training/mnist/test.csv.gz",
+                           header = F, sep = ',', dest = 'test.hex')
 ```
 
 We convert the response column (last column, contains integers between 0 and 9) to a categorical variable, since we want to do classification.
@@ -116,9 +114,9 @@ score_test_set=T  #disable if only interested in training throughput
 run <- function(extra_params) {
   str(extra_params)
   print("Training.")
-  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785, loss="CrossEntropy",
-         training_frame=train_hex, destination_key="dlmodel"), extra_params))
-  sampleshist <- model@model$scoringHistory$"Training Samples"
+  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785,
+         training_frame=train_hex, model_id="dlmodel"), extra_params))
+  sampleshist <- model@model$scoring_history$samples
   samples <- sampleshist[length(sampleshist)]
   time <- model@model$run_time/1000
   print(paste0("training samples: ", samples))
@@ -128,7 +126,9 @@ run <- function(extra_params) {
   if (score_test_set) {
     print("Scoring on test set.")
     ## Note: This scores full test set (10,000 rows) - can take time!
-    test_error <- h2o.performance(model, test_hex)@metrics$cm$prediction_error
+    p <- h2o.performance(model, test_hex)
+    cm <- h2o.confusionMatrix(p)
+    test_error <- cm$Error[length(cm$Error)]
     print(paste0("test set error  : ", test_error))
   } else {
     test_error <- 1.0
@@ -251,7 +251,7 @@ writecsv(lapply(args, run), "adaptive_rate.csv")
 
 <div id='plot_adaptive_rate'></div>
 
-It is clear that the fastest option is to run with a manual learning rate and without momentum (default: 0), as this reduces the memory and computational overhead to a minimum. Enabling the adaptive learning rate is roughly equivalent to turning on momentum training (as each model coefficient keeps track of its history), it is only slightly more computationally expensive (it uses an [approximate square-root function](https://github.com/h2oai/h2o-dev/blob/master/h2o-core/src/main/java/water/util/MathUtils.java) that only costs a few clock cycles). Also, different hyper-parameters for adaptive learning rate can affect the training speed (at least for Rectifier activation functions, where back-propagation depends on the activation values).
+It is clear that the fastest option is to run with a manual learning rate and without momentum (default: 0), as this reduces the memory and computational overhead to a minimum. Enabling the adaptive learning rate is roughly equivalent to turning on momentum training (as each model coefficient keeps track of its history), it is only slightly more computationally expensive (it uses an [approximate square-root function](https://github.com/h2oai/h2o-3/blob/master/h2o-core/src/main/java/water/util/MathUtils.java) that only costs a few clock cycles). Also, different hyper-parameters for adaptive learning rate can affect the training speed (at least for Rectifier activation functions, where back-propagation depends on the activation values).
 
 Note that the lowest test set error was achieved with default settings (adaptive learning rate), corroborating our approach. For cases where fastest model training is required (possibly at the expense of highest achievable accuracy), manual learning rates without momentum can be a good option, but in general, adaptive learning rate simplifies the usage of H2O Deep Learning and make this tool highly usable by non-experts.
 
@@ -298,6 +298,12 @@ args <- list(
   
   list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, 
        train_samples_per_iteration=1000, activation="TanhWithDropout")
+  
+#  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, 
+#       train_samples_per_iteration=1000, activation="Maxout"),
+  
+#  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, 
+#       train_samples_per_iteration=1000, activation="MaxoutWithDropout")
 )
 writecsv(lapply(args, run), "activation_function.csv")
 ```
@@ -308,7 +314,7 @@ writecsv(lapply(args, run), "activation_function.csv")
 ### External Large Deep Network Benchmark
 Recently, we learned of a [Deep Learning project that benchmarked against H2O](http://www.comp.nus.edu.sg/~dbsystem/singa/development/2015/01/29/compare-h2o/), and we tried to reproduce their results, especially since they claimed that H2O is slower.
 
-Since we know that [all the compute cores are 100% max'ed out with H2O Deep Learning](https://twitter.com/arnocandel/status/499715893505454080), or, as my colleagues call it, *They got Arno'd*... I had to see what's going on. And trust me, I have profiled the living daylight out of H2O Deep Learning, and added some [low-level optimizations](https://github.com/h2oai/h2o-dev/blob/master/h2o-algos/src/main/java/hex/deeplearning/Neurons.java#L1070-L1109) for maximum throughput.
+Since we know that [all the compute cores are 100% max'ed out with H2O Deep Learning](https://twitter.com/arnocandel/status/499715893505454080), or, as my colleagues call it, *They got Arno'd*... I had to see what's going on. And trust me, I have profiled the living daylight out of H2O Deep Learning, and added some [low-level optimizations](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/deeplearning/Neurons.java#L1070-L1109) for maximum throughput.
 
 For a direct comparison, we aim to use the same [H2O parameters](http://www.comp.nus.edu.sg/~dinhtta/MLP.java) as the external H2O Benchmark study (which was using Java and Scala code instead of R, but that doesn't make a difference in runtime, as the same H2O Java code is executed):
 
@@ -449,7 +455,7 @@ With the simple 1-line command in R shown below, we achieve 0.83% test set error
     #       9        1    2    0    0   4   3   0    2   0  997 0.01189
     #       Totals 981 1142 1038 1013 977 891 956 1031 964 1007 0.00830
 
-For the above parameters, the parallel scalability on 1 to 63 nodes (1 one defective) was studied:
+For the above parameters, the parallel scalability on 1 to 63 nodes was studied:
 ![MNIST scalability](../../../2015_02_deep-learning-performance/DL_ScalabilityMNIST.png)
 Without going into too much detail, the settings were a balance between fast convergence and high throughput. Also, the 1-node run had no communication overhead, while all the other runs had some communication overhead, so the comparison is not entirely fair, but more later!
 
@@ -463,7 +469,7 @@ For a successful application of distributed H2O Deep Learning for Ebay text clas
 Distributed H2O Deep Learning is used for [Fraud Detection at PayPal](http://youtu.be/RqkheMI3Ciw).
 
 ##Summary
-H2O Deep Learning is a powerful, easy-to-use tool with highly competitive characteristics, both in terms of raw computing performance as well as predictive accuracy. H2O Deep Learning is used by customers in production. You can learn more about it from our [H2O Deep Learning booklet](https://leanpub.com/u/h2oai) or from [H2O World Training](http://learn.h2o.ai), which will require only minimal changes to migrate from h2o to h2o-dev. For information about performance tuning of H2O Deep Learning, you *really* have to read this entire blog, it's worth it!
+H2O Deep Learning is a powerful, easy-to-use tool with highly competitive characteristics, both in terms of raw computing performance as well as predictive accuracy. H2O Deep Learning is used by customers in production. You can learn more about it from our [H2O Deep Learning booklet](https://leanpub.com/u/h2oai) or from [H2O World Training](http://learn.h2o.ai), which will require only minimal changes to migrate from h2o to h2o-3. For information about performance tuning of H2O Deep Learning, you *really* have to read this entire blog, it's worth it!
 
 Thank you for your interest! May H2O Deep Learning inspire you to build your own [smart applications](http://apps.h2o.ai)! We welcome your feedback!
 
