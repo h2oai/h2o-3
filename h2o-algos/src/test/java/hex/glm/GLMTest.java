@@ -1596,7 +1596,7 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
    * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
