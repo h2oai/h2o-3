@@ -349,6 +349,41 @@ public class SVDTest extends TestUtil {
     }
   }
 
+  @Test public void testArrestsRand() throws InterruptedException, ExecutionException {
+    SVDModel model = null;
+    Frame train = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      parms._train = train._key;
+      parms._nv = 4;
+      parms._seed = 1234;
+      parms._only_v = false;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._svd_method = SVDParameters.Method.Probabilistic;
+
+      SVD job = new SVD(parms);
+      try {
+        model = job.trainModel().get();
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
   @Test public void testIVVSum() {
     double[][] res = ard(ard(1, 2, 3), ard(2, 5, 6), ard(3, 6, 9));
     double[] v = new double[] {7, 8, 9};

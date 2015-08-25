@@ -141,7 +141,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
-      Frame ybig = null, aqfrm = null, qfrm = null;
+      Frame ybig = null, qfrm = null;
       DataInfo yinfo = null;
       final int ncolA = dinfo._adaptedFrame.numCols();
 
@@ -150,12 +150,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Vec[] vecs = new Vec[ncolA + _parms._nv];
         for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
         for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = dinfo._adaptedFrame.anyVec().makeZero();
-        aqfrm = new Frame(vecs);
+        Frame aqfrm = new Frame(vecs);
 
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-        rtsk.doAll(dinfo._adaptedFrame);
+        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         ybig = rtsk.outputFrame(Key.make(), null, null);
 
         yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
@@ -168,9 +168,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         for (int q = 0; q < iters; q++) {
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-          QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+          QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
           qrtsk.doAll(aqfrm);
-          SMulTask stsk = new SMulTask(ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+          SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
           stsk.doAll(aqfrm);
 
           Matrix ysmall = new Matrix(stsk._atq);
@@ -179,7 +179,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
           BMulTask btsk = new BMulTask(self(), dinfo, ArrayUtils.transpose(ysmall_q));
-          btsk.doAll(dinfo._adaptedFrame);
+          btsk.doAll(_parms._nv, dinfo._adaptedFrame);
           ybig = btsk.outputFrame(Key.make(), null, null);
 
           yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
@@ -192,9 +192,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
 
         // 4) Compute Q_j from updated R_j at the end of final iteration
-        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, dinfo._cats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
         qrtsk.doAll(aqfrm);
         qfrm = aqfrm.extractFrame(ncolA, aqfrm.numCols());
+        DKV.put(Key.make(), qfrm);
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
@@ -205,7 +206,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           throw t;
         }
       } finally {
-        if( aqfrm != null ) aqfrm.delete();
         if( ybig != null ) ybig.delete();
         if( yinfo != null ) yinfo.remove();
       }
@@ -217,26 +217,49 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Make input frame [A,Q], where A = read-only training data, Q = matrix from randomized subspace iteration
       final int ncolA = dinfo._adaptedFrame.numCols();
       Vec[] vecs = new Vec[ncolA + _parms._nv];
-      for(int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
-      for(int i = 0; i < _parms._nv; i++) vecs[ncolA+i] = dinfo._adaptedFrame.anyVec().makeZero();
+      for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
+      for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = dinfo._adaptedFrame.anyVec().makeZero();
       Frame aqfrm = new Frame(vecs);
 
-      // 1) Form the matrix B = Q'A = (A'Q)'
-      SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels).doAll(aqfrm);
-      double[][] qta = ArrayUtils.transpose(stsk._atq);
+      DataInfo qinfo = null;
+      Frame u = null;
 
-      // 2) Compute SVD of small matrix B = WDV'
-      Matrix qtaJ = new Matrix(qta);
-      SingularValueDecomposition svdJ = qtaJ.svd();
+      try {
+        qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
+        DKV.put(qinfo._key, qinfo);
 
-      // 3) Form orthonormal matrix U = QW
-      double[][] utilde = svdJ.getU().getArray();
-      DataInfo qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
-      BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(utilde)).doAll(_parms._nv, qinfo._adaptedFrame);
-      Frame u = btsk.outputFrame(model._output._u_key, null, null);
+        // 1) Form the matrix B = Q'A = (A'Q)'
+        SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+        stsk.doAll(aqfrm);
+        double[][] qta = ArrayUtils.transpose(stsk._atq);
 
-      model._output._d = svdJ.getSingularValues();
-      model._output._v = svdJ.getV().getArray();
+        // 2) Compute SVD of small matrix B = WDV'
+        Matrix qtaJ = new Matrix(qta);
+        SingularValueDecomposition svdJ = qtaJ.svd();
+
+        // 3) Form orthonormal matrix U = QW
+        if (!_parms._only_v && _parms._keep_u) {
+          model._output._u_key = Key.make(_parms._u_name);
+          double[][] svdJ_u = svdJ.getU().getArray();
+          BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(svdJ_u));
+          btsk.doAll(_parms._nv, qinfo._adaptedFrame);
+          u = btsk.outputFrame(model._output._u_key, null, null);
+        }
+
+        model._output._d = svdJ.getSingularValues();
+        model._output._v = svdJ.getV().getArray();
+      } catch( Throwable t ) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
+      } finally {
+        if( qinfo != null ) qinfo.remove();
+      }
       return u;
     }
 
@@ -544,7 +567,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       _normSub = normSub;
       _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats-1];
+      _numStart = _catOffsets[_ncats];
       _use_all_factor_levels = use_all_factor_levels;
 
       _L = chol.getL().getArray();
@@ -627,7 +650,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       _normSub = normSub;
       _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats-1];
+      _numStart = _catOffsets[_ncats];
       _use_all_factor_levels = use_all_factor_levels;
     }
 
@@ -647,7 +670,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
             int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
             if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
-            _atq[_catOffsets[p] + level][k] += q;
+            _atq[_catOffsets[p] + level][k-_ncolA] += q;
           }
         }
 
@@ -658,7 +681,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           for(int row = 0; row  < cs[0]._len; row++) {
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
-            _atq[pexp][k] += q * (a - _normSub[pnum]) * _normMul[pnum];
+            _atq[pexp][k-_ncolA] += q * (a - _normSub[pnum]) * _normMul[pnum];
           }
           pexp++; pnum++;
         }
