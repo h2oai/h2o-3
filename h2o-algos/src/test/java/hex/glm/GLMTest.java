@@ -1546,7 +1546,7 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Ignore("PUBDEV-1839")
+  @Test //PUBDEV-1839
   public void testCitibikeReproPUBDEV1839() throws Exception {
     GLM job = null;
     GLMModel model = null;
@@ -1559,7 +1559,6 @@ public class GLMTest  extends TestUtil {
       params._response_column = "bikes";
       params._train = tfr._key;
       params._valid = vfr._key;
-      params._lambda = new double[]{1e-5};
       job = new GLM(Key.make("glm_model"), "glm test PUBDEV-1839", params);
       model = job.trainModel().get();
 
@@ -1572,6 +1571,31 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Ignore("PUBDEV-1953")
+  public void testCitibikeReproPUBDEV1953() throws Exception {
+    GLM job = null;
+    GLMModel model = null;
+    Frame tfr = parse_test_file("smalldata/glm_test/citibike_small_train.csv");
+    Frame vfr = parse_test_file("smalldata/glm_test/citibike_small_test.csv");
+
+    try {
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.poisson);
+      params._response_column = "bikes";
+      params._train = tfr._key;
+      params._valid = vfr._key;
+      params._family = Family.poisson;
+      job = new GLM(Key.make("glm_model"), "glm test PUBDEV-1839", params);
+      model = job.trainModel().get();
+
+    } finally {
+      tfr.remove();
+      vfr.remove();
+      if(model != null)model.delete();
+      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
 
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
