@@ -152,8 +152,8 @@ pfr <- function(x) { chk.Frame(x); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),
   if( exists("eval2",x,inherits=FALSE) ) return( get("eval2",envir=x,inherits=FALSE) )
   res <- paste(sapply(xchild, function(child) { if( is.Frame(child) ) .eval.impl(child,F) else child }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
-  .set(x,"eval2", xchild <- .key.make("RTMP")) # Flag as code-emitted
-  if( .shared(x) && !toplevel) 
+  .set(x,"eval2", xchild <- .key.make("RTMP")) # Flag as code-emitted by assigning the cluster name
+  if( .shared(x) && !toplevel ) # Wrap in a tmp= if it might be used again from R
     res <- paste0("(tmp= ",xchild," ",res,")")
   res
 }
@@ -186,8 +186,9 @@ pfr <- function(x) { chk.Frame(x); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:eval2, method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
     if( !is.null(res$scalar) ) .set(x,"data",res$scalar)
-    # Now clear all internal DAG nodes, allowing GC
+    # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
+    .h2o.gc()
   }
   x
 }
@@ -414,11 +415,11 @@ NULL
       print(col)
       stop("unimplemented1")
     } else if( is.character(col) ) { # Columns by name
-      idx <- match(col,colnames(data))-1 # Match on name, then zero-based
-      if( is.na(idx) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
-    } else { # Generic R expression
-      idx <- .row.col.selector(col)
+      idx <- match(col,colnames(data)) # Match on name
+      if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
+      col <- idx
     }
+    idx <- .row.col.selector(col) # Generic R expression
     data <- .newExpr("cols",data,idx) # Column selector
   }
   # Have a row selector?
@@ -495,10 +496,9 @@ NULL
   }
 
   if( is.character(value) ) value <- .quote(value)
-  res <- .newExpr("=", data, value, cols, rows)
   # Set col name and return updated frame
-  if( !is.na(name) )  res <- .newExpr("colnames=", res, idx-1, .quote(name))
-  res
+  if( is.na(name) ) .newExpr("=", data, value, cols, rows)
+  else              .newExpr("=", data, value, cols, rows, .quote(name))
 }
 
 #' @rdname Frame-Extract
@@ -1706,6 +1706,43 @@ h2o.table <- function(x, y = NULL) {
   chk.Frame(x)
   if( !is.null(y) ) chk.Frame(y)
   if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
+}
+
+#'
+#' Compute A Histgram
+#'
+#' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
+#' in computing bin width.
+#'
+#' @param x A single numeric column from an H2OFrame.
+#' @param breaks Can be one of the following:
+#'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
+#'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
+#'               A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+#' @param plot A logical value indicating whether or not a plot should be generated (default is TRUE).
+#' @export
+h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
+  if( is.character(breaks) ) {
+    if( breaks=="Sturges" ) breaks <- "sturges"
+    if( breaks=="Rice"    ) breaks <- "rice"
+    if( breaks=="Doane"   ) breaks <- "doane"
+    if( breaks=="FD"      ) breaks <- "fd"
+    if( breaks=="Scott"   ) breaks <- "scott"
+  }
+  h <- as.data.frame(.newExpr("hist", chk.Frame(x), .quote(breaks)))
+  counts <- stats::na.omit(h[,2])
+  mids <- stats::na.omit(h[,4])
+  histo <- list()
+  histo$breaks <- h$breaks
+  histo$counts <- as.numeric(counts)
+  histo$density <- as.numeric(histo$counts / sum(histo$counts) * 1 / diff(histo$breaks))
+  histo$mids   <- as.numeric(mids)
+  histo$xname  <- deparse(substitute(x))
+  oldClass(histo) <- "histogram"
+  if( plot ) {
+    plot(histo)
+    invisible(histo)
+  } else histo
 }
 
 #'

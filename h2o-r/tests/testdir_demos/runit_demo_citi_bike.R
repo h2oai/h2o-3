@@ -101,7 +101,6 @@ split_fit_predict <- function(data) {
                  y = myY,
                  training_frame    = train,
                  validation_frame  = test,
-                 lambda            = 1e-5,
                  family            = "poisson")
 
   # 4- Score on holdout set & report

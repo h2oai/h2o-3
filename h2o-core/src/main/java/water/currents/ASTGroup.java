@@ -157,6 +157,15 @@ class ASTGroup extends ASTPrim {
       // Normal number or IGNORE: bump count; RM: do not bump count
       if( !Double.isNaN(d1) || _na==NAHandling.IGNORE ) ns[i]++; 
     }
+    void atomic_op( double[] d0s, long[] n0s, int i, double d1, long n1 ) {
+      double d;  long n;
+      // Normal number or ALL   : call op()
+      if( !Double.isNaN(d1) || _na==NAHandling.ALL    )
+        while( !AtomicUtils.DoubleArray.CAS(d0s,i, d=d0s[i], _fcn.op(d,d1) ) ) ;
+      // Normal number or IGNORE: bump count; RM: do not bump count
+      if( !Double.isNaN(d1) || _na==NAHandling.IGNORE )
+        while( !AtomicUtils.  LongArray.CAS(n0s,i, n=n0s[i], n+n1 ) ) ;
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -186,15 +195,16 @@ class ASTGroup extends ASTPrim {
       }
       reduce(_gss,gs);          // Atomically merge Group stats
     }
+    // Reduce, but no need for atomic on this path
     @Override public void reduce(GBTask t) { if( _gss != t._gss ) reduce(_gss,t._gss); }
+    // If coming from the map() call, must atomically merge groups
     private void reduce( NonBlockingHashMap<G,String> l, NonBlockingHashMap<G,String> r ) {
-      for( G rg : r.keySet() ) {
+      for( G rg : r.keySet() )
         if( l.putIfAbsent(rg,"")!=null ) {
           G lg = l.getk(rg);
-          assert lg!=null;
-          throw H2O.unimpl();   // Need to atomically merge groups here
+          for( int i=0; i<_aggs.length; i++ )
+            _aggs[i].atomic_op(lg._ds,lg._ns,i,rg._ds[i],rg._ns[i]); // Need to atomically merge groups here
         }
-      }
     }
   }
 

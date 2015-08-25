@@ -59,15 +59,11 @@ class ASTNumList extends AST {
       if( _cnts[i] != 1 ) isList = false;
     }
 
-    // Sort bases; complain about dups unless it's the stride==cnt==1 case.
-    if( isList ) {
-      Arrays.sort(_bases);
-    } else {
+    // Complain about unordered bases, unless it's a simple number list
+    if( !isList )
       for( int i=1; i<_bases.length; i++ )
         if( _bases[i-1] >= _bases[i] )
           throw new IllegalArgumentException("Bases must be monotonically increasing");
-    }
-
   }
 
   // A simple ASTNumList of 1 number

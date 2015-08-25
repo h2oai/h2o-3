@@ -5,7 +5,7 @@ import water.fvec.*;
 
 /** Assign into a row slice */
 class ASTAssign extends ASTPrim {
-  @Override int nargs() { return 1+4; } // (= dst src col_expr row_expr)
+  @Override int nargs() { return -1; } // (= dst src col_expr row_expr {"colname"})
   @Override String str() { return "=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
@@ -15,8 +15,11 @@ class ASTAssign extends ASTPrim {
     // Check for append; add a col of NAs if appending
     if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
       dst = new Frame(dst._names.clone(),dst.vecs().clone());
-      dst.add(Frame.defaultColName(dst.numCols()), dst.anyVec().makeCon(Double.NaN));
+      dst.add(asts[5].exec(env).getStr(), dst.anyVec().makeCon(Double.NaN));
       // DKV update on dst happens in RapidsHandler
+      if( asts.length!=6 ) throw new IllegalArgumentException("assign requires args (= dst src col_expr row_expr \"colname\")");
+    } else {
+      if( asts.length!=5 ) throw new IllegalArgumentException("assign requires args (= dst src col_expr row_expr)");
     }
 
     // Slice out cols for mutation
