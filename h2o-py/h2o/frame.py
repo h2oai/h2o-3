@@ -1174,7 +1174,7 @@ class H2OFrame:
       return [H2OFrame._get_scalar(r) for r in res]
   @staticmethod
   def _get_scalar(res):
-    if res[0] == []: return float("nan")
+    if res[0] == '': return float("nan")
     res = res[0][0]
     if res == "TRUE": return True
     if res == "FALSE":return False
