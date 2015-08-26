@@ -14,3 +14,5 @@ nbins_cats = 0,Classification_Balanced_data_Auto_Balance_classes_Dense_Nbins__ca
 ,Classification_Balanced_data_Auto_Balance_classes_disabled_Dense_Nbins_cats_error,rf_neg_testcase_10,,x,x,,,,,,,,,,,,,,,,0,,,,,,,,Auto,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
 nfolds > observations,Classification_Balanced_data_Auto_Balance_classes_Dense_nfolds_greater_observations,rf_neg_testcase_11,,x,x,,,,,,,200,,,,,,,,,,,x,,,,,,Auto,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
 ,Classification_Balanced_data_Auto_Balance_classes_disabled_Dense_nfolds_greater_observations,rf_neg_testcase_12,,x,x,,,,,,,200,,,,,,,,,,,,,,,,,Auto,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
+nfolds = 1,Classification_Balanced_data_Auto_Balance_classes_Dense_nfolds_0,rf_neg_testcase_13,,x,x,,,,,,,1,,,,,,,,,,,x,,,,,,Auto,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
+,Classification_Balanced_data_Auto_Balance_classes_disabled_Dense_nfolds_0,rf_neg_testcase_14,,x,x,,,,,,,1,,,,,,,,,,,,,,,,,Auto,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
