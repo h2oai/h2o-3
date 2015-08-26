@@ -11,6 +11,8 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
+
 public class LinearAlgebraUtils {
   /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in new vecs
@@ -160,34 +162,45 @@ public class LinearAlgebraUtils {
     final boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
     final double[][] _L;
 
+    // Constructor if A is purely numeric data
+    public QRfromChol( CholeskyDecomposition chol, double nobs, int ncolA, int ncolQ, double[] normSub, double[] normMul) {
+      this(chol, nobs, ncolA, ncolA, 0, ncolQ, normSub, normMul, null, false);
+    }
     public QRfromChol( CholeskyDecomposition chol, double nobs, int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
       _ncolA = ncolA;
       _ncolExp = ncolExp;
       _ncats = ncats;
       _ncolQ = ncolQ;
-      _normSub = normSub;
-      _normMul = normMul;
+      _normSub = normSub == null ? new double[_ncolA-_ncats] : normSub;
+      if(normMul == null) {
+        _normMul = new double[_ncolA-_ncats];
+        Arrays.fill(_normMul, 1.0);
+      } else
+        _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats];
+      _numStart = _catOffsets == null ? 0 : _catOffsets[_ncats];
       _use_all_factor_levels = use_all_factor_levels;
 
       _L = chol.getL().getArray();
       ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
     }
 
-    public final void forwardSolve(double[][] L, double[] b) {
+    public final double[] forwardSolve(double[][] L, double[] b) {
       assert L != null && L.length == L[0].length && L.length == b.length;
+      double[] res = new double[b.length];
 
       for(int i = 0; i < b.length; i++) {
-        double sum = 0;
+        res[i] = b[i];
         for(int j = 0; j < i; j++)
-          sum += L[i][j] * b[j];
-        b[i] = (b[i] - sum) / L[i][i];
+          res[i] -= L[i][j] * res[j];
+        res[i] /= L[i][i];
       }
+      return res;
     }
 
     @Override public void map(Chunk cs[]) {
       assert (_ncolA + _ncolQ) == cs.length;
+      double[] arow = new double[_ncolA];
       double[] qrow = new double[_ncolQ];
 
       for(int row = 0; row < cs[0]._len; row++) {
@@ -200,7 +213,7 @@ public class LinearAlgebraUtils {
           int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
           int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
           if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
-          qrow[_catOffsets[p] + level] = 1;
+          arow[_catOffsets[p] + level] = 1;
         }
 
         // Numeric columns
@@ -208,17 +221,17 @@ public class LinearAlgebraUtils {
         int pexp = _numStart;
         for(int p = _ncats; p < _ncolA; p++) {
           double a = cs[p].atd(row);
-          qrow[pexp] = (a - _normSub[pnum]) * _normMul[pnum];
+          arow[pexp] = (a - _normSub[pnum]) * _normMul[pnum];
           pexp++; pnum++;
         }
 
         // 2) Solve for single row of Q using forward substitution
-        forwardSolve(_L, qrow);
+        qrow = forwardSolve(_L, arow);
 
         // 3) Save row of solved values into Q
         int i = 0;
         for(int d = _ncolA; d < _ncolA+_ncolQ; d++)
-          cs[d].set(row, qrow[i]);
+          cs[d].set(row, qrow[i++]);
         assert i == qrow.length;
       }
     }

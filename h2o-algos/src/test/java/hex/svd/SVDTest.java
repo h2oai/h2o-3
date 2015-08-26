@@ -350,6 +350,12 @@ public class SVDTest extends TestUtil {
   }
 
   @Test public void testArrestsProb() throws InterruptedException, ExecutionException {
+    // Expected right singular values and vectors
+    double[] d_expected = new double[] {1419.06139510, 194.82584611, 45.66133763, 18.06955662};
+    double[][] v_expected = ard(ard(-0.04239181,  0.01616262, -0.06588426,  0.99679535),
+            ard(-0.94395706,  0.32068580,  0.06655170, -0.04094568),
+            ard(-0.30842767, -0.93845891,  0.15496743,  0.01234261),
+            ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
     SVDModel model = null;
     Frame train = null;
     try {
@@ -358,13 +364,16 @@ public class SVDTest extends TestUtil {
       parms._train = train._key;
       parms._nv = 4;
       parms._seed = 1234;
-      parms._keep_u = false;
+      parms._only_v = false;
+      parms._keep_u = true;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.Probabilistic;
 
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
+        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

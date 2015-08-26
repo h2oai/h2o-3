@@ -10,7 +10,6 @@ import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
-import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.*;
 import water.*;
 import water.fvec.Chunk;
@@ -26,6 +25,7 @@ import java.util.Arrays;
  * Singular Value Decomposition
  * <a href = "http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf">SVD via Power Method Algorithm</a>
  * <a href = "https://www.cs.cmu.edu/~venkatg/teaching/CStheory-infoage/book-chapter-4.pdf">Proof of Convergence for Power Method</a>
+ * <a href = "http://arxiv.org/pdf/0909.4061.pdf">Probabilistic Algorithms for Matrix Approximation</a>
  * @author anqi_fu
  */
 public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
@@ -140,22 +140,19 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
-      Frame yinit = null, ybig = null, qfrm = null;
       DataInfo yinfo = null;
       Key yinfo_key = Key.make(), ykey = Key.make();
+      Frame yinit = null, ybig = null, qfrm = null, ayqfrm = null;
       final int ncolA = dinfo._adaptedFrame.numCols();
 
       try {
-        // 0) Make input frame [A,Q], where A = read-only training data, Q = matrix from each QR factorization
-        Frame aqfrm = new Frame(dinfo._adaptedFrame);
-        for (int i = 0; i < _parms._nv; i++) aqfrm.add("qcol_" + i, aqfrm.anyVec().makeZero());
-
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         yinit = rtsk.outputFrame(ykey, null, null);
 
+        // Calculate Cholesky of Gram to get R' = L matrix
         yinfo = new DataInfo(yinfo_key, yinit, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
@@ -163,25 +160,42 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
         Matrix ygram = new Matrix(gtsk._gram.getXX());
         CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
+        System.out.println(ArrayUtils.pprint(chol.getL().getArray()));
+
+        // Make input frame [A,Q,Y] where A = read-only training data, Y = AQ, Q from Y = QR factorization
+        ayqfrm = new Frame(dinfo._adaptedFrame);
+        ayqfrm.add(yinit);
+        for (int i = 0; i < _parms._nv; i++)
+          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
+
+        // Get Q from Y = QR giving R' = L
+        double[] normSubY = new double[_parms._nv];
+        double[] normMulY = new double[_parms._nv];
+        Arrays.fill(normMulY, 1.0);
+        Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // Pass in [Y,Q]
+        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
+        qrtsk.doAll(yqfrm);
 
         for (int q = 0; q < iters; q++) {
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-          QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
-          qrtsk.doAll(aqfrm);
+          Frame aqfrm = ayqfrm.subframe(0, ncolA);
+          aqfrm.add(ayqfrm.subframe(ncolA+_parms._nv, ayqfrm.numCols()));
           SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
-          stsk.doAll(aqfrm);
+          stsk.doAll(aqfrm);    // Pass in [A,Q]
 
           Matrix ysmall = new Matrix(stsk._atq);
           QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
           double[][] ysmall_q = ysmall_qr.getQ().getArray();
 
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
+          Frame ayfrm = ayqfrm.subframe(0,ncolA+_parms._nv);
           BMulInPlaceTask tsk = new BMulInPlaceTask(ncolA, ArrayUtils.transpose(ysmall_q));
-          tsk.doAll(aqfrm);     // Reuse [A,Q] frame and write Y_j into old Q_{j-1}
-          ybig = aqfrm.subframe(ncolA, aqfrm.numCols());
+          tsk.doAll(ayfrm);     // TODO: Can we reuse [A,Q] frame and write Y_j into old Q_{j-1}?
+          ybig = ayfrm.subframe(ncolA, ayfrm.numCols());
           ybig = new Frame(ykey, ybig.names(), ybig.vecs());
           DKV.put(ybig);
 
+          // Calculate Cholesky of Gram to get R' = L matrix
           yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
           DKV.put(yinfo._key, yinfo);
           gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
@@ -189,14 +203,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
           ygram = new Matrix(gtsk._gram.getXX());
           chol = new CholeskyDecomposition(ygram);
+
+          yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());
+          qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
+          qrtsk.doAll(yqfrm);   // Pass in [Y,Q]
         }
 
-        // 4) Compute Q_j from updated R_j at the end of final iteration
-        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
-        qrtsk.doAll(aqfrm);
-        qfrm = aqfrm.extractFrame(ncolA, aqfrm.numCols());
+        // 4) Extract and save final Q_j from [A,Q] frame
+        qfrm = ayqfrm.extractFrame(ncolA+_parms._nv, ayqfrm.numCols());
         qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
-        DKV.put(qfrm);   // TODO: Pull this out otherwise Q frame gets deleted
+        DKV.put(qfrm);
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
@@ -210,7 +226,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( yinfo != null ) yinfo.remove();
         if( yinit != null ) yinit.delete();
         if( ybig != null ) ybig.delete();
+        if( ayqfrm != null ) {
+          for(int i = ncolA; i < ncolA+_parms._nv; i++)
+            ayqfrm.vec(i).remove();
+        }
       }
+      System.out.println(qfrm.toString());
       return qfrm;
     }
 
@@ -381,7 +402,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
 
           // 4) Normalize output frame columns by singular values to get left singular vectors
-          // TODO: Make sure model building consistent if algo cancelled midway
           model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
 
           if (!_parms._only_v && !_parms._keep_u) {          // Delete U vecs if computed, but user does not want it returned
@@ -394,7 +414,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
           // TODO: Calculate optimal number of iters for randomized subspace iteration
-          qfrm = randSubIter(dinfo, model, 1, _parms._seed);
+          qfrm = randSubIter(dinfo, model, 10, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
