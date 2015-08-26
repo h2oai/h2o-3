@@ -571,6 +571,11 @@ public class ArrayUtils {
     a[i] = a[change];
     a[change] = helper;
   }
+  private static void swap(int[] a, int i, int change) {
+    int helper = a[i];
+    a[i] = a[change];
+    a[change] = helper;
+  }
 
   /**
    * Extract a shuffled array of integers
@@ -597,12 +602,10 @@ public class ArrayUtils {
     return result;
   }
 
-  public static void shuffleArray(long[] a, long seed) {
+  public static void shuffleArray(int[] a, Random rng) {
     int n = a.length;
-    Random random = getRNG(seed);
-    random.nextInt();
     for (int i = 0; i < n; i++) {
-      int change = i + random.nextInt(n - i);
+      int change = i + rng.nextInt(n - i);
       swap(a, i, change);
     }
   }

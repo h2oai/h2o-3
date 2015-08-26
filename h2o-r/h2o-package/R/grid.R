@@ -18,6 +18,7 @@
 #' @param hyper_params  list of hyper parameters (i.e., \code{list(ntrees=c(1,2), max_depth=c(5,7))})
 #' @param is_supervised  if specified then override default heuristing which decide if given algorithm
 #'        name and parameters specify super/unsupervised algorithm.
+#' @param do_hyper_params_check  perform client check for specified hyper parameters
 #' @param conn connection to H2O cluster
 #' @importFrom jsonlite toJSON
 #' @examples
@@ -33,31 +34,36 @@ h2o.grid <- function(algorithm,
                      ...,
                      hyper_params = list(),
                      is_supervised = NULL,
+                     do_hyper_params_check = TRUE,
                      conn = h2o.getConnection())
 {
   # Extract parameters
   dots <- list(...)
+  algorithm <- .h2o.unifyAlgoName(algorithm)
   model_param_names <- names(dots)
   hyper_param_names <- names(hyper_params)
+  # Reject overlapping definition of parameters
   if (any(model_param_names %in% hyper_param_names)) {
     overlapping_params <- intersect(model_param_names, hyper_param_names)
     stop(paste0("The following parameters are defined as common model parameters and also as hyper parameters: ",
                 .collapse(overlapping_params), "! Please choose only one way!"))
   }
+  # Prepare model parameters
   params <- .h2o.prepareModelParameters(algo = algorithm, params = dots, is_supervised = is_supervised)
-  # FIXME: rename x to ignore, y to response
-
-  # Validation of model parameters
+  # Validation of input key
   .key.validate(params$key_value)
   # Get model builder parameters for this model
   allParams <- .h2o.getModelParameters(algo = algorithm)
-  # Verify the parameters
-  params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
-  params <- .h2o.checkModelParameters(algo = algorithm, allParams = allParams, params = params, hyper_params = hyper_params)
-  # TODO: Validate hyper parameters
+  # Verify and unify the parameters
+  params <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = allParams,
+                                                  params = params, hyper_params = hyper_params)
+  # Validate and unify hyper parameters
+  hyper_values <- .h2o.checkAndUnifyHyperParameters(algo = algorithm,
+                                                        allParams = allParams, hyper_params = hyper_params,
+                                                        do_hyper_params_check = do_hyper_params_check)
 
-  # Append grid parameters
-  params$hyper_parameters <- toJSON(hyper_params, digits=99)
+  # Append grid parameters in JSON form
+  params$hyper_parameters <- toJSON(hyper_values, digits=99)
 
   # Append grid_id if it is specified
   if (!missing(grid_id)) params$grid_id <- grid_id
@@ -91,7 +97,10 @@ h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })
   hyper_names <- lapply(json$hyper_names, function(name) { name })
-  failed_params <- lapply(json$failed_params, function(param) { if (is.na(param)) NULL else param })
+  failed_params <- lapply(json$failed_params, function(param) {
+                          x <- if (is.null(param) || is.na(param)) NULL else param
+                          x
+                        })
   failure_details <- lapply(json$failure_details, function(msg) { msg })
   failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
 

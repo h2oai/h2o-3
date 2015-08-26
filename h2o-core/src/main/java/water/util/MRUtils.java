@@ -59,9 +59,9 @@ public class MRUtils {
     return new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        long[] idx = new long[cs[0]._len];
+        int[] idx = new int[cs[0]._len];
         for (int r=0; r<idx.length; ++r) idx[r] = r;
-        ArrayUtils.shuffleArray(idx, seed);
+        ArrayUtils.shuffleArray(idx, getRNG(seed));
         for (long anIdx : idx) {
           for (int i = 0; i < ncs.length; i++) {
             ncs[i].addNum(cs[i].atd((int) anIdx));

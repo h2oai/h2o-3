@@ -6,14 +6,14 @@ check.deeplearning_imbalanced <- function(conn) {
   
   covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
-  hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,activation="Rectifier",loss="CrossEntropy",hidden=c(200,200),epochs=1,training_frame=covtype,balance_classes=F,reproducible=T, seed=1234)
+  hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=F,reproducible=T, seed=12345)
   print(hh_imbalanced)
-  hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,activation="Rectifier",loss="CrossEntropy",hidden=c(200,200),epochs=1,training_frame=covtype,balance_classes=T,reproducible=T, seed=1234)
+  hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=T,reproducible=T, seed=12345)
   print(hh_balanced)
 
-  #compare error for class 6 (difficult minority)
-  class_6_err_imbalanced <- h2o.confusionMatrix(hh_imbalanced)[6,8]
-  class_6_err_balanced   <- h2o.confusionMatrix(hh_balanced)[6,8]
+  #compare overall logloss
+  class_6_err_imbalanced <- h2o.logloss(hh_imbalanced)
+  class_6_err_balanced <- h2o.logloss(hh_balanced)
 
   if (class_6_err_imbalanced < class_6_err_balanced) {
       print("--------------------")

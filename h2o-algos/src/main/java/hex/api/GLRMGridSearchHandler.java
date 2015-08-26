@@ -32,7 +32,7 @@ public class GLRMGridSearchHandler
   public static class GLRMGrid extends Grid<GLRMModel.GLRMParameters> {
 
     public GLRMGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }
