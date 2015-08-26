@@ -36,6 +36,9 @@ import java.util.HashMap;
  *
  * <p></p>
  * Extra columns that are not in the model are ignored by the predict methods.
- */
+ *
+ * <p></p>
+ * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/RowData.java" target="_blank">here on github</a>.
+*/
 public class RowData extends HashMap<String, Object> {
 }
