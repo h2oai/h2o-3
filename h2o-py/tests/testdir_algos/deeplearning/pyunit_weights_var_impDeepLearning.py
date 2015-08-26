@@ -104,7 +104,7 @@ def weights_vi(ip,port):
                                               variable_importances=True,
                                               weights_column="weights",
                                               hidden=[1],
-                                              reproducible=True, seed=1234,
+                                              reproducible=True, seed=123,
                                               activation="Tanh")
 
     varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])

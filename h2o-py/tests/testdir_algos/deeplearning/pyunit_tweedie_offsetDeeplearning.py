@@ -17,14 +17,14 @@ def tweedie_offset(ip,port):
                           score_training_samples=0,score_validation_samples=0)
 
     mean_residual_deviance = dl.mean_residual_deviance()
-    assert abs(0.561641366536-mean_residual_deviance) < 1e-6, "Expected mean residual deviance to be 0.561641366536, but got " \
+    assert abs(0.556 - mean_residual_deviance) < 1e-3, "Expected mean residual deviance to be 0.556, but got " \
                                                          "{0}".format(mean_residual_deviance)
     predictions = dl.predict(insurance)
-    assert abs(47.6819999424-predictions[0].mean()) < 1e-6, "Expected mean of predictions to be 47.6819999424, but got " \
+    assert abs(47.61-predictions[0].mean()) < 1e-2, "Expected mean of predictions to be 47.61, but got " \
                                                           "{0}".format(predictions[0].mean())
-    assert abs(1.90409304033-predictions[0].min()) < 1e-6, "Expected min of predictions to be 1.90409304033, but got " \
+    assert abs(1.94-predictions[0].min()) < 1e-1, "Expected min of predictions to be 1.94, but got " \
                                                           "{0}".format(predictions[0].min())
-    assert abs(280.735054543-predictions[0].max()) < 1e-6, "Expected max of predictions to be 280.735054543, but got " \
+    assert abs(284.6-predictions[0].max()) < 28, "Expected max of predictions to be 284.6, but got " \
                                                           "{0}".format(predictions[0].max())
 
     # with offset
@@ -34,14 +34,14 @@ def tweedie_offset(ip,port):
                           score_training_samples=0,score_validation_samples=0,offset_column="offset",
                           training_frame=insurance)
     mean_residual_deviance = dl.mean_residual_deviance()
-    assert abs(0.261065520191-mean_residual_deviance) < 1e-6, "Expected mean residual deviance to be 0.261065520191, but got " \
+    assert abs(0.261-mean_residual_deviance) < 1e-2, "Expected mean residual deviance to be 0.261, but got " \
                                                          "{0}".format(mean_residual_deviance)
     predictions = dl.predict(insurance)
-    assert abs(49.2939039783-predictions[0].mean()) < 1e-6, "Expected mean of predictions to be 49.2939039783, but got " \
+    assert abs(49.53-predictions[0].mean()) < 1e-1, "Expected mean of predictions to be 49.53, but got " \
                                                           "{0}".format(predictions[0].mean())
-    assert abs(1.07391126487-predictions[0].min()) < 1e-6, "Expected min of predictions to be 1.07391126487, but got " \
+    assert abs(1.074-predictions[0].min()) < 1e-1, "Expected min of predictions to be 1.074, but got " \
                                                           "{0}".format(predictions[0].min())
-    assert abs(397.328758591-predictions[0].max()) < 1e-6, "Expected max of predictions to be 397.328758591, but got " \
+    assert abs(397.3-predictions[0].max()) < 40, "Expected max of predictions to be 397.3, but got " \
                                                           "{0}".format(predictions[0].max())
 if __name__ == "__main__":
     h2o.run_test(sys.argv, tweedie_offset)
