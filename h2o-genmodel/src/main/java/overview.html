@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <body>
-<ul>
 <br>
 This document describes how to use H2O's generated POJO models.
 
@@ -45,20 +44,20 @@ $ java -jar h2o.jar
 
 <h3>Step 2 (in a web browser): Build model</h3>
 
-<ul>
-<li>* Go to <a href="http://localhost:54321" target="_blank">http://localhost:54321</a></li>
-<li>* Click on view example Flows near the right edge of the screen.  Here is a screenshot of what to look for:</li>
+<ol>
+<li>Go to <a href="http://localhost:54321" target="_blank">http://localhost:54321</a></li>
+<li>Click on view example Flows near the right edge of the screen.  Here is a screenshot of what to look for:</li>
 
     <img border="2" src="doc-files/view_example_flows.png">
 
-<li>* Click on GBM_Airlines_Classification.flow</li>
-<li>* If a confirmation prompt appears asking you to "Load Notebook", click it</li>
-<li>* From the "Flow" menu choose the "Run all cells" option</li>
-<li>* Scroll down and find the "Model" cell in the notebook.  Click on the Download POJO button as shown in the following screenshot:</li>
+<li>Click on GBM_Airlines_Classification.flow</li>
+<li>If a confirmation prompt appears asking you to "Load Notebook", click it</li>
+<li>From the "Flow" menu choose the "Run all cells" option</li>
+<li>Scroll down and find the "Model" cell in the notebook.  Click on the Download POJO button as shown in the following screenshot:</li>
 
     <img border="2" src="doc-files/download_pojo_button.png">
 
-</ul>
+</ol>
 
 <h3>Step 3 (in terminal window 2): Download model pieces</h3>
 <pre>
@@ -69,9 +68,10 @@ $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
 </pre>
 
 <h3>Step 4 (in terminal window 2): Create main program</h3>
-Create a new file called main.java with the following contents:
+Create a new file called <em>main.java</em> with the following contents:
 
 <pre>
+{@code
 import java.io.*;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -107,6 +107,7 @@ public class main {
     System.out.println("");
   }
 }
+}
 </pre>
 
 <h3>Step 5 (in terminal window 2): Compile and Run</h3>
@@ -136,7 +137,7 @@ lines or so in the web browser, cutting off the bottom of large models.
 
 <h3>From R:</h3>
 The following code snippet shows an example of building a model and downloading its
-corresponding POJO from an R script.
+corresponding POJO from an R script:
 <pre>
 {@code
 library(h2o)
@@ -154,7 +155,7 @@ h2o.download_pojo(model)
 
 <h3>From Python:</h3>
 The following code snippet shows an example of building a model and downloading its
-corresponding POJO from a Python script.
+corresponding POJO from a Python script:
 
 <pre>
 {@code
