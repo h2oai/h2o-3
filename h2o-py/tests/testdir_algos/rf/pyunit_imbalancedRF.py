@@ -17,9 +17,9 @@ def imbalanced(ip,port):
     balanced_perf = balanced.model_performance(covtype)
     balanced_perf.show()
 
-    ##compare error for class 6 (difficult minority)
-    class_6_err_imbalanced = imbalanced_perf.confusion_matrix().cell_values[5][7]
-    class_6_err_balanced = balanced_perf.confusion_matrix().cell_values[5][7]
+    #compare overall logloss
+    class_6_err_imbalanced = imbalanced.logloss()
+    class_6_err_balanced = balanced.logloss()
 
     print("--------------------")
     print("")
@@ -31,7 +31,7 @@ def imbalanced(ip,port):
     print("")
     print("--------------------")
 
-    assert class_6_err_imbalanced >= 0.9*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
+    assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, imbalanced)

@@ -10,13 +10,8 @@ test.rf.imbalanced <- function(conn) {
   hh_imbalanced_metrics <- h2o.performance(hh_imbalanced)
   hh_balanced_metrics   <- h2o.performance(hh_balanced  )
 
-  #compare error for class 6 (difficult minority)
-  #confusion_matrix element at position A,P for N classes is at: model$confusion[P*(N+1)-(N-A+1)]
-  #Here, A=6 P=8, N=7 -> need element 8*(7+1)-(7-6+1) = 62
-
-  class_6_err_imbalanced <- h2o.confusionMatrix(hh_imbalanced_metrics)[6,8]
-  class_6_err_balanced   <- h2o.confusionMatrix(hh_balanced_metrics)[6,8]
-
+  class_6_err_imbalanced <- h2o.logloss(hh_imbalanced)
+  class_6_err_balanced <- h2o.logloss(hh_balanced)
 
   print("class_6_err_imbalanced")
   print(class_6_err_imbalanced)
@@ -24,7 +19,7 @@ test.rf.imbalanced <- function(conn) {
   print("class_6_err_balanced")
   print(class_6_err_balanced)
 
-  expect_true(class_6_err_imbalanced >= 0.9*class_6_err_balanced, "balance_classes makes it at least 10% worse!")
+  expect_true(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 
   testEnd()
 }
