@@ -359,8 +359,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
-        if(!mp._shuffle_training_data && mp._balance_classes && !mp._reproducible) {
-          Log.info("Enabling training data shuffling, because balance_classes is enabled.");
+        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == train.numRows() && train.anyVec().nChunks()==1) {
+          Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
           mp._shuffle_training_data = true;
         }
 
