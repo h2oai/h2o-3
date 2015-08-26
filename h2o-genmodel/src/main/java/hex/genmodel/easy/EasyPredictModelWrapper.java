@@ -223,7 +223,7 @@ public class EasyPredictModelWrapper {
           HashMap<String, Integer> columnDomainMap = domainMap.get(index);
           Integer levelIndex = columnDomainMap.get(levelName);
           if (levelIndex == null) {
-            throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")");
+            throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
           }
           double value = levelIndex;
 
