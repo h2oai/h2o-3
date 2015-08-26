@@ -413,7 +413,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for(String s:warns) warn("_validation_frame",s);
       final Submodel nullSm = new Submodel(_parms._lambda[0], _bc._betaStart, 0, itsk._gtNull._val.explainedDev(),itsk._gtNullTest != null?itsk._gtNullTest._val.residualDeviance():Double.NaN);
       _model.setSubmodel(nullSm);
-
+      _model._output.setSubmodelIdx(0);
       _model._output._training_metrics = itsk._gtNull._val.makeModelMetrics(_model,_parms.train());
       if(_valid != null)
         _model._output._validation_metrics = itsk._gtNullTest._val.makeModelMetrics(_model,_parms.valid());
@@ -1405,7 +1405,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     // latest is the best
                     _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train());
                     _model._output._validation_metrics = gt2._val.makeModelMetrics(_model,_parms.valid());
-                    if(_parms._family == Family.binomial)
+                    if(_parms._family == Family.binomial && gt2._nobs > 0)
                       _model._output._threshold = ((ModelMetricsBinomial)_model._output._validation_metrics)._auc.defaultThreshold();
                   }
                   _model.generateSummary(_parms._train, _taskInfo._iter);

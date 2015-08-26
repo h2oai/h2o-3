@@ -11,7 +11,6 @@ def pubdev_1839(ip, port):
                    y           =train     ["bikes"],
                    validation_x=test .drop("bikes"),
                    validation_y=test      ["bikes"],
-                   Lambda=[1e-5],
                    family="poisson")
 
 if __name__ == "__main__":
