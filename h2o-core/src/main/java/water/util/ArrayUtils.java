@@ -60,6 +60,13 @@ public class ArrayUtils {
   }
 
   public static double l2norm2(double [] x){ return l2norm2(x, false); }
+
+  public static double l2norm2(double [][] xs, boolean skipLast){
+    double res = 0;
+    for(double [] x:xs)
+      res += l2norm2(x,skipLast);
+    return res;
+  }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length - (skipLast?1:0);

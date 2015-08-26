@@ -832,7 +832,7 @@ public class GLMTest  extends TestUtil {
 //      }
 //      assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
 //      assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
-//      assertEquals(val1.aic, val2.aic,1e-2);
+//      assertEquals(val1._aic, val2._aic,1e-2);
 //      // compare result against glmnet
 //      assertEquals(5336.918,val1.residualDeviance(),1);
 //      assertEquals(6051.613,val1.nullDeviance(),1);
@@ -1040,7 +1040,7 @@ public class GLMTest  extends TestUtil {
       }
       assertEquals(nullDeviance(model1), nullDeviance(model2), 1e-4);
       assertEquals(residualDeviance(model1), residualDeviance(model2), 1e-4);
-//      assertEquals(val1.aic, val2.aic,1e-2);
+//      assertEquals(val1._aic, val2._aic,1e-2);
       // compare result against glmnet
       assertEquals(5336.918, residualDeviance(model1), 1);
       assertEquals(6051.613, nullDeviance(model2), 1);

@@ -29,7 +29,7 @@ import java.util.Arrays;
 public abstract class GLMTask  {
 
  static class YMUTask extends MRTask<YMUTask> {
-   double _ymu;
+
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long _nobs;
    double _wsum;
@@ -45,9 +45,10 @@ public abstract class GLMTask  {
 
    double [] _xsum; // weighted sum of x
    double [] _xxsum; // weighted sum of x^2
+   double [] _yMu;
+   final int _nClasses;
 
-
-   public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
+   public YMUTask(DataInfo dinfo, Vec mVec, int nclasses, H2OCountedCompleter cmp){
      super(cmp);
      _fVec = mVec;
      _nums = dinfo._nums;
@@ -55,7 +56,7 @@ public abstract class GLMTask  {
      _responseId = dinfo.responseChunkId();
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
      _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
-//     _comupteWeightedSigma = dinfo._weights && dinfo._predictor_transform.isSigmaScaled() ||  dinfo._predictor_transform.isMeanAdjusted();
+     _nClasses = nclasses;
    }
 
    @Override public void setupLocal(){_fVec.preWriting();}
@@ -72,6 +73,7 @@ public abstract class GLMTask  {
 //   }
 
    @Override public void map(Chunk [] chunks) {
+     _yMu = new double[_nClasses];
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
      for(int i = 0; i < chunks.length; ++i)
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
@@ -99,8 +101,10 @@ public abstract class GLMTask  {
        _wsum += w;
        double d = w*response.atd(r);
        assert !Double.isNaN(d);
-       assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
-       _ymu += d;
+       if(_nClasses > 1)
+         _yMu[(int)d] += 1;
+       else
+        _yMu[0] += d;
        if(d < _yMin)
          _yMin = d;
        if(d > _yMax)
@@ -111,7 +115,7 @@ public abstract class GLMTask  {
        DKV.put(_fVec.chunkKey(chunks[0].cidx()), new CBSChunk(skip));
    }
    @Override public void postGlobal() {
-     _ymu /= _wsum;
+     ArrayUtils.mult(_yMu,1.0/_wsum);
      Futures fs = new Futures();
      _fVec.postWrite(fs); // we just overwrote the vec
      fs.blockForPending();
@@ -119,7 +123,7 @@ public abstract class GLMTask  {
    @Override public void reduce(YMUTask ymt) {
      if(_nobs > 0 && ymt._nobs > 0) {
        _wsum += ymt._wsum;
-       _ymu += ymt._ymu;
+       ArrayUtils.add(_yMu,ymt._yMu);
        _nobs += ymt._nobs;
        if(_yMin > ymt._yMin)
          _yMin = ymt._yMin;
@@ -131,7 +135,7 @@ public abstract class GLMTask  {
        }
      } else if (_nobs == 0) {
        _wsum = ymt._wsum;
-       _ymu = ymt._ymu;
+       _yMu = ymt._yMu;
        _nobs = ymt._nobs;
        _yMin = ymt._yMin;
        _yMax = ymt._yMax;
@@ -276,34 +280,61 @@ public abstract class GLMTask  {
   }
 
   static class GLMMultinomialGradientTask extends MRTask<GLMMultinomialGradientTask> {
-    double [][] _beta;
+    final double [][] _beta;
     final DataInfo _dinfo;
     final double _currentLambda;
     final double _reg;
     double [] _gradient;
+    long _nobs;
+    double _wsum;
+    double _likelihood;
+    GLMValidation _val;
+    final boolean _validate;
+    final Vec _rowFilter;
 
-    public GLMMultinomialGradientTask(DataInfo dinfo, double lambda, double reg) {
+    public GLMMultinomialGradientTask(DataInfo dinfo, double lambda, double[][] beta, double reg, Vec rowFilter, boolean validate, H2OCountedCompleter cmp) {
+      super(cmp);
       _dinfo = dinfo;
       _currentLambda = lambda;
       _reg = reg;
+      _validate = validate;
+      _beta = beta;
+      _rowFilter = rowFilter;
     }
+
     public void map(Chunk [] chks) {
+      int rank = 0;
+      Chunk rowFilter = _rowFilter != null?_rowFilter.chunkForChunkIdx(chks[0].cidx()):new C0DChunk(0,chks[0]._len);
+      for(int i = 0; i < _beta.length; ++i)
+        for(int j = 0; j < _beta[i].length; ++j)
+          if(_beta[i][j] != 0)
+            ++rank;
+      _val = new GLMValidation(_dinfo._adaptedFrame.lastVec().domain(), 0, new GLMParameters(Family.multinomial),rank,0,_validate);
       Row row = _dinfo.newDenseRow();
       final int P = _beta[0].length;
       double [] exps = MemoryManager.malloc8d(_beta.length);
       double [] grad = new double[_beta.length*P];
-
       for(int r = 0; r < chks[0]._len; ++r) {
-        _dinfo.extractDenseRow(chks,r,row);
+        if(rowFilter.at8(r) == 1)continue;
+        _dinfo.extractDenseRow(chks, r, row);
         if(row.bad) continue;
+        int y = (int)row.response(0);
+        ++_nobs;
+        _wsum += row.weight;
         double sumExp = 0;
         for(int c = 0; c < _beta.length; ++c) {
           exps[c] = Math.exp(row.innerProduct(_beta[c]));
           sumExp += exps[c];
         }
+        sumExp = Math.max(Double.MIN_NORMAL,sumExp);
+        double l = -row.innerProduct(_beta[y]) - Math.log(sumExp);
+        if(Double.isInfinite(l))
+          System.out.println("haha");
+        _val.add(Double.NaN,row.weight*.5*l,Double.NaN,Double.NaN);
+        _likelihood += l;
         double reg = 1.0/sumExp;
         for(int c = 0; c < _beta.length; ++c) {
-          double val = exps[c]*reg;
+          double val = row.weight*exps[c]*reg;
           for(int i = 0; i < _dinfo._cats; ++i) {
             int id = row.binIds[i];
             grad[c*P+id] -= val;
@@ -313,25 +344,29 @@ public abstract class GLMTask  {
             grad[c*P+i+off] -= row.numVals[i]*val;
           }
         }
-        int c = (int)row.response(0);
         for(int i = 0; i < _dinfo._cats; ++i) {
           int id = row.binIds[i];
-          grad[c*P+id] += 1;
+          grad[y*P+id] += row.weight;
         }
         int off = _dinfo.numStart();
         for(int i = 0; i < _dinfo._nums; ++i) {
-          grad[c*P+i+off] += row.numVals[i];
+          grad[y*P+i+off] += row.weight*row.numVals[i];
         }
       }
       _gradient = grad;
     }
+
     @Override
     public void reduce(GLMMultinomialGradientTask gmgt){
       ArrayUtils.add(_beta,gmgt._beta);
+      _nobs += gmgt._nobs;
+      _wsum += gmgt._wsum;
+      _likelihood += gmgt._likelihood;
+      _val.reduce(gmgt._val);
     }
 
     @Override public void postGlobal(){
-      ArrayUtils.mult(_gradient,_reg);
+      ArrayUtils.mult(_gradient, _reg);
       int P = (int)_beta[0].length;
       for(int c = 0; c < _beta.length; ++c)
         for(int j = 0; j < _beta[c].length - (_dinfo._intercept?1:0); ++j)
@@ -553,7 +588,7 @@ public abstract class GLMTask  {
       String [] domain = _dinfo._adaptedFrame.lastVec().domain();
       if(domain == null && _params._family == Family.binomial)
         domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
-      _val = new GLMValidation(domain,_params._intercept, _ymu, _params,rank,0,_validate);
+      _val = new GLMValidation(domain, _ymu, _params,rank,0,_validate);
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       if(_rowFilter != null) {
         Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
@@ -838,12 +873,13 @@ public abstract class GLMTask  {
         String [] domain = _dinfo._adaptedFrame.lastVec().domain();
         if(domain == null && _params._family == Family.binomial)
           domain = new String[]{"0","1"}; // special hard-coded case for binomial on binary col
-        _val = new GLMValidation(domain, true, _ymu, _params, rank, .5, true); // todo pass correct threshold
+        _val = new GLMValidation(domain, _ymu, _params, rank, .5, true); // todo pass correct threshold
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_params._family == Family.binomial && _validate){
         _ti = new int[2];
       }
+
     }
 
     @Override
@@ -865,9 +901,10 @@ public abstract class GLMTask  {
         eta = r.innerProduct(_beta);
         if(_params._family == Family.multinomial) {
           double sumExp = 0;
-          for(int c = 0; c < _beta.length; ++c)
+          for(int c = 0; c < _beta_multinomial.length; ++c)
             sumExp += Math.exp(r.innerProduct(_beta_multinomial[c]));
           mu = Math.exp(eta) / sumExp;
+          sumExp = Math.max(Double.MIN_NORMAL,sumExp);
           _likelihood += r.innerProduct(_beta_multinomial[(int)y]) - Math.log(sumExp);
         } else {
           mu = _params.linkInv(eta + r.offset);
@@ -880,7 +917,6 @@ public abstract class GLMTask  {
       }
       if(_validate)
         _val.add(y, mu, r.weight, r.offset);
-
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       wsum+=w;
       wsumu+=r.weight; // just add the user observation weight for the scaling.
@@ -919,7 +955,7 @@ public abstract class GLMTask  {
         int ns = _dinfo.numStart();
         int interceptIdx = _xy.length-1;
         double [] interceptRow = _gram._xx[interceptIdx-_gram._diagN];
-        double nobs = interceptRow[interceptRow.length-1]; // weighted nobs
+        double nobs = interceptRow[interceptRow.length-1]; // weighted _nobs
         for(int i = ns; i < _dinfo.fullN(); ++i) {
           double iMean = _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
           for (int j = 0; j < ns; ++j)
@@ -1370,7 +1406,7 @@ public abstract class GLMTask  {
 //      for (int i = 0; i < _xvals.length; ++i) {
 //        _xvals[i].computeAIC();
 //        _xvals[i].computeAUC();
-//        _xvals[i].nobs = _nobs - _xvals[i].nobs;
+//        _xvals[i]._nobs = _nobs - _xvals[i]._nobs;
 //        GLMModel.setXvalidation(cmp, _xmodels[i]._key, _lambda, _xvals[i]);
 //      }
 //      GLMModel.setXvalidation(cmp, _model._key, _lambda, new GLMXValidation(_model, _xmodels, _xvals, _lambda, _nobs,_thresholds));
