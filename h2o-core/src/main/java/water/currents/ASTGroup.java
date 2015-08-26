@@ -4,7 +4,6 @@ import java.util.Arrays;
 import water.*;
 import water.util.*;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
 
 /** GroupBy
  *  Group the rows of 'data' by unique combinations of '[group-by-cols]',
