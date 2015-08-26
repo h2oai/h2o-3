@@ -100,12 +100,27 @@
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.getModelParameters(algo = algo)
 
-  # R treats integer as not numeric
+  # R treats integer as not numeric: FIXME move into checkAndUnifyModelParameters
   params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
   #---------- Check user parameter types ----------#
   param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
-  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  .h2o.validateModelParameters(conn, algo, param_values, h2oRestApiVersion)
+  #---------- Build! ----------#
+  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
+
+  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
+}
+
+#
+# Validate given parameters against algorithm parameters validation
+# REST end-point. Stop execution in case of validation error.
+#
+.h2o.validateModelParameters <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
@@ -120,14 +135,6 @@
     })
     if(any(nzchar(warn))) warning(warn)
   }
-
-  #---------- Build! ----------#
-  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-
-  job_key  <- res$job$key$name
-  dest_key <- res$job$dest$name
-
-  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
