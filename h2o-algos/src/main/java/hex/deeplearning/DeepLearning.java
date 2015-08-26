@@ -244,15 +244,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           assert (actualNewP != oldP);
           DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
 
-          actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
-
-          if (actualNewP._nfolds != 0) {
-            Log.info("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
-
-            H2O.unimpl("writing to n_folds field needs to be uncommented");
-            // actualNewP._n_folds = 0;
-          }
           cp.update(self());
         } finally {
           if (cp != null) cp.unlock(self());

@@ -356,6 +356,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
     validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
     _bestError = cp._bestError;
+    epoch_counter = cp.epoch_counter;
 
     // deep clone scoring history
     errors = cp.errors.clone();
