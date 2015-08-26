@@ -160,7 +160,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
         Matrix ygram = new Matrix(gtsk._gram.getXX());
         CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
-        System.out.println(ArrayUtils.pprint(chol.getL().getArray()));
 
         // Make input frame [A,Q,Y] where A = read-only training data, Y = AQ, Q from Y = QR factorization
         ayqfrm = new Frame(dinfo._adaptedFrame);
@@ -231,7 +230,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             ayqfrm.vec(i).remove();
         }
       }
-      System.out.println(qfrm.toString());
       return qfrm;
     }
 
