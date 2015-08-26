@@ -172,13 +172,13 @@ class ASTGroup extends ASTPrim {
   // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
   // groups and all aggregates
   static class GBTask extends MRTask<GBTask> {
-    private final NonBlockingHashMap<G,String> _gss; // Shared per-node, common, racy
+    private final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
-    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new NonBlockingHashMap<>(); }
+    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); }
     @Override public void map(Chunk[] cs) {
       // Groups found in this Chunk
-      NonBlockingHashMap<G,String> gs = new NonBlockingHashMap<>();
+      IcedHashMap<G,String> gs = new IcedHashMap<>();
       G gWork = new G(_gbCols.length,_aggs.length); // Working Group
       G gOld;                   // Existing Group to be filled in
       for( int row=0; row<cs[0]._len; row++ ) {
@@ -198,7 +198,7 @@ class ASTGroup extends ASTPrim {
     // Reduce, but no need for atomic on this path
     @Override public void reduce(GBTask t) { if( _gss != t._gss ) reduce(_gss,t._gss); }
     // If coming from the map() call, must atomically merge groups
-    private void reduce( NonBlockingHashMap<G,String> l, NonBlockingHashMap<G,String> r ) {
+    private void reduce( IcedHashMap<G,String> l, IcedHashMap<G,String> r ) {
       for( G rg : r.keySet() )
         if( l.putIfAbsent(rg,"")!=null ) {
           G lg = l.getk(rg);
@@ -212,7 +212,7 @@ class ASTGroup extends ASTPrim {
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
 
-  static class G extends Iced {
+  private static class G extends Iced {
     final double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 

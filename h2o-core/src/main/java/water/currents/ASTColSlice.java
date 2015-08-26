@@ -71,7 +71,7 @@ class ASTRowSlice extends ASTPrim {
       final long[] ls = nums.expand8Sort();
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-          if( ls.length > 0 ) return;
+          if( ls.length == 0 ) return;
           long start = cs[0].start();
           long end   = start + cs[0]._len;
           long min = ls[0], max = ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
@@ -84,15 +84,14 @@ class ASTRowSlice extends ASTPrim {
           if( !(max<start || min>end) ) {   // not situation 1 or 2 above
             long startOffset = (min > start ? (long)min : start);  // situation 4 and 5 => min > start;
             for( int i=(int)(startOffset-start); i<cs[0]._len; ++i) {
-              throw H2O.unimpl(); // must sort 'nums'; have sorted list in ls[], need binary search
-              //if( nums.has(start+i) ) {
-              //  for(int c=0;c<cs.length;++c) {
-              //    if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
-              //    else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);
-              //    else if( cs[c].isNA(i)              ) ncs[c].addNA();
-              //    else                                  ncs[c].addNum(cs[c].atd(i));
-              //  }
-              //}
+              if( Arrays.binarySearch(ls,start+i) >= 0 ) {
+                for(int c=0;c<cs.length;++c) {
+                  if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
+                  else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);
+                  else if( cs[c].isNA(i)              ) ncs[c].addNA();
+                  else                                  ncs[c].addNum(cs[c].atd(i));
+                }
+              }
             }
           }
         }
