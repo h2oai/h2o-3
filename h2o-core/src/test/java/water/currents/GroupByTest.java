@@ -15,20 +15,16 @@ public class GroupByTest extends TestUtil {
     Frame fr = null;
     String tree = "(GB hex [1] [] mean 2 \"all\")"; // Group-By on col 1 (not 0), no order-by, mean of col 2
     try {
-      fr = checkTree(tree,"smalldata/iris/iris_wheader.csv");
-      Assert.assertEquals( 2,fr.numCols());
-      Assert.assertEquals(23,fr.numRows());
-
-      Assert.assertEquals(2.0, fr.vec(0).at( 0), Math.ulp(1)); // Group 2.0, mean is 3.5
-      Assert.assertEquals(3.5, fr.vec(1).at( 0), Math.ulp(1));
-      Assert.assertEquals(2.2, fr.vec(0).at( 1), Math.ulp(1)); // Group 2.2, mean is 4.5
-      Assert.assertEquals(4.5, fr.vec(1).at( 1), Math.ulp(1));
-
-      Assert.assertEquals(2.8, fr.vec(0).at( 7), Math.ulp(1)); // Group 2.8, mean is 5.043, largest group
-      Assert.assertEquals(5.042857142857143, fr.vec(1).at(7), Math.ulp(1));
-
-      Assert.assertEquals(4.4, fr.vec(0).at(22), Math.ulp(1)); // Group 4.4, mean is 1.5, last group
-      Assert.assertEquals(1.5, fr.vec(1).at(22), Math.ulp(1));
+      fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
+      chkDim(fr,2,23);
+      chkFr(fr,0,0,2.0);        // Group 2.0, mean is 3.5
+      chkFr(fr,1,0,3.5);
+      chkFr(fr,0,1,2.2);        // Group 2.2, mean is 4.5
+      chkFr(fr,1,1,4.5);
+      chkFr(fr,0,7,2.8);        // Group 2.8, mean is 5.043, largest group
+      chkFr(fr,1,7,5.042857142857143);
+      chkFr(fr,0,22,4.4);       // Group 4.4, mean is 1.5, last group
+      chkFr(fr,1,22,1.5);
 
     } finally {
       if( fr != null ) fr.delete();
@@ -41,20 +37,17 @@ public class GroupByTest extends TestUtil {
     Frame fr = null;
     String tree = "(GB hex [4] [] nrow 0 \"all\" mean 2 \"all\")"; // Group-By on col 4, no order-by, nrow and mean of col 2
     try {
-      fr = checkTree(tree,"smalldata/iris/iris_wheader.csv");
-      Assert.assertEquals( 3,fr.numCols());
-      Assert.assertEquals( 3,fr.numRows());
-      String[] flowers = fr.vec(0).domain();
-
-      Assert.assertEquals("Iris-setosa", flowers[(int)fr.vec(0).at8(0)]); // Group setosa, mean is 1.464
-      Assert.assertEquals( 50  , fr.vec(1).at8(0));
-      Assert.assertEquals(1.464, fr.vec(2).at (0), Math.ulp(1));
-      Assert.assertEquals("Iris-versicolor", flowers[(int)fr.vec(0).at8(1)]); // Group versicolor, mean is 4.26
-      Assert.assertEquals( 50  , fr.vec(1).at8(1));
-      Assert.assertEquals(4.26 , fr.vec(2).at (1), Math.ulp(1));
-      Assert.assertEquals("Iris-virginica", flowers[(int)fr.vec(0).at8(2)]); // Group virginica, mean is 5.552
-      Assert.assertEquals( 50  , fr.vec(1).at8(2));
-      Assert.assertEquals(5.552, fr.vec(2).at (2), Math.ulp(1));
+      fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
+      chkDim(fr,3,3);
+      chkFr(fr,0,0,"Iris-setosa");
+      chkFr(fr,1,0,50);
+      chkFr(fr,2,0,1.464);
+      chkFr(fr,0,1,"Iris-versicolor");
+      chkFr(fr,1,1,50);
+      chkFr(fr,2,1,4.26 );
+      chkFr(fr,0,2,"Iris-virginica");
+      chkFr(fr,1,2,50);
+      chkFr(fr,2,2,5.552);
 
     } finally {
       if( fr != null ) fr.delete();
@@ -66,33 +59,34 @@ public class GroupByTest extends TestUtil {
     Frame fr = null;
     try {
       String tree = "(GB hex [7] [] nrow 0 \"all\" mean 1 \"all\")"; // Group-By on year, no order-by, mean of economy
-      fr = checkTree(tree,"smalldata/junit/cars.csv");
-      Assert.assertEquals( 3,fr.numCols());
-      Assert.assertEquals(13,fr.numRows());
+      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      chkDim(fr,3,13);
 
-      Assert.assertEquals( 70  ,fr.vec(0). at8(0)); // 1970, 35 cars, NA in economy
-      Assert.assertEquals( 35  ,fr.vec(1). at8(0));
-      Assert.assertTrue(        fr.vec(2).isNA(0));
+      chkFr(fr,0,0,70);         // 1970, 35 cars, NA in economy
+      chkFr(fr,1,0,35);
+      chkFr(fr,2,0,Double.NaN);
 
-      Assert.assertEquals( 72  ,fr.vec(0). at8(2)); // 1972, 28 cars, 18.714 in economy
-      Assert.assertEquals( 28  ,fr.vec(1). at8(2));
-      Assert.assertEquals(18.71,fr.vec(2). at (2), 1e-1);
+      chkFr(fr,0,2,72);         // 1972, 28 cars, 18.714 in economy
+      chkFr(fr,1,2,28);
+      chkFr(fr,2,2,18.714,1e-1);
       fr.delete();
 
       tree = "(GB hex [7] [] nrow 1 \"all\" nrow 1 \"rm\" nrow 1 \"ignore\")"; // Group-By on year, no order-by, nrow of economy
-      fr = checkTree(tree,"smalldata/junit/cars.csv");
-      Assert.assertEquals( 70  ,fr.vec(0). at8(0)); // 1970, 35 cars, 29 have economy
-      Assert.assertEquals( 35  ,fr.vec(1). at8(0)); // ALL
-      Assert.assertEquals( 29  ,fr.vec(2). at8(0)); // RM
-      Assert.assertEquals( 29  ,fr.vec(3). at8(0)); // IGNORE
+      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      chkDim(fr,4,13);
+      chkFr(fr,0,0,70);         // 1970, 35 cars, 29 have economy
+      chkFr(fr,1,0,35);         // ALL
+      chkFr(fr,2,0,29);         // RM
+      chkFr(fr,3,0,29);         // IGNORE
       fr.delete();
 
       tree = "(GB hex [7] [] mean 1 \"all\" mean 1 \"rm\" mean 1 \"ignore\")"; // Group-By on year, no order-by, mean of economy
-      fr = checkTree(tree,"smalldata/junit/cars.csv");
-      Assert.assertEquals( 70  ,fr.vec(0). at8(0)); // 1970, 35 cars, 29 have economy
-      Assert.assertTrue  (      fr.vec(1).isNA(0)); // ALL
-      Assert.assertEquals(17.69,fr.vec(2). at (0), 1e-1); // RM
-      Assert.assertEquals(14.66,fr.vec(3). at (0), 1e-1); // IGNORE
+      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      chkDim(fr,4,13);
+      chkFr(fr,0,0,70);          // 1970, 35 cars, 29 have economy
+      chkFr(fr,1,0,Double.NaN);  // ALL
+      chkFr(fr,2,0,17.69, 1e-1); // RM
+      chkFr(fr,3,0,14.66, 1e-1); // IGNORE
 
     } finally {
       if( fr != null ) fr.delete();
@@ -100,8 +94,56 @@ public class GroupByTest extends TestUtil {
     }
   }
 
-  private Frame checkTree(String tree, String fname) { return checkTree(tree,fname,false); }
-  private Frame checkTree(String tree, String fname, boolean expectThrow) {
+  @Test public void testAllAggs() {
+    Frame fr = null;
+    try {
+      String tree = "(GB hex [4] []  nrow 0 \"rm\"  mean 1 \"rm\"  sum 1 \"rm\"  min 1 \"rm\"  max 1 \"rm\" )";
+      fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
+      chkDim(fr,6,3);
+
+      chkFr(fr,0,0,"Iris-setosa");
+      chkFr(fr,1,0,50);         // nrow
+      chkFr(fr,2,0,3.418);      // mean
+      chkFr(fr,3,0,170.9);      // sum
+      chkFr(fr,4,0,  2.3);      // min
+      chkFr(fr,5,0,  4.4);      // max
+
+      chkFr(fr,0,1,"Iris-versicolor");
+      chkFr(fr,1,1,50);         // nrow
+      chkFr(fr,2,1,2.770);      // mean
+      chkFr(fr,3,1,138.5);      // sum
+      chkFr(fr,4,1,  2.0);      // min
+      chkFr(fr,5,1,  3.4);      // max
+
+      chkFr(fr,0,2,"Iris-virginica");
+      chkFr(fr,1,2,50);         // nrow
+      chkFr(fr,2,2,2.974);      // mean
+      chkFr(fr,3,2,148.7);      // sum
+      chkFr(fr,4,2,  2.2);      // min
+      chkFr(fr,5,2,  3.8);      // max
+
+    } finally {
+      if( fr != null ) fr.delete();
+      Keyed.remove(Key.make("hex"));
+    }
+  }
+
+  private void chkDim( Frame fr, int col, int row ) {
+    Assert.assertEquals(col,fr.numCols());
+    Assert.assertEquals(row,fr.numRows());
+  }
+  private void chkFr( Frame fr, int col, int row, double exp ) { chkFr(fr,col,row,exp,Math.ulp(1)); }
+  private void chkFr( Frame fr, int col, int row, double exp, double tol ) { 
+    if( Double.isNaN(exp) ) Assert.assertTrue(fr.vec(col).isNA(row));
+    else                    Assert.assertEquals(exp, fr.vec(col).at(row),tol); 
+  }
+  private void chkFr( Frame fr, int col, int row, String exp ) { 
+    String[] dom = fr.vec(col).domain();
+    Assert.assertEquals(exp, dom[(int)fr.vec(col).at8(row)]);
+  }
+
+  private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
+  private Frame chkTree(String tree, String fname, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("hex"),fname);
     try {
       Val val = Exec.exec(tree);
