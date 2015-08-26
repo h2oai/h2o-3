@@ -39,9 +39,9 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        ard(ard(0, 50, 0),
-            ard(0, 8, 42),
-            ard(0, 1, 49)),
+        ard(ard(27, 16, 7),
+            ard(0, 4, 46),
+            ard(0, 3, 47)),
         s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
         DeepLearningParameters.Activation.Rectifier);
 
@@ -59,8 +59,8 @@ public class DeepLearningTest extends TestUtil {
             },
             5,
             ard(ard(50, 0, 0),
-                    ard(0, 24, 26),
-                    ard(0, 2, 48)),
+                    ard(0, 39, 11),
+                    ard(0, 8, 42)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -77,11 +77,11 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(0, 3, 0, 1, 0),
-                    ard(0, 191, 3, 13, 0),
+            ard(ard(0, 4, 0, 0, 0),
+                    ard(0, 193, 5, 9, 0),
                     ard(0, 2, 1, 0, 0),
-                    ard(0, 57, 0, 27, 0),
-                    ard(0, 4, 0, 23, 81)),
+                    ard(0, 65, 3, 16, 0),
+                    ard(0, 11, 0, 7, 90)),
             s("3", "4", "5", "6", "8"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -98,10 +98,10 @@ public class DeepLearningTest extends TestUtil {
             },
             5,
             ard(ard(0, 4, 0, 0, 0),
-                    ard(0, 205, 0, 2, 0),
+                    ard(0, 206, 0, 1, 0),
                     ard(0, 2, 0, 1, 0),
                     ard(0, 14, 0, 69, 1),
-                    ard(0, 0, 0, 5, 103)),
+                    ard(0, 0, 0, 6, 102)),
             s("3", "4", "5", "6", "8"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -175,8 +175,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(50, 177),
-                ard(13, 140)),
+            ard(ard(97, 130),
+                ard(28, 125)),
             s("0", "1"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -192,7 +192,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(6, 221),
+            ard(ard(4, 223),
               ard(0, 153)),
             s("0", "1"),
             DeepLearningParameters.Activation.RectifierWithDropout);
@@ -210,8 +210,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(147, 80),
-                    ard(32, 121)),
+            ard(ard(141, 86),
+                ard(25, 128)),
             s("0", "1"),
             DeepLearningParameters.Activation.Tanh);
   }
@@ -227,8 +227,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(58, 169),
-                    ard(12, 141)),
+            ard(ard(110, 117),
+                    ard(23, 130)),
             s("0", "1"),
             DeepLearningParameters.Activation.TanhWithDropout);
   }
@@ -280,7 +280,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            50.64888427459188,
+            46.2696942006363,
             DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -296,7 +296,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            43.23221633974401,
+            43.458837416075966,
             DeepLearningParameters.Activation.Tanh);
 
   }
@@ -329,7 +329,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         5,
-        43.18892905201482,
+        41.85026474777778,
         DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -345,7 +345,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             50,
-            39.28828141866821,
+            37.894819598316246,
             DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -374,7 +374,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            0.012637071389641636,
+            1.6201002863836856E-4,
             DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -691,10 +691,10 @@ public class DeepLearningTest extends TestUtil {
 
       dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
+      assertEquals(0.7592592592592592, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3189562728439277, mse, 1e-8);
+      assertEquals(0.31481334186707816, mse, 1e-8);
 
       Assert.assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
@@ -734,7 +734,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.318703980026072, mse, 1e-8); //Note: better results than non-shuffled
+      assertEquals(0.31599425403539766, mse, 1e-8); //Note: better results than non-shuffled
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5)); //PUBDEV-1900
       job.remove();
@@ -773,7 +773,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.37190384882022604, mse, 1e-8);
+      assertEquals(0.3164307133994674, mse, 1e-8);
 
       Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
       job.remove();
@@ -813,7 +813,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7777777777777778, mm.auc()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.2664527326336792, mse, 1e-8);
+      assertEquals(0.32223485418125575, mse, 1e-8);
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5)); //PUBDEV-1900
       job.remove();
@@ -1005,7 +1005,7 @@ public class DeepLearningTest extends TestUtil {
       dl = job.trainModel().get();
 
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
-      Assert.assertEquals(0.0722053993476808, mm._MSE, 1e-8);
+      Assert.assertEquals(0.0712931422088762, mm._MSE, 1e-2);
 
       Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
 

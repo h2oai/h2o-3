@@ -3,6 +3,10 @@ package hex.deeplearning;
 import org.junit.Ignore;
 import hex.deeplearning.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningParameters.Loss;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.RandomUtils;
+
 import java.text.DecimalFormat;
 import java.util.Random;
 
@@ -221,8 +225,8 @@ public class DeepLearningMLPReference {
     _nn.InitializeWeights();
   }
 
-  void train(int maxEpochs, double learnRate, double momentum, Loss loss) {
-    _nn.Train(_trainData, maxEpochs, learnRate, momentum, loss);
+  void train(int maxEpochs, double learnRate, double momentum, Loss loss, long seed) {
+    _nn.Train(_trainData, maxEpochs, learnRate, momentum, loss, seed);
   }
 
   void MakeTrainTest(double[][] allData, double[][] trainData, double[][] testData, Random rand) {
@@ -667,19 +671,22 @@ public class DeepLearningMLPReference {
 
     // ----------------------------------------------------------------------------------------
 
-    public void Train(double[][] trainData, int maxEprochs, double learnRate, double momentum, Loss loss) {
+    public void Train(double[][] trainData, int maxEprochs, double learnRate, double momentum, Loss loss, long seed) {
       // train a back-prop style NN classifier using learning rate and momentum
       // no weight decay
       int epoch = 0;
       double[] xValues = new double[numInput]; // inputs
       double[] tValues = new double[numOutput]; // target values
 
-      int[] sequence = new int[trainData.length];
-      for( int i = 0; i < sequence.length; ++i )
-        sequence[i] = i;
 
       while( epoch < maxEprochs ) {
-        // shuffle(sequence); // visit each training data in random order
+        // same logic as in FrameTask
+        final long chunkSeed = (0x8734093502429734L + (seed + epoch*trainData.length) ) * ((epoch+1) + 0x9823423497823423L);
+        final Random skip_rng = RandomUtils.getRNG(chunkSeed);
+        int[] sequence = new int[trainData.length];
+        for( int i = 0; i < sequence.length; ++i ) sequence[i] = i;
+        ArrayUtils.shuffleArray(sequence, skip_rng);
+
         for( int i = 0; i < trainData.length; ++i ) {
           int idx = sequence[i];
           System.arraycopy(trainData[idx], 0, xValues, 0, numInput); // extract x's and y's.

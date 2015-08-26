@@ -133,7 +133,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final boolean sample = (fraction < 0.999 || obs_weights || _shuffle);
     final long chunkSeed = (0x8734093502429734L + _seed + offset) * (_iteration + 0x9823423497823423L);
     final Random skip_rng = sample ? RandomUtils.getRNG(chunkSeed) : null;
-    int[] shufIdx = new int[nrows];
+    int[] shufIdx = skip_rng == null ? null : new int[nrows];
     if (skip_rng != null) {
       for (int i = 0; i < nrows; ++i) shufIdx[i] = i;
       ArrayUtils.shuffleArray(shufIdx, skip_rng);
@@ -158,7 +158,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         } else if (r == -1){
           r = shufIdx[row_idx];
           // if we have weights, and we did the %2 skipping above, then we need to find an alternate row with non-zero weight
-          while (obs_weights && ((r == 0 && weight_map[0] == 0) || (r > 0 && weight_map[r] == weight_map[r-1]))) {
+          while (obs_weights && ((r == 0 && weight_map[r] == 0) || (r > 0 && weight_map[r] == weight_map[r-1]))) {
             r = skip_rng.nextInt(nrows); //random sampling with replacement
           }
         } else {
