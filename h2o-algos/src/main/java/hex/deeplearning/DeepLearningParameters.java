@@ -581,7 +581,7 @@ public class DeepLearningParameters extends Model.Parameters {
       dl.error("_offset_column", "Offset is only supported for regression.");
 
     if (_activation == Activation.Maxout || _activation == Activation.MaxoutWithDropout)
-      dl.error("_activation", "Maxout activation is not currently supported (implementation is in progress: PUBDEV-1928).");
+      dl.warn("_activation", "Maxout implementation is still in progress: PUBDEV-1928");
 
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
