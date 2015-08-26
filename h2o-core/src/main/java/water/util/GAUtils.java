@@ -17,7 +17,7 @@ public class GAUtils {
       // skip useless URIs
       if (uri.contains("/NodePersistentStorage") || uri.contains("/Metadata")) return;
 
-      // clean URIs that include names eg. /3/DKV/foo
+      // clean URIs that include names eg. /3/DKV/random_key_name -> /3/DKV/
       if (uri.contains("/Frames/") ||
               uri.contains("/DKV/") ||
               uri.contains("/Models/") ||

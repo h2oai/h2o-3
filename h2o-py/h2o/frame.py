@@ -586,6 +586,16 @@ class H2OFrame:
     cols = sorted(cols)
     return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
 
+  def kfold_column(self, n_folds=3, seed=-1):
+    """
+    Build a fold assignments column for cross-validation. This call will produce a column
+    having the same data layout as the calling object.
+
+    :param n_folds: Number of folds.
+    :return: A column of fold IDs.
+    """
+    return H2OFrame(expr=ExprNode("kfold_column",self,n_folds,seed))._frame()
+
   def structure(self):
     """
     Similar to R's str method: Compactly Display the Structure of this H2OFrame instance.

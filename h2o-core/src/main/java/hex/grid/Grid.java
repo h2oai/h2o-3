@@ -14,6 +14,7 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedLong;
 import water.util.PojoUtils;
+import water.util.PojoUtils.FieldNaming;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.  Lazily filled in,
@@ -30,7 +31,7 @@ public class Grid<MP extends Model.Parameters>
    *
    * @see hex.schemas.GridSchemaV99
    */
-  public static final Grid GRID_PROTO = new Grid(null, null, null, null);
+  public static final Grid GRID_PROTO = new Grid(null, null, null, null, null);
 
   /**
    * A cache of double[] hyper-parameters mapping to Models.
@@ -72,6 +73,11 @@ public class Grid<MP extends Model.Parameters>
   private final String[] _hyper_names;
 
   /**
+   *
+   */
+  private final FieldNaming _field_naming_strategy;
+
+  /**
    * Construct a new grid object to store results of grid search.
    *
    * @param key        reference to this object
@@ -79,7 +85,7 @@ public class Grid<MP extends Model.Parameters>
    * @param hyperNames names of used hyper parameters
    * @param modelName  name of model included in this object (e.g., "GBM")
    */
-  protected Grid(Key key, MP params, String[] hyperNames, String modelName) {
+  protected Grid(Key key, MP params, String[] hyperNames, String modelName, FieldNaming fieldNaming) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
@@ -88,6 +94,7 @@ public class Grid<MP extends Model.Parameters>
     _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
     _failure_details = new String[]{};
     _failed_raw_params = new String[][]{};
+    _field_naming_strategy = fieldNaming;
   }
 
   /**
@@ -290,7 +297,7 @@ public class Grid<MP extends Model.Parameters>
   public Object[] getHyperValues(MP parms) {
     Object[] result = new Object[_hyper_names.length];
     for (int i = 0; i < _hyper_names.length; i++) {
-      result[i] = PojoUtils.getFieldValue(parms, _hyper_names[i]);
+      result[i] = PojoUtils.getFieldValue(parms, _hyper_names[i], _field_naming_strategy);
     }
     return result;
   }

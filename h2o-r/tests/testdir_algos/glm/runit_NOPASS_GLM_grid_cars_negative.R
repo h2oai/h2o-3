@@ -20,12 +20,12 @@ check.glm.grid.cars.negative <- function(conn) {
   ## Invalid glm parameters
   grid_space <- list()
   grid_space$lambda <- list(0.0001,0.001,'a')
-  grid_space$alpha <- list(0,0.5,1,'b')
+  grid_space$alpha <- list(list(0),list(0.5),list(1),list('b'))
   Log.info(lapply(names(grid_space), function(n) paste0("The provided ",n," search space: ", grid_space[n])))
 
   expected_grid_space <- list()
   expected_grid_space$lambda <- list(0.0001,0.00)
-  expected_grid_space$alpha <- list(0,0.5,1)
+  expected_grid_space$alpha <- list(list(0),list(0.5),list(1))
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   predictors <- c("displacement","power","weight","acceleration","year")

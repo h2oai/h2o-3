@@ -22,9 +22,32 @@ import water.exceptions.H2ONotFoundArgumentException;
  */
 public class PojoUtils {
   public enum FieldNaming {
-    CONSISTENT,
-    DEST_HAS_UNDERSCORES,
-    ORIGIN_HAS_UNDERSCORES
+    CONSISTENT {
+      @Override String toDest(String origin) { return origin; }
+      @Override String toOrigin(String dest) { return dest; }
+    },
+    DEST_HAS_UNDERSCORES {
+      @Override String toDest(String origin) { return "_" + origin; }
+      @Override String toOrigin(String dest) { return dest.substring(1); }
+    },
+    ORIGIN_HAS_UNDERSCORES {
+      @Override String toDest(String origin) { return origin.substring(1); }
+      @Override String toOrigin(String dest) { return "_" + dest; }
+    };
+
+    /**
+     * Return destination name based on origin name.
+     * @param origin name of origin argument
+     * @return  return a name of destination argument.
+     */
+    abstract String toDest(String origin);
+
+    /**
+     * Return name of origin parameter derived from name of origin parameter.
+     * @param dest  name of destination argument.
+     * @return  return a name of origin argument.
+     */
+    abstract String toOrigin(String dest);
   }
 
 
@@ -84,14 +107,7 @@ public class PojoUtils {
     for (Field orig_field : orig_fields) {
       String origin_name = orig_field.getName();
 
-      String dest_name = null;
-      if (field_naming == FieldNaming.CONSISTENT) {
-        dest_name = origin_name;
-      } else if (field_naming == FieldNaming.DEST_HAS_UNDERSCORES) {
-        dest_name = "_" + origin_name;
-      } else if (field_naming == FieldNaming.ORIGIN_HAS_UNDERSCORES) {
-        dest_name = origin_name.substring(1);
-      }
+      String dest_name = field_naming.toDest(origin_name);
 
       if (skip_fields != null && (ArrayUtils.contains(skip_fields, origin_name) || ArrayUtils.contains(skip_fields, dest_name)))
         continue;
@@ -427,16 +443,16 @@ public class PojoUtils {
    * @throws java.lang.IllegalArgumentException  when o is <code>null</code>, or field is not found,
    * or field cannot be read.
    */
-  public static Object getFieldValue(Object o, String name) {
+  public static Object getFieldValue(Object o, String name, FieldNaming fieldNaming) {
     if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
-    Field f = null;
+    String destName = fieldNaming.toDest(name);
     try {
-      f = o.getClass().getField(name);
+      Field f = o.getClass().getField(destName);
       return f.get(o);
     } catch (NoSuchFieldException e) {
-      throw new IllegalArgumentException("Field not found: '" + name + "' on object " + o);
+      throw new IllegalArgumentException("Field not found: '" + name + "/" + destName + "' on object " + o);
     } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "' on object " + o);
+      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "/" + destName + "' on object " + o);
     }
   }
 }

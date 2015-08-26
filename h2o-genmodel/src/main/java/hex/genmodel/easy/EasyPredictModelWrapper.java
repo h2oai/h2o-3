@@ -12,6 +12,9 @@ import java.util.HashMap;
  *
  * Note that for any given model, you must use the exact one correct predict method below based on the
  * model category.
+ *
+ * <p></p>
+ * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
  */
 public class EasyPredictModelWrapper {
   // All private members are read-only after the constructor.
@@ -223,7 +226,7 @@ public class EasyPredictModelWrapper {
           HashMap<String, Integer> columnDomainMap = domainMap.get(index);
           Integer levelIndex = columnDomainMap.get(levelName);
           if (levelIndex == null) {
-            throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")");
+            throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
           }
           double value = levelIndex;
 
