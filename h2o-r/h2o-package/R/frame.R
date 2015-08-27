@@ -530,6 +530,7 @@ NULL
       }
     } else idx <- col
     if( is.null(value) ) return(`[.Frame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
+    if( idx==ncol(data)+1 && is.na(name) ) name <- paste0("C",idx)
     cols <- .row.col.selector(idx)
   }
 
@@ -1465,6 +1466,93 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=.prim.list(na.
 
   # Create the group by AST
   .newExprList("GB",args)
+}
+
+#'
+#' Basic Imputation of H2O Vectors
+#'
+#'  Perform simple imputation on a single vector by filling missing values with aggregates
+#'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
+#'  based on groupings of columns from within data; these columns can be passed by index or
+#'  name to the by parameter. If a factor column is supplied, then the method must be one
+#'  "mode". Anything else results in a full stop.
+#'
+#'  The default method is selected based on the type of the column to impute. If the column
+#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Otherwise
+#'  column types (e.g. String, Time, UUID) are not supported.
+#'
+#'  @param data The dataset containing the column to impute.
+#'  @param column The column to impute.
+#'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
+#'                "mode" replaces with the most common factor (for factor columns only);
+#'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
+#'  @param by group by columns
+#'  @param inplace Perform the imputation inplace or make a copy. Default is to perform the imputation in place.
+#'
+#'  @return a Frame with imputed values
+#'  @examples
+#' \donttest{
+#'  h2o.init()
+#'  fr <- as.h2o(iris, destination_frame="iris")
+#'  fr[sample(nrow(fr),40),5] <- NA  # randomly replace 50 values with NA
+#'  # impute with a group by
+#'  h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
+#' }
+#'  @export
+h2o.impute <- function(data, column, method=.prim.c("mean","median","mode"), # TODO: add "bfill","ffill"
+                       combine_method=.prim.c("interpolate", "average", "lo", "hi"), by=NULL, inplace=TRUE) {
+  # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
+  # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
+  # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
+
+  # this AST: (h2o.impute %fr #colidx method combine_method inplace max_gap by)
+  chk.Frame(data)
+
+  # sanity check `column` then convert to 0-based index.
+  if( length(column) > 1L ) stop("`column` must be a single column.")
+  col.id <- -1L
+  if( is.numeric(column) ) col.id <- column - 1L
+  else                     col.id <- match(column,colnames(data)) - 1L
+  if( col.id < 0L || col.id > (ncol(data)-1L) ) stop("Column ", col.id, " out of range.")
+
+  # choose "mean" by default for numeric columns. "mode" for factor columns
+  if( length(method) > 1) {
+    if( is.factor(data[column]) ) method <- "mode"
+    method <- "mean"
+  }
+
+  # choose "interplate" by default for combine_method
+  if( length(combine_method) > 1L ) combine_method <- "interpolate"
+  if( combine_method=="lo" ) combine_method <- "low"
+  if( combine_method=="hi" ) combine_method <- "high"
+
+  # sanity check method, column type, by parameters
+  if( method=="median" ) {
+    # no by and median
+    if( !is.null(by) ) stop("Unimplemented: No `by` and `median`. Please select a different method.")
+  }
+
+  # check that method isn't median or mean for factor columns.
+  if( is.factor(data[column]) && !(method %in% .prim.c("ffill", "bfill", "mode")) )
+    stop("Column is categorical, method must not be mean or median.")
+
+  # handle the data
+  gb.cols <- "[]"
+  if( !is.null(by) ) {
+    if(is.character(by)) {
+      vars <- match(by, colnames(data))
+      if( any(is.na(vars)) )
+        stop('No column named ', by, ' in ', substitute(data), '.')
+      } else if(is.integer(by)) { vars <- by }
+      else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
+      # 1-index -> 0-index and sanity check
+      vars <- vars - 1L
+      if(vars < 0L || vars > (ncol(data)-1L))
+        stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+      gb.cols <- vars
+  }
+
+  .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
 }
 
 #' Produce a Vector of Random Uniform Numbers

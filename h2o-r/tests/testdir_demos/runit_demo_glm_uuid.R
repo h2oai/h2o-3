@@ -70,7 +70,7 @@ test <- function() {
     perf@metrics$AUC
 
   print("Show distribution of predictions with quantile.")
-    print(quant <- quantile.H2OFrame(air.results$'p1'))
+    print(quant <- quantile.Frame(air.results$'p1'))
   print("Extract strongest predictions.")
     top.air <- h2o.assign(air.results[air.results$'p1' > quant['75%'], ],key="top.air")
     print("Dimension of strongest predictions: ")
