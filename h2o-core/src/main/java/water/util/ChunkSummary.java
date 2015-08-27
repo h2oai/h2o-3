@@ -30,6 +30,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     "C16",                      // UUID
     "CStr",                     // Strings
     "CXD",                      // Sparse doubles
+    "CUD",                      // Few Unique doubles
     "C8D",                      //leave this as last -> no compression
   };
   final transient static String[] chunkNames = new String[]{
@@ -50,6 +51,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
           "128-bit UUID",
           "String",
           "Sparse Reals",
+          "Unique Reals",
           "64-bit Reals",
   };
 

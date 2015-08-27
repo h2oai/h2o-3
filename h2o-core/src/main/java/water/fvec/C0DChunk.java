@@ -45,7 +45,6 @@ public class C0DChunk extends Chunk {
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
-  @Override final public AutoBuffer write_impl(AutoBuffer ab) { return ab.putA1(_mem,_mem.length); }
   @Override final public C0DChunk read_impl(AutoBuffer ab) {
     _mem = ab.bufClose();
     _start = -1;  _cidx = -1;
