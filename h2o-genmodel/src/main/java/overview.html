@@ -11,12 +11,12 @@ This document describes how to use H2O's generated POJO models.
 
 <h1><u>About generated models</u></h1>
 <p></p>
-H2O-generated POJO models are intended to be easily embedded in any Java environment.
-The only compile and runtime dependency for a generated model is the h2o-genmodel.jar
+H2O-generated POJO models are intended to be easily embeddable in any Java environment.
+The only compilation and runtime dependency for a generated model is the h2o-genmodel.jar
 file produced as the build output of this package.
 
 <p></p>
-If you are just getting started, first look at the <a href="#quickstart">Quick start</a> section below, and
+If you are just getting started, refer to the <a href="#quickstart">Quick start</a> section below first,
 then look at the documentation for the <em>hex.genmodel.easy</em> package.
 
 <p></p>
@@ -46,20 +46,20 @@ $ java -jar h2o.jar
 
 <ol>
 <li>Go to <a href="http://localhost:54321" target="_blank">http://localhost:54321</a></li>
-<li>Click on view example Flows near the right edge of the screen.  Here is a screenshot of what to look for:</li>
+<li>Click "view example Flows" near the right edge of the screen. Refer to the following screenshot:</li>
 
     <img border="2" src="doc-files/view_example_flows.png">
 
-<li>Click on GBM_Airlines_Classification.flow</li>
-<li>If a confirmation prompt appears asking you to "Load Notebook", click it</li>
-<li>From the "Flow" menu choose the "Run all cells" option</li>
-<li>Scroll down and find the "Model" cell in the notebook.  Click on the Download POJO button as shown in the following screenshot:</li>
+<li>Click "GBM_Airlines_Classification.flow"</li>
+<li>If a confirmation prompt appears, click "Load Notebook"</li>
+<li>From the "Flow" menu, choose "Run all cells" </li>
+<li>Scroll down and find the "Model" cell in the notebook.  Click the Download POJO button (shown in the following screenshot):</li>
 
     <img border="2" src="doc-files/download_pojo_button.png">
-
+<li> NOTE: The instructions below assume the POJO model was downloaded to the "Downloads" folder.</li>
 </ol>
 
-<h3>Step 3 (in terminal window 2): Download model pieces</h3>
+<h3>Step 3 (in a *new* terminal window - H2O must still be running in the first terminal window): Download model pieces</h3>
 <pre>
 $ mkdir experiment
 $ cd experiment
@@ -67,8 +67,8 @@ $ mv ~/Downloads/gbm_pojo_test.java .
 $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
 </pre>
 
-<h3>Step 4 (in terminal window 2): Create main program</h3>
-Create a new file called <em>main.java</em> with the following contents:
+<h3>Step 4 (in terminal window 2): Create the main program</h3>
+Create a new file called <em>main.java</em> ( `vim main.java`) with the following contents:
 
 <pre>
 {@code
@@ -116,6 +116,12 @@ $ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java 
 $ java -cp .:h2o-genmodel.jar main
 </pre>
 
+The following output displays:
+<pre>
+        Label (aka prediction) is flight departure delayed: YES
+        Class probabilities: 0.4790490513429604,0.5209509486570396
+</pre>
+
 <h3><a href="doc-files/GBM_Airlines_Classification.pdf" target="_blank">Appendix: PDF of the Flow that built this model</a></h3>
 
 <!-- ============================================================ -->
@@ -129,14 +135,14 @@ $ java -cp .:h2o-genmodel.jar main
 Generated models can be extracted from H2O in the following ways:
 
 <h3>From the H2O Flow Web UI: </h3>
-When viewing a model, press the "Download POJO" button at the top of the model cell,
-as the example in the Quick start section demonstrated.
+When viewing a model, click the "Download POJO" button at the top of the model cell
+(refer to the example in the "Quick Start" section).
 
-You can also Preview the POJO inside Flow, but it will only show the first thousand
-lines or so in the web browser, cutting off the bottom of large models.
+You can also preview the POJO inside Flow, but it will only show the first 1000
+lines or so in the web browser, truncating large models.
 
 <h3>From R:</h3>
-The following code snippet shows an example of building a model and downloading its
+The following code snippet represents an example of H2O building a model and downloading its
 corresponding POJO from an R script:
 <pre>
 {@code
@@ -154,7 +160,7 @@ h2o.download_pojo(model)
 </pre>
 
 <h3>From Python:</h3>
-The following code snippet shows an example of building a model and downloading its
+The following code snippet represents an example of H2O building a model and downloading its
 corresponding POJO from a Python script:
 
 <pre>
