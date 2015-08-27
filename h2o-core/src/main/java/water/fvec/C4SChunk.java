@@ -55,7 +55,6 @@ public class C4SChunk extends Chunk {
 //  public int pformat_len0() { return pformat_len0(_scale,5); }
 //  public String pformat0() { return "% 10.4e"; }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C4SChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
