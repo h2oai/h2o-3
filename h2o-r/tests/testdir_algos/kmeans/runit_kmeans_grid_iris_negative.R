@@ -17,7 +17,8 @@ check.kmeans.grid.iris.negative <- function(conn) {
 
   Log.info("Constructing the grid of kmeans models with some invalid kmeans parameters...")
   # Skip client check which means that grid will contain failed models.
-  iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check = F)
+  iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check=FALSE)
+  expect_error(h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space))
   print(iris_kmeans_grid)
 
   Log.info("Performing various checks of the constructed grid...")
