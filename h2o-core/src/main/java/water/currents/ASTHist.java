@@ -8,6 +8,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
+import water.util.MRUtils;
 
 class ASTHist extends ASTPrim {
   @Override int nargs() { return 1+2; } // (hist x breaks)
@@ -199,5 +200,21 @@ class ASTHist extends ASTPrim {
       while( vv > o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
         o = _max[x];
     }
+  }
+}
+
+// Find the mode: the most popular element.  Here because you need to histogram the data.
+class ASTMode extends ASTPrim {
+  @Override String str() { return "mode"; }
+  @Override int nargs() { return 1+2; }
+  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() != 1 || !fr.anyVec().isEnum() )
+      throw new IllegalArgumentException("mean only works on a single categorical column");
+    return new ValNum(mode(fr.anyVec()));
+  }
+  static int mode(Vec v) {
+    double[] dist = new MRUtils.ClassDist(v).doAll(v).dist();
+    return ArrayUtils.maxIndex(dist);
   }
 }

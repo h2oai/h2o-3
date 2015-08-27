@@ -79,6 +79,12 @@ class ASTNumList extends AST {
     _cnts   = new long  []{hi_exclusive-lo};
   }
 
+  // An empty number list
+  ASTNumList( ) {
+    _bases  = new double[0];
+    _strides= new double[0];
+    _cnts   = new long  [0];
+  }
 
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack

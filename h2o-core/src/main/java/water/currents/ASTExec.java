@@ -6,6 +6,7 @@ import water.util.SB;
 /** Apply A Function.  Basic function execution. */
 class ASTExec extends AST {
   final AST[] _asts;
+  ASTExec( AST[] asts ) { _asts = asts; }
   protected ASTExec( Exec e ) { 
     e.xpeek('(');
     AST ast = e.parse();

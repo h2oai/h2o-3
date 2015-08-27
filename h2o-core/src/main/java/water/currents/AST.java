@@ -134,6 +134,7 @@ abstract public class AST extends Iced<AST> {
     // Complex Math
     init(new ASTHist());
     init(new ASTImpute());
+    init(new ASTMode());
     init(new ASTRunif());
     init(new ASTTable());
     init(new ASTVariance());
@@ -198,6 +199,7 @@ class ASTNum extends AST {
 /** A String.  Execution is just to return the constant. */
 class ASTStr extends AST {
   final ValStr _str;
+  ASTStr(String str) { _str = new ValStr(str); }
   ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
   @Override public String str() { return _str.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override Val exec(Env env) { return _str; }

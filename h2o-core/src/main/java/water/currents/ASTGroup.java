@@ -221,7 +221,7 @@ class ASTGroup extends ASTPrim {
   // Groups!  Contains a Group Key - an array of doubles (often just 1 entry
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
-  private static class G extends Iced {
+  static class G extends Iced {
     final double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
@@ -230,9 +230,10 @@ class ASTGroup extends ASTPrim {
 
     G( int ncols, AGG[] aggs ) { 
       _gs = new double[ncols]; 
-      _ds = new double[aggs.length]; 
-      _ns = new long  [aggs.length]; 
-      for( int i=0; i<aggs.length; i++ ) _ds[i] = aggs[i].initVal();
+      int len = aggs==null ? 0 : aggs.length;
+      _ds = new double[len]; 
+      _ns = new long  [len]; 
+      for( int i=0; i<len; i++ ) _ds[i] = aggs[i].initVal();
     }
     G fill(int row, Chunk chks[], int cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols

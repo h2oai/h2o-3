@@ -128,6 +128,32 @@ public class GroupByTest extends TestUtil {
     }
   }
 
+  @Test public void testImpute() {
+    Frame fr = null;
+    try {
+      // Impute fuel economy via the "mean" method, no.
+      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [] TRUE)";
+      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      chkDim(fr,8,406);
+
+      Assert.assertEquals(0,fr.vec(1).naCnt()); // No NAs anymore
+      Assert.assertEquals(23.51,fr.vec(1).at(26),1e-1); // Row 26 was an NA, now as mean economy
+      fr.delete();
+
+      // Impute fuel economy via the "mean" method, after grouping by year.  Update in place.
+      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7] TRUE)";
+      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      chkDim(fr,8,406);
+
+      Assert.assertEquals(0,fr.vec(1).naCnt()); // No NAs anymore
+      Assert.assertEquals(17.69,fr.vec(1).at(26),1e-1); // Row 26 was an NA, now as 1970 mean economy
+
+    } finally {
+      if( fr != null ) fr.delete();
+      Keyed.remove(Key.make("hex"));
+    }
+  }
+
   private void chkDim( Frame fr, int col, int row ) {
     Assert.assertEquals(col,fr.numCols());
     Assert.assertEquals(row,fr.numRows());

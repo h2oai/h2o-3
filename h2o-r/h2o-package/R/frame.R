@@ -1545,11 +1545,9 @@ h2o.impute <- function(data, column, method=.prim.c("mean","median","mode"), # T
         stop('No column named ', by, ' in ', substitute(data), '.')
       } else if(is.integer(by)) { vars <- by }
       else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
-      # 1-index -> 0-index and sanity check
-      vars <- vars - 1L
-      if(vars < 0L || vars > (ncol(data)-1L))
+      if( vars <= 0L || vars > (ncol(data)) )
         stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
-      gb.cols <- vars
+      gb.cols <- .row.col.selector(vars)
   }
 
   .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
