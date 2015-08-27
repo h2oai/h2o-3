@@ -152,8 +152,19 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         yinit = rtsk.outputFrame(ykey, null, null);
 
+        // Make input frame [A,Q,Y] where A = read-only training data, Y = AQ, Q from Y = QR factorization
+        ayqfrm = new Frame(dinfo._adaptedFrame);
+        ayqfrm.add(yinit);
+        for (int i = 0; i < _parms._nv; i++)
+          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
+        Frame ayfrm = ayqfrm.subframe(0, ncolA + _parms._nv);
+        Frame aqfrm = ayqfrm.subframe(0, ncolA);
+        aqfrm.add(ayqfrm.subframe(ncolA + _parms._nv, ayqfrm.numCols()));
+        Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // Pass in [Y,Q]
+        ybig = ayfrm.subframe(ncolA, ayfrm.numCols());
+
         // Calculate Cholesky of Gram to get R' = L matrix
-        yinfo = new DataInfo(yinfo_key, yinit, null, true, DataInfo.TransformType.NONE, true, false, false);
+        yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
         gtsk.doAll(yinfo._adaptedFrame);
@@ -161,24 +172,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Matrix ygram = new Matrix(gtsk._gram.getXX());
         CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
 
-        // Make input frame [A,Q,Y] where A = read-only training data, Y = AQ, Q from Y = QR factorization
-        ayqfrm = new Frame(dinfo._adaptedFrame);
-        ayqfrm.add(yinit);
-        for (int i = 0; i < _parms._nv; i++)
-          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
-
         // Get Q from Y = QR giving R' = L
         double[] normSubY = new double[_parms._nv];
         double[] normMulY = new double[_parms._nv];
         Arrays.fill(normMulY, 1.0);
-        Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // Pass in [Y,Q]
         QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
         qrtsk.doAll(yqfrm);
 
         for (int q = 0; q < iters; q++) {
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-          Frame aqfrm = ayqfrm.subframe(0, ncolA);
-          aqfrm.add(ayqfrm.subframe(ncolA+_parms._nv, ayqfrm.numCols()));
           SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
           stsk.doAll(aqfrm);    // Pass in [A,Q]
 
@@ -187,29 +189,22 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           double[][] ysmall_q = ysmall_qr.getQ().getArray();
 
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-          Frame ayfrm = ayqfrm.subframe(0,ncolA+_parms._nv);
           BMulInPlaceTask tsk = new BMulInPlaceTask(ncolA, ArrayUtils.transpose(ysmall_q));
           tsk.doAll(ayfrm);     // TODO: Can we reuse [A,Q] frame and write Y_j into old Q_{j-1}?
-          ybig = ayfrm.subframe(ncolA, ayfrm.numCols());
-          ybig = new Frame(ykey, ybig.names(), ybig.vecs());
-          DKV.put(ybig);
 
           // Calculate Cholesky of Gram to get R' = L matrix
-          yinfo = new DataInfo(yinfo_key, ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
-          DKV.put(yinfo._key, yinfo);
           gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
           gtsk.doAll(yinfo._adaptedFrame);
           // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
           ygram = new Matrix(gtsk._gram.getXX());
           chol = new CholeskyDecomposition(ygram);
 
-          yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());
           qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
           qrtsk.doAll(yqfrm);   // Pass in [Y,Q]
         }
 
         // 4) Extract and save final Q_j from [A,Q] frame
-        qfrm = ayqfrm.extractFrame(ncolA+_parms._nv, ayqfrm.numCols());
+        qfrm = ayqfrm.extractFrame(ncolA + _parms._nv, ayqfrm.numCols());
         qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
         DKV.put(qfrm);
       } catch( Throwable t ) {
@@ -412,7 +407,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
           // TODO: Calculate optimal number of iters for randomized subspace iteration
-          qfrm = randSubIter(dinfo, model, 10, _parms._seed);
+          qfrm = randSubIter(dinfo, model, 1, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);

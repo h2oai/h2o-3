@@ -100,10 +100,14 @@ public class LinearAlgebraUtils {
       _ncolExp = ncolExp;
       _ncats = ncats;
       _ncolQ = ncolQ;
-      _normSub = normSub;
-      _normMul = normMul;
+      _normSub = normSub == null ? new double[_ncolA-_ncats] : normSub;
+      if(normMul == null) {
+        _normMul = new double[_ncolA-_ncats];
+        Arrays.fill(_normMul, 1.0);
+      } else
+        _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats];
+      _numStart = _catOffsets == null ? 0 : _catOffsets[_ncats];
       _use_all_factor_levels = use_all_factor_levels;
     }
 
