@@ -93,13 +93,13 @@ test.GBM.rand_attk_forloop <- function(conn) {
   print(seed)
   p.sid <- h2o.runif(pros.hex,seed=seed)
 
-  pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
+  pros.train <- h2o.assign(pros.hex[p.sid > .3, ], "pros.train")
   pros.train[,2] <- as.factor(pros.train[,2])
   pros.train[,5] <- as.factor(pros.train[,5])
   pros.train[,6] <- as.factor(pros.train[,6])
   pros.train[,9] <- as.factor(pros.train[,9])
 
-  pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
+  pros.test <- h2o.assign(pros.hex[p.sid <= .3, ], "pros.test")
   pros.test[,2] <- as.factor(pros.test[,2])
   pros.test[,5] <- as.factor(pros.test[,5])
   pros.test[,6] <- as.factor(pros.test[,6])
