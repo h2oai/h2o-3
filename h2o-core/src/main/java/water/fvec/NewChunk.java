@@ -900,10 +900,6 @@ public class NewChunk extends Chunk {
         long bias = 2147483647l + lemin;
         return new C4SChunk( bufX(bias,xmin,C4SChunk._OFF,2),bias,PrettyPrint.pow10(xmin));
       }
-      HashSet<Double> hs = new HashSet<>();
-      for (int i=0;i<len();++i)
-        hs.add(_ds[i]);
-      Log.info("Sparsity: " + (1-(float)hs.size()/len()));
       return chunkD();
     } // else an integer column
 
@@ -1035,6 +1031,7 @@ public class NewChunk extends Chunk {
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
+    HashSet<Double> hs = new HashSet<>();
     final byte [] bs = MemoryManager.malloc1(_len *8,true);
     int j = 0;
     for(int i = 0; i < _len; ++i){
@@ -1043,9 +1040,11 @@ public class NewChunk extends Chunk {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
+      hs.add(d);
       UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == sparseLen() :"j = " + j + ", _len = " + sparseLen();
+    Log.info("FillRate: " + hs.size() + "/" + len() + " = " + ((float)hs.size()/len()));
     return new C8DChunk(bs);
   }
 
