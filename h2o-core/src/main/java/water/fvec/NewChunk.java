@@ -6,10 +6,12 @@ import water.H2O;
 import water.MemoryManager;
 import water.parser.ParseTime;
 import water.parser.ValueString;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -898,6 +900,10 @@ public class NewChunk extends Chunk {
         long bias = 2147483647l + lemin;
         return new C4SChunk( bufX(bias,xmin,C4SChunk._OFF,2),bias,PrettyPrint.pow10(xmin));
       }
+      HashSet<Double> hs = new HashSet<>();
+      for (int i=0;i<len();++i)
+        hs.add(_ds[i]);
+      Log.info("Sparsity: " + (1-(float)hs.size()/len()));
       return chunkD();
     } // else an integer column
 
