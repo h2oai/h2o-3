@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Scala, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
@@ -29,7 +29,7 @@ While most of this README is written for developers who do their own builds, mos
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA (PUBDEV contains issues for the current H2O-3 project; PUB contains issues for H2O-Classic)
+*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/summary) contains issues for the current H2O-3 project; [PUB](https://0xdata.atlassian.net/browse/PUB) contains issues for H2O-Classic)
     * <http://jira.h2o.ai>
 *  h2ostream community forum - ask your questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
@@ -492,7 +492,7 @@ Documentation for each bleeding edge nightly build is available on the [nightly 
 ## 9. Community
 
 We will breathe & sustain a vibrant community with the focus of taking a software engineering approach to data science and empowering everyone interested in data to be able to hack data using math and algorithms.
-Join us on google groups [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
+Join us on google groups at [h2ostream](https://groups.google.com/forum/#!forum/h2ostream) and feel free to file issues directly on our [JIRA](http://jira.h2o.ai). 
 
 Team & Committers
 
@@ -539,8 +539,6 @@ Stacie Spreitzer
 Vinod Iyengar
 Charlene Windom
 Parag Sanghavi
-
-
 ```
 
 <a name="Advisors"></a>
