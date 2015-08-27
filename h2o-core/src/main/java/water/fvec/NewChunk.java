@@ -4,9 +4,7 @@ import water.AutoBuffer;
 import water.Futures;
 import water.H2O;
 import water.MemoryManager;
-import water.parser.ParseTime;
 import water.parser.ValueString;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -958,10 +956,10 @@ public class NewChunk extends Chunk {
           break;
         case 4:
           int ival = (int)lval;
-          UnsafeUtils.set4(buf, off+ridsz, ival);
+          UnsafeUtils.set4(buf, off + ridsz, ival);
           break;
         case 8:
-          UnsafeUtils.set8(buf, off+ridsz, lval);
+          UnsafeUtils.set8(buf, off + ridsz, lval);
           break;
         default:
           throw H2O.fail();
@@ -1031,20 +1029,28 @@ public class NewChunk extends Chunk {
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
-    HashSet<Double> hs = new HashSet<>();
+    HashSet<Double> hs = new HashSet<>(CUDChunk.MAX_UNIQUES);
     final byte [] bs = MemoryManager.malloc1(_len *8,true);
     int j = 0;
+    boolean fitsInUnique = true;
     for(int i = 0; i < _len; ++i){
       double d = 0;
       if(_id == null || _id.length == 0 || (j < _id.length && _id[j] == i)) {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
-      hs.add(d);
+      if (fitsInUnique && hs.size() < CUDChunk.MAX_UNIQUES) {
+        hs.add(d);
+      } else {
+        fitsInUnique = false;
+      }
       UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == sparseLen() :"j = " + j + ", _len = " + sparseLen();
-    Log.info("FillRate: " + hs.size() + "/" + len() + " = " + ((float)hs.size()/len()));
+    // See if it's possible and worth the computational overhead to compress into CSDChunk
+    // -> Heuristic: should at least save 50% in memory compared to C8DChunk
+    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < 0.5 * len()*8)
+      return new CUDChunk(bs, hs, len());
     return new C8DChunk(bs);
   }
 
