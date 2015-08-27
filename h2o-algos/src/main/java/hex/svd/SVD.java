@@ -178,7 +178,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Arrays.fill(normMulY, 1.0);
         QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
         qrtsk.doAll(yqfrm);
-        System.out.println(qrtsk._err);
 
         int iters = 0;
         long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
@@ -205,7 +204,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
           qrtsk.doAll(yqfrm);   // Pass in [Y,Q]
           iters++;
-          System.out.println(qrtsk._err);
         }
 
         // 4) Extract and save final Q_j from [A,Q] frame
