@@ -22,15 +22,12 @@ check.deeplearning.grid.cars.negative <- function(conn) {
   grid_space$activation <- lapply(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 2), function (x) x)
   grid_space$activation[[3]] <- "Foo"
   grid_space$epochs <- list(1, 2)
-  grid_space$loss <- lapply(sample(c("Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute"), 2), function (x) x)
-  grid_space$loss[[3]] <- "Bar"
   grid_space$distribution <- list(sample(c('bernoulli','multinomial','gaussian'), 1))
   Log.info(lapply(names(grid_space), function(n) paste0("The provided ",n," search space: ", grid_space[n])))
 
   expected_grid_space <- list()
   expected_grid_space$activation <- grid_space$activation[grid_space$activation != "Foo"]
   expected_grid_space$epochs <- list(1, 2)
-  expected_grid_space$loss <- grid_space$loss[grid_space$loss != "Bar"]
   expected_grid_space$distribution <- grid_space$distribution
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
@@ -62,13 +59,13 @@ check.deeplearning.grid.cars.negative <- function(conn) {
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
-  expect_equal(length(cars_deeplearning_grid@model_ids), 8)
+  expect_equal(length(cars_deeplearning_grid@model_ids), 4)
 
   Log.info("Check that the hyper_params that were passed to grid, were used to construct the models...")
   # Get models
   grid_models <- lapply(cars_deeplearning_grid@model_ids, function(mid) { model = h2o.getModel(mid) })
   # Check expected number of models
-  expect_equal(length(grid_models), 8)
+  expect_equal(length(grid_models), 4)
   # Check parameters coverage
   for ( name in names(grid_space) ) { expect_model_param(grid_models, name, expected_grid_space[[name]]) }
 
