@@ -44,6 +44,11 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(cc.isNA(vals.length));
     Assert.assertTrue(cc.isNA_abs(vals.length));
 
+    // randomly writing one of the unique values is fine
+    cc.set_impl(vals.length-1, a);
+    Assert.assertTrue(cc.atd(vals.length-1) == a);
+    vals[vals.length-1]=a;
+
     nc = cc.inflate_impl(new NewChunk(null, 0));
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length + 1, nc._len);
