@@ -33,8 +33,8 @@ public class CUDChunk extends Chunk {
         if (Double.compare(d, UnsafeUtils.get8d(_mem, 8 + (j << 3))) == 0)
           pos = j;
       assert(pos >= 0);
-      assert((byte)pos==pos);
-      UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, (byte)pos);
+      assert((byte)(pos-128)==pos-128);
+      UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, (byte)(pos-128)); //(signed) byte is in -128...127
     }
     _start = -1;
   }
@@ -44,7 +44,7 @@ public class CUDChunk extends Chunk {
     return (long)res;
   }
   @Override protected final double   atd_impl( int i ) {
-    int whichUnique = (int)UnsafeUtils.get1(_mem, 8 + (numUniques << 3) + i);
+    int whichUnique = (UnsafeUtils.get1(_mem, 8 + (numUniques << 3) + i)+128);
     return UnsafeUtils.get8d(_mem, 8 + (whichUnique << 3));
   }
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(atd_impl(i)); }
@@ -52,7 +52,7 @@ public class CUDChunk extends Chunk {
   @Override boolean set_impl(int i, double d) {
     for (int j = 0; j < numUniques; ++j) {
       if (Double.compare(d, UnsafeUtils.get8d(_mem, 8 + (j << 3))) == 0) {
-        UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, (byte) j);
+        UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, (byte) (j-128));
         return true;
       }
     }
