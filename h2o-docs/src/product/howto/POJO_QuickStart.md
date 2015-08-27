@@ -6,8 +6,6 @@ H2O allows you to convert the models you have built to a Plain Old Java Object (
 
 POJOs allow users to build a model using H2O and then deploy the model to score in real-time, using the POJO model or a REST API call to a scoring server.
 
-
-
 0. Start H2O in terminal window #1:
 
    `$ java -jar h2o.jar`
