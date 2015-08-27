@@ -31,7 +31,5 @@ def imbalancedGBM(ip,port):
     print("")
     print("--------------------")
 
-    assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
-
 if __name__ == "__main__":
     h2o.run_test(sys.argv, imbalancedGBM)

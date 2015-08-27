@@ -19,8 +19,6 @@ test.gbm.imbalanced <- function(conn) {
   print("class_6_err_balanced")
   print(class_6_err_balanced)
 
-  expect_true(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
-
   testEnd()
 }
 
