@@ -1,8 +1,8 @@
 package hex.glm;
 
-import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.OptionsGroupParam;
 import h2o.testng.utils.Param;
+import h2o.testng.utils.CommonHeaders;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 
@@ -12,10 +12,7 @@ import java.util.List;
 
 public class GLMConfig {
 
-	/**
-	 * The first row of data is used to testing.
-	 */
-	public final static int firstRow = 4;
+	public final static int indexRowHeader = 4;
 	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/glmCases.csv";
 	public final static String negativeTestcaseFilePath = "h2o-testng/src/test/resources/glmNegCases.csv";
 	
@@ -31,6 +28,7 @@ public class GLMConfig {
 			new Param("_standardize", "boolean"),
 			new Param("_lambda_search", "boolean"),
 			new Param("_nfolds", "int"),
+//			new Param("_fold_column", "String"), //TODO check it
 			new Param("_ignore_const_cols", "boolean"),
 			new Param("_offset_column", "String"),
 			new Param("_weights_column", "String"),
@@ -51,53 +49,40 @@ public class GLMConfig {
 			new Object[] {Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}
 	); 
 
-	public static List<String> tcHeaders = new ArrayList<String>(Arrays.asList(
-			"0",
-			FunctionUtils.test_description,
-			FunctionUtils.testcase_id,
+	public static List<String> listHeaders = new ArrayList<String>(
+			Arrays.asList(
+					"gaussian",
+					"binomial",
+					"poisson",
+					"gamma",
+					"tweedie",
 
-			// GLM Parameters
-			"regression",
-			"classification",
-			"gaussian",
-			"binomial",
-			"poisson",
-			"gamma",
-			"tweedie",
-
-			"auto",
-			"irlsm",
-			"lbfgs",
-			
-			"_nfolds",
-			"fold_column",
-
-			"_ignore_const_cols",
-			"_offset_column",
-			"_weights_column",
-			"_alpha",
-			"_lambda",
-			"_lambda_search",
-			"_standardize",
-			"_non_negative",
-			"betaConstraints",
-			"lowerBound",
-			"upperBound",
-			"beta_given",
-			"_intercept",
-			"_prior",
-			"_max_active_predictors",
-			"distribution",
-			"regression_balanced_unbalanced",
-			"sparse",
-			"dense",
-			
-			// dataset files & ids
-			FunctionUtils.train_dataset_id,
-			FunctionUtils.validate_dataset_id,
-
-			"_ignored_columns",
-			"r",
-			"scikit"
-	));
+					"auto",
+					"irlsm",
+					"lbfgs",
+					
+					"_nfolds",
+					"_fold_column",
+					"_ignore_const_cols",
+					"_offset_column",
+					"_weights_column",
+					"_alpha",
+					"_lambda",
+					"_lambda_search",
+					"_standardize",
+					"_non_negative",
+					"betaConstraints",
+					"lowerBound",
+					"upperBound",
+					//"beta_given", //TODO: check it
+					"_intercept",
+					"_prior",
+					"_max_active_predictors",
+					"_ignored_columns"
+			)
+	);
+	
+	static {
+	    listHeaders.addAll(CommonHeaders.commonHeaders);
+	}
 }

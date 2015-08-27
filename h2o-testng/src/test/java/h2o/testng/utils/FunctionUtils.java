@@ -35,10 +35,22 @@ import water.parser.ParseDataset;
 
 public class FunctionUtils {
 
-	public static String validate(Param[] params, List<String> tcHeaders, String train_dataset_id,
-			Dataset train_dataset, String[] input) {
+	private final static String regexToSplitTestcase = ",";
 
-		System.out.println("Validate DRFParameters object with testcase: " + input[tcHeaders.indexOf(testcase_id)]);
+	public final static String glm = "glm";
+	public final static String gbm = "gbm";
+	public final static String drf = "drf";
+
+	public final static String smalldata = "smalldata";
+	public final static String bigdata = "bigdata";
+
+	// ---------------------------------------------- //
+	// execute testcase
+	// ---------------------------------------------- //
+	public static String validate(Param[] params, String train_dataset_id, Dataset train_dataset,
+			HashMap<String, String> rawInput) {
+
+		System.out.println("Validate DRFParameters object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 		String result = null;
 
 		if (StringUtils.isEmpty(train_dataset_id)) {
@@ -51,7 +63,7 @@ public class FunctionUtils {
 			result = "Dataset characteristic is not available";
 		}
 		else {
-			result = Param.validateAutoSetParams(params, tcHeaders, input);
+			result = Param.validateAutoSetParams(params, rawInput);
 		}
 
 		if (result != null) {
@@ -68,23 +80,18 @@ public class FunctionUtils {
 	 * @param input
 	 * @return
 	 */
-	public static String checkImplemented(List<String> tcHeaders, String[] input) {
+	public static String checkImplemented(HashMap<String, String> rawInput) {
 
-		System.out.println("check modelParameter object with testcase: " + input[tcHeaders.indexOf(testcase_id)]);
+		System.out.println("check modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 		String result = null;
 
-		if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("_weights_column")].trim())) {
-			result = "weights_column is not implemented";
-		}
-		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("fold_column")].trim())) {
-			result = "fold_column is not implemented";
-		}
-		else if (StringUtils.isNotEmpty(input[tcHeaders.indexOf("gaussian")].trim())
-				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("binomial")].trim())
-				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("multinomial")].trim())
-				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("poisson")].trim())
-				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("gamma")].trim())
-				|| StringUtils.isNotEmpty(input[tcHeaders.indexOf("tweedie")].trim())) {
+		if (StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_gaussian).trim())
+				|| StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_binomial).trim())
+				|| StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_multinomial).trim())
+				|| StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_poisson).trim())
+				|| StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_gamma).trim())
+				|| StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_tweedie).trim())) {
+
 			result = "Only AUTO family is implemented";
 		}
 
@@ -104,13 +111,12 @@ public class FunctionUtils {
 	 * @param responseColumn
 	 * @return null if testcase do not require betaconstraints otherwise return beta constraints frame
 	 */
-	private static Frame createBetaConstraints(List<String> tcHeaders, String[] rawInput, Frame trainFrame,
-			String responseColumn) {
+	private static Frame createBetaConstraints(HashMap<String, String> rawInput, Frame trainFrame, String responseColumn) {
 
 		Frame betaConstraints = null;
-		boolean isBetaConstraints = Param.parseBoolean(rawInput[tcHeaders.indexOf("betaConstraints")]);
-		String lowerBound = rawInput[tcHeaders.indexOf("lowerBound")];
-		String upperBound = rawInput[tcHeaders.indexOf("upperBound")];
+		boolean isBetaConstraints = Param.parseBoolean(rawInput.get("betaConstraints"));
+		String lowerBound = rawInput.get("lowerBound");
+		String upperBound = rawInput.get("upperBound");
 
 		if (!isBetaConstraints) {
 			return null;
@@ -146,11 +152,11 @@ public class FunctionUtils {
 		return betaConstraints;
 	}
 
-	public static Model.Parameters toModelParameter(Param[] params, List<String> tcHeaders, String algorithm,
-			String train_dataset_id, String validate_dataset_id, Dataset train_dataset, Dataset validate_dataset,
-			String[] input) {
+	public static Model.Parameters toModelParameter(Param[] params, String algorithm, String train_dataset_id,
+			String validate_dataset_id, Dataset train_dataset, Dataset validate_dataset,
+			HashMap<String, String> rawInput) {
 
-		System.out.println("Create modelParameter object with testcase: " + input[tcHeaders.indexOf(testcase_id)]);
+		System.out.println("Create modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 
 		Model.Parameters modelParameter = null;
 
@@ -160,7 +166,7 @@ public class FunctionUtils {
 				modelParameter = new DRFModel.DRFParameters();
 
 				// set distribution param
-				Family drfFamily = (Family) DRFConfig.familyParams.getValue(input, tcHeaders);
+				Family drfFamily = (Family) DRFConfig.familyParams.getValue(rawInput);
 
 				if (drfFamily != null) {
 					System.out.println("Set _distribution: " + drfFamily);
@@ -173,8 +179,8 @@ public class FunctionUtils {
 				modelParameter = new GLMParameters();
 
 				hex.glm.GLMModel.GLMParameters.Family glmFamily = (hex.glm.GLMModel.GLMParameters.Family) GLMConfig.familyOptionsParams
-						.getValue(input, tcHeaders);
-				Solver s = (Solver) GLMConfig.solverOptionsParams.getValue(input, tcHeaders);
+						.getValue(rawInput);
+				Solver s = (Solver) GLMConfig.solverOptionsParams.getValue(rawInput);
 
 				if (glmFamily != null) {
 					System.out.println("Set _family: " + glmFamily);
@@ -191,7 +197,7 @@ public class FunctionUtils {
 				modelParameter = new GBMParameters();
 
 				// set distribution param
-				Family gbmFamily = (Family) GBMConfig.familyParams.getValue(input, tcHeaders);
+				Family gbmFamily = (Family) GBMConfig.familyParams.getValue(rawInput);
 
 				if (gbmFamily != null) {
 					System.out.println("Set _distribution: " + gbmFamily);
@@ -204,7 +210,7 @@ public class FunctionUtils {
 		}
 
 		// set AutoSet params
-		Param.setAutoSetParams(modelParameter, params, tcHeaders, input);
+		Param.setAutoSetParams(modelParameter, params, rawInput);
 
 		// set response_column param
 		modelParameter._response_column = train_dataset.getResponseColumn();
@@ -225,7 +231,7 @@ public class FunctionUtils {
 			}
 
 			if (algorithm.equals(FunctionUtils.glm)) {
-				betaConstraints = createBetaConstraints(tcHeaders, input, trainFrame, train_dataset.getResponseColumn());
+				betaConstraints = createBetaConstraints(rawInput, trainFrame, train_dataset.getResponseColumn());
 				if (betaConstraints != null) {
 					((GLMParameters) modelParameter)._beta_constraints = betaConstraints._key;
 				}
@@ -256,8 +262,7 @@ public class FunctionUtils {
 		return modelParameter;
 	}
 
-	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase,
-			String[] rawInput) {
+	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase) {
 
 		Frame trainFrame = null;
 		Frame score = null;
@@ -381,8 +386,102 @@ public class FunctionUtils {
 		}
 	}
 
-	public static Object[][] dataProvider(HashMap<String, Dataset> dataSetCharacteristic, List<String> tcHeaders,
-			String algorithm, String positiveTestcaseFilePath, String negativeTestcaseFilePath, int firstRow) {
+	// ---------------------------------------------- //
+	// initiate data. Read testcase files
+	// ---------------------------------------------- //
+	public static Object[][] readAllTestcase(HashMap<String, Dataset> dataSetCharacteristic, String algorithm) {
+
+		if (StringUtils.isNotEmpty(algorithm)) {
+			return readAllTestcaseOneAlgorithm(dataSetCharacteristic, algorithm);
+		}
+		Object[][] result = null;
+		int nrows = 0;
+		int ncols = 0;
+		int r = 0;
+		int i = 0;
+
+		Object[][] drfTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.drf);
+		Object[][] gbmTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.gbm);
+		Object[][] glmTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.glm);
+
+		if (drfTestcase != null && drfTestcase.length != 0) {
+			nrows = drfTestcase[0].length;
+			ncols += drfTestcase.length;
+		}
+		if (gbmTestcase != null && gbmTestcase.length != 0) {
+			nrows = gbmTestcase[0].length;
+			ncols += gbmTestcase.length;
+		}
+		if (glmTestcase != null && glmTestcase.length != 0) {
+			nrows = glmTestcase[0].length;
+			ncols += glmTestcase.length;
+		}
+
+		result = new Object[ncols][nrows];
+
+		if (drfTestcase != null && drfTestcase.length != 0) {
+			for (i = 0; i < drfTestcase.length; i++) {
+				result[r++] = drfTestcase[i];
+			}
+		}
+		if (gbmTestcase != null && gbmTestcase.length != 0) {
+			for (i = 0; i < gbmTestcase.length; i++) {
+				result[r++] = gbmTestcase[i];
+			}
+		}
+		if (glmTestcase != null && glmTestcase.length != 0) {
+			for (i = 0; i < glmTestcase.length; i++) {
+				result[r++] = glmTestcase[i];
+			}
+		}
+
+		return result;
+	}
+
+	private static Object[][] readAllTestcaseOneAlgorithm(HashMap<String, Dataset> dataSetCharacteristic,
+			String algorithm) {
+
+		int indexRowHeader = 0;
+		String positiveTestcaseFilePath = null;
+		String negativeTestcaseFilePath = null;
+		List<String> listHeaders = null;
+
+		switch (algorithm) {
+			case FunctionUtils.drf:
+				indexRowHeader = DRFConfig.indexRowHeader;
+				positiveTestcaseFilePath = DRFConfig.positiveTestcaseFilePath;
+				negativeTestcaseFilePath = DRFConfig.negativeTestcaseFilePath;
+				listHeaders = DRFConfig.listHeaders;
+				break;
+
+			case FunctionUtils.glm:
+				indexRowHeader = GLMConfig.indexRowHeader;
+				positiveTestcaseFilePath = GLMConfig.positiveTestcaseFilePath;
+				negativeTestcaseFilePath = GLMConfig.negativeTestcaseFilePath;
+				listHeaders = GLMConfig.listHeaders;
+				break;
+
+			case FunctionUtils.gbm:
+				indexRowHeader = GBMConfig.indexRowHeader;
+				positiveTestcaseFilePath = GBMConfig.positiveTestcaseFilePath;
+				negativeTestcaseFilePath = GBMConfig.negativeTestcaseFilePath;
+				listHeaders = GBMConfig.listHeaders;
+				break;
+
+			default:
+				System.out.println("do not implement for algorithm: " + algorithm);
+				return null;
+		}
+
+		Object[][] result = FunctionUtils.dataProvider(dataSetCharacteristic, listHeaders, algorithm,
+				positiveTestcaseFilePath, negativeTestcaseFilePath, indexRowHeader);
+
+		return result;
+	}
+
+	private static Object[][] dataProvider(HashMap<String, Dataset> dataSetCharacteristic,
+			List<String> listHeaders, String algorithm, String positiveTestcaseFilePath,
+			String negativeTestcaseFilePath, int indexRowHeader) {
 
 		Object[][] result = null;
 		Object[][] positiveData = null;
@@ -391,10 +490,10 @@ public class FunctionUtils {
 		int numCol = 0;
 		int r = 0;
 
-		positiveData = readTestcaseFile(dataSetCharacteristic, tcHeaders, positiveTestcaseFilePath, firstRow,
-				algorithm, false);
-		negativeData = readTestcaseFile(dataSetCharacteristic, tcHeaders, negativeTestcaseFilePath, firstRow,
-				algorithm, true);
+		positiveData = readTestcaseFile(dataSetCharacteristic,  listHeaders, positiveTestcaseFilePath,
+				indexRowHeader, algorithm, false);
+		negativeData = readTestcaseFile(dataSetCharacteristic, listHeaders, negativeTestcaseFilePath,
+				indexRowHeader, algorithm, true);
 
 		if (positiveData != null && positiveData.length != 0) {
 			numRow += positiveData.length;
@@ -425,13 +524,15 @@ public class FunctionUtils {
 		return result;
 	}
 
-	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic, List<String> tcHeaders,
-			String fileName, int firstRow, String algorithm, boolean isNegativeTestcase) {
+	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic,
+			List<String> listHeaders, String fileName, int indexRowHeader, String algorithm, boolean isNegativeTestcase) {
 
 		Object[][] result = null;
 		List<String> lines = null;
+		String[] hearderRow = null;
 
 		if (StringUtils.isEmpty(fileName)) {
+			System.out.println("Not found file: " + fileName);
 			return null;
 		}
 
@@ -446,22 +547,30 @@ public class FunctionUtils {
 		}
 
 		// remove headers
-		lines.removeAll(lines.subList(0, firstRow));
+		lines.removeAll(lines.subList(0, indexRowHeader - 1));
+
+		hearderRow = lines.remove(0).split(regexToSplitTestcase, -1);
+
+		if (!validateTestcaseFile(listHeaders, fileName, hearderRow)) {
+			System.out.println("Testcase file is wrong format");
+			return null;
+		}
 
 		result = new Object[lines.size()][9];
 		int r = 0;
 		for (String line : lines) {
-			String[] variables = line.trim().split(",", -1);
+			String[] variables = line.trim().split(regexToSplitTestcase, -1);
+			HashMap<String, String> rawInput = parseToHashMap(listHeaders, hearderRow, variables);
 
-			result[r][0] = variables[tcHeaders.indexOf(testcase_id)];
-			result[r][1] = variables[tcHeaders.indexOf(test_description)];
-			result[r][2] = variables[tcHeaders.indexOf(train_dataset_id)];
-			result[r][3] = variables[tcHeaders.indexOf(validate_dataset_id)];
-			result[r][4] = dataSetCharacteristic.get(variables[tcHeaders.indexOf(train_dataset_id)]);
-			result[r][5] = dataSetCharacteristic.get(variables[tcHeaders.indexOf(validate_dataset_id)]);
+			result[r][0] = rawInput.get(CommonHeaders.testcase_id);
+			result[r][1] = rawInput.get(CommonHeaders.test_description);
+			result[r][2] = rawInput.get(CommonHeaders.train_dataset_id);
+			result[r][3] = rawInput.get(CommonHeaders.validate_dataset_id);
+			result[r][4] = dataSetCharacteristic.get(result[r][2]);
+			result[r][5] = dataSetCharacteristic.get(result[r][3]);
 			result[r][6] = algorithm;
 			result[r][7] = isNegativeTestcase;
-			result[r][8] = variables;
+			result[r][8] = rawInput;
 
 			r++;
 		}
@@ -469,6 +578,86 @@ public class FunctionUtils {
 		return result;
 	}
 
+	private static boolean validateTestcaseFile(List<String> listHeaders, String fileName, String[] headerRow) {
+
+		System.out.println("validate file: " + fileName);
+
+		for (String header : listHeaders) {
+			if (Arrays.asList(headerRow).indexOf(header) < 0) {
+				System.out.println(String.format("find not found %s column in %s", header, fileName));
+				return false;
+			}
+
+		}
+
+		return true;
+	}
+
+	private static HashMap<String, String> parseToHashMap(List<String> listHeaders, String[] headerRow,
+			String[] testcaseRow) {
+
+		HashMap<String, String> result = new HashMap<String, String>();
+
+		for (String header : listHeaders) {
+			result.put(header, testcaseRow[Arrays.asList(headerRow).indexOf(header)]);
+		}
+
+		return result;
+	}
+
+	public static Object[][] removeAllTestcase(Object[][] testcases, String size) {
+
+		if (testcases == null || testcases.length == 0) {
+			return null;
+		}
+
+		if (StringUtils.isEmpty(size)) {
+			return testcases;
+		}
+
+		Object[][] result = null;
+		Object[][] temp = null;
+		int nrows = 0;
+		int ncols = 0;
+		int r = 0;
+		int i = 0;
+		Dataset dataset = null;
+
+		ncols = testcases.length;
+		nrows = testcases[0].length;
+		temp = new Object[ncols][nrows];
+
+		for (i = 0; i < ncols; i++) {
+
+			dataset = (Dataset) testcases[i][4];
+
+			if (dataset == null) {
+				// because we have to show any INVALID testcase thus we have to add this testcase
+				temp[r++] = testcases[i];
+			}
+			else if (size.equals(dataset.getDataSetDirectory())) {
+				temp[r++] = testcases[i];
+			}
+		}
+
+		if (r == 0) {
+			System.out.println(String.format("dataset characteristic have no size what is: %s.", size));
+		}
+		else {
+
+			result = new Object[r][nrows];
+
+			for (i = 0; i < r; i++) {
+				result[i] = temp[i];
+			}
+		}
+
+		return result;
+	}
+
+	// ---------------------------------------------- //
+	// management dataset characteristic file
+	// ---------------------------------------------- //
 	public static HashMap<String, Dataset> readDataSetCharacteristic() {
 
 		HashMap<String, Dataset> result = new HashMap<String, Dataset>();
@@ -540,15 +729,4 @@ public class FunctionUtils {
 		}
 	}
 
-	public final static String testcase_id = "testcase_id";
-	public final static String test_description = "test_description";
-	public final static String train_dataset_id = "train_dataset_id";
-	public final static String validate_dataset_id = "validate_dataset_id";
-
-	public final static String glm = "glm";
-	public final static String gbm = "gbm";
-	public final static String drf = "drf";
-
-	public final static String smalldata = "smalldata";
-	public final static String bigdata = "bigdata";
 }

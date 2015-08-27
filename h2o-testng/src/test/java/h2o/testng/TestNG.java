@@ -10,7 +10,6 @@ import hex.tree.drf.DRFConfig;
 import hex.tree.gbm.GBMConfig;
 
 import java.util.HashMap;
-import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
@@ -47,7 +46,7 @@ public class TestNG extends TestNGUtil {
 
 		Object[][] result = null;
 
-		Object[][] data = readAllTestcase(algorithm);
+		Object[][] data = FunctionUtils.readAllTestcase(dataSetCharacteristic, algorithm);
 
 		if (data == null || data.length == 0) {
 			return null;
@@ -75,19 +74,18 @@ public class TestNG extends TestNGUtil {
 		}
 
 		// set size
-		result = removeAllTestcase(data, size);
+		result = FunctionUtils.removeAllTestcase(data, size);
 		return result;
 	}
 
 	@Test(dataProvider = "SingleTestcase")
 	public void basic(String testcase_id, String test_description, String train_dataset_id, String validate_dataset_id,
 			Dataset train_dataset, Dataset validate_dataset, String algorithm, boolean isNegativeTestcase,
-			String[] rawInput) {
+			HashMap<String, String> rawInput) {
 
 		RecordingTestcase rt = new RecordingTestcase();
 
 		Param[] params = null;
-		List<String> tcHeaders = null;
 
 		Model.Parameters modelParameter = null;
 		String invalidMessage = null;
@@ -98,17 +96,14 @@ public class TestNG extends TestNGUtil {
 		switch (algorithm) {
 			case FunctionUtils.drf:
 				params = DRFConfig.params;
-				tcHeaders = DRFConfig.tcHeaders;
 				break;
 
 			case FunctionUtils.gbm:
 				params = GBMConfig.params;
-				tcHeaders = GBMConfig.tcHeaders;
 				break;
 
 			case FunctionUtils.glm:
 				params = GLMConfig.params;
-				tcHeaders = GLMConfig.tcHeaders;
 				break;
 
 			default:
@@ -116,9 +111,9 @@ public class TestNG extends TestNGUtil {
 		}
 
 		try {
-			invalidMessage = FunctionUtils.validate(params, tcHeaders, train_dataset_id, train_dataset, rawInput);
+			invalidMessage = FunctionUtils.validate(params, train_dataset_id, train_dataset, rawInput);
 			if (FunctionUtils.drf.equals(algorithm)) {
-				notImplMessage = FunctionUtils.checkImplemented(tcHeaders, rawInput);
+				notImplMessage = FunctionUtils.checkImplemented(rawInput);
 			}
 
 			if (StringUtils.isNotEmpty(invalidMessage)) {
@@ -131,10 +126,11 @@ public class TestNG extends TestNGUtil {
 			}
 			else {
 				// TODO: move modelParameter from here to FunctionUtils
-				modelParameter = FunctionUtils.toModelParameter(params, tcHeaders, algorithm, train_dataset_id,
+				modelParameter = FunctionUtils.toModelParameter(params, algorithm, train_dataset_id,
 						validate_dataset_id, train_dataset, validate_dataset, rawInput);
 
-				FunctionUtils.basicTesting(algorithm, modelParameter, isNegativeTestcase, rawInput);
+				FunctionUtils.basicTesting(algorithm, modelParameter, isNegativeTestcase);
+				System.out.println(rawInput);
 			}
 		}
 		finally {
@@ -159,145 +155,6 @@ public class TestNG extends TestNGUtil {
 	public void afterClass() {
 
 		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
-	}
-
-	private static Object[][] readAllTestcase(String algorithm) {
-
-		if (StringUtils.isNotEmpty(algorithm)) {
-			return readAllTestcaseOneAlgorithm(algorithm);
-		}
-		Object[][] result = null;
-		int nrows = 0;
-		int ncols = 0;
-		int r = 0;
-		int i = 0;
-
-		Object[][] drfTestcase = readAllTestcaseOneAlgorithm(FunctionUtils.drf);
-		Object[][] gbmTestcase = readAllTestcaseOneAlgorithm(FunctionUtils.gbm);
-		Object[][] glmTestcase = readAllTestcaseOneAlgorithm(FunctionUtils.glm);
-
-		if (drfTestcase != null && drfTestcase.length != 0) {
-			nrows = drfTestcase[0].length;
-			ncols += drfTestcase.length;
-		}
-		if (gbmTestcase != null && gbmTestcase.length != 0) {
-			nrows = gbmTestcase[0].length;
-			ncols += gbmTestcase.length;
-		}
-		if (glmTestcase != null && glmTestcase.length != 0) {
-			nrows = glmTestcase[0].length;
-			ncols += glmTestcase.length;
-		}
-
-		result = new Object[ncols][nrows];
-
-		if (drfTestcase != null && drfTestcase.length != 0) {
-			for (i = 0; i < drfTestcase.length; i++) {
-				result[r++] = drfTestcase[i];
-			}
-		}
-		if (gbmTestcase != null && gbmTestcase.length != 0) {
-			for (i = 0; i < gbmTestcase.length; i++) {
-				result[r++] = gbmTestcase[i];
-			}
-		}
-		if (glmTestcase != null && glmTestcase.length != 0) {
-			for (i = 0; i < glmTestcase.length; i++) {
-				result[r++] = glmTestcase[i];
-			}
-		}
-
-		return result;
-	}
-
-	private static Object[][] readAllTestcaseOneAlgorithm(String algorithm) {
-
-		int firstRow = 0;
-		String positiveTestcaseFilePath = null;
-		String negativeTestcaseFilePath = null;
-		List<String> tcHeaders = null;
-
-		switch (algorithm) {
-			case FunctionUtils.drf:
-				firstRow = DRFConfig.firstRow;
-				positiveTestcaseFilePath = DRFConfig.positiveTestcaseFilePath;
-				negativeTestcaseFilePath = DRFConfig.negativeTestcaseFilePath;
-				tcHeaders = DRFConfig.tcHeaders;
-				break;
-
-			case FunctionUtils.glm:
-				firstRow = GLMConfig.firstRow;
-				positiveTestcaseFilePath = GLMConfig.positiveTestcaseFilePath;
-				negativeTestcaseFilePath = GLMConfig.negativeTestcaseFilePath;
-				tcHeaders = GLMConfig.tcHeaders;
-				break;
-
-			case FunctionUtils.gbm:
-				firstRow = GBMConfig.firstRow;
-				positiveTestcaseFilePath = GBMConfig.positiveTestcaseFilePath;
-				negativeTestcaseFilePath = GBMConfig.negativeTestcaseFilePath;
-				tcHeaders = GBMConfig.tcHeaders;
-				break;
-
-			default:
-				System.out.println("do not implement for algorithm: " + algorithm);
-				return null;
-		}
-
-		Object[][] result = FunctionUtils.dataProvider(dataSetCharacteristic, tcHeaders, algorithm,
-				positiveTestcaseFilePath, negativeTestcaseFilePath, firstRow);
-
-		return result;
-	}
-
-	private static Object[][] removeAllTestcase(Object[][] testcases, String size) {
-
-		if (testcases == null || testcases.length == 0) {
-			return null;
-		}
-
-		if (StringUtils.isEmpty(size)) {
-			return testcases;
-		}
-
-		Object[][] result = null;
-		Object[][] temp = null;
-		int nrows = 0;
-		int ncols = 0;
-		int r = 0;
-		int i = 0;
-		Dataset dataset = null;
-
-		ncols = testcases.length;
-		nrows = testcases[0].length;
-		temp = new Object[ncols][nrows];
-
-		for (i = 0; i < ncols; i++) {
-
-			dataset = (Dataset) testcases[i][4];
-
-			if (dataset == null) {
-				// because we have to show any INVALID testcase thus we have to add this testcase
-				temp[r++] = testcases[i];
-			}
-			else if (size.equals(dataset.getDataSetDirectory())) {
-				temp[r++] = testcases[i];
-			}
-		}
-
-		if (r == 0) {
-			System.out.println(String.format("dataset characteristic have no size what is: %s.", size));
-		}
-		else {
-
-			result = new Object[r][nrows];
-
-			for (i = 0; i < r; i++) {
-				result[i] = temp[i];
-			}
-		}
-
-		return result;
 	}
 
 	private static String algorithm = "";

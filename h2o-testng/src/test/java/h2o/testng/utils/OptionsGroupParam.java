@@ -2,6 +2,7 @@ package h2o.testng.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class OptionsGroupParam {
@@ -15,10 +16,10 @@ public class OptionsGroupParam {
 		this.values = values;
 	}
 
-	public Object getValue(String[] value, List<String> tcHeaders) {
+	public Object getValue(HashMap<String, String> rawInput) {
 
 		for (String option : optionsGroup) {
-			if (Param.parseBoolean(value[tcHeaders.indexOf(option)])) {
+			if (Param.parseBoolean(rawInput.get(option))) {
 				return values[optionsGroup.indexOf(option)];
 			}
 		}

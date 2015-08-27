@@ -4,6 +4,7 @@ import hex.Model;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -81,13 +82,13 @@ public class Param {
 		return fr;
 	}
 
-	public static String validateAutoSetParams(Param[] params, List<String> tcHeaders, String[] input) {
+	public static String validateAutoSetParams(Param[] params, HashMap<String, String> rawInput) {
 
 		String result = null;
 
 		for (Param p : params) {
 			if (p.isAutoSet) {
-				result = p.validate(input[tcHeaders.indexOf(p.name)]);
+				result = p.validate(rawInput.get(p.name));
 				if (result != null) {
 					break;
 				}
@@ -97,13 +98,13 @@ public class Param {
 		return result;
 	}
 
-	public static boolean setAutoSetParams(Model.Parameters modelParameter, Param[] params, List<String> tcHeaders,
-			String[] input) {
+	public static boolean setAutoSetParams(Model.Parameters modelParameter, Param[] params,
+			HashMap<String, String> rawInput) {
 
 		// set AutoSet params
 		for (Param p : params) {
 			if (p.isAutoSet) {
-				p.parseAndSet(modelParameter, input[tcHeaders.indexOf(p.name)]);
+				p.parseAndSet(modelParameter, rawInput.get(p.name));
 			}
 		}
 		return true;
@@ -180,7 +181,7 @@ public class Param {
 		return result;
 	}
 
-	//TODO: change to private
+	// TODO: change to private
 	public boolean parseAndSet(Object params, String value) {
 
 		value = value.trim();

@@ -85,7 +85,7 @@ public class Dataset {
 		System.out.print("columnNames: ");
 		if (columnNames != null) {
 			for (String e : columnNames) {
-				System.out.print(e + ",");
+				System.out.print(e + splitByRegex);
 			}
 		}
 		System.out.println();
@@ -93,7 +93,7 @@ public class Dataset {
 		System.out.print("columnTypes: ");
 		if (columnTypes != null) {
 			for (String e : columnTypes) {
-				System.out.print(e + ",");
+				System.out.print(e + splitByRegex);
 			}
 		}
 		System.out.println();
