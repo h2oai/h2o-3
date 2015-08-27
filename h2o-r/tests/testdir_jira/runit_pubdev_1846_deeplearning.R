@@ -12,12 +12,13 @@ test.pubdev.1846.deeplearning <- function(conn){
 
   predictors <- c("displacement","power","weight","acceleration","year")
   response_col <- "economy_20mpg"
+  expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=cars,
+                          hyper_params=grid_space, do_hyper_params_check = T))
   gg <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=cars,
            hyper_params=grid_space, do_hyper_params_check = F)
   # All params should fail right now
   gg_size <- length(gg@failed_params)
   expect_equal(grid_space_size, gg_size)
-  # FIXME: should assert on results + should call DL with do_hyper_params_check = T
 
   testEnd()
 }
