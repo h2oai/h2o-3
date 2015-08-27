@@ -404,7 +404,7 @@ You need to:
 1.  Add a new driver directory and assembly directory (each with a `build.gradle` file) in `h2o-hadoop`
 2.  Add these new projects to `h2o-3/settings.gradle`
 3.  Add the new Hadoop version to `HADOOP_VERSIONS` in `make-dist.sh`
-4.  Add the new Hadoop version to the `wget` list in `h2o-dist/index.html`
+4.  Add the new Hadoop version to the list in `h2o-dist/buildinfo.json`
 
 ### Debugging HDFS
 
