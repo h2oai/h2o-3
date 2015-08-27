@@ -29,7 +29,7 @@ While most of this README is written for developers who do their own builds, mos
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/summary) contains issues for the current H2O-3 project; [PUB](https://0xdata.atlassian.net/browse/PUB) contains issues for H2O-Classic)
+*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) contains issues for the current H2O-3 project; [PUB](https://0xdata.atlassian.net/projects/PUB/issues) contains issues for H2O-Classic)
     * <http://jira.h2o.ai>
 *  h2ostream community forum - ask your questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
