@@ -94,17 +94,20 @@ test.GBM.rand_attk_forloop <- function(conn) {
   pros.hex[,5] <- as.factor(pros.hex[,5])
   pros.hex[,6] <- as.factor(pros.hex[,6])
   pros.hex[,9] <- as.factor(pros.hex[,9])
-  p.sid <- h2o.runif(pros.hex)
+  seed <- as.integer(runif(1,1,10000000000))
+  print("SEED: ")
+  print(seed)
+  p.sid <- h2o.runif(pros.hex,seed=seed)
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
   iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
-  i.sid <- h2o.runif(iris.hex)
+  i.sid <- h2o.runif(iris.hex,seed=seed)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
 
   cars.hex <- h2o.uploadFile(conn, locate("smalldata/junit/cars.csv"))
-  c.sid <- h2o.runif(cars.hex)
+  c.sid <- h2o.runif(cars.hex,seed=seed)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
