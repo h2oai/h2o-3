@@ -48,7 +48,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   @Override
   public long progressUnits() {
-    return _parms._nv+1;
+    switch(_parms._svd_method) {
+      case GramSVD:
+        return 2;
+      case Power:
+        return 1 + _parms._nv;
+      case Probabilistic:
+        return 5 + _parms._max_iterations;
+      default: return _parms._nv;
+    }
   }
 
 
@@ -146,6 +154,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       try {
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
+        update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
@@ -164,6 +173,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         ybig = ayfrm.subframe(ncolA, ayfrm.numCols());
 
         // Calculate Cholesky of Gram to get R' = L matrix
+        update(1, "Computing QR factorization of Y");
         yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
@@ -182,6 +192,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         int iters = 0;
         long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
         while (qrtsk._err / qobs > TOLERANCE && iters < max_iterations) {
+          update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
+
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
           stsk.doAll(aqfrm);    // Pass in [A,Q]
@@ -245,15 +257,18 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Frame aqfrm = new Frame(vecs);
 
         // 1) Form the matrix B = Q'A = (A'Q)'
+        update(1, "Forming small matrix B = Q'A for direct SVD");
         SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
         stsk.doAll(aqfrm);
         double[][] qta = ArrayUtils.transpose(stsk._atq);
 
         // 2) Compute SVD of small matrix B = WDV'
+        update(1, "Calculating SVD of small matrix locally");
         Matrix qtaJ = new Matrix(qta);
         SingularValueDecomposition svdJ = qtaJ.svd();
 
         // 3) Form orthonormal matrix U = QW
+        update(1, "Forming distributed orthonormal matrix U");
         if (!_parms._only_v && _parms._keep_u) {
           model._output._u_key = Key.make(_parms._u_name);
           double[][] svdJ_u = svdJ.getU().getArray();
@@ -314,22 +329,24 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._catOffsets = dinfo._catOffsets;
         model._output._names_expanded = dinfo.coefNames();
 
-        // Calculate and save Gram matrix of training data
-        // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
-        GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
-        Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
-        assert gram.fullN() == _ncolExp;
-        model._output._nobs = gtsk._nobs;
-        model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
-        model.update(self());
-        update(1);
-
         if(_parms._svd_method == SVDParameters.Method.GramSVD) {
+          // Calculate and save Gram matrix of training data
+          // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
+          update(1, "Begin distributed calculation of Gram matrix");
+          GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
+          Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
+          assert gram.fullN() == _ncolExp;
+          model._output._nobs = gtsk._nobs;
+          model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
+          model.update(self());
+
           // Calculate SVD of G = A'A/n and back out SVD of A. If SVD of A = UDV' then A'A/n = V(D^2/n)V'
+          update(1, "Calculating SVD of Gram matrix locally");
           Matrix gramJ = new Matrix(gtsk._gram.getXX());
           SingularValueDecomposition svdJ = gramJ.svd();
 
           // Output diagonal of D
+          update(1, "Computing stats from SVD");
           double[] sval = svdJ.getSingularValues();
           model._output._d = new double[_parms._nv];    // Only want rank = nv diagonal values
           for(int k = 0; k < _parms._nv; k++)
@@ -352,7 +369,18 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             u = tsk.outputFrame(model._output._u_key, null, null);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Power) {
+          // Calculate and save Gram matrix of training data
+          // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
+          update(1, "Begin distributed calculation of Gram matrix");
+          GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
+          Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
+          assert gram.fullN() == _ncolExp;
+          model._output._nobs = gtsk._nobs;
+          model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
+          model.update(self());
+
           // 1) Run one iteration of power method
+          update(1, "Iteration 1 of power method");     // One unit of work
           // 1a) Initialize right singular vector v_1
           model._output._v = new double[_parms._nv][_ncolExp];  // Store V' for ease of use and transpose back at end
           model._output._v[0] = powerLoop(gram, _parms._seed);
@@ -369,7 +397,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             computeSigmaU(dinfo, model, 0, ivv_sum, uvecs);  // Compute first singular value \sigma_1
           }
           model.update(self()); // Update model in K/V store
-          update(1);            // One unit of work
 
           // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
           updateIVVSum(ivv_sum, model._output._v[0]);
@@ -379,6 +406,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           for (int k = 1; k < _parms._nv; k++) {
             if (!isRunning()) break;
+            update(1, "Iteration" + String.valueOf(k+1) + "of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
             model._output._v[k] = powerLoop(gram_update, _parms._seed);
@@ -394,7 +422,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             guptsk = new GramUpdate(self(), dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
             gram_update = guptsk._gram;
             model.update(self()); // Update model in K/V store
-            update(1);            // One unit of work
           }
 
           // 4) Normalize output frame columns by singular values to get left singular vectors
