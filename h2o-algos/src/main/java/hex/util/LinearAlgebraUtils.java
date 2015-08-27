@@ -44,27 +44,69 @@ public class LinearAlgebraUtils {
    */
   public static class BMulInPlaceTask extends MRTask<BMulInPlaceTask> {
     final double[][] _yt;   // _yt = Y' (transpose of Y)
-    final int _ncolX;
+    final int _ncolX;     // Number of cols in X
+    final int _ncats;     // Number of categorical cols in X
+    final double[] _normSub;  // For standardizing X
+    final double[] _normMul;
+    final int[] _catOffsets;  // Categorical offsets for X
+    final int _numStart;      // Beginning of numeric cols in X when categorical cols expanded
+    final boolean _use_all_factor_levels;   // Use all factor levels when expanding X?
 
-    public BMulInPlaceTask(int ncolX, double[][] yt) {
-      assert yt != null;
+    // Constructor if X is purely numeric data
+    public BMulInPlaceTask(double[][] yt, int ncolX, double[] normSub, double[] normMul) {
+      this(yt, ncolX, ncolX, 0, normSub, normMul, new int[] {0}, false);
+    }
+    public BMulInPlaceTask(double[][] yt, int ncolX, int ncolExp, int ncats, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
+      if(normSub != null) assert normSub.length == ncolX-ncats;
+      if(normMul != null) assert normMul.length == ncolX-ncats;
+      assert catOffsets != null && (catOffsets.length-1) == ncats;
+      assert yt != null && yt[0].length == ncolExp;
+
       _ncolX = ncolX;
+      _ncats = ncats;
+      _normSub = normSub == null ? new double[_ncolX-_ncats] : normSub;
+      if(normMul == null) {
+        _normMul = new double[_ncolX-_ncats];
+        Arrays.fill(_normMul, 1.0);
+      } else
+        _normMul = normMul;
+      _catOffsets = catOffsets;
+      _numStart = _catOffsets[_ncats];
+      _use_all_factor_levels = use_all_factor_levels;
       _yt = yt;
     }
 
     @Override public void map(Chunk[] cs) {
       assert cs.length == _ncolX + _yt.length;
-      double[] x = new double[_ncolX];
 
       for(int row = 0; row < cs[0]._len; row++) {
-        // Extract row of X
-        for (int k = 0; k < _ncolX; k++)
-          x[k] = cs[k].atd(row);
-
         // Inner product of X row with Y column (Y' row)
         int bidx = _ncolX;
+
         for (int p = 0; p < _yt.length; p++) {
-          double sum = ArrayUtils.innerProduct(x, _yt[p]);
+          // Categorical columns
+          double sum = 0;
+          for (int k = 0; k < _ncats; k++) {
+            double x = cs[k].atd(row);
+            if (Double.isNaN(x)) continue;    // Missing categorical values are skipped
+
+            int last_cat = _catOffsets[k+1]-_catOffsets[k]-1;
+            int level = (int)x - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
+            if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
+            sum += _yt[p][_catOffsets[k]+level];
+          }
+
+          // Numeric columns
+          int pnum = 0;
+          int pexp = _numStart;
+          for (int k = _ncats; k < _ncolX; k++) {
+            double x = cs[k].atd(row);
+            sum += _yt[p][pexp] * (x - _normSub[pnum]) * _normMul[pnum];
+            pnum++; pexp++;
+          }
+          assert pexp == _yt[p].length;
+
+          // Save inner product to B
           cs[bidx].set(row, sum);
           bidx++;
         }
@@ -92,8 +134,8 @@ public class LinearAlgebraUtils {
     public double[][] _atq;    // Output: A'Q is p_exp by k, where p_exp = number of cols in A with categoricals expanded
 
     public SMulTask(int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
-      assert normSub != null && normSub.length == ncats;
-      assert normMul != null && normMul.length == ncats;
+      if(normSub != null) assert normSub.length == ncolA-ncats;
+      if(normMul != null) assert normMul.length == ncolA-ncats;
       assert catOffsets != null && (catOffsets.length-1) == ncats;
 
       _ncolA = ncolA;
@@ -107,7 +149,7 @@ public class LinearAlgebraUtils {
       } else
         _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets == null ? 0 : _catOffsets[_ncats];
+      _numStart = _catOffsets[_ncats];
       _use_all_factor_levels = use_all_factor_levels;
     }
 
@@ -141,6 +183,7 @@ public class LinearAlgebraUtils {
           }
           pexp++; pnum++;
         }
+        assert pexp == _atq.length;
       }
     }
 
@@ -156,7 +199,6 @@ public class LinearAlgebraUtils {
    */
   public static class QRfromChol extends MRTask<QRfromChol> {
     final int _ncolA;     // Number of cols in A
-    final int _ncolExp;   // Number of cols in A with categoricals expanded
     final int _ncats;     // Number of categorical cols in A
     final int _ncolQ;     // Number of cols in Q
     final double[] _normSub;  // For standardizing A
@@ -167,12 +209,15 @@ public class LinearAlgebraUtils {
     final double[][] _L;
 
     // Constructor if A is purely numeric data
-    public QRfromChol( CholeskyDecomposition chol, double nobs, int ncolA, int ncolQ, double[] normSub, double[] normMul) {
-      this(chol, nobs, ncolA, ncolA, 0, ncolQ, normSub, normMul, null, false);
+    public QRfromChol(CholeskyDecomposition chol, double nobs, int ncolA, int ncolQ, double[] normSub, double[] normMul) {
+      this(chol, nobs, ncolA, 0, ncolQ, normSub, normMul, new int[] {0}, false);
     }
-    public QRfromChol( CholeskyDecomposition chol, double nobs, int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
+    public QRfromChol(CholeskyDecomposition chol, double nobs, int ncolA, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
+      if(normSub != null) assert normSub.length == ncolA-ncats;
+      if(normMul != null) assert normMul.length == ncolA-ncats;
+      assert catOffsets != null && (catOffsets.length-1) == ncats;
+
       _ncolA = ncolA;
-      _ncolExp = ncolExp;
       _ncats = ncats;
       _ncolQ = ncolQ;
       _normSub = normSub == null ? new double[_ncolA-_ncats] : normSub;
@@ -182,7 +227,7 @@ public class LinearAlgebraUtils {
       } else
         _normMul = normMul;
       _catOffsets = catOffsets;
-      _numStart = _catOffsets == null ? 0 : _catOffsets[_ncats];
+      _numStart = _catOffsets[_ncats];
       _use_all_factor_levels = use_all_factor_levels;
 
       _L = chol.getL().getArray();
@@ -205,7 +250,6 @@ public class LinearAlgebraUtils {
     @Override public void map(Chunk cs[]) {
       assert (_ncolA + _ncolQ) == cs.length;
       double[] arow = new double[_ncolA];
-      double[] qrow = new double[_ncolQ];
 
       for(int row = 0; row < cs[0]._len; row++) {
         // 1) Extract single expanded row of A
@@ -230,7 +274,7 @@ public class LinearAlgebraUtils {
         }
 
         // 2) Solve for single row of Q using forward substitution
-        qrow = forwardSolve(_L, arow);
+        double[] qrow = forwardSolve(_L, arow);
 
         // 3) Save row of solved values into Q
         int i = 0;

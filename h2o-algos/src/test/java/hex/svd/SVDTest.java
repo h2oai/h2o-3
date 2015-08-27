@@ -409,8 +409,7 @@ public class SVDTest extends TestUtil {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
-      parms._ignored_columns = new String[] {"sepal_len", "sepal_wid", "petal_len", "petal_wid"};
-      parms._nv = 3;
+      parms._nv = 7;
       parms._use_all_factor_levels = true;
       parms._only_v = false;
       parms._transform = DataInfo.TransformType.NONE;
@@ -419,8 +418,8 @@ public class SVDTest extends TestUtil {
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
-        // TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
-        // Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
