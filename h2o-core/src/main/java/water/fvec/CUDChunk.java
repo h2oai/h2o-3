@@ -2,8 +2,9 @@ package water.fvec;
 
 import water.AutoBuffer;
 import water.MemoryManager;
+import water.nbhm.NonBlockingHashMap;
 import water.util.UnsafeUtils;
-import java.util.HashSet;
+import java.util.Map;
 
 /**
  * The "few unique doubles"-compression function
@@ -17,26 +18,23 @@ public class CUDChunk extends Chunk {
   }
   int numUniques;
   CUDChunk() {}
-  CUDChunk(byte[] bs, HashSet<Double> hs, int len) {
+  CUDChunk(byte[] bs, NonBlockingHashMap<Long,Byte> hs, int len) {
+    _start = -1;
     numUniques = hs.size();
     set_len(len);
     _mem = MemoryManager.malloc1(computeByteSize(numUniques, _len), false);
     UnsafeUtils.set4(_mem, 0, _len);
     UnsafeUtils.set4(_mem, 4, numUniques);
     int j=0;
-    for (Double d : hs)
-      UnsafeUtils.set8d(_mem, 8 + (j++ << 3), d);
-    for (int i=0; i<len; ++i) {
-      double d = UnsafeUtils.get8d(bs, i << 3);
-      int pos = -1;
-      for (j=0; j<numUniques; ++j) //binary search not needed for now
-        if (Double.compare(d, UnsafeUtils.get8d(_mem, 8 + (j << 3))) == 0)
-          pos = j;
-      assert(pos >= 0);
-      assert((byte)(pos-128)==pos-128);
-      UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, (byte)(pos-128)); //(signed) byte is in -128...127
+    //create the mapping and also store the unique values (as longs)
+    for (Map.Entry<Long,Byte> e : hs.entrySet()) {
+      e.setValue(new Byte((byte)(j-128))); //j is in 0...256  -> byte value needs to be in -128...127 for storage
+      UnsafeUtils.set8(_mem, 8 + (j << 3), e.getKey());
+      j++;
     }
-    _start = -1;
+    // store the mapping
+    for (int i=0; i<len; ++i)
+      UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, hs.get(Double.doubleToLongBits(UnsafeUtils.get8d(bs, i << 3))));
   }
   @Override protected final long   at8_impl( int i ) {
     double res = atd_impl(i);
@@ -45,13 +43,13 @@ public class CUDChunk extends Chunk {
   }
   @Override protected final double   atd_impl( int i ) {
     int whichUnique = (UnsafeUtils.get1(_mem, 8 + (numUniques << 3) + i)+128);
-    return UnsafeUtils.get8d(_mem, 8 + (whichUnique << 3));
+    return Double.longBitsToDouble(UnsafeUtils.get8(_mem, 8 + (whichUnique << 3)));
   }
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(atd_impl(i)); }
   @Override boolean set_impl(int idx, long l) { return false; }
   @Override boolean set_impl(int i, double d) {
     for (int j = 0; j < numUniques; ++j) {
-      if (Double.compare(d, UnsafeUtils.get8d(_mem, 8 + (j << 3))) == 0) {
+      if (Double.compare(Double.doubleToLongBits(d), UnsafeUtils.get8(_mem, 8 + (j << 3))) == 0) {
         UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, (byte) (j-128));
         return true;
       }

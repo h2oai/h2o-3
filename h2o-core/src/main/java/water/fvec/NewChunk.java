@@ -4,14 +4,14 @@ import water.AutoBuffer;
 import water.Futures;
 import water.H2O;
 import water.MemoryManager;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.ValueString;
+import water.util.IcedDouble;
+import water.util.IcedInt;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
@@ -1018,8 +1018,8 @@ public class NewChunk extends Chunk {
       switch( log ) {
       case 0:          bs [i    +off] = (byte)le ; break;
       case 1: UnsafeUtils.set2(bs,(i<<1)+off,  (short)le); break;
-      case 2: UnsafeUtils.set4(bs,(i<<2)+off,    (int)le); break;
-      case 3: UnsafeUtils.set8(bs,(i<<3)+off,         le); break;
+      case 2: UnsafeUtils.set4(bs, (i << 2) + off, (int) le); break;
+      case 3: UnsafeUtils.set8(bs, (i << 3) + off, le); break;
       default: throw H2O.fail();
       }
     }
@@ -1029,7 +1029,8 @@ public class NewChunk extends Chunk {
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
-    HashSet<Double> hs = new HashSet<>(CUDChunk.MAX_UNIQUES);
+    NonBlockingHashMap<Long,Byte> hs = new NonBlockingHashMap<>(CUDChunk.MAX_UNIQUES);
+    Byte dummy = '0';
     final byte [] bs = MemoryManager.malloc1(_len *8,true);
     int j = 0;
     boolean fitsInUnique = true;
@@ -1040,16 +1041,14 @@ public class NewChunk extends Chunk {
         ++j;
       }
       if (fitsInUnique && hs.size() < CUDChunk.MAX_UNIQUES) {
-        hs.add(d);
+        hs.putIfAbsent(Double.doubleToLongBits(d),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
       } else {
         fitsInUnique = false;
       }
       UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == sparseLen() :"j = " + j + ", _len = " + sparseLen();
-    // See if it's possible and worth the computational overhead to compress into CSDChunk
-    // -> Heuristic: should at least save 50% in memory compared to C8DChunk
-    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < 0.5 * len()*8)
+    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < len()*8)
       return new CUDChunk(bs, hs, len());
     return new C8DChunk(bs);
   }
