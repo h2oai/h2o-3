@@ -18,7 +18,8 @@
 #' @param hyper_params  list of hyper parameters (i.e., \code{list(ntrees=c(1,2), max_depth=c(5,7))})
 #' @param is_supervised  if specified then override default heuristing which decide if given algorithm
 #'        name and parameters specify super/unsupervised algorithm.
-#' @param do_hyper_params_check  perform client check for specified hyper parameters
+#' @param do_hyper_params_check  perform client check for specified hyper parameters. It can be time expensive for
+#'        large hyper space
 #' @param conn connection to H2O cluster
 #' @importFrom jsonlite toJSON
 #' @examples
@@ -48,20 +49,39 @@ h2o.grid <- function(algorithm,
     stop(paste0("The following parameters are defined as common model parameters and also as hyper parameters: ",
                 .collapse(overlapping_params), "! Please choose only one way!"))
   }
+  # Get model builder parameters for this model
+  all_params <- .h2o.getModelParameters(algo = algorithm)
+
   # Prepare model parameters
   params <- .h2o.prepareModelParameters(algo = algorithm, params = dots, is_supervised = is_supervised)
   # Validation of input key
   .key.validate(params$key_value)
-  # Get model builder parameters for this model
-  allParams <- .h2o.getModelParameters(algo = algorithm)
+  # Validate all hyper parameters against REST API end-point
+  if (do_hyper_params_check) {
+    lparams <- params
+    # Generate all combination of hyper parameters
+    expanded_grid <- expand.grid(lapply(hyper_params, function(o) { 1:length(o) }))
+    # Verify each defined point in hyper space against REST API
+    apply(expanded_grid,
+          MARGIN = 1,
+          FUN = function(permutation) {
+      # Fill hyper parameters for this permutation
+      hparams <- lapply(hyper_param_names, function(name) { hyper_params[[name]][[permutation[[name]]]] })
+      names(hparams) <- hyper_param_names
+      params_for_validation <- lapply(append(lparams, hparams), function(x) { if(is.integer(x)) x <- as.numeric(x); x })
+      # We have to repeat part of work used by model builders
+      params_for_validation <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = all_params, params = params_for_validation)
+      .h2o.validateModelParameters(conn, algorithm, params_for_validation)
+    })
+  }
+
   # Verify and unify the parameters
-  params <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = allParams,
+  params <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = all_params,
                                                   params = params, hyper_params = hyper_params)
   # Validate and unify hyper parameters
   hyper_values <- .h2o.checkAndUnifyHyperParameters(algo = algorithm,
-                                                        allParams = allParams, hyper_params = hyper_params,
+                                                        allParams = all_params, hyper_params = hyper_params,
                                                         do_hyper_params_check = do_hyper_params_check)
-
   # Append grid parameters in JSON form
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
 
