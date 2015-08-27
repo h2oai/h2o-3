@@ -95,11 +95,7 @@ public abstract class Parser extends Iced {
         nextChunk.close(); // Match output chunks to input zipfile chunks
         if( dout != nextChunk ) {
           dout.reduce(nextChunk);
-          if (_jobKey != null) {
-            Job.update(_setup._chunk_size, _jobKey);
-            if (((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed())
-              break;
-          }
+          if (_jobKey != null && ((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) break;
         }
         nextChunk = nextChunk.nextChunk();
       }

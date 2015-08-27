@@ -279,8 +279,7 @@ public final class PersistHdfs extends Persist {
         Path pfs = file.getPath();
         if( file.isDir() ) {
           addFolder(fs, pfs, keys, failed);
-        } else {
-          long size = file.getLen();
+        } else if (file.getLen() > 0){
           Key k = null;
           keys.add((k = HDFSFileVec.make(file.getPath().toString(), file.getLen(), futures)).toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");

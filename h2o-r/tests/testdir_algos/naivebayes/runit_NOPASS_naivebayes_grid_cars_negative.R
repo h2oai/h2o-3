@@ -30,8 +30,8 @@ check.naivebayes.grid.cars.negative <- function(conn) {
   train[,response_col] <- as.factor(train[,response_col])
 
   Log.info("Constructing the grid of naivebayes models with some invalid naivebayes parameters...")
-  cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", x=predictors, y=response_col,
-                                   training_frame=train, hyper_params=grid_space)
+  cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space, do_hyper_params_check=FALSE)
+  expect_error(h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space))
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")

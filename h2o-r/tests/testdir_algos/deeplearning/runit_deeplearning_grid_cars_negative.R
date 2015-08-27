@@ -19,19 +19,15 @@ check.deeplearning.grid.cars.negative <- function(conn) {
 
   ## Invalid deeplearning parameters
   grid_space <- list()
-  grid_space$activation <- c(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout",
-                                    "MaxoutWithDropout"), 2), "Foo")
-  grid_space$hidden <- list(c(10,10), c(20,20), 50)
-  grid_space$epochs <- c(1, 2, -10)
-  grid_space$loss <- c(sample(c("Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute"), 2), "Bar")
-  grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
+  grid_space$activation <- lapply(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 2), function (x) x)
+  grid_space$activation[[3]] <- "Foo"
+  grid_space$epochs <- list(1, 2)
+  grid_space$distribution <- list(sample(c('bernoulli','multinomial','gaussian'), 1))
   Log.info(lapply(names(grid_space), function(n) paste0("The provided ",n," search space: ", grid_space[n])))
 
   expected_grid_space <- list()
   expected_grid_space$activation <- grid_space$activation[grid_space$activation != "Foo"]
-  expected_grid_space$hidden <- list(c(10,10), c(20,20))
-  expected_grid_space$epochs <- c(1, 2)
-  expected_grid_space$loss <- grid_space$loss[grid_space$loss != "Bar"]
+  expected_grid_space$epochs <- list(1, 2)
   expected_grid_space$distribution <- grid_space$distribution
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
@@ -50,23 +46,26 @@ check.deeplearning.grid.cars.negative <- function(conn) {
   Log.info("Constructing the grid of deeplearning models with some invalid deeplearning parameters...")
   if ( validation_scheme == 1 ) {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
-                              hyper_params=grid_space)
+                              hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,hyper_params=grid_space))
   } else if ( validation_scheme == 2 ) {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
-                              nfolds=nfolds, hyper_params=grid_space)
+                              nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space))
   } else {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
-                              validation_frame=valid, hyper_params=grid_space) }
+                              validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
-  expect_equal(length(cars_deeplearning_grid@model_ids), 16)
+  expect_equal(length(cars_deeplearning_grid@model_ids), 4)
 
   Log.info("Check that the hyper_params that were passed to grid, were used to construct the models...")
   # Get models
   grid_models <- lapply(cars_deeplearning_grid@model_ids, function(mid) { model = h2o.getModel(mid) })
   # Check expected number of models
-  expect_equal(length(grid_models), 16)
+  expect_equal(length(grid_models), 4)
   # Check parameters coverage
   for ( name in names(grid_space) ) { expect_model_param(grid_models, name, expected_grid_space[[name]]) }
 
@@ -93,3 +92,5 @@ check.deeplearning.grid.cars.negative <- function(conn) {
 
   testEnd()
 }
+
+doTest("Deep Learning Grid Search using bad parameters", check.deeplearning.grid.cars.negative)
