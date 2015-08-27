@@ -37,8 +37,6 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
                                                           sample(2:3,1)) }
     if ( sample(0:1,1) ) { grid_space$hidden <- lapply(sample(1:3,sample(2:3,1)), function (x) rep(sample(10:200,1),sample(2:3,1))) }
     if ( sample(0:1,1) ) { grid_space$epochs <- sample(1:10, sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$loss <- sample(c("Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute"),
-                                                    sample(2:3,1)) }
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
   if ( algo == "kmeans" ) {
@@ -52,7 +50,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
     lambda <- sample(0:1,1)
     alpha <- sample(0:1,1)
     if ( lambda ) { grid_space$lambda <- lapply(round(runif(sample(2:3,1)),6), function (x) x) }
-    if ( !lambda || alpha ) { grid_space$alpha <- lapply(round(runif(sample(2:3,1)),6), function (x) list(x)) }
+    if ( !lambda || alpha ) { grid_space$alpha <- lapply(round(runif(sample(2:3,1)),6), function (x) x) }
     grid_space$family <- sample(c('binomial','gaussian','poisson','tweedie','gamma'), 1)
     if ( grid_space$family == "tweedie" ) {
       if ( sample(0:1,1) ) {
