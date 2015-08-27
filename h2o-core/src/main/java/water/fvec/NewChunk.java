@@ -1029,8 +1029,8 @@ public class NewChunk extends Chunk {
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
-    NonBlockingHashMap<Long,Byte> hs = new NonBlockingHashMap<>(CUDChunk.MAX_UNIQUES);
-    Byte dummy = '0';
+    HashMap<Long,Byte> hs = new HashMap<>(CUDChunk.MAX_UNIQUES);
+    Byte dummy = 0;
     final byte [] bs = MemoryManager.malloc1(_len *8,true);
     int j = 0;
     boolean fitsInUnique = true;
@@ -1040,17 +1040,21 @@ public class NewChunk extends Chunk {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
-      if (fitsInUnique && hs.size() < CUDChunk.MAX_UNIQUES) {
-        hs.putIfAbsent(Double.doubleToLongBits(d),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
-      } else {
-        fitsInUnique = false;
+      if (fitsInUnique) {
+        if (hs.size() < CUDChunk.MAX_UNIQUES) //still got space
+          hs.putIfAbsent(Double.doubleToLongBits(d),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
+        else if (hs.size() == CUDChunk.MAX_UNIQUES) //full, but might not need more space because of repeats
+          fitsInUnique = hs.containsKey(Double.doubleToLongBits(d));
+        else //full - no longer try to fit into CUDChunk
+          fitsInUnique = false;
       }
       UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == sparseLen() :"j = " + j + ", _len = " + sparseLen();
-    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < len()*8)
+    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < 0.8 * bs.length)
       return new CUDChunk(bs, hs, len());
-    return new C8DChunk(bs);
+    else
+      return new C8DChunk(bs);
   }
 
   // Compute a compressed UUID buffer

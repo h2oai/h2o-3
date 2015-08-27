@@ -2,8 +2,9 @@ package water.fvec;
 
 import water.AutoBuffer;
 import water.MemoryManager;
-import water.nbhm.NonBlockingHashMap;
 import water.util.UnsafeUtils;
+
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,7 +19,7 @@ public class CUDChunk extends Chunk {
   }
   int numUniques;
   CUDChunk() {}
-  CUDChunk(byte[] bs, NonBlockingHashMap<Long,Byte> hs, int len) {
+  CUDChunk(byte[] bs, HashMap<Long,Byte> hs, int len) {
     _start = -1;
     numUniques = hs.size();
     set_len(len);
