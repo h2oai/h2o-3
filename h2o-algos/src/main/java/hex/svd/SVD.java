@@ -139,7 +139,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame randSubIter(DataInfo dinfo, SVDModel model, int iters, long seed) {
+    private Frame randSubIter(DataInfo dinfo, SVDModel model, int max_iterations, long seed) {
       DataInfo yinfo = null;
       Frame yinit = null, ybig = null, qfrm = null, ayqfrm = null;
       final int ncolA = dinfo._adaptedFrame.numCols();
@@ -151,7 +151,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         yinit = rtsk.outputFrame(Key.make(), null, null);
 
-        // Make input frame [A,Q,Y] where A = read-only training data, Y = AQ, Q from Y = QR factorization
+        // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
+        // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
         ayqfrm = new Frame(dinfo._adaptedFrame);
         ayqfrm.add(yinit);
         for (int i = 0; i < _parms._nv; i++)
@@ -177,9 +178,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Arrays.fill(normMulY, 1.0);
         QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
         qrtsk.doAll(yqfrm);
+        System.out.println(qrtsk._err);
 
-        // TODO: Keep track of change in ||Q_j-Q_{j-1}|| between iterations so can terminate loop
-        for (int q = 0; q < iters; q++) {
+        int iters = 0;
+        long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
+        while (qrtsk._err / qobs > TOLERANCE && iters < max_iterations) {
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
           stsk.doAll(aqfrm);    // Pass in [A,Q]
@@ -201,6 +204,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
           qrtsk.doAll(yqfrm);   // Pass in [Y,Q]
+          iters++;
+          System.out.println(qrtsk._err);
         }
 
         // 4) Extract and save final Q_j from [A,Q] frame
@@ -406,8 +411,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             utsk.doAll(u);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
-          // TODO: Calculate optimal number of iters for randomized subspace iteration
-          qfrm = randSubIter(dinfo, model, 1, _parms._seed);
+          qfrm = randSubIter(dinfo, model, _parms._max_iterations, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);

@@ -1146,8 +1146,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final boolean _regX;      // Should I calculate regularization of (old) X matrix?
 
     // Output
-    double _loss;
-    double _xold_reg;
+    double _loss;       // Loss evaluated on A - XY using new X (and current Y)
+    double _xold_reg;   // Regularization evaluated on old X
 
     ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, GLRMParameters.Loss[] lossFunc, int weightId) {
       this(parms, yt, ncolA, ncolX, ncats, normSub, normMul, lossFunc, weightId, false);

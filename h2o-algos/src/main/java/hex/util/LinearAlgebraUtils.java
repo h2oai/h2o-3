@@ -208,6 +208,8 @@ public class LinearAlgebraUtils {
     final boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
     final double[][] _L;
 
+    public double _err;    // Output: l2 norm of difference between old and new Q
+
     // Constructor if A is purely numeric data
     public QRfromChol(CholeskyDecomposition chol, double nobs, int ncolA, int ncolQ, double[] normSub, double[] normMul) {
       this(chol, nobs, ncolA, 0, ncolQ, normSub, normMul, new int[] {0}, false);
@@ -232,6 +234,7 @@ public class LinearAlgebraUtils {
 
       _L = chol.getL().getArray();
       ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
+      _err = 0;
     }
 
     public final double[] forwardSolve(double[][] L, double[] b) {
@@ -278,10 +281,16 @@ public class LinearAlgebraUtils {
 
         // 3) Save row of solved values into Q
         int i = 0;
-        for(int d = _ncolA; d < _ncolA+_ncolQ; d++)
+        for(int d = _ncolA; d < _ncolA+_ncolQ; d++) {
+          double qold = cs[d].atd(row);
+          double diff = qrow[i] - qold;
+          _err += diff * diff;    // Calculate SSE between Q_new and Q_old
           cs[d].set(row, qrow[i++]);
+        }
         assert i == qrow.length;
       }
     }
+
+    @Override protected void postGlobal() { _err = Math.sqrt(_err); }
   }
 }
