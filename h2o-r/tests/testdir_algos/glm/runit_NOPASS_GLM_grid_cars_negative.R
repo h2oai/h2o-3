@@ -19,13 +19,13 @@ check.glm.grid.cars.negative <- function(conn) {
 
   ## Invalid glm parameters
   grid_space <- list()
-  grid_space$lambda <- list(0.0001,0.001,'a')
-  grid_space$alpha <- list(list(0),list(0.5),list(1),list('b'))
+  grid_space$lambda <- list(0.0001,0.001)
+  grid_space$alpha <- list(0,0.5,1,-22)
   Log.info(lapply(names(grid_space), function(n) paste0("The provided ",n," search space: ", grid_space[n])))
 
   expected_grid_space <- list()
-  expected_grid_space$lambda <- list(0.0001,0.00)
-  expected_grid_space$alpha <- list(list(0),list(0.5),list(1))
+  expected_grid_space$lambda <- list(0.0001,0.001)
+  expected_grid_space$alpha <- list(0,0.5,1)
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   predictors <- c("displacement","power","weight","acceleration","year")
@@ -42,14 +42,14 @@ check.glm.grid.cars.negative <- function(conn) {
 
   Log.info("Constructing the grid of glm models with some invalid glm parameters...")
   if ( validation_scheme == 1 ) {
-    cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train,
-                              hyper_params=grid_space)
+    cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space))
   } else if ( validation_scheme == 2 ) {
-    cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train,
-                              nfolds=nfolds, hyper_params=grid_space)
+    cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space))
   } else {
-    cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train,
-                              validation_frame=valid, hyper_params=grid_space) }
+    cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
