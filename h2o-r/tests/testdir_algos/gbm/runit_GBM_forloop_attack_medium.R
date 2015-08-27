@@ -94,7 +94,7 @@ test.GBM.rand_attk_forloop <- function(conn) {
   pros.hex[,5] <- as.factor(pros.hex[,5])
   pros.hex[,6] <- as.factor(pros.hex[,6])
   pros.hex[,9] <- as.factor(pros.hex[,9])
-  seed <- as.integer(runif(1,1,10000000000))
+  seed <- as.integer(runif(1,1,.Machine$integer.max))
   print("SEED: ")
   print(seed)
   p.sid <- h2o.runif(pros.hex,seed=seed)
