@@ -53,7 +53,7 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
-  if( !exists("id",envir=x) && is.character(x:eval) ) {
+  if( !exists("id",envir=x) && is.character(x:eval) && .shared(x) ) {
     cat("=== Finalizer on ",x:eval,"\n")
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x:eval), method = "DELETE")
   }
@@ -63,7 +63,8 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
 .newFrame <- function(op,id) {
   stopifnot( is.character(id) )
-  node <- structure(new.env(parent = emptyenv()), class="Frame")
+  #node <- structure(new.env(parent = emptyenv()), class="Frame")
+  assign("node",structure(new.env(parent = emptyenv()), class="Frame"))
   .set(node,"op",op)
   .set(node,"id",id)
   .set(node,"eval",id)
@@ -71,10 +72,11 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 }
 
 # A new lazy expression
-.newExpr <- function(op,...) .newExprList(op,list(...))
+.newExpr <- function(op,...) .newExprList(op,.prim.list(...))
 
 .newExprList <- function(op,li) {
-  node <- structure(new.env(parent = emptyenv()), class="Frame")
+  #node <- structure(new.env(parent = emptyenv()), class="Frame")
+  assign("node",structure(new.env(parent = emptyenv()), class="Frame"))
   .set(node,"op",op)
   .set(node,"eval",li)
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
@@ -97,12 +99,12 @@ Math.Frame <- function(x) .newExpr(.Generic,x)
 
 Math.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
-Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
+Math.Frame <- function(x,...) .newExprList(.Generic,.prim.list(x,...))
 
 Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl")
   # Eagerly evaluation, to produce a scalar
-  res <- .eval.frame(.newExprList(.Generic,list(x,...))):data
+  res <- .eval.frame(.newExprList(.Generic,.prim.list(x,...))):data
   if( .Generic=="all" ) as.logical(res) else res
 }
 
@@ -110,16 +112,50 @@ is.na.Frame <- function(x) .newExpr("is.na", x)
 
 `!.Frame` <- function(x) .newExpr("!!",x)
 
+#
+# Overload Assignment!
+# 
+# Trying to remove excessive temp generation, by having the R interpreter tell
+# H2O that some computation may be used, or not.  If the expression is only
+# ever used once, then no temp is needed and the cluster can optimize the
+# lifetime.  If the temp *may* be used again, the cluster needs a temp for
+# the reuse, or else the computation needs to be "pure" and re-executed.
+#
+# Flag as shared all Frames that get assigned to something.  These will be
+# assigned an RTMP name, and will live until an R GC calls their finalizer.
+# Other frames are known to be expression-local-only, and they are not visible
+# to R after the current expression, and the cluster may optimize their
+# lifetime.
+rm("<-" )
+.prim.c <- .Primitive("c")
+.prim.list <- .Primitive("list")
+.setShared <- function(x) if( is.Frame(x) ) .set(x,"shared",TRUE)
+
+assign("<-", function(x,y) {
+  force(y)
+  .setShared(y)
+  assign("xsub",substitute(x))
+  if( is.symbol(xsub) ) assign(as.character(xsub),y, envir=parent.frame())
+  else eval(as.call(.prim.list(.Primitive("<-"),xsub,y )),parent.frame())
+})
+
+assign("c", function(...) {
+  res <- .prim.c(...)
+  lapply(res, .setShared)
+  res
+})
+
+assign("list", function(...) {
+  res <- .prim.list(...)
+  lapply(res, .setShared)
+  res
+})
+
 # True if this Node appears to be shared, and thus need a server-side temp
-#require(pryr)
-.shared <- function(x) {
-#  q <- .Call("named", x, PACKAGE="named")
-#  print(paste0("REF: ",q))
-#  q <- pryr:::named2(substitute(x),parent.frame())
-#  q <- refs(x)
-#  q>=1
-  return(TRUE)
-}
+# Nodes with a server-side temp have a R GC finalizer deleting the temp with
+# the node dies on the R-side.
+.shared <- function(x) exists("shared",x,inherits=FALSE)
+
 
 # Internal recursive clear-visit-flag function, goes hand-n-hand with a
 # recursive visitor
@@ -188,7 +224,9 @@ pfr <- function(x) { chk.Frame(x); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),
     if( !is.null(res$scalar) ) .set(x,"data",res$scalar)
     # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
-    .h2o.gc()
+    # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
+    # temps... to help debug GC issues.
+    #.h2o.gc()
   }
   x
 }
@@ -204,7 +242,7 @@ pfr <- function(x) { chk.Frame(x); e<-new.env(); .set(e,"cnt",0); print(.pfr(x),
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
 #' @export
-dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(data))) }
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(.prim.list(x:nrow,ncol(data))) }
 
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
@@ -318,7 +356,7 @@ print.Frame <- function(x) { cat(as.character(x)); invisible(x) }
 #' @param cols Print the per-column str for the Frame
 #' @export
 str.Frame <- function(x, cols=FALSE, ...) {
-  if (length(l <- list(...)) && any("give.length" == names(l)))
+  if (length(l <- .prim.list(...)) && any("give.length" == names(l)))
     invisible(NextMethod("str", ...))
   else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
 
@@ -330,9 +368,9 @@ str.Frame <- function(x, cols=FALSE, ...) {
 
   # header statement
   cat("\nFrame '", x:eval, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-  l <- list()
+  l <- .prim.list()
   for( i in 1:nc ) {
-    cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+    cat("$ ", cc[i], rep(' ', width - max(na.omit(.prim.c(0,nchar(cc[i]))))), ": ", sep="")
     first.10.rows <- df[,i]
     if( is.factor(first.10.rows) ) {
       lvls <- levels(first.10.rows)
@@ -415,18 +453,18 @@ NULL
       print(col)
       stop("unimplemented1")
     } else if( is.character(col) ) { # Columns by name
-      idx <- match(col,colnames(data)) # Match on name
+      assign("idx", match(col,colnames(data))) # Match on name
       if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
       col <- idx
     }
     idx <- .row.col.selector(col) # Generic R expression
-    data <- .newExpr("cols",data,idx) # Column selector
+    assign("data",.newExpr("cols",data,idx)) # Column selector
   }
   # Have a row selector?
   if( !missing(row) && (is.Frame(row) || !is.na(row)) ) {
     if( !is.Frame(row) )    # Generic R expression
       row <- .row.col.selector(row)
-    data <- .newExpr("rows",data,row) # Row selector
+    assign("data",.newExpr("rows",data,row)) # Row selector
   }
   data
 }
@@ -485,7 +523,7 @@ NULL
     cols <- paste0("[]") # Shortcut for "all cols"
   } else {
     if( is.character(col) ) {
-      idx <- match(col, colnames(data))
+      assign("idx", match(col, colnames(data)))
       if( any(is.na(idx)) ) { # Any unknown names?
         if( length(col) > 1 ) stop("unknown column names")
         else { idx <- ncol(data)+1; name <- col } # Append 1 unknown column
@@ -547,8 +585,8 @@ NULL
 #' @export
 h2o.quantile <- function(x,
                      # AUTOGENERATED params
-                     probs = c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999),
-                     combine_method = c("interpolate", "average", "avg", "low", "high"),
+                     probs = .prim.c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999),
+                     combine_method = .prim.c("interpolate", "average", "avg", "low", "high"),
                      ...)
 {
   # verify input parameters
@@ -565,7 +603,7 @@ h2o.quantile <- function(x,
 
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
-  res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method))
+  assign("res",.newExpr("quantile", x, .num.list(probs), .quote(combine_method)))
   res <- as.matrix(res)
   col <- as.numeric(res[,-1])
   names(col) <- paste0(100*res[,1], "%")
@@ -603,7 +641,7 @@ summary.Frame <- function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
   FORMAT.DIGITS <- 4L
   cnames <- colnames(object)
-  missing <- list()
+  missing <- .prim.list()
 
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
@@ -615,14 +653,14 @@ summary.Frame <- function(object, factors=6L, ...) {
     col.type <- col.sum$type  # enum, string, int, real, time, uuid
 
     # numeric column: [min,1Q,median,mean,3Q,max]
-    if( col.type %in% c("real", "int") ) {
+    if( col.type %in% .prim.c("real", "int") ) {
       cmin <- cmax <- cmean <- c1Q <- cmedian <- c3Q <- NaN                                              # all 6 values are NaN by default
       if( !(is.null(col.sum$mins) || length(col.sum$mins) == 0L) ) cmin <- min(col.sum$mins,na.rm=TRUE)  # set the min
       if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
       if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
 
       if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
-        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
+        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  .prim.c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
         cmedian <- col.sum$percentiles[6] # p=.5
         c3Q     <- col.sum$percentiles[8] # p=.75
       }
@@ -630,20 +668,20 @@ summary.Frame <- function(object, factors=6L, ...) {
       missing.count <- NULL
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
 
-      params <- format(signif( as.numeric( c(cmin, c1Q, cmedian, cmean, c3Q, cmax) ), SIG.DIGITS), digits=FORMAT.DIGITS)   # do some formatting for pretty printing
-      result <- c(paste0("Min.   :", params[1L], "  "), paste0("1st Qu.:", params[2L], "  "),
-                  paste0("Median :", params[3L], "  "), paste0("Mean   :", params[4L], "  "),
-                  paste0("3rd Qu.:", params[5L], "  "), paste0("Max.   :", params[6L], "  "))
+      params <- format(signif( as.numeric( .prim.c(cmin, c1Q, cmedian, cmean, c3Q, cmax) ), SIG.DIGITS), digits=FORMAT.DIGITS)   # do some formatting for pretty printing
+      result <- .prim.c(paste0("Min.   :", params[1L], "  "), paste0("1st Qu.:", params[2L], "  "),
+                        paste0("Median :", params[3L], "  "), paste0("Mean   :", params[4L], "  "),
+                        paste0("3rd Qu.:", params[5L], "  "), paste0("Max.   :", params[6L], "  "))
 
       # return summary string for this column
       if( is.null(missing.count) ) result <- result
-      else                         result <- c(result, paste0("NA's   :",missing.count,"  "))
+      else                         result <- .prim.c(result, paste0("NA's   :",missing.count,"  "))
 
       result
     } else if( col.type == "enum" ) {
       domains <- col.sum$domain
       domain.cnts <- col.sum$histogram_bins
-      if( length(domain.cnts) < length(domains) ) domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
+      if( length(domain.cnts) < length(domains) ) domain.cnts <- .prim.c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
       missing.count <- 0L
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
       # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
@@ -661,7 +699,7 @@ summary.Frame <- function(object, factors=6L, ...) {
       df.domains.subset <- df.domains[1L:factors,]      # subset to the top `factors` (default is 6)
 
       # if there are any missing levels, plonk them down here now after we've subset.
-      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
+      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, .prim.c("NA", missing.count))
 
       # fish out the domains
       domains <- as.character(df.domains.subset[,1L])
@@ -670,7 +708,7 @@ summary.Frame <- function(object, factors=6L, ...) {
       counts <- as.character(df.domains.subset[,2L])
 
       # compute a width for the factor levels and also one for the counts
-      width <- c( max(nchar(domains),0L, na.rm = TRUE), max(nchar(counts),0L, na.rm = TRUE) )
+      width <- .prim.c( max(nchar(domains),0L, na.rm = TRUE), max(nchar(counts),0L, na.rm = TRUE) )
       # construct the result
       paste0(domains,sapply(domains, function(x) {
                       x <- max(0, nchar(x), na.rm = TRUE)
@@ -681,7 +719,7 @@ summary.Frame <- function(object, factors=6L, ...) {
 
     } else {
       # types are time, uuid, string ... ignore for now?
-#      c(paste0(col.type, ": ignored"))
+#      .prim.c(paste0(col.type, ": ignored"))
       NULL
     }
   })
@@ -697,7 +735,7 @@ summary.Frame <- function(object, factors=6L, ...) {
       result <- as.table(cols)
     } else {
       cols <- data.frame( lapply(cols, function(col) {
-                  if( length(col) < max.len ) c(col, rep("", max.len-length(col)))  # pad out result with "" for the prettiest of pretty printing... my pretty... and your little dog TOO! MUAHAHHAHA
+                  if( length(col) < max.len ) .prim.c(col, rep("", max.len-length(col)))  # pad out result with "" for the prettiest of pretty printing... my pretty... and your little dog TOO! MUAHAHHAHA
                   else col                                                          # no padding necessary!
                 }), stringsAsFactors=FALSE)                                         # keep as strings...
 
@@ -792,7 +830,7 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   if( na.rm ) stop("na.rm versions not impl") 
   if( is.null(y) ) y <- x
   if(!missing(use)) {
-    if (use %in% c("pairwise.complete.obs", "na.or.complete"))
+    if (use %in% .prim.c("pairwise.complete.obs", "na.or.complete"))
       stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   } else
     use <- "everything"
@@ -969,7 +1007,7 @@ h2o.setTimezone <- function(tz) .newExpr("setTimeZone",.quote(tz))
 #'
 #' @export
 h2o.getTimezone <- function() {
-  ret <- .fetch.data(gtz <- .newExpr("getTimeZone"))
+  ret <- .fetch.data(assign("gtz",.newExpr("getTimeZone")))
   h2o.rm(gtz:eval)
   ret
 }
@@ -978,7 +1016,7 @@ h2o.getTimezone <- function() {
 #'
 #' @export
 h2o.listTimezones <- function() {
-  ret <- .fetch.data(gtz <- .newExpr("listTimeZones"))
+  ret <- .fetch.data(assign("gtz",.newExpr("listTimeZones")))
   h2o.rm(gtz:eval)
   ret
 }
@@ -1012,8 +1050,8 @@ as.h2o <- function(x, destination_frame= "") {
   types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
   write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
-  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                        col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+  assign("h2f",h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+                              col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(.prim.c("NA_h2o"),ncol(x))))
   file.remove(tmpf)
   h2f
 }
@@ -1247,12 +1285,12 @@ ifelse <- function(test, yes, no) {
 #' head(prostate.cbind)
 #' @export
 h2o.cbind <- function(...) {
-  li <- list(unlist(list(...)))
+  li <- .prim.list(unlist(.prim.list(...)))
   use.args <- FALSE
   if( length(li)==1 && is.list(li[[1]]) ) {
     li <- li[[1]]
     use.args <- TRUE
-  } else li <- list(...)
+  } else li <- .prim.list(...)
   lapply(li, function(l) chk.Frame(l) )
   .newExprList("cbind",li)
 }
@@ -1275,7 +1313,7 @@ h2o.cbind <- function(...) {
 #' head(prostate.cbind)
 #' @export
 h2o.rbind <- function(...) {
-  ls <- list(...)
+  ls <- .prim.list(...)
   l <- unlist(ls)
   if( !is.list(l) ) l <- ls
   klazzez <- unlist(lapply(l, function(i) is.Frame(i)))
@@ -1331,9 +1369,9 @@ h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y
 #' @return Returns a new \linkS4class{Frame} object with columns equivalent to the number of
 #'         groups created
 #' @export
-h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
+h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=.prim.list(na.methods=NULL, col.names=NULL)) {
   # Build the argument list: (GB data, [group.by] [order.by] {agg col "na"}...)
-  args <- list(chk.Frame(data))
+  args <- .prim.list(chk.Frame(data))
 
   ### handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
@@ -1348,7 +1386,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   }
   if(group.cols <= 0L || group.cols > ncol(data))
     stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
-  args <- c(args,.row.col.selector(group.cols))
+  args <- .prim.c(args,.row.col.selector(group.cols))
 
   ### ORDER BY ###
   order.by.cols <- NULL
@@ -1364,10 +1402,10 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
     }
     if(order.by.cols < 1L || order.by.cols > ncol(data)) stop('Column ', order.by.cols, ' out of range for frame columns ', ncol(data), '.')
   }
-  args <- c(args,.row.col.selector(order.by.cols))
+  args <- .prim.c(args,.row.col.selector(order.by.cols))
 
 
-  a <- substitute(list(...))
+  a <- substitute(.prim.list(...))
   a[[1]] <- NULL  # drop the wrapping list()
   nAggs <- length(a)  # the number of aggregates
   # for each aggregate, build this list: (agg,col.idx,na.method)
@@ -1408,7 +1446,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
       gb.control$na.methods <- rep(gb.control$na.methods, nAggs)
     } else {
       n.missing <- nAggs - length(gb.control$na.methods)
-      gb.control$na.methods <- c(gb.control$na.methods, rep("all", n.missing))
+      gb.control$na.methods <- .prim.c(gb.control$na.methods, rep("all", n.missing))
     }
 
   # have more na.methods than aggregates -- rm extras
@@ -1422,7 +1460,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   # Append the aggregates!  Append triples: aggregate, column, na-handling
   for( idx in 1:nAggs ) {
-    args <- c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx])) 
+    args <- .prim.c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx])) 
   }
 
   # Create the group by AST
@@ -1483,7 +1521,7 @@ apply <- function(X, MARGIN, FUN, ...) {
   if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))
 
   # Margin must be 1 or 2 and specified
-  if( missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))) )
+  if( missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% .prim.c(1L, 2L))) )
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
   # Basic sanity checking on function
   if( missing(FUN) ) stop("FUN must be an R function")
@@ -1494,9 +1532,9 @@ apply <- function(X, MARGIN, FUN, ...) {
   if( !is.null(.FUN) ) FUN <- as.name(FUN)
 
   # Deal with extra arguments
-  l <- list(...)
+  l <- .prim.list(...)
   if(length(l) > 0L) {
-    tmp <- sapply(l, function(x) { !class(x) %in% c("Frame", "numeric", "character", "logical") } )
+    tmp <- sapply(l, function(x) { !class(x) %in% .prim.c("Frame", "numeric", "character", "logical") } )
     if(any(tmp)) stop("H2O only recognizes Frame, numeric, and character objects.")
 
     idx <- which(sapply(l, function(x) is(x, "Frame")))
@@ -1522,7 +1560,7 @@ apply <- function(X, MARGIN, FUN, ...) {
   # environment (not the static environment the H2O wrapper itself is compiled
   # in).  Unknown variables in the function body will be looked up in the
   # dynamic scope.
-  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, list(), sys.parent(1) ))
+  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, .prim.list(), sys.parent(1) ))
 }
 
 #' Inserting Missing Values to an H2O DataFrame
@@ -1549,7 +1587,7 @@ apply <- function(X, MARGIN, FUN, ...) {
 #' summary(irismiss.hex)
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
-  parms = list()
+  parms = .prim.list()
   parms$dataset <- .eval.frame(data):eval # Eager force evaluation
   parms$fraction <- fraction
   if( !missing(seed) )
@@ -1616,7 +1654,7 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
   if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
 
-  .cframe.map <- c("key" = "dest")
+  .cframe.map <- .prim.c("key" = "dest")
   parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent, 2)  # depth must be 2 in order to pop out of the lapply scope...
   if(missing(key) || !is.character(key) || !nzchar(key))
     parms$key = .key.make(prefix = "frame")
@@ -1645,12 +1683,12 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex = h2o.importFile(path = irisPath)
-#' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
+#' iris.split = h2o.splitFrame(iris.hex, ratios = .prim.c(0.2, 0.5))
 #' head(iris.split[[1]])
 #' summary(iris.split[[1]])
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  params <- list()
+  params <- .prim.list()
   params$dataset <- .eval.frame(chk.Frame(data)):eval
   params$ratios <- .collapse(ratios)
   if (!missing(destination_frames))
@@ -1699,8 +1737,8 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #' h2o.table(prostate.hex[,3])
 #'
 #' # Two-way table of ages (rows) and race (cols) of all patients
-#' head(h2o.table(prostate.hex[,c(3,4)]))
-#' h2o.table(prostate.hex[,c(3,4)])
+#' head(h2o.table(prostate.hex[,.prim.c(3,4)]))
+#' h2o.table(prostate.hex[,.prim.c(3,4)])
 #' @export
 h2o.table <- function(x, y = NULL) {
   chk.Frame(x)
@@ -1718,7 +1756,7 @@ h2o.table <- function(x, y = NULL) {
 #' @param breaks Can be one of the following:
 #'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
 #'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
-#'               A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+#'               A vector of numbers giving the split points, e.g., .prim.c(-50,213.2123,9324834)
 #' @param plot A logical value indicating whether or not a plot should be generated (default is TRUE).
 #' @export
 h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
@@ -1732,7 +1770,7 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
   h <- as.data.frame(.newExpr("hist", chk.Frame(x), .quote(breaks)))
   counts <- stats::na.omit(h[,2])
   mids <- stats::na.omit(h[,4])
-  histo <- list()
+  histo <- .prim.list()
   histo$breaks <- h$breaks
   histo$counts <- as.numeric(counts)
   histo$density <- as.numeric(histo$counts / sum(histo$counts) * 1 / diff(histo$breaks))

@@ -20,7 +20,7 @@ locate_source <- function(s) {
     myPath <- locate(s)
 }
 
-test.citibike.demo <- function(conn) {
+test.citibike.demo <- function() {
 # Pick either the big or the small demo.
 # Big data is 10M rows
 small_test <-  locate_source("smalldata/demos/citibike_20k.csv")
