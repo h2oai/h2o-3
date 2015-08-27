@@ -346,7 +346,8 @@
         }
       }
       <!-- DOM 0 style without jquery -->
-      window.onload = function() {
+
+      trackLinks = function() {
         trackLink('download-zip', 'Download', 'ZIP');
         trackLink('doc-flow', 'Documentation', 'Flow');
         trackLink('doc-r-pdf', 'Documentation', 'R');
@@ -364,8 +365,96 @@
         trackLink('btnCopy6','Copy to Clipboard', 'Run H2O on Maven');
         trackLink('btnCopy7','Copy to Clipboard', 'Run H2O on Hadoop');
         trackLink('btnCopy8','Copy to Clipboard', 'Use H2O directly from Python');
+      }
 
-        initializeTabs();
+      populatePageWithBuildInfoJson = function(obj) {
+        var out;
+        var i;
+
+        out = "";
+        out += "<ul>\n";
+        user_documents = obj.user_documents;
+        for (i = 0; i < user_documents.length; i++) {
+          doc = user_documents[i];
+          out += "<li>";
+          out += "<a id=\"";
+          out += doc.id;
+          out += "\"";
+          out += " href=\"";
+          out += doc.path
+          out += "\">";
+          out += doc.name;
+          out += "</a>";
+          out += "</li>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("user_documentation")
+        tmp.innerHTML = out;
+
+        out = "";
+        out += "<ul>\n";
+        developer_documents = obj.developer_documents;
+        for (i = 0; i < developer_documents.length; i++) {
+          doc = developer_documents[i];
+          out += "<li>";
+          out += "<a id=\"";
+          out += doc.id;
+          out += "\"";
+          out += " href=\"";
+          out += doc.path
+          out += "\">";
+          out += doc.name;
+          out += "</a>";
+          out += "</li>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("developer_documentation")
+        tmp.innerHTML = out;
+
+        out = "";
+        out += "<ul>\n";
+        hadoop_distributions = obj.hadoop_distributions;
+        for (i = 0; i < hadoop_distributions.length; i++) {
+          dist = hadoop_distributions[i];
+          var url = location.href;
+          var url2 = url.substring(0, url.lastIndexOf("/"));
+          out += "wget ";
+          out += url2;
+          out += "/";
+          out += dist.zip_file_path;
+          out += "<br/>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("to_copy4")
+        tmp.innerHTML = out;
+      }
+
+      readBuildInfoJsonFile = function() {
+        var xmlhttp = new XMLHttpRequest();
+        var url = "buildinfo.json";
+
+        xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var myObj = JSON.parse(xmlhttp.responseText);
+            populatePageWithBuildInfoJson(myObj);
+
+            // Must be after populating the page or id's won't be found.
+            trackLinks();
+            initializeTabs();
+          }
+        }
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+      }
+
+      window.onload = function() {
+        readBuildInfoJsonFile();
       }
     </script>
   </head>
@@ -652,89 +741,5 @@ dependencies {</br>
         </div>
       </div>
     </div>
-
-    <script>
-
-var xmlhttp = new XMLHttpRequest();
-var url = "buildinfo.json";
-
-xmlhttp.onreadystatechange = function() {
-    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-        var myObj = JSON.parse(xmlhttp.responseText);
-        myFunction(myObj);
-    }
-}
-xmlhttp.open("GET", url, true);
-xmlhttp.send();
-
-function myFunction(obj) {
-    var out;
-    var i;
-
-    out = "";
-    out += "<ul>\n";
-    user_documents = obj.user_documents;
-    for (i = 0; i < user_documents.length; i++) {
-        doc = user_documents[i];
-        out += "<li>";
-        out += "<a id=\"";
-        out += doc.id;
-        out += "\"";
-        out += " href=\"";
-        out += doc.path
-        out += "\">";
-        out += doc.name;
-        out += "</a>";
-        out += "</li>";
-        out += "\n";
-    }
-    out += "</ul>\n";
-
-    tmp = document.getElementById("user_documentation")
-    tmp.innerHTML = out;
-
-    out = "";
-    out += "<ul>\n";
-    developer_documents = obj.developer_documents;
-    for (i = 0; i < developer_documents.length; i++) {
-        doc = developer_documents[i];
-        out += "<li>";
-        out += "<a id=\"";
-        out += doc.id;
-        out += "\"";
-        out += " href=\"";
-        out += doc.path
-        out += "\">";
-        out += doc.name;
-        out += "</a>";
-        out += "</li>";
-        out += "\n";
-    }
-    out += "</ul>\n";
-
-    tmp = document.getElementById("developer_documentation")
-    tmp.innerHTML = out;
-
-    out = "";
-    out += "<ul>\n";
-    hadoop_distributions = obj.hadoop_distributions;
-    for (i = 0; i < hadoop_distributions.length; i++) {
-        dist = hadoop_distributions[i];
-        var url = location.href;
-        var url2 = url.substring(0, url.lastIndexOf("/"));
-        out += "wget ";
-        out += url2;
-        out += "/";
-        out += dist.zip_file_path;
-        out += "<br/>";
-        out += "\n";
-    }
-    out += "</ul>\n";
-
-    tmp = document.getElementById("to_copy4")
-    tmp.innerHTML = out;
-}
-
-    </script>
   </body>
 </html>
