@@ -3,6 +3,7 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.AutoBuffer;
 import water.TestUtil;
 
 import java.util.Arrays;
@@ -44,9 +45,19 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(cc.isNA(vals.length));
     Assert.assertTrue(cc.isNA_abs(vals.length));
 
+    Chunk cc2 = new CUDChunk();
+    cc2.read(cc.write(new AutoBuffer()).flipForReading());
+    Assert.assertEquals(cc._len, cc2._len);
+    Assert.assertEquals(vals.length + 1, cc2._len);
+    Assert.assertTrue(cc2 instanceof CUDChunk);
+    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atd(i), Math.ulp(vals[i]));
+    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at_abs(i), Math.ulp(vals[i]));
+    Assert.assertTrue(cc2.isNA(vals.length));
+    Assert.assertTrue(cc2.isNA_abs(vals.length));
+
     // randomly writing one of the unique values is fine
     cc.set_impl(vals.length-1, a);
-    Assert.assertTrue(cc.atd(vals.length-1) == a);
+    Assert.assertTrue(cc.atd(vals.length - 1) == a);
     vals[vals.length-1]=a;
 
     nc = cc.inflate_impl(new NewChunk(null, 0));
@@ -57,7 +68,7 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(nc.isNA(vals.length));
     Assert.assertTrue(nc.isNA_abs(vals.length));
 
-    Chunk cc2 = nc.compress();
+    cc2 = nc.compress();
     Assert.assertEquals(vals.length + 1, cc._len);
     Assert.assertTrue(cc2 instanceof CUDChunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atd(i), Math.ulp(vals[i]));

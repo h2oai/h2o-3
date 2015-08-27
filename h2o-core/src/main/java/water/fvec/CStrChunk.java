@@ -9,6 +9,7 @@ public class CStrChunk extends Chunk {
   static protected final int _OFF=4;
   private int _valstart;
 
+  public CStrChunk() {}
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx) {
     _start = -1;
     _valstart = _OFF + (idxLen<<2);
@@ -49,7 +50,6 @@ public class CStrChunk extends Chunk {
   @Override public boolean isSparse() { return false; }
   @Override public int sparseLen() { return _len; }
 
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length);  }
   @Override public CStrChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
