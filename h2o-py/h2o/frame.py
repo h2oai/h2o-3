@@ -6,6 +6,8 @@ import gc
 from group_by import GroupBy
 
 
+# TODO: Automatically convert column names into Frame properties!
+
 class H2OFrame:
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
@@ -333,7 +335,7 @@ class H2OFrame:
     """
     self.head(rows=10,cols=sys.maxint,show=True,as_pandas=as_pandas)  # all columns
 
-  def head(self, rows=10, cols=200, show=False, as_pandas=False):
+  def head(self, rows=10, cols=200, show=False, as_pandas=False): # TODO: add 1 to both HEAD and TAIL
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
@@ -348,7 +350,7 @@ class H2OFrame:
     ncols = min(self.ncol, cols)
     colnames = self.names[:ncols]
     head = self[0:nrows,0:ncols]
-    res = head.as_data_frame(as_pandas)[1:]
+    res = head.as_data_frame(as_pandas) if as_pandas else head.as_data_frame(as_pandas)[1:]
     if show: self._do_show(as_pandas,res,colnames)
     return res if as_pandas else head
 
@@ -719,7 +721,9 @@ class H2OFrame:
   def __del__(self):
     if not self._keep and self._computed: h2o.remove(self)
 
-  def keep(self): self._keep = True
+  def keep(self):
+    self._keep = True
+    return self
 
   def drop(self, i):
     """
@@ -740,6 +744,7 @@ class H2OFrame:
     """
     if isinstance(i, basestring): i=self._find_idx(i)
     col = H2OFrame(expr=ExprNode("pop",self,i))._frame()
+    if self._keep: col.keep()
     self._update()
     return col
 
