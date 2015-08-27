@@ -1042,7 +1042,7 @@ public class NewChunk extends Chunk {
       }
       if (fitsInUnique) {
         if (hs.size() < CUDChunk.MAX_UNIQUES) //still got space
-          hs.putIfAbsent(Double.doubleToLongBits(d),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
+          hs.put(new Long(Double.doubleToLongBits(d)),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
         else if (hs.size() == CUDChunk.MAX_UNIQUES) //full, but might not need more space because of repeats
           fitsInUnique = hs.containsKey(Double.doubleToLongBits(d));
         else //full - no longer try to fit into CUDChunk
