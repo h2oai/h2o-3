@@ -2,12 +2,12 @@
 # accessors require _metric_json to have a particular form.
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def metric_json_check(ip, port):
     
 
-    df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     # Regression metric json
     reg_mod = h2o.gbm(y=df["CAPSULE"], x=df[3:], training_frame=df, distribution="gaussian")
@@ -121,7 +121,7 @@ def metric_json_check(ip, port):
                                                                             bin_metric_diff)
 
     # Multinomial metric json
-    df = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    df = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
     myX = ["Origin", "Dest", "IsDepDelayed", "UniqueCarrier", "Distance", "fDayofMonth", "fDayOfWeek"]
     myY = "fYear"
     mul_mod = h2o.gbm(x=df[myX], y=df[myY], training_frame=df, distribution="multinomial")
@@ -149,7 +149,7 @@ def metric_json_check(ip, port):
                                                                             mul_metric_diff)
 
     # Clustering metric json
-    df = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    df = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
     clus_mod = h2o.kmeans(x=df[0:4], k=3, standardize=False)
     clus_met = clus_mod.model_performance()
     clus_metric_json_keys_have = clus_met._metric_json.keys()
@@ -175,4 +175,4 @@ def metric_json_check(ip, port):
                                                                             clus_metric_diff)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, metric_json_check)
+    tests.run_test(sys.argv, metric_json_check)

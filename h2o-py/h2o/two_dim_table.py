@@ -22,6 +22,11 @@ class H2OTwoDimTable(object):
     self.col_formats = col_formats
 
   def show(self, header=True):
+    if h2o.can_use_pandas():
+      import pandas
+      pandas.options.display.max_rows = 20
+      print pandas.DataFrame(self.cell_values,columns=self.col_header)
+      return
     print
     if header: print self.table_header + ":"
     print

@@ -1,6 +1,6 @@
 import sys, shutil
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def milsong_checkpoint(ip,port):
@@ -20,9 +20,9 @@ def milsong_checkpoint(ip,port):
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
     # save the model, then load the model
-    model_path = h2o.save_model(model1, name="delete_model", force=True)
+    model_path = h2o.save_model(model1,force=True)
     restored_model = h2o.load_model(model_path)
-    shutil.rmtree("delete_model")
+    shutil.rmtree(model_path)
 
     # continue building the model
     ntrees2 = ntrees1 + 50
@@ -40,4 +40,4 @@ def milsong_checkpoint(ip,port):
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, milsong_checkpoint)
+    tests.run_test(sys.argv, milsong_checkpoint)

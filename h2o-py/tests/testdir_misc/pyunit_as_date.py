@@ -1,9 +1,9 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def download_pojo(ip,port):
-  hdf = h2o.import_frame(path=h2o.locate("smalldata/jira/v-11.csv"))
+  hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
   print hdf.head()
 
   # NB: columns 1,5 are currently unsupported as date types
@@ -51,7 +51,7 @@ def download_pojo(ip,port):
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf = h2o.import_frame(path=h2o.locate("smalldata/jira/v-11.csv"))
+  hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
   hdf["ds9"] = hdf["ds9"].asfactor()
 
   hdf5 = hdf["ds5"]
@@ -69,4 +69,4 @@ def download_pojo(ip,port):
   hdf10 = hdf10.as_date("%Y_%m_%d")
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, download_pojo)
+  tests.run_test(sys.argv, download_pojo)

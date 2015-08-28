@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 import random
 
@@ -12,7 +12,7 @@ def frame_reducers(ip,port):
     h2o_data = h2o.H2OFrame(python_obj=data)
     np_data = np.array(data)
 
-    row, col = h2o_data.dim()
+    row, col = h2o_data.dim
 
     c = random.randint(0,col-1)
     h2o_val = h2o_data[c].min()
@@ -52,4 +52,4 @@ def frame_reducers(ip,port):
         "numpy".format(h2o_val,num_val)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, frame_reducers)
+    tests.run_test(sys.argv, frame_reducers)

@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 import random
 import math
@@ -29,7 +29,7 @@ def vec_math_ops(ip,port):
     np_data4 = np.array(abs_data)
     np_data5 = np.array(zero_one_data)
 
-    row, col = h2o_data1.dim()
+    row, col = h2o_data1.dim
 
     c = random.randint(0,col-1)
     for d in range(1,6):
@@ -39,19 +39,19 @@ def vec_math_ops(ip,port):
         r = h2o_round[0]
         assert s == r, "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
     h2o_transposed = h2o_data1[c].transpose()
-    x, y = h2o_transposed.dim()
+    x, y = h2o_transposed.dim
     assert x == 1 and y == 10, "Expected 1 row and 10 columns, but got {0} rows and {1} columns".format(x,y)
-    h2o.np_comparison_check(h2o_data1[:,c].cos(), np.cos(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[:,c].sin(), np.sin(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[:,c].tan(), np.tan(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data2[:,c].acos(), np.arccos(np_data2[:,c]), 10)
-    h2o.np_comparison_check(h2o_data2[:,c].asin(), np.arcsin(np_data2[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[:,c].atan(), np.arctan(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[:,c].cosh(), np.cosh(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[c].sinh(), np.sinh(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
-    h2o.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
-    h2o.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[:,c].cos(), np.cos(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[:,c].sin(), np.sin(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[:,c].tan(), np.tan(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data2[:,c].acos(), np.arccos(np_data2[:,c]), 10)
+    tests.np_comparison_check(h2o_data2[:,c].asin(), np.arcsin(np_data2[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[:,c].atan(), np.arctan(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[:,c].cosh(), np.cosh(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[c].sinh(), np.sinh(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
+    tests.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
+    tests.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
     h2o_val = h2o_data3[c].gamma()[5,:]
     num_val = math.gamma(h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
@@ -79,4 +79,4 @@ def vec_math_ops(ip,port):
     #                                "values between h2o and numpy".format(h2o_val,num_val)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, vec_math_ops)
+    tests.run_test(sys.argv, vec_math_ops)

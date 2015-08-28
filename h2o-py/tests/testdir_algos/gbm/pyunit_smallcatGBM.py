@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn import ensemble
@@ -14,7 +14,7 @@ def smallcatGBM(ip,port):
   
 
   #Log.info("Importing alphabet_cattest.csv data...\n")
-  alphabet = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
+  alphabet = h2o.import_file(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
   alphabet["y"] = alphabet["y"].asfactor()
   #Log.info("Summary of alphabet_cattest.csv from H2O:\n")
   #alphabet.summary()
@@ -36,4 +36,4 @@ def smallcatGBM(ip,port):
   gbm_sci.fit(trainDataFeatures[:,np.newaxis],trainDataResponse)
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, smallcatGBM)
+  tests.run_test(sys.argv, smallcatGBM)

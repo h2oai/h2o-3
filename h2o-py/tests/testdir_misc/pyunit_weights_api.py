@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def weights_api(ip,port):
     
     
 
-    h2o_iris_data = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))
+    h2o_iris_data = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
     r = h2o_iris_data.runif()
     iris_train = h2o_iris_data[r > 0.2]
     iris_valid = h2o_iris_data[r <= 0.2]
@@ -100,4 +100,4 @@ def weights_api(ip,port):
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_api)
+    tests.run_test(sys.argv, weights_api)

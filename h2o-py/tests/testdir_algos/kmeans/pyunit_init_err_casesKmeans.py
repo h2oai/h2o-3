@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def init_err_casesKmeans(ip,port):
@@ -8,10 +8,10 @@ def init_err_casesKmeans(ip,port):
       # connect to localhost:54321
 
     # Log.info("Importing benign.csv data...\n")
-    benign_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     #benign_h2o.summary()
-    numcol = benign_h2o.ncol()
-    numrow = benign_h2o.nrow()
+    numcol = benign_h2o.ncol
+    numrow = benign_h2o.nrow
 
     # Log.info("Non-numeric entry that isn't 'Random', 'PlusPlus', or 'Furthest'")
     try:
@@ -78,4 +78,4 @@ def init_err_casesKmeans(ip,port):
     h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start))
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, init_err_casesKmeans)
+  tests.run_test(sys.argv, init_err_casesKmeans)

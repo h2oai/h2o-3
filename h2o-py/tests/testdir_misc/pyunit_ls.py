@@ -1,14 +1,14 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def ls_test(ip,port):
     
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     h2o.ls()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, ls_test)
+    tests.run_test(sys.argv, ls_test)

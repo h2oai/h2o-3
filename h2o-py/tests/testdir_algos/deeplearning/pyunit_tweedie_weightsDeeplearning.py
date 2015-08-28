@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def tweedie_weights(ip,port):
 
-    data = h2o.import_frame(h2o.locate("smalldata/glm_test/cancar_logIn.csv"))
+    data = h2o.import_file(h2o.locate("smalldata/glm_test/cancar_logIn.csv"))
     data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
     data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
     data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()
@@ -12,7 +12,7 @@ def tweedie_weights(ip,port):
     data["Merit"] = data["Merit"].asfactor()
     data["Class"] = data["Class"].asfactor()
     loss = data["Cost"] / data["Insured"]
-    loss.setName(0,"Loss")
+    loss.set_name(0,"Loss")
     cancar = loss.cbind(data)
 
     # Without weights
@@ -31,4 +31,4 @@ def tweedie_weights(ip,port):
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, tweedie_weights)
+    tests.run_test(sys.argv, tweedie_weights)

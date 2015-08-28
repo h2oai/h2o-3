@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def cv_carsDL(ip,port):
 
     # read in the dataset and construct training set (and validation set)
-    cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
@@ -34,15 +34,15 @@ def cv_carsDL(ip,port):
     dl1 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     dl2 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     try:
-        h2o.check_models(dl1, dl2, True)
+        tests.check_models(dl1, dl2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
 
     # 3. folds_column
     num_folds = random.randint(2,5)
-    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow())])
-    fold_assignments.setNames(["fold_assignments"])
+    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
+    fold_assignments.set_names(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], training_frame=cars,
                           fold_column="fold_assignments", keep_cross_validation_predictions=True)
@@ -67,7 +67,7 @@ def cv_carsDL(ip,port):
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), fold_assignment="Modulo")
+    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow, fold_assignment="Modulo")
 
     # 2. nfolds = 0
     dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=0)
@@ -87,7 +87,7 @@ def cv_carsDL(ip,port):
 
     # 2. more folds than observations
     try:
-        dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, fold_assignment="Modulo")
+        dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow+1, fold_assignment="Modulo")
         assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
         assert True
@@ -109,4 +109,4 @@ def cv_carsDL(ip,port):
     #     assert True
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, cv_carsDL)
+    tests.run_test(sys.argv, cv_carsDL)

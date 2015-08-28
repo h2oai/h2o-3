@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def random_attack(ip,port):
@@ -40,7 +40,7 @@ def random_attack(ip,port):
     pros[4] = pros[4].asfactor()
     pros[5] = pros[5].asfactor()
     pros[8] = pros[8].asfactor()
-    r = pros[0].runif() # a column of length pros.nrow() with values between 0 and 1
+    r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
@@ -74,4 +74,4 @@ def random_attack(ip,port):
         attack(cars_train, cars_valid, random.sample([1,3,4,5,6,7],random.randint(1,6)), 2)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, random_attack)
+    tests.run_test(sys.argv, random_attack)

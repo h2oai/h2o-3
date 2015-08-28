@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def upload_import_small(ip, port):
     # Connect to a pre-existing cluster
@@ -11,10 +11,10 @@ def upload_import_small(ip, port):
 
     for dataset in various_datasets:
         uploaded_frame = h2o.upload_file(h2o.locate(dataset))
-        imported_frame = h2o.import_frame(h2o.locate(dataset))
+        imported_frame = h2o.import_file(h2o.locate(dataset))
 
-        rows_u, cols_u = uploaded_frame.dim()
-        rows_i, cols_i = imported_frame.dim()
+        rows_u, cols_u = uploaded_frame.dim
+        rows_i, cols_i = imported_frame.dim
 
         assert rows_u == rows_i, "Expected same number of rows regardless of method. upload: {0}, import: " \
                                  "{1}.".format(rows_u, rows_i)
@@ -23,4 +23,4 @@ def upload_import_small(ip, port):
                                  "{1}.".format(cols_u, cols_i)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, upload_import_small)
+    tests.run_test(sys.argv, upload_import_small)

@@ -1,6 +1,6 @@
 import os, sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 def deeplearning_autoencoder(ip, port):
     
@@ -38,7 +38,7 @@ def deeplearning_autoencoder(ip, port):
     # conver train_supervised with autoencoder to lower-dimensional space
     train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp]._frame(), 0)
 
-    assert train_supervised_features.ncol() == nfeatures, "Dimensionality of reconstruction is wrong!"
+    assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
 
     # Train DRF on extracted feature space
     drf_model = h2o.random_forest(x=train_supervised_features[0:20],
@@ -56,8 +56,8 @@ def deeplearning_autoencoder(ip, port):
     cm.show()
 
     # 10% error +/- 0.001
-    assert abs(cm.cell_values[10][10] - 0.1078) < 0.001, "Error. Expected 0.1078, but got {0}".format(cm.cell_values[10][10])
+    assert abs(cm.cell_values[10][10] - 0.082) < 0.001, "Error. Expected 0.082, but got {0}".format(cm.cell_values[10][10])
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, deeplearning_autoencoder)
+    tests.run_test(sys.argv, deeplearning_autoencoder)
 
