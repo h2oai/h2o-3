@@ -48,6 +48,10 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,0,2,"Iris-virginica");
       chkFr(fr,1,2,50);
       chkFr(fr,2,2,5.552);
+      fr.delete();
+
+      fr = chkTree("(GB hex [1] [] mode 4 \"all\" )","smalldata/iris/iris_wheader.csv");
+      chkDim(fr,2,23);
 
     } finally {
       if( fr != null ) fr.delete();

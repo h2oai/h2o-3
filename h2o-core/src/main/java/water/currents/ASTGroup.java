@@ -24,31 +24,43 @@ class ASTGroup extends ASTPrim {
   // Functions handled by GroupBy
   enum FCN {
     nrow() { 
-      @Override double op( double d0, double d1 ) { return d0+ 1; }
-      @Override double postPass( double d, long n ) { return d; }
+      @Override void op( double[] d0s, double d1 ) { d0s[0]++; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
+      @Override double postPass( double ds[], long n ) { return ds[0]; }
     },
     mean() { 
-      @Override double op( double d0, double d1 ) { return d0+d1; }
-      @Override double postPass( double d, long n ) { return d/n; }
+      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
+      @Override double postPass( double ds[], long n ) { return ds[0]/n; }
     },
     sum() { 
-      @Override double op( double d0, double d1 ) { return d0+d1; }
-      @Override double postPass( double d, long n ) { return d; }
+      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
+      @Override double postPass( double ds[], long n ) { return ds[0]; }
     },
     min() { 
-      @Override double op( double d0, double d1 ) { return Math.min(d0,d1); }
-      @Override double postPass( double d, long n ) { return d; }
-      @Override double initVal() { return Double.MAX_VALUE; }
+      @Override void op( double[] d0s, double d1 ) { d0s[0]= Math.min(d0s[0],d1); }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { op(d0s,d1s[0]); }
+      @Override double postPass( double ds[], long n ) { return ds[0]; }
+      @Override double[] initVal(int maxx) { return new double[]{ Double.MAX_VALUE}; }
     },
     max() { 
-      @Override double op( double d0, double d1 ) { return Math.max(d0,d1); }
-      @Override double postPass( double d, long n ) { return d; }
-      @Override double initVal() { return -Double.MAX_VALUE; }
+      @Override void op( double[] d0s, double d1 ) { d0s[0]= Math.max(d0s[0],d1); }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { op(d0s,d1s[0]); }
+      @Override double postPass( double ds[], long n ) { return ds[0]; }
+      @Override double[] initVal(int maxx) { return new double[]{-Double.MAX_VALUE}; }
+    },
+    mode() { 
+      @Override void op( double[] d0s, double d1 ) { d0s[(int)d1]++; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
+      @Override double postPass( double ds[], long n ) { return ArrayUtils.maxIndex(ds); }
+      @Override double[] initVal(int maxx) { return new double[maxx]; }
     },
     ;
-    abstract double op( double d0, double d1 );
-    abstract double postPass( double d, long n );
-    double initVal() { return 0; }
+    abstract void op( double[] d0, double d1 );
+    abstract void atomic_op( double[] d0, double[] d1 );
+    abstract double postPass( double ds[], long n );
+    double[] initVal(int maxx) { return new double[]{0}; }
   }
 
   @Override int nargs() { return -1; } // (GB data [group-by-cols] [order-by-cols] {fcn col "na"}...)
@@ -73,8 +85,11 @@ class ASTGroup extends ASTPrim {
       FCN fcn = FCN.valueOf(asts[idx].exec(env).getFun().str());
       ASTNumList col = check(ncols,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
+      int agg_col = (int)col.min(); // Aggregate column
+      if( fcn==FCN.mode && !fr.vec(agg_col).isEnum() )
+        throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
-      aggs[(idx-4)/3] = new AGG(fcn,(int)col.min(),na);
+      aggs[(idx-4)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
     }
 
     // do the group by work now
@@ -123,7 +138,7 @@ class ASTGroup extends ASTPrim {
           for( j=0; j<g._gs.length; j++ ) // The Group Key, as a row
             ncs[j].addNum(g._gs[j]);
           for( int a=0; a<aggs.length; a++ )
-            ncs[j++].addNum(aggs[a]._fcn.postPass(g._ds[a],g._ns[a]));
+            ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a],g._ns[a]));
         }
       }
     }.doAll(nCols,v).outputFrame(names,domains);
@@ -152,28 +167,26 @@ class ASTGroup extends ASTPrim {
     final FCN _fcn;
     final int _col;
     final NAHandling _na;
-    AGG( FCN fcn, int col, NAHandling na ) { _fcn = fcn; _col = col; _na = na; }
+    final int _maxx;            // Largest integer this column
+    AGG( FCN fcn, int col, NAHandling na, int maxx ) { _fcn = fcn; _col = col; _na = na; _maxx = maxx; }
     // Update the array pair {ds[i],ns[i]} with d1.
     // ds is the reduction array
     // ns is the element count
-    void op( double[] ds, long[] ns, int i, double d1 ) {
+    void op( double[][] d0ss, long[] n0s, int i, double d1 ) {
       // Normal number or ALL   : call op()
-      if( !Double.isNaN(d1) || _na==NAHandling.ALL    ) ds[i] = _fcn.op(ds[i],d1);
+      if( !Double.isNaN(d1) || _na==NAHandling.ALL    ) _fcn.op(d0ss[i],d1);
       // Normal number or IGNORE: bump count; RM: do not bump count
-      if( !Double.isNaN(d1) || _na==NAHandling.IGNORE ) ns[i]++; 
+      if( !Double.isNaN(d1) || _na==NAHandling.IGNORE ) n0s[i]++; 
     }
-    // Atomically update the array pair {ds[i],ns[i]} with the pair {d1,n1}.
+    // Atomically update the array pair {dss[i],ns[i]} with the pair {d1,n1}.
     // Same as op() above, but called racily and updates atomically.
-    void atomic_op( double[] d0s, long[] n0s, int i, double d1, long n1 ) {
-      double d;  long n;
-      // Normal number or ALL   : call op()
-      if( !Double.isNaN(d1) || _na==NAHandling.ALL    )
-        while( !AtomicUtils.DoubleArray.CAS(d0s,i, d=d0s[i], _fcn.op(d,d1) ) ) ;
-      // Normal number or IGNORE: bump count; RM: do not bump count
-      if( !Double.isNaN(d1) || _na==NAHandling.IGNORE )
-        while( !AtomicUtils.  LongArray.CAS(n0s,i, n=n0s[i], n+n1 ) ) ;
+    void atomic_op( double[][] d0ss, long[] n0s, int i, double[] d1s, long n1 ) {
+      synchronized(d0ss[i]) { 
+        _fcn.atomic_op(d0ss[i],d1s); 
+        n0s[i] += n1;
+      }
     }
-    double initVal() { return _fcn.initVal(); }
+    double[] initVal() { return _fcn.initVal(_maxx); }
   }
 
   // --------------------------------------------------------------------------
@@ -198,7 +211,7 @@ class ASTGroup extends ASTPrim {
         } else gOld=gs.getk(gWork);            // Else get existing group
 
         for( int i=0; i<_aggs.length; i++ ) // Accumulate aggregate reductions
-          _aggs[i].op(gOld._ds,gOld._ns,i,cs[_aggs[i]._col].atd(row));
+          _aggs[i].op(gOld._dss,gOld._ns,i, cs[_aggs[i]._col].atd(row));
       }
       // This is a racy update into the node-local shared table of groups
       reduce(gs);               // Atomically merge Group stats
@@ -213,7 +226,7 @@ class ASTGroup extends ASTPrim {
         if( _gss.putIfAbsent(rg,"")!=null ) {
           G lg = _gss.getk(rg);
           for( int i=0; i<_aggs.length; i++ )
-            _aggs[i].atomic_op(lg._ds,lg._ns,i,rg._ds[i],rg._ns[i]); // Need to atomically merge groups here
+            _aggs[i].atomic_op(lg._dss,lg._ns,i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
         }
     }
   }
@@ -225,15 +238,15 @@ class ASTGroup extends ASTPrim {
     final double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
-    final double _ds[];         // Aggregates: usually sum or sum*2
+    final double _dss[][];      // Aggregates: usually sum or sum*2
     final long   _ns[];         // row counts per aggregate, varies by NA handling and column
 
     G( int ncols, AGG[] aggs ) { 
       _gs = new double[ncols]; 
       int len = aggs==null ? 0 : aggs.length;
-      _ds = new double[len]; 
+      _dss= new double[len][]; 
       _ns = new long  [len]; 
-      for( int i=0; i<len; i++ ) _ds[i] = aggs[i].initVal();
+      for( int i=0; i<len; i++ ) _dss[i] = aggs[i].initVal();
     }
     G fill(int row, Chunk chks[], int cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
