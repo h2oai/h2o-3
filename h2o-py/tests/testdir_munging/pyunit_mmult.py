@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import random
 import numpy as np
 
@@ -22,4 +22,4 @@ def mmult(ip,port):
                                                   "equal quantile values between h2o and numpy".format(h2o_val,np_val)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, mmult)
+    tests.run_test(sys.argv, mmult)

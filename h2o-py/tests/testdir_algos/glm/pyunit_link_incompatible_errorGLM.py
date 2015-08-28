@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def link_incompatible_error(ip,port):
     
@@ -8,7 +8,7 @@ def link_incompatible_error(ip,port):
 
 
     print("Reading in original prostate data.")
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
 
     print("Throw error when trying to create model with incompatible logit link.")
     try:
@@ -31,4 +31,4 @@ def link_incompatible_error(ip,port):
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, link_incompatible_error)
+    tests.run_test(sys.argv, link_incompatible_error)

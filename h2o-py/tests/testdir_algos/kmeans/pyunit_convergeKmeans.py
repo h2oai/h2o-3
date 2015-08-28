@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def convergeKmeans(ip,port):
 
@@ -8,7 +8,7 @@ def convergeKmeans(ip,port):
     # connect to localhost:54321
 
   # Log.info("Importing ozone.csv data...\n")
-  ozone_h2o = h2o.import_frame(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+  ozone_h2o = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
   #ozone_h2o.summary()
 
   miters = 5
@@ -41,4 +41,4 @@ def convergeKmeans(ip,port):
   assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, convergeKmeans)
+    tests.run_test(sys.argv, convergeKmeans)

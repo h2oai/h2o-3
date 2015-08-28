@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def imbalancedGBM(ip,port):
     
     
 
-    covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.import_file(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
     covtype[54] = covtype[54].asfactor()
 
     hh_imbalanced = h2o.gbm(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=False, nfolds=3, distribution="multinomial")
@@ -34,4 +34,4 @@ def imbalancedGBM(ip,port):
     assert class_6_err_imbalanced >= 0.90*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, imbalancedGBM)
+    tests.run_test(sys.argv, imbalancedGBM)

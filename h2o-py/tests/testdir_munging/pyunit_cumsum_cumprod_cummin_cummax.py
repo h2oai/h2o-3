@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def cumsumminprodmax(ip,port):
     # TODO PUBDEV-1748
@@ -27,11 +27,11 @@ def cumsumminprodmax(ip,port):
                                                                                                     cummin2[9,0])
 
     cumprod1.show()
-    print cumprod1.dim()
+    print cumprod1.dim
     assert cumprod1[8,0] == cumprod2[8,0] == 362880, "expected cumprod to be 362880, but got {0} and " \
                                                      "{1}".format(cumprod1[8,0], cumprod2[8,0])
 
     h2o.remove(foo)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, cumsumminprodmax)
+    tests.run_test(sys.argv, cumsumminprodmax)

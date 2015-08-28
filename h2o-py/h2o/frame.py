@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy
 from expr import h2o,ExprNode
 import gc
+from group_by import GroupBy
 
 
 class H2OFrame:
@@ -37,8 +38,10 @@ class H2OFrame:
     self._nrows     = None
     self._ncols     = None
     self._col_names = None
+    self._types     = None
     self._computed  = False
     self._ast       = None
+    self._data      = None  # any cached data
 
     if expr is not None:         self._ast = expr
     elif python_obj is not None: self._upload_python_object(python_obj)
@@ -61,7 +64,7 @@ class H2OFrame:
   def __str__(self): return self.__repr__()
 
   def _import_parse(self,file_path):
-    rawkey = h2o.import_file(file_path)
+    rawkey = h2o.lazy_import(file_path)
     setup = h2o.parse_setup(rawkey)
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
@@ -69,6 +72,7 @@ class H2OFrame:
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
     self._ncols = parse["number_columns"]
     self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
+    self._types = dict(zip(self._col_names,parse["column_types"]))
     self._keep = True
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
@@ -229,6 +233,16 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("mktime", year,month,day,hour,minute,second,msec))._frame()
 
+  @property
+  def columns(self):
+    """
+    Retrieve the column names for this H2OFrame.
+
+    :return: A list of column names.
+    """
+    return self.col_names
+
+  @property
   def col_names(self):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
@@ -236,23 +250,19 @@ class H2OFrame:
     :return: A character list[] of column names.
     """
     self._eager()
-    return self._col_names
+    return copy.deepcopy(self._col_names)
 
-  def sd(self):
-    """
-    :return: Standard deviation of the H2OVec elements.
-    """
-    return H2OFrame(expr=ExprNode("sd", self))._scalar()
-
-  def names(self):
+  @property
+  def names(self,i=None):
     """
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
 
     :return: A character list[] of column names.
     """
     self._eager()
-    return self.col_names()
+    return self.col_names if i is None else self.columns[i]
 
+  @property
   def nrow(self):
     """
     Get the number of rows in this H2OFrame.
@@ -262,6 +272,7 @@ class H2OFrame:
     self._eager()
     return self._nrows
 
+  @property
   def ncol(self):
     """
     Get the number of columns in this H2OFrame.
@@ -279,13 +290,32 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("filterNACols", self, frac))._frame()
 
+  @property
   def dim(self):
     """
     Get the number of rows and columns in the H2OFrame.
 
     :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
     """
-    return [self.nrow(), self.ncol()]
+    return [self.nrow, self.ncol]
+
+  @property
+  def shape(self):
+    """
+    Get the shape of the H2OFrame.
+
+    :return: A tuple (nrow, ncol)
+    """
+    return (self.nrow, self.ncol)
+
+  @property
+  def types(self):
+    """
+    Get the column types of H2OFrame.
+
+    :return: A dictionary of column_name-type pairs
+    """
+    return copy.deepcopy(self._types)
 
   def unique(self):
     """
@@ -295,43 +325,56 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("unique", self))._frame()
 
-  def show(self): self.head(rows=10,cols=sys.maxint,show=True)  # all columns
+  def show(self,as_pandas=True):
+    """
+    Used by the H2OFrame.__repr__ method to display a snippet of the data frame.
 
-  def head(self, rows=10, cols=200, show=False, **kwargs):
+    :param as_pandas: Display a pandas style data frame (better for pretty printing wide datasets)
+    :return: None
+    """
+    self.head(rows=10,cols=sys.maxint,show=True,as_pandas=as_pandas)  # all columns
+
+  def head(self, rows=10, cols=200, show=False, as_pandas=False):
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
     :param show: Display the output.
-    :param kwargs: Extra arguments passed from other methods.
+    :param as_pandas: Display with pandas frame.
     :return: None
     """
     self._eager()
-    nrows = min(self.nrow(), rows)
-    ncols = min(self.ncol(), cols)
-    colnames = self.names()[0:ncols]
-    head = self[0:10,0:ncols]
-    res = head.as_data_frame(False)[1:]
-    if show:
-      print "First {} rows and first {} columns: ".format(nrows, ncols)
-      h2o.H2ODisplay(res,colnames)
-    return head
+    nrows = min(self.nrow,rows)
+    ncols = min(self.ncol, cols)
+    colnames = self.names[:ncols]
+    head = self[0:nrows,0:ncols]
+    res = head.as_data_frame(as_pandas)[1:]
+    if show: self._do_show(as_pandas,res,colnames)
+    return res if as_pandas else head
 
-  def tail(self, rows=10, cols=200, show=False, **kwargs):
+  def _do_show(self,as_pandas,fr,names):
+    print "H2OFrame with {} rows and {} columns: ".format(self.nrow, self.ncol)
+    if as_pandas:
+      import pandas
+      pandas.options.display.max_rows=20
+      print fr
+    else:
+      h2o.H2ODisplay(fr,names)
+
+  def tail(self, rows=10, cols=200, show=False, as_pandas=False):
     """
     Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
-    :param kwargs: Extra arguments passed from other methods.
     :return: None
     """
     self._eager()
-    nrows = min(self.nrow(), rows)
-    ncols = min(self.ncol(), cols)
-    start_idx = max(self.nrow()-nrows,0)
-    tail = self[start_idx:(start_idx+nrows),:]
+    nrows = min(self.nrow, rows)
+    ncols = min(self.ncol, cols)
+    start_idx = max(self.nrow-nrows,0)
+    tail = self[start_idx:(start_idx+nrows),:ncols]
     res = tail.as_data_frame(False)
     colnames = res.pop(0)
     if show:
@@ -346,9 +389,9 @@ class H2OFrame:
     :param col: A column index in this H2OFrame.
     :return: a list of strings that are the factor levels for the column.
     """
-    if self.ncol()==1 or col is None:
+    if self.ncol==1 or col is None:
       lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-      levels=[level for l in lol for level in l] if self.ncol()==1 else lol
+      levels=[level for l in lol for level in l] if self.ncol==1 else lol
     elif col is not None:
       lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("cols", self, col)))._frame(),False)[1:]
       levels=[level for l in lol for level in l]
@@ -394,7 +437,7 @@ class H2OFrame:
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol()), names)._eager()),id=self._id)
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()),id=self._id)
     self._update()
     return self
 
@@ -406,8 +449,8 @@ class H2OFrame:
     :param name: The new name of the column to set
     :return: the input frame
     """
-    if not isinstance(col, int) and self.ncol() > 1: raise ValueError("`col` must be an index. Got: " + str(col))
-    if self.ncol() == 1: col = 0
+    if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
+    if self.ncol == 1: col = 0
     h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()),id=self._id)
     self._update()
     return self
@@ -461,7 +504,7 @@ class H2OFrame:
   def __repr__(self):
     if sys.gettrace() is None:
       self.show()
-    return ""
+      return ""
 
   def as_date(self,format):
     """
@@ -538,11 +581,21 @@ class H2OFrame:
     :return: A frame with the columns dropped.
     """
     self._eager()
-    is_char = all([isinstance(i,(unicode,str)) for i in cols])
+    is_char = all([isinstance(i,basestring) for i in cols])
     if is_char:
       cols = [self._find_idx(col) for col in cols]
     cols = sorted(cols)
     return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
+
+  def kfold_column(self, n_folds=3, seed=-1):
+    """
+    Build a fold assignments column for cross-validation. This call will produce a column
+    having the same data layout as the calling object.
+
+    :param n_folds: Number of folds.
+    :return: A column of fold IDs.
+    """
+    return H2OFrame(expr=ExprNode("kfold_column",self,n_folds,seed))._frame()
 
   def structure(self):
     """
@@ -551,7 +604,7 @@ class H2OFrame:
     :return: None
     """
     df = self.head().as_data_frame(use_pandas=False)
-    nr = self.nrow()
+    nr = self.nrow
     nc = len(df[0])
     cn = df.pop(0)
     width = max([len(c) for c in cn])
@@ -622,7 +675,7 @@ class H2OFrame:
     """
     if isinstance(item, (int,str,unicode,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
     elif isinstance(item, slice):
-      item = slice(item.start,min(self.ncol(),item.stop))
+      item = slice(item.start,min(self.ncol,item.stop))
       return H2OFrame(expr=ExprNode("cols",self,item))
     elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
     elif isinstance(item, tuple):
@@ -644,37 +697,41 @@ class H2OFrame:
     """
     Replace a column in an H2OFrame.
 
-    :param b: A 0-based index or a column name or tuple
+    :param b: A 0-based index or a column name.
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
     """
-    # (= dst src col_expr row_expr)
-    update_index=-1
-    newcolname=None
-    if isinstance(b, (str,unicode)):
-      if b not in self.col_names():
-        newcolname=b
-        update_index=self._ncols
+    col_expr=None
+    row_expr=None
+    colname=None
+
+    if isinstance(b, basestring):
+      if b in self.col_names: col_expr = self.col_names.index(b)
       else:
-        update_index=self.col_names().index(b)
-    elif isinstance(b, int): update_index=b
+        col_expr = self._ncols
+        colname = b
+    elif isinstance(b, int): col_expr = b
+    elif isinstance(b, tuple):
+      col_expr = b[1]
+      row_expr = b[0]
+      if isinstance(col_expr, basestring):
+        if col_expr not in self.col_names:
+          colname = col_expr
+          col_expr = self._ncols
+      elif isinstance(col_expr, slice):
+        if col_expr.start is None and col_expr.stop is None:
+          col_expr = slice(0,self.ncol)
+      elif col_expr==-1: col_expr = slice(0,self.ncol)
+    elif isinstance(b, H2OFrame): row_expr = b
+    else: row_expr = slice(0,self.nrow)
 
-    col_expr = b[1] if isinstance(b,tuple) else update_index
-    if isinstance(col_expr, (str,unicode)): col_expr=self.col_names().index(col_expr)
+    if row_expr is None: row_expr = slice(0,self.nrow)
+    if col_expr is None: col_expr = slice(0,self.ncol)
 
-    if col_expr == -1:   # no columns given, just have row_expr => select all columns...
-      col_expr=slice(0,self.ncol())
-
-    if isinstance(col_expr, slice):
-      if col_expr.start is None and col_expr.stop is None:
-        col_expr = slice(0,self.ncol())
-
-    row_expr = b[0] if isinstance(b,tuple) else b if isinstance(b, H2OFrame) else slice(0,self.nrow())
     src = c._frame() if isinstance(c,H2OFrame) else float("nan") if c is None else c
-    expr = ExprNode("=", self, src, col_expr, row_expr)
+    expr = ExprNode("=",self,src,col_expr,row_expr) if colname is None else ExprNode("=",self,src,col_expr,row_expr,colname)
     h2o.rapids(ExprNode._collapse_sb(expr._eager()), self._id)
     self._update()
-    if newcolname is not None: self.set_name(update_index, newcolname)
 
   def __int__(self):   return int(self._scalar())
 
@@ -692,14 +749,26 @@ class H2OFrame:
     :param i: Column to drop
     :return: Returns an H2OFrame
     """
-    if isinstance(i, (unicode,str)): i = self._find_idx(i)
+    if isinstance(i, basestring): i = self._find_idx(i)
     return H2OFrame(expr=ExprNode("cols", self,-(i+1)))._frame()
+
+  def pop(self,i):
+    """
+    Pop a colunn out of an H2OFrame.
+
+    :param i: The index or name of the column to pop.
+    :return: The column dropped from the frame.
+    """
+    if isinstance(i, basestring): i=self._find_idx(i)
+    col = H2OFrame(expr=ExprNode("pop",self,i))._frame()
+    self._update()
+    return col
 
   def __len__(self):
     """
-    :return: Number of columns in this H2OFrame
+    :return: Number of rows
     """
-    return self.ncol()
+    return self.nrow
 
   def quantile(self, prob=None, combine_method="interpolate"):
     """
@@ -753,28 +822,15 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("ddply", self, cols, fun))._frame()
 
-  def group_by(self,cols,aggregates,order_by=None):
+  def group_by(self,by,order_by=None):
     """
-    GroupBy
+    Returns a new GroupBy object using this frame and the desired grouping columns.
 
-    :param cols: The columns to group on.
-    :param a: A dictionary of aggregates having the following shape: \
-    {"colname":[aggregate, column, naMethod]}\
-    e.g.: {"bikes":["count", 0, "all"]}\
-
-    The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
-    NAs that appear in columns that are being aggregated.
-
-    "all" - include NAs
-    "rm"  - exclude NAs
-    "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    :param by: The columns to group on.
     :param order_by: A list of column names or indices on which to order the results.
-    :return: The group by frame.
+    :return: A new GroupBy object.
     """
-    aggs = []
-    for k in aggregates: aggs += (aggregates[k] + [str(k)])
-    aggs = h2o.ExprNode("agg", *aggs)
-    return H2OFrame(expr=ExprNode("GB", self,cols,aggs,order_by))._frame()
+    return GroupBy(self,by,order_by)
 
   def impute(self,column,method="mean",combine_method="interpolate",by=None,inplace=True):
     """
@@ -787,8 +843,8 @@ class H2OFrame:
     :param inplace: Impute inplace?
     :return: the imputed frame.
     """
-    if isinstance(column, (str, unicode)): column = self._find_idx(column)
-    if isinstance(by, (str, unicode)):     by     = self._find_idx(by)
+    if isinstance(column, basestring): column = self._find_idx(column)
+    if isinstance(by, basestring):     by     = self._find_idx(by)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
   def merge(self, other, allLeft=False, allRite=False):
@@ -811,8 +867,7 @@ class H2OFrame:
     subset of the original.
 
     :param fraction: A number between 0 and 1 indicating the fraction of entries to replace with missing.
-    :param seed: A random number used to select which entries to replace with missing values. Default of seed = -1 will
-    automatically generate a seed in H2O.
+    :param seed: A random number used to select which entries to replace with missing values. Default of seed = -1 will automatically generate a seed in H2O.
     :return: H2OFrame with missing values inserted
     """
     self._eager()
@@ -826,17 +881,17 @@ class H2OFrame:
     return self
 
   # generic reducers (min, max, sum, var)
-  def min(self, na_rm=False):
+  def min(self):
     """
     :return: The minimum value of all frame entries
     """
-    return H2OFrame(expr=ExprNode("minNA" if na_rm else "min", self))._scalar()
+    return H2OFrame(expr=ExprNode("min", self))._scalar()
 
-  def max(self, na_rm=False):
+  def max(self):
     """
     :return: The maximum value of all frame entries
     """
-    return H2OFrame(expr=ExprNode("maxNA" if na_rm else "max", self))._scalar()
+    return H2OFrame(expr=ExprNode("max", self))._scalar()
 
   def sum(self, na_rm=False):
     """
@@ -863,6 +918,12 @@ class H2OFrame:
     :return: The covariance matrix of the columns in this H2OFrame.
     """
     return H2OFrame(expr=ExprNode("var",self,y,use))
+
+  def sd(self):
+    """
+    :return: Standard deviation of the H2OVec elements.
+    """
+    return H2OFrame(expr=ExprNode("sd", self))._scalar()
 
   def asfactor(self):
     """
@@ -908,23 +969,20 @@ class H2OFrame:
     """
     :return: a frame of the counts at each combination of factor levels
     """
-    return H2OFrame(expr=ExprNode("table",self,data2) if data2 is not None else ExprNode("table",self))
+    return H2OFrame(expr=ExprNode("table",self,data2))
 
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """
     Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR in computing bin width.
 
-    :param breaks: breaks Can be one of the following: A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott." A
-    single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width. Or,
-    A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
+    :param breaks: breaks Can be one of the following: A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott." A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width. Or, A vector of numbers giving the split points, e.g., c(-50,213.2123,9324834)
     :param plot: A logical value indicating whether or not a plot should be generated (default is TRUE).
-    :return: if plot is True, then return None, else, an H2OFrame with these columns: breaks, counts, mids_true, mids,
-    and density
+    :return: if plot is True, then return None, else, an H2OFrame with these columns: breaks, counts, mids_true, mids, and density
     """
     frame = H2OFrame(expr=ExprNode("hist", self, breaks))._frame()
 
     total = frame["counts"].sum(True)
-    densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow())]
+    densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow)]
     densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.set_names(["density"])
@@ -983,10 +1041,8 @@ class H2OFrame:
     the user.
 
     :param factors: factors Factor columns (either indices or column names).
-    :param pairwise: Whether to create pairwise interactions between factors (otherwise create one
-    higher-order interaction). Only applicable if there are 3 or more factors.
-    :param max_factors: Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all
-    factor will be made)
+    :param pairwise: Whether to create pairwise interactions between factors (otherwise create one higher-order interaction). Only applicable if there are 3 or more factors.
+    :param max_factors: Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all factor will be made)
     :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
     :param destination_frame: A string indicating the destination key. If empty, this will be auto-generated by H2O.
     :return: H2OFrame
@@ -1130,10 +1186,18 @@ class H2OFrame:
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
 
 
-
-  # convenience methods for eagering sclars, frames, and deflating 1x1 frames to scalars
+  # flow-coding result methods
   def _scalar(self):
-    res = h2o.rapids(ExprNode._collapse_sb(self._ast._eager()))["scalar"]
+    self._eager()  # scalar should be stashed into self._data
+    return H2OFrame._get_scalar(self._data)
+    # res = self.as_data_frame(False)[1:]
+    # if len(res)==1: return H2OFrame._get_scalar(res)
+    # else:
+    #   return [H2OFrame._get_scalar(r) for r in res]
+
+  @staticmethod
+  def _get_scalar(res):
+    if res == '' or res=="NaN": return float("nan")
     if res == "TRUE": return True
     if res == "FALSE":return False
     try:    return float(res)
@@ -1151,9 +1215,13 @@ class H2OFrame:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
       if pytmp:
-        h2o.rapids(ExprNode._collapse_sb(sb), self._id)
-        sb = [self._id," "]
-        self._update()   # fill out _nrows, _ncols, _col_names, _computed
+        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
+        if "Scalar" in res["__meta"]["schema_name"] or "String" in res["__meta"]["schema_name"]:  # scalar return type, inline scalar (self._id is invalid! => so don't update it)
+          sb = [str(res["scalar"])," "]
+          self._data = res["scalar"]
+        else:
+          sb = [self._id," "]
+          self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
 
   def _do_it(self,sb):
@@ -1216,8 +1284,8 @@ def _handle_python_lists(python_obj):
   data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
   return header, data_to_write
 def _is_list(l)    : return isinstance(l, (tuple, list))
-def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(str,unicode)) for i in l])
-def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int  )) for i in l])
+def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,basestring) for i in l])
+def _is_num_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int)) for i in l])
 def _is_list_of_lists(o):                  return any(isinstance(l, (list, tuple)) for l in o)
 def _handle_numpy_array(python_obj):       return _handle_python_lists(python_obj=python_obj.tolist())
 def _handle_pandas_data_frame(python_obj): return _handle_numpy_array(python_obj=python_obj.as_matrix())

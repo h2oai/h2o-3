@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def get_model_test(ip,port):
     
     
 
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     r = prostate[0].runif()
     train = prostate[r < 0.70]
@@ -20,7 +20,7 @@ def get_model_test(ip,port):
     assert regression_gbm2._model_json['output']['model_category'] == "Regression"
     predictions2 = regression_gbm2.predict(test)
 
-    for r in range(predictions1.nrow()):
+    for r in range(predictions1.nrow):
         p1 = predictions1[r,0]
         p2 = predictions2[r,0]
         assert p1 == p2, "expected regression predictions to be the same for row {}, but got {} and {}".format(r, p1, p2)
@@ -34,13 +34,13 @@ def get_model_test(ip,port):
     assert bernoulli_gbm2._model_json['output']['model_category'] == "Binomial"
     predictions2 = bernoulli_gbm2.predict(test)
 
-    for r in range(predictions1.nrow()):
+    for r in range(predictions1.nrow):
         p1 = predictions1[r,0]
         p2 = predictions2[r,0]
         assert p1 == p2, "expected binomial predictions to be the same for row {}, but got {} and {}".format(r, p1, p2)
 
     # Clustering
-    benign_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     km_h2o = h2o.kmeans(x=benign_h2o, k=3)
     benign_km = h2o.get_model(km_h2o._id)
     assert benign_km._model_json['output']['model_category'] == "Clustering"
@@ -54,11 +54,11 @@ def get_model_test(ip,port):
     assert multinomial_dl2._model_json['output']['model_category'] == "Multinomial"
     predictions2 = multinomial_dl2.predict(test)
 
-    for r in range(predictions1.nrow()):
+    for r in range(predictions1.nrow):
         p1 = predictions1[r,0]
         p2 = predictions2[r,0]
         assert p1 == p2, "expected multinomial predictions to be the same for row {0}, but got {1} and {2}" \
                          "".format(r, p1, p2)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, get_model_test)
+    tests.run_test(sys.argv, get_model_test)

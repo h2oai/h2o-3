@@ -81,7 +81,7 @@ h2o.downloadCSV <- function(data, filename) {
     stop("`data` must be an Frame object")
 
   conn = h2o.getConnection()
-  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?src_key=', .eval.frame(data):eval)
+  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?src_key=', .eval.frame(data):id)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))

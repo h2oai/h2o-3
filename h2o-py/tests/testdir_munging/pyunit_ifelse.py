@@ -1,11 +1,11 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def insert_missing(ip,port):
   air_path = [h2o.locate("smalldata/airlines/allyears2k_headers.zip")]
 
-  data = h2o.import_frame(path=air_path)
+  data = h2o.import_file(path=air_path)
 
   hour1 = data["CRSArrTime"] / 100
   mins1 = data["CRSArrTime"] % 100
@@ -20,4 +20,4 @@ def insert_missing(ip,port):
   data.show()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, insert_missing)
+  tests.run_test(sys.argv, insert_missing)

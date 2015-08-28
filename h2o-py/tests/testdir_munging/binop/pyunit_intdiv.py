@@ -1,20 +1,20 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def intdiv(ip,port):
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     iris = iris[:,0:4]
-    rows, cols = iris.dim()
+    rows, cols = iris.dim
 
     #frame/scaler
     res = iris // 5
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = 5 // iris[:,0:2]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #frame/col
@@ -45,7 +45,7 @@ def intdiv(ip,port):
 
     # frame/frame
     res = iris[:,0:2] // iris[:,0:2]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == 150 and res_cols == 2, "dimension mismatch"
 
     try:
@@ -56,5 +56,5 @@ def intdiv(ip,port):
       pass
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, intdiv)
+    tests.run_test(sys.argv, intdiv)
 

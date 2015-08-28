@@ -28,7 +28,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
                          col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL) {
   parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings, parse_type=parse_type)
 
-  parse.params <- .prim.list(
+  parse.params <- list(
             source_frames = .collapse.char(parse.params$source_frames),
             destination_frame  = parse.params$destination_frame,
             separator = parse.params$separator,
@@ -69,7 +69,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
   # begin the setup
   # setup the parse parameters here
-  parseSetup.params <- .prim.list()
+  parseSetup.params <- list()
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
   parseSetup.params$source_frames = .collapse.char(data:id)
@@ -105,7 +105,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)
 
   # return the parse setup as a list of setup :D
-  parse.params <- .prim.list(
+  parse.params <- list(
         source_frames      = sapply(parseSetup$source_frames, function(asrc) asrc$name),
         destination_frame  = destination_frame,
         separator          = parseSetup$separator,

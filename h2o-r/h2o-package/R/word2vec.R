@@ -43,7 +43,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (!is.Frame(trainingFrame)) invisible(nrow(trainingFrame))  # try to force the eval of the frame
   if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an H2OFrame object")
 
-  params <- list(training_frame = .eval.frame(trainingFrame):eval,
+  params <- list(training_frame = .eval.frame(trainingFrame):id,
                  wordModel = wordModel,
                  normModel = normModel,
                  minWordFreq = minWordFreq,

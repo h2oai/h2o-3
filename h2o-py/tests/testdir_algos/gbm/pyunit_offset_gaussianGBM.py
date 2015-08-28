@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def offset_gaussian(ip,port):
     # Connect to a pre-existing cluster
     
 
-    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 
@@ -23,13 +23,13 @@ def offset_gaussian(ip,port):
     #   pr = pg - - log(Insurance$Holders)
     assert abs(44.33016 - gbm._model_json['output']['init_f']) < 1e-5, "expected init_f to be {0}, but got {1}". \
         format(44.33016, gbm._model_json['output']['init_f'])
-    assert abs(1491.135 - gbm.mse()) < 1e-3, "expected mse to be {0}, but got {1}".format(1491.135, gbm.mse())
-    assert abs(49.23438 - predictions.mean()) < 1e-3, "expected prediction mean to be {0}, but got {1}". \
+    assert abs(1491.135 - gbm.mse()) < 1e-2, "expected mse to be {0}, but got {1}".format(1491.135, gbm.mse())
+    assert abs(49.23438 - predictions.mean()) < 1e-2, "expected prediction mean to be {0}, but got {1}". \
         format(49.23438, predictions.mean())
-    assert abs(-45.54382 - predictions.min()) < 1e-1, "expected prediction min to be {0}, but got {1}". \
-        format(-45.54382, predictions.min())
-    assert abs(207.348 - predictions.max()) < 1e-1, "expected prediction max to be {0}, but got {1}". \
-        format(207.348, predictions.max())
+    assert abs(-45.5720659304 - predictions.min()) < 1e-2, "expected prediction min to be {0}, but got {1}". \
+        format(-45.5720659304, predictions.min())
+    assert abs(207.387 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
+        format(207.387, predictions.max())
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, offset_gaussian)
+    tests.run_test(sys.argv, offset_gaussian)

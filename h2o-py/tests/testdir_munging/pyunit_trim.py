@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def trim_check(ip,port):
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_frame(path=h2o.locate("smalldata/junit/cars_trim.csv"))
+    frame = h2o.import_file(path=h2o.locate("smalldata/junit/cars_trim.csv"))
 
     # single column (frame)
     trimmed_frame = frame["name"].trim()
@@ -22,4 +22,4 @@ def trim_check(ip,port):
     assert trimmed_vec[2,0] == "AMC Ambassador SST",      "Expected 'AMC Ambassador SST', but got {}".format(trimmed_frame[2,0])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, trim_check)
+    tests.run_test(sys.argv, trim_check)

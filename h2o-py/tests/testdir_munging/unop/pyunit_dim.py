@@ -1,5 +1,5 @@
 ##
-# Test out the dim() functionality
+# Test out the dim functionality
 # If data frame, get back a vector of two numbers: [1] nrows ncols
 # If NAs in the frame, they still count.
 # If not a frame, expect NULL
@@ -7,7 +7,7 @@
 
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 
 def dim_checks(ip,port):
@@ -15,10 +15,10 @@ def dim_checks(ip,port):
   
 
   # Log.info("Uploading logreg/princeton/cuse.dat")
-  h2o_data = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  h2o_data = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   np_data = np.loadtxt(h2o.locate("smalldata/logreg/prostate.csv"), delimiter=',', skiprows=1)
 
-  h2o_rows, h2o_cols = h2o_data.dim()
+  h2o_rows, h2o_cols = h2o_data.dim
   np_rows, np_cols = list(np_data.shape)
 
   print 'The dimensions of h2o frame is: {0} x {1}'.format(h2o_rows, h2o_cols)
@@ -31,7 +31,7 @@ def dim_checks(ip,port):
   h2o_slice = h2o_data[4]
   np_slice = np_data[:,4]
 
-  h2o_rows, h2o_cols = h2o_slice.dim()
+  h2o_rows, h2o_cols = h2o_slice.dim
   np_rows = np_slice.shape[0]
 
   print 'The dimensions of h2o column slice is: {0} x {1}'.format(h2o_rows, h2o_cols)
@@ -43,7 +43,7 @@ def dim_checks(ip,port):
 
   h2oColAmpFive = h2o_slice & 5
 
-  assert h2oColAmpFive.nrow() == h2o_rows, "expected the number of rows to remain unchanged"
+  assert h2oColAmpFive.nrow == h2o_rows, "expected the number of rows to remain unchanged"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, dim_checks)
+  tests.run_test(sys.argv, dim_checks)

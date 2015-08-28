@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -9,7 +9,7 @@ def iris_h2o_vs_sciKmeans(ip,port):
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+  iris_h2o = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
   iris_sci = np.genfromtxt(h2o.locate("smalldata/iris/iris.csv"), delimiter=',')
   iris_sci = iris_sci[:,0:4]
 
@@ -39,4 +39,4 @@ def iris_h2o_vs_sciKmeans(ip,port):
       assert (hpoint- spoint) < 1e-10, "expected centers to be the same"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, iris_h2o_vs_sciKmeans)
+  tests.run_test(sys.argv, iris_h2o_vs_sciKmeans)

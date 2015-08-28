@@ -14,10 +14,10 @@ class ASTAssign extends ASTPrim {
 
     // Check for append; add a col of NAs if appending
     if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
+      String newColName =  asts.length==6?asts[5].exec(env).getStr():Frame.defaultColName(dst.numCols());
       dst = new Frame(dst._names.clone(),dst.vecs().clone());
-      dst.add(asts[5].exec(env).getStr(), dst.anyVec().makeCon(Double.NaN));
+      dst.add(newColName, dst.anyVec().makeCon(Double.NaN));
       // DKV update on dst happens in RapidsHandler
-      if( asts.length!=6 ) throw new IllegalArgumentException("assign requires args (= dst src col_expr row_expr \"colname\")");
     } else {
       if( asts.length!=5 ) throw new IllegalArgumentException("assign requires args (= dst src col_expr row_expr)");
     }

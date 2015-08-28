@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 ######################################################
 #
@@ -11,7 +11,7 @@ def irisGBM(ip,port):
     # connect to localhost:54321
 
   # Import training data
-  train = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+  train = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
   train.describe()
 
   # Run GBM
@@ -30,4 +30,4 @@ def irisGBM(ip,port):
   my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, irisGBM)
+  tests.run_test(sys.argv, irisGBM)

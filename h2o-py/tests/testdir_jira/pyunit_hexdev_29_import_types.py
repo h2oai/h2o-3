@@ -5,10 +5,10 @@
 ################################################################################
 import sys, os
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def continuous_or_categorical(ip, port):
-  fraw = h2o.import_file(h2o.locate("smalldata/jira/hexdev_29.csv"))
+  fraw = h2o.lazy_import(h2o.locate("smalldata/jira/hexdev_29.csv"))
   fsetup = h2o.parse_setup(fraw)
   fsetup["column_types"][0] = "ENUM"
   fsetup["column_types"][1] = "ENUM"
@@ -23,4 +23,4 @@ def continuous_or_categorical(ip, port):
   assert (df_hex['h3'].isfactor())
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, continuous_or_categorical)
+    tests.run_test(sys.argv, continuous_or_categorical)

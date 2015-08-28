@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def benign(ip,port):
     
     
 
-    training_data = h2o.import_frame(h2o.locate("smalldata/logreg/benign.csv"))
+    training_data = h2o.import_file(h2o.locate("smalldata/logreg/benign.csv"))
 
     Y = 3
     X = range(3) + range(4,11)
@@ -16,11 +16,11 @@ def benign(ip,port):
 
     #Log.info("Check that the columns used in the model are the ones we passed in.")
     #Log.info("===================Columns passed in: ================")
-    in_names = [training_data.names()[i] for i in X]
+    in_names = [training_data.names[i] for i in X]
     #Log.info("===================Columns passed out: ================")
     out_names = [model._model_json['output']['coefficients_table'].cell_values[c][0] for c in range(len(X)+1)]    
     assert in_names == out_names[1:]
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, benign)
+  tests.run_test(sys.argv, benign)
 

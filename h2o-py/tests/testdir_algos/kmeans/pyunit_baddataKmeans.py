@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 import string
 
@@ -78,7 +78,7 @@ def baddataKmeans(ip,port):
     assert len(centers[c]) == 10, "expected center to be 10 "+str(len(centers[c]))
 
   # Log.info("Importing iris.csv data...\n")
-  iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+  iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
   km_model = h2o.kmeans(x=iris, k=5)
   centers = km_model.centers()
@@ -87,4 +87,4 @@ def baddataKmeans(ip,port):
     assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
 
 if __name__ == "__main__":
-   h2o.run_test(sys.argv, baddataKmeans)
+   tests.run_test(sys.argv, baddataKmeans)

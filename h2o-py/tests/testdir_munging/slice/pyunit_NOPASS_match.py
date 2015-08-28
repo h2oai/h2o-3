@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def match_check(ip,port):
     # Connect to a pre-existing cluster
     
 
-    hex = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    hex = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     print "doing the match: h2o.match(hex$Species, [\"Iris-setosa\", \"Iris-versicolor\"]"
     sub_h2o_match = hex[4].match(["Iris-setosa", "Iris-versicolor"])
@@ -21,7 +21,7 @@ def match_check(ip,port):
     hh_match.show()
 
     print "print the dim of the subsetted frame"
-    rows, cols = hh_match.dim()
+    rows, cols = hh_match.dim
     print "rows: {0}".format(rows)
     print "cols: {0}".format(cols)
 
@@ -42,7 +42,7 @@ def match_check(ip,port):
     hh_match.show()
 
     print "print the dim of the subsetted frame"
-    rows, cols = hh_match.dim()
+    rows, cols = hh_match.dim
     print "rows: {0}".format(rows)
     print "cols: {0}".format(cols)
 
@@ -50,4 +50,4 @@ def match_check(ip,port):
     assert rows == 9 and cols == 5, "Unexpected dimensions. Got {0} rows and {1} cols.".format(rows,cols)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, match_check)
+    tests.run_test(sys.argv, match_check)
