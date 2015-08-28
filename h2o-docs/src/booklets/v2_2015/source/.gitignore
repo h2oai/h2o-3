@@ -1,0 +1,8 @@
+# Latex output
+*.bbl
+*.blg
+*.log
+*.aux
+*.toc
+*.synctex
+*.out
