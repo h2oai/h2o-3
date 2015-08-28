@@ -9,16 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import hex.genmodel.GenModel;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Lockable;
-import water.MRTask;
-import water.MemoryManager;
-import water.Weaver;
+import water.*;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.EnumWrappedVec;
@@ -79,6 +70,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  them!
    */
   public abstract static class Parameters extends Iced {
+    public AutoBuffer deepClone() {
+      return write(new AutoBuffer()).flipForReading();
+    }
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1000;
 
