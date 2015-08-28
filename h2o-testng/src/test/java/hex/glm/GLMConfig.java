@@ -28,7 +28,7 @@ public class GLMConfig {
 			new Param("_standardize", "boolean"),
 			new Param("_lambda_search", "boolean"),
 			new Param("_nfolds", "int"),
-//			new Param("_fold_column", "String"), //TODO check it
+			new Param("_fold_column", "String"),
 			new Param("_ignore_const_cols", "boolean"),
 			new Param("_offset_column", "String"),
 			new Param("_weights_column", "String"),
