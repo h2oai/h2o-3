@@ -2,9 +2,9 @@ package water.util;
 
 import water.fvec.Frame;
 
-import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
-import edu.emory.mathcs.jtransforms.fft.DoubleFFT_2D;
-import edu.emory.mathcs.jtransforms.fft.DoubleFFT_3D;
+import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
+import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
+import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
@@ -232,29 +232,29 @@ public class MathUtils {
     return d < 0?-1:1;
   }
 
-  public static class FFT {
+  public static class DCT {
 
     public static void initCheck(Frame input, int width, int height, int depth) {
       ConcurrencyUtils.setNumberOfThreads(1);
       if (width < 1 || height < 1 || depth < 1)
-        throw new H2OIllegalArgumentException("FFT dimensions must be >= 1");
+        throw new H2OIllegalArgumentException("dimensions must be >= 1");
       if (width*height*depth != input.numCols())
-        throw new H2OIllegalArgumentException("FFT dimensions WxHxD must match the # columns of the frame");
+        throw new H2OIllegalArgumentException("dimensions HxWxD must match the # columns of the frame");
       for (Vec v : input.vecs()) {
         if (v.naCnt() > 0)
-          throw new H2OIllegalArgumentException("FFT can not be computed on rows with missing values");
+          throw new H2OIllegalArgumentException("DCT can not be computed on rows with missing values");
         if (!v.isNumeric())
-          throw new H2OIllegalArgumentException("FFT can only be computed on numeric columns");
+          throw new H2OIllegalArgumentException("DCT can only be computed on numeric columns");
       }
     }
 
     /**
-     * Compute the real-valued 1D Fourier transform for each row in the given Frame, and return a new Frame
+     * Compute the 1D discrete cosine transform for each row in the given Frame, and return a new Frame
      *
      * @param input   Frame containing numeric columns with data samples
      * @param N       Number of samples (must be less or equal than number of columns)
      * @param inverse Whether to compute the inverse
-     * @return Frame containing real-valued 1D (inverse)FFT of each row (same dimensionality)
+     * @return Frame containing 1D (inverse) DCT of each row (same dimensionality)
      */
     public static Frame transform1D(Frame input, final int N, final boolean inverse) {
       initCheck(input, N, 1, 1);
@@ -267,11 +267,11 @@ public class MathUtils {
             for (int i = 0; i < N; ++i)
               a[i] = cs[i].atd(row);
 
-            // compute FFT for each row
+            // compute DCT for each row
             if (!inverse)
-              new DoubleFFT_1D(N).realForward(a);
+              new DoubleDCT_1D(N).forward(a, true);
             else
-              new DoubleFFT_1D(N).realInverse(a, true);
+              new DoubleDCT_1D(N).inverse(a, true);
 
             // write result to NewChunk
             for (int i = 0; i < N; ++i)
@@ -282,75 +282,78 @@ public class MathUtils {
     }
 
     /**
-     * Compute the real-valued 2D Fourier transform for each row in the given Frame, and return a new Frame
+     * Compute the 2D discrete cosine transform for each row in the given Frame, and return a new Frame
      *
      * @param input   Frame containing numeric columns with data samples
-     * @param rows    width
-     * @param cols    height
+     * @param height  height
+     * @param width   width
      * @param inverse Whether to compute the inverse
-     * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
+     * @return Frame containing 2D DCT of each row (same dimensionality)
      */
-    public static Frame transform2D(Frame input, final int rows, final int cols, final boolean inverse) {
-      initCheck(input, rows, cols, 1);
+    public static Frame transform2D(Frame input, final int height, final int width, final boolean inverse) {
+      initCheck(input, height, width, 1);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          double[][] a = new double[rows][cols];
+          double[][] a = new double[height][width];
           // each row is a 2D sample
-          for (int i = 0; i < rows; ++i)
-            for (int j = 0; j < cols; ++j)
-              a[i][j] = cs[i + j * rows].atd(j);
+          for (int row = 0; row < cs[0]._len; ++row) {
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                a[i][j] = cs[i * width + j].atd(row);
 
-          // compute 2D FFT
-          if (!inverse)
-            new DoubleFFT_2D(rows, cols).realForward(a);
-          else
-            new DoubleFFT_2D(rows, cols).realInverse(a, true);
+            // compute 2D DCT
+            if (!inverse)
+              new DoubleDCT_2D(height, width).forward(a, true);
+            else
+              new DoubleDCT_2D(height, width).inverse(a, true);
 
-          // write result to NewChunk
-          for (int i = 0; i < rows; ++i)
-            for (int j = 0; j < cols; ++j)
-              ncs[i].addNum(a[i][j]);
+            // write result to NewChunk
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                ncs[i * width + j].addNum(a[i][j]);
 
+          }
         }
-      }.doAll(input.numCols(), input).outputFrame();
+      }.doAll(height * width, input).outputFrame();
     }
 
     /**
-     * Compute the real-valued 3D Fourier transform for each row in the given Frame, and return a new Frame
+     * Compute the 3D discrete cosine transform for each row in the given Frame, and return a new Frame
      *
      * @param input   Frame containing numeric columns with data samples
-     * @param rows    height
-     * @param cols    width
+     * @param height  height
+     * @param width   width
      * @param depth   depth
      * @param inverse Whether to compute the inverse
-     * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
+     * @return Frame containing 3D DCT of each row (same dimensionality)
      */
-    public static Frame transform3D(Frame input, final int rows, final int cols, final int depth, final boolean inverse) {
-      initCheck(input, rows, cols, depth);
+    public static Frame transform3D(Frame input, final int height, final int width, final int depth, final boolean inverse) {
+      initCheck(input, height, width, depth);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          double[][][] a = new double[rows][cols][depth];
+          double[][][] a = new double[height][width][depth];
 
           // each row is a 3D sample
-          for (int i = 0; i < rows; ++i)
-            for (int j = 0; j < cols; ++j)
-              for (int k = 0; k < depth; ++k)
-                a[i][j][k] = cs[i + j * rows + k * rows * cols].atd(j);
+          for (int row = 0; row < cs[0]._len; ++row) {
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                for (int k = 0; k < depth; ++k)
+                  a[i][j][k] = cs[i*(width*depth) + j*depth + k].atd(row);
 
-          // compute 3D FFT
-          if (!inverse)
-            new DoubleFFT_3D(depth, rows, cols).realForward(a);
-          else
-            new DoubleFFT_3D(depth, rows, cols).realInverse(a, true);
+            // compute 3D DCT
+            if (!inverse)
+              new DoubleDCT_3D(height, width, depth).forward(a, true);
+            else
+              new DoubleDCT_3D(height, width, depth).inverse(a, true);
 
-          // write result to NewChunk
-          for (int i = 0; i < rows; ++i)
-            for (int j = 0; j < cols; ++j)
-              for (int k = 0; k < depth; ++k)
-                ncs[i].addNum(a[i][j][k]);
-
+            // write result to NewChunk
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                for (int k = 0; k < depth; ++k)
+                  ncs[i].addNum(a[i][j][k]);
+          }
         }
       }.doAll(input.numCols(), input).outputFrame();
     }
