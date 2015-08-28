@@ -41,5 +41,7 @@ lung_zero_one_weights,smalldata,lung_zero_one_weights.csv,cases,city;age;pop;cas
 sweden_zero_one_weights,smalldata,sweden_zero_one_weights.csv,Claims,Kilometres;Zone;Bonus;Make;Insured;Claims;Payment;weights,Numeric;Numeric;Numeric;Numeric;Numeric;Enum;Numeric;Numeric,2182,8,,,,,,
 insurance_log_holders_poisson,smalldata,insurance_log_holders.csv,Claims,District;Group;Age;Holders;Claims;log_holders,Numeric;Enum;Enum;Numeric;Numeric;Numeric,64,6,,,,,,
 insurance_zero_one_weights_poisson,smalldata,insurance_zero_one_weights.csv,Claims,District;Group;Age;Holders;Claims;weights,Numeric;Enum;Enum;Numeric;Numeric;Numeric,64,6,,,,,,
+insurance_gamma_dense_train,smalldata,insurance_gamma_dense_train.csv,Claims,District;Group;Age;Holders;Claims;offset,Numeric;Enum;Enum;Numeric;Numeric;Numeric,45,6,,,,,,
+insurance_gamma_dense_test,smalldata,insurance_gamma_dense_test.csv,Claims,District;Group;Age;Holders;Claims;offset,Numeric;Enum;Enum;Numeric;Numeric;Numeric,19,6,,,,,,
 newsgroup_train1,bigdata,newsgroup_train1.csv,,,,,,,,,,,
 newsgroup_validation1,bigdata,newsgroup_validation1.csv,,,,,,,,,,,
