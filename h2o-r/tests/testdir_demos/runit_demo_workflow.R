@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-demo_workflow <- function(conn) {
+demo_workflow <- function() {
     Log.info("Import small iris data...")
-    hex <- as.h2o(conn, iris, destination_frame = "iris")
+    hex <- as.h2o(iris, destination_frame = "iris")
     k <- 3
     setSeed <- 148008988978
     
