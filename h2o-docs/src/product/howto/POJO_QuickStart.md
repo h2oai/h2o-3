@@ -1,5 +1,7 @@
 #POJO Quick Start
 
+This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html) for more information, including packages. 
+
 ##What is a POJO? 
 
 H2O allows you to convert the models you have built to a Plain Old Java Object (POJO), which can then be easily deployed within your Java app and scheduled to run on a specified dataset.
@@ -157,53 +159,25 @@ The PredictCsv class is used by the H2O test harness to make predictions on new 
 
   Anything that runs in a JVM. The POJO is a standalone Java class with no dependencies on H2O. 
 
-- **Do I need to pre-process all the inputs before calling the scoring engine?**
+- **How should I format my data before calling the POJO?**
 
-  Currently, yes.
+	Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html)).
+	 - Input columns must only contain categorical levels that were seen during training
+	- Any additional input columns not used for training are ignored
+   - If no input column is specified, it will be treated as an `NA`
+	- Some models do not handle NAs well (e.g., GLM) 
+	- Any transformations applied to data before model training must also be applied before calling the POJO predict method
+ 
 
 - **How do I run a POJO on a Spark Cluster?**
 
   The POJO provides just the math logic to do predictions, so you won’t find any Spark (or even H2O) specific code there.  If you want to use the POJO to make predictions on a dataset in Spark, create a map to call the POJO for each row and save the result to a new column, row-by-row. 
 
-
-- **How do I score using an exported POJO?**
-
-  The generated POJO can be used independently of a H2O cluster. First use `curl` to send the h2o-genmodel.jar file and the java code for model to the server. The following is an example; the ip address and model names will need to be changed. 
-
-	```
-	mkdir tmpdir
-	cd tmpdir
-	curl http://127.0.0.1:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
-	curl http://127.0.0.1:54321/3/Models.java/gbm_model > gbm_model.java
-	```
-
-  To score a simple .CSV file, download the [PredictCSV.java](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java) file and compile it with the POJO. Make a subdirectory for the compilation (this is useful if you have multiple models to score on).
-
-	```
-	wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java
-	mkdir gbm_model_dir
-	javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
-	``` 
-
-	Specify the following:
-	- the classpath using `-cp` 
-	- the model name (or class) using `--model` 
-	- the csv file you want to score using `--input` 
-	- the location for the predictions using `--output`. 
-	 
-	You must match the table column names to the order specified in the POJO. The output file will be in a .hex format, which is a lossless text representation of floating point numbers. Both R and Java will be able to read the hex strings as numerics.
-
-	```
-	java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
-	```
-
 - **How do I communicate with a remote cluster using the REST API?**
 
-  To create a set of bare POJOs for the REST API payloads that can be used by JVM REST API clients: 
+  You can dl the POJO using the REST API but when calling the POJO predict function, it's in the same JVM, not across a REST API. 
 
-	0. Clone the sources from GitHub. 
-	0. Start an H2O instance. 
-	0. Enter `% cd py`.
-	0. Enter `% python generate_java_binding.py`. 
+- **Is it possible to make predictions using my H2O cluster with the REST API?**
 
-  This script connects to the server, gets all the metadata for the REST API schemas, and writes the Java POJOs to `{sourcehome}/build/bindings/Java`. 
+  Yes, but this way of making predictions is separate from the POJO.
+For more information about in-H2O predictions (as opposed to POJO predictions), see the documentation for the H2O REST API endpoint /3/Predictions.
