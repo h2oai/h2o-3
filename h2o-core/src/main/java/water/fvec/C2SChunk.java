@@ -69,7 +69,6 @@ public class C2SChunk extends Chunk {
 //    //return hasFloat() ? "% 10.4e" : super.pformat0();
 //  }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C2SChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;

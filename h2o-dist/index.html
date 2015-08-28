@@ -346,7 +346,8 @@
         }
       }
       <!-- DOM 0 style without jquery -->
-      window.onload = function() {
+
+      trackLinks = function() {
         trackLink('download-zip', 'Download', 'ZIP');
         trackLink('doc-flow', 'Documentation', 'Flow');
         trackLink('doc-r-pdf', 'Documentation', 'R');
@@ -364,8 +365,118 @@
         trackLink('btnCopy6','Copy to Clipboard', 'Run H2O on Maven');
         trackLink('btnCopy7','Copy to Clipboard', 'Run H2O on Hadoop');
         trackLink('btnCopy8','Copy to Clipboard', 'Use H2O directly from Python');
+      }
 
-        initializeTabs();
+      populatePageWithBuildInfoJson = function(obj) {
+        var out;
+        var i;
+
+        out = "";
+        out += "<ul>\n";
+        user_documents = obj.user_documents;
+        for (i = 0; i < user_documents.length; i++) {
+          doc = user_documents[i];
+          out += "<li>";
+          out += "<a id=\"";
+          out += doc.id;
+          out += "\"";
+          out += " href=\"";
+          out += doc.path
+          out += "\">";
+          out += doc.name;
+          out += "</a>";
+          out += "</li>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("user_documentation")
+        tmp.innerHTML = out;
+
+        out = "";
+        out += "<ul>\n";
+        developer_documents = obj.developer_documents;
+        for (i = 0; i < developer_documents.length; i++) {
+          doc = developer_documents[i];
+          out += "<li>";
+          out += "<a id=\"";
+          out += doc.id;
+          out += "\"";
+          out += " href=\"";
+          out += doc.path
+          out += "\">";
+          out += doc.name;
+          out += "</a>";
+          out += "</li>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("developer_documentation")
+        tmp.innerHTML = out;
+
+        out = "";
+        out += "<ul>\n";
+        booklets = obj.booklets;
+        for (i = 0; i < booklets.length; i++) {
+          doc = booklets[i];
+          out += "<li>";
+          out += "<a id=\"";
+          out += doc.id;
+          out += "\"";
+          out += " href=\"";
+          out += doc.path
+          out += "\">";
+          out += doc.name;
+          out += "</a>";
+          out += "</li>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("booklets")
+        tmp.innerHTML = out;
+
+        out = "";
+        out += "<ul>\n";
+        hadoop_distributions = obj.hadoop_distributions;
+        for (i = 0; i < hadoop_distributions.length; i++) {
+          dist = hadoop_distributions[i];
+          var url = location.href;
+          var url2 = url.substring(0, url.lastIndexOf("/"));
+          out += "wget ";
+          out += url2;
+          out += "/";
+          out += dist.zip_file_path;
+          out += "<br/>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("to_copy4")
+        tmp.innerHTML = out;
+      }
+
+      readBuildInfoJsonFile = function() {
+        var xmlhttp = new XMLHttpRequest();
+        var url = "buildinfo.json";
+
+        xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var myObj = JSON.parse(xmlhttp.responseText);
+            populatePageWithBuildInfoJson(myObj);
+
+            // Must be after populating the page or id's won't be found.
+            trackLinks();
+            initializeTabs();
+          }
+        }
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+      }
+
+      window.onload = function() {
+        readBuildInfoJsonFile();
       }
     </script>
   </head>
@@ -562,7 +673,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     if (! ("stats"    %in% rownames(installed.packages()))) { install.packages("stats") }<br/>
                     if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }<br/>
                     if (! ("RCurl"    %in% rownames(installed.packages()))) { install.packages("RCurl") }<br/>
-                    if (! ("jsonlite"    %in% rownames(installed.packages()))) { install.packages("jsonlite") }<br/>
+                    if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }<br/>
                     if (! ("tools"    %in% rownames(installed.packages()))) { install.packages("tools") }<br/>
                     if (! ("utils"    %in% rownames(installed.packages()))) { install.packages("utils") }<br/>
                     <br/>
@@ -581,15 +692,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='to_copy4'>
               <span class="octicon octicon-clippy"></span>
             </button>
-            <p class="terminal" id="to_copy4">
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.2.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.3.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.4.2.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.2.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip<br/>
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
-            </p>
+            <p class="terminal" id="to_copy4"></p>
             <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
              <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
               <span class="octicon octicon-clippy"></span>
@@ -650,23 +753,11 @@ dependencies {</br>
         </div>
         <div id="documentation">
           <h2>User Documentation</h2>
-          <ul>
-            <li><a id="doc-flow" href="docs-website/h2o-docs/index.html">H2O Documentation</a></li>
-            <li><a id="doc-recent-changes" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/RecentChanges.md">Recent Changes</a></li>
-            <li><a id="doc-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
-            <li><a id="doc-py" href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
-            <li><a id="doc-sparkling-water" href="docs-website/h2o-docs/index.html#Welcome%20to%20H2O%203.0-Sparkling%20Water%20Users">Sparkling Water Readme</a></li>
-            <li><a id="doc-migration" href="docs-website/h2o-docs/index.html#Migrating%20to%20H2O%203.0">Migrating to H2O 3.0</a></li>
-          </ul>
+          <div id="user_documentation"></div>
           <h2>Developer Documentation</h2>
-          <ul>
-            <li><a id="doc-readme" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/README.md">Github README</a></li>
-            <li><a id="doc-rest" href="docs-website/h2o-docs/index.html">REST API Documentation</a></li>
-            <li><a id="doc-h2o-core-javadoc" href="docs-website/h2o-core/javadoc/index.html">H2O Core Java Developer Documentation (Javadoc)</a></li>
-            <li><a id="doc-h2o-algos-javadoc" href="docs-website/h2o-algos/javadoc/index.html">H2O Algos Java Developer Documentation (Javadoc)</a></li>
-            <li><a id="doc-h2o-genmodel-javadoc" href="docs-website/h2o-genmodel/javadoc/index.html">H2O Generated POJO Model API Developer Documentation (Javadoc)</a></li>
-            <li><a id="doc-h2o-scala-javadoc" href="docs-website/h2o-scala/scaladoc/index.html">H2O Scala API Developer Documentation (Scaladoc)</a></li>
-          </ul>
+          <div id="developer_documentation"></div>
+          <h2>Booklets</h2>
+          <div id="booklets"></div>
         </div>
       </div>
     </div>

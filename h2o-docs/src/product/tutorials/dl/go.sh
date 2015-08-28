@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TARGET=2015_02_deep-learning-performance
+TARGET=2015_08_deep-learning-performance
 WEB_REPO=~/0xdata.com
 
 awk '/INSERT1/{while((getline line < $2) > 0 ){print line}close($2);next}1' dlperf.md.template > dlperf.md

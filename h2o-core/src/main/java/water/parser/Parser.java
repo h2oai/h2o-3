@@ -69,6 +69,8 @@ public abstract class Parser extends Iced {
     if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
+    // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
+    // FIXME are parsed for parseSetup
     while( is.available() > 0 && (_jobKey == null || !((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()))
       parseChunk(cidx++, din, dout);
     parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
@@ -86,12 +88,15 @@ public abstract class Parser extends Iced {
     StreamParseWriter nextChunk = dout;
     int zidx = bvs.read(null,0,0); // Back-channel read of chunk index
     assert zidx==1;
-    while( is.available() > 0 && (_jobKey == null || !((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed())) {
+    while( is.available() > 0 ) {
       int xidx = bvs.read(null,0,0); // Back-channel read of chunk index
       if( xidx > zidx ) {  // Advanced chunk index of underlying ByteVec stream?
         zidx = xidx;       // Record advancing of chunk
         nextChunk.close(); // Match output chunks to input zipfile chunks
-        if( dout != nextChunk ) dout.reduce(nextChunk);
+        if( dout != nextChunk ) {
+          dout.reduce(nextChunk);
+          if (_jobKey != null && ((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) break;
+        }
         nextChunk = nextChunk.nextChunk();
       }
       parseChunk(cidx++, din, nextChunk);
