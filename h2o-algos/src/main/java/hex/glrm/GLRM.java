@@ -25,7 +25,9 @@ import water.util.Log;
 import water.util.RandomUtils;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -605,6 +607,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._training_metrics = model.scoreMetricsOnly(_parms.train());
         if (_valid != null)
           model._output._validation_metrics = model.scoreMetricsOnly(_parms.valid());
+        model._output._model_summary = createModelSummaryTable(model._output);
         model.update(self());
         done();
       } catch (Throwable t) {
@@ -639,6 +642,32 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     Key self() {
       return _key;
+    }
+
+    private TwoDimTable createModelSummaryTable(GLRMModel.GLRMOutput output) {
+      List<String> colHeaders = new ArrayList<>();
+      List<String> colTypes = new ArrayList<>();
+      List<String> colFormat = new ArrayList<>();
+      colHeaders.add("Number of Rows"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Final Step Size"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Final Objective Value"); colTypes.add("double"); colFormat.add("%.5f");
+
+      final int rows = 1;
+      TwoDimTable table = new TwoDimTable(
+              "Model Summary", null,
+              new String[rows],
+              colHeaders.toArray(new String[0]),
+              colTypes.toArray(new String[0]),
+              colFormat.toArray(new String[0]),
+              "");
+      int row = 0;
+      int col = 0;
+      table.set(row, col++, output._nobs);
+      table.set(row, col++, output._iterations);
+      table.set(row, col++, output._step_size);
+      table.set(row, col++, output._objective);
+      return table;
     }
   }
 
