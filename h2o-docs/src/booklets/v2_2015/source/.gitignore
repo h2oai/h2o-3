@@ -4,5 +4,8 @@
 *.log
 *.aux
 *.toc
+*.pdf
 *.synctex
 *.out
+
+generated_buildinfo.tex
