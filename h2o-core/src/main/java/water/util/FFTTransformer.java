@@ -46,7 +46,7 @@ public class FFTTransformer extends Transformer<FFTTransformer> {
       error("_dimensions", "Dimensions must be >= 1");
     if (_dataset.numCols() < _dimensions[0] * _dimensions[1] * _dimensions[2])
       error("_dimensions", "Product of dimensions WxHxD must be <= #columns (" + _dataset.numCols() + ")");
-    MathUtils.FFT.initCheck(_dataset);
+    MathUtils.FFT.initCheck(_dataset, _dimensions[0], _dimensions[1], _dimensions[2]);
 
     return (FFTTransformer) start(
             new H2O.H2OCountedCompleter() {

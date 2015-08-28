@@ -234,8 +234,12 @@ public class MathUtils {
 
   public static class FFT {
 
-    public static void initCheck(Frame input) {
+    public static void initCheck(Frame input, int width, int height, int depth) {
       ConcurrencyUtils.setNumberOfThreads(1);
+      if (width < 1 || height < 1 || depth < 1)
+        throw new H2OIllegalArgumentException("FFT dimensions must be >= 1");
+      if (width*height*depth != input.numCols())
+        throw new H2OIllegalArgumentException("FFT dimensions WxHxD must match the # columns of the frame");
       for (Vec v : input.vecs()) {
         if (v.naCnt() > 0)
           throw new H2OIllegalArgumentException("FFT can not be computed on rows with missing values");
@@ -253,7 +257,7 @@ public class MathUtils {
      * @return Frame containing real-valued 1D (inverse)FFT of each row (same dimensionality)
      */
     public static Frame transform1D(Frame input, final int N, final boolean inverse) {
-      initCheck(input);
+      initCheck(input, N, 1, 1);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -287,7 +291,7 @@ public class MathUtils {
      * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
      */
     public static Frame transform2D(Frame input, final int rows, final int cols, final boolean inverse) {
-      initCheck(input);
+      initCheck(input, rows, cols, 1);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -323,7 +327,7 @@ public class MathUtils {
      * @return Frame containing real-valued 1D FFT of each row (same dimensionality)
      */
     public static Frame transform3D(Frame input, final int rows, final int cols, final int depth, final boolean inverse) {
-      initCheck(input);
+      initCheck(input, rows, cols, depth);
       return new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
