@@ -105,13 +105,13 @@ The document source itself can be found here:
 
 \section{Generalized Linear Models}
 
-Generalized linear models (GLM) are an extension of traditional linear models. They have gained popularity in statistical data analysis because of: 1- the flexibility of the model structure which unifies the typical regression methods (such as linear regression and logistic regression for binary classification), 2- the availability of software to fit the models. GLMs scale well to large datasets. The estimation of the model is obtained by maximizing the log-likelihood of the parameters for the observed data. 
+Generalized linear models (GLM) are an extension of traditional linear models. They have gained popularity in statistical data analysis because of (1) the flexibility of the model structure which unifies the typical regression methods (such as linear regression and logistic regression for binary classification) and (2) the availability of software to fit the models. GLMs scale well to large datasets. The estimation of the model is obtained by maximizing the log-likelihood of the parameters for the observed data. 
 
 %Generalized linear models (GLM) are the workhorse for most predictive analysis use cases. GLM scales well to large datasets, is based on a solid statistical background, and can be used for both regression and classification. It
 %is a generalization of linear models, allowing for modeling of data with exponential distributions and for
 %categorical data (classification). GLM models are fitted by solving the maximum likelihood optimization problem.
 
-In the familiar linear regression setup, the independent observations vector $y$ is assumed to be related to its corresponding predictor vector $x$ by the relation $$y = x^{\top}\beta + \beta_0 + \epsilon,$$ where $\beta$ is the parameter vector, $\beta_0$ is an intercept term and $\epsilon \sim \mathcal{N}( 0, \sigma^2 )$ represents gaussian noise. Therefore the response is also normally distributed $y \sim \mathcal{N}( x^{\top} \beta + \beta_0, \sigma^2 )$. This model is restrictive as it assumes additivity of the covariates, normality of the error term as well as constancy of the variance. Such assumptions do not hold in numerous applications and datasets, thus a more flexible model is desirable. 
+In the familiar linear regression setup, the independent observations vector $y$ is assumed to be related to its corresponding predictor vector $x$ by $$y = x^{\top}\beta + \beta_0 + \epsilon,$$ where $\beta$ is the parameter vector, $\beta_0$ represents the intercept term and $\epsilon \sim \mathcal{N}( 0, \sigma^2 )$ is a gaussian random variable which is the noise. Therefore the response $y$ is also normally distributed $y \sim \mathcal{N}( x^{\top} \beta + \beta_0, \sigma^2 )$. This model is restrictive as it assumes additivity of the covariates, normality of the error term as well as constancy of the variance. Such assumptions do not hold in numerous applications and datasets, thus a more flexible model is desirable. 
 
 %Generalized linear models are generalizations of linear regression models. Linear regression models the dependency
 %of response $y$ on a vector of predictors $x$ ($y \sim x^T \beta + \beta_0$). The models are built with the assumptions
@@ -119,11 +119,11 @@ In the familiar linear regression setup, the independent observations vector $y$
 %offset of some constant $\beta_0$, i.e. $ y = \mathcal{N}(x^T \beta + \beta_0 , \sigma^2) $. These assumptions can
 %be overly restrictive for real-world data that do not necessarily have a Gaussian distribution.
 
-GLMs relax the above assumptions by allowing the variance to vary as a function of the mean, non-normal errors as well as a non-linear relation between the response and covariates. More specifically, the response distribution is assumed to belong to the exponential family. The components of a GLM are:
+GLMs relax the above assumptions by allowing the variance to vary as a function of the mean, non-normal errors as well as a non-linear relation between the response and covariates. More specifically, the response distribution is assumed to belong to the exponential family which includes the gaussian, poisson, binomial, multinomial and gamma distributions as special cases. The components of a GLM are:
 \begin{itemize}
-\item The random component density: the density function $f(y,\theta,\phi)$ has a probability distribution from the exponential family, for which the gaussian distribution is a special case. This removes the restriction on the distribution of the error and allows for non-homogeneity of the variance with respect to the mean vector.
+\item The random component: the density function $f(y,\theta,\phi)$ has a probability distribution from the exponential family. This removes the restriction on the distribution of the error and allows for non-homogeneity of the variance with respect to the mean vector.
 \item The systematic component $\eta$: $\eta = X\beta$, where $X$ is the matrix of all observation vectors.
-\item The link function $g$: $E(y) = \mu = g^{-1}(\eta)$ which relates the expected value of the response $\mu$ to the linear component $\eta$. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, as it allows the response to belong to a restricted range of values depending on the chosen transformation $g$.
+\item The link function $g$: $E(y) = \mu = g^{-1}(\eta)$ which relates the expected value of the response $\mu$ to the linear component $\eta$. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation $g$.
 \end{itemize}
 
 %GLM generalizes linear regression in the following ways: 
@@ -137,55 +137,69 @@ This generalization of linear models makes GLMs suitable for a wider range of pr
 %This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
 
 \subsection{GLM in H2O}
-H2O's GLM algorithm fits generalized linear models with parameter regularization. The elastic net penalty  $P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + {(1- \alpha) \over 2} \| \beta \|_2^2 \right) $ is added to the log-likelihood, combining the $\ell_1$  and $\ell_2$ norms. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number of predictors with non-zero coefficients ($\mathtt{\sim}$ low thousands) (? depends on lambda, what do you mean exactly?). For a specific $\alpha$ value, the algorithm can compute models for a single value of the tuning parameter $\lambda$ which controls the sparsity of the solution, or the full regularization path as in the glmnet package for R (refer
-to \citetalias{glmnet}).  H2O's GLM fits the model by solving following problem:
+H2O's GLM algorithm fits generalized linear models to the data by maximizing the log-likelihood. The elastic net penalty can be used for parameter regularization. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number of predictors with non-zero coefficients ($\mathtt{\sim}$ low thousands).\\
 
-\[ \min\limits_{\beta}\ (\ Classic GLM  + Regularization Penalty \ )\]
+The elastic net regularization penalty $\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + {(1- \alpha) \over 2} \| \beta \|_2^2 \right)$ which is added to the log-likelihood that is optimized is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients. It shrinks the coefficients by imposing a penalty on their size and induces sparsity in the solution. Such properties are desirable as they reduce the variance in the predictions and make the model more interpretable, since it selects a subset of the given variables. For a specific $\alpha$ value, the algorithm can compute models for (1) a single value of the tuning parameter $\lambda$ or (2) the full regularization path as in the glmnet package for R (refer to \citetalias{glmnet}).
 
-which is equivalent to:
+ H2O's GLM fits the model by solving the following likelihood optimization with parameter regularization over $n$ observations:
+$$ \min_{\beta,\beta_0} \sum_{i=1}^n \log f\left(y_i ; \beta,\beta_0\right)  + \lambda P_{\alpha}(\beta). $$
 
-\[ \min\limits_{\beta}\ (\ {{1\over{N}} log\_likelihood(family,\beta)  + \lambda (\alpha \| \beta \|_1} + {1- \alpha \over 2} \| \beta \|_2^2) \ )\]
+%\[ \min\limits_{\beta}\ (\ Classic GLM  + Regularization Penalty \ )\]
 
-\bigskip
-The elastic net parameter $\alpha$ controls the penalty distribution between L1 (Lasso) and L2 (Ridge Regression)
-penalties. The range is any value between 0 and 1. When $\alpha$ = 0, we have no L1 penalty and the problem becomes
-ridge regression. If $\alpha$ = 1, there is no L2 penalty and we have Lasso.
+%which is equivalent to:
 
-The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the
-L2-only penalty does not reduce coefficients to exactly 0. The two penalties also differ in the case of correlated
-predictors. The L2 penalty shrinks coefficients for correlated columns towards each other, while the L1 penalty
-will pick one and drive the others to zero. Using the elastic net argument $\alpha$, you can combine these two
-behaviors. It is also useful to always add a small L2 penalty to increase numerical stability.
+%\[ \min\limits_{\beta}\ (\ {{1\over{N}} log\_likelihood(family,\beta)  + \lambda (\alpha \| \beta \|_1} + {1- \alpha \over 2} \| \beta \|_2^2) \ )\]
+
+The elastic net parameter $\alpha \in [0,1]$ controls the penalty distribution between the $\ell_1$ (lasso) and $\ell_2$ (ridge regression)
+penalties. When $\alpha=0$, the $\ell_1$ penalty is not used and we obtain the
+ridge regression solution with shrunken coefficients. If $\alpha=1$, the lasso operator soft-thresholds the coefficients reducing some of them to zero depending on the $\lambda$ value.
+
+Variable selection is important in numerous modern applications with many covariates for which the $\ell_1$ penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, it is advantageous to use the lasso as it will select a small number of variables for sufficiently high $\lambda$. The $\ell_2$ norm does not have that effect, it only shrinks the coefficients without setting them exactly to zero.  %The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the
+%L2-only penalty does not reduce coefficients to exactly 0. 
+The two penalties also differ in the presence of correlated
+predictors. The $\ell_2$ penalty shrinks coefficients for correlated columns towards each other, while the $\ell_1$ penalty
+tends to select only one of them. Using the elastic net argument $\alpha$, you can combine these two
+behaviors. It is also useful to always add a small $\ell_2$ penalty to increase numerical stability.
 
 Similarly to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting
-from a null-model (maximum penalty) down to a minimally-penalized model. To improve the efficiency of this search, 
+from the null-model (evaluated at the smallest penalty $\lambda_{\max}$ for which all coefficients are set to zero) down to a minimally-penalized model. To improve the efficiency of this search, 
 H2O employs strong-rules as described in \citetalias{strong} to filter out inactive coefficients (coefficients pushed
-to zero by penalty). Computing the full regularization path is useful because it gives more insight about the
-importance of individual coefficients and quality of the model while allowing selection of the optimal amount of
-penalization for the given problem and data.
+to zero by penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. Moreover, cross-validation allows the tuning of the optimal amount of regularization $\lambda$ for the given problem and data.
 
 \subsection{Model fitting}
-GLM models are fitted by maximizing the likelihood. For the Gaussian family, maximum likelihood is simply the
-minimal mean squared error, which has an analytical solution and can be solved with a standard method of least squares. For all other families, the maximum likelihood problem has no analytical solution so we must use an iterative method such
-as IRLSM, Newton method, gradient descent, or L-BFGS.
+GLM models are fitted by maximizing the likelihood of the data. For the Gaussian family, maximum likelihood simply corresponds to 
+minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares, which also holds when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. Thus, we must use an iterative method such as IRLSM, the newton method, gradient descent, L-BFGS or coordinate descent with naive or covariance updates. The solver can be selected by the user after selecting the model, which consists in specifying the exponential density. 
 
 \subsection{Model validation}
-Evaluating the quality of the model is a critical part of the data-modeling and scoring process. There are several
-standard ways to evaluate the quality of the fitted GLM model; the most common method is to use the resulting
-deviance. Deviance is calculated by comparing the log likelihood of the fitted model with the log likelihood of the
-saturated model (or theoretically perfect model).
 
-\[ deviance = 2({ln(L_{s})} - {ln(L_{m})}) \]
+After having selected the model, it is important to evaluate the precision of the estimates. The quality of the fitted model can be obtained 
+by computing the goodness of fit between the predicted values that are generated by the model and the given input data. Multiple measures of discrepancy may be used, namely the logarithm of the ratio of likelihoods, called deviance, and the Akaike information criterion (AIC) which are both returned by H2O after fitting a GLM. A benchmark for a good model is the saturated or full model, which is the largest model that can be fitted. Assuming the dataset consists of $n$ observations, the saturated model has $n$ parameters $\hat{\mu}_i$, one per observation, and thus fits the data perfectly.
 
-Another metric frequently used for model selection is the Akaike information criterion (AIC). The AIC measures the
-relative quality of a statistical model for a given set of data obtained by calculating the information loss after
-replacing the original data with the model itself. Unlike deviance, which would assign a perfect value for the
-saturated model and measures the absolute quality of the fit with a comparison against the null-hypothesis, AIC
-takes into account the complexity of the given model. AIC is defined as follows:
+The deviance is the difference between the maximized log-likelihoods of the fitted and saturated models. Let $\ell(y;\hat{\mu})$ be the likelihood corresponding to the estimated means vector $\hat{\mu}$ from the likelihood maximization, and let $\ell(y;y)$ be the likelihood of the saturated model which is the maximum likelihood achievable. Then the scaled deviance, defined as 
+$$ D^*(y,\hat{\mu}) = 2\ell(y;y)-2\ell(y;\hat{\mu}),$$
+is used as a goodness of fit measure for GLMs. When the deviance obtained is too large, the model does not fit the data well. 
 
-\[ aic = 2(k - ln(L_{m}))\]
+%Evaluating the quality of the model is a critical part of the data-modeling and scoring process. There are several
+%standard ways to evaluate the quality of the fitted GLM model; the most common method is to use the resulting
+%deviance. Deviance is calculated by comparing the log likelihood of the fitted model with the log likelihood of the
+%saturated model (or theoretically perfect model).
+%
+%\[ deviance = 2({ln(L_{s})} - {ln(L_{m})}) \]
 
-where $k$ is the number of model parameters and $ln(L_{m})$ is the log likelihood of the fitted model over the data.
+Another metric to measure the quality of the fitted statistical model is the AIC, defined as
+$$AIC = 2k -2\log(\ell(y;\hat{\mu})),$$
+where $k$ is the number of parameters included in the model and $\ell$ is the likelihood of the fitted model defined as above.
+ Given a set of models for a dataset, AIC compares the qualities of the models with respect to each other. This provides a way to select the optimal one, which is the model with the lowest AIC score. Note that the AIC score does not give an absolute measure of the quality of a given model. Moreover, the AIC takes into account the number of parameters that are included in the model by increasing the penalty as the number of parameters increases. This prevents from obtaining a complex model that overfits the data which is not considered in the deviance computation.
+ 
+%Another metric frequently used for model selection is the Akaike information criterion (AIC). The AIC measures the
+%relative quality of a statistical model for a given set of data obtained by calculating the information loss after
+%replacing the original data with the model itself. Unlike deviance, which would assign a perfect value for the
+%saturated model and measures the absolute quality of the fit with a comparison against the null-hypothesis, AIC
+%takes into account the complexity of the given model. AIC is defined as follows:
+%
+%\[ aic = 2(k - ln(L_{m}))\]
+%
+%where $k$ is the number of model parameters and $ln(L_{m})$ is the log likelihood of the fitted model over the data.
 
 \subsection{Regularization} \label{regularization}
 We introduce penalties to the model building process to avoid over-fitting, reduce variance of the prediction
