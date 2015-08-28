@@ -19,12 +19,11 @@ public class DCTTest extends TestUtil {
     Frame frameRec = null;
     try {
       CreateFrame cf = new CreateFrame();
-      cf.rows = 1000;
-      int height = 1024;
+      cf.rows = 100;
+      int height = 513;
       int width = 1;
       int depth = 1;
       cf.cols = height*width*depth;
-      cf.cols = 1024;
       cf.categorical_fraction = 0.0;
       cf.integer_fraction = 0;
       cf.binary_fraction = 0;
@@ -59,9 +58,9 @@ public class DCTTest extends TestUtil {
     Frame frameRec = null;
     try {
       CreateFrame cf = new CreateFrame();
-      cf.rows = 1000;
-      int height = 48;
-      int width = 16;
+      cf.rows = 100;
+      int height = 47;
+      int width = 29;
       int depth = 1;
       cf.cols = height*width*depth;
       cf.categorical_fraction = 0.0;
@@ -98,10 +97,10 @@ public class DCTTest extends TestUtil {
     Frame frameRec = null;
     try {
       CreateFrame cf = new CreateFrame();
-      cf.rows = 1000;
-      int height = 32;
-      int width = 16;
-      int depth = 4;
+      cf.rows = 100;
+      int height = 35;
+      int width = 11;
+      int depth = 14;
       cf.cols = height*width*depth;
       cf.categorical_fraction = 0.0;
       cf.integer_fraction = 0;

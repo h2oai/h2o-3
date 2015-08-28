@@ -352,10 +352,10 @@ public class MathUtils {
             for (int i = 0; i < height; ++i)
               for (int j = 0; j < width; ++j)
                 for (int k = 0; k < depth; ++k)
-                  ncs[i].addNum(a[i][j][k]);
+                  ncs[i*(width*depth) + j*depth + k].addNum(a[i][j][k]);
           }
         }
-      }.doAll(input.numCols(), input).outputFrame();
+      }.doAll(height*width*depth, input).outputFrame();
     }
   }
 
