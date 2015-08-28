@@ -6,7 +6,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 the_test <- function(conn){
-  df = h2o.importFile(conn, locate('smalldata/jira/pub-569.csv'))
+  df = h2o.importFile(locate('smalldata/jira/pub-569.csv'))
 
   metric.quantilesScore <- function(valuesArray) {
     numberOfLevels <- 100

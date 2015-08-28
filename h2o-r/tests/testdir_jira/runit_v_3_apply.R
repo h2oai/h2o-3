@@ -7,7 +7,7 @@ source('../h2o-runit.R')
 
 applytest <- function(conn){
   Log.info('uploading apply testing dataset')
-  df.h <- h2o.importFile(conn, locate('smalldata/jira/v-3.csv'), "v3.hex")
+  df.h <- h2o.importFile(locate('smalldata/jira/v-3.csv'), "v3.hex")
 
   Log.info('printing from h2o')
   Log.info( head(df.h) )

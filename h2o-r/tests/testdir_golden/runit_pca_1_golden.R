@@ -5,7 +5,7 @@ test.pcavanilla.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing USArrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   
   Log.info("Compare with PCA when center = TRUE, scale. = TRUE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = TRUE)

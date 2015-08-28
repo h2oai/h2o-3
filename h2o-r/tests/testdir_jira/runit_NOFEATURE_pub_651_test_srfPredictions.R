@@ -7,7 +7,7 @@ source('../h2o-runit.R')
 
 test.pub.651 <- function(conn) {
   print("Parsing the adult income dataset")
-  adlt_income<-h2o.importFile(conn, normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
+  adlt_income<-h2o.importFile(normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
   myX = 1:14
   myY = 15
 

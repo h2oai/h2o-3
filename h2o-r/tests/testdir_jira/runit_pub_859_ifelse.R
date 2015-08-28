@@ -16,7 +16,7 @@ test.pub.859 <- function(conn) {
     c(0,0,0,0,0,1,1,0,0,0) 
   )) 
   a = a_initial 
-  a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex") 
+  a.h2o <- as.h2o(a_initial, destination_frame="r.hex") 
   d = ifelse(F, a.h2o[1,] , apply(a.h2o, 2, sum)) 
   dd = ifelse(F, a[1,] , apply(a, 2, sum))
   d.h2o = as.data.frame(d)

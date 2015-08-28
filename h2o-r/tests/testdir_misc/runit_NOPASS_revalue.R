@@ -7,7 +7,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
 
-  hex <- as.h2o(conn, iris)
+  hex <- as.h2o(iris)
 
   Log.info("Original factor column")
   print(hex$Species)

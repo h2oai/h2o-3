@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdocclusterstatus.golden <- function(H2Oserver) {
 	
 
- h2o.clusterStatus(H2Oserver)
+ h2o.clusterStatus()
 
 testEnd()
 }

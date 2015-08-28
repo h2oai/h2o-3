@@ -20,12 +20,12 @@ test.pub.65 <- function(conn) {
   print(hexR.sum)
   
   Log.info("Import data to H2O with key = 'p65' and print summary")
-  hex <- h2o.importFile(conn, normalizePath(fzPath), "p65")
+  hex <- h2o.importFile(normalizePath(fzPath), "p65")
   hex.sum <- summary(hex)
   print(hex.sum)
   
   Log.info("Import data to H2O with key = 'p65_dupe' and print summary")
-  hex2 <- h2o.importFile(conn, normalizePath(fzPath), "p65_dupe")
+  hex2 <- h2o.importFile(normalizePath(fzPath), "p65_dupe")
   hex2.sum <- summary(hex2)
   print(hex2.sum)
   

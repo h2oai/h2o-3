@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.betaConstraints.illegalBounds <- function(conn){
 
   Log.info("Importing prostate dataset...")
-  prostate_h2o <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
+  prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
 
   Log.info("Create beta constraints frame...")

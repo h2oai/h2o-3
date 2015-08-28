@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.rdoc_save_model.golden <- function(H2Oserver) {
   prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-  prostate.hex <- h2o.uploadFile(H2Oserver, path = prosPath, destination_frame = "prostate.hex")
+  prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 
   if(ncol(prostate.hex) != 9) stop('import done incorrectly')
   newcols <- setdiff(names(prostate.hex), c('ID', 'GLEASON'))

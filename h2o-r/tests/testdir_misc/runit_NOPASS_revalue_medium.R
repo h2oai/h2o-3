@@ -9,7 +9,7 @@ check.revalue <- function(conn) {
   filePath <- "/home/0xdiag/datasets/airlines/airlines_all.csv"
 
   # Uploading data file to h2o.
-  air <- h2o.importFile(conn, filePath, "air")
+  air <- h2o.importFile(filePath, "air")
 
   # Print dataset size.
   print(levels(air$Origin))

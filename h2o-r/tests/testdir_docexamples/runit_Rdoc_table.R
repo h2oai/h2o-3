@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdoc_table.golden <- function(H2Oserver) {
 
 prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-prostate.hex <- h2o.uploadFile(H2Oserver, path = prosPath, destination_frame = "prostate.hex")
+prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 summary(prostate.hex)
 
 # Counts of the ages of all patients

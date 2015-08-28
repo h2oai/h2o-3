@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.pub_505 <- function(localH2O) {
 
-hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/jira/pub_505.csv")), "p505")
+hex <- h2o.importFile(normalizePath(locate("smalldata/jira/pub_505.csv")), "p505")
 
 rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_505.csv")))
 

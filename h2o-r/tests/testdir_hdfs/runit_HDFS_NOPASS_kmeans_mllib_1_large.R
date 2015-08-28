@@ -33,7 +33,7 @@ check.kmeans_mllib <- function(conn) {
 
   heading("Import BigCross.data from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
-  cross.hex <- h2o.importFile(conn, url)
+  cross.hex <- h2o.importFile(url)
   n <- nrow(cross.hex)
   print(paste("Imported n =", n, "rows"))
 

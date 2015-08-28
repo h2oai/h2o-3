@@ -35,7 +35,7 @@ datetest <- function(conn){
   Log.info('Test 1')
   Log.info('uploading date testing dataset')
   # Data file is 10 columns of dates, each column in a different format
-  hdf <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/v-11.csv')))
+  hdf <- h2o.importFile(normalizePath(locate('smalldata/jira/v-11.csv')))
 
   Log.info('data as loaded into h2o:')
   Log.info(head(hdf))
@@ -133,7 +133,7 @@ datetest <- function(conn){
   }
   
   #load data frame into H2O
-  hdf = as.h2o(conn, ldf, "hdf")
+  hdf = as.h2o(ldf, "hdf")
   #parse strings and enums into dates on H2O
   for (i in 1:11) {
     hdf[[paste("c",i,sep="")]] <- as.Date(hdf[[paste("c",i,sep="")]], formats[[i]])

@@ -33,7 +33,7 @@ test.merge.examples <- function(conn) {
                                 HourOfDay = c(23, 23),
                                 Weekend = c(1, 1),
                                 Season = c(1, 1))
-  crimeExamples <- as.h2o(crimeExamples.r, conn)
+  crimeExamples <- as.h2o(crimeExamples.r)
   names(crimeExamples) <- make.names(names(crimeExamples))
   print(head(crimeExamples))
   

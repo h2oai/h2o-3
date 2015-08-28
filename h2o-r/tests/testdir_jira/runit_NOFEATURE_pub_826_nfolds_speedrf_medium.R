@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 
 test.pub.826 <- function(conn) {
   Log.info('Importing the airlines data from smalldata.')
-  flights <- h2o.importFile(conn, normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
+  flights <- h2o.importFile(normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
 
   Log.info('Print head of dataset')
   Log.info(head(flights))

@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.pub_506 <- function(localH2O) {
 
-hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/jira/pub_506.csv")), "p506")
+hex <- h2o.importFile(normalizePath(locate("smalldata/jira/pub_506.csv")), "p506")
 
 rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_506.csv")))
 
@@ -32,7 +32,7 @@ expect_equal(sum_h2o, sum_R)
 
 Log.info("Now doing c(3000000000, 3000000001)")
 
-a_h2o <- as.h2o(localH2O, c(3000000000, 3000000001), 'a')
+a_h2o <- as.h2o(c(3000000000, 3000000001), 'a')
 a_R   <- c(3000000000, 3000000001) 
 
 Log.info("H2O's:")

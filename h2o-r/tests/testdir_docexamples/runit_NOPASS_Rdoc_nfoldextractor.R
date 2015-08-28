@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.rdocnfoldextractor.golden <- function(localH2O) {
 irisPath <- system.file("extdata", "iris.csv", package = "h2o")
-iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
+iris.hex <- h2o.uploadFile(path = irisPath)
 iris.folds <- h2o.nFoldExtractor(iris.hex, nfolds=10, fold_to_extract = 4)
 head(iris.folds[[1]])
 summary(iris.folds[[1]])

@@ -24,7 +24,7 @@ test.GLM.offset <- function(conn) {
 
   Log.info ('Check binomial models for GLM with and without offset')
   Log.info ('Import prostate dataset into H2O and R...')
-  prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
+  prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
   prostate.csv <- as.data.frame(prostate.hex)
 
   family_type <- c("binomial", "poisson")

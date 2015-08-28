@@ -10,7 +10,7 @@ source('../h2o-runit.R')
 
 test.uuid <- function(conn) {
   Log.info('Importing test_uuid.csv to H2O...')
-  df <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/test_uuid_na.csv')))
+  df <- h2o.importFile(normalizePath(locate('smalldata/jira/test_uuid_na.csv')))
   colnames(df) = c("AA", "UUID", "CC")
   
   Log.info("Slice a subset of columns 1")

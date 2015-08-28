@@ -5,7 +5,7 @@ test.principalcomp.golden <- function(H2Oserver) {
   #Example from prcomp R doc
 
   ausPath <- system.file("extdata", "australia.csv", package="h2o")
-  australia.hex <- h2o.uploadFile(H2Oserver, path = ausPath)
+  australia.hex <- h2o.uploadFile(path = ausPath)
   australia.pca <- h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
   model <- print(australia.pca)
   summary <- summary(australia.pca)

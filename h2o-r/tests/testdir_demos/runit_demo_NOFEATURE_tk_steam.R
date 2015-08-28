@@ -31,7 +31,7 @@ if (TRUE) {
 
 check.demo_steam <- function(conn) {
 
-  df <- h2o.importFile(conn, filePath, "df")
+  df <- h2o.importFile(filePath, "df")
 
   s <- h2o.runif(df)
   air.train <- df[s <= 0.8,]

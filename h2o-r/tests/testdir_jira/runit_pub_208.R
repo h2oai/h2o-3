@@ -16,7 +16,7 @@ str(rdat)
 
 factor_columns <- which(unlist(lapply(rdat, is.factor)))
 
-hex <- as.h2o(localH2O, rdat)
+hex <- as.h2o(rdat)
 
 str(hex)
 

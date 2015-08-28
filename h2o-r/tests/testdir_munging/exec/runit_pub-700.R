@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-get.eval.result <- function(conn, expr) {
-  res <-  .h2o.__exec2(conn, expr)
+get.eval.result <- function(expr) {
+  res <-  .h2o.__exec2(expr)
   return(new("H2OFrame", h2o=conn, key=res$dest_key))
 }
 

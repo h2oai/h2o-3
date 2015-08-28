@@ -19,7 +19,7 @@ test.rh2o_logging <- function(conn) {
 
   Log.info("Begin logging..."); h2o.startLogging()
   Log.info("Import iris dataset, then run summary and GBM")
-  iris.hex <- h2o.uploadFile(conn, path = locate("smalldata/iris/iris_wheader.csv"), key = "iris.hex")
+  iris.hex <- h2o.uploadFile(path = locate("smalldata/iris/iris_wheader.csv"), key = "iris.hex")
   print(summary(iris.hex))
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, data = iris.hex)
   print(iris.gbm)

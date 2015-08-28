@@ -10,7 +10,7 @@ function(conn) {
     str(rr)
     dim(rr)
     
-    mfrmr=h2o.uploadFile(conn,filepath,destination_frame = "mfrmr")
+    mfrmr=h2o.uploadFile(filepath,destination_frame = "mfrmr")
     str(mfrmr)
     myX = 2:13
     myY = 1 

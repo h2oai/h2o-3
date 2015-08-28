@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.pub_589_stacktrace_on_is_factor_from_ddply <- function(localH2O) {
 
-covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 # covtype.local = as.data.frame(covtype.hex)
 

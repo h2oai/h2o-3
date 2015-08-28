@@ -11,7 +11,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
     print("Reading in arcene dataset")
-        dataset = h2o.importFile(conn, locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
+        dataset = h2o.importFile(locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
 
     print("Time copying of entire datatset")
         startTime = proc.time()

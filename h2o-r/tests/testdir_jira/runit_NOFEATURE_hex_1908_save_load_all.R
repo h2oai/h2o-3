@@ -17,7 +17,7 @@ test.hex_1908 <- function(conn) {
   
   # Test saving and loading of GLM model
   Log.info("Importing airlines.csv...")
-  airlines.hex = h2o.importFile(conn, normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
+  airlines.hex = h2o.importFile(normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
   
   # Set x and y variables
   myY = "IsDepDelayed"
@@ -55,7 +55,7 @@ test.hex_1908 <- function(conn) {
   file.rename(temp_subdir1, temp_subdir2)
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
-  airlines.hex = h2o.importFile(conn, normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
+  airlines.hex = h2o.importFile(normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
   
   # Load model back into H2O
   Log.info(paste("Model saved in", temp_subdir2))

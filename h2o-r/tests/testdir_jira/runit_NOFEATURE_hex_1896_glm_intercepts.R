@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 test.GLM.zero_intercept <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
   # Fix this next line!!
-  prostate.hex = h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
+  prostate.hex = h2o.importFile(normalizePath(locate('smalldata/logreg/prostate.csv')))
   ## Rebalance should happen internally now
   # prostate.rebalanced = h2o.rebalance(data = prostate.hex, chunks = 16, key = "prostate.rebalanced")
   ## Import data into R

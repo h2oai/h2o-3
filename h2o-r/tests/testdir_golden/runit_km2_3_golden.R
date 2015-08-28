@@ -6,7 +6,7 @@ test.kmslice.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing iris.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
-  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), destination_frame = "irisH2O")
+  irisH2O <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"), destination_frame = "irisH2O")
   # iris has some duplicated rows. Want to guarantee unique init centers
   # Still failing intermittently..a random init from the data, is the same as kmeans rand init ..
   # So that doesn't guarantee one true answer.
@@ -25,7 +25,7 @@ test.kmslice.golden <- function(H2Oserver) {
   # FIXME: predict directly on sliced H2O frame breaks
   # classH2O <- predict(fitH2O, irisH2O[,1:4])
 
-  classH2O <- predict(fitH2O, as.h2o(conn, irisR[,1:4]))
+  classH2O <- predict(fitH2O, as.h2o(irisR[,1:4]))
   # H2O indexes from 0, but R indexes from 1
   forCompareH2O <- as.matrix(classH2O)+1
   forCompareR <- as.matrix(classR)

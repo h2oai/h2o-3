@@ -5,7 +5,7 @@ test.glm2Poissonregression.golden <- function(H2Oserver) {
 	
 #Import data: 
 Log.info("Importing CUSE data...") 
-cuseH2O<- h2o.uploadFile(H2Oserver, locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
+cuseH2O<- h2o.uploadFile(locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
 cuseR<- read.csv(locate("smalldata/logreg/cuseexpanded.csv"), header=T)
 
 Log.info("Test H2O Poisson not regularized")

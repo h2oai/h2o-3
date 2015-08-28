@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdocsd.golden <- function(localH2O) {
 
     prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-    prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+    prostate.hex <- h2o.uploadFile(path = prosPath)
     sd(prostate.hex$AGE)
 
 testEnd()

@@ -12,7 +12,7 @@ source('../h2o-runit.R')
 test <- function(conn) {
 
   print("Read prostate data into R.")
-  prostate.data <-  h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
+  prostate.data <-  h2o.importFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
 
   print("Set variables for h2o.")
   myY = "DPROS"

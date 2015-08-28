@@ -5,7 +5,7 @@ test.pubdev.1398 <- function(conn) {
   k <- 13
   Log.info("Importing decathlon.csv...")
   dec.dat <- read.csv(locate("smalldata/pca_test/decathlon.csv"))
-  dec.hex <- h2o.importFile(conn, locate("smalldata/pca_test/decathlon.csv"))
+  dec.hex <- h2o.importFile(locate("smalldata/pca_test/decathlon.csv"))
   print(summary(dec.hex))
   
   Log.info("Reshuffling R data to match H2O...")

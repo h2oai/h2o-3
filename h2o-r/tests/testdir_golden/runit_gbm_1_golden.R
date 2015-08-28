@@ -5,7 +5,7 @@ test.gbmMSEgauss.golden <- function(H2Oserver) {
 	
 #Import data: 
 Log.info("Importing smtrees data...") 
-smtreesH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/gbm_test/smtrees.csv"), destination_frame="smtreesH2O")
+smtreesH2O <- h2o.uploadFile(locate("smalldata/gbm_test/smtrees.csv"), destination_frame="smtreesH2O")
 smtreesR <- read.csv(locate("smalldata/gbm_test/smtrees.csv"))
 
 Log.info("Test H2O generation of MSE for GBM")

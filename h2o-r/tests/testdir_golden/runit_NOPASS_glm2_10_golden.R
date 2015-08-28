@@ -5,7 +5,7 @@ test.glm2RidgeObjective.golden <- function(H2Oserver) {
 	
 #IMPORT DATA:
 Log.info("Importing handmade data...") 
-handmadeH2O<- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
+handmadeH2O<- h2o.uploadFile(locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
 handmadeR<- read.csv(locate("smalldata/glm_test/handmade.csv"))
 
 Xvars<- as.matrix(cbind(handmadeR$a, handmadeR$b, handmadeR$c, handmadeR$d, handmadeR$e))

@@ -7,8 +7,8 @@ test <- function(conn){
         Log.info("h2o-only data")
         testEnd()
   } else {
-    h2oData <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/data.csv")
-    betaConstraints <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    h2oData <- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
+    betaConstraints <- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
     betaConstraints <- betaConstraints[1:(nrow(betaConstraints)-1),] # remove intercept
     betaConstraints <- as.data.frame(betaConstraints)
 

@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.pub_474_h2o.ddply_should_return_void_for_void_functions <- function(localH2O) {
 
-covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 covtype.local <- as.data.frame(covtype.hex)
 
 # Are we in the right universe?

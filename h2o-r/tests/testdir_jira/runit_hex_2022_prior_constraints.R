@@ -13,8 +13,8 @@ test.Priors.BetaConstraints <- function(conn) {
   if (!file.exists(pathToFile) || !file.exists(pathToConstraints)) {
     testEnd()
   } else {
-    modelStack <- h2o.importFile(conn, pathToFile)
-    betaConstraints.hex <- h2o.importFile(conn, pathToConstraints)
+    modelStack <- h2o.importFile(pathToFile)
+    betaConstraints.hex <- h2o.importFile(pathToConstraints)
     beta_nointercept.hex <- betaConstraints.hex[1:(nrow(betaConstraints.hex)-1),]
 
     ## Set Parameters (default standardization = T)

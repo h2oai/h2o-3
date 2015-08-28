@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.ifce<- function(conn) {
 
-  hex <- as.h2o(conn, iris)
+  hex <- as.h2o(iris)
   zhex <- hex - hex
   # h2o.exec(zhex <- hex - hex)
   

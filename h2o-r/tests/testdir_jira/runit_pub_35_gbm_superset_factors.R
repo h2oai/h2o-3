@@ -19,14 +19,14 @@ source('../h2o-runit.R')
 pub35gbm <- function(conn){
   Log.info('uploading gbm training dataset')
   dataset_path = normalizePath(locate('smalldata/jira/pub-35_train.csv'))
-  df.h <- h2o.importFile(conn, dataset_path)
+  df.h <- h2o.importFile(dataset_path)
 
   Log.info('printing from h2o')
   Log.info( head(df.h) )
 
   Log.info("uploading gbm testing dataset")
   dataset_path <- normalizePath(locate('smalldata/jira/pub-35_test.csv'))
-  df.h2 <- h2o.importFile(conn, dataset_path)
+  df.h2 <- h2o.importFile(dataset_path)
   Log.info( head(df.h2) )
 
   Log.info("Training a GBM model")

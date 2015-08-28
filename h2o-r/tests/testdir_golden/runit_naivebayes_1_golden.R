@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.nbayes.golden <- function(H2Oserver) {
   Log.info("Importing iris_wheader.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
-  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris_wheader.csv"), destination_frame = "irisH2O")
+  irisH2O <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"), destination_frame = "irisH2O")
   
   Log.info("Compare with Naive Bayes when x = 1:4, y = 5, laplace = 0")
   fitR <- naiveBayes(class ~ ., irisR, laplace = 0)

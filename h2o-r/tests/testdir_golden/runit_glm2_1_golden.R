@@ -5,7 +5,7 @@ test.glm2binregression.golden <- function(H2Oserver) {
 	
 #Import data: 
 Log.info("Importing CUSE data...") 
-cuseH2O <- h2o.uploadFile(H2Oserver, path = locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
+cuseH2O <- h2o.uploadFile(path = locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
 cuseR <- read.csv(locate("smalldata/logreg/cuseexpanded.csv"), header=T)
 
 Log.info("Test H2O treatment of FACTORS AS PREDICTORS")

@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 
 test <- function(conn) {
 print("Reading in prostate dataset")
-pros.hex <- h2o.importFile(conn,normalizePath(locate("smalldata/logreg/prostate.csv")), destination_frame="pros.hex")
+pros.hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")), destination_frame="pros.hex")
 print ("Run summary")
 summary(pros.hex)
 print("Summary of a column")
@@ -70,7 +70,7 @@ print("order the results by AUC on test set")
 ordered_results <- result_frame[order(result_frame$AUC,decreasing=T),]
 ordered_results
 print("get the model that gives the best prediction using the AUC score")
-glm_best_model <- h2o.getModel(conn,model_id= ordered_results[1,"key"])
+glm_best_model <- h2o.getModel(model_id= ordered_results[1,"key"])
 print(glm_best_model)
 
 #GBM

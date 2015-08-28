@@ -6,7 +6,7 @@ test.kmstand.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing ozone.csv data...")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/ozone.csv"), destination_frame = "ozoneH2O")
+  ozoneH2O <- h2o.uploadFile(locate("smalldata/glm_test/ozone.csv"), destination_frame = "ozoneH2O")
   startIdx <- sort(sample(1:nrow(ozoneR), 3))
   
   # H2O standardizes data (de-mean and scale so standard deviation is one)

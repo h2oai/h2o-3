@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.runit_NOPASS_pub_532_negative_exponent <- function(localH2O) {
 
-covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 # Are we in the right universe?
 expect_equal(20000, dim(covtype.hex)[1])

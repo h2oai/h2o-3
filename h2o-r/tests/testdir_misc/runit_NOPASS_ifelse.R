@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 test.ifelse <- function(conn) {
   
   Log.info("Importing heart dataset into H2O...")
-  heart.hex <- as.h2o(conn = conn, object = heart, "heart.hex")  
+  heart.hex <- as.h2o(object = heart, "heart.hex")
   Log.info("Change Surgery Column in R using bases' ifelse...")
   heart$surgery <- ifelse(heart$surgery == 0, "N", "Y")
   Log.info("Change Surgery Column in H2O using H2O's ifelse...")

@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 
 test.hex.207 <- function(conn) {
   Log.info("Importing ecology_model.csv...")
-  tr <- h2o.importFile(conn, normalizePath(locate("smalldata/gbm_test/ecology_model.csv")), destination_frame = "tr")
+  tr <- h2o.importFile(normalizePath(locate("smalldata/gbm_test/ecology_model.csv")), destination_frame = "tr")
   
   myX <- setdiff(colnames(tr), c("Angaus", "Site"))
   myY <- "Angaus"

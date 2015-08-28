@@ -7,7 +7,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.likelihood.infinity <- function(conn) {
-  cars.hex <- h2o.uploadFile(conn, locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")

@@ -5,7 +5,7 @@ test.glm2ProstateAUC.golden <- function(H2Oserver) {
 	
     #Import data:
     Log.info("Importing Benign data...")
-    prostateH2O<- h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame="cuseH2O")
+    prostateH2O<- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame="cuseH2O")
     prostateR<- read.csv(locate("smalldata/logreg/prostate.csv"), header=T)
     
  Log.info("Run matching models in R and H2O")

@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.australia.golden <- function(H2Oserver) {
   Log.info("Importing AustraliaCoast.csv data...") 
   australiaR <- read.csv(locate("smalldata/pca_test/AustraliaCoast.csv"), header = TRUE)
-  australiaH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/AustraliaCoast.csv"), destination_frame = "australiaH2O")
+  australiaH2O <- h2o.uploadFile(locate("smalldata/pca_test/AustraliaCoast.csv"), destination_frame = "australiaH2O")
   
   k_test <- sort(sample(1:8,3))
   for(k in k_test) {

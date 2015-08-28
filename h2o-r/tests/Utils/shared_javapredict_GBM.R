@@ -3,7 +3,7 @@ heading("BEGIN TEST")
 check.gbm <- function(conn) {
 
   heading("Uploading train data to H2O")
-  iris_train.hex <- h2o.importFile(conn, train)
+  iris_train.hex <- h2o.importFile(train)
 
   heading("Creating GBM model in H2O")
   distribution <- if (exists("distribution")) distribution else "AUTO"
@@ -21,7 +21,7 @@ check.gbm <- function(conn) {
   h2o.download_pojo(iris.gbm.h2o, tmpdir_name)
 
   heading("Uploading test data to H2O")
-  iris_test.hex <- h2o.importFile(conn, test)
+  iris_test.hex <- h2o.importFile(test)
 
   heading("Predicting in H2O")
   iris.gbm.pred <- h2o.predict(iris.gbm.h2o, iris_test.hex)

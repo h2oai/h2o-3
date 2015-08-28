@@ -12,8 +12,8 @@ heading("BEGIN TEST")
 check.hex_850 <- function(conn) {
 
   path = locate("smalldata/jira/850.csv")
-  j.fv = h2o.importFile(conn, path, destination_frame="jira850.hex")
-  h2o.ls(conn)
+  j.fv = h2o.importFile(path, destination_frame="jira850.hex")
+  h2o.ls()
 
   if (nrow(j.fv) != 4) {
       stop("j.fv should have 4 rows")

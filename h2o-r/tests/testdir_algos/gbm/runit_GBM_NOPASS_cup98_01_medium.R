@@ -5,8 +5,8 @@ test.GBM <- function(conn) {
   # setwd("~/0xdata/ws/h2o-dev/h2o-r/tests/testdir_algos/gbm")
   # conn = h2o.init(startH2O = FALSE)
 
-  train.hex <- h2o.uploadFile(conn, locate("bigdata/laptop/usecases/cup98LRN_z.csv"), destination_frame="cup98LRN_z.hex")
-  test.hex  <- h2o.uploadFile(conn, locate("bigdata/laptop/usecases/cup98VAL_z.csv"), destination_frame="cup98VAL_z.hex")
+  train.hex <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98LRN_z.csv"), destination_frame="cup98LRN_z.hex")
+  test.hex  <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98VAL_z.csv"), destination_frame="cup98VAL_z.hex")
 
   # Train H2O GBM Model:
   train.hex$TARGET_B <- as.factor(train.hex$TARGET_B)

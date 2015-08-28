@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdoc_log_echo.golden <- function(H2Oserver) {
 	
 
- h2o.logAndEcho(H2Oserver, "Test log and echo method.")
+ h2o.logAndEcho("Test log and echo method.")
 
 testEnd()
 }

@@ -13,7 +13,7 @@ heading("BEGIN TEST")
 check.hex_1506 <- function(conn) {
 
   path = locate("smalldata/iris/iris_wheader.nonspd.csv")
-  iris.hex = h2o.importFile(conn, path, destination_frame="iris.hex")
+  iris.hex = h2o.importFile(path, destination_frame="iris.hex")
 
   expect_warning(h2o.glm(x = c(1:4,6:8), y = "class_REC", training_frame = iris.hex, family = "binomial", lambda = 0))
   expect_warning(h2o.glm(x = c(1:4,6:8), y = "class_REC", training_frame = iris.hex, family = "binomial", lambda = c(0,1e-5,0.1)))
