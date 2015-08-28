@@ -163,7 +163,7 @@
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  .eval.frame(i):eval
+    if(is.Frame(i))  .eval.frame(i):id
     else             i
   })
 
@@ -283,7 +283,7 @@ h2o.getFutureModel <- function(object) {
   
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  .eval.frame(i):eval
+    if(is.Frame(i))  .eval.frame(i):id
     else             i
   })
 
@@ -314,7 +314,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/',  .eval.frame(newdata):eval)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  .eval.frame(newdata):id)
   res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   h2o.getFrame(res$name)
@@ -396,7 +396,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingFrame else .eval.frame(data):eval
+  data.id <- if( missingData ) trainingFrame else .eval.frame(data):id
   if( !is.null(trainingFrame) && !missingData && data.id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
@@ -1631,7 +1631,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  url <- paste0("Predictions/models/",object@model_id, "/frames/", .eval.frame(newdata):eval)
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", .eval.frame(newdata):id)
   res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object

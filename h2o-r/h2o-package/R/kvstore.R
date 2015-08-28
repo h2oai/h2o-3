@@ -28,11 +28,11 @@
   stopifnot(!missing(N))
   .eval.frame(x)
   if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:eval, "?row_count=",N))$frames[[1]]
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:id, "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
     L <- lapply(res$columns, function(c) if( c$type=="string" ) c$string_data else c$data )
     maxlen <- max(sapply(L,length))
-    pad.na <- function(x) { .prim.c(x,rep(NA,maxlen-length(x))) }
+    pad.na <- function(x) { c(x,rep(NA,maxlen-length(x))) }
     data <- do.call(data.frame,lapply(L,pad.na))
     # Zero rows?  Then force a zero-length full width data.frame
     if( length(data)==0 ) data <- as.data.frame(matrix(NA,ncol=length(res$columns),nrow=0L))
@@ -71,7 +71,7 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   if( !is.null(data:id) && key == data:id ) stop("Destination key must differ from input frame ", key)
   # Eager evaluate, copied from .eval.frame
-  exec_str <- .eval.impl(data,TRUE);
+  exec_str <- .eval.impl(data);
   print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
@@ -169,17 +169,17 @@ h2o.getModel <- function(model_id) {
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
-  else if (!(model_category %in% .prim.c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction")))
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction")))
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
-  model <- json$output[!(names(json$output) %in% .prim.c("__meta", "names", "domains", "model_category"))]
+  model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   MetricsClass <- paste0("H2O", model_category, "Metrics")
   # setup the metrics objects inside of model...
   model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
-  parameters <- .prim.list()
-  allparams  <- .prim.list()
+  parameters <- list()
+  allparams  <- list()
   lapply(json$parameters, function(param) {
     if (!is.null(param$actual_value)) {
       name <- param$name
