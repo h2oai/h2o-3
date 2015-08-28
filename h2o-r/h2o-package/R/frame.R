@@ -769,7 +769,7 @@ summary.Frame <- function(object, factors=6L, ...) {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-h2o.mean <- function(x, ...) .eval.frame(.newExpr("mean",x)):data
+h2o.mean <- function(x, na.rm=TRUE) { op <- if(na.rm) "meanNA" else "mean"; .eval.frame(.newExpr(op,x)):data }
 
 #' @rdname h2o.mean
 #' @export
@@ -1550,7 +1550,11 @@ h2o.impute <- function(data, column, method=.prim.c("mean","median","mode"), # T
       gb.cols <- .row.col.selector(vars)
   }
 
-  .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
+  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
+  # In-place updates we force right now, because the user expects future uses
+  # of 'data' to show the imputed changed.
+  if( inplace ) .fetch.data(res,1)
+  res
 }
 
 #' Produce a Vector of Random Uniform Numbers
