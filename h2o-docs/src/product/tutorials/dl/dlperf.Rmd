@@ -35,7 +35,7 @@ For simplicity, we start with some single-node experiments quantifying the raw t
 ### Establish Connection to H2O
 For this study, we use the latest version of H2O, [h2o-3](http://github.com/h2oai/h2o-3). The numerical performance of H2O Deep Learning in h2o-3 is very similar to the performance of its equivalent in [h2o-2](http://github.com/h2oai/h2o-2). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
 
-We use nightly build 1097 of h2o-3, but you should be able to use any future nightly or stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
+We use the latest stable version as of today, but you should be able to use any future nightly or stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
 
 The following two commands remove any previously installed H2O packages for R.
 ```{r}
@@ -51,14 +51,12 @@ if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats")
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
 if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
-if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 ```
 Now we download, install and initialize the H2O package for R.
 ```{r}
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-simons/7/R")))
-#install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/3137/R")))
 library(h2o)
 library('stringr')
 ```

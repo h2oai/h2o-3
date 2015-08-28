@@ -12,6 +12,7 @@ import water.TestUtil;
  * Created by tomasnykodym on 3/28/14.
  */
 public class SparseTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   private Chunk makeChunk(double [] vals, Futures fs) {
     int nzs = 0;
     int [] nonzeros = new int[vals.length];
@@ -96,7 +97,7 @@ public class SparseTest extends TestUtil {
   }
 
 
-  @Test public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CXDChunk.class,CXDChunk.class,C8DChunk.class);}
+  @Test public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CXDChunk.class,CXDChunk.class,CUDChunk.class);}
 
   @Test public void testBinary() {
     runTest(new double [] {1,1,1},1,1,CX0Chunk.class,CX0Chunk.class,CBSChunk.class);
