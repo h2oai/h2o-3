@@ -65,7 +65,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   @Override
   public long progressUnits() {
-    return _parms._max_iterations + 1;
+    return 2 + _parms._max_iterations;
   }
 
   @Override public ModelCategory[] can_build() {
@@ -523,6 +523,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         int[] numLevels = tinfo._adaptedFrame.cardinality();
 
         // Use closed form solution for X if quadratic loss and regularization
+        update(1, "Initializing X and Y matrices");   // One unit of work
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (na_cnt == 0 && _parms.hasClosedForm())
