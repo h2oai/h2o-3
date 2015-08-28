@@ -42,7 +42,6 @@ public class C0LChunk extends Chunk {
     return nc;
   }
   @Override public int sparseLen(){return _con == 0?0: _len;}
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C0LChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;

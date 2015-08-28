@@ -1,7 +1,7 @@
 ---
-title: "The Definitive Performance Tuning Guide for H2O Deep Learning"
+title: "The Definitive Performance Tuning Guide for H2O Deep Learning (Ported scripts to H2O-3, results are taken from February's blog)"
 author: arno-candel
-date: "2015-02-27"
+date: "2015-08-28"
 ---
 
 <!-- AUTO-GENERATED  DO NOT EDIT! -->
