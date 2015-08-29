@@ -351,11 +351,11 @@ public class SVDTest extends TestUtil {
 
   @Test public void testArrestsProb() throws InterruptedException, ExecutionException {
     // Expected right singular values and vectors
-    double[] d_expected = new double[] {1419.06139510, 194.82584611, 45.66133763, 18.06955662};
-    double[][] v_expected = ard(ard(-0.04239181,  0.01616262, -0.06588426,  0.99679535),
-                                ard(-0.94395706,  0.32068580,  0.06655170, -0.04094568),
-                                ard(-0.30842767, -0.93845891,  0.15496743,  0.01234261),
-                                ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
+    double[] d_expected = new double[] {11.024148, 6.964086, 4.179904, 2.915146};
+    double[][] v_expected = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
+                                ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
+                                ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
+                                ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
     SVDModel model = null;
     Frame train = null;
     try {
@@ -366,7 +366,7 @@ public class SVDTest extends TestUtil {
       parms._seed = 1234;
       parms._only_v = false;
       parms._keep_u = true;
-      parms._transform = DataInfo.TransformType.NONE;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._svd_method = SVDParameters.Method.Probabilistic;
 
       SVD job = new SVD(parms);

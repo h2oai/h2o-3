@@ -18,6 +18,7 @@ import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -211,24 +212,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     int catsexp = dinfo._catOffsets[dinfo._catOffsets.length-1];
     double[][] cexp = new double[sdata.length][catsexp + dinfo._nums];
 
-    // Expand out categorical columns
-    int cidx;
-    for(int j = 0; j < dinfo._cats; j++) {
-      for(int i = 0; i < sdata.length; i++) {
-        if (Double.isNaN(sdata[i][j])) {
-          if (dinfo._catMissing[j] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-          else cidx = dinfo._catOffsets[j+1]-1;     // Otherwise, missing value turns into extra (last) factor
-        } else
-          cidx = dinfo.getCategoricalId(j, (int)sdata[i][j]);
-        if(cidx >= 0) cexp[i][cidx] = 1;  // Ignore categorical levels outside domain
-      }
-    }
-
-    // Copy over numeric columns
-    for(int j = 0; j < dinfo._nums; j++) {
-      for(int i = 0; i < sdata.length; i++)
-        cexp[i][catsexp+j] = sdata[i][dinfo._cats+j];
-    }
+    for(int i = 0; i < sdata.length; i++)
+      LinearAlgebraUtils.expandRow(sdata[i], dinfo, cexp[i], false);
     return cexp;
   }
 

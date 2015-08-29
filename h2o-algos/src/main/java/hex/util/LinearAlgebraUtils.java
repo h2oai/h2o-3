@@ -14,13 +14,49 @@ import water.util.ArrayUtils;
 import java.util.Arrays;
 
 public class LinearAlgebraUtils {
-  /*
-   * Return chunk row with categoricals expanded in array tmp
-   */
-  protected static double[] expandRow(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] tmp) {
-    int cidx;
 
+  /*
+   * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
+   */
+  private static double modifyNumeric(double x, int col, DataInfo dinfo) {
+    double y = x;
+    if (Double.isNaN(x) && dinfo._imputeMissing)  // Impute missing value with mean
+      y = dinfo._numMeans[col];
+    if (dinfo._normSub != null && dinfo._normMul != null)  // Transform x if requested
+      y = (y - dinfo._normSub[col]) * dinfo._normMul[col];
+    return y;
+  }
+
+  /*
+   * Return row with categoricals expanded in array tmp
+   */
+  public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp) { return expandRow(row, dinfo, tmp, true); }
+  public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp, boolean modify_numeric) {
     // Categorical columns
+    int cidx;
+    for(int col = 0; col < dinfo._cats; col++) {
+      if (Double.isNaN(row[col])) {
+        if (dinfo._catMissing[col] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
+        else cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
+      } else
+        cidx = dinfo.getCategoricalId(col, (int)row[col]);
+      if(cidx >= 0) tmp[cidx] = 1;
+    }
+
+    // Numeric columns
+    int chk_cnt = dinfo._cats;
+    int exp_cnt = dinfo.numStart();
+    for(int col = 0; col < dinfo._nums; col++) {
+      // Only do imputation and transformation if requested
+      tmp[exp_cnt] = modify_numeric ? modifyNumeric(row[chk_cnt], col, dinfo) : row[chk_cnt];
+      exp_cnt++; chk_cnt++;
+    }
+    return tmp;
+  }
+
+  public static double[] expandRow(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] tmp, boolean modify_numeric) {
+    // Categorical columns
+    int cidx;
     for(int col = 0; col < dinfo._cats; col++) {
       double x = chks[col].atd(row_in_chunk);
       if (Double.isNaN(x)) {
@@ -35,12 +71,9 @@ public class LinearAlgebraUtils {
     int chk_cnt = dinfo._cats;
     int exp_cnt = dinfo.numStart();
     for(int col = 0; col < dinfo._nums; col++) {
-      double x = chks[chk_cnt].atd(row_in_chunk);
-      if(Double.isNaN(x) && dinfo._imputeMissing)   // Impute missing value with mean
-        x = dinfo._numMeans[col];
-      if(dinfo._normSub != null && dinfo._normMul != null)   // Transform x if requested
-        x = (x - dinfo._normSub[col]) * dinfo._normMul[col];
-      tmp[exp_cnt] = x;
+      double x = chks[col].atd(row_in_chunk);
+      // Only do imputation and transformation if requested
+      tmp[exp_cnt] = modify_numeric ? modifyNumeric(x, col, dinfo) : x;
       exp_cnt++; chk_cnt++;
     }
     return tmp;
@@ -49,11 +82,10 @@ public class LinearAlgebraUtils {
   /*
    * Inner product of chunk row (with categoricals expanded) and vec
    */
-  protected static double innerProduct(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] vec) {
+  public static double innerProduct(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] vec) {
+    // Categorical columns
     double sum = 0;
     int cidx;
-
-    // Categorical columns
     for (int col = 0; col < dinfo._cats; col++) {
       double x = chks[col].atd(row_in_chunk);
       if (Double.isNaN(x)) {
@@ -69,10 +101,7 @@ public class LinearAlgebraUtils {
     int exp_cnt = dinfo.numStart();
     for (int col = 0; col < dinfo._nums; col++) {
       double x = chks[chk_cnt].atd(row_in_chunk);
-      if(Double.isNaN(x) && dinfo._imputeMissing)   // Impute missing value with mean
-        x = dinfo._numMeans[col];
-      if(dinfo._normSub != null && dinfo._normMul != null)   // Transform x if requested
-        x = (x - dinfo._normSub[col]) * dinfo._normMul[col];
+      x = modifyNumeric(x, col, dinfo);
       sum += vec[exp_cnt] * x;
       exp_cnt++; chk_cnt++;
     }
@@ -145,36 +174,18 @@ public class LinearAlgebraUtils {
    * Output: atq = A'Q (small matrix) is \tilde{p} by k where \tilde{p} = number of cols in A with categoricals expanded
    */
   public static class SMulTask extends MRTask<SMulTask> {
+    final DataInfo _ainfo;  // Info for frame A
     final int _ncolA;     // Number of cols in A
     final int _ncolExp;   // Number of cols in A with categoricals expanded
-    final int _ncats;     // Number of categorical cols in A
     final int _ncolQ;     // Number of cols in Q
-    final double[] _normSub;  // For standardizing A
-    final double[] _normMul;
-    final int[] _catOffsets;  // Categorical offsets for A
-    final int _numStart;      // Beginning of numeric cols in A when categorical cols expanded
-    final boolean _use_all_factor_levels;   // Use all factor levels when expanding A?
 
     public double[][] _atq;    // Output: A'Q is p_exp by k, where p_exp = number of cols in A with categoricals expanded
 
-    public SMulTask(int ncolA, int ncolExp, int ncats, int ncolQ, double[] normSub, double[] normMul, int[] catOffsets, boolean use_all_factor_levels) {
-      if(normSub != null) assert normSub.length == ncolA-ncats;
-      if(normMul != null) assert normMul.length == ncolA-ncats;
-      assert catOffsets != null && (catOffsets.length-1) == ncats;
-
-      _ncolA = ncolA;
-      _ncolExp = ncolExp;
-      _ncats = ncats;
+    public SMulTask(DataInfo ainfo, int ncolQ) {
+      _ainfo = ainfo;
+      _ncolA = ainfo._adaptedFrame.numCols();
+      _ncolExp = ainfo._adaptedFrame.numColsExp();
       _ncolQ = ncolQ;
-      _normSub = normSub == null ? new double[_ncolA-_ncats] : normSub;
-      if(normMul == null) {
-        _normMul = new double[_ncolA-_ncats];
-        Arrays.fill(_normMul, 1.0);
-      } else
-        _normMul = normMul;
-      _catOffsets = catOffsets;
-      _numStart = _catOffsets[_ncats];
-      _use_all_factor_levels = use_all_factor_levels;
     }
 
     @Override public void map(Chunk cs[]) {
@@ -183,27 +194,30 @@ public class LinearAlgebraUtils {
 
       for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
         // Categorical columns
-        for(int p = 0; p < _ncats; p++) {
+        int cidx;
+        for(int p = 0; p < _ainfo._cats; p++) {
           for(int row = 0; row < cs[0]._len; row++) {
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
-            if (Double.isNaN(a)) continue;
 
-            int last_cat = _catOffsets[p+1]-_catOffsets[p]-1;
-            int level = (int)a - (_use_all_factor_levels ? 0:1);  // Reduce index by 1 if first factor level dropped during training
-            if (level < 0 || level > last_cat) continue;  // Skip categorical level in test set but not in train
-            _atq[_catOffsets[p] + level][k-_ncolA] += q;
+            if (Double.isNaN(a)) {
+              if (_ainfo._catMissing[p] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
+              else cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor
+            } else
+              cidx = _ainfo.getCategoricalId(p, (int)a);
+            if(cidx >= 0) _atq[cidx][k-_ncolA] += q;   // Ignore categorical levels outside domain
           }
         }
 
         // Numeric columns
         int pnum = 0;
-        int pexp = _numStart;
-        for(int p = _ncats; p < _ncolA; p++) {
+        int pexp = _ainfo.numStart();
+        for(int p = _ainfo._cats; p < _ncolA; p++) {
           for(int row = 0; row  < cs[0]._len; row++) {
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
-            _atq[pexp][k-_ncolA] += q * (a - _normSub[pnum]) * _normMul[pnum];
+            a = modifyNumeric(a, p, _ainfo);
+            _atq[pexp][k-_ncolA] += q * a;
           }
           pexp++; pnum++;
         }
@@ -258,7 +272,7 @@ public class LinearAlgebraUtils {
 
       for(int row = 0; row < cs[0]._len; row++) {
         // 1) Extract single expanded row of A
-        expandRow(cs, row, _ainfo, arow);
+        expandRow(cs, row, _ainfo, arow, true);
 
         // 2) Solve for single row of Q using forward substitution
         double[] qrow = forwardSolve(_L, arow);

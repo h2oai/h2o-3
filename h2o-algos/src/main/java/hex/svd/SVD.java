@@ -192,7 +192,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-          SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+          SMulTask stsk = new SMulTask(dinfo, _parms._nv);
           stsk.doAll(aqfrm);    // Pass in [A,Q]
 
           Matrix ysmall = new Matrix(stsk._atq);
@@ -255,7 +255,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 1) Form the matrix B = Q'A = (A'Q)'
         update(1, "Forming small matrix B = Q'A for direct SVD");
-        SMulTask stsk = new SMulTask(ncolA, _ncolExp, model._output._ncats, _parms._nv, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+        SMulTask stsk = new SMulTask(dinfo, _parms._nv);
         stsk.doAll(aqfrm);
         double[][] qta = ArrayUtils.transpose(stsk._atq);
 
