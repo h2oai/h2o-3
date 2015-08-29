@@ -137,12 +137,13 @@ This generalization of linear models makes GLMs suitable for a wider range of pr
 %This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
 
 \subsection{GLM in H2O}
-H2O's GLM algorithm fits generalized linear models to the data by maximizing the log-likelihood. The elastic net penalty can be used for parameter regularization. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number of predictors with non-zero coefficients ($\mathtt{\sim}$ low thousands).\\
+H2O's GLM algorithm fits generalized linear models to the data by maximizing the log-likelihood. The elastic net penalty can be used for parameter regularization. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number of predictors with non-zero coefficients ($\mathtt{\sim}$ low thousands).  H2O's GLM fits the model by solving the following likelihood optimization with parameter regularization:
+ $$\min_{\beta,\beta_0} \mbox{ GLM log-ikelihood} + \mbox{Regularization Penalty}.$$
 
-The elastic net regularization penalty $\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + {(1- \alpha) \over 2} \| \beta \|_2^2 \right)$ which is added to the log-likelihood that is optimized is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients. It shrinks the coefficients by imposing a penalty on their size and induces sparsity in the solution. Such properties are desirable as they reduce the variance in the predictions and make the model more interpretable, since it selects a subset of the given variables. For a specific $\alpha$ value, the algorithm can compute models for (1) a single value of the tuning parameter $\lambda$ or (2) the full regularization path as in the glmnet package for R (refer to \citetalias{glmnet}).
-
- H2O's GLM fits the model by solving the following likelihood optimization with parameter regularization over $n$ observations:
-$$ \min_{\beta,\beta_0} \sum_{i=1}^n \log f\left(y_i ; \beta,\beta_0\right)  + \lambda P_{\alpha}(\beta). $$
+The elastic net regularization penalty $$\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + {(1- \alpha) \over 2} \| \beta \|_2^2 \right)$$ which is added to the log-likelihood that is optimized is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients. It shrinks the coefficients by imposing a penalty on their size and induces sparsity in the solution. Such properties are desirable as they reduce the variance in the predictions and make the model more interpretable, since it selects a subset of the given variables. For a specific $\alpha$ value, the algorithm can compute models for (1) a single value of the tuning parameter $\lambda$ or (2) the full regularization path as in the glmnet package for R (refer to \citetalias{glmnet}).
+ 
+ More specifically, the above corresponds to solving the following optimization for $n$ observations:
+$$ \min_{\beta,\beta_0} \sum_{i=1}^n \log f\left(y_i ; \beta,\beta_0\right)  + \lambda \left(\alpha \| \beta \|_1 + {(1- \alpha) \over 2} \| \beta \|_2^2 \right). $$
 
 %\[ \min\limits_{\beta}\ (\ Classic GLM  + Regularization Penalty \ )\]
 
@@ -154,17 +155,9 @@ The elastic net parameter $\alpha \in [0,1]$ controls the penalty distribution b
 penalties. When $\alpha=0$, the $\ell_1$ penalty is not used and we obtain the
 ridge regression solution with shrunken coefficients. If $\alpha=1$, the lasso operator soft-thresholds the coefficients reducing some of them to zero depending on the $\lambda$ value.
 
-Variable selection is important in numerous modern applications with many covariates for which the $\ell_1$ penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, it is advantageous to use the lasso as it will select a small number of variables for sufficiently high $\lambda$. The $\ell_2$ norm does not have that effect, it only shrinks the coefficients without setting them exactly to zero.  %The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the
-%L2-only penalty does not reduce coefficients to exactly 0. 
-The two penalties also differ in the presence of correlated
-predictors. The $\ell_2$ penalty shrinks coefficients for correlated columns towards each other, while the $\ell_1$ penalty
-tends to select only one of them. Using the elastic net argument $\alpha$, you can combine these two
-behaviors. It is also useful to always add a small $\ell_2$ penalty to increase numerical stability.
-
 Similarly to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting
 from the null-model (evaluated at the smallest penalty $\lambda_{\max}$ for which all coefficients are set to zero) down to a minimally-penalized model. To improve the efficiency of this search, 
-H2O employs strong-rules as described in \citetalias{strong} to filter out inactive coefficients (coefficients pushed
-to zero by penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. Moreover, cross-validation allows the tuning of the optimal amount of regularization $\lambda$ for the given problem and data.
+H2O employs the strong rules as described in \citetalias{strong} to filter out inactive columns (coefficients that will remain equal to zero given the imposed penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. Moreover, cross-validation can be used after fitting models for the full regularization path to tune the optimal amount of regularization $\lambda$ for the given problem and data by computing the error evaluated on the validation dataset.
 
 \subsection{Model fitting}
 GLM models are fitted by maximizing the likelihood of the data. For the Gaussian family, maximum likelihood simply corresponds to 
@@ -203,16 +196,25 @@ where $k$ is the number of parameters included in the model and $\ell$ is the li
 
 \subsection{Regularization} \label{regularization}
 We introduce penalties to the model building process to avoid over-fitting, reduce variance of the prediction
-error, and handle correlated predictors. There are two common penalized linear models: ridge regression and
-Lasso (least absolute shrinkage and selection operator). Ridge regression provides greater numerical stability and is easier and faster to compute. In comparison, Lasso leads to a sparse solution, which is advantageous in many situations, as it can be used for feature selection and to produce models with fewer parameters. When encountering highly correlated columns, the L2 penalty tends to push all of the coefficients towards each other, while the L1 penalty will pick one and remove the others to produce 0 coefficients.
+error, and handle correlated predictors. The two most common penalized models are ridge regression and the
+lasso (least absolute shrinkage and selection operator). The elastic net combines both penalties . 
 
 \subsubsection{Lasso and Ridge regression}
 
-Lasso represents the L1 penalty and is an alternative regularized least squares method that uses the constraint
-$||B||_1$. The main difference between Lasso and
-ridge regression is that as the penalty for ridge regression increases, the parameters are reduced to non-zero
-values. With Lasso, if the penalty is increased, the parameters can be reduced to zero values. Since reducing
-parameters to zero removes them from the model, the Lasso method only relies on the relevant data (discards the noise). Ridge regression never removes any predictors.
+Ridge regression provides greater numerical stability and is easier and faster to compute. In comparison, the lasso leads to a sparse solution when the tuning parameter is sufficiently large. This could be advantageous in many situations, namely in datasets which consist of a very large number of predictors, as it can be used for feature selection producing models with fewer parameters. When the data variables are highly correlated, the $\ell_2$ penalty tends to push all of the coefficients towards each other, while the $\ell_1$ penalty will tend to pick one and set the other coefficients to 0.
+
+The lasso stands for the $\ell_1$ penalty and is an alternative regularized least squares method that penalizes sum of the absolute values of the coefficients 
+$||\beta||_1=\sum_{k=1}^p |\beta_k|$. The main difference between the lasso and
+ridge regression is that as the penalty for ridge regression increases, the parameters are simultaneously reduced without being reduced to zero
+exactly. However for the lasso, as the tuning parameter value $\lambda$ is increased, all coefficients are set to zero. Since reducing
+parameters to zero removes them from the model, the lasso is a good selection tool. Ridge regression keeps all the predictors in the model.
+
+Variable selection is important in numerous modern applications with many covariates for which the $\ell_1$ penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, it is advantageous to use the lasso as it will select a small number of variables for sufficiently high $\lambda$. The $\ell_2$ norm does not have that effect, it only shrinks the coefficients without setting them exactly to zero.  %The main advantage of an L1 penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the
+%L2-only penalty does not reduce coefficients to exactly 0. 
+The two penalties also differ in the presence of correlated
+predictors. The $\ell_2$ penalty shrinks coefficients for correlated columns towards each other, while the $\ell_1$ penalty
+tends to select only one of them. Using the elastic net argument $\alpha$, you can combine these two
+behaviors. It is also useful to always add a small $\ell_2$ penalty to increase numerical stability.
 
 \subsubsection{Elastic net penalty}
 
