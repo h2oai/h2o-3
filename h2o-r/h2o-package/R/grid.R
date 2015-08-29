@@ -70,7 +70,7 @@ h2o.grid <- function(algorithm,
       names(hparams) <- hyper_param_names
       params_for_validation <- lapply(append(lparams, hparams), function(x) { if(is.integer(x)) x <- as.numeric(x); x })
       # We have to repeat part of work used by model builders
-      params_for_validation <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = all_params, params = params_for_validation)
+      params_for_validation <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = all_params, params = params_for_validation)
       .h2o.validateModelParameters(conn, algorithm, params_for_validation)
     })
   }
