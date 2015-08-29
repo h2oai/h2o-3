@@ -13,6 +13,7 @@
 % A few of the arguments are deprecated (according to Arno), but they still appear in the code, so I don't know if we should include them or not in our arg list.  Right now they appear as "(Deprecated)" below
 % On the arglist, what does Optional indicate?  Many are not marked as optional... but are actually Optional.  Not sure (Optional) is being used properly.
 % Many of the params in the arglist are shared with other algos, let's make sure those definitions are identical between booklets.
+% Maybe move the Load Data section to the Use Case section (like GBM)
 
 \input{common/conf_top.tex}
 
@@ -115,7 +116,7 @@ The document source itself can be found here:
 \newpage
 \section{Deep Learning Overview}
 %Deep Learning has been dominating recent machine learning competitions with better predictions. 
-Unlike the neural networks of the past, modern Deep Learning has cracked the code for training stability and generalization and scales on big data.  It is often the algorithm of choice for highest predictive accuracy, as deep learning performs quite well in a number of diverse problems. 
+Unlike the neural networks of the past, modern Deep Learning has cracked the code for training stability and generalization and scales on big data.  It is often the algorithm of choice for highest predictive accuracy, as deep learning algorithms performs quite well in a number of diverse problems. 
 
 First, we present a brief overview of deep neural networks for supervised learning tasks. There are several theoretical frameworks for deep learning, and here we summarize the feedforward architecture used by H2O. 
 \\
@@ -224,8 +225,8 @@ Function & Formula & Typical use \\ [0.5ex] % inserts table
 %heading 
 \hline % inserts single horizontal line 
 Mean Squared Error & $L(W,B | j) = \frac{1}{2}\|t^{(j)} - o^{(j)}\|_2^2$ & Regression \\ % inserting body of the table 
-Absolute & $L(W,B | j) = \|t^{(j)} - o^{(j)}\|$ & Regression \\
-Huber & $L(W,B | j) = \frac{1}{2}\|t^{(j)} - o^{(j)}\|_2^2$ & Regression \\
+Absolute & $L(W,B | j)$ = TO DO & Regression \\
+Huber & $L(W,B | j)$ = TO DO & Regression \\
 Cross Entropy & $L(W,B | j) = -\sum\limits_{y \in O} \left(\ln(o_y^{(j)}) \cdot t_y^{(j)} + \ln(1-o_y^{(j)}) \cdot (1-t_y^{(j)})\right) $ & Classification \\
 \hline %inserts single line 
 \end{tabular} 
@@ -299,7 +300,8 @@ Here, the weights and bias updates follow the asynchronous  $\textsc{Hogwild!}$ 
 
 \subsubsection{Specifying the number of training samples per iteration} 
 \label{sssec:TrainSamplesPerIter}
-H2O Deep Learning is scalable and can take advantage of large clusters of compute nodes. There are three operating modes. The default behavior is to let every node train on the entire (replicated) dataset, but automatically  shuffling (and/or using a subset of) the training examples for each iteration locally. For datasets that don't fit into each node's memory (depending on the amount of heap memory specified by the \texttt{-Xmx} option), it might not be possible to replicate the data, and each compute node can be instructed to train only with local data. An experimental single node mode is available for cases where final convergence is slow due to the presence of too many nodes, but this has not been necessary in our testing.
+H2O Deep Learning is scalable and can take advantage of large clusters of compute nodes. There are three operating modes. The default behavior is to let every node train on the entire (replicated) dataset, but automatically  shuffling (and/or using a subset of) the training examples for each iteration locally. For datasets that don't fit into each node's memory (depending on the amount of heap memory specified by the \texttt{-XmX} Java %(or \texttt{max\_mem\_size} in R) 
+option), it might not be possible to replicate the data, and each compute node can be instructed to train only with local data. An experimental single node mode is available for cases where final convergence is slow due to the presence of too many nodes, but this has not been necessary in our testing.
 
 The number of training examples globally presented to the distributed SGD worker nodes between model averaging is defined by the parameter \texttt{train\_samples\_per\_iteration}. If the specified value is \texttt{-1}, all nodes process all their local training data per iteration. If \texttt{replicate\_training\_data} is enabled, which is the default setting, this will result in training N epochs (passes over the data) per iteration on N nodes; otherwise, one epoch will be trained per iteration. Another special value is \texttt{0}, which always results in one epoch per iteration, regardless of the number of compute nodes. In general, any user-specified positive number is permissible for this parameter. For large datasets, we recommend specifying a fraction of the dataset. 
 
@@ -311,16 +313,16 @@ For example, if the training data contains $10$ million rows, and we specify the
 H2O's Deep Learning framework supports regularization techniques to prevent overfitting. 
 \\
 \\
-$\ell_1$ and $\ell_2$ regularization enforce the same penalties as they do with other models; that is, modifying the loss function so as to minimize some  %%incomplete sentence? or referring to the equation below? should specify what is minimized (loss?)
+$\ell_1$ (Lasso) and $\ell_2$ (Ridge) regularization enforce the same penalties as they do with other models; that is, modifying the loss function so as to minimize some loss, %%incomplete sentence? or referring to the equation below? should specify what is minimized (loss?)
 \\
 \begin{center}
-$L'(W,B$ $|$ $j) = L(W,B$ $|$ $j) + \lambda_1 R_1(W,B$ $|$ $j) + \lambda_2 R_2(W,B$ $|$ $j)$
+$L'(W,B$ $|$ $j) = L(W,B$ $|$ $j) + \lambda_1 R_1(W,B$ $|$ $j) + \lambda_2 R_2(W,B$ $|$ $j)$.
 \end{center}
 
 For $\ell_1$ regularization, $R_1(W,B$ $|$ $j)$ represents of the sum of all $\ell_1$ norms of the weights and biases in the network; $R_2(W,B$ $|$ $j)$ represents the sum of squares of all the weights and biases in the network. The constants $\lambda_1$ and $\lambda_2$ are generally specified as very small, for example $10^{-5}$.
 \\
-The second type of regularization available for deep learning is a recent innovation called dropout (\href{http://arxiv.org/pdf/1207.0580.pdf}{Hinton et al., 2012}). 
 
+The second type of regularization available for deep learning is a modern innovation called dropout (\href{http://arxiv.org/pdf/1207.0580.pdf}{Hinton et al., 2012}). % TO DO: Add sparsity regularization (and was there another one -- see argument list)
 Dropout constrains the online optimization so that during forward propagation for a given training example, each neuron in the network suppresses its activation with probability $\textsc{P}$, which is usually less than 0.2 for input neurons and up to 0.5 for hidden neurons. There are two effects: as with $\ell_2$ regularization, the network weight values are scaled toward 0. Furthermore, each training example trains a different model, although they share the same global parameters. As a result, dropout allows an exponentially large number of models to be averaged as an ensemble, which can prevent overfitting and improve generalization. Input dropout can be especially useful when the feature space is large and noisy.
 
 \subsection{Advanced optimization} 
@@ -328,17 +330,17 @@ H2O features manual and automatic versions of advanced optimization. The manual 
 
 \subsubsection{Momentum training}
 \label{sssec:MomentumTraining}
-Momentum modifies back-propagation by allowing prior iterations to influence the current version. In particular, a velocity vector $v$ is defined to modify the updates as follows, with $\theta$ representing the parameters $W,B$; $\mu$ representing the momentum coefficient, and $\alpha$ denoting the learning rate. 
+Momentum modifies back-propagation by allowing prior iterations to influence the current version. In particular, a velocity vector, $v$, is defined to modify the updates as follows: with $\theta$ representing the parameters $W,B$; $\mu$ representing the momentum coefficient, and $\alpha$ denoting the learning rate. 
 \begin{center}
 $v_{t+1} = \mu v_t - \alpha \nabla L(\theta_t)$
 \\
 $\theta_{t+1} = \theta_t + v_{t+1}$
 \end{center}
 Using the momentum parameter can aid in avoiding 
-local minima and the associated instability (\href{http://www.cs.toronto.edu/~fritz/absps/momentum.pdf}{Sutskever et al, 2014}). Too much momentum can lead to instabilities, which is why it is best to ramp up the momentum slowly.
+local minima and the associated instability (\href{http://www.cs.toronto.edu/~fritz/absps/momentum.pdf}{Sutskever et al, 2014}). Too much momentum can lead to instabilities, which is why it is best to ramp up the momentum slowly.  The parameters that control momentum are \texttt{momentum\_start, momentum\_ramp} and \texttt{momentum\_stable}.
 \\
 \\
-The Nesterov accelerated gradient method is a recommended improvement when using momentum updates. Using this method, the updates are further modified such that 
+The Nesterov accelerated gradient method, triggered by the  \texttt{nesterov\_accelerated\_gradient} parameter, is a recommended improvement when using momentum updates. Using this method, the updates are further modified such that 
 \begin{center}
 $v_{t+1} = \mu v_t - \alpha \nabla L(\theta_t + \mu v_t)$
 \\
@@ -350,36 +352,47 @@ $W_{t+1} = W_t + v_{t+1}$
 Throughout training, as the model approaches a minimum, the chance of oscillation or ``optimum skipping" creates the need for a slower learning rate. Instead of specifying a constant learning rate $\alpha$, learning rate annealing gradually reduces the learning rate $\alpha_t$ to ``freeze" into local minima in the optimization landscape (\href{http://arxiv.org/pdf/1212.5701v1.pdf}{Zeiler, 2012}).  
 \\
 \\
-For H2O, the annealing rate is the inverse of the number of training samples it takes to cut the learning rate in half (e.g., $10^{-6}$ means that it takes $10^6$ training samples to halve the learning rate).
+For H2O, the annealing rate (\texttt{rate\_annealing}) is the inverse of the number of training samples it takes to cut the learning rate in half (e.g., $10^{-6}$ means that it takes $10^6$ training samples to halve the learning rate).
 
 \subsubsection{Adaptive learning} 
 \label{sssec:AdaptiveLearning}
 The implemented adaptive learning rate algorithm ADADELTA (\href{http://arxiv.org/pdf/1212.5701v1.pdf}{Zeiler, 2012})  automatically combines the benefits of learning rate annealing and momentum training to avoid slow convergence. Specifying only two parameters ($\rho$ and $\epsilon$)  simplifies hyper parameter search. In some cases, manually controlled (non-adaptive) learning rate and momentum specifications can lead to better results, but require a hyperparameter search of up to 7 parameters. If the model is built on a topology with many local minima or long plateaus, it is possible for a constant learning rate to produce sub-optimal results. In general, however, we find the adaptive learning rate produces the best results, so this option is used as the default. 
 
-The first of two hyper parameters for adaptive learning is $\rho$. It is similar to momentum and relates to the memory to prior weight updates. Typical values are between 0.9 and 0.999. The second of two hyper parameters, $\epsilon$, for adaptive learning is similar to learning rate annealing during initial training and momentum at later stages where it allows forward progress.
+The first of two hyper parameters for adaptive learning is $\rho$ (\texttt{rho}). It is similar to momentum and relates to the memory to prior weight updates. Typical values are between 0.9 and 0.999. The second of two hyper parameters, $\epsilon$ (\texttt{epsilon}), for adaptive learning is similar to learning rate annealing during initial training and momentum at later stages where it allows forward progress.
 Typical values are between $10^{-10}$ and $10^{-4}$.
 
 \subsection{Loading data} 
 
-Loading a dataset in R for use in H2O is slightly different from the usual methodology: datasets must be converted into \texttt{H2OParsedData} objects. For the following example, we use a toy weather dataset included in the \href{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}{H2O GitHub repository for the H2O Deep Learning documentation} at \\https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo/. 
+%Loading a dataset for use in H2O in R or Python is slightly different from the usual methodology: datasets must be converted into \texttt{H2OFrame} objects rather than an R \texttt{data.frame} or Python Pandas \texttt{DataFrame} or NumPy array. 
+Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert
+our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. For this example, we will download and import a small example dataset hosted in a public Amazon S3 bucket.%: {\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}}
 
-First, load the data to your current working directory in your R Console (do this for all dataset downloads), and then run the following command.
+%For the following example, we use a toy weather dataset included in the \href{https://github.com/h2oai/h2o-3/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}{H2O GitHub repository for the H2O Deep Learning documentation} at \\https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo/. 
 
-\begin{lstlisting}[style=R]
-weather.hex = h2o.uploadFile(h2o_server, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
-\end{lstlisting}
-\normalsize
+%First, load the data to your current working directory in your R Console (do this for all dataset downloads), and then run the following command.
+%
+%\begin{lstlisting}[style=R]
+%weather.hex = h2o.uploadFile(h2o_server, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
+%\end{lstlisting}
+%\normalsize
+%
+%\bigskip
+%\noindent
+%To see a quick summary of the data, run the following command.
+%\begin{lstlisting}[style=R]
+%summary(weather.hex)
+%\end{lstlisting}
+\waterExampleInR
+%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
+\lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
 
-\bigskip
-\noindent
-To see a quick summary of the data, run the following command.
-\begin{lstlisting}[style=R]
-summary(weather.hex)
-\end{lstlisting}
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_importfile_example.py}
+
 
 \subsubsection{Standardization} 
 
-Along with categorical encoding, H2O preprocesses data to be standardized for compatibility with the activation functions (recall Table 1's summary of each activation function's target space). Since the activation function does not generally map into $\mathbb{R}$, we first standardize our data to be drawn from $\mathcal{N}(0,1)$. Standardizing again after network propagation allows us to compute more precise errors in this standardized space, rather than in the raw feature space. 
+Along with categorical encoding, H2O's Deep Learning preprocesses the data to be standardized for compatibility with the activation functions (recall Table 1's summary of each activation function's target space). Since the activation function does not generally map into the full spectrum of real numbers, $\mathbb{R}$, we first standardize our data to be drawn from $\mathcal{N}(0,1)$. Standardizing again after network propagation allows us to compute more precise errors in this standardized space, rather than in the raw feature space. 
 
 \subsection{Additional parameters} 
 
