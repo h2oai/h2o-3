@@ -183,10 +183,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
 
         // Get Q from Y = QR giving R' = L
-        double[] normSubY = new double[_parms._nv];
-        double[] normMulY = new double[_parms._nv];
-        Arrays.fill(normMulY, 1.0);
-        QRfromChol qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
+        QRfromChol qrtsk = new QRfromChol(yinfo, chol, gtsk._nobs, _parms._nv);
         qrtsk.doAll(yqfrm);
 
         int iters = 0;
@@ -203,7 +200,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           double[][] ysmall_q = ysmall_qr.getQ().getArray();
 
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-          BMulInPlaceTask tsk = new BMulInPlaceTask(ArrayUtils.transpose(ysmall_q), ncolA, _ncolExp, model._output._ncats, model._output._normSub, model._output._normMul, model._output._catOffsets, _parms._use_all_factor_levels);
+          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q));
           tsk.doAll(ayfrm);     // TODO: Can we reuse [A,Q] frame and write Y_j into old Q_{j-1}?
 
           // Calculate Cholesky of Gram to get R' = L matrix
@@ -213,7 +210,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           ygram = new Matrix(gtsk._gram.getXX());
           chol = new CholeskyDecomposition(ygram);
 
-          qrtsk = new QRfromChol(chol, gtsk._nobs, _parms._nv, _parms._nv, normSubY, normMulY);
+          qrtsk = new QRfromChol(yinfo, chol, gtsk._nobs, _parms._nv);
           qrtsk.doAll(yqfrm);   // Pass in [Y,Q]
           iters++;
         }

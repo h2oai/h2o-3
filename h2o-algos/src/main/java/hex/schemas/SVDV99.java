@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.DataInfo;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
+import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 
@@ -27,6 +28,9 @@ public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV9
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
+
+    @API(help = "Method for computing SVD (Caution: Power and Probablistic are currently experimental and unstable)", values = { "GramSVD", "Power", "Probabilistic" })   // TODO: pull out of enum class
+    public SVDParameters.Method svd_method;
 
     @API(help = "Number of right singular vectors")
     public int nv;
