@@ -417,6 +417,28 @@
 
         out = "";
         out += "<ul>\n";
+        booklets = obj.booklets;
+        for (i = 0; i < booklets.length; i++) {
+          doc = booklets[i];
+          out += "<li>";
+          out += "<a id=\"";
+          out += doc.id;
+          out += "\"";
+          out += " href=\"";
+          out += doc.path
+          out += "\">";
+          out += doc.name;
+          out += "</a>";
+          out += "</li>";
+          out += "\n";
+        }
+        out += "</ul>\n";
+
+        tmp = document.getElementById("booklets")
+        tmp.innerHTML = out;
+
+        out = "";
+        out += "<ul>\n";
         hadoop_distributions = obj.hadoop_distributions;
         for (i = 0; i < hadoop_distributions.length; i++) {
           dist = hadoop_distributions[i];
@@ -731,13 +753,11 @@ dependencies {</br>
         </div>
         <div id="documentation">
           <h2>User Documentation</h2>
-          <ul>
           <div id="user_documentation"></div>
-          </ul>
           <h2>Developer Documentation</h2>
-          <ul>
           <div id="developer_documentation"></div>
-          </ul>
+          <h2>Booklets</h2>
+          <div id="booklets"></div>
         </div>
       </div>
     </div>

@@ -95,7 +95,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     if (!_parms._use_all_factor_levels && _parms._pca_method == PCAParameters.Method.GLRM)
       error("_use_all_factor_levels", "GLRM only implemented for _use_all_factor_levels = true");
 
-    if (expensive && error_count() == 0) checkMemoryFootPrint();
+    if (_parms._pca_method == PCAParameters.Method.GramSVD && expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {

@@ -115,5 +115,33 @@
             "id"   : "doc-h2o-scala-javadoc",
             "path" : "docs-website/h2o-scala/scaladoc/index.html"
         }
+    ],
+
+    "booklets" : [
+        {
+            "name" : "GLM",
+            "id"   : "booklet-glm",
+            "path" : "docs-website/h2o-docs/booklets/GLM_Vignette.pdf"
+        },
+        {
+            "name" : "DeepLearning",
+            "id"   : "booklet-deeplearning",
+            "path" : "docs-website/h2o-docs/booklets/DeepLearningRVignette.pdf"
+        },
+        {
+            "name" : "GBM",
+            "id"   : "booklet-gbm",
+            "path" : "docs-website/h2o-docs/booklets/GBM_Vignette.pdf"
+        },
+        {
+            "name" : "R",
+            "id"   : "booklet-r",
+            "path" : "docs-website/h2o-docs/booklets/R_Vignette.pdf"
+        },
+        {
+            "name" : "SparklingWater",
+            "id"   : "booklet-sparklingwater",
+            "path" : "docs-website/h2o-docs/booklets/SparklingWaterVignette.pdf"
+        }
     ]
 }
