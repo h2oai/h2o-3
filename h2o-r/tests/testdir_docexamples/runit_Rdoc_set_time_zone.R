@@ -15,18 +15,18 @@ print_diff <- function(r, h2o) {
 # The two local copies are then checked for the correct time
 # offset.
 #
-test.rdoc_settimezone.golden <- function(H2Oserver) {
-  origTZ = h2o.getTimezone(H2Oserver)
-  h2o.setTimezone("Etc/UTC", H2Oserver)
+test.rdoc_settimezone.golden <- function() {
+  origTZ = h2o.getTimezone()
+  h2o.setTimezone("Etc/UTC")
   rdf = data.frame(c("Fri Jan 10 00:00:00 1969", "Tue Jan 10 04:00:00 2068", "Mon Dec 30 01:00:00 2002", "Wed Jan 1 12:00:00 2003"))
   colnames(rdf) <- c("c1")
-  hdf = as.h2o(H2Oserver, rdf, "hdf")
+  hdf = as.h2o(rdf, "hdf")
   hdf$c1 <- as.Date(hdf$c1, "%c")
   ldfUTC <- as.data.frame(hdf)
 
   h2o.rm(hdf)
-  h2o.setTimezone("America/Los_Angeles", H2Oserver)
-  hdf = as.h2o(H2Oserver, rdf, "hdf")
+  h2o.setTimezone("America/Los_Angeles")
+  hdf = as.h2o(rdf, "hdf")
   hdf$c1 <- as.Date(hdf$c1, "%c")
   ldfPST <- as.data.frame(hdf)
 
@@ -37,7 +37,7 @@ test.rdoc_settimezone.golden <- function(H2Oserver) {
   expect_that(act, equals(diff[,1]))
   
   # erase side effect of test
-  h2o.setTimezone(as.character(origTZ[1,1]), H2Oserver)
+  h2o.setTimezone(as.character(origTZ[1,1]))
   testEnd()
 }
 

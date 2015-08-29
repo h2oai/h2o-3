@@ -756,6 +756,46 @@ median.Frame <- function(x, ...) {
   else base::median(x,...)
 }
 
+#' Cut  Numeric Data to Factor
+#'
+#' Divides the range of the  data into intervals and codes the values according to which interval they fall in. The
+#' leftmost interval corresponds to the level one, the next is level two, etc.
+#'
+#' @param x An \linkS4class{Frame} object with numeric columns.
+#' @param breaks A numeric vector of two or more unique cut points.
+#' @param labels Labels for the levels of the resulting category. By default, labels are constructed sing "(a,b]"
+#'        interval notation.
+#' @param include.lowest \code{Logical}, indicationg if an 'x[i]' equal to the lowest (or highest, for \code{right =
+#'        FALSE} 'breaks' value should be included
+#' @param right /code{Logical}, indicating if the intervals should be closed on the right (opened on the left) or vice
+#'        versa.
+#' @param dig.lab Integer which is used when labels are not given, determines the number of digits used in formatting
+#'        the break numbers.
+#' @param ... Further arguments passed to or from other methods.
+#' @return Returns an \linkS4class{Frame} object containing the factored data with intervals as levels.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
+#' summary(iris.hex)
+#'
+#' # Cut sepal length column into intervals determined by min/max/quantiles
+#' sepal_len.cut = cut(iris.hex$sepal_len, c(4.2, 4.8, 5.8, 6, 8))
+#' head(sepal_len.cut)
+#' summary(sepal_len.cut)
+#' }
+#' @export
+h2o.cut <- function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3, ...) {
+  if (!is.numeric(breaks) || length(breaks) == 0L || !all(is.finite(breaks)))
+    stop("`breaks` must be a numeric vector")
+  .newExpr("cut", chk.Frame(x), breaks, labels, include.lowest, right, dig.lab)
+}
+
+#' @export
+cut.Frame <- h2o.cut
+
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.
@@ -966,7 +1006,7 @@ h2o.setTimezone <- function(tz) .newExpr("setTimeZone",.quote(tz))
 #'
 #' @export
 h2o.getTimezone <- function() {
-  ret <- .fetch.data(assign("gtz",.newExpr("getTimeZone")))
+  ret <- .fetch.data(assign("gtz",.newExpr("getTimeZone")),1000)
   h2o.rm(gtz:id)
   ret
 }
@@ -975,7 +1015,7 @@ h2o.getTimezone <- function() {
 #'
 #' @export
 h2o.listTimezones <- function() {
-  ret <- .fetch.data(assign("gtz",.newExpr("listTimeZones")))
+  ret <- .fetch.data(assign("gtz",.newExpr("listTimeZones")),1000)
   h2o.rm(gtz:id)
   ret
 }
@@ -1542,6 +1582,24 @@ h2o.runif <- function(x, seed = -1) {
   if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
   .newExpr("h2o.runif", chk.Frame(x), seed)
 }
+
+#' Check Frame columns for factors
+#'
+#' Determines if any column of an Frame object contains categorical data.
+#'
+#' @name h2o.anyFactor
+#' @param x An \code{\linkS4class{Frame}} object.
+#' @return Returns a logical value indicating whether any of the columns in \code{x} are factors.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.importFile(path = irisPath)
+#' h2o.anyFactor(iris.hex)
+#' }
+#' @export
+h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,

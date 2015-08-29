@@ -99,3 +99,15 @@ class ASTAsNumeric extends ASTPrim {
   }
 }
 
+// Added to facilitate Runit testing
+class ASTAnyFactor extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (any.factor frame)
+  @Override String str() { return "any.factor"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    for( Vec vec : fr.vecs() )
+      if( vec.isEnum() ) return new ValStr("TRUE");
+    return new ValStr("FALSE");
+  }
+}
+

@@ -140,6 +140,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTVariance());
 
     // Generic data mungers
+    init(new ASTAnyFactor());
     init(new ASTAsFactor());
     init(new ASTAsNumeric());
     init(new ASTCBind());
@@ -150,15 +151,16 @@ abstract public class AST extends Iced<AST> {
     init(new ASTIsFactor());
     init(new ASTRBind());
     init(new ASTRowSlice());
-    init(new ASTTmpAssign());
-    init(new ASTSetLevel());
     init(new ASTSetDomain());
+    init(new ASTSetLevel());
+    init(new ASTTmpAssign());
 
     // Complex data mungers
     init(new ASTAssign());
     init(new ASTCut());
     init(new ASTGroup());
     init(new ASTMerge());
+    init(new ASTQtile());
 
     // String Ops
     init(new ASTStrSplit());
@@ -174,10 +176,6 @@ abstract public class AST extends Iced<AST> {
 
     // Cluster management
     init(new ASTLs());
-
-    // Model Calls
-    init(new ASTQtile());
-
 
     // Repeaters
     init(new ASTRepLen());
