@@ -365,30 +365,7 @@ Typical values are between $10^{-10}$ and $10^{-4}$.
 
 %Loading a dataset for use in H2O in R or Python is slightly different from the usual methodology: datasets must be converted into \texttt{H2OFrame} objects rather than an R \texttt{data.frame} or Python Pandas \texttt{DataFrame} or NumPy array. 
 Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert
-our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. For this example, we will download and import a small example dataset hosted in a public Amazon S3 bucket.%: {\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}}
-
-%For the following example, we use a toy weather dataset included in the \href{https://github.com/h2oai/h2o-3/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}{H2O GitHub repository for the H2O Deep Learning documentation} at \\https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo/. 
-
-%First, load the data to your current working directory in your R Console (do this for all dataset downloads), and then run the following command.
-%
-%\begin{lstlisting}[style=R]
-%weather.hex = h2o.uploadFile(h2o_server, path = "weather.csv", header = TRUE, sep = ",", key = "weather.hex")
-%\end{lstlisting}
-%\normalsize
-%
-%\bigskip
-%\noindent
-%To see a quick summary of the data, run the following command.
-%\begin{lstlisting}[style=R]
-%summary(weather.hex)
-%\end{lstlisting}
-\waterExampleInR
-%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
-\lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
-
-\waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_importfile_example.py}
-
+our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. 
 
 \subsubsection{Standardization} 
 
@@ -409,26 +386,47 @@ For a full list of H2O Deep Learning model parameters and default values, see Ap
 
 \subsection{MNIST overview} 
 
-The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known academic dataset used to benchmark classification performance. The data consists of 60,000 training images and 10,000 test images, for which each is a standardized $28^2$ pixel greyscale image of a single handwritten digit. You can download the datasets from the \href{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}{H2O GitHub repository for the H2O Deep Learning documentation} at \\https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo/. Remember to save these .csv files to your working directory. Following the weather data example, we begin by loading these datasets into R as \texttt{H2OParsedData} objects. 
+The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known academic dataset used to benchmark classification performance. The data consists of 60,000 training images and 10,000 test images, for which each is a standardized $28^2$ pixel greyscale image of a single handwritten digit.  An example of the scanned handwritten digits is shown in Figure 1. 
 
-\begin{lstlisting}[style=R]
-train_images.hex = h2o.uploadFile(h2o_server, path = "mnist_train.csv", header = FALSE, sep = ",", key = "train_images.hex")
-test_images.hex = h2o.uploadFile(h2o_server, path = "mnist_test.csv", header = FALSE, sep = ",", key = "test_images.hex")
-\end{lstlisting}
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=90mm]{./images/mnistdigits.jpg}
+\caption{Example MNIST digit images \label{overflow}}
+\end{figure}
+
+
+For this example, we will download and import the train and test datasets from a public Amazon S3 bucket.%: {\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}}
+The train file is 13MB and the test file is 2.1MB, and below we download the data directly so the speed that the data is imported is limited by download speed.  Files can be uploaded from a variety of sources, including a remote locations and HDFS.
+
+\newpage
+\waterExampleInR
+%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
+\lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_importfile_example.py}
 
 \subsection{Performing a trial run}
 \label{ssec:TrialRun} 
 The example below illustrates the relative simplicity underlying most H2O Deep Learning model parameter configurations, as a result of the default settings. We use the first $28^2 = 784$ values of each row to represent the full image and the final value to denote the digit class. Rectified linear activation is popular with image processing and has performed well on the MNIST database previously and dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
-\begin{lstlisting}[style=R]
-#Train the model for digit classification
-mnist_model = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = c(200,200,200), input_dropout_ratio = 0.2, l1 = 1e-5, validation = test_images.hex, epochs = 10)
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
 
-\end{lstlisting}
-\normalsize
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
+
+
+
+%\begin{lstlisting}[style=R]
+%#Train the model for digit classification
+%mnist_model = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = c(200,200,200), input_dropout_ratio = 0.2, l1 = 1e-5, validation = test_images.hex, epochs = 10)
+%
+%\end{lstlisting}
+%\normalsize
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set. Another option is to use n-fold validation by specifying, for example, \texttt{nfolds=5} instead of \texttt{validation=test\_images}. 
+The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option is to use k-fold validation by specifying, for example, \texttt{nfolds = 5} in addition to / instead of \texttt{validation\_frame = test}.  When \texttt{nfolds} is a positive integer, k-fold cross validation will be performed and the cross-validation metrics will be computed.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  
 
 \subsubsection{Extracting and handling the results} 
 
