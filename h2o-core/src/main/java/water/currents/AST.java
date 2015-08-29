@@ -89,6 +89,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTATan());
     init(new ASTSinh());
     init(new ASTSgn());
+    init(new ASTPop());
 
     // Math binary ops
     init(new ASTAnd ());
