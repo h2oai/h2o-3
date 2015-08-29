@@ -1,14 +1,18 @@
 % TO DO:
 % 5.2.2) Update maxout formula
-% 5.2.3) Update loss functions for Absolute and Huber
+% 5.2.3) Update loss functions for Absolute and Huber in Table 2
 % 5.2.3) Starting with this section, use algorithm mode to outline algos like SGD
 % Appendix parameters:  Add notes on acceptable ranges.  ie.  rho in [0,1]?
 % Are there any parameters that should be marked as Optional or Experimental?
 
+
 % NOTES:
 % Some of the parameter definitions in the appendix have R-specific flavor to them.  For example, c(100,100) is specific to R.
 % Some of the parameters listed here are not available in R (and probably Python).  For example, _target_ratio_comm_to_comp
-
+% Some references are in parenthesis and some are not.... need to standardize citations in text
+% A few of the arguments are deprecated (according to Arno), but they still appear in the code, so I don't know if we should include them or not in our arg list.  Right now they appear as "(Deprecated)" below
+% On the arglist, what does Optional indicate?  Many are not marked as optional... but are actually Optional.  Not sure (Optional) is being used properly.
+% Many of the params in the arglist are shared with other algos, let's make sure those definitions are identical between booklets.
 
 \input{common/conf_top.tex}
 
@@ -168,8 +172,7 @@ H2O's Deep Learning functionalities include:
 
 \item automatic imputation of missing values
 
-% Question: Is this available in H2O-3?
-\item automatic tuning of communication vs computation for best performance
+\item automatic tuning of communication vs computation for best performance  %assuming this is a reference to the force_load_balance param?
 
 \item model export in plain java code for deployment in production environments
 
@@ -238,21 +241,21 @@ The procedure to minimize the loss function $L(W,B$ $|$ $j)$ is a parallelized v
 \\
 \line(1,0){275}
 \\
-Initialize $W,B$ 
+1. Initialize $W,B$ 
 \\
-Iterate until convergence criterion reached
-\\
-\indent Get training example $i$
-\\
-\indent Update all weights $w_{jk} \in W$, biases $b_{jk} \in B$
-\\
-\indent \indent $w_{jk} := w_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial w_{jk}}$
-\\
-\indent \indent $b_{jk} := b_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial b_{jk}}$
-\\
+2. Iterate until convergence criterion reached:
+
+\hspace{1cm} a. Get training example $i$
+
+\hspace{1cm} b. Update all weights $w_{jk} \in W$, biases $b_{jk} \in B$
+
+\hspace{2cm}  $w_{jk} := w_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial w_{jk}}$
+
+\hspace{2cm} $b_{jk} := b_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial b_{jk}}$
+
 \line(1,0){275}
 \\
-\\  %HERE
+\\  
 Stochastic gradient descent is known to be fast and memory-efficient, but not easily parallelizable without becoming slow. We utilize \textsc{Hogwild!}, the recently developed lock-free parallelization scheme from \href{http://i.stanford.edu/hazy/papers/hogwild-nips.pdf}{Niu et al, 2011}, to address this issue. \textsc{Hogwild!} follows a shared memory model where multiple cores  (each handling separate subsets or all of the training data) are able to make independent contributions to the gradient updates $\nabla L(W,B$ $ |$ $j)$ asynchronously. In a multi-node system, this parallelization scheme works on top of H2O's distributed setup where the training data is distributed across the cluster. Each node operates in parallel on its local data until the final parameters $W,B$ are obtained by averaging. Below is a rough summary.
 \\
 \\
@@ -261,33 +264,33 @@ Stochastic gradient descent is known to be fast and memory-efficient, but not ea
 \\
 \line(1,0){440}
 \\
-Initialize global model parameters $W,B$
+1. Initialize global model parameters $W,B$
 \\
-Distribute training data $\mathcal{T}$ across nodes (can be disjoint or replicated)
+2. Distribute training data $\mathcal{T}$ across nodes (can be disjoint or replicated)
 \\
-Iterate until convergence criterion reached
-\\
-\indent For nodes $n$ with training subset $\mathcal{T}_n$, do in parallel:
-\\
-\indent \indent Obtain copy of the global model parameters $W_n, B_n$
-\\
-\indent \indent Select active subset $\mathcal{T}_{na} \subset \mathcal{T}_n$ (user-given number of samples per iteration)
-\\
-\indent \indent Partition $\mathcal{T}_{na}$ into $\mathcal{T}_{nac}$ by cores $n_c$
-\\
-\indent \indent For cores $n_c$ on node $n$, do in parallel:
-\\
-\indent \indent \indent Get training example $i \in \mathcal{T}_{nac}$
-\\
-\indent \indent \indent  Update all weights $w_{jk} \in W_n$, biases $b_{jk} \in B_n$
-\\
-\indent \indent \indent  \indent $w_{jk} := w_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial w_{jk}}$
-\\
-\indent \indent \indent  \indent $b_{jk} := b_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial b_{jk}}$
-\\
-\indent Set $W,B := $ Avg$_n$ $W_n,$ $ $Avg$_n$ $B_n$
-\\
-\indent Optionally score the model on (potentially sampled) train/validation scoring sets
+3. Iterate until convergence criterion reached:
+
+\hspace{1cm} 3.1. For nodes $n$ with training subset $\mathcal{T}_n$, do in parallel:
+
+\hspace{2cm}  a. Obtain copy of the global model parameters $W_n, B_n$
+
+\hspace{2cm}  b. Select active subset $\mathcal{T}_{na} \subset \mathcal{T}_n$ (user-given number of samples per iteration)
+
+\hspace{2cm}  c. Partition $\mathcal{T}_{na}$ into $\mathcal{T}_{nac}$ by cores $n_c$
+
+\hspace{2cm}  d. For cores $n_c$ on node $n$, do in parallel:
+
+\hspace{3cm}  i. Get training example $i \in \mathcal{T}_{nac}$
+
+\hspace{3cm}  ii. Update all weights $w_{jk} \in W_n$, biases $b_{jk} \in B_n$
+
+\hspace{4cm}  $w_{jk} := w_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial w_{jk}}$
+
+\hspace{4cm} $b_{jk} := b_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial b_{jk}}$
+
+\hspace{1cm} 3.2. Set $W,B := $ Avg$_n$ $W_n,$ $ $Avg$_n$ $B_n$
+
+\hspace{1cm} 3.3. Optionally score the model on (potentially sampled) train/validation scoring sets
 \\
 \line(1,0){440}
 \\
@@ -706,23 +709,23 @@ Refer to the ``\nameref{sssec:AdaptiveLearning}'' section for more details.
 
 \item \texttt{shuffle\_training\_data}: Logical.  Enable shuffling of training data (on each node). This option is recommended if training data is replicated on N nodes, and the number of training samples per iteration is close to N times the dataset size, where all nodes train with (almost) all of the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N times the dataset size or larger).  Default is false.
 
-\item \texttt{sparse}: Logical. Enable sparse data handling.% (experimental).  
+\item \texttt{sparse}: (Deprecated) Logical. Enable sparse data handling.% (Experimental). 
 Default is false.
 
-\item \texttt{col\_major}: Logical. Use a column major weight matrix for the input layer; can speed up forward propagation, but may slow down backpropagation. Default is false.
+\item \texttt{col\_major}: (Deprecated) Logical. Use a column major weight matrix for the input layer; can speed up forward propagation, but may slow down backpropagation. Default is false.
 
-\item \texttt{average\_activation}: Specify the average activation for the sparse autoencoder. %(Experimental).
+\item \texttt{average\_activation}: Specify the average activation for the sparse autoencoder (Experimental).
 Default is 0.
 
-\item \texttt{sparsity\_beta}: Specify the sparsity-based regularization optimization.  Default is 0. 
+\item \texttt{sparsity\_beta}: Specify the sparsity-based regularization optimization (Experimental).  Default is 0. 
 
-\item \texttt{max\_categorical\_features}:  Max. number of categorical features, enforced via hashing (Experimental).  Default is $2^{31}-1$ (\texttt{Integer.MAX\_VALUE} in Java).
+\item \texttt{max\_categorical\_features}:  Maximum number of categorical features allowed in a column, enforced via hashing (Experimental).  Default is $2^{31}-1$ (\texttt{Integer.MAX\_VALUE} in Java).
 
 \item \texttt{reproducible}: Logical. Force reproducibility on small data (will be slow -- only uses one thread).  Default is false.
 
 \item \texttt{export\_weights\_and\_biases}: Logical. Specify whether to export the neural network weights and biases as an \texttt{H2OFrame}.  Default is false.
 
-% TO DO: Should these be added?
+% TO DO: Should these be added?  They are in the Java code, but not documented elsewhere
 %  public boolean _elastic_averaging = false;
 %  public double _elastic_averaging_moving_rate = 0.9;
 %  public double _elastic_averaging_regularization = 1e-3;
@@ -735,7 +738,7 @@ Default is 0.
 
 \item \texttt{weights\_column}: Specify the weights column by column name. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
-\item \texttt{nfolds}: (Optional) Number of folds for cross-validation.% If the number of folds is greater than or equal to 2, then validation must remain empty. 
+\item \texttt{nfolds}: (Optional) Number of folds for cross-validation. % If the number of folds is greater than or equal to 2, then validation must remain empty. 
 Default is 0 (no cross-validation is performed).
 
 \item \texttt{fold\_column}: (Optional) Name of column with cross-validation fold index assignment per observation; the folds are supplied by the user. 
