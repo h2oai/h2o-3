@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.merge.examples <- function(conn) {
+test.merge.examples <- function() {
   census_path <- locate("smalldata/chicago/chicagoCensus.csv")
   
   Log.info("Import Chicago census data...")

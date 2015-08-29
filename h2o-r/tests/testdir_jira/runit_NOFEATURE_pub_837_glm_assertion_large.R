@@ -8,7 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
   print("Reading in original adult data.")
   adult.train <-  h2o.importFile(locate("smalldata/glm_test/adult.gz"), destination_frame="adult.train")
 

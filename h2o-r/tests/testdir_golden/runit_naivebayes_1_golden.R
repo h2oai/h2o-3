@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.nbayes.golden <- function(H2Oserver) {
+test.nbayes.golden <- function() {
   Log.info("Importing iris_wheader.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
   irisH2O <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"), destination_frame = "irisH2O")

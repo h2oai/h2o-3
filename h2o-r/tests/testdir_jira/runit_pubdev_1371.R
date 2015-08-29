@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub.1371 <- function(conn) {
+test.pub.1371 <- function() {
   test_frame <- h2o.createFrame(rows = 10000, cols = 200, randomize = TRUE, value = 0, real_range = 37743, 
                                categorical_fraction = 0.1, factors = 5, integer_fraction = 0.5, 
                                binary_fraction = 0.1, binary_ones_fraction = 0.02, integer_range = 243943, 

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.ifce<- function(conn) {
+test.ifce<- function() {
 
   r.hex <- as.h2o(iris)
   r.hex[3,-2] + 5

@@ -31,7 +31,7 @@ print_diff <- function(r, h2o) {
 # ldf - dataframe copied from H2O server
 # rdf - dataframe created using only R native methods
 #
-datetest <- function(conn){
+datetest <- function(){
   Log.info('Test 1')
   Log.info('uploading date testing dataset')
   # Data file is 10 columns of dates, each column in a different format

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1398 <- function(conn) {
+test.pubdev.1398 <- function() {
   k <- 13
   Log.info("Importing decathlon.csv...")
   dec.dat <- read.csv(locate("smalldata/pca_test/decathlon.csv"))

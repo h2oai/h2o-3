@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 
 
 
-functiontest <- function(conn){
+functiontest <- function(){
   Log.info('uploading function testing dataset')
   df.h <- h2o.importFile(locate('smalldata/jira/v-3.csv'))
 

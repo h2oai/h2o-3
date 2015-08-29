@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.h2o.nfold <- function(conn) {
+test.h2o.nfold <- function() {
   tolerance <- 1e-2
 
   hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")))

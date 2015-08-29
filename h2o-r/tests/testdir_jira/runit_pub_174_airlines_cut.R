@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_174_cut <- function(conn) {
+test.pub_174_cut <- function() {
   Log.info('Uploading allyears2k_header.csv to H2O...')
   air.hex <- h2o.importFile(normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   

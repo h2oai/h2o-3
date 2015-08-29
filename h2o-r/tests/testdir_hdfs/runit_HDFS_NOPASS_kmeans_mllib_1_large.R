@@ -23,7 +23,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.kmeans_mllib <- function(conn) {
+check.kmeans_mllib <- function() {
   local_err_bench = locate("smalldata/mllib_bench/bigcross_wcsse.csv")
   # local_err_bench = locate("smalldata/mllib_bench/ozone_wcsse.csv")
 

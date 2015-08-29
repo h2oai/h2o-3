@@ -9,7 +9,7 @@ source('../../h2o-runit.R')
 #     conn = h2o.init()
 
 
-test.apply_w_quantile <- function(conn) {
+test.apply_w_quantile <- function() {
 
     a_initial <- data.frame(cbind(
     v1=c(1,0,1,0,1,0,1,0,1,0),

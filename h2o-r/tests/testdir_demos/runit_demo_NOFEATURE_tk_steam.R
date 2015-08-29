@@ -29,7 +29,7 @@ if (TRUE) {
   filePath <- "https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
 }
 
-check.demo_steam <- function(conn) {
+check.demo_steam <- function() {
 
   df <- h2o.importFile(filePath, "df")
 

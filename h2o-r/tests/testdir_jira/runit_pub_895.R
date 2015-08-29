@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub.895 <- function(conn) {
+test.pub.895 <- function() {
 print("Parse header file")
 spect_header = h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header")
 print("Parse train and test files")

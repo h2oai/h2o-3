@@ -1,14 +1,19 @@
 package water.currents;
 
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
 import water.AutoBuffer;
 import water.MRTask;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+
 // TODO:  Define "table" in terms of "groupby"
+// TODO: keep dense format for two-column comparison (like in previous version of Rapids)
 // (table X Y) ==>
 // (groupby (cbind X Y) [X Y] nrow TRUE)
 

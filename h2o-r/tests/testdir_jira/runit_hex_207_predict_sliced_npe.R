@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.hex.207 <- function(conn) {
+test.hex.207 <- function() {
   Log.info("Importing ecology_model.csv...")
   tr <- h2o.importFile(normalizePath(locate("smalldata/gbm_test/ecology_model.csv")), destination_frame = "tr")
   

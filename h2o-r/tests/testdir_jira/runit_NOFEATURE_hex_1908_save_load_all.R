@@ -8,7 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
 source('../h2o-runit.R')
 
-test.hex_1908 <- function(conn) {
+test.hex_1908 <- function() {
   h2o.removeAll(conn)
   temp_dir = tempdir()
   temp_subdir1 = paste(temp_dir, "tmp", sep = .Platform$file.sep)

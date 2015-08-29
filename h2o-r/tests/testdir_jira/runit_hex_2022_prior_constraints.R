@@ -5,7 +5,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.Priors.BetaConstraints <- function(conn) {
+test.Priors.BetaConstraints <- function() {
 
   Log.info("Import modelStack data into H2O...")
   pathToFile <- "/mnt/0xcustomer-datasets/c27/data.csv"

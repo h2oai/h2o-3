@@ -7,7 +7,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.hex_1829 <- function(conn){
+test.hex_1829 <- function(){
 
   heading("BEGIN TEST")
   Log.info("Import small prostate dataset")

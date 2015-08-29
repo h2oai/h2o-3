@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_1235 <- function(conn) {
+test.pub_1235 <- function() {
   Log.info("Import Chicago crimes data...")
   crimes <- h2o.importFile(locate("smalldata/chicago/chicagoCrimes10k.csv.zip"))
   print(summary(crimes))

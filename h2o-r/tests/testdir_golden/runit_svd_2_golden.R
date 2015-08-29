@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.svdidentity.golden <- function(H2Oserver) {
+test.svdidentity.golden <- function() {
   Log.info("Importing USArrests.csv data...") 
   arrestsH2O <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   

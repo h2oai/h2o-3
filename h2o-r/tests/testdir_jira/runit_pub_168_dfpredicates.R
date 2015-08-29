@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 
 
 
-factorfilter <- function(conn){
+factorfilter <- function(){
   Log.info('uploading ddply testing dataset')
   df.h <- h2o.importFile(normalizePath(locate('smalldata/jira/pub-180.csv')))
 

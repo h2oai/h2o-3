@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 #import multimodal data set; parse as FV
-test.summary2.numeric <- function(conn) {
+test.summary2.numeric <- function() {
   Log.info("Importing wonkysummary.csv data...")
   wonkysummary.hex <- h2o.importFile(locate("smalldata/jira/wonkysummary.csv"), "wonky.hex")
 

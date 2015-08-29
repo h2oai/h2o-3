@@ -4,7 +4,7 @@
 source('../h2o-runit.R')
 options(echo=TRUE)
 library(h2o)
-check.revalue <- function(conn) {
+check.revalue <- function() {
 
   filePath <- "/home/0xdiag/datasets/airlines/airlines_all.csv"
 

@@ -1,6 +1,6 @@
 
 heading("BEGIN TEST")
-check.dl <- function(conn) {
+check.dl <- function() {
 
   heading("Uploading train data to H2O")
   iris_train.hex <- h2o.importFile(train)

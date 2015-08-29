@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_862_support_anonymous_functions_with_ddply <- function(H2Oserver) {
+test.pub_862_support_anonymous_functions_with_ddply <- function() {
 
 covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 

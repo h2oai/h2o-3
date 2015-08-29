@@ -673,7 +673,7 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,str,unicode,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
+    if isinstance(item, (int,basestring,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
     elif isinstance(item, slice):
       item = slice(item.start,min(self.ncol,item.stop))
       return H2OFrame(expr=ExprNode("cols",self,item))
@@ -691,7 +691,7 @@ class H2OFrame:
       if allcols: return H2OFrame(expr=ExprNode("rows",self,item[0]))  # fr[rows,:] -> really just a row slices
 
       res = H2OFrame(expr=ExprNode("rows", ExprNode("cols",self,item[1]),item[0]))
-      return res.flatten() if isinstance(item[0], (str,unicode,int)) and isinstance(item[1],(str,unicode,int)) else res
+      return res.flatten() if isinstance(item[0], (basestring,int)) and isinstance(item[1],(basestring,int)) else res
 
   def __setitem__(self, b, c):
     """
@@ -906,18 +906,18 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("meanNA" if na_rm else "mean", self))._scalar()
 
-  def median(self):
+  def median(self, na_rm=False):
     """
     :return: Median of this column.
     """
-    return H2OFrame(expr=ExprNode("median", self))._scalar()
+    return H2OFrame(expr=ExprNode("median", self, na_rm))._scalar()
 
   def var(self,y=None,use="everything"):
     """
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
-    return H2OFrame(expr=ExprNode("var",self,y,use))
+    return H2OFrame(expr=ExprNode("var",self,self if y is None else y,use))._get()
 
   def sd(self):
     """
@@ -969,7 +969,7 @@ class H2OFrame:
     """
     :return: a frame of the counts at each combination of factor levels
     """
-    return H2OFrame(expr=ExprNode("table",self,data2))
+    return H2OFrame(expr=ExprNode("table",self,data2) if data2 is not None else ExprNode("table",self))
 
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """
@@ -1189,11 +1189,13 @@ class H2OFrame:
   # flow-coding result methods
   def _scalar(self):
     self._eager()  # scalar should be stashed into self._data
-    return H2OFrame._get_scalar(self._data)
-    # res = self.as_data_frame(False)[1:]
-    # if len(res)==1: return H2OFrame._get_scalar(res)
-    # else:
-    #   return [H2OFrame._get_scalar(r) for r in res]
+    if self._data is None:
+      res = self.as_data_frame(False)[1:]
+      if len(res)==1: return H2OFrame._get_scalar(res[0][0])
+      else:
+        return [H2OFrame._get_scalar(r[0]) for r in res]
+    else:
+      return H2OFrame._get_scalar(self._data)
 
   @staticmethod
   def _get_scalar(res):
@@ -1202,6 +1204,12 @@ class H2OFrame:
     if res == "FALSE":return False
     try:    return float(res)
     except: return res
+
+  def _get(self):
+    self._eager()
+    if self._data is None:
+      return self._frame()
+    return self._scalar()
 
   def _frame(self):  # force an eval on the frame and return it
     self._eager()
@@ -1241,7 +1249,10 @@ class H2OFrame:
     #  the "long" path:
     #     pending exprs in DAG with exterior refs must be saved (refs >= magic count)
     #
-    if self._computed: sb += [self._id+" "]
+    if self._computed:
+      if self.dim == [1,1]:
+        sb += [str(self._scalar()), " "]   # inline 1x1 H2OFrame here
+      else:                 sb += [self._id+" "]
     else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
 
   def _update(self):

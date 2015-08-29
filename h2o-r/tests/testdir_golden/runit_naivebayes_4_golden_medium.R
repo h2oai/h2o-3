@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.nbayes.golden <- function(H2Oserver) {
+test.nbayes.golden <- function() {
   Log.info("Importing covtype.20k.data training data...") 
   covtypeR <- read.csv(locate("smalldata/covtype/covtype.20k.data"), header = FALSE)
   covtypeH2O <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"), destination_frame = "covtypeH2O", header = FALSE)

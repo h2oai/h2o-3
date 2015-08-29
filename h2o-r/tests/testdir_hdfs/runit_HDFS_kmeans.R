@@ -24,7 +24,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.kmeans <- function(conn) {
+check.kmeans <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.

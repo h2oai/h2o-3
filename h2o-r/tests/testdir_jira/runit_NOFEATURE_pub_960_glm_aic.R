@@ -9,7 +9,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
 
   print("Read prostate data into R.")
   prostate.data <-  h2o.importFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")

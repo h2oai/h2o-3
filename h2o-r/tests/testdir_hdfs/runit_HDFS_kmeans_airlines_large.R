@@ -23,7 +23,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.kmeans_airlines <- function(conn) {
+check.kmeans_airlines <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.

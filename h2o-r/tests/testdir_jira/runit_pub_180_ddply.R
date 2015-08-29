@@ -8,7 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-h2o.ddplytest <- function(conn){
+h2o.ddplytest <- function(){
   Log.info('uploading h2o.ddply testing dataset')
   dataset_path = normalizePath(locate('smalldata/jira/pub-180.csv'))
   df.h <- h2o.importFile(dataset_path)

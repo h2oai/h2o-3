@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_863_disallow_addFunction_of_functions_that_already_exist <- function(localH2O) {
+test.pub_863_disallow_addFunction_of_functions_that_already_exist <- function() {
 
 covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 

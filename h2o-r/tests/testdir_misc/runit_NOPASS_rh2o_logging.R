@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.rh2o_logging <- function(conn) {
+test.rh2o_logging <- function() {
   # Change log paths to R working directory
   h2o.setLogPath(getwd(), "Command")
   h2o.setLogPath(getwd(), "Error")

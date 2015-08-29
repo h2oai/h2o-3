@@ -25,7 +25,7 @@ if (running_inside_h2o) {
 
 
 heading("BEGIN TEST")
-check.hdfs_basic <- function(conn) {
+check.hdfs_basic <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.australia.golden <- function(H2Oserver) {
+test.australia.golden <- function() {
   # Import data: 
   Log.info("Importing AustraliaCoast.csv data...") 
   australiaR <- read.csv(locate("smalldata/pca_test/AustraliaCoast.csv"), header = TRUE)

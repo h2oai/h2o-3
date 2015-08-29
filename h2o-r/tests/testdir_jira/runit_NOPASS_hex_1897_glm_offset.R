@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.GLM.offset <- function(conn) {
+test.GLM.offset <- function() {
 
   compare_scores <- function(h2o_model, r_model, data) {
     pred.r <- r_model$fitted.values

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.betaConstraints.illegalBounds <- function(conn){
+test.betaConstraints.illegalBounds <- function(){
 
   Log.info("Importing prostate dataset...")
   prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))

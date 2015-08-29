@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.rdocash2o.golden <- function(H2Oserver) {
+test.rdocash2o.golden <- function() {
 	
 #Example from as.factor R example
 

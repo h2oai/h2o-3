@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.glm.nonspdmatrix.exception <- function(conn)
+test.glm.nonspdmatrix.exception <- function()
 {
   cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])

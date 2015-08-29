@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.glm2Poissonregression.golden <- function(H2Oserver) {
+test.glm2Poissonregression.golden <- function() {
 	
 #Import data: 
 Log.info("Importing CUSE data...") 

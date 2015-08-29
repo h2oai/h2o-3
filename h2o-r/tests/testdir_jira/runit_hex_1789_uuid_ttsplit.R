@@ -9,7 +9,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.uuid <- function(conn) {
+test.uuid <- function() {
   Log.info('Importing test_uuid.csv to H2O...')
   df <- h2o.importFile(normalizePath(locate('smalldata/jira/test_uuid.csv')))
   colnames(df) <- c("AA", "UUID", "CC")

@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
     fPath = tryCatch({
       locate("bigdata/laptop/text8.gz")
     }, warning= function(w) {

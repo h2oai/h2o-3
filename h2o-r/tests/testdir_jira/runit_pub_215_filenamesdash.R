@@ -7,7 +7,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-dash_filename_test <- function(conn){
+dash_filename_test <- function(){
   Log.info('uploading testing dataset')
   df.h <- h2o.importFile(locate('smalldata/jira/pub-215.csv'))
 

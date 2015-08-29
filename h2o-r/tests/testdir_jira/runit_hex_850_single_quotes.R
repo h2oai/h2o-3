@@ -9,7 +9,7 @@ options(echo=TRUE)
 source('../h2o-runit.R')
 
 heading("BEGIN TEST")
-check.hex_850 <- function(conn) {
+check.hex_850 <- function() {
 
   path = locate("smalldata/jira/850.csv")
   j.fv = h2o.importFile(path, destination_frame="jira850.hex")

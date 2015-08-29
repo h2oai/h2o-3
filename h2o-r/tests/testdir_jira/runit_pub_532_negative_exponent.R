@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.runit_NOPASS_pub_532_negative_exponent <- function(localH2O) {
+test.runit_NOPASS_pub_532_negative_exponent <- function() {
 
 covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 

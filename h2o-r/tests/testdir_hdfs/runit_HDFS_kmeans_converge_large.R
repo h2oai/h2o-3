@@ -23,7 +23,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.kmeans_converge <- function(conn) {
+check.kmeans_converge <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.

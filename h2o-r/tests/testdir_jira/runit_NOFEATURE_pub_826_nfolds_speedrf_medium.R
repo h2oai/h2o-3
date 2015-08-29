@@ -7,7 +7,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.pub.826 <- function(conn) {
+test.pub.826 <- function() {
   Log.info('Importing the airlines data from smalldata.')
   flights <- h2o.importFile(normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
 

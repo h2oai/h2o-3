@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.head_empty_frame <- function(conn) {
+test.head_empty_frame <- function() {
 
   a_initial = cbind(c(0,0,0,0), c(1,1,1,1)) 
   # create data frame without col names in R, transfer to h2o (V* names preserved from R) 

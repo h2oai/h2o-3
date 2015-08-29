@@ -10,7 +10,7 @@ options(echo=TRUE)
 source('../h2o-runit.R')
 
 heading("BEGIN TEST")
-check.hex_1506 <- function(conn) {
+check.hex_1506 <- function() {
 
   path = locate("smalldata/iris/iris_wheader.nonspd.csv")
   iris.hex = h2o.importFile(path, destination_frame="iris.hex")

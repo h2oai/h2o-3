@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.PCA.australia <- function(conn) {
+test.PCA.australia <- function() {
   Log.info("Importing AustraliaCoast.csv data...\n")
   australia.data = read.csv(locate("smalldata/pca_test/AustraliaCoast.csv"), header = TRUE)
   australia.hex = h2o.importFile(locate( "smalldata/pca_test/AustraliaCoast.csv",))

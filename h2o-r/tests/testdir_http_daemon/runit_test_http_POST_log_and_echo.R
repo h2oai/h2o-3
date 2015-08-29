@@ -8,7 +8,7 @@
 
 source('../h2o-runit.R')
 
-check.log_and_echo <- function(conn) {
+check.log_and_echo <- function() {
 
   oneHundredChars <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
   oneThousandChars <- paste(oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, sep="")

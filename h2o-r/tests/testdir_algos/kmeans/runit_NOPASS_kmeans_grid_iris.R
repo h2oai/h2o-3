@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.kmeans.grid.iris <- function(conn) {
+check.kmeans.grid.iris <- function() {
   iris <- h2o.uploadFile(locate("smalldata/iris/iris.csv"))
 
   grid_space = makeRandomGridSpace(algo="kmeans")

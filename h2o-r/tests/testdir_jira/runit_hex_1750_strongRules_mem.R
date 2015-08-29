@@ -8,7 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
   if( !h2o.is_client() ) {
     print("Reading in Arcene data.")
       arcene.train = h2o.importFile(locate("smalldata/arcene/arcene_train.data"), destination_frame="arcene.train", header=FALSE)

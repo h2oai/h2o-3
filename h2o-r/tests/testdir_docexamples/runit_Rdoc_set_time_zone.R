@@ -15,7 +15,7 @@ print_diff <- function(r, h2o) {
 # The two local copies are then checked for the correct time
 # offset.
 #
-test.rdoc_settimezone.golden <- function(H2Oserver) {
+test.rdoc_settimezone.golden <- function() {
   origTZ = h2o.getTimezone()
   h2o.setTimezone("Etc/UTC")
   rdf = data.frame(c("Fri Jan 10 00:00:00 1969", "Tue Jan 10 04:00:00 2068", "Mon Dec 30 01:00:00 2002", "Wed Jan 1 12:00:00 2003"))

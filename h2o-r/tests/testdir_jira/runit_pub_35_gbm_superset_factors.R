@@ -16,7 +16,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-pub35gbm <- function(conn){
+pub35gbm <- function(){
   Log.info('uploading gbm training dataset')
   dataset_path = normalizePath(locate('smalldata/jira/pub-35_train.csv'))
   df.h <- h2o.importFile(dataset_path)

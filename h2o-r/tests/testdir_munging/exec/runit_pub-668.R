@@ -8,7 +8,7 @@ source('../../h2o-runit.R')
 # conn = h2o.init()
 
 
-test.pub.668 <- function(conn) {
+test.pub.668 <- function() {
 
     a_initial <- data.frame(cbind(
     c(0,0,1,0,0,1,0,0,0,0),

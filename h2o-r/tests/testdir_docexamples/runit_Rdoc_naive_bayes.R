@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.rdoc_naive_bayes.golden <- function(H2Oserver) {
+test.rdoc_naive_bayes.golden <- function() {
   
   votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
   votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)

@@ -23,7 +23,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.hdfs_glrm <- function(conn) {
+check.hdfs_glrm <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.

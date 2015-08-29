@@ -9,7 +9,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.colapply <- function(conn) {
+test.colapply <- function() {
   Log.info('Uploading cebbinom.csv to H2O...')
   cebH2O <- h2o.importFile(normalizePath(locate('smalldata/jira/cebbinom.csv')))
 

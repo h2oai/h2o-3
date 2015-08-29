@@ -2,7 +2,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.rdoc_deep_learning.golden <- function(H2Oserver) {
+test.rdoc_deep_learning.golden <- function() {
 
 irisPath = system.file("extdata", "iris.csv", package = "h2o")
 iris.hex = h2o.uploadFile(path = irisPath)

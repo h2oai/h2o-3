@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1383 <- function(conn) {
+test.pubdev.1383 <- function() {
   k <- 10
   Log.info("Importing fgl_tr.csv...")
   fgl.dat <- read.csv(locate("smalldata/pca_test/fgl_tr.csv"))

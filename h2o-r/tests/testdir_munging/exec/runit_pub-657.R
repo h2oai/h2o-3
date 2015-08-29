@@ -5,7 +5,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.pub.657 <- function(conn) {
+test.pub.657 <- function() {
 
     a_initial <- data.frame(v1=c(0,0,0,0), v2=c(1,1,1,1))
     a <- a_initial

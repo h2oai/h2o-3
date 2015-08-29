@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.GLM.betaConstraints <- function(conn){
+test.GLM.betaConstraints <- function(){
 
     Log.info("Importing prostate dataset...")
     prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))

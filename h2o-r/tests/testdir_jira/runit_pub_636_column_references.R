@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_636_column_references <- function(H2Oserver) {
+test.pub_636_column_references <- function() {
 
 prostatePath <- locate("smalldata/prostate/prostate.csv")
 prostate.hex <- h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")

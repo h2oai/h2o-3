@@ -9,7 +9,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
 
 	print("Reading in Mushroom data for binomial glm.")
 	mushroom.train <-  h2o.importFile(locate("smalldata/glm_test/Mushroom.gz"), destination_frame="mushroom.train")

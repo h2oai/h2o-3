@@ -10,7 +10,7 @@ source('../h2o-runit.R')
 #      conn = h2o.init()
 
 
-test.frame_add <- function(conn) {
+test.frame_add <- function() {
 
     a_initial = cbind(
     c(0,0,1,0,0,1,0,0,0,0),

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_171_colname_assign_with_square_brackets <- function(H2Oserver) {
+test.pub_171_colname_assign_with_square_brackets <- function() {
   air <- h2o.importFile(normalizePath(locate("smalldata/airlines/allyears2k_headers.zip")), "air")
   print(colnames(air))
   parsed_names <- colnames(air)

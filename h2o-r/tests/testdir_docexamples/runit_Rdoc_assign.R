@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.h2o.assign.golden <- function(H2Oserver) {
+test.h2o.assign.golden <- function() {
 
 
 prosPath <- system.file("extdata", "prostate.csv", package="h2o")

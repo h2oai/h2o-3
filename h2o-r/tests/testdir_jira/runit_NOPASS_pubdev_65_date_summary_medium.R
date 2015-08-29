@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub.65 <- function(conn) {
+test.pub.65 <- function() {
   fPath <- tryCatch({
     locate("bigdata/laptop/jira/pub_65.csv")
   }, warning= function(w) {

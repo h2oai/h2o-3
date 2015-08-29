@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_208 <- function(localH2O) {
+test.pub_208 <- function() {
 
 rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_208.csv")))
 

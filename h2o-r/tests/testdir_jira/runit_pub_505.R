@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_505 <- function(localH2O) {
+test.pub_505 <- function() {
 
 hex <- h2o.importFile(normalizePath(locate("smalldata/jira/pub_505.csv")), "p505")
 

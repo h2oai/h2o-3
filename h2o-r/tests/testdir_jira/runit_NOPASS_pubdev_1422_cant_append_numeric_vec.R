@@ -5,7 +5,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.cant.assign.to.new.col <- function(conn) {
+test.cant.assign.to.new.col <- function() {
   Log.info("Works fine on this dataset... Uploading pros...")
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
 

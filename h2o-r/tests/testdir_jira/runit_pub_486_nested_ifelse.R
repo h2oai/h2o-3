@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.nested_ifelse <- function(conn) {
+test.nested_ifelse <- function() {
   a <- as.h2o(2)
   b <- as.h2o(2)
   d <- as.h2o(2)

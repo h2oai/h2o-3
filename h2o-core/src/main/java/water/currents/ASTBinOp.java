@@ -8,6 +8,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly two arguments
@@ -221,9 +222,10 @@ class ASTOr   extends ASTBinOp { String str() { return "|" ; } double op( double
 class ASTPlus extends ASTBinOp { String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
 class ASTPow  extends ASTBinOp { String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
 class ASTSub  extends ASTBinOp { String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
+class ASTIntDiv extends ASTBinOp { String str() { return "intDiv"; } double op(double l, double r) { return (int)l/(int)r;}}
 
 class ASTRound extends ASTBinOp { 
-  String str() { return "round"; } 
+  String str() { return "round"; }
   double op(double x, double digits) { 
     // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
     if(Double.isNaN(x)) return x;
@@ -255,7 +257,7 @@ class ASTGT   extends ASTBinOp { String str() { return ">" ; } double op( double
 class ASTLE   extends ASTBinOp { String str() { return "<="; } double op( double l, double r ) { return l<=r?1:0; } }
 class ASTLT   extends ASTBinOp { String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
 
-class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double l, double r ) { return l==r?1:0; } 
+class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
   double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); } 
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
@@ -274,7 +276,7 @@ class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double
   @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
-class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double l, double r ) { return l!=r?1:0; } 
+class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
   double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } 
   @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
 }

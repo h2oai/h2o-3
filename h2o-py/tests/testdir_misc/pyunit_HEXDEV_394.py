@@ -1,17 +1,17 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o,tests
 
 def hexdev_394(ip,port):
   path = "/Users/spencer/Downloads/covtype_training.csv"
-  trainraw = h2o.import_file(path)
+  trainraw = h2o.lazy_import(path)
   tsetup = h2o.parse_setup(trainraw)
   tsetup["column_types"][10] = "ENUM"
   tsetup["column_types"][11] = "ENUM"
   tsetup["column_types"][12] = "ENUM"
   train = h2o.parse_raw(tsetup)
   
-  cols = train.col_names()  # This returned space for first column name
+  cols = train.col_names  # This returned space for first column name
   x_cols = [colname for colname in cols if colname != "Cover_Type"]
   x_cols
   
@@ -54,4 +54,4 @@ def hexdev_394(ip,port):
   print train._keep
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, hexdev_394)
+    tests.run_test(sys.argv, hexdev_394)

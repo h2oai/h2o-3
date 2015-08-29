@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.rdocextremes.golden <- function(H2Oserver) {
+test.rdocextremes.golden <- function() {
 
 
 ausPath = system.file("extdata", "australia.csv", package="h2o")

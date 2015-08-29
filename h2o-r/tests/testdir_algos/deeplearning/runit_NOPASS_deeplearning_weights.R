@@ -3,7 +3,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 
-test_weights_by_row_duplication <- function(conn) {
+test_weights_by_row_duplication <- function() {
   
   require(testthat)
   

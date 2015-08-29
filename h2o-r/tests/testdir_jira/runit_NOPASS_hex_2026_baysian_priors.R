@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test <- function(conn){
+test <- function(){
   if (!file.exists("/mnt/0xcustomer-datasets/c27/data.csv")) {
     Log.info("h2o-only data")
     testEnd()

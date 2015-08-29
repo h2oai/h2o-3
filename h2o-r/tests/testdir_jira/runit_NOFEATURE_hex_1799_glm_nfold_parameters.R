@@ -11,7 +11,7 @@ heading("BEGIN TEST")
 
 
 hex_1799_test <-
-function(conn) {
+function() {
 
   path <- locate("smalldata/logreg/prostate.csv")
   prostate.hex <- h2o.importFile(path, destination_frame="prostate.hex")

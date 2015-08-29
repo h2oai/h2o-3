@@ -5,7 +5,7 @@
 
 source('../h2o-runit.R')
 
-test.ifelse <- function(conn) {
+test.ifelse <- function() {
   
   Log.info("Importing heart dataset into H2O...")
   heart.hex <- as.h2o(object = heart, "heart.hex")

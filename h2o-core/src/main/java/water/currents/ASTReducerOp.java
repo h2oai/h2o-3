@@ -2,14 +2,8 @@ package water.currents;
 
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 /** Subclasses take a Frame and produces a scalar.  NAs -> NAs */
@@ -97,7 +91,7 @@ class ASTMax  extends ASTRollupOp { String str() { return "max" ; } double op( d
 
 class ASTMedian extends ASTPrim {
   @Override String str() { return "median"; }
-  @Override int nargs() { return 1+2; }
+  @Override int nargs() { return 1+2; }  // (median fr method)
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum()==1;
@@ -263,34 +257,70 @@ class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double 
 class ASTMeanNA extends ASTPrim {
   @Override int nargs() { return 1+1; }
   @Override String str() { return "meanNA"; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
-      throw new IllegalArgumentException("mean only works on a single numeric column");
-    return new ValNum(fr.anyVec().mean());
+    if( fr.numCols()==1 ) {
+      if( !fr.anyVec().isNumeric() ) return new ValNum(Double.NaN);
+      return new ValNum(fr.anyVec().mean());
+    }
+    Futures fs = new Futures();
+    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+    AppendableVec v = new AppendableVec(key);
+    NewChunk chunk = new NewChunk(v, 0);
+    for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).mean():Double.NaN);
+    chunk.close(0,fs);
+    Vec vec = v.close(fs);
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+    DKV.put(fr2);
+    return new ValFrame(fr2);
   }
 }
 
 class ASTMean extends ASTPrim {
   @Override String str() { return "mean"; }
   @Override int nargs() { return 1+1; }
-  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() !=1 || !fr.anyVec().isNumeric() )
-      throw new IllegalArgumentException("mean only works on a single numeric column");
-    if( fr.anyVec().length()==0 || fr.anyVec().naCnt() > 0) return new ValNum(Double.NaN);
-    return new ValNum((fr.anyVec().mean()));
+    if( fr.numCols() == 1) {
+      if( !fr.anyVec().isNumeric() ) return new ValNum(Double.NaN);
+      if( fr.anyVec().length()==0 || fr.anyVec().naCnt() >0 ) return new ValNum(Double.NaN);
+      return new ValNum(fr.anyVec().mean());
+    }
+    Futures fs = new Futures();
+    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+    AppendableVec v = new AppendableVec(key);
+    NewChunk chunk = new NewChunk(v, 0);
+    for( int i=0;i<fr.numCols();++i ) chunk.addNum((fr.vec(i).isNumeric()||fr.vec(i).naCnt()>0)?fr.vec(i).mean():Double.NaN);
+    chunk.close(0,fs);
+    Vec vec = v.close(fs);
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+    DKV.put(fr2);
+    return new ValFrame(fr2);
   }
 }
 
-class ASTSdev extends ASTPrim {
+class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package result into Frame
   @Override int nargs() { return 1+1; }
   @Override String str() { return "sd"; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 || !fr.anyVec().isNumeric() )
-      throw new IllegalArgumentException("sd only works on a single numeric column");
-    return new ValNum(fr.anyVec().sigma());
+    if (fr.numCols() == 1) {
+      if (!fr.anyVec().isNumeric()) return new ValNum(Double.NaN);
+      return new ValNum(fr.anyVec().sigma());
+    }
+    Futures fs = new Futures();
+    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+    AppendableVec v = new AppendableVec(key);
+    NewChunk chunk = new NewChunk(v, 0);
+    for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).sigma():Double.NaN);
+    chunk.close(0,fs);
+    Vec vec = v.close(fs);
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+    DKV.put(fr2);
+    return new ValFrame(fr2);
   }
 }
 
@@ -413,7 +443,7 @@ class ASTCumProd extends ASTCumu {
 class ASTCumMin extends ASTCumu {
   @Override int nargs() { return 1+1; }
   @Override String str() { return "cummin"; }
-  @Override double op(double l, double r) { return Math.min(l,r); }
+  @Override double op(double l, double r) { return Math.min(l, r); }
   @Override double init() { return Double.MAX_VALUE; }
 }
 

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1458 <- function(conn) {
+test.pubdev.1458 <- function() {
   Log.info("Importing pub_1458.csv data...")
   train.dat <- read.csv(locate("smalldata/jira/pub_1458.csv"), header = TRUE)
   train.hex <- h2o.importFile(locate("smalldata/jira/pub_1458.csv"))

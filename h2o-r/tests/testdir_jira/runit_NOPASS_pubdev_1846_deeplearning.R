@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1846.deeplearning <- function(conn){
+test.pubdev.1846.deeplearning <- function(){
 
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
   grid_space <- list()

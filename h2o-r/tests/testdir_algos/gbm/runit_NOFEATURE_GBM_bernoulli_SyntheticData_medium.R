@@ -4,7 +4,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM.bernoulli.SyntheticData <- function(conn) {
+test.GBM.bernoulli.SyntheticData <- function() {
 
     #   Generate dataset
     # http://www.stat.missouri.edu/~speckman/stat461/boost.R

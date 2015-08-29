@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.glm2RidgeObjective.golden <- function(H2Oserver) {
+test.glm2RidgeObjective.golden <- function() {
 	
 #IMPORT DATA:
 Log.info("Importing handmade data...") 

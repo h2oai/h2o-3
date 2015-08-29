@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.glm2Ridge.golden <- function(H2Oserver) {
+test.glm2Ridge.golden <- function() {
 	
 #RT's solver:
 ridgeLinear<-

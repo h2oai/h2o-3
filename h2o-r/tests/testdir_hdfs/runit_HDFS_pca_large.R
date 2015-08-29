@@ -23,7 +23,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.pca_large <- function(conn) {
+check.pca_large <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.
