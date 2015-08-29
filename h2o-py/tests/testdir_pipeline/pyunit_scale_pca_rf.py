@@ -11,7 +11,7 @@ def scale_pca_rf_pipe(ip,port):
 
   iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
 
-  # build a data transformation pipeline using sklearn's Pipeline and H2O transforms
+  # build transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
                    ("pca", H2OPCA(n_components=2)),
                    ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
