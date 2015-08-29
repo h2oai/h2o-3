@@ -57,6 +57,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTExp   ());
     init(new ASTFloor ());
     init(new ASTIsNA  ());
+    init(new ASTIsNumeric());
+    init(new ASTIsCharacter());
     init(new ASTLog   ());
     init(new ASTNot   ());
     init(new ASTRound ());
@@ -69,6 +71,24 @@ abstract public class AST extends Iced<AST> {
     init(new ASTNrow  ());
     init(new ASTNLevels());
     init(new ASTLevels());
+    init(new ASTACosh());
+    init(new ASTASinh());
+    init(new ASTATanh());
+    init(new ASTCosPi());
+    init(new ASTSinPi());
+    init(new ASTTanPi());
+    init(new ASTLog10());
+    init(new ASTLog2());
+    init(new ASTLog1p());
+    init(new ASTExpm1());
+    init(new ASTGamma());
+    init(new ASTLGamma());
+    init(new ASTDiGamma());
+    init(new ASTTriGamma());
+    init(new ASTASin());
+    init(new ASTATan());
+    init(new ASTSinh());
+    init(new ASTSgn());
 
     // Math binary ops
     init(new ASTAnd ());
@@ -79,6 +99,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTPlus());
     init(new ASTPow ());
     init(new ASTSub ());
+    init(new ASTIntDiv());
 
     // Relational
     init(new ASTGE());
@@ -142,6 +163,7 @@ abstract public class AST extends Iced<AST> {
     // Generic data mungers
     init(new ASTAnyFactor());
     init(new ASTAsFactor());
+    init(new ASTCharacter());
     init(new ASTAsNumeric());
     init(new ASTCBind());
     init(new ASTColNames());
@@ -149,11 +171,16 @@ abstract public class AST extends Iced<AST> {
     init(new ASTFilterNACols());
     init(new ASTFlatten());
     init(new ASTIsFactor());
+    init(new ASTAnyFactor());
     init(new ASTRBind());
     init(new ASTRowSlice());
     init(new ASTSetDomain());
     init(new ASTSetLevel());
     init(new ASTTmpAssign());
+
+    // Matrix Ops
+    init(new ASTTranspose());
+    init(new ASTMMult());
 
     // Complex data mungers
     init(new ASTAssign());
@@ -176,6 +203,13 @@ abstract public class AST extends Iced<AST> {
 
     // Cluster management
     init(new ASTLs());
+
+    // Model Calls
+    init(new ASTQtile());
+
+    // Search
+    init(new ASTMatch());
+    init(new ASTWhich());
 
     // Repeaters
     init(new ASTRepLen());

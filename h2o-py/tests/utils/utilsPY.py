@@ -91,7 +91,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     """
     Check values achieved by h2o against values achieved by numpy
 
-    :param h2o_data: an H2OFrame or H2OVec
+    :param h2o_data: an H2OFrame
     :param np_data: a numpy array
     :param num_elements: number of elements to compare
     :return: None

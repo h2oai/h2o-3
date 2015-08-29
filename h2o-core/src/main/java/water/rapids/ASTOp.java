@@ -30,6 +30,8 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static water.util.RandomUtils.getRNG;
+
 /**
  * Parse a generic R string and build an AST, in the context of an H2O Cloud
  */
@@ -179,6 +181,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMad());
 
     // Misc
+    putPrefix(new ASTKFold());
+    putPrefix(new ASTPop());
     putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
     putPrefix(new ASTRename());
@@ -699,6 +703,29 @@ class ASTSignif extends ASTUniPrefixOp {
   }
 }
 
+class ASTPop extends ASTUniPrefixOp {
+  int _idx;
+  public ASTPop() { super(new String[]{"ary","col_to_pop"}); }
+  @Override String opStr() { return "pop"; }
+  @Override ASTOp make() { return new ASTPop(); }
+  @Override ASTPop parse_impl(Exec E) {
+    AST fr = E.parse();
+    AST col = E.parse();
+    if( col instanceof ASTNum ) _idx = (int)((ASTNum)col)._d;
+    else throw new IllegalArgumentException("Expected a column index. Got: " + col.getClass());
+    ASTPop res = (ASTPop)clone();
+    res._asts = new AST[]{fr};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.popAry();
+    String[] name = new String[]{fr.names()[_idx]};
+    Vec[] v = new Vec[]{fr.remove(_idx)};
+    if( fr._key!=null ) DKV.put(fr);
+    env.pushAry(new Frame(name,v));
+  }
+}
+
 class ASTNrow extends ASTUniPrefixOp {
   public ASTNrow() { super(VARS1); }
   @Override String opStr() { return "nrow"; }
@@ -993,53 +1020,13 @@ class ASTScale extends ASTUniPrefixOp {
   }
   private void parseArg(Exec E, boolean center) {
     if( center ) {
-      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-      if (centers == null) {
-        // means `center` is boolean
-        AST a;
-        try {
-          AST e = E.parse();
-          a = E._env.lookup((ASTId) e);  // looking up TRUE / FALSE
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected %TRUE or %FALSE. Got: " + e.getClass());
-        }
-        try {
-          _center = ((ASTNum) a).dbl() == 1;
-          _centers = null;
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get a number for the `center` argument after the lookup. Got: " + a.getClass());
-        }
-      } else {
-        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
-        _centers = new double[centers.length];
-        for (int i = 0; i < centers.length; ++i) _centers[i] = Double.valueOf(centers[i]);
-      }
+      AST a = E.parse();
+      if( a instanceof ASTId )              _center  = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+      else if( a instanceof ASTDoubleList ) _centers = ((ASTDoubleList)a)._d;
     } else {
-      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-      if (centers == null) {
-        // means `scale` is boolean
-        AST a;
-        try {
-          a = E._env.lookup((ASTId) E.skipWS().parse());
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get an ASTId. Badly formed AST.");
-        }
-        try {
-          _scale = ((ASTNum) a).dbl() == 1;
-          _scales = null;
-        } catch (ClassCastException e) {
-          e.printStackTrace();
-          throw new IllegalArgumentException("Expected to get a number for the `scale` argument.");
-        }
-      } else {
-        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
-        _scales = new double[centers.length];
-        for (int i = 0; i < centers.length; ++i) _scales[i] = Double.valueOf(centers[i]);
-      }
+      AST a = E.parse();
+      if( a instanceof ASTId )              _scale  = ((ASTNum)E._env.lookup((ASTId)a))._d==1;
+      else if( a instanceof ASTDoubleList ) _scales = ((ASTDoubleList)a)._d;
     }
   }
 
@@ -2233,9 +2220,38 @@ class ASTUnique extends ASTUniPrefixOp {
   }
 }
 
+class ASTKFold extends ASTUniPrefixOp {
+  int _nfolds;
+  long _seed;
+  @Override String opStr() { return "kfold_column"; }
+  @Override ASTOp make() { return new ASTKFold(); }
+  public ASTKFold() { super(new String[]{"x","nfolds", "seed"});}
+  ASTKFold parse_impl(Exec E) {
+    AST ary = E.parse();
+    _nfolds = (int)E.nextDbl();
+    _seed = (long)E.nextDbl();
+    E.eatEnd();
+    ASTKFold res = (ASTKFold)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Vec foldVec = e.popAry().anyVec().makeZero();
+    if( _seed == -1 ) _seed = new Random().nextLong();
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        long start = c.start();
+        for (int i = 0; i < c._len; ++i) {
+          int fold = Math.abs(getRNG(start + _seed + i).nextInt()) % _nfolds;
+          c.set(i, fold);
+        }
+      }
+    }.doAll(foldVec);
+    e.pushAry(new Frame(foldVec));
+  }
+}
 
 class ASTKappa extends ASTUniPrefixOp {
-
   int _nclass;
   @Override String opStr() { return "kappa"; }
   @Override ASTOp make() { return new ASTKappa(); }
@@ -3090,9 +3106,9 @@ class ASTMatch extends ASTUniPrefixOp {
       @Override public void map(Chunk c, NewChunk n) {
         int rows = c._len;
         if(strsTable==null)
-          for (int r = 0; r < rows; ++r) n.addNum(in(dblsTable, c.atd(r)),0);
+          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(dblsTable, c.atd(r)),0);
         else
-          for (int r = 0; r < rows; ++r) n.addNum(in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
+          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
     e.pushAry(rez);
@@ -3280,8 +3296,25 @@ class ASTSetDomain extends ASTUniPrefixOp {
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
     Vec v = f.anyVec();
     if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
-    if( _domains!=null && _domains.length != v.domain().length)
-      throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + v.domain().length + " != " + _domains.length);
+    if( _domains!=null && _domains.length != v.domain().length) {
+      // in this case we want to recollect the domain and check that number of levels matches _domains
+      Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
+      t.doAll(v);
+      final long[] dom = t.domain();
+      if( dom.length != _domains.length)
+        throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + _domains.length);
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for(int i=0;i<c._len;++i) {
+            if( !c.isNA(i) ) {
+              long num = Arrays.binarySearch(dom, c.at8(i));
+              if( num < 0 ) throw new IllegalArgumentException("Could not find the enum value!");
+              c.set(i,num);
+            }
+          }
+        }
+      }.doAll(v);
+    }
     v.setDomain(_domains);
     DKV.put(v);
   }
@@ -3326,8 +3359,8 @@ class ASTRepLen extends ASTUniPrefixOp {
         // this is equivalent to what R does, but by additionally calling "as.data.frame"
         String[] col_names = new String[(int)_length];
         for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
-        Frame f = new Frame(col_names, new Vec[(int)_length]);
-        for (int i = 0; i < f.numCols(); ++i)
+        Frame f = new Frame();
+        for (int i = 0; i < _length; ++i)
           f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
         env.pushAry(f);
       }
@@ -3750,6 +3783,11 @@ class ASTRemoveVecs extends ASTUniPrefixOp {
     AST ary = E.parse();
     AST a = E.parse();
     if( a instanceof ASTLongList ) _rmVecs = ((ASTLongList)a)._l;
+    else if( a instanceof ASTDoubleList ) {
+      double [] dlist = ((ASTDoubleList)a)._d;
+      _rmVecs=new long[dlist.length];
+      for(int i=0;i<dlist.length;++i) _rmVecs[i]=(long)dlist[i];
+    }
     else if( a instanceof ASTNum ) _rmVecs = new long[]{(long)((ASTNum)a)._d};
     else throw new IllegalArgumentException("Expected to get an `llist` or `num`. Got: " + a.getClass());
     E.eatEnd(); // eat the ending ')'
@@ -3815,13 +3853,24 @@ class ASTSdev extends ASTUniPrefixOp {
       env.poppush(1, new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();
-      if (fr.vecs().length > 1)
-        throw new IllegalArgumentException("sd does not apply to multiple cols.");
-      if (fr.vecs()[0].isEnum())
-        throw new IllegalArgumentException("sd only applies to numeric vector.");
-
-      double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
-      env.poppush(1, new ValNum(sig));
+      if( fr.numCols() > 1) {
+        Futures fs = new Futures();
+        Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+        AppendableVec v = new AppendableVec(key);
+        NewChunk chunk = new NewChunk(v, 0);
+        for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).sigma());
+        chunk.close(0,fs);
+        Vec vec = v.close(fs);
+        fs.blockForPending();
+        Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+        DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+        env.pushAry(fr2);
+      } else {
+        double sig;
+        if( fr.anyVec().isEnum() ) sig = Double.NaN;
+        else                       sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
+        env.poppush(1, new ValNum(sig));
+      }
     }
   }
 }
@@ -4024,11 +4073,11 @@ class ASTMean extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     if (env.isNum()) return;
     Frame fr = env.popAry(); // get the frame w/o sub-reffing
-    if (fr.numCols() > 1 && fr.numRows() > 1)
-      throw new IllegalArgumentException("mean does not apply to multiple cols.");
+//    if (fr.numCols() > 1 && fr.numRows() > 1)
+//      throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
-      throw new IllegalArgumentException("mean only applies to numeric vector.");
-    if (fr.numCols() > 1) {
+      throw new IllegalArgumentException("mean only applies to numeric columns.");
+    if (fr.numCols() > 1 && fr.numRows()==1) {
       double mean=0;
       double rows=0;
       for(Vec v : fr.vecs()) {
@@ -4036,6 +4085,18 @@ class ASTMean extends ASTUniPrefixOp {
         if( !Double.isNaN(val)) {mean += v.at(0); rows++;}
       }
       env.push(new ValNum(mean/rows));
+    } else if( fr.numCols() > 1) {
+      Futures fs = new Futures();
+      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+      AppendableVec v = new AppendableVec(key);
+      NewChunk chunk = new NewChunk(v, 0);
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).mean());
+      chunk.close(0,fs);
+      Vec vec = v.close(fs);
+      fs.blockForPending();
+      Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
+      DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
+      env.pushAry(fr2);
     } else {
       Vec v = fr.anyVec();
       if( _narm || v.naCnt()==0 ) env.push(new ValNum(v.mean()));
@@ -4084,7 +4145,7 @@ class ASTMean extends ASTUniPrefixOp {
 //     }
    }
     @Override public void map(Chunk c) {
-      if (c.vec().isEnum() || c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
+      if (c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
       if (_narm) {
         for (int r = 0; r < c._len; r++)
           if (!c.isNA(r)) { _sum += c.atd(r); _rowcnt++;}
