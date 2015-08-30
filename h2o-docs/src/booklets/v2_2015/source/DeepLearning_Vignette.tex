@@ -379,7 +379,7 @@ This section provided some background on the various parameter configurations in
 There is no default setting for the hidden layer size, number, or epochs. Experimenting with building deep learning models using different network topologies and different datasets will lead to intuition for these parameters but two general rules of thumb should be applied. First, choose larger network sizes, as they can perform higher-level feature extraction, and techniques like dropout may train only subsets of the network at once. Second, use more epochs for greater predictive accuracy, but only when the computational cost is affordable. Many example tests can be found in the H2O \href{https://github.com/h2oai/h2o-3/}{GitHub} repository for pointers on specific values and results for these (and other) parameters.
 \\
 \\
-For a full list of H2O Deep Learning model parameters and default values, see Appendix A. 
+For a full list of H2O Deep Learning model parameters and default values, see Appendix A.   %Add link to appendix? 
 
 \section{Use case: MNIST digit classification} 
 
@@ -410,14 +410,7 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 \label{ssec:TrialRun} 
 The example below illustrates the relative simplicity underlying most H2O Deep Learning model parameter configurations, as a result of the default settings. We use the first $28^2 = 784$ values of each row to represent the full image and the final value to denote the digit class. Rectified linear activation is popular with image processing and has performed well on the MNIST database previously and dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
-\waterExampleInR
-\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
-
-\waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
-
-
-
+% Old R example:
 %\begin{lstlisting}[style=R]
 %#Train the model for digit classification
 %mnist_model = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = c(200,200,200), input_dropout_ratio = 0.2, l1 = 1e-5, validation = test_images.hex, epochs = 10)
@@ -425,11 +418,19 @@ The example below illustrates the relative simplicity underlying most H2O Deep L
 %\end{lstlisting}
 %\normalsize
 
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
+
+% TO DO: Add this code (currently commented out)
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
+
+
 \noindent
 The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option is to use k-fold validation by specifying, for example, \texttt{nfolds = 5} in addition to / instead of \texttt{validation\_frame = test}.  When \texttt{nfolds} is a positive integer, k-fold cross validation will be performed and the cross-validation metrics will be computed.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  
 
 \subsubsection{Extracting and handling the results} 
-
+% HERE
 We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
 
 \begin{lstlisting}[style=R]
