@@ -126,7 +126,7 @@
         {
             "name" : "DeepLearning",
             "id"   : "booklet-deeplearning",
-            "path" : "docs-website/h2o-docs/booklets/DeepLearningRVignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/DeepLearning_Vignette.pdf"
         },
         {
             "name" : "GBM",
