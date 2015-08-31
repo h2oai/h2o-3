@@ -275,13 +275,15 @@ public class AutoSerialTest extends Iced {
 
   TestEnum[] _ea;
 
-  @Ignore("PUBDEV-1914")
+  /** Test for PUBDEV-1914 */
+  @Test
   public void testArrayOfEnums() {
-    _ea = new TestEnum[] { TestEnum.A, TestEnum.B, TestEnum.C};
+    _ea = new TestEnum[] { TestEnum.B, null, TestEnum.A, TestEnum.B, TestEnum.C};
     this.write(abw());
+    _ea = null;
     this.read(abr());
-    Assert.assertTrue(_ea.length == 3);
-    Assert.assertTrue(Arrays.deepEquals(_ea, new TestEnum[] { TestEnum.A, TestEnum.B, TestEnum.C}));
+    Assert.assertTrue(_ea.length == 5);
+    Assert.assertTrue(Arrays.deepEquals(_ea, new TestEnum[] { TestEnum.B, null, TestEnum.A, TestEnum.B, TestEnum.C}));
     _ea = null;
   }
 }
