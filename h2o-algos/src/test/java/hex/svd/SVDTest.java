@@ -357,13 +357,12 @@ public class SVDTest extends TestUtil {
                                 ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
                                 ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
     SVDModel model = null;
-    Frame train = null;
+    Frame train = null, score = null;
     try {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 4;
-      parms._seed = 1234;
       parms._only_v = false;
       parms._keep_u = true;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
@@ -374,6 +373,7 @@ public class SVDTest extends TestUtil {
         model = job.trainModel().get();
         Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
         TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+        score = model.score(train);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -385,6 +385,7 @@ public class SVDTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
+      if (score != null) score.delete();
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
@@ -420,6 +421,49 @@ public class SVDTest extends TestUtil {
         model = job.trainModel().get();
         TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
         Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+        score = model.score(train);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
+  @Test public void testBenignProb() throws InterruptedException, ExecutionException {
+    // Expected singular values
+    double[] d_expected = new double[] {450.809529, 212.934956, 155.608260, 64.528823, 52.334624};
+
+    SVDModel model = null;
+    Frame train = null, score = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/logreg/benign.csv");
+      SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      parms._train = train._key;
+      parms._nv = 5;
+      parms._only_v = false;
+      parms._keep_u = true;
+      parms._transform = DataInfo.TransformType.DEMEAN;
+      parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._impute_missing = true;
+
+      SVD job = new SVD(parms);
+      try {
+        model = job.trainModel().get();
+        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+        score = model.score(train);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

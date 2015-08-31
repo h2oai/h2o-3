@@ -286,7 +286,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Forming distributed orthonormal matrix U");
         if (!_parms._only_v && _parms._keep_u) {
           model._output._u_key = Key.make(_parms._u_name);
-          double[][] svdJ_u = svdJ.getU().getArray();
+          double[][] svdJ_u = svdJ.getU().getMatrix(0,qta.length-1,0,_parms._nv-1).getArray();
 
           qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
           DKV.put(qinfo._key, qinfo);
@@ -295,8 +295,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           u = btsk.outputFrame(model._output._u_key, null, null);
         }
 
-        model._output._d = svdJ.getSingularValues();
-        model._output._v = svdJ.getV().getArray();
+        model._output._d = Arrays.copyOfRange(svdJ.getSingularValues(), 0, _parms._nv);
+        model._output._v = svdJ.getV().getMatrix(0,qta[0].length-1,0,_parms._nv-1).getArray();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
