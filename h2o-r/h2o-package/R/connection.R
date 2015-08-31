@@ -252,7 +252,7 @@ h2o.clusterStatus <- function() {
   conn = h2o.getConnection()
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
-  res <- .h2o.fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
 
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
@@ -277,7 +277,7 @@ h2o.clusterStatus <- function() {
 #
 # Get a session ID at init
 .init.session_id <- function() {
-  res <- .h2o.fromJSON(.h2o.doSafeGET(urlSuffix = "InitID"))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = "InitID")))
   res$session_key
 }
 

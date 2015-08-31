@@ -36,9 +36,6 @@
 
 .process.body <- function(b,formalz,envs) {
   stmnts <- as.list(b)
-  if( length(stmnts) < 1 ) {
-    browser()
-  }
   tmp1 <- ""; tmp2 <- ""
   # Leading { means a list of statements, there is no trailing close-}
   if( identical(stmnts[[1L]], quote(`{`))) {
