@@ -129,7 +129,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   @Override
   protected void postGlobal() {
     if (chunk_counts == null || chunk_byte_sizes == null || byte_size_per_node == null) return;
-    assert(total_row_count == _fr.numRows());
+    assert(total_row_count == _fr.numRows()): "total_row_count["+total_row_count+"] != _fr.numRows()["+_fr.numRows()+"]. ";
 
     // compute counts and sizes
     total_chunk_byte_size = 0;
