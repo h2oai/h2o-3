@@ -11,9 +11,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.colapply <- function(conn) {
+test.colapply <- function() {
   Log.info('Uploading hepatitis data from jira web to H2O...')
-  hep <- h2o.importFile(conn, path=locate("smalldata/drf_test/hepatitis.data.txt"), "hep")
+  hep <- h2o.importFile(path=locate("smalldata/drf_test/hepatitis.data.txt"), "hep")
   
   Log.info('Print head of dataset')
   Log.info(head(hep))

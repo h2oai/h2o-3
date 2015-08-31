@@ -6,8 +6,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_685_margin.err.throw <- function(H2Oserver) {
-  hex <- as.h2o(H2Oserver, iris[,1:4])
+test.pub_685_margin.err.throw <- function() {
+  hex <- as.h2o(iris[,1:4])
 
   expect_error(print(apply(hex, c(1,2), sum)))
 

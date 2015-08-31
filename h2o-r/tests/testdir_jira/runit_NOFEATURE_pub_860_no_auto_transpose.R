@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_860_no_auto_transpose <- function(H2Oserver) {
+test.pub_860_no_auto_transpose <- function() {
 
 prostatePath <- locate("smalldata/prostate/prostate.csv")
-prostate.hex <- h2o.importFile(H2Oserver, path = prostatePath, destination_frame = "prostate.hex")
+prostate.hex <- h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local <- as.data.frame(prostate.hex)
 

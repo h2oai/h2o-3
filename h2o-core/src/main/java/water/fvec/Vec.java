@@ -397,7 +397,7 @@ public class Vec extends Keyed<Vec> {
         }
       }
     }.doAllNodes();
-    DKV.put(v0._key,v0);        // Header last
+    DKV.put(v0._key, v0);        // Header last
     return v0;
   }
 
@@ -423,7 +423,7 @@ public class Vec extends Keyed<Vec> {
     for(long d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key,v,fs);
+    DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
   }
@@ -439,7 +439,7 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d,group(),_espc); }
+  public Vec makeCon( final double d ) { return makeCon(d, group(), _espc); }
 
   private static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
     if( (long)d==d ) return makeCon((long)d, null, group, espc);
@@ -453,7 +453,7 @@ public class Vec extends Keyed<Vec> {
         }
       }
     }.doAllNodes();
-    DKV.put(v0._key,v0);        // Header last
+    DKV.put(v0._key, v0);        // Header last
     return v0;
   }
 
@@ -747,7 +747,7 @@ public class Vec extends Keyed<Vec> {
   public static Key chunkKey(Key veckey, int cidx ) {
     byte [] bits = veckey._kb.clone();
     bits[0] = Key.CHK;
-    UnsafeUtils.set4(bits,6,cidx); // chunk#
+    UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
   }
   Key rollupStatsKey() { return chunkKey(-2); }
@@ -786,7 +786,7 @@ public class Vec extends Keyed<Vec> {
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
   static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
-    byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
+    byte [] bits = MemoryManager.malloc1(kb.length + KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
     bits[1] = -1;         // Not homed
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
@@ -1223,7 +1223,7 @@ public class Vec extends Keyed<Vec> {
     private final int _s;
     private boolean[] _u;
     private long[] _d;
-    CollectDomainFast(int s) { _s=s; }
+    public CollectDomainFast(int s) { _s=s; }
     @Override protected void setupLocal() { _u=MemoryManager.mallocZ(_s+1); }
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )

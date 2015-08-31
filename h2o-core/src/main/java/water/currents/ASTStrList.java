@@ -1,11 +1,12 @@
 package water.currents;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import water.H2O;
 import water.DKV;
+import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /** A collection of Strings only.  This is a syntatic form only, and never
  *  executes and never gets on the execution stack.
@@ -72,6 +73,20 @@ class ASTAsFactor extends ASTPrim {
   }
 }
 
+/** Convert to StringVec */
+class ASTCharacter extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (as.character col)
+  @Override String str() { return "as.character"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame ary = stk.track(asts[1].exec(env)).getFrame();
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
+    Vec v0 = ary.anyVec();
+    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toEnum() creates a new vec --> must be cleaned up!
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
+    return new ValFrame(fr);
+  }
+}
+
 /** Is a factor/categorical? */
 class ASTIsFactor extends ASTPrim {
   @Override int nargs() { return 1+1; } // (is.factor col)
@@ -88,6 +103,51 @@ class ASTIsFactor extends ASTPrim {
   }
 }
 
+/** Is a numeric? */
+class ASTIsNumeric extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (is.numeric col)
+  @Override String str() { return "is.numeric"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isNumeric() ? "TRUE" : "FALSE");
+    double ds[] = new double[fr.numCols()];
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
+    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
+    vec.setDomain(new String[]{"TRUE","FALSE"});
+    return new ValFrame(new Frame(new String[]{"is.numeric"}, new Vec[]{vec}));
+  }
+}
+
+/** Is String Vec? */
+class ASTIsCharacter extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (is.character col)
+  @Override String str() { return "is.character"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isString() ? "TRUE" : "FALSE");
+    double ds[] = new double[fr.numCols()];
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = fr.vec(i).isString() ? 1 : 0;
+    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
+    vec.setDomain(new String[]{"TRUE","FALSE"});
+    return new ValFrame(new Frame(new String[]{"is.character"}, new Vec[]{vec}));
+  }
+}
+
+/** Any columns factor/categorical? */
+class ASTAnyFactor extends ASTPrim {
+  @Override int nargs() { return 1+1; } // (any.factor frame)
+  @Override String str() { return "any.factor"; }
+  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String res = "FALSE";
+    for (int i = 0; i < fr.vecs().length; ++i)
+      if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
+    return new ValStr(res);
+  }
+}
+
 /** Convert to a numeric */
 class ASTAsNumeric extends ASTPrim {
   @Override int nargs() { return 1+1; } // (as.numeric col)
@@ -98,16 +158,3 @@ class ASTAsNumeric extends ASTPrim {
     return new ValFrame(new Frame(fr._names, new Vec[]{fr.anyVec().toNumeric()}));
   }
 }
-
-// Added to facilitate Runit testing
-class ASTAnyFactor extends ASTPrim {
-  @Override int nargs() { return 1+1; } // (any.factor frame)
-  @Override String str() { return "any.factor"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for( Vec vec : fr.vecs() )
-      if( vec.isEnum() ) return new ValStr("TRUE");
-    return new ValStr("FALSE");
-  }
-}
-

@@ -11,10 +11,10 @@ heading("BEGIN TEST")
 
 
 hex_1799_test <-
-function(conn) {
+function() {
 
   path <- locate("smalldata/logreg/prostate.csv")
-  prostate.hex <- h2o.importFile(conn, path, destination_frame="prostate.hex")
+  prostate.hex <- h2o.importFile(path, destination_frame="prostate.hex")
   
   main_model <- h2o.glm(x = 3:8, y = 2, training_frame = prostate.hex, nfolds = 2, standardize = FALSE, family = "binomial")
 
@@ -23,7 +23,7 @@ function(conn) {
   
   print(conn)
   
-  first_xval <- h2o.getModel(conn, main_model@model_id)@xval[[1]]
+  first_xval <- h2o.getModel(main_model@model_id)@xval[[1]]
 
   Log.info("Expect that the xval model has a family binomial, just like the main model...")
   expect_that(first_xval@model$params$family$family, equals("binomial"))

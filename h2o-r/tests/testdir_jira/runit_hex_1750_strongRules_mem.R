@@ -8,11 +8,11 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
   if( !h2o.is_client() ) {
     print("Reading in Arcene data.")
-      arcene.train = h2o.importFile(conn, locate("smalldata/arcene/arcene_train.data"), destination_frame="arcene.train", header=FALSE)
-      label = h2o.importFile(conn, locate("smalldata/arcene/arcene_train_labels.labels"), destination_frame="label", header=FALSE)
+      arcene.train = h2o.importFile(locate("smalldata/arcene/arcene_train.data"), destination_frame="arcene.train", header=FALSE)
+      label = h2o.importFile(locate("smalldata/arcene/arcene_train_labels.labels"), destination_frame="label", header=FALSE)
       arcene.train.label = h2o.assign(data=ifelse(label==1,1,0), key="arcene.train.label")
       colnames(arcene.train.label) <- "arcene.train.label"
       arcene.train.full = h2o.assign(data=(h2o.cbind(arcene.train,arcene.train.label)),key="arcene.train.full")

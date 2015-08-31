@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test_one_file <- function(localH2O, fnam, mins, maxs) {
-DF <- h2o.importFile(localH2O, h2o:::.h2o.locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
+DF <- h2o.importFile(h2o:::.h2o.locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
 raw_payload = h2o:::.h2o.doSafeREST(conn = localH2O, urlSuffix = paste0("Frames.json/",fnam,".hex/columns/B/summary"), method = "GET")
 # print(raw_payload)
 json = h2o:::.h2o.fromJSON(raw_payload)
@@ -12,7 +12,7 @@ expect_equal(as.vector(json$frames[[1]]$columns[[1]]$maxs), maxs)   #    since [
 
 # The problem was that +Inf was returned in maxs when nrow<5. Similarly -Inf in mins.
 # Test the edge cases around 0-5 rows using pre-prepared tiny .csv files of just 2 columns
-mytest = function(localH2O) {
+mytest = function() {
     # test_one_file(localH2O, "test0", mins=c(NA,NA,NA,NA,NA), maxs=c(NA,NA,NA,NA,NA))  # header only fails to read (likely correct behaviour)
     test_one_file(localH2O, "test1", mins=c(2L,NA,NA,NA,NA), maxs=c(2L,NA,NA,NA,NA))
     test_one_file(localH2O, "test2", mins=c(2L,5L,NA,NA,NA), maxs=c(5L,2L,NA,NA,NA))

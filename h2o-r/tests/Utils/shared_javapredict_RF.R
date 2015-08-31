@@ -1,8 +1,8 @@
 heading("BEGIN TEST")
-check.rf <- function(conn) {
+check.rf <- function() {
 
   heading("Uploading train data to H2O")
-  iris_train.hex <- h2o.importFile(conn, train)
+  iris_train.hex <- h2o.importFile(train)
 
   heading("Creating DRF model in H2O")
   balance_classes <- if (exists("balance_classes")) balance_classes else FALSE
@@ -19,7 +19,7 @@ check.rf <- function(conn) {
   h2o.download_pojo(iris.rf.h2o, tmpdir_name)
 
   heading("Uploading test data to H2O")
-  iris_test.hex <- h2o.importFile(conn, test)
+  iris_test.hex <- h2o.importFile(test)
 
   heading("Predicting in H2O")
   iris.rf.pred <- h2o.predict(iris.rf.h2o, iris_test.hex)

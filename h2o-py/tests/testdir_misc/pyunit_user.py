@@ -35,8 +35,8 @@ def user(ip, port):
     print colmeans
     print
 
-    try:                   print a["Sepal_len"]  # Error, mispelt column name
-    except ValueError, ex: pass  # Expected error
+    try:                   print a["Sepal_len"].dim  # Error, mispelt column name
+    except Exception: pass  # Expected error
 
     b = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
