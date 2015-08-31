@@ -284,8 +284,15 @@ public abstract class Neurons {
 
   private void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2) {
     final int cols = _previous._a.size();
-    final int start = linearIndexMatrix(row, 0, cols);
-    final int end = linearIndexMatrix(row, w.cols(), cols);
+    int start;
+    int end;
+    if (_k != 0) {
+      start = _k * (row*cols           ) + _maxIncoming[row];
+      end =   _k * (row*cols + (cols-1)) + _maxIncoming[row];
+    } else {
+      start = row * cols;
+      end =   row * cols + cols;
+    }
     float r2 = MathUtils.sumSquares(w.raw(), start, end);
 //    float r2 = MathUtils.approxSumSquares(w.raw(), idx, idx + cols);
     if( r2 > max_w2) {
@@ -374,7 +381,7 @@ public abstract class Neurons {
     final boolean have_ada = _minfo.adaDelta();
     final float l1 = (float)params._l1;
     final float l2 = (float)params._l2;
-    final int b = linearIndexVector(row);
+    final int b = _k != 0 ? _k*row+_maxIncoming[row] : row;
     final double bias = _b.get(b);
 
     partial_grad -= Math.signum(bias) * l1 + bias * l2;
@@ -571,17 +578,6 @@ public abstract class Neurons {
       _dropout.randomlySparsifyActivation(_a, seed);
     }
 
-  }
-
-  private int linearIndexMatrix(int row, int col, int cols) {
-    final int idx = row * cols + col;
-
-    // for Maxout, return the "winning" linear index into the matrix
-    return _k != 0 ? _k*idx + _maxIncoming[row] : idx;
-  }
-
-  private int linearIndexVector(int row) {
-    return _k != 0 ? _k*row+_maxIncoming[row] : row;
   }
 
   /**
