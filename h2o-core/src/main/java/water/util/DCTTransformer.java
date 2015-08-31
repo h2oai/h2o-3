@@ -7,7 +7,7 @@ import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 
-public class FFTTransformer extends Transformer<FFTTransformer> {
+public class DCTTransformer extends Transformer<DCTTransformer> {
 
   /**
    * Input dataset to transform
@@ -22,43 +22,43 @@ public class FFTTransformer extends Transformer<FFTTransformer> {
    */
   int[] _dimensions = null;
   /**
-   * Whether to do inverse FFT (from reciprocal space back to real space)
+   * Whether to do inverse DCT
    */
   boolean _inverse = false;
 
-  public FFTTransformer() {
-    this(Key.<FFTTransformer>make());
+  public DCTTransformer() {
+    this(Key.<DCTTransformer>make());
   }
 
-  public FFTTransformer(Key<FFTTransformer> dest) {
-    this(dest, "FFTTransformer job");
+  public DCTTransformer(Key<DCTTransformer> dest) {
+    this(dest, "DCTTransformer job");
   }
 
-  public FFTTransformer(Key<FFTTransformer> dest, String desc) {
+  public DCTTransformer(Key<DCTTransformer> dest, String desc) {
     super(dest, desc);
   }
 
   @Override
-  protected FFTTransformer execImpl() {
+  protected DCTTransformer execImpl() {
     if (_dimensions.length != 3)
       error("_dimensions", "Need 3 dimensions (width/height/depth): WxHxD (1D: Wx1x1, 2D: WxHx1, 3D: WxHxD)");
     if (ArrayUtils.minValue(_dimensions) < 1)
       error("_dimensions", "Dimensions must be >= 1");
     if (_dataset.numCols() < _dimensions[0] * _dimensions[1] * _dimensions[2])
       error("_dimensions", "Product of dimensions WxHxD must be <= #columns (" + _dataset.numCols() + ")");
-    MathUtils.FFT.initCheck(_dataset);
+    MathUtils.DCT.initCheck(_dataset, _dimensions[0], _dimensions[1], _dimensions[2]);
 
-    return (FFTTransformer) start(
+    return (DCTTransformer) start(
             new H2O.H2OCountedCompleter() {
               @Override
               protected void compute2() {
                 Frame fft;
                 if (_dimensions[1] == 1 && _dimensions[2] == 1) {
-                  fft = MathUtils.FFT.transform1D(_dataset, _dimensions[0], _inverse);
+                  fft = MathUtils.DCT.transform1D(_dataset, _dimensions[0], _inverse);
                 } else if (_dimensions[2] == 1) {
-                  fft = MathUtils.FFT.transform2D(_dataset, _dimensions[0], _dimensions[1], _inverse);
+                  fft = MathUtils.DCT.transform2D(_dataset, _dimensions[0], _dimensions[1], _inverse);
                 } else {
-                  fft = MathUtils.FFT.transform3D(_dataset, _dimensions[0], _dimensions[1], _dimensions[2], _inverse);
+                  fft = MathUtils.DCT.transform3D(_dataset, _dimensions[0], _dimensions[1], _dimensions[2], _inverse);
                 }
                 Frame dest = new Frame(_destination_frame, fft.names(), fft.vecs());
                 DKV.put(dest);

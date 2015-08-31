@@ -159,7 +159,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
@@ -360,7 +360,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
@@ -610,12 +610,13 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(0.8348088,GLMTest.auc(model),1e-4);
 //          assertEquals(76.8525, GLMTest.residualDevianceTest(model),1e-4);
           // test scoring
-          try { // check we get IAE if computing metrics on data with no weights (but trained with weights)
+//          try { // NO LONGER check that we get IAE if computing metrics on data with no weights (but trained with weights)
             scoreTrain = model.score(_prostateTrain);
-            assertTrue("shoul've thrown IAE", false);
-          } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
-          }
+            scoreTrain.delete();
+//            assertTrue("shoul've thrown IAE", false); //TN-1 now autofills with weights 1
+//          } catch (IllegalArgumentException iae) {
+//            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights vector"));
+//          }
           Frame f = new Frame(_prostateTrain);
           f.remove("CAPSULE");
           // test we can generate predictions with no weights (no metrics)
@@ -941,7 +942,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test dataset is missing"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;

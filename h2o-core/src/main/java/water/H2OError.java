@@ -3,6 +3,7 @@ package water;
 import water.util.HttpResponseStatus;
 import water.util.IcedHashMap;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -66,10 +67,17 @@ public class H2OError extends Iced {
     if (null != e) {
       this._exception_type = e.getClass().getCanonicalName();
       this._exception_msg = e.getMessage();
+      ArrayList<String> arr = new ArrayList<>();
       StackTraceElement[] trace = e.getStackTrace();
-      this._stacktrace = new String[trace.length];
-      for (int i = 0; i < trace.length; i++)
-        this._stacktrace[i] = trace[i].toString();
+      for (StackTraceElement ste : trace) {
+        String s = ste.toString();
+        arr.add(s);
+        if (s.startsWith("org.eclipse.jetty")) {
+          // Don't need humongous jetty stack traces.
+          break;
+        }
+      }
+      this._stacktrace = arr.toArray(new String[0]);
     }
   }
 

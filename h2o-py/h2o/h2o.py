@@ -354,7 +354,7 @@ def download_csv(data, filename):
   """
   data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
+  url = "http://{}:{}/3/DownloadDataset.bin?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
   with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 def download_all_logs(dirname=".",filename=None):

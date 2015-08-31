@@ -9,16 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import hex.genmodel.GenModel;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Lockable;
-import water.MRTask;
-import water.MemoryManager;
-import water.Weaver;
+import water.*;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.EnumWrappedVec;
@@ -79,6 +70,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  them!
    */
   public abstract static class Parameters extends Iced {
+    public AutoBuffer deepClone() {
+      return write(new AutoBuffer()).flipForReading();
+    }
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1000;
 
@@ -561,21 +555,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isFold = fold != null && names[i].equals(fold);
 
       if(vec == null && isResponse && computeMetrics)
-        throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
+        throw new IllegalArgumentException("Test/Validation dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
-        throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
-      if(vec == null && isWeights && computeMetrics)
-        throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
+        throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
+      if(vec == null && isWeights && computeMetrics) {
+        vec = test.anyVec().makeCon(1);
+        msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
+        //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
+      }
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null) {
         String str = null;
         if( expensive ) {
           if (isFold) {
-            str = "Validation set is missing fold column " + names[i] + ": substituting in a column of 0s";
+            str = "Test/Validation dataset is missing fold column '" + names[i] + "': substituting in a column of 0s";
             vec = test.anyVec().makeCon(0);
           } else {
-            str = "Validation set is missing training column " + names[i] + ": substituting in a column of NAs";
+            str = "Test/Validation dataset is missing training column '" + names[i] + "': substituting in a column of NAs";
             vec = test.anyVec().makeCon(missing);
             convNaN++;
           }
@@ -590,21 +587,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             try {
               evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
             } catch( NumberFormatException nfe ) {
-              throw new IllegalArgumentException("Validation set has a non-categorical column "+names[i]+" which is categorical in the training data");
+              throw new IllegalArgumentException("Test/Validation dataset has a non-categorical column '"+names[i]+"' which is categorical in the training data");
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
-              throw new IllegalArgumentException("Validation set has a categorical response column "+names[i]+" with no levels in common with the model");
+              throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
-              msgs.add("Validation column " + names[i] + " has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
+              msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             if (expensive) { vec = evec;  good++; } // Keep it
             else { evec.remove(); vec = null; } // No leaking if not-expensive
           } else {
             good++;
           }
         } else if( vec.isEnum() ) {
-          throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
+          throw new IllegalArgumentException("Test/Validation dataset has categorical column '"+names[i]+"' which is real-valued in the training data");
         } else {
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
@@ -612,7 +609,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       vvecs[i] = vec;
     }
     if( good == convNaN )
-      throw new IllegalArgumentException("Validation set has no columns in common with the training set");
+      throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);

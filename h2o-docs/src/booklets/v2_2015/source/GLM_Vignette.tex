@@ -2,6 +2,9 @@
 
 \input{common/conf_top.tex}
 
+% produced as part of ./gradlew booklets
+\input{generated_buildinfo.tex}
+
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 \defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
 \defcitealias{admm}{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers by Boyd et. al}
@@ -28,6 +31,8 @@
 
 \bigskip
 August 2015: Third Edition 
+
+(Built for H2O version \waterVersion)
 \\%add front page image here? (wavy lines)
 \bigskip
 \end{center}
@@ -83,7 +88,6 @@ interpret model output, how to make predictions, and various implementation deta
 
 \newpage
 
-\newcommand{\waterVersion}{3.0.1.4}
 \input{common/installation.tex}
 
 \subsection{Example code}
