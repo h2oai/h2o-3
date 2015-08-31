@@ -25,8 +25,9 @@ h2o.removeAll()
 #----------------------------------------------------------------------
 
 # Data frame size
-rows = c(1e6)
-cols = c(2e3,5e3,10e3)
+rows <- c(1e6)
+# cols <- c(2e3,5e3,10e3)
+cols <- c(2e3)
 k_dim <- 15
 print(paste("Matrix decomposition rank k =", k_dim))
 
