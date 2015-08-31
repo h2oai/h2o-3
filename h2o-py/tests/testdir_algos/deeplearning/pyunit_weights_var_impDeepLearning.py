@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 import copy
 
@@ -104,7 +104,7 @@ def weights_vi(ip,port):
                                               variable_importances=True,
                                               weights_column="weights",
                                               hidden=[1],
-                                              reproducible=True, seed=1234,
+                                              reproducible=True, seed=123,
                                               activation="Tanh")
 
     varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
@@ -112,4 +112,4 @@ def weights_vi(ip,port):
                                                   "dataset: ('p3', 'p1', 'p2'), but got: {0}".format(varimp_combined)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_vi)
+    tests.run_test(sys.argv, weights_vi)

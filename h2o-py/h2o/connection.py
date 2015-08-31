@@ -492,7 +492,7 @@ class H2OConnection(object):
         pass
       raise EnvironmentError(("h2o-py got an unexpected HTTP status code:\n {} {} (method = {}; url = {}). \n"+ \
                               "detailed error messages: {}")
-                             .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
+                              .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
 
     if logging._is_logging():
@@ -525,7 +525,7 @@ class H2OConnection(object):
         raise ValueError("Unknown HTTP method " + method)
 
     except requests.ConnectionError as e:
-      raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}".format(e.message))
+      raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}".format(e))
 
     return http_result
 

@@ -100,11 +100,27 @@
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.getModelParameters(algo = algo)
 
-  params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
+  # R treats integer as not numeric: FIXME move into checkAndUnifyModelParameters
+  params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
   #---------- Check user parameter types ----------#
-  param_values <- .h2o.checkModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
+  param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
-  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  .h2o.validateModelParameters(conn, algo, param_values, h2oRestApiVersion)
+  #---------- Build! ----------#
+  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
+
+  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
+}
+
+#
+# Validate given parameters against algorithm parameters validation
+# REST end-point. Stop execution in case of validation error.
+#
+.h2o.validateModelParameters <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(i) {
       if( i$message_type == "ERROR" )
@@ -119,14 +135,6 @@
     })
     if(any(nzchar(warn))) warning(warn)
   }
-
-  #---------- Build! ----------#
-  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-
-  job_key  <- res$job$key$name
-  dest_key <- res$job$dest$name
-
-  new("H2OModelFuture",conn=conn, job_key=job_key, model_id=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
@@ -155,12 +163,13 @@ h2o.getFutureModel <- function(object) {
 }
 
 .h2o.prepareModelParameters <- function(algo, params, is_supervised) {
-  if (!inherits(params$training_frame, "H2OFrame")) {
-   tryCatch(params$training_frame <- h2o.getFrame(params$training_frame),
-            error = function(err) {
-              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
-            })
+  if (!is.null(params$training_frame)) {
+    params$training_frame <- .h2o.checkFrameParam(params$training_frame, "training_frame")
   }
+  if (!is.null(params$validation_frame)) {
+    params$validation_frame <- .h2o.checkFrameParam(params$validation_frame, "validation_frame")
+  }
+
   # Check if specified model request is for supervised algo
   isSupervised <- if (!is.null(is_supervised)) is_supervised else .isSupervised(algo, params)
 
@@ -168,8 +177,8 @@ h2o.getFutureModel <- function(object) {
     if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
     if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
     args <- .verify_dataxy(params$training_frame, x, y)
-    if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
-    if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+    if( !is.null(params$offset_column) && !is.null(params$offset_column))  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+    if( !is.null(params$weights_column) && !is.null(params$weights_column)) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
     params$ignored_columns <- args$x_ignore
     params$response_column <- args$y
   } else {
@@ -180,7 +189,8 @@ h2o.getFutureModel <- function(object) {
       params$ignored_columns <- args$cols_ignore
     }
   }
-
+  # Note: Magic copied from start .h2o.startModelJob
+  params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
   params
 }
 
@@ -189,47 +199,17 @@ h2o.getFutureModel <- function(object) {
   allParameters
 }
 
-.h2o.checkModelParameters <- function(algo, allParams, params, hyper_params = list()) {
+.h2o.checkAndUnifyModelParameters <- function(algo, allParams, params, hyper_params = list()) {
+  # First verify all parameters
   error <- lapply(allParams, function(i) {
     e <- ""
-    if (i$required && !((i$name %in% names(params)) || (i$name %in% names(hyper_params)))) {
-      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
-    } else if (i$name %in% names(params)) {
-      # changing Java types to R types
-      mapping <- .type.map[i$type,]
-      type    <- mapping[1L, 1L]
-      scalar  <- mapping[1L, 2L]
-      if (is.na(type))
-        stop("Cannot find type ", i$type, " in .type.map")
-      if (scalar) { # scalar == TRUE
-        if (type == "H2OModel")
-            type <-  "character"
-        if (!inherits(params[[i$name]], type))
-          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
-        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
-          e <- paste0("\"", i$name,"\" must be in")
-          for (fact in i$values)
-            e <- paste0(e, " \"", fact, "\",")
-          e <- paste(e, "but got", params[[i$name]])
-        }
-        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
-          params[[i$name]] <<- "Infinity"
-        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
-          params[[i$name]] <<- "-Infinity"
-      } else {      # scalar == FALSE
-        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
-        if (length(k) > 0)
-          for (n in k)
-            if (params[[i$name]][n] == Inf)
-              params[[i$name]][n] <<- "Infinity"
-            else
-              params[[i$name]][n] <<- "-Infinity"
-        if (!inherits(params[[i$name]], type))
-          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
-        else if (type == "character")
-          params[[i$name]] <<- .collapse.char(params[[i$name]])
-        else
-          params[[i$name]] <<- .collapse(params[[i$name]])
+    name <- i$name
+    if (i$required && !((name %in% names(params)) || (name %in% names(hyper_params)))) {
+      e <- paste0("argument \"", name, "\" is missing, with no default\n")
+    } else if (name %in% names(params)) {
+      e <- .h2o.checkParam(i, params[[name]])
+      if (!nzchar(e)) {
+        params[[name]] <<- .h2o.transformParam(i, params[[name]])
       }
     }
     e
@@ -237,7 +217,7 @@ h2o.getFutureModel <- function(object) {
 
   if(any(nzchar(error)))
     stop(error)
-  
+
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
     if(is(i, "H2OFrame"))
@@ -247,6 +227,122 @@ h2o.getFutureModel <- function(object) {
   })
 
   param_values
+}
+
+# Check definition of given parameters in given list of parameters
+# Returns error message or empty string
+# Note: this function has no side-effects!
+.h2o.checkParam <- function(paramDef, paramValue) {
+  e <- ""
+  # Fetch mapping for given Java to R types
+  mapping <- .type.map[paramDef$type,]
+  type    <- mapping[1L, 1L]
+  scalar  <- mapping[1L, 2L]
+  name    <- paramDef$name
+  if (is.na(type))
+    stop("Cannot find type ", paramDef$type, " in .type.map")
+  if (scalar) { # scalar == TRUE
+    if (type == "H2OModel")
+        type <-  "character"
+    if (!inherits(paramValue, type)) {
+      e <- paste0("\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
+    } else if ((length(paramDef$values) > 1L) && !(paramValue %in% paramDef$values)) {
+      e <- paste0("\"", name,"\" must be in")
+      for (fact in paramDef$values)
+        e <- paste0(e, " \"", fact, "\",")
+      e <- paste(e, "but got", paramValue)
+    }
+  } else {      # scalar == FALSE
+    if (!inherits(paramValue, type))
+      e <- paste0("vector of ", name, " must be of type ", type, ", but got ", class(paramValue), ".\n")
+  }
+  e
+}
+
+.h2o.transformParam <- function(paramDef, paramValue, collapseArrays = TRUE) {
+  # Fetch mapping for given Java to R types
+  mapping <- .type.map[paramDef$type,]
+  type    <- mapping[1L, 1L]
+  scalar  <- mapping[1L, 2L]
+  name    <- paramDef$name
+  if (scalar) { # scalar == TRUE
+    if (inherits(paramValue, 'numeric') && paramValue ==  Inf) {
+      paramValue <- "Infinity"
+    } else if (inherits(paramValue, 'numeric') && paramValue == -Inf) {
+      paramValue <- "-Infinity"
+    }
+  } else {      # scalar == FALSE
+    k = which(paramValue == Inf | paramValue == -Inf)
+    if (length(k) > 0)
+      for (n in k)
+        if (paramValue[n] == Inf)
+          paramValue[n] <<- "Infinity"
+        else
+          paramValue[n] <<- "-Infinity"
+    if (collapseArrays) {
+      if (type == "character")
+        paramValue <- .collapse.char(paramValue)
+      else
+        paramValue <- .collapse(paramValue)
+    }
+  }
+  if (is(paramValue, "H2OFrame")) {
+    paramValue <- paramValue@frame_id
+  }
+  paramValue
+}
+
+# Validate a given set of hyper parameters
+# against algorithm definition.
+# Transform all parameters in the same way as normal algorithm
+# would do.
+.h2o.checkAndUnifyHyperParameters <- function(algo, allParams, hyper_params, do_hyper_params_check) {
+
+  errors <- lapply(allParams, function(paramDef) {
+      e <- ""
+      name <- paramDef$name
+      hyper_names <- names(hyper_params)
+      # First reject all non-gridable hyper parameters
+      if (!paramDef$gridable && (name %in% hyper_names)) {
+        e <- paste0("argument \"", name, "\" is not gridable\n")
+      } else if (name %in% hyper_names) { # Check all specified hyper parameters
+        # Hyper values for `name` parameter
+        hyper_vals <- hyper_params[[name]]
+        # Collect all possible verification errors
+        if (do_hyper_params_check) {
+          he <- lapply(hyper_vals, function(hv) {
+                  # Transform all integer values to numeric
+                  hv <- if (is.integer(hv)) as.numeric(hv) else hv
+                  .h2o.checkParam(paramDef, hv)
+                })
+          e <- paste(he, collapse='')
+        }
+        # If there is no error then transform hyper values
+        if (!nzchar(e)) {
+          transf_hyper_vals <- sapply(hyper_vals, function(hv) {
+                                      # R does not treat integers as numeric
+                                      if (is.integer(hv)) {
+                                        hv <- as.numeric(hv)
+                                      }
+                                      mapping <- .type.map[paramDef$type,]
+                                      type <- mapping[1L, 1L]
+                                      # Force evaluation of frames and fetch frame_id as
+                                      # a side effect
+                                      if (type == "H2OFrame") {
+                                        hv <- .h2o.checkFrameParam(hv, name)@frame_id
+                                      }
+                                      .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                                })
+          hyper_params[[name]] <<- transf_hyper_vals
+        }
+      }
+      e
+  })
+
+  if(any(nzchar(errors)))
+    stop(errors)
+
+  hyper_params
 }
 
 #' Predict on an H2O Model
@@ -1781,3 +1877,12 @@ h2o.sdev <- function(object) {
     TRUE
   }
 }
+
+# Transform given name to
+# expected values ("gbm", "drf")
+# It allows for having algorithm name aliases
+.h2o.unifyAlgoName <- function(algo) {
+  result <- if (algo == "randomForest") "drf" else algo
+  result
+}
+

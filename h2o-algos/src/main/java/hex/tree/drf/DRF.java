@@ -63,12 +63,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     super.init(expensive);
     // Initialize local variables
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
-      throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
+      throw new IllegalArgumentException("Sample rate should be interval [0,1] but it is " + _parms._sample_rate);
     if( _parms._mtries < 1 && _parms._mtries != -1 ) error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols))
-        error("_mtries","Computed mtries should be -1 or in interval <1,#cols> but it is " + _parms._mtries);
+        error("_mtries","Computed mtries should be -1 or in interval [1,"+ncols+"] but it is " + _parms._mtries);
     }
     if (_parms._distribution == Distribution.Family.AUTO) {
       if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
@@ -173,7 +173,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       int ntreesFromCheckpoint = _parms.hasCheckpoint() ?
               ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees : 0;
 
-      if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,#cols> but it is " + _mtry);
+      if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
       // Initialize TreeVotes for classification, MSE arrays for regression
       initTreeMeasurements();
       // Append number of trees participating in on-the-fly scoring
@@ -202,8 +202,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       for( tid=0; tid < _ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms.hasCheckpoint()) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, true, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping )
+          if( training_r2 >= _parms._r2_stopping ) {
+            doScoringAndSaveModel(true, true, _parms._build_tree_one_node);
             return;             // Stop when approaching round-off error
+          }
         }
         // At each iteration build K trees (K = nclass = response column domain size)
 
@@ -378,7 +380,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {
-                int treePred = getPrediction(rpred, data_row(chks, row, rowdata), _threshold);
+                int treePred = getPrediction(rpred, _model._output._priorClassDist, data_row(chks, row, rowdata), _threshold);
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression

@@ -24,7 +24,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
 
     Key dest = Key.make("spirals2");
 
-    for (boolean sparse : new boolean[]{true,false}) {
+    for (boolean sparse : new boolean[]{false}) {
       for (boolean col_major : new boolean[]{false}) {
         if (!sparse && col_major) continue;
 
@@ -32,7 +32,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         {
           DeepLearningParameters p = new DeepLearningParameters();
           p._seed = 0xbabe;
-          p._epochs = 500;
+          p._epochs = 600;
           p._hidden = new int[]{100};
           p._sparse = sparse;
           p._col_major = col_major;
@@ -55,7 +55,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._fast_mode = true;
           p._ignore_const_cols = true;
           p._nesterov_accelerated_gradient = true;
-          p._diagnostics = true;
           p._score_training_samples = 1000;
           p._score_validation_samples = 10000;
           p._shuffle_training_data = false;
@@ -84,8 +83,8 @@ public class DeepLearningSpiralsTest extends TestUtil {
           ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
           double error = mm._auc.defaultErr();
           Log.info("Error: " + error);
-          if (error >= 0.025) {
-            Assert.fail("Classification error is not less than 0.025, but " + error + ".");
+          if (error > 0) {
+            Assert.fail("Classification error is not 0, but " + error + ".");
           }
           pred.delete();
           mymodel.delete();

@@ -1,13 +1,13 @@
 package water.api;
 
+import java.lang.reflect.Field;
+
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.api.SchemaMetadata.FieldMetadata;
 import water.util.PojoUtils;
-
-import java.lang.reflect.Field;
 
 // TODO: move into hex.schemas!
 
@@ -54,6 +54,9 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
   @API(help="For Vec-type fields this is the set of Frame-type fields which must contain the named column; for example, for a SupervisedModel the response_column must be in both the training_frame and (if it's set) the validation_frame")
   public String[] is_mutually_exclusive_with;
 
+  @API(help="Parameter can be used in grid call", direction=API.Direction.OUTPUT)
+  public boolean gridable;
+
   public ModelParameterSchemaV3() {
   }
 
@@ -98,6 +101,8 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
         this.is_member_of_frames = annotation.is_member_of_frames();
 
         this.is_mutually_exclusive_with = annotation.is_mutually_exclusive_with(); // NOTE: later we walk all the fields in the Schema and form the transitive closure of these lists.
+
+        this.gridable = annotation.gridable();
       }
     }
     catch (Exception e) {
@@ -151,7 +156,8 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
     ab.putJSONStr("level", level);                                            ab.put1(',');
     ab.putJSONAStr("values", values);                                         ab.put1(',');
     ab.putJSONAStr("is_member_of_frames", is_member_of_frames);               ab.put1(',');
-    ab.putJSONAStr("is_mutually_exclusive_with", is_mutually_exclusive_with);
+    ab.putJSONAStr("is_mutually_exclusive_with", is_mutually_exclusive_with); ab.put1(',');
+    ab.putJSONStrUnquoted("gridable", gridable ? "true" : "false");
     return ab;
   }
 }

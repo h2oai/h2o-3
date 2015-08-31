@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def offsets_and_distributions(ip,port):
 
@@ -34,8 +34,8 @@ def offsets_and_distributions(ip,port):
     predictions = dl.predict(insurance)
 
     # tweedie
-    dl = h2o.deeplearning(x=insurance.names()[0:3], y="Claims", distribution="tweedie", offset_column="offset", training_frame=insurance)
+    dl = h2o.deeplearning(x=insurance.names[0:3], y="Claims", distribution="tweedie", offset_column="offset", training_frame=insurance)
     predictions = dl.predict(insurance)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, offsets_and_distributions)
+    tests.run_test(sys.argv, offsets_and_distributions)

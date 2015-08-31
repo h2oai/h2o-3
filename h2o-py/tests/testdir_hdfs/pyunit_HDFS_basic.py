@@ -4,17 +4,17 @@
 
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def hdfs_basic(ip, port):
     
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    running_inside_h2o = h2o.is_running_internal_to_h2o()
+    running_inside_h2o = tests.is_running_internal_to_h2o()
 
     if running_inside_h2o:
-        hdfs_name_node = h2o.get_h2o_internal_hdfs_name_node()
+        hdfs_name_node = tests.get_h2o_internal_hdfs_name_node()
         hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
         hdfs_iris_dir  = "/datasets/runit/iris_test_train"
 
@@ -27,7 +27,7 @@ def hdfs_basic(ip, port):
         iris_h2o = h2o.import_file(url)
         iris_h2o.head()
         iris_h2o.tail()
-        n = iris_h2o.nrow()
+        n = iris_h2o.nrow
         print "rows: {0}".format(n)
         assert n == 150, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 150)
         assert isinstance(iris_h2o, h2o.H2OFrame), "Wrong type. Expected H2OFrame, but got {0}".format(type(iris_h2o))
@@ -43,7 +43,7 @@ def hdfs_basic(ip, port):
         iris_dir_h2o = h2o.import_file(urls)
         iris_dir_h2o.head()
         iris_dir_h2o.tail()
-        n = iris_dir_h2o.nrow()
+        n = iris_dir_h2o.nrow
         print "rows: {0}".format(n)
         assert n == 150, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 150)
         assert isinstance(iris_dir_h2o, h2o.H2OFrame), "Wrong type. Expected H2OFrame, but got {0}".\
@@ -53,4 +53,4 @@ def hdfs_basic(ip, port):
         print "Not running on H2O internal network.  No access to HDFS."
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, hdfs_basic)
+    tests.run_test(sys.argv, hdfs_basic)

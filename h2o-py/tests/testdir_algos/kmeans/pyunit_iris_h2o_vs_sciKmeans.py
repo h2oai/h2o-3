@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -39,4 +39,4 @@ def iris_h2o_vs_sciKmeans(ip,port):
       assert (hpoint- spoint) < 1e-10, "expected centers to be the same"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, iris_h2o_vs_sciKmeans)
+  tests.run_test(sys.argv, iris_h2o_vs_sciKmeans)

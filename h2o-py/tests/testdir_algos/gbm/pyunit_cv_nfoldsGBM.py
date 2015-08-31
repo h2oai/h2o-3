@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def cv_nfoldsGBM(ip,port):
   
@@ -21,4 +21,4 @@ def cv_nfoldsGBM(ip,port):
     assert False, "expected an error"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, cv_nfoldsGBM)
+  tests.run_test(sys.argv, cv_nfoldsGBM)

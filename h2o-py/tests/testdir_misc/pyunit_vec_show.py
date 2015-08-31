@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def vec_show(ip,port):
     
@@ -24,4 +24,4 @@ def vec_show(ip,port):
     iris[2].show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, vec_show)
+    tests.run_test(sys.argv, vec_show)

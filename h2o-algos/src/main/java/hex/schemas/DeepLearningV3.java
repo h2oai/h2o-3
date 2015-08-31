@@ -83,7 +83,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_categorical_features",
         "reproducible",
         "export_weights_and_biases",
-        "mini_batch_size",
+//        "mini_batch_size",
 //        "elastic_averaging",
 //        "elastic_averaging_moving_rate",
 //        "elastic_averaging_regularization"
@@ -326,14 +326,14 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * A fraction of the features for each training row to be omitted from training in order
      * to improve generalization (dimension sampling).
      */
-    @API(help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2)", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double input_dropout_ratio;
 
     /**
      * A fraction of the inputs for each hidden layer to be omitted from training in order
      * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
      */
-    @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double[] hidden_dropout_ratios;
 
     /**
@@ -341,7 +341,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * has the net effect of dropping some weights (setting them to zero) from a model
      * to reduce complexity and avoid overfitting.
      */
-    @API(help = "L1 regularization (can add stability and improve generalization, causes many weights to become 0)", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "L1 regularization (can add stability and improve generalization, causes many weights to become 0)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double l1;
 
     /**
@@ -350,7 +350,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * frequently produces substantial gains in modeling as estimate variance is
      * reduced.
      */
-    @API(help = "L2 regularization (can add stability and improve generalization, causes many weights to be small", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "L2 regularization (can add stability and improve generalization, causes many weights to be small", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double l2;
 
     /**
@@ -515,10 +515,10 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
-    @API(help = "Sparse data handling (Experimental).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Sparse data handling (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean sparse;
 
-    @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean col_major;
 
     @API(help = "Average activation for sparse auto-encoder (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
@@ -536,8 +536,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Whether to export Neural Network weights and biases to H2O Frames", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean export_weights_and_biases;
 
-    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
-    public int mini_batch_size;
+//    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public int mini_batch_size;
 
 //    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public boolean elastic_averaging;

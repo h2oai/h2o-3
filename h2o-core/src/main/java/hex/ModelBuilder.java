@@ -680,7 +680,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   transient double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
-    return _parms._balance_classes;
+    return isClassifier();
   }
 
   @Override
@@ -851,7 +851,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (expensive) {
           for (String s : msgs) {
             Log.info(s);
-            info("_valid", s);
+            warn("_valid", s);
           }
         }
         assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));

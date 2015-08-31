@@ -32,7 +32,7 @@ public class PCAGridSearchHandler
   public static class PCAGrid extends Grid<PCAModel.PCAParameters> {
 
     public PCAGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

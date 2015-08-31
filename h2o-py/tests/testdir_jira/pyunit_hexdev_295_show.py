@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def show_jira(ip, port):
     
@@ -10,4 +10,4 @@ def show_jira(ip, port):
     h2o_data.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, show_jira)
+    tests.run_test(sys.argv, show_jira)

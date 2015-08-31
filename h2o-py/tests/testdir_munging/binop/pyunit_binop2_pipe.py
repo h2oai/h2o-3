@@ -1,22 +1,22 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def binop_pipe(ip,port):
     
     
 
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    rows, cols = iris.dim()
+    rows, cols = iris.dim
     iris.show()
 
     # frame/scaler
     res = 5 | iris
-    rows, cols = res.dim()
+    rows, cols = res.dim
     assert rows == rows and cols == cols, "dimension mismatch"
 
     res = iris | 1
-    rows, cols = res.dim()
+    rows, cols = res.dim
     assert rows == rows and cols == cols, "dimension mismatch"
 
     # vec/vec
@@ -26,15 +26,15 @@ def binop_pipe(ip,port):
 
     # vec/scaler
     res = iris[0] | 1
-    rows = res.nrow()
+    rows = res.nrow
     assert rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow()
+    new_rows = iris[res].nrow
     assert new_rows == rows, "wrong number of rows returned"
 
     res = 1 | iris[1]
-    rows = res.nrow()
+    rows = res.nrow
     assert rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow()
+    new_rows = iris[res].nrow
     assert new_rows == rows, "wrong number of rows returned"
 
     # frame/vec
@@ -54,11 +54,11 @@ def binop_pipe(ip,port):
 
     # frame/frame
     res = iris | iris
-    rows, cols = res.dim()
+    rows, cols = res.dim
     assert rows == rows and cols == cols, "dimension mismatch"
 
     res = iris[0:2] | iris[1:3]
-    rows, cols = res.dim()
+    rows, cols = res.dim
     assert rows == rows and cols == 2, "dimension mismatch"
 
     #try:
@@ -69,6 +69,6 @@ def binop_pipe(ip,port):
     #    pass
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, binop_pipe)
+  tests.run_test(sys.argv, binop_pipe)
 
 

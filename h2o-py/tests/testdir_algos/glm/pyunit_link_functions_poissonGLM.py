@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import pandas as pd
 import zipfile
 import statsmodels.api as sm
@@ -47,5 +47,5 @@ def link_functions_poisson(ip,port):
     assert h2o_deviance_id - sm_deviance_id < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, link_functions_poisson)
+    tests.run_test(sys.argv, link_functions_poisson)
 

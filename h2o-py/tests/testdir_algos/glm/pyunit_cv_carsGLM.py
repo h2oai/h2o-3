@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
 def cv_carsGLM(ip,port):
@@ -32,21 +32,21 @@ def cv_carsGLM(ip,port):
     nfolds = random.randint(3,10)
     glm1 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Modulo")
     glm2 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Modulo")
-    h2o.check_models(glm1, glm2, True)
+    tests.check_models(glm1, glm2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
     glm1 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Random")
     glm2 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, family=family, fold_assignment="Random")
     try:
-        h2o.check_models(glm1, glm2, True)
+        tests.check_models(glm1, glm2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
 
     # 3. folds_column
     num_folds = random.randint(2,5)
-    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow())])
+    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
     fold_assignments.setNames(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     glm = h2o.glm(y=cars[response_col], x=cars[predictors], training_frame=cars, family=family,
@@ -87,14 +87,14 @@ def cv_carsGLM(ip,port):
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
     # TODO: PUBDEV-1776
-    #glm = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), family=family,
+    #glm = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow, family=family,
     #              fold_assignment="Modulo")
 
     # 2. nfolds = 0
     glm1 = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=0, family=family)
     # check that this is equivalent to no nfolds
     glm2 = h2o.glm(y=cars[response_col], x=cars[predictors], family=family)
-    h2o.check_models(glm1, glm2)
+    tests.check_models(glm1, glm2)
 
     # 3. cross-validation and regular validation attempted
     glm = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col],
@@ -112,7 +112,7 @@ def cv_carsGLM(ip,port):
 
     # 2. more folds than observations
     try:
-        glm = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, family=family,
+        glm = h2o.glm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow+1, family=family,
                       fold_assignment="Modulo")
         assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
@@ -135,4 +135,4 @@ def cv_carsGLM(ip,port):
     #     assert True
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, cv_carsGLM)
+    tests.run_test(sys.argv, cv_carsGLM)

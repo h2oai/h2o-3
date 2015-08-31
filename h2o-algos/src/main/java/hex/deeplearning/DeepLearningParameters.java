@@ -3,6 +3,7 @@ package hex.deeplearning;
 import hex.Distribution;
 import hex.Model;
 import water.H2O;
+import static water.H2O.technote;
 import water.Key;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -228,7 +229,7 @@ public class DeepLearningParameters extends Model.Parameters {
   /**
    * A maximum on the sum of the squared incoming weights into
    * any one neuron. This tuning parameter is especially useful for unbound
-   * activation functions such as Maxout or Rectifier.
+   * activation functions such as Rectifier.
    */
   public float _max_w2 = Float.POSITIVE_INFINITY;
 
@@ -430,6 +431,10 @@ public class DeepLearningParameters extends Model.Parameters {
     for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
     if (_mini_batch_size < 1)
       dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
+    if (_mini_batch_size > 1)
+      dl.error("_mini_batch_size", "Mini-batch size > 1 is not yet supported.");
+    if (!_diagnostics)
+      dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
 
     if (!_autoencoder) {
       if (_valid == null)
@@ -507,7 +512,7 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_autoencoder && _loss == Loss.CrossEntropy)
         dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
       if (!classification && _loss == Loss.CrossEntropy)
-        dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
+        dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
     }
     if (!classification && _loss == Loss.CrossEntropy)
       dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
@@ -519,7 +524,7 @@ public class DeepLearningParameters extends Model.Parameters {
         case tweedie:
         case gamma:
         case poisson:
-          dl.error("_distribution", _distribution  + " distribution is not allowed for classification.");
+          dl.error("_distribution", technote(2, _distribution  + " distribution is not allowed for classification."));
           break;
         case AUTO:
         case bernoulli:
@@ -532,7 +537,7 @@ public class DeepLearningParameters extends Model.Parameters {
       switch(_distribution) {
         case multinomial:
         case bernoulli:
-          dl.error("_distribution", _distribution  + " distribution is not allowed for regression.");
+          dl.error("_distribution", technote(2, _distribution  + " distribution is not allowed for regression."));
           break;
         case tweedie:
         case gamma:
@@ -575,12 +580,18 @@ public class DeepLearningParameters extends Model.Parameters {
     if (classification && dl.hasOffsetCol())
       dl.error("_offset_column", "Offset is only supported for regression.");
 
+    if (_activation == Activation.Maxout || _activation == Activation.MaxoutWithDropout)
+      dl.warn("_activation", "Maxout implementation is still in progress: PUBDEV-1928");
+
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
       dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
     if (_max_categorical_features < 1)
       dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
-
+    if (_sparse)
+      dl.error("_sparse", "Deprecated: Sparse data handling not supported anymore - not faster.");
+    if (_col_major)
+      dl.error("_col_major", "Deprecated: Column major data handling not supported anymore - not faster.");
     if (!_sparse && _col_major) {
       dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
     }

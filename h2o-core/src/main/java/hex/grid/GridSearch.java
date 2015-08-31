@@ -116,7 +116,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
           new Grid<>(dest(),
                      _hyperSpaceWalker.getParams(),
                      _hyperSpaceWalker.getHyperParamNames(),
-                     _modelFactory.getModelName());
+                     _modelFactory.getModelName(),
+                     _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(jobKey());
     }
     // Java trick
@@ -208,11 +209,19 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       }
       // Grid search is done
       done();
-    } catch(Exception e) {
+    } catch(Throwable e) {
       // Something wrong happened during hyper-space walking
       // So cancel this job
       // FIXME: should I delete grid here? it failed but user can be interested in partial result
-      failed(e);
+      Job thisJob = DKV.getGet(jobKey());
+      if (thisJob._state == JobState.CANCELLED) {
+        Log.info("Job " + jobKey() + " cancelled by user.");
+      } else {
+        // Mark job as failed
+        failed(e);
+        // And propagate unknown exception up
+        throw e;
+      }
     } finally {
       // Unlock grid object
       grid.unlock(jobKey());
@@ -382,6 +391,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     @Override
     public ModelParametersBuilder<MP> get(MP initialParams) {
       return new SimpleParamsBuilder<>(initialParams);
+    }
+
+    @Override
+    public PojoUtils.FieldNaming getFieldNamingStrategy() {
+      return PojoUtils.FieldNaming.CONSISTENT;
     }
 
     /**

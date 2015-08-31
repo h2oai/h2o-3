@@ -15,15 +15,48 @@ class ModelBase(object):
     self._is_xvalidated=False
     self._xval_keys=None
 
-    for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
-      if metric in model_json["output"]:
-        if  model_json["output"][metric] is not None:
-          if metric=="cross_validation_metrics":
-            self._is_xvalidated=True
-          model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
+    if dest_key is not None and model_json is not None and metrics_class is not None:
+      # build Metric objects out of each metrics
+      for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
+        if metric in model_json["output"]:
+          if  model_json["output"][metric] is not None:
+            if metric=="cross_validation_metrics":
+              self._is_xvalidated=True
+            model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
 
-    if self._is_xvalidated:
-      self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+
+      # build a useful dict of the params
+      self._params={}
+      for p in self._model_json["parameters"]: self._params[p["label"]]=p
+
+  @property
+  def id(self):
+    """
+    :return: Retrieve this model's identifier.
+    """
+    return self._id
+
+  @property
+  def params(self):
+    """
+    Get the parameters and the actual/default values only.
+
+    :return: A dictionary of parameters used to build this model.
+    """
+    params = {}
+    for p in self._params:
+      params[p] = {"default":self._params[p]["default_value"], "actual":self._params[p]["actual_value"]}
+    return params
+
+  @property
+  def full_parameters(self):
+    """
+    Get the full specification of all parameters.
+
+    :return: a dictionary of parameters used to build this model.
+    """
+    return self._params
 
   def __repr__(self):
     self.show()
@@ -62,6 +95,15 @@ class ModelBase(object):
     :return: A model or list of models.
     """
     return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
+
+  @property
+  def xvals(self):
+    """
+    Return a list of the cross-validated models.
+
+    :return: A list of models
+    """
+    return self.get_xval_models()
 
   def deepfeatures(self, test_data, layer):
     """
@@ -421,3 +463,15 @@ class ModelBase(object):
   @staticmethod
   def _has(dictionary, key):
     return key in dictionary and dictionary[key] is not None
+
+  @staticmethod
+  def _check_targets(y_actual, y_predicted):
+    """
+    Check that y_actual and y_predicted have the same length.
+
+    :param y_actual: An H2OFrame
+    :param y_predicted: An H2OFrame
+    :return: None
+    """
+    if len(y_actual) != len(y_predicted):
+      raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))

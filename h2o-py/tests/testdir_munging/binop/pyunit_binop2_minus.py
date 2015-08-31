@@ -1,19 +1,19 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def binop_minus(ip,port):
     
     
 
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
-    rows, cols = iris.dim()
+    rows, cols = iris.dim
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
     res = 2 - iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [-209.9, -82.6, -6.9, 97.8]):
         assert abs((x - y)) < 1e-1,  "expected same values"
@@ -28,7 +28,7 @@ def binop_minus(ip,port):
     # LHS: scaler, RHS: H2OFrame
     res = 1.2 - iris[2]
     res2 = res[21,:] - iris
-    res_rows, res_cols = res2.dim()
+    res_rows, res_cols = res2.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     # LHS: scaler, RHS: H2OVec
@@ -65,11 +65,11 @@ def binop_minus(ip,port):
 
     # LHS: H2OFrame, RHS: H2OFrame
     res = iris - iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] - iris[1:3]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -94,7 +94,7 @@ def binop_minus(ip,port):
 
     # LHS: H2OFrame, RHS: scaler
     res = iris - 2
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [209.9, 82.6, 6.9, -97.8]):
         assert abs(x - y) < 1e-1,  "expected same values"
@@ -102,4 +102,4 @@ def binop_minus(ip,port):
 ###################################################################
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, binop_minus)
+    tests.run_test(sys.argv, binop_minus)

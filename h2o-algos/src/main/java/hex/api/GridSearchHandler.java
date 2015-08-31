@@ -118,6 +118,11 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
     public ModelParametersBuilder<MP> get(MP initialParams) {
       return new ModelParametersFromSchemaBuilder<MP, PS>(initialParams);
     }
+
+    @Override
+    public PojoUtils.FieldNaming getFieldNamingStrategy() {
+      return PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES;
+    }
   }
 
   /**
@@ -161,6 +166,15 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
       PojoUtils
           .copyProperties(params, paramsSchema, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, null,
                           fields.toArray(new String[fields.size()]));
+      // FIXME: handle these train/valid fields in different way
+      // See: ModelParametersSchema#fillImpl
+      if (params._valid == null && paramsSchema.validation_frame != null) {
+        params._valid = Key.make(paramsSchema.validation_frame.name);
+      }
+      if (params._train == null && paramsSchema.training_frame != null) {
+        params._train = Key.make(paramsSchema.training_frame.name);
+      }
+
       return params;
     }
   }

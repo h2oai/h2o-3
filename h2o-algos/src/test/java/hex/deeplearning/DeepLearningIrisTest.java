@@ -67,278 +67,270 @@ public class DeepLearningIrisTest extends TestUtil {
                     for (int hidden : hiddens) {
                       for (int epoch : epochs) {
                         for (double rate : rates) {
-                          for (boolean sparse : new boolean[]{true, false}) {
-                            for (boolean col_major : new boolean[]{false}) {
-                              Scope.enter();
-                              DeepLearningModel mymodel = null;
-                              Frame trainPredict = null;
-                              Frame testPredict = null;
-                              try {
-                                if (col_major && !sparse) continue;
-                                num_runs++;
-                                if (fraction < rng.nextFloat()) continue;
-                                Log.info("");
-                                Log.info("STARTING.");
-                                Log.info("Running with " + activation.name() + " activation function and " + loss.name() + " loss function.");
-                                Log.info("Initialization with " + dist.name() + " distribution and " + scale + " scale, holdout ratio " + holdout_ratio);
-                                Log.info("Using " + hidden + " hidden layer neurons and momentum: " + momentum);
-                                Log.info("Using seed " + seed);
+                          Scope.enter();
+                          DeepLearningModel mymodel = null;
+                          Frame trainPredict = null;
+                          Frame testPredict = null;
+                          try {
+                            num_runs++;
+                            if (fraction < rng.nextFloat()) continue;
+                            Log.info("");
+                            Log.info("STARTING.");
+                            Log.info("Running with " + activation.name() + " activation function and " + loss.name() + " loss function.");
+                            Log.info("Initialization with " + dist.name() + " distribution and " + scale + " scale, holdout ratio " + holdout_ratio);
+                            Log.info("Using " + hidden + " hidden layer neurons and momentum: " + momentum);
+                            Log.info("Using seed " + seed);
 
-                                Random rand;
+                            Random rand;
 
-                                int trial = 0;
-                                do {
-                                  Log.info("Trial #" + ++trial);
-                                  if (_train != null) _train.delete();
-                                  if (_test  != null) _test .delete();
+                            int trial = 0;
+                            do {
+                              Log.info("Trial #" + ++trial);
+                              if (_train != null) _train.delete();
+                              if (_test  != null) _test .delete();
 
-                                  rand = RandomUtils.getRNG(seed);
+                              rand = RandomUtils.getRNG(seed);
 
-                                  double[][] rows = new double[(int) frame.numRows()][frame.numCols()];
-                                  String[] names = new String[frame.numCols()];
-                                  for (int c = 0; c < frame.numCols(); c++) {
-                                    names[c] = "ColumnName" + c;
-                                    for (int r = 0; r < frame.numRows(); r++)
-                                      rows[r][c] = frame.vecs()[c].at(r);
-                                  }
+                              double[][] rows = new double[(int) frame.numRows()][frame.numCols()];
+                              String[] names = new String[frame.numCols()];
+                              for (int c = 0; c < frame.numCols(); c++) {
+                                names[c] = "ColumnName" + c;
+                                for (int r = 0; r < frame.numRows(); r++)
+                                  rows[r][c] = frame.vecs()[c].at(r);
+                              }
 
-                                  for (int i = rows.length - 1; i >= 0; i--) {
-                                    int shuffle = rand.nextInt(i + 1);
-                                    double[] row = rows[shuffle];
-                                    rows[shuffle] = rows[i];
-                                    rows[i] = row;
-                                  }
+                              for (int i = rows.length - 1; i >= 0; i--) {
+                                int shuffle = rand.nextInt(i + 1);
+                                double[] row = rows[shuffle];
+                                rows[shuffle] = rows[i];
+                                rows[i] = row;
+                              }
 
-                                  int limit = (int) (frame.numRows() * holdout_ratio);
-                                  _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
-                                  _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
+                              int limit = (int) (frame.numRows() * holdout_ratio);
+                              _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
+                              _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
-                                  // Must have all output classes in training
-                                  // data (since that's what the reference
-                                  // implementation has hardcoded).  But count
-                                  // of classes is not known unless we visit
-                                  // all the response data - force that now.
-                                  _train.replace(_train.numCols()-1,_train.lastVec().toEnum());
-                                  _test .replace(_train.numCols()-1,_test .lastVec().toEnum());
-                                  DKV.put(_train._key,_train);
-                                  DKV.put(_test ._key,_test );
-                                }
-                                while( _train.lastVec().cardinality() < 3);
+                              // Must have all output classes in training
+                              // data (since that's what the reference
+                              // implementation has hardcoded).  But count
+                              // of classes is not known unless we visit
+                              // all the response data - force that now.
+                              _train.replace(_train.numCols()-1,_train.lastVec().toEnum());
+                              _test .replace(_train.numCols()-1,_test .lastVec().toEnum());
+                              DKV.put(_train._key,_train);
+                              DKV.put(_test ._key,_test );
+                            }
+                            while( _train.lastVec().cardinality() < 3);
 
-                                // use the same seed for the reference implementation
-                                DeepLearningMLPReference ref = new DeepLearningMLPReference();
-                                ref.init(activation, RandomUtils.getRNG(seed), holdout_ratio, hidden);
+                            // use the same seed for the reference implementation
+                            DeepLearningMLPReference ref = new DeepLearningMLPReference();
+                            ref.init(activation, RandomUtils.getRNG(seed), holdout_ratio, hidden);
 
-                                DeepLearningParameters p = new DeepLearningParameters();
-                                p._train = _train._key;
-                                p._response_column = _train.lastVecName();
-                                assert _train.lastVec().isEnum();
-                                p._ignored_columns = null;
+                            DeepLearningParameters p = new DeepLearningParameters();
+                            p._train = _train._key;
+                            p._response_column = _train.lastVecName();
+                            assert _train.lastVec().isEnum();
+                            p._ignored_columns = null;
 
-                                p._seed = seed;
-                                p._hidden = new int[]{hidden};
-                                p._adaptive_rate = false;
-                                p._rho = 0;
-                                p._epsilon = 0;
-                                p._rate = rate / (1 - momentum); //adapt to (1-m) correction that's done inside (only for constant momentum!)
-                                p._activation = activation;
-                                p._max_w2 = Float.POSITIVE_INFINITY;
-                                p._input_dropout_ratio = 0;
-                                p._rate_annealing = 0; //do not change - not implemented in reference
-                                p._l1 = 0;
-                                p._loss = loss;
-                                p._l2 = 0;
-                                p._momentum_stable = momentum; //reference only supports constant momentum
-                                p._momentum_start = p._momentum_stable; //do not change - not implemented in reference
-                                p._momentum_ramp = 0; //do not change - not implemented in reference
-                                p._initial_weight_distribution = dist;
-                                p._initial_weight_scale = scale;
-                                p._diagnostics = true;
-                                p._valid = null;
-                                p._quiet_mode = true;
-                                p._fast_mode = false; //to be the same as reference
+                            p._seed = seed;
+                            p._hidden = new int[]{hidden};
+                            p._adaptive_rate = false;
+                            p._rho = 0;
+                            p._epsilon = 0;
+                            p._rate = rate / (1 - momentum); //adapt to (1-m) correction that's done inside (only for constant momentum!)
+                            p._activation = activation;
+                            p._max_w2 = Float.POSITIVE_INFINITY;
+                            p._input_dropout_ratio = 0;
+                            p._rate_annealing = 0; //do not change - not implemented in reference
+                            p._l1 = 0;
+                            p._loss = loss;
+                            p._l2 = 0;
+                            p._momentum_stable = momentum; //reference only supports constant momentum
+                            p._momentum_start = p._momentum_stable; //do not change - not implemented in reference
+                            p._momentum_ramp = 0; //do not change - not implemented in reference
+                            p._initial_weight_distribution = dist;
+                            p._initial_weight_scale = scale;
+                            p._valid = null;
+                            p._quiet_mode = true;
+                            p._fast_mode = false; //to be the same as reference
 //                            p._fast_mode = true; //to be the same as old NeuralNet code
-                                p._nesterov_accelerated_gradient = false; //to be the same as reference
+                            p._nesterov_accelerated_gradient = false; //to be the same as reference
 //                            p._nesterov_accelerated_gradient = true; //to be the same as old NeuralNet code
-                                p._train_samples_per_iteration = 0; //sync once per period
-                                p._ignore_const_cols = false;
-                                p._shuffle_training_data = false;
-                                p._classification_stop = -1; //don't stop early -> need to compare against reference, which doesn't stop either
-                                p._force_load_balance = false; //keep just 1 chunk for reproducibility
-                                p._overwrite_with_best_model = false; //keep just 1 chunk for reproducibility
-                                p._replicate_training_data = false;
-                                p._single_node_mode = true;
-                                p._sparse = sparse;
-                                p._col_major = col_major;
-                                p._epochs = 0;
-                                p._elastic_averaging = false;
-                                DeepLearning dl = new DeepLearning(p);
-                                try {
-                                  mymodel = dl.trainModel().get();
-                                } finally {
-                                  dl.remove();
-                                }
-                                p._epochs = epoch;
+                            p._train_samples_per_iteration = 0; //sync once per period
+                            p._ignore_const_cols = false;
+                            p._shuffle_training_data = false;
+                            p._classification_stop = -1; //don't stop early -> need to compare against reference, which doesn't stop either
+                            p._force_load_balance = false; //keep just 1 chunk for reproducibility
+                            p._overwrite_with_best_model = false;
+                            p._replicate_training_data = false;
+                            p._single_node_mode = true;
+                            p._epochs = 0;
+                            p._elastic_averaging = false;
+                            DeepLearning dl = new DeepLearning(p);
+                            try {
+                              mymodel = dl.trainModel().get();
+                            } finally {
+                              dl.remove();
+                            }
+                            p._epochs = epoch;
 
-                                Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
+                            Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
 
-                                // use the same random weights for the reference implementation
-                                Neurons l = neurons[1];
-                                for (int o = 0; o < l._a.size(); o++) {
-                                  for (int i = 0; i < l._previous._a.size(); i++) {
+                            // use the same random weights for the reference implementation
+                            Neurons l = neurons[1];
+                            for (int o = 0; o < l._a.size(); o++) {
+                              for (int i = 0; i < l._previous._a.size(); i++) {
 //                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
-                                    ref._nn.ihWeights[i][o] = l._w.get(o, i);
-                                  }
-                                  ref._nn.hBiases[o] = l._b.get(o);
+                                ref._nn.ihWeights[i][o] = l._w.get(o, i);
+                              }
+                              ref._nn.hBiases[o] = l._b.get(o);
 //                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
-                                }
-                                l = neurons[2];
-                                for (int o = 0; o < l._a.size(); o++) {
-                                  for (int i = 0; i < l._previous._a.size(); i++) {
+                            }
+                            l = neurons[2];
+                            for (int o = 0; o < l._a.size(); o++) {
+                              for (int i = 0; i < l._previous._a.size(); i++) {
 //                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
-                                    ref._nn.hoWeights[i][o] = l._w.get(o, i);
-                                  }
-                                  ref._nn.oBiases[o] = l._b.get(o);
+                                ref._nn.hoWeights[i][o] = l._w.get(o, i);
+                              }
+                              ref._nn.oBiases[o] = l._b.get(o);
 //                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
-                                }
+                            }
 
-                                // Train the Reference
-                                ref.train((int) p._epochs, rate, p._momentum_stable, loss);
+                            // Train the Reference
+                            ref.train((int) p._epochs, rate, p._momentum_stable, loss, seed);
 
-                                // Train H2O
-                                mymodel.delete();
-                                dl = new DeepLearning(p);
-                                try {
-                                  mymodel = dl.trainModel().get();
-                                } finally {
-                                  dl.remove();
-                                }
-                                Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * dl.train().numRows());
+                            // Train H2O
+                            mymodel.delete();
+                            dl = new DeepLearning(p);
+                            try {
+                              mymodel = dl.trainModel().get();
+                            } finally {
+                              dl.remove();
+                            }
+                            Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * dl.train().numRows());
 
-                                /**
-                                 * Tolerances (should ideally be super tight -> expect the same double/float precision math inside both algos)
-                                 */
-                                final double abseps = 1e-4;
-                                final double releps = 1e-4;
+                            /**
+                             * Tolerances (should ideally be super tight -> expect the same double/float precision math inside both algos)
+                             */
+                            final double abseps = 1e-6;
+                            final double releps = 1e-6;
 
-                                /**
-                                 * Compare weights and biases in hidden layer
-                                 */
-                                neurons = DeepLearningTask.makeNeuronsForTesting(mymodel.model_info()); //link the weights to the neurons, for easy access
-                                l = neurons[1];
-                                for (int o = 0; o < l._a.size(); o++) {
-                                  for (int i = 0; i < l._previous._a.size(); i++) {
-                                    double a = ref._nn.ihWeights[i][o];
-                                    double b = l._w.get(o, i);
-                                    compareVal(a, b, abseps, releps);
+                            /**
+                             * Compare weights and biases in hidden layer
+                             */
+                            neurons = DeepLearningTask.makeNeuronsForTesting(mymodel.model_info()); //link the weights to the neurons, for easy access
+                            l = neurons[1];
+                            for (int o = 0; o < l._a.size(); o++) {
+                              for (int i = 0; i < l._previous._a.size(); i++) {
+                                double a = ref._nn.ihWeights[i][o];
+                                double b = l._w.get(o, i);
+                                compareVal(a, b, abseps, releps);
 //                                System.out.println("weight[" + o + "]=" + b);
-                                  }
-                                  double ba = ref._nn.hBiases[o];
-                                  double bb = l._b.get(o);
-                                  compareVal(ba, bb, abseps, releps);
-                                }
-                                Log.info("Weights and biases for hidden layer: PASS");
+                              }
+                              double ba = ref._nn.hBiases[o];
+                              double bb = l._b.get(o);
+                              compareVal(ba, bb, abseps, releps);
+                            }
+                            Log.info("Weights and biases for hidden layer: PASS");
 
-                                /**
-                                 * Compare weights and biases for output layer
-                                 */
-                                l = neurons[2];
-                                for (int o = 0; o < l._a.size(); o++) {
-                                  for (int i = 0; i < l._previous._a.size(); i++) {
-                                    double a = ref._nn.hoWeights[i][o];
-                                    double b = l._w.get(o, i);
-                                    compareVal(a, b, abseps, releps);
-                                  }
-                                  double ba = ref._nn.oBiases[o];
-                                  double bb = l._b.get(o);
-                                  compareVal(ba, bb, abseps, releps);
-                                }
-                                Log.info("Weights and biases for output layer: PASS");
+                            /**
+                             * Compare weights and biases for output layer
+                             */
+                            l = neurons[2];
+                            for (int o = 0; o < l._a.size(); o++) {
+                              for (int i = 0; i < l._previous._a.size(); i++) {
+                                double a = ref._nn.hoWeights[i][o];
+                                double b = l._w.get(o, i);
+                                compareVal(a, b, abseps, releps);
+                              }
+                              double ba = ref._nn.oBiases[o];
+                              double bb = l._b.get(o);
+                              compareVal(ba, bb, abseps, releps);
+                            }
+                            Log.info("Weights and biases for output layer: PASS");
 
-                                /**
-                                 * Compare predictions
-                                 * Note: Reference and H2O each do their internal data normalization,
-                                 * so we must use their "own" test data, which is assumed to be created correctly.
-                                 */
-                                // H2O predictions
-                                Frame fpreds = mymodel.score(_test); //[0] is label, [1]...[4] are the probabilities
+                            /**
+                             * Compare predictions
+                             * Note: Reference and H2O each do their internal data normalization,
+                             * so we must use their "own" test data, which is assumed to be created correctly.
+                             */
+                            // H2O predictions
+                            Frame fpreds = mymodel.score(_test); //[0] is label, [1]...[4] are the probabilities
 
-                                try {
-                                  for (int i = 0; i < _test.numRows(); ++i) {
-                                    // Reference predictions
-                                    double[] xValues = new double[neurons[0]._a.size()];
-                                    System.arraycopy(ref._testData[i], 0, xValues, 0, xValues.length);
-                                    double[] ref_preds = ref._nn.ComputeOutputs(xValues);
+                            try {
+                              for (int i = 0; i < _test.numRows(); ++i) {
+                                // Reference predictions
+                                double[] xValues = new double[neurons[0]._a.size()];
+                                System.arraycopy(ref._testData[i], 0, xValues, 0, xValues.length);
+                                double[] ref_preds = ref._nn.ComputeOutputs(xValues);
 
-                                    // find the label
-                                    // do the same as H2O here (compare float values and break ties based on row number)
-                                    double[] preds = new double[ref_preds.length + 1];
-                                    for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = ref_preds[j];
-                                    preds[0] = GenModel.getPrediction(preds, xValues, 0.5);
+                                // find the label
+                                // do the same as H2O here (compare float values and break ties based on row number)
+                                double[] preds = new double[ref_preds.length + 1];
+                                for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = ref_preds[j];
+                                preds[0] = GenModel.getPrediction(preds, null, xValues, 0.5);
 
-                                    // compare predicted label
-                                    Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
+                                // compare predicted label
+                                Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
 //                                // compare predicted probabilities
 //                                for (int j=0; j<ref_preds.length; ++j) {
 //                                  compareVal((float)(ref_preds[j]), fpreds.vecs()[1+j].at(i), abseps, releps);
 //                                }
-                                  }
-                                } finally {
-                                  if (fpreds != null) fpreds.delete();
-                                }
-                                Log.info("Predicted values: PASS");
+                              }
+                            } finally {
+                              if (fpreds != null) fpreds.delete();
+                            }
+                            Log.info("Predicted values: PASS");
 
-                                /**
-                                 * Compare (self-reported) scoring
-                                 */
-                                final double trainErr = ref._nn.Accuracy(ref._trainData);
-                                final double  testErr = ref._nn.Accuracy(ref. _testData);
-                                trainPredict = mymodel.score(_train);
-                                testPredict  = mymodel.score(_test );
-                                hex.ModelMetrics mmtrain = hex.ModelMetrics.getFromDKV(mymodel,_train);
-                                hex.ModelMetrics mmtest  = hex.ModelMetrics.getFromDKV(mymodel,_test );
-                                final double myTrainErr = mmtrain.cm().err();
-                                final double  myTestErr = mmtest .cm().err();
-                                Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
-                                Log.info("REF  training error : " +   trainErr * 100 + "%, test error: " +   testErr * 100 + "%");
-                                compareVal(trainErr, myTrainErr, abseps, releps);
-                                compareVal( testErr,  myTestErr, abseps, releps);
-                                Log.info("Scoring: PASS");
+                            /**
+                             * Compare (self-reported) scoring
+                             */
+                            final double trainErr = ref._nn.Accuracy(ref._trainData);
+                            final double  testErr = ref._nn.Accuracy(ref. _testData);
+                            trainPredict = mymodel.score(_train);
+                            testPredict  = mymodel.score(_test );
+                            hex.ModelMetrics mmtrain = hex.ModelMetrics.getFromDKV(mymodel,_train);
+                            hex.ModelMetrics mmtest  = hex.ModelMetrics.getFromDKV(mymodel,_test );
+                            final double myTrainErr = mmtrain.cm().err();
+                            final double  myTestErr = mmtest .cm().err();
+                            Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
+                            Log.info("REF  training error : " +   trainErr * 100 + "%, test error: " +   testErr * 100 + "%");
+                            compareVal(trainErr, myTrainErr, abseps, releps);
+                            compareVal( testErr,  myTestErr, abseps, releps);
+                            Log.info("Scoring: PASS");
 
-                                // get the actual best error on training data
-                                float best_err = Float.MAX_VALUE;
-                                for (DeepLearningScoring err : mymodel.scoring_history()) {
-                                  best_err = Math.min(best_err, (float) (Double.isNaN(err.scored_train._classError) ? best_err : err.scored_train._classError)); //multi-class classification
-                                }
-                                Log.info("Actual best error : " + best_err * 100 + "%.");
-                                
-                                // this is enabled by default
-                                if (p._overwrite_with_best_model) {
-                                  Frame bestPredict = null;
-                                  try {
-                                    bestPredict = mymodel.score(_train);
-                                    hex.ModelMetrics mmbest = hex.ModelMetrics.getFromDKV(mymodel,_train);
-                                    final double bestErr = mmbest.cm().err();
-                                    Log.info("Best_model's error : " + bestErr * 100 + "%.");
-                                    compareVal(bestErr, best_err, abseps, releps);
-                                  } finally {
-                                    if (bestPredict != null) bestPredict.delete();
-                                  }
-                                }
-                                Log.info("Parameters combination " + num_runs + ": PASS");
+                            // get the actual best error on training data
+                            float best_err = Float.MAX_VALUE;
+                            for (DeepLearningScoring err : mymodel.scoring_history()) {
+                              best_err = Math.min(best_err, (float) (Double.isNaN(err.scored_train._classError) ? best_err : err.scored_train._classError)); //multi-class classification
+                            }
+                            Log.info("Actual best error : " + best_err * 100 + "%.");
 
+                            // this is enabled by default
+                            if (p._overwrite_with_best_model) {
+                              Frame bestPredict = null;
+                              try {
+                                bestPredict = mymodel.score(_train);
+                                hex.ModelMetrics mmbest = hex.ModelMetrics.getFromDKV(mymodel,_train);
+                                final double bestErr = mmbest.cm().err();
+                                Log.info("Best_model's error : " + bestErr * 100 + "%.");
+                                compareVal(bestErr, best_err, abseps, releps);
                               } finally {
-                                // cleanup
-                                if (mymodel != null) {
-                                  mymodel.delete();
-                                }
-                                if (_train != null) _train.delete();
-                                if (_test != null) _test.delete();
-                                if (trainPredict != null) trainPredict.delete();
-                                if (testPredict != null) testPredict.delete();
-                                Scope.exit();
+                                if (bestPredict != null) bestPredict.delete();
                               }
                             }
+                            Log.info("Parameters combination " + num_runs + ": PASS");
+
+                          } finally {
+                            // cleanup
+                            if (mymodel != null) {
+                              mymodel.delete();
+                            }
+                            if (_train != null) _train.delete();
+                            if (_test != null) _test.delete();
+                            if (trainPredict != null) trainPredict.delete();
+                            if (testPredict != null) testPredict.delete();
+                            Scope.exit();
                           }
                         }
                       }

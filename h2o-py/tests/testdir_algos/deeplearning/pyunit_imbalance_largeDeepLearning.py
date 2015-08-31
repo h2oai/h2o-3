@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 def imbalance(ip, port):
     
@@ -19,9 +19,9 @@ def imbalance(ip, port):
                                    reproducible=True, seed=1234)
     print hh_balanced
 
-    #compare error for class 6 (difficult minority)
-    class_6_err_imbalanced = hh_imbalanced.confusion_matrix(covtype).cell_values[5][7]
-    class_6_err_balanced = hh_balanced.confusion_matrix(covtype).cell_values[5][7]
+    #compare overall logloss
+    class_6_err_imbalanced = hh_imbalanced.logloss()
+    class_6_err_balanced = hh_balanced.logloss()
 
     if class_6_err_imbalanced < class_6_err_balanced:
         print "--------------------"
@@ -40,4 +40,4 @@ def imbalance(ip, port):
     assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, imbalance)
+    tests.run_test(sys.argv, imbalance)

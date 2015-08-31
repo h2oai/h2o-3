@@ -64,7 +64,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       }
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data, " + defaultThreshold() + " );").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + " );").nl();
     }
   }
 

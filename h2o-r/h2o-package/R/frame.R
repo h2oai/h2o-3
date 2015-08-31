@@ -531,27 +531,36 @@ setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) h2o.match
 #' @export
 setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.omit", object) )
 
-#' Compute FFT of an H2OFrame
+#' Compute DCT of an H2OFrame
 #'
-#' Compute the Discrete Fast Fourier Transform of every row in the H2OFrame
+#' Compute the Discrete Cosine Transform of every row in the H2OFrame
 #'
 #' @param data An \linkS4class{H2OFrame} object representing the dataset to transform
 #' @param destination_frame A frame ID for the result
-#' @param dimensions An array containing the 3 integer values for length, width, depth of each sample.
-#'        The product of LxWxD must total up to less than the number of columns. For 1D FFT, use c(L,1,1).
-#' @param inverse Whether to perform the inverse Fourier transform
+#' @param dimensions An array containing the 3 integer values for height, width, depth of each sample.
+#'        The product of HxWxD must total up to less than the number of columns.
+#'        For 1D, use c(L,1,1), for 2D, use C(N,M,1).
+#' @param inverse Whether to perform the inverse transform
 #' @examples
 #' \donttest{
 #'   library(h2o)
 #'   localH2O = h2o.init()
-#'   df <- h2o.createFrame(localH2O, rows = 10000, cols = 1024,
+#'   df <- h2o.createFrame(localH2O, rows = 1000, cols = 8*16*24,
 #'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
-#'   df1 <- h2o.fft(data=df,dimensions=c(1024,1,1),destination_frame="df1",inverse=FALSE)
-#'   df2 <- h2o.fft(data=df1,dimensions=c(1024,1,1),destination_frame="df2",inverse=TRUE)
+#'   df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
+#'   max(abs(df1-df2))
+#'
+#'   df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
+#'   max(abs(df1-df2))
+#'
+#'   df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
 #'   max(abs(df1-df2))
 #' }
 #' @export
-h2o.fft <- function(data, destination_frame, dimensions, inverse=F) {
+h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(data)
@@ -567,7 +576,7 @@ h2o.fft <- function(data, destination_frame, dimensions, inverse=F) {
     params$destination_frame <- destination_frame
   params$inverse <- inverse
 
-  res <- .h2o.__remoteSend(data@conn, method="POST", h2oRestApiVersion = 99, "FFTTransformer", .params = params)
+  res <- .h2o.__remoteSend(data@conn, method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(data@conn, job_key)
 
@@ -1343,11 +1352,8 @@ h2o.levels <- function(x, i) {
     i <- 1
   } else if( is.character(i) ) i <- match(i, colnames(x))
   if( is.na(i) ) stop("no such column found")
-  col_idx <- i
-  if (col_idx <= 0) col_idx <- 1
-  if (col_idx >= ncol(x)) col_idx <- ncol(x)
-  res <- .h2o.__remoteSend(x@conn, .h2o.__COL_DOMAIN(x@frame_id, colnames(x)[col_idx]), method="GET")
-  res$domain[[1]]
+  levels <- as.data.frame(.h2o.nary_frame_op("levels", x[,i]))[,1]
+  if( length(levels) == 0 ) {return(NULL)} else {return(levels)}
 }
 
 #'
@@ -1629,7 +1635,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
       df.domains.subset <- df.domains[1L:factors,]      # subset to the top `factors` (default is 6)
 
       # if there are any missing levels, plonk them down here now after we've subset.
-      if( missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
+      if( !is.null(missing.count) && !is.na(missing.count) && missing.count > 0L ) df.domains.subset <- rbind( df.domains.subset, c("NA", missing.count))
 
       # fish out the domains
       domains <- as.character(df.domains.subset[,1L])
@@ -2598,7 +2604,7 @@ h2o.vote  <- function(x, nclasses, weights=rep(0,ncol(x))) { .h2o.nary_frame_op(
 # TODO: Cleanup the cruft!
 #' Split H2O Dataset, Apply Function, and Return Results
 #'
-#' For each subset of an H2O data set, apply a user-specified function, then comine the results.
+#' For each subset of an H2O data set, apply a user-specified function, then combine the results.  This is an experimental feature.
 #'
 #' @param .data An \linkS4class{H2OFrame} object to be processed.
 #' @param .variables Variables to split \code{.data} by, either the indices or names of a set of columns.
@@ -2883,7 +2889,9 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #' Compute A Histgram
 #'
 #' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
-#' in computing bin width.
+#' in computing bin width. Note that we do not beautify the breakpoints as R does.
+#'
+#'
 #'
 #' @param x A single numeric column from an H2OFrame.
 #' @param breaks Can be one of the following:
@@ -3012,3 +3020,32 @@ h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
 ##   })
 ##   list.of.bins
 ## })
+
+#
+# Force evaluation of given frame
+# if it is necessary.
+#
+.h2o.evalFrame <- function(frame) {
+  mktmp <- !.is.eval(frame)
+  if (mktmp) {
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, frame_id=frame@frame_id)
+  }
+}
+
+#
+# Check and evaluate given frame if it is necassary.
+# Returns frame.
+#
+.h2o.checkFrameParam <- function(frame, param_name) {
+  if (!inherits(frame, "H2OFrame")) {
+   tryCatch(frame <- h2o.getFrame(frame),
+            error = function(err) {
+              stop(cat("argument \"", param_name, "\" must be a valid H2OFrame or frame ID"))
+            })
+  } else {
+    # Force AST evaluation
+    .h2o.evalFrame(frame)
+  }
+  frame
+}
+

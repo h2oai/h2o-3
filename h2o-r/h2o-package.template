@@ -16,7 +16,7 @@ Version: \tab SUBST_PROJECT_VERSION\cr
 Branch: \tab SUBST_PROJECT_BRANCH\cr
 Date: \tab SUBST_PROJECT_DATE\cr
 License: \tab Apache License (== 2.0)\cr
-Depends: \tab R (>= 2.13.0), RCurl, rjson, statmod, tools, methods, utils\cr
+Depends: \tab R (>= 2.13.0), RCurl, jsonlite, statmod, tools, methods, utils\cr
 }
 
 This package allows the user to run basic H2O commands using R commands. In order to use it, you must first have H2O running. To run H2O on your local machine, call \code{h2o.init} without any arguments, and H2O will be automatically launched at localhost:54321, where the IP is "127.0.0.1" and the port is 54321. If H2O is running on a cluster, you must provide the IP and port of the remote machine as arguments to the h2o.init() call.

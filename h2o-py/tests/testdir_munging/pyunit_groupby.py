@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import pandas as pd
 import numpy as np
 
@@ -12,7 +12,7 @@ def group_by(ip,port):
     pd_iris = pd.read_csv(h2o.locate("smalldata/iris/iris_wheader.csv"))
 
     na_handling = ["ignore","rm","all"]
-    col_names = h2o_iris.col_names()[0:4]
+    col_names = h2o_iris.col_names[0:4]
 
     print "Running smoke test"
 
@@ -32,4 +32,4 @@ def group_by(ip,port):
         .sum(  na=na)
       print grouped.get_frame()
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, group_by)
+    tests.run_test(sys.argv, group_by)

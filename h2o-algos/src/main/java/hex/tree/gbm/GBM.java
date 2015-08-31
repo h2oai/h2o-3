@@ -103,22 +103,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     switch( _parms._distribution) {
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-        error("_distribution", "Binomial requires the response to be a 2-class categorical");
+        error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
       break;
     case multinomial:
-      if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
+      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an enum response."));
       break;
     case poisson:
-      if (isClassifier()) error("_distribution", "Poisson requires the response to be numeric.");
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Poisson requires the response to be numeric."));
       break;
     case gamma:
-      if (isClassifier()) error("_distribution", "Gamma requires the response to be numeric.");
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
       break;
     case tweedie:
-      if (isClassifier()) error("_distribution", "Tweedie requires the response to be numeric.");
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Tweedie requires the response to be numeric."));
       break;
     case gaussian:
-      if (isClassifier()) error("_distribution", "Gaussian requires the response to be numeric.");
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Gaussian requires the response to be numeric."));
       break;
     case AUTO:
       break;
@@ -163,8 +163,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping )
+          if( training_r2 >= _parms._r2_stopping ) {
+            doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
             return;             // Stop when approaching round-off error
+          }
         }
 
         // Compute predictions and resulting residuals for trees built so far

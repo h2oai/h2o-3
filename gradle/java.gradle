@@ -34,3 +34,9 @@ if (JavaVersion.current().isJava8Compatible()) {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
 }
+
+javadoc {
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
+    def tmp = title.tokenize()[0] +  " version " + bv.getProjectVersion() + " API"
+    title = tmp
+}

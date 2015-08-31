@@ -5,6 +5,17 @@ description = "H2O GenModel"
 
 apply from: "$rootDir/gradle/dataCheck.gradle"
 
+javadoc {
+    options.overview = "src/main/java/overview.html" // relative to source root
+
+    doLast {
+        copy {
+            from "src/main/java/doc-files"
+            into "$buildDir/docs/javadoc/doc-files"
+        }
+    }
+}
+
 //
 // This project has intentionally no dependencies
 // DO NOT ADD ANY DEPENDENCIES ON h2o-* projects

@@ -653,34 +653,52 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
 
+  static <E> Object parsePrimitve(String s, Class fclz) {
+    if (fclz.equals(String.class)) return s; // Strings already the right primitive type
+    if (fclz.equals(int.class)) return parseInteger(s, int.class);
+    if (fclz.equals(long.class)) return parseInteger(s, long.class);
+    if (fclz.equals(short.class)) return parseInteger(s, short.class);
+    if (fclz.equals(boolean.class)) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
+    if (fclz.equals(byte.class)) return parseInteger(s, byte.class);
+    if (fclz.equals(double.class)) return Double.valueOf(s);
+    if (fclz.equals(float.class)) return Float.valueOf(s);
+    //FIXME: if (fclz.equals(char.class)) return Character.valueOf(s);
+    throw H2O.fail("Unknown primitive type to parse: " + fclz.getSimpleName());
+  }
+
   // URL parameter parse
   static <E> Object parse(String field_name, String s, Class fclz, boolean required, Class schemaClass) {
-    try {
-      if (fclz.equals(String.class)) return s; // Strings already the right primitive type
-      if (fclz.equals(int.class)) return parseInteger(s, int.class);
-      if (fclz.equals(long.class)) return parseInteger(s, long.class);
-      if (fclz.equals(short.class)) return parseInteger(s, short.class);
-      if (fclz.equals(boolean.class)) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
-      if (fclz.equals(byte.class)) return parseInteger(s, byte.class);
-      if (fclz.equals(double.class)) return Double.valueOf(s);
-      if (fclz.equals(float.class)) return Float.valueOf(s);
-    } catch (NumberFormatException ne) {
-      String msg = "Illegal argument for field: " + field_name + " of schema: " +  schemaClass.getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
-      throw new H2OIllegalArgumentException(msg);
+    if (fclz.isPrimitive() || String.class.equals(fclz)) {
+      try {
+        return parsePrimitve(s, fclz);
+      } catch (NumberFormatException ne) {
+        String msg = "Illegal argument for field: " + field_name + " of schema: " +  schemaClass.getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
+        throw new H2OIllegalArgumentException(msg);
+      }
     }
-    if (fclz.isArray()) {      // An array?
-      if (s.equals("null") || s.length() == 0) return null;
-      read(s, 0, '[', fclz);
-      read(s, s.length() - 1, ']', fclz);
-
-      String inside = s.substring(1, s.length() - 1).trim();
-      String[] splits; // "".split(",") => {""} so handle the empty case explicitly
-      if (inside.length() == 0)
-        splits = new String[]{};
-      else
-        splits = splitArgs(inside);
+    // An array?
+    if (fclz.isArray()) {
+      // Get component type
       Class<E> afclz = (Class<E>) fclz.getComponentType();
+      // Result
       E[] a = null;
+      // Handle simple case with null-array
+      if (s.equals("null") || s.length() == 0) return null;
+      // Splitted values
+      String[] splits; // "".split(",") => {""} so handle the empty case explicitly
+      if (s.startsWith("[") && s.endsWith("]") ) { // It looks like an array
+        read(s, 0, '[', fclz);
+        read(s, s.length() - 1, ']', fclz);
+        String inside = s.substring(1, s.length() - 1).trim();
+        if (inside.length() == 0)
+          splits = new String[]{};
+        else
+          splits = splitArgs(inside);
+      } else { // Lets try to parse single value as an array!
+        // See PUBDEV-1955
+        splits = new String[] { s.trim() };
+      }
+
       // Can't cast an int[] to an Object[].  Sigh.
       if (afclz == int.class) { // TODO: other primitive types. . .
         a = (E[]) Array.newInstance(Integer.class, splits.length);

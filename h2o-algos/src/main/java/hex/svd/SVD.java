@@ -18,6 +18,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 import java.util.Arrays;
 
@@ -72,6 +73,21 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     init(false);
   }
 
+  @Override
+  protected void checkMemoryFootPrint() {
+    HeartBeat hb = H2O.SELF._heartbeat;
+    double p = _train.degreesOfFreedom();
+    long mem_usage = (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
+    long max_mem = hb.get_max_mem();
+    if (mem_usage > max_mem) {
+      String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
+              + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+              + ") - try reducing the number of columns and/or the number of categorical factors.";
+      error("_train", msg);
+      cancel(msg);
+    }
+  }
+
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
@@ -87,6 +103,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     if(_parms._nv < 1 || _parms._nv > _ncolExp)
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
+
+    if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   // Compute ivv_sum - vec * vec' for symmetric array ivv_sum

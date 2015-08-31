@@ -24,19 +24,19 @@ class GroupBy:
   def __init__(self,fr,by,order_by=None):
     self._fr=fr                 # IN
     self._by=by                 # IN
-    self._col_names=fr.names()  # IN
+    self._col_names=fr.names    # IN
     self._aggs={}               # IN
     self._order_by = order_by
     self._computed=False        #
     self._res=None              # OUT: resulting group by frame
 
-    if isinstance(order_by,str):  # sanitize order_by if str
+    if isinstance(order_by,basestring):  # sanitize order_by if str
       idx = self._fr.index(order_by)  # must indirectly index into by columns
       try:               self._order_by=self._by.index(idx)
       except ValueError: print "Invalid order_by: Must be a group by column."
 
-    if isinstance(by,str):            self._by = [self._fr.index(by)]
-    elif isinstance(by,(tuple,list)): self._by = [self._fr.index(b) if isinstance(b, str) else b for b in by]
+    if isinstance(by,basestring):     self._by = [self._fr.index(by)]
+    elif isinstance(by,(tuple,list)): self._by = [self._fr.index(b) if isinstance(b, basestring) else b for b in by]
     else: self._by = [self._by]
 
   def min(  self,col=None,name="",na="all"): return self._add_agg("min",col,name,na)
@@ -49,6 +49,7 @@ class GroupBy:
   def first(self,col=None,name="",na="all"): return self._add_agg("first",col,name,na)
   def last( self,col=None,name="",na="all"): return self._add_agg("last",col,name,na)
   def ss(self,col=None,name="",na="all"):    return self._add_agg("ss",col,name,na)
+  def mode(self,col=None,name="",na="all"):  return self._add_agg("mode",col,name,na)
 
   def get_frame(self):
     """
@@ -56,6 +57,13 @@ class GroupBy:
     """
     self._eager()
     return self._res
+
+  @property
+  def frame(self):
+    """
+    :return: the result of the group by
+    """
+    return self.get_frame()
 
   def remove(self,name=None,regex=None):
     """
@@ -90,17 +98,17 @@ class GroupBy:
       col=0
       name="count" if name=="" else name
     if col is None:
-      for i in range(self._fr.ncol()):
+      for i in range(self._fr.ncol):
         if i not in self._by: self._add_agg(op,i,name,na)
       return self
-    elif isinstance(col, (str,unicode)): cidx=self._fr.index(col)
+    elif isinstance(col, basestring):  cidx=self._fr.index(col)
     elif isinstance(col, int):         cidx=col
     elif isinstance(col, (tuple,list)):
       for i in col:
         self._add_agg(op,i,name,na)
       return self
     else:                              raise ValueError("col must be a column name or index.")
-    if name=="": name = "{}_{}".format(op,self._fr.col_names()[cidx])
+    if name=="": name = "{}_{}".format(op,self._fr.col_names[cidx])
     self._aggs[name]=[op,cidx,na]
     self._computed=False
     return self

@@ -361,7 +361,22 @@ public class ArrayUtils {
   }
   public static String[] toString(Object[] ary) {
     String[] result = new String[ary.length];
-    for (int i=0; i<ary.length; i++) result[i] = String.valueOf(ary[i]);
+    for (int i=0; i<ary.length; i++) {
+      Object o = ary[i];
+      if (o != null && o.getClass().isArray()) {
+        Class klazz = ary[i].getClass();
+        result[i] = byte[].class.equals(klazz) ? Arrays.toString((byte[]) o) :
+                    short[].class.equals(klazz) ? Arrays.toString((short[]) o) :
+                    int[].class.equals(klazz) ? Arrays.toString((int[]) o) :
+                    long[].class.equals(klazz) ? Arrays.toString((long[]) o) :
+                    boolean[].class.equals(klazz) ? Arrays.toString((boolean[]) o) :
+                    float[].class.equals(klazz) ? Arrays.toString((float[]) o) :
+                    double[].class.equals(klazz) ? Arrays.toString((double[]) o) : Arrays.toString((Object[]) o);
+
+      } else {
+        result[i] = String.valueOf(o);
+      }
+    }
     return result;
   }
 
@@ -576,6 +591,11 @@ public class ArrayUtils {
     a[i] = a[change];
     a[change] = helper;
   }
+  private static void swap(int[] a, int i, int change) {
+    int helper = a[i];
+    a[i] = a[change];
+    a[change] = helper;
+  }
 
   /**
    * Extract a shuffled array of integers
@@ -602,12 +622,10 @@ public class ArrayUtils {
     return result;
   }
 
-  public static void shuffleArray(long[] a, long seed) {
+  public static void shuffleArray(int[] a, Random rng) {
     int n = a.length;
-    Random random = getRNG(seed);
-    random.nextInt();
     for (int i = 0; i < n; i++) {
-      int change = i + random.nextInt(n - i);
+      int change = i + rng.nextInt(n - i);
       swap(a, i, change);
     }
   }

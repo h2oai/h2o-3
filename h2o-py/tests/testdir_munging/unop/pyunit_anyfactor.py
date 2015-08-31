@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 def anyfactor(ip,port):
     
@@ -21,4 +21,4 @@ def anyfactor(ip,port):
     assert not iris[0].anyfactor(), "Expected false, but got true. Columns 1 is numeric."
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, anyfactor)
+    tests.run_test(sys.argv, anyfactor)

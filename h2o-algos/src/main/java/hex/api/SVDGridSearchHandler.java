@@ -32,7 +32,7 @@ public class SVDGridSearchHandler
   public static class SVDGrid extends Grid<SVDModel.SVDParameters> {
 
     public SVDGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }
