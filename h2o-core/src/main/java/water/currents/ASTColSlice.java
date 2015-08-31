@@ -1,13 +1,17 @@
 package water.currents;
 
+import jsr166y.CountedCompleter;
+import water.DKV;
+import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.fvec.*;
+import water.parser.ValueString;
+
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.HashMap;
-import jsr166y.CountedCompleter;
-
-import water.*;
-import water.fvec.*;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {
@@ -116,9 +120,10 @@ class ASTFlatten extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()==1 && fr.numRows()==1 ) {
       if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
+      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new ValueString(),0).toString());
       return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
     }
-    throw new IllegalArgumentException("May only flatten 1x1 Frames to scalars.");
+    return new ValFrame(fr); // did not flatten
   }
 }
 
