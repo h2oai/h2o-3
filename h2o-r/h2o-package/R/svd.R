@@ -51,9 +51,6 @@ h2o.svd <- function(training_frame, x, nv,
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
   
-  ## -- Force evaluate temporary ASTs -- ##
-  .eval.frame(training_frame)
-  
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
@@ -71,5 +68,5 @@ h2o.svd <- function(training_frame, x, nv,
     parms$use_all_factor_levels <- use_all_factor_levels
   
   # Error check and build model
-  .h2o.modelJob('svd', parms, do_future=FALSE)
+  .h2o.modelJob('svd', parms, do_future=FALSE, version=99)
 }

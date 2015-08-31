@@ -997,28 +997,22 @@ as.Date.Frame <- function(x, format, ...) {
 }
 
 #' Set the Time Zone on the H2O Cloud
+#' Forced eager, not lazy, since it side-effects the cluster.
 #'
 #' @param tz The desired timezone.
 #' @export
-h2o.setTimezone <- function(tz) .newExpr("setTimeZone",.quote(tz))
+h2o.setTimezone <- function(tz) .fetch.data(.newExpr("setTimeZone",.quote(tz)),1000)
 
 #' Get the Time Zone on the H2O Cloud
+#' Returns a string
 #'
 #' @export
-h2o.getTimezone <- function() {
-  ret <- .fetch.data(assign("gtz",.newExpr("getTimeZone")),1000)
-  h2o.rm(gtz:id)
-  ret
-}
+h2o.getTimezone <- function() .fetch.data(.newExpr("getTimeZone"),1000)
 
 #' List all of the Time Zones Acceptable by the H2O Cloud.
 #'
 #' @export
-h2o.listTimezones <- function() {
-  ret <- .fetch.data(assign("gtz",.newExpr("listTimeZones")),1000)
-  h2o.rm(gtz:id)
-  ret
-}
+h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,

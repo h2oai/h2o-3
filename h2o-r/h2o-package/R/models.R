@@ -5,15 +5,13 @@
 # ------------------------------- Helper Functions --------------------------- #
 # Used to verify data, x, y and turn into the appropriate things
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
-  if( !is.Frame(data))
-    stop('`data` must be an Frame object')
   if(!is.character(x) && !is.numeric(x))
     stop('`x` must be column names or indices')
   if( !autoencoder )
     if(!is.character(y) && !is.numeric(y))
       stop('`y` must be a column name or index')
 
-  cc <- colnames(data)
+  cc <- colnames(chk.Frame(data))
 
   if(is.character(x)) {
     if(!all(x %in% cc))
