@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o,tests
 
 def hexdev_394(ip,port):
-  path = "/Users/spencer/Downloads/covtype_training.csv"
+  path = "smalldata/covtype/covtype.20k.data"
   trainraw = h2o.lazy_import(path)
   tsetup = h2o.parse_setup(trainraw)
   tsetup["column_types"][10] = "ENUM"
@@ -12,7 +12,7 @@ def hexdev_394(ip,port):
   train = h2o.parse_raw(tsetup)
   
   cols = train.col_names  # This returned space for first column name
-  x_cols = [colname for colname in cols if colname != "Cover_Type"]
+  x_cols = [colname for colname in cols if colname != "C55"]
   x_cols
   
   
@@ -20,9 +20,9 @@ def hexdev_394(ip,port):
   newtrain = splits[0]
   newvalid = splits[1]
   newtrain_x = newtrain[x_cols]
-  newtrain_y = newtrain["Cover_Type"]
+  newtrain_y = newtrain[54].asfactor()
   newvalid_x = newvalid[x_cols]
-  newvalid_y = newvalid["Cover_Type"]
+  newvalid_y = newvalid[54].asfactor()
   
   
   my_gbm = h2o.gbm(y=newtrain_y,
@@ -37,9 +37,9 @@ def hexdev_394(ip,port):
   split1, split2 = train.split_frame()
   
   newtrain_x = split1[x_cols]
-  newtrain_y = split1["Cover_Type"]
+  newtrain_y = split1[54].asfactor()
   newvalid_x = split2[x_cols]
-  newvalid_y = split2["Cover_Type"]
+  newvalid_y = split2[54].asfactor()
   
   my_gbm = h2o.gbm(y=newtrain_y,
                    validation_y=newvalid_y,

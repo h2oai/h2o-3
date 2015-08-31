@@ -131,8 +131,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr = H2OFrame()
   parsed = parse(setup, id, first_line_is_header)
   fr._nrows = parsed['rows']
-  fr._col_names = parsed['column_names']
-  fr._ncols = len(fr._col_names)
+  fr._ncols = parsed["number_columns"]
+  fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   fr._computed = True
   fr._id = id
   fr._keep = True
