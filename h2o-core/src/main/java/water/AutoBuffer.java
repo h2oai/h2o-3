@@ -641,7 +641,7 @@ public /* final */ class AutoBuffer {
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newLen),oldpos,newLen-oldpos)
           .order(ByteOrder.nativeOrder());
-    } else {
+    } else if (_bb.capacity() != BBP_BIG._size) { //avoid expanding existing BBP items
       int oldPos = _bb.position();
       _bb.flip();
       _bb = BBP_BIG.make().put(_bb);
