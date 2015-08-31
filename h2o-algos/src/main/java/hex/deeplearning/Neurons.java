@@ -643,25 +643,25 @@ public abstract class Neurons {
       assert(_b.size() == _a.size() * _k);
       assert(_w.size() == _a.size() * _previous._a.size() * _k);
       final int rows = _a.size();
+      double[] channel = new double[_k];
       for( int row = 0; row < rows; row++ ) {
         _a.set(row, 0);
         if( !training || _dropout == null || _dropout.unit_active(row) ) {
           final int cols = _previous._a.size();
-          double[] activations = new double[_k];
           // For each neuron in the previous layer, there's k channels
           // Each channel has its own weight and bias values
           // The channel leading to the highest incoming value (W*x + b) is the "winner" and will activate this neuron
           short maxK = 0;
           for( short k = 0; k < _k; k++ ) {
-            activations[k] = 0;
+            channel[k] = 0;
             for( int col = 0; col < cols; col++ ) {
-              activations[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a.get(col);
+              channel[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a.get(col);
             }
-            activations[k] += _b.raw()[_k*row+k];
-            if (activations[k] > activations[maxK]) maxK=k;
+            channel[k] += _b.raw()[_k*row+k];
+            if (channel[k] > channel[maxK]) maxK=k;
           }
           _maxIncoming[row] = maxK;
-          _a.set(row, activations[maxK]);
+          _a.set(row, channel[maxK]);
         }
       }
       compute_sparsity();
