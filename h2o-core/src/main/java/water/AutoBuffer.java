@@ -587,26 +587,16 @@ public /* final */ class AutoBuffer {
   /** Put as needed to keep from overflowing the ByteBuffer. */
   private ByteBuffer putSp( int sz ) {
     assert !_read;
-    while(sz > _bb.remaining())
-      sendPartial();
+    while (sz > _bb.remaining()) {
+      if ((_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < BBP_BIG._size))
+        expandByteBuffer(sz);
+      else sendPartial();
+    }
     return _bb;
   }
   // Do something with partial results, because the ByteBuffer is full.
-  // If we are byte[] backed, double the backing array size.
   // If we are doing I/O, ship the bytes we have now and flip the ByteBuffer.
   private ByteBuffer sendPartial() {
-    // Writing into an expanding byte[]?
-    if( (_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < MTU)) {
-      // This is a byte[] backed buffer; expand the backing byte[].
-      byte[] ary = _bb.array();
-      int newlen = ary.length<<1; // New size is 2x old size
-      if(_h2o != null && newlen > MTU)
-        newlen = MTU;
-      int oldpos = _bb.position();
-      _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newlen),oldpos,newlen-oldpos)
-        .order(ByteOrder.nativeOrder());
-      return _bb;
-    }
     // Doing I/O with the full ByteBuffer - ship partial results
     _size += _bb.position();
     if( _chan == null )
@@ -633,13 +623,30 @@ public /* final */ class AutoBuffer {
       // declare (and then ignore) this exception.
       throw new AutoBufferException(e);
     }
-    if( _bb.capacity() < BBP_BIG._size ) {
-      if(_bb.isDirect())
-        BBP_SML.free(_bb);
-      _bb = BBP_BIG.make();
-    }
     _firstPage = false;
     _bb.clear();
+    return _bb;
+  }
+
+  // Called when the byte buffer doesn't have enough room
+  // If buffer is array backed, and the needed rooom is small,
+  // increase the size of the backing array,
+  // otherwise dump into a large direct buffer
+  private ByteBuffer expandByteBuffer(int sizeHint) {
+    int needed = sizeHint-_bb.remaining()+_bb.capacity();
+    if ((_h2o==null && _chan == null) || (_bb.hasArray() && needed < MTU)) {
+      byte[] ary = _bb.array();
+      // just get twice what is currently needed
+      int newLen = 1 << (water.util.MathUtils.log2(needed)+1);
+      int oldpos = _bb.position();
+      _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newLen),oldpos,newLen-oldpos)
+          .order(ByteOrder.nativeOrder());
+    } else if (_bb.capacity() != BBP_BIG._size) { //avoid expanding existing BBP items
+      int oldPos = _bb.position();
+      _bb.flip();
+      _bb = BBP_BIG.make().put(_bb);
+      _bb.position(oldPos);
+    }
     return _bb;
   }
 
@@ -1157,6 +1164,7 @@ public /* final */ class AutoBuffer {
   }
   public AutoBuffer putA1( byte[] ary, int length ) { return putA1(ary,0,length); }
   public AutoBuffer putA1( byte[] ary, int sofar, int length ) {
+    if (length - sofar > _bb.remaining()) expandByteBuffer(length-sofar);
     while( sofar < length ) {
       int len = Math.min(length - sofar, _bb.remaining());
       _bb.put(ary, sofar, len);
@@ -1169,6 +1177,7 @@ public /* final */ class AutoBuffer {
     //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
+    if (ary.length*2 > _bb.remaining()) expandByteBuffer(ary.length*2);
     int sofar = 0;
     while( sofar < ary.length ) {
       ShortBuffer sb = _bb.asShortBuffer();
@@ -1184,13 +1193,14 @@ public /* final */ class AutoBuffer {
     //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
+    if (ary.length*4 > _bb.remaining()) expandByteBuffer(ary.length*4);
     int sofar = 0;
     while( sofar < ary.length ) {
-      IntBuffer sb = _bb.asIntBuffer();
-      int len = Math.min(ary.length - sofar, sb.remaining());
-      sb.put(ary, sofar, len);
+      IntBuffer ib = _bb.asIntBuffer();
+      int len = Math.min(ary.length - sofar, ib.remaining());
+      ib.put(ary, sofar, len);
       sofar += len;
-      _bb.position(_bb.position() + sb.position()*4);
+      _bb.position(_bb.position() + ib.position()*4);
       if( sofar < ary.length ) sendPartial();
     }
     return this;
@@ -1226,12 +1236,13 @@ public /* final */ class AutoBuffer {
 
     put1(8);                    // Ship as full longs
     int sofar = x;
+    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(ary.length*8);
     while( sofar < y ) {
-      LongBuffer sb = _bb.asLongBuffer();
-      int len = Math.min(y - sofar, sb.remaining());
-      sb.put(ary, sofar, len);
+      LongBuffer lb = _bb.asLongBuffer();
+      int len = Math.min(y - sofar, lb.remaining());
+      lb.put(ary, sofar, len);
       sofar += len;
-      _bb.position(_bb.position() + sb.position()*8);
+      _bb.position(_bb.position() + lb.position() * 8);
       if( sofar < y ) sendPartial();
     }
     return this;
@@ -1240,13 +1251,14 @@ public /* final */ class AutoBuffer {
     //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
+    if (ary.length*4 > _bb.remaining()) expandByteBuffer(ary.length*4);
     int sofar = 0;
     while( sofar < ary.length ) {
-      FloatBuffer sb = _bb.asFloatBuffer();
-      int len = Math.min(ary.length - sofar, sb.remaining());
-      sb.put(ary, sofar, len);
+      FloatBuffer fb = _bb.asFloatBuffer();
+      int len = Math.min(ary.length - sofar, fb.remaining());
+      fb.put(ary, sofar, len);
       sofar += len;
-      _bb.position(_bb.position() + sb.position()*4);
+      _bb.position(_bb.position() + fb.position()*4);
       if( sofar < ary.length ) sendPartial();
     }
     return this;
@@ -1255,13 +1267,14 @@ public /* final */ class AutoBuffer {
     //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
+    if (ary.length*8 > _bb.remaining()) expandByteBuffer(ary.length*8);
     int sofar = 0;
     while( sofar < ary.length ) {
-      DoubleBuffer sb = _bb.asDoubleBuffer();
-      int len = Math.min(ary.length - sofar, sb.remaining());
-      sb.put(ary, sofar, len);
+      DoubleBuffer db = _bb.asDoubleBuffer();
+      int len = Math.min(ary.length - sofar, db.remaining());
+      db.put(ary, sofar, len);
       sofar += len;
-      _bb.position(_bb.position() + sb.position()*8);
+      _bb.position(_bb.position() + db.position()*8);
       if( sofar < ary.length ) sendPartial();
     }
     return this;
