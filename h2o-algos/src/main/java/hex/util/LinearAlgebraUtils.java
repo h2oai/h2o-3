@@ -61,52 +61,21 @@ public class LinearAlgebraUtils {
       double x = chks[col].atd(row_in_chunk);
       if (Double.isNaN(x)) {
         if (dinfo._catMissing[col] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-        else cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
+        cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
       } else
         cidx = dinfo.getCategoricalId(col, (int)x);
       if(cidx >= 0) tmp[cidx] = 1;
     }
 
     // Numeric columns
-    int chk_cnt = dinfo._cats;
     int exp_cnt = dinfo.numStart();
     for(int col = 0; col < dinfo._nums; col++) {
       double x = chks[col].atd(row_in_chunk);
       // Only do imputation and transformation if requested
       tmp[exp_cnt] = modify_numeric ? modifyNumeric(x, col, dinfo) : x;
-      exp_cnt++; chk_cnt++;
+      exp_cnt++;
     }
     return tmp;
-  }
-
-  /*
-   * Inner product of chunk row (with categoricals expanded) and vec
-   */
-  public static double innerProduct(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] vec) {
-    // Categorical columns
-    double sum = 0;
-    int cidx;
-    for (int col = 0; col < dinfo._cats; col++) {
-      double x = chks[col].atd(row_in_chunk);
-      if (Double.isNaN(x)) {
-        if (dinfo._catMissing[col] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-        else cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
-      } else
-        cidx = dinfo.getCategoricalId(col, (int)x);
-      if(cidx >= 0) sum += vec[cidx];   // Ignore categorical levels outside domain
-    }
-
-    // Numeric columns
-    int chk_cnt = dinfo._cats;
-    int exp_cnt = dinfo.numStart();
-    for (int col = 0; col < dinfo._nums; col++) {
-      double x = chks[chk_cnt].atd(row_in_chunk);
-      x = modifyNumeric(x, col, dinfo);
-      sum += vec[exp_cnt] * x;
-      exp_cnt++; chk_cnt++;
-    }
-    assert exp_cnt == vec.length;
-    return sum;
   }
 
   /**
@@ -151,16 +120,22 @@ public class LinearAlgebraUtils {
 
     @Override public void map(Chunk[] cs) {
       assert cs.length == _ncolX + _yt.length;
-      double sum;
 
+      // Copy over only X frame chunks
+      Chunk[] xchk = new Chunk[_ncolX];
+      for(int i = 0; i < _ncolX; i++) xchk[i] = cs[i];
+
+      double sum;
       for(int row = 0; row < cs[0]._len; row++) {
+        // Extract row of X
+        DataInfo.Row xrow = _xinfo.newDenseRow();
+        _xinfo.extractDenseRow(xchk, row, xrow);
+
         int bidx = _ncolX;
         for (int p = 0; p < _yt.length; p++) {
           // Inner product of X row with Y column (Y' row)
-          sum = innerProduct(cs, row, _xinfo, _yt[p]);
-
-          // Save inner product to B
-          cs[bidx].set(row, sum);
+          sum = xrow.innerProduct(_yt[p]);
+          cs[bidx].set(row, sum);   // Save inner product to B
           bidx++;
         }
         assert bidx == cs.length;
@@ -202,7 +177,7 @@ public class LinearAlgebraUtils {
 
             if (Double.isNaN(a)) {
               if (_ainfo._catMissing[p] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-              else cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor
+              cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor
             } else
               cidx = _ainfo.getCategoricalId(p, (int)a);
             if(cidx >= 0) _atq[cidx][k-_ncolA] += q;   // Ignore categorical levels outside domain
@@ -210,7 +185,6 @@ public class LinearAlgebraUtils {
         }
 
         // Numeric columns
-        int pnum = 0;
         int pexp = _ainfo.numStart();
         for(int p = _ainfo._cats; p < _ncolA; p++) {
           for(int row = 0; row  < cs[0]._len; row++) {
@@ -219,7 +193,7 @@ public class LinearAlgebraUtils {
             a = modifyNumeric(a, p, _ainfo);
             _atq[pexp][k-_ncolA] += q * a;
           }
-          pexp++; pnum++;
+          pexp++;
         }
         assert pexp == _atq.length;
       }
@@ -268,14 +242,19 @@ public class LinearAlgebraUtils {
 
     @Override public void map(Chunk cs[]) {
       assert (_ncolA + _ncolQ) == cs.length;
-      double[] arow = new double[_ncolA];
+
+      // Copy over only A frame chunks
+      Chunk[] achks = new Chunk[_ncolA];
+      for(int i = 0; i <_ncolA; i++) achks[i] = cs[i];
 
       for(int row = 0; row < cs[0]._len; row++) {
         // 1) Extract single expanded row of A
-        expandRow(cs, row, _ainfo, arow, true);
+        DataInfo.Row arow = _ainfo.newDenseRow();
+        _ainfo.extractDenseRow(achks, row, arow);
+        double[] aexp = arow.expandCats();
 
         // 2) Solve for single row of Q using forward substitution
-        double[] qrow = forwardSolve(_L, arow);
+        double[] qrow = forwardSolve(_L, aexp);
 
         // 3) Save row of solved values into Q
         int i = 0;

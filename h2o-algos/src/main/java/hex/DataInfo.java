@@ -111,7 +111,7 @@ public class DataInfo extends Keyed {
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
   public DataInfo(Key selfKey, Frame train, Frame valid, boolean useAllFactorLevels, TransformType predictor_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket) {
-    this(selfKey, train, valid, 0, useAllFactorLevels, predictor_transform, TransformType.NONE, skipMissing, imputeMissing, missingBucket, false, false, false);
+    this(selfKey, train, valid, 0, useAllFactorLevels, predictor_transform, TransformType.NONE, skipMissing, imputeMissing, missingBucket, /* weight */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
   }
 
   public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
@@ -480,7 +480,7 @@ public class DataInfo extends Keyed {
           return numVals[i-off];
         int j = Arrays.binarySearch(numIds,i);
         return j >= 0?numVals[j]:0;
-      } else { // categoricvasl
+      } else { // categoricals
         int j = Arrays.binarySearch(binIds,i);
         return j >= 0?1:0;
       }
@@ -520,6 +520,27 @@ public class DataInfo extends Keyed {
       return res;
     }
 
+    public double[] expandCats() {
+      if(isSparse() || _responses > 0) throw H2O.unimpl();
+
+      int N = fullN();
+      int numStart = numStart();
+      double[] res = new double[N + (_intercept ? 1:0)];
+
+      for(int i = 0; i < nBins; ++i)
+        res[binIds[i]] = 1;
+      if(numIds == null) {
+        for(int i = 0; i < numVals.length; ++i)
+          res[numStart+i] = numVals[i];
+      } else {
+        for(int i = 0; i < nNums; ++i)
+          res[numIds[i]] = numVals[i];
+      }
+      if(_intercept)
+        res[res.length-1] = 1;
+      return res;
+    }
+
     public String toString() {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
@@ -551,6 +572,7 @@ public class DataInfo extends Keyed {
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
       if (chunks[i].isNA(rid)) {
+          // TODO: What if missingBucket = false?
           row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
       } else {
         int c = getCategoricalId(i,(int)chunks[i].at8(rid));
