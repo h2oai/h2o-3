@@ -93,7 +93,7 @@
 #' @param sparsity_beta Sparsity regularization (Experimental)
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing
 #'        Experimental)
-#' @param reproducible Force reproducibility on small data (will be slow - only uses 1 thread)
+#' @param reproducible Force reproducibility on small data (requires setting the \code{seed} argument and this will be slow - only uses 1 thread)
 #' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O
 #'        Frames"
 #' @param offset_column Specify the offset column.
