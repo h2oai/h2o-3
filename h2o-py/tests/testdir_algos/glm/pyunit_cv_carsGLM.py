@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def cv_carsGLM(ip,port):
+def cv_carsGLM():
 
     # read in the dataset and construct training set (and validation set)
     cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))

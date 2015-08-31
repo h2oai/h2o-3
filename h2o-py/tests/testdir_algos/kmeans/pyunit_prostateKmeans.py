@@ -5,7 +5,7 @@ import h2o, tests
 import numpy as np
 from sklearn.cluster import KMeans
 
-def prostateKmeans(ip,port):
+def prostateKmeans():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 

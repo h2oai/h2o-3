@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import numpy as np
 
-def op_precedence(ip,port):
+def op_precedence():
     # Connect to a pre-existing cluster
     
 

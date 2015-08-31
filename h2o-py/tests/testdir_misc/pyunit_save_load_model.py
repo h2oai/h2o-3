@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 from h2o.model.binomial import H2OBinomialModel
 
-def save_load_model(ip,port):
+def save_load_model():
     
     
 

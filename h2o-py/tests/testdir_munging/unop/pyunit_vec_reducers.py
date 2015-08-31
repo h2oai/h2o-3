@@ -4,7 +4,7 @@ import h2o, tests
 import numpy as np
 import random
 
-def frame_reducers(ip,port):
+def frame_reducers():
     
     
 

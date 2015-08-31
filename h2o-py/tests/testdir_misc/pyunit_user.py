@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 
-def user(ip, port):
+def user():
     # Connect to a pre-existing cluster
     h2o.init(ip=ip, port=port)
 

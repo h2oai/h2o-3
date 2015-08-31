@@ -6,7 +6,7 @@ import random
 import math
 import scipy.special
 
-def expr_math_ops(ip,port):
+def expr_math_ops():
     
     
 

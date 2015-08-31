@@ -6,7 +6,7 @@ import h2o, tests
 #
 # Sample Running GBM on iris_wheader.csv
 
-def irisGBM(ip,port):
+def irisGBM():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 

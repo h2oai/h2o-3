@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def covtype(ip,port):
+def covtype():
 
   
   

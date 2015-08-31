@@ -6,7 +6,7 @@ import random
 import math
 import scipy.special
 
-def vec_math_ops(ip,port):
+def vec_math_ops():
     
     
 

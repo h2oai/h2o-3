@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def directory_import(ip,port):
+def directory_import():
 
     running_inside_h2o = tests.is_running_internal_to_h2o()
 

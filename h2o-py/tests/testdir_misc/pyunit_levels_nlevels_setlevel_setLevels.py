@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 
-def levels_nlevels_setlevel_setLevels_test(ip,port):
+def levels_nlevels_setlevel_setLevels_test():
     
     
 

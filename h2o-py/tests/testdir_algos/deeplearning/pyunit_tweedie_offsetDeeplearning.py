@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def tweedie_offset(ip,port):
+def tweedie_offset():
 
     insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
     insurance["offset"] = insurance["Holders"].log()

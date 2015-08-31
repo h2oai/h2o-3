@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def varimp_test(ip,port):
+def varimp_test():
     
     
     train = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))

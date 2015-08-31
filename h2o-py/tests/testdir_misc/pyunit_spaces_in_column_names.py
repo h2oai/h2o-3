@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def spaces_in_column_names(ip,port):
+def spaces_in_column_names():
     
     
 

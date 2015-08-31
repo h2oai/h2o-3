@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def pubdev_1431(ip, port):
+def pubdev_1431():
 
     running_inside_h2o = tests.is_running_internal_to_h2o()
 

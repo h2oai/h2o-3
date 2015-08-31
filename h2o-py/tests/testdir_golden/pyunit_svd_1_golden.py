@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 
-def svd_1_golden(ip, port):
+def svd_1_golden():
     
 
     print "Importing USArrests.csv data..."

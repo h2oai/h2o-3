@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def offset_poisson(ip,port):
+def offset_poisson():
     # Connect to a pre-existing cluster
     
 

@@ -6,7 +6,7 @@ import random
 import math
 import scipy.special
 
-def frame_math_ops(ip,port):
+def frame_math_ops():
     
     
 

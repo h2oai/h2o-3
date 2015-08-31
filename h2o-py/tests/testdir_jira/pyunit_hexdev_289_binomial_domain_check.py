@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def domain_check(ip, port):
+def domain_check():
     
 
     air_train = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
