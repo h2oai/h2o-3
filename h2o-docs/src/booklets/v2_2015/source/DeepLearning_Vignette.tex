@@ -379,7 +379,7 @@ This section provided some background on the various parameter configurations in
 There is no default setting for the hidden layer size, number, or epochs. Experimenting with building deep learning models using different network topologies and different datasets will lead to intuition for these parameters but two general rules of thumb should be applied. First, choose larger network sizes, as they can perform higher-level feature extraction, and techniques like dropout may train only subsets of the network at once. Second, use more epochs for greater predictive accuracy, but only when the computational cost is affordable. Many example tests can be found in the H2O \href{https://github.com/h2oai/h2o-3/}{GitHub} repository for pointers on specific values and results for these (and other) parameters.
 \\
 \\
-For a full list of H2O Deep Learning model parameters and default values, see Appendix A. 
+For a full list of H2O Deep Learning model parameters and default values, see Appendix A.   %Add link to appendix? 
 
 \section{Use case: MNIST digit classification} 
 
@@ -410,20 +410,21 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 \label{ssec:TrialRun} 
 The example below illustrates the relative simplicity underlying most H2O Deep Learning model parameter configurations, as a result of the default settings. We use the first $28^2 = 784$ values of each row to represent the full image and the final value to denote the digit class. Rectified linear activation is popular with image processing and has performed well on the MNIST database previously and dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
-\waterExampleInR
-\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
-
-\waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
-
-
-
+% Old R example:
 %\begin{lstlisting}[style=R]
 %#Train the model for digit classification
 %mnist_model = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = c(200,200,200), input_dropout_ratio = 0.2, l1 = 1e-5, validation = test_images.hex, epochs = 10)
 %
 %\end{lstlisting}
 %\normalsize
+
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
+
+% TO DO: Add this code (currently commented out)
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
+
 
 \noindent
 The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option is to use k-fold validation by specifying, for example, \texttt{nfolds = 5} in addition to / instead of \texttt{validation\_frame = test}.  When \texttt{nfolds} is a positive integer, k-fold cross validation will be performed and the cross-validation metrics will be computed.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  
@@ -432,33 +433,32 @@ The model runs for only 10 epochs since it is just meant  as a trial run. In thi
 
 We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
 
-\begin{lstlisting}[style=R]
-#View the specified parameters of your deep learning model
-mnist_model@model$params
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
 
-#Examine the performance of the trained model
-mnist_model
+% TO DO: Add this code (currently commented out)
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
 
-\end{lstlisting}
+
+
 \noindent
-The second command returns the training and validation errors for the model. The training error value is based on the parameter \texttt{score\_training\_samples}, which specifies the number of randomly sampled training points to be used for scoring  (the default uses 10,000 points). The validation error is based on the parameter \texttt{score\_validation\_samples}, which configures the same value on the validation set; by default, this is the entire validation set.
+The second command returns the training and validation errors for the model. The training error value is based on the parameter \texttt{score\_training\_samples}, which specifies the number of randomly sampled training points to be used for scoring (the default uses 10,000 points). The validation error is based on the parameter \texttt{score\_validation\_samples}, which configures the same value on the validation set; by default, this is the entire validation set.
 
-In general, choosing a greater number of sampled points leads to a better understanding of the model's performance on your dataset; setting either of these parameters to 0 automatically uses the entire corresponding dataset for scoring. However, either method allows you to control the minimum
-and maximum time spent on scoring with the \texttt{score\_interval} and \texttt{score\_duty\_cycle} parameters.
+In general, choosing a greater number of sampled points leads to a better understanding of the model's performance on your dataset; setting either of these parameters to 0 automatically uses the entire corresponding dataset for scoring. However, either method allows you to control the minimum and maximum time spent on scoring with the \texttt{score\_interval} and \texttt{score\_duty\_cycle} parameters.
 \\
 \\
 These scoring parameters also affect the final model when the parameter \texttt{overwrite\_with\_best\_model} is enabled. This option selects the model that achieved the lowest validation error during training (based on the sampled points used for scoring) as the final model after training. If a dataset is not specified as the validation set, the training data is used by default; in this case, either the \texttt{score\_training\_samples} or \texttt{score\_validation\_samples} parameter will control the error computation during training and, in turn, the selected best model.
 \\
 \\
 Once we have a satisfactory model, the \texttt{h2o.predict()} command can be used to compute and store predictions on new data, which can then be used for further tasks in the interactive data science process.
-\begin{lstlisting}[style=R]
-#Perform classification on the test set
-prediction = h2o.predict(mnist_model, newdata=test_images.hex)
 
-#Copy predictions from H2O to R
-pred = as.data.frame(prediction)
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
 
-\end{lstlisting}
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_predict.py}
+
 
 
 \subsection{Web interface} 
@@ -467,8 +467,18 @@ H2O R users have access to an intuitive web interface for H2O, Flow, to mirror t
 
 \subsubsection{Variable importances} 
 
-The variable importances feature can be enabled with the argument \texttt{variable\_importances=TRUE}. This feature allows us to view the absolute and relative predictive strength of each feature in the prediction task. From R, you can access the variable importances using the command \\
- \texttt{mnist\_model@model\$varimp}. From the web UI, you can also view a visualization of the variable importances.
+The variable importances feature can be enabled with the argument \texttt{variable\_importances = TRUE}. This feature allows us to view the absolute and relative predictive strength of each feature in the prediction task.  Each H2O algorithm class has it's own methodology for computing variable importance.  For H2O's Deep Learning, the Gedeon method is used, which can be slow for large networks, so it is turned off by default.  If variable importance is the top priority in your analysis, you may (also) consider training a Random Forest and inspecting the variable importances generated with that method.
+
+The following code demonstrates training using the \texttt{variable\_importances} option enabled and how to extract the variable importances from the trained model.  From the web UI, you can also view a visualization of the variable importances.
+
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
+
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_varimp.py}
+
+
 
 \subsubsection{Java model} 
 
@@ -478,35 +488,52 @@ Another important feature of the web interface is the Java (POJO) model, accessi
 
 H2O supports grid search capabilities for model tuning by allowing users to tweak certain parameters and observe changes in model behavior. This is done by specifying sets of values for parameter arguments. The following example represents a sample grid search:
 
-\begin{lstlisting}[style=R]
-#Create a set of network topologies
-hidden_layers = list(c(200,200), c(100,300,100),c(500,500,500))
+%\begin{lstlisting}[style=R]
+%#Create a set of network topologies
+%hidden_layers = list(c(200,200), c(100,300,100),c(500,500,500))
+%
+%mnist_model_grid = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = hidden_layers, validation = test_images.hex, epochs = 1, l1 = c(1e-5,1e-7), input_dropout_ratio = 0.2)
+%
+%\end{lstlisting}
 
-mnist_model_grid = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = hidden_layers, validation = test_images.hex, epochs = 1, l1 = c(1e-5,1e-7), input_dropout_ratio = 0.2)
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch.R}
 
-\end{lstlisting}
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch.py}
+
+
 \normalsize
 \noindent
 In this example, we specified three different network topologies and two different $\ell_1$ norm weights. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. This provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to Appendix A for parameter descriptions and configurable values.
 
-\begin{lstlisting}[style=R]
-#print out all prediction errors and run times of the models
-mnist_model_grid
-mnist_model_grid@model
+%\begin{lstlisting}[style=R]
+%#print out all prediction errors and run times of the models
+%mnist_model_grid
+%mnist_model_grid@model
+%
+%#print out a *short* summary of each of the models (indexed by parameter)
+%mnist_model_grid@sumtable
+%
+%#print out *full* summary of each of the models
+%all_params = lapply(mnist_model_grid@model, function(x) { x@model$params })
+%all_params
+%
+%#access a particular parameter across all models
+%l1_params = lapply(mnist_model_grid@model, function(x) { x@model$params$l1 })
+%l1_params
+%\end{lstlisting}
 
-#print out a *short* summary of each of the models (indexed by parameter)
-mnist_model_grid@sumtable
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch_result.R}
 
-#print out *full* summary of each of the models
-all_params = lapply(mnist_model_grid@model, function(x) { x@model$params })
-all_params
-
-#access a particular parameter across all models
-l1_params = lapply(mnist_model_grid@model, function(x) { x@model$params$l1 })
-l1_params
-\end{lstlisting}
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch_result.py}
 
 
+% HERE (Have not edited the rest of Ch 6  - 7; Appendix has been edited though)
 \subsection{Checkpoint model}
 
 To resume model training, use checkpoint model keys for incrementally training a particular model with more iterations, more data, different data, and so forth. To train our initial model further, we can use it (or its key) as a checkpoint argument for a new model.
