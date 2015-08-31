@@ -1131,9 +1131,18 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new String Vec  */
-  public StrWrappedVec toStringVec() {
+  public Vec toStringVec() {
     if( !isEnum() ) throw new IllegalArgumentException("String conversion only works on enum columns");
-    return new StrWrappedVec(group().addVec(),_espc,this._key);
+    return new Enum2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
+  }
+
+  private class Enum2StrChkTask extends MRTask<Enum2StrChkTask> {
+    final String[] _domain;
+    Enum2StrChkTask(String[] domain) { _domain=domain; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      for(int i=0;i<c._len;++i)
+        nc.addStr(new ValueString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));
+    }
   }
 
   /** Convert entire Vec to an array of doubles, loading all of the data into a
