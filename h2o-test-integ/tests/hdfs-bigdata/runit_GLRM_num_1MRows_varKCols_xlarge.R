@@ -57,7 +57,7 @@ for(i in 1:length(rows)) { # changing number of rows
     print(paste("Time it took to create frame:", create_frm_time[i,j]))
     
     print("Running GLRM on frame with quadratic loss and no regularization")
-    aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=myframe, k=k_dim, init="PlusPlus", loss="L2", regularization_x="None", regularization_y="None", max_iterations=500))
+    aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=myframe, k=k_dim, init="PlusPlus", loss="L2", regularization_x="None", regularization_y="None", max_iterations=100))
     algo_run_time[i,j] <- aat[3]
     print(myframe.glrm)
     print(paste("Time it took to build model:", algo_run_time[i,j]))
