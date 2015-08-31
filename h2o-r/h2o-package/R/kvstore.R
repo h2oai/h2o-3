@@ -30,10 +30,15 @@
   if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:id, "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
-    L <- lapply(res$columns, function(c) if( c$type=="string" ) c$string_data else c$data )
+    # Numeric data is OK, but can be short if e.g., there are trailing NAs
+    # String data is a list form; convert to a vector (and convert NULL to NA)
+    L <- lapply(res$columns, function(c) {
+      if( c$type!="string" )  c$data
+      else  sapply(c$string_data, function(str) { if(is.null(str)) NA_character_ else str }); 
+    })
+    # Pad out to same length (square up ragged data), and convert to data.frame
     maxlen <- max(sapply(L,length))
-    pad.na <- function(x) { c(x,rep(NA,maxlen-length(x))) }
-    data <- do.call(data.frame,lapply(L,pad.na))
+    data <- do.call(data.frame,lapply(L,function(row) c(row,rep(NA,maxlen-length(row)))))
     # Zero rows?  Then force a zero-length full width data.frame
     if( length(data)==0 ) data <- as.data.frame(matrix(NA,ncol=length(res$columns),nrow=0L))
     colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
