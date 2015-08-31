@@ -25,7 +25,7 @@ import static hex.ConfusionMatrix.buildCM;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() throws Exception { runFraction(0.000015f); }
+  @Test public void run() throws Exception { runFraction(0.00001f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -101,8 +101,8 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.TanhWithDropout,
                           DeepLearningParameters.Activation.Rectifier,
                           DeepLearningParameters.Activation.RectifierWithDropout,
-//                          DeepLearningParameters.Activation.Maxout,
-//                          DeepLearningParameters.Activation.MaxoutWithDropout,
+                          DeepLearningParameters.Activation.Maxout,
+                          DeepLearningParameters.Activation.MaxoutWithDropout,
                   }) {
                     boolean reproducible=false;
                     switch (dist) {
