@@ -31,7 +31,7 @@ class ExprNode:
     elif isinstance(arg, (unicode,str)):          return '"'+arg+'"'
     elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start) )
     elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], basestring) else ("[" + " ".join([str(i) for i in arg])+"]")
-    elif arg is None:                             raise ValueError("args should never be None")
+    elif arg is None:                             return "[]"  # empty list
     raise ValueError("Unexpected arg type: " + str(type(arg)))
 
   @staticmethod

@@ -845,7 +845,7 @@ class H2OFrame:
     """
     if isinstance(column, basestring): column = self._find_idx(column)
     if isinstance(by, basestring):     by     = self._find_idx(by)
-    return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
+    return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()   #  (h2o.impute data col method combine_method groupby in.place)
 
   def merge(self, other, allLeft=False, allRite=False):
     """

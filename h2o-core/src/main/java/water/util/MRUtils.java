@@ -1,15 +1,19 @@
 package water.util;
 
-import static water.util.RandomUtils.getRNG;
-
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static water.util.RandomUtils.getRNG;
 
 public class MRUtils {
 
@@ -113,6 +117,45 @@ public class MRUtils {
           _ys[(int) ys.at8(i)] += ws.atd(i);
     }
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
+  }
+
+  public static class Dist extends MRTask<Dist> {
+    private transient NonBlockingHashMap<Double,Integer> _dist;
+    @Override public void map(Chunk ys) {
+      _dist = new NonBlockingHashMap<>();
+      for( int row=0; row< ys._len; row++ )
+        if( !ys.isNA(row) ) {
+          double v = ys.atd(row);
+          Integer oldV = _dist.putIfAbsent(v,1);
+          if( oldV!=null ) _dist.put(v,oldV+1);
+        }
+    }
+
+    @Override public void reduce(Dist mrt) {
+      if( _dist != mrt._dist ) {
+        NonBlockingHashMap<Double,Integer> l = _dist;
+        NonBlockingHashMap<Double,Integer> r = mrt._dist;
+        if( l.size() < r.size() ) { l=r; r=_dist; }
+        for( Double v: r.keySet() ) {
+          Integer oldVal = l.putIfAbsent(v, r.get(v));
+          if( oldVal!=null ) l.put(v, oldVal+r.get(v));
+        }
+        _dist=l;
+        mrt._dist=null;
+      }
+    }
+    public double[] dist() {
+      int i=0;
+      double[] dist = new double[_dist.size()];
+      for( int v: _dist.values() ) dist[i++] = v;
+      return dist;
+    }
+    public double[] keys() {
+      int i=0;
+      double[] keys = new double[_dist.size()];
+      for( double v: _dist.keySet() ) keys[i++] = v;
+      return keys;
+    }
   }
 
 

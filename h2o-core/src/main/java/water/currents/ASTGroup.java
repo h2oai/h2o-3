@@ -1,9 +1,17 @@
 package water.currents;
 
+import water.H2O;
+import water.Iced;
+import water.MRTask;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.Log;
+
 import java.util.Arrays;
-import water.*;
-import water.util.*;
-import water.fvec.*;
 
 /** GroupBy
  *  Group the rows of 'data' by unique combinations of '[group-by-cols]',
@@ -37,6 +45,23 @@ class ASTGroup extends ASTPrim {
       @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1; }
       @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
       @Override double postPass( double ds[], long n ) { return ds[0]; }
+    },
+    sumSquares() {
+      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
+      @Override double postPass( double ds[], long n) { return ds[0]; }
+    },
+    var() {
+      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
+      @Override double postPass( double ds[], long n) { return (ds[0] - ds[1]*ds[1]/n)/n; }
+      @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
+    },
+    sdev() {
+      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
+      @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
+      @Override double postPass( double ds[], long n) { return Math.sqrt((ds[0] - ds[1]*ds[1]/n)/n); }
+      @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     min() { 
       @Override void op( double[] d0s, double d1 ) { d0s[0]= Math.min(d0s[0],d1); }
@@ -82,7 +107,9 @@ class ASTGroup extends ASTPrim {
     int naggs = (asts.length-4)/3;
     final AGG[] aggs = new AGG[naggs];
     for( int idx = 4; idx < asts.length; idx += 3 ) {
-      FCN fcn = FCN.valueOf(asts[idx].exec(env).getFun().str());
+      Val v = asts[idx].exec(env);
+      String fn = v instanceof ValFun ? v.getFun().str() : v.getStr();
+      FCN fcn = FCN.valueOf(fn);
       ASTNumList col = check(ncols,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
       int agg_col = (int)col.min(); // Aggregate column
@@ -244,7 +271,7 @@ class ASTGroup extends ASTPrim {
     G( int ncols, AGG[] aggs ) { 
       _gs = new double[ncols]; 
       int len = aggs==null ? 0 : aggs.length;
-      _dss= new double[len][]; 
+      _dss= new double[len][];
       _ns = new long  [len]; 
       for( int i=0; i<len; i++ ) _dss[i] = aggs[i].initVal();
     }
