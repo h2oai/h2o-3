@@ -215,7 +215,6 @@ class ASTMode extends ASTPrim {
   }
   static int mode(Vec v) {
     if( v.isNumeric() ) {
-//      if( !v.isInt() ) throw new IllegalArgumentException("mode applies to integer and categorical columns.");
       MRUtils.Dist t = new MRUtils.Dist().doAll(v);
       int mode = ArrayUtils.maxIndex(t.dist());
       return (int)t.keys()[mode];
