@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 
-def expr_show(ip,port):
+def expr_show():
     
     
 

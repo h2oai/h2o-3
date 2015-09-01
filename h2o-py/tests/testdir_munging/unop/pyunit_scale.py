@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def center_scale(ip,port):
+def center_scale():
     
     
 

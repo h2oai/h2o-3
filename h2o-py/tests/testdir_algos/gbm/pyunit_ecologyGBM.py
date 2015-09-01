@@ -6,7 +6,7 @@ import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def ecologyGBM(ip,port):
+def ecologyGBM():
     
     
 

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def multi_dim_slicing(ip,port):
+def multi_dim_slicing():
     # Connect to a pre-existing cluster
     
 

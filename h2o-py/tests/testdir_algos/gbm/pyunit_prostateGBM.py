@@ -6,7 +6,7 @@ import h2o, tests
 #
 # Sample Running GBM on prostate.csv
 
-def prostateGBM(ip,port):
+def prostateGBM():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 

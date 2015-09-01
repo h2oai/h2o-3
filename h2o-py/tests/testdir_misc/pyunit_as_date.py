@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def download_pojo(ip,port):
+def download_pojo():
   hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
   print hdf.head()
 

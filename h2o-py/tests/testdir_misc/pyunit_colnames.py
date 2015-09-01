@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def col_names_check(ip,port):
+def col_names_check():
     
     
 

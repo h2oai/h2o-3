@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def pyunit_make_glm_model(ip,port):
+def pyunit_make_glm_model():
     # TODO: PUBDEV-1717
     pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
     model = h2o.glm(x=pros[["AGE","DPROS","DCAPS","PSA","VOL","GLEASON"]], y=pros["CAPSULE"], family="gaussian", alpha=[0])

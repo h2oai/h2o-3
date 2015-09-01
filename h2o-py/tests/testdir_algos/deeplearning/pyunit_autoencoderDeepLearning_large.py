@@ -2,7 +2,7 @@ import os, sys
 sys.path.insert(1,"../../../")
 import h2o, tests
 
-def deeplearning_autoencoder(ip, port):
+def deeplearning_autoencoder():
     
 
     resp = 784

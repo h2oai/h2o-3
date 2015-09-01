@@ -7,7 +7,7 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
 
-def emptyclusKmeans(ip,port):
+def emptyclusKmeans():
     # Connect to a pre-existing cluster
       # connect to localhost:54321
 

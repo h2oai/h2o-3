@@ -2,6 +2,10 @@
     "version_major" : 1,
     "version_minor" : 0,
 
+    "build_time_millis" : SUBST_BUILD_TIME_MILLIS,
+    "build_time_iso8601" : "SUBST_BUILD_TIME_ISO8601",
+    "build_time_local" : "SUBST_BUILD_TIME_LOCAL",
+
     "project_version" : "SUBST_PROJECT_VERSION",
     "branch_name" : "SUBST_BRANCH_NAME",
     "build_number" : "SUBST_BUILD_NUMBER",
@@ -126,7 +130,7 @@
         {
             "name" : "DeepLearning",
             "id"   : "booklet-deeplearning",
-            "path" : "docs-website/h2o-docs/booklets/DeepLearningRVignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/DeepLearning_Vignette.pdf"
         },
         {
             "name" : "GBM",

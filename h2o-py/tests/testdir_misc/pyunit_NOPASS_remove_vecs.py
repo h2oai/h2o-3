@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def pyunit_remove_vecs(ip,port):
+def pyunit_remove_vecs():
     # TODO PUBDEV-1789
     pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
     rows, cols = pros.dim

@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import numpy as np
 
-def quantile(ip,port):
+def quantile():
     # Connect to a pre-existing cluster
     
 

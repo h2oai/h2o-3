@@ -4,7 +4,7 @@ import h2o, tests
 import pandas as pd
 import numpy as np
 
-def group_by(ip,port):
+def group_by():
     # Connect to a pre-existing cluster
     
 

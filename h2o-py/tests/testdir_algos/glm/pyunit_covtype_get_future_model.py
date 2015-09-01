@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def test_get_future_model(ip,port):
+def test_get_future_model():
     
     
 

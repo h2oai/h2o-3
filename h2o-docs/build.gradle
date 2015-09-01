@@ -58,13 +58,13 @@ task compileGlm2(type: Exec, dependsOn: compileGlm1) {
 
 task compileDl1(type: Exec, dependsOn: createBuildInfoTex) {
     workingDir bookletPath
-    commandLine 'pdflatex', '-halt-on-error', 'DeepLearningRVignette.tex'
+    commandLine 'pdflatex', '-halt-on-error', 'DeepLearning_Vignette.tex'
     standardOutput = new FileOutputStream("$bookletPath/compileDl1.out")
 }
 
 task compileDl2(type: Exec, dependsOn: compileDl1) {
     workingDir bookletPath
-    commandLine 'pdflatex', '-halt-on-error', 'DeepLearningRVignette.tex'
+    commandLine 'pdflatex', '-halt-on-error', 'DeepLearning_Vignette.tex'
     standardOutput = new FileOutputStream("$bookletPath/compileDl2.out")
 }
 

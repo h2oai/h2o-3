@@ -177,8 +177,8 @@ h2o.getFutureModel <- function(object) {
     if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
     if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
     args <- .verify_dataxy(params$training_frame, x, y)
-    if( !is.null(params$offset_column) )  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
-    if( !is.null(params$weights_column) ) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+    if( !is.null(params$offset_column) && !is.null(params$offset_column))  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+    if( !is.null(params$weights_column) && !is.null(params$weights_column)) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
     params$ignored_columns <- args$x_ignore
     params$response_column <- args$y
   } else {

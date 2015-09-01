@@ -4,7 +4,7 @@ import h2o, tests
 import numpy as np
 import pandas as pd
 
-def to_H2OFrame(ip,port):
+def to_H2OFrame():
     # Connect to a pre-existing cluster
     
 

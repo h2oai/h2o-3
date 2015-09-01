@@ -93,7 +93,7 @@
 #' @param sparsity_beta Sparsity regularization (Experimental)
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing
 #'        Experimental)
-#' @param reproducible Force reproducibility on small data (will be slow - only uses 1 thread)
+#' @param reproducible Force reproducibility on small data (requires setting the \code{seed} argument and this will be slow - only uses 1 thread)
 #' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O
 #'        Frames"
 #' @param offset_column Specify the offset column.
@@ -203,9 +203,9 @@ h2o.deeplearning <- function(x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y, autoencoder)
-  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$response_column <- args$y
   parms$ignored_columns <- args$x_ignore
   if(!missing(model_id))

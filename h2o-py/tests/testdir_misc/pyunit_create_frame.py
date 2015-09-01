@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def create_frame_test(ip,port):
+def create_frame_test():
     
     
 
