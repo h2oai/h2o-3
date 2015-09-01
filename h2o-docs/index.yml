@@ -9,6 +9,8 @@ sources:
   - src/product/howto/YARN_BP.md
   - src/product/howto/H2O-DevLogs.md
   - src/product/upgrade/Migration.md
+  - src/product/howto/POJO_QuickStart.md
+  - src/product/tutorials/GridSearch.md
   - src/product/howto/FAQ.md
   - src/product/howto/Videos.md
 

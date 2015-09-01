@@ -297,7 +297,18 @@ Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value betw
 
 If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
 
+---
 
+**What types of data columns does H2O support?**
+
+Currently, H2O supports: 
+
+- float (any IEEE double)
+- integer (up to 64bit, but compressed according to actual range)
+- factor (same as integer, but with a String mapping, often handled differently in the algorithms)
+- time (same as 64bit integer, but with a time-since-Unix-epoch interpretation)
+- UUID (128bit integer, no math allowed)
+- String
 
 ---
 
@@ -494,6 +505,7 @@ Currently, we do not support this capability. If you are interested in contribut
 
 
 ---
+
 
 ##Hadoop
 
@@ -947,7 +959,63 @@ EOF
 
 ---
 
+<!---
 
+in progress - commenting out until complete
+
+**How do I extract the variable importance from the output in R?**
+
+Launch R, then enter the following: 
+
+```
+library(h2o)
+h <- h2o.init()
+as.h2o(iris)
+as.h2o(testing)
+m <- h2o.gbm(x=1:4, y=5, data=hex, importance=T)
+
+m@model$varimp
+             Relative importance Scaled.Values Percent.Influence
+Petal.Width          7.216290000  1.0000000000       51.22833426
+Petal.Length         6.851120500  0.9493965043       48.63600147
+Sepal.Length         0.013625654  0.0018881799        0.09672831
+Sepal.Width          0.005484723  0.0007600474        0.03893596
+```
+
+The variable importances are returned as an R data frame and you can extract the names and values of the data frame as follows:
+
+```
+is.data.frame(m@model$varimp)
+# [1] TRUE
+
+names(m@model$varimp)
+# [1] "Relative importance" "Scaled.Values"       "Percent.Influence"  
+
+rownames(m@model$varimp)
+# [1] "Petal.Width"  "Petal.Length" "Sepal.Length" "Sepal.Width"
+
+m@model$varimp$"Relative importance"
+# [1] 7.216290000 6.851120500 0.013625654 0.005484723
+```
+
+-->
+
+
+---
+
+**How does the `col.names` argument work in `group_by`?**
+
+You need to add the `col.names` inside the `gb.control` list. Refer to the following example:
+
+```
+newframe <- h2o.group_by(dd, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
+    sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+newframe$avg_email_event_click_ct2 = newframe$total_email_event_click_ct / newframe$count
+```
+
+
+
+---
 
 ##Sparkling Water
 
