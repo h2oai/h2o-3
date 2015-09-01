@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 
-def upload_file(ip, port):
+def upload_file():
     
 
     a = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def pca_prostate(ip, port):
+def pca_prostate():
     
 
     print "Importing prostate.csv data...\n"

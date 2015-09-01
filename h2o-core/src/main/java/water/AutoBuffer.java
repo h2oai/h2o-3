@@ -1,20 +1,36 @@
 package water;
 
-import water.H2ONode.H2OSmallMessage;
-import water.util.Log;
-import water.util.TwoDimTable;
+import com.google.common.base.Charsets;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
-import java.net.*;
-import java.nio.*;
+import java.net.DatagramPacket;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Random;
-import com.google.common.base.Charsets;
+
+import water.H2ONode.H2OSmallMessage;
+import water.util.Log;
+import water.util.TwoDimTable;
 
 /**
  * A ByteBuffer backed mixed Input/OutputStream class.
@@ -754,14 +770,14 @@ public /* final */ class AutoBuffer {
     return this;
   }
 
-  public Enum[] getAEnum(Enum[] values) {
+  public <E extends Enum> E[] getAEnum(E[] values) {
     //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
     int y=(int)xy;               // Middle non-zeros
     int z = y==0 ? 0 : getInt(); // Trailing nulls
-    Enum[] ts = new Enum[x+y+z];
+    E[] ts = (E[]) Array.newInstance(values.getClass().getComponentType(), x+y+z);
     for( int i = x; i < x+y; ++i ) ts[i] = getEnum(values);
     return ts;
   }
@@ -1144,7 +1160,7 @@ public /* final */ class AutoBuffer {
     return len == -1 ? null : new String(getA1(len), Charsets.UTF_8);
   }
 
-  public Enum getEnum(Enum[] values ) {
+  public <E extends Enum> E getEnum(E[] values ) {
     int idx = get1();
     return idx == -1 ? null : values[idx];
   }

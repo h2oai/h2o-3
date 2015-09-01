@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def download_all_logs(ip,port):
+def download_all_logs():
     
     
 

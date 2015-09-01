@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(1,"../../../")
 import h2o, tests
 
-def deeplearning_basic(ip, port):
+def deeplearning_basic():
     
 
     iris_hex = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))

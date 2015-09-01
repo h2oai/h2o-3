@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import numpy as np
 
-def mmult(ip,port):
+def mmult():
     data = [[random.uniform(-10000,10000)] for c in range(100)]
     h2o_data = h2o.H2OFrame(python_obj=data)
     np_data = np.array(data)

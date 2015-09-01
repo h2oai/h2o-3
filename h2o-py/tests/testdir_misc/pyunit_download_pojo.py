@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def download_pojo(ip,port):
+def download_pojo():
   
   
 

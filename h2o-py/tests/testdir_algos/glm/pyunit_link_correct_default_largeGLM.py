@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def link_correct_default(ip,port):
+def link_correct_default():
 	
 	
 

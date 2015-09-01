@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def interaction_check(ip,port):
+def interaction_check():
     # Connect to a pre-existing cluster
     
 

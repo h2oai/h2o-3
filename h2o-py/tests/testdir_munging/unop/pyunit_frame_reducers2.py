@@ -4,7 +4,7 @@ import h2o, tests
 import numpy as np
 import random
 
-def expr_reducers(ip,port):
+def expr_reducers():
     
     
 

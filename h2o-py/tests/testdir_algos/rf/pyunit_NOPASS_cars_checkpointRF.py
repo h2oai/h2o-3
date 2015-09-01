@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def cars_checkpoint(ip,port):
+def cars_checkpoint():
 
     cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars.runif()
