@@ -94,13 +94,14 @@ abstract public class AST extends Iced<AST> {
     // Math binary ops
     init(new ASTAnd ());
     init(new ASTDiv ());
+    init(new ASTIntDiv());
     init(new ASTMod ());
     init(new ASTMul ());
     init(new ASTOr  ());
     init(new ASTPlus());
     init(new ASTPow ());
+    init(new ASTScale());
     init(new ASTSub ());
-    init(new ASTIntDiv());
 
     // Relational
     init(new ASTGE());
@@ -140,23 +141,24 @@ abstract public class AST extends Iced<AST> {
     init(new ASTDay());
     init(new ASTDay());
     init(new ASTDayOfWeek());
-    init(new ASTHour());
     init(new ASTGetTimeZone());
+    init(new ASTHour());
     init(new ASTListTimeZones());
     init(new ASTMillis());
     init(new ASTMinute());
+    init(new ASTMktime());
     init(new ASTMonth());
     init(new ASTSecond());
     init(new ASTSetTimeZone());
     init(new ASTWeek());
     init(new ASTYear());
     init(new ASTasDate());
-    init(new ASTMktime());
 
     // Complex Math
     init(new ASTHist());
     init(new ASTImpute());
     init(new ASTMode());
+    init(new ASTQtile());
     init(new ASTRunif());
     init(new ASTTable());
     init(new ASTUnique());
@@ -205,9 +207,6 @@ abstract public class AST extends Iced<AST> {
 
     // Cluster management
     init(new ASTLs());
-
-    // Model Calls
-    init(new ASTQtile());
 
     // Search
     init(new ASTMatch());

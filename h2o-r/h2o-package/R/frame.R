@@ -870,6 +870,31 @@ sd <- function(x, na.rm=FALSE) {
   else stats::sd(x,na.rm)
 }
 
+#'
+#' Scaling and Centering of an H2O Frame
+#'
+#' Centers and/or scales the columns of an H2O dataset.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param center either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @param scale either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath, destination_frame = "iris.hex")
+#' summary(iris.hex)
+#'
+#' # Scale and center all the numeric columns in iris data set
+#' scale(iris.hex[, 1:4])
+#' }
+#' @export
+h2o.scale <- function(x, center = TRUE, scale = TRUE) .newExpr("scale", chk.Frame(x), center, scale)
+
+#' @export
+scale.Frame <- h2o.scale
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1650,11 +1675,15 @@ apply <- function(X, MARGIN, FUN, ...) {
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
+  fname <- as.character(substitute(FUN))
   if( typeof(FUN) == "builtin" || typeof(FUN) == "symbol") {
-    fname <- as.character(substitute(FUN))
     if( fname %in% .h2o.primitives ) return(.newExpr("apply",X,MARGIN,fname))
     stop(paste0("Function '",fname,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
   }
+
+  # Look for an H2O function that works on a Frame; it will be handed a Frame of 1 col
+  if( exists(paste0(fname,".Frame")) )
+    return(.newExpr("apply",X,MARGIN,fname))
 
   # Explode anonymous function into a Currents AST.  Pass along the dynamic
   # environment (not the static environment the H2O wrapper itself is compiled

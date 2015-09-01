@@ -35,6 +35,7 @@
 }
 
 .process.body <- function(b,formalz,envs) {
+browser()
   stmnts <- as.list(b)
   tmp1 <- ""; tmp2 <- ""
   # Leading { means a list of statements, there is no trailing close-}
@@ -144,7 +145,7 @@
     args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard, formalz, envs )
 
     # H2O primitives we invoke directly
-    if( fname %in% .h2o.primitives )
+    if( fname %in% .h2o.primitives || exists(paste0(fname,".Frame")) )
       return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
 
     # Slice '[]' needs a little work: row and col break out into 2 nested calls,
