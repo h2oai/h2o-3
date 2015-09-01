@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def offset_bernoulli_cars(ip,port):
+def offset_bernoulli_cars():
     # Connect to a pre-existing cluster
     
 

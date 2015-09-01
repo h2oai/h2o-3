@@ -320,10 +320,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Key[] modelKeys = new Key[N];
     final Key[] predictionKeys = new Key[N];
 
-    // Step 2: Make 2*N binary weight vectors
+    // Step 2: Make 2*N binary weight vectors and store the CV train/validation frames
     final String origWeightsName = _parms._weights_column;
     final Vec[] weights = new Vec[2*N];
     final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
+    final Frame[] cvTrain = new Frame[N];
+    final Frame[] cvValid = new Frame[N];
+    final String[] identifier = new String[N];
+    final String weightName = "weights";
+
+    final Key<M> origDest = dest();
     for (int i=0; i<N; ++i) {
       // Make weights
       weights[2*i]   = origTrainFrame.anyVec().makeZero();
@@ -352,117 +358,116 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         String msg = "Not enough data to create " + N + " random cross-validation splits. Either reduce nfolds, specify a larger dataset (or specify another random number seed, if applicable).";
         throw new H2OIllegalArgumentException(msg);
       }
-    }
-    if (_parms._fold_column == null) {
-      foldAssignment.remove();
+
+      identifier[i] = origDest.toString() + "_cv_" + (i+1);
+      modelKeys[i] = Key.make(identifier[i]);
+
+      // Training/Validation share the same data, but will have exclusive weights
+      cvTrain[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvTrain[i].add(weightName, weights[2*i]);
+      DKV.put(cvTrain[i]);
+      cvValid[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      cvValid[i].add(weightName, weights[2*i+1]);
+      DKV.put(cvValid[i]);
     }
 
-    // Build N cross-validation models
-    final Key<M> origDest = dest();
+    // clean up memory (mostly small helper vectors and Frame headers)
+    if (_parms._fold_column == null) foldAssignment.remove();
+    if (origWeightsName == null) origWeight.remove();
+
     // adapt main Job's progress bar to build N+1 models
     ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
     _deleteProgressKey = false; // keep the same progress bar for all N+1 jobs
 
+    long cs = _parms.checksum();
+    final boolean async = false;
+    ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
-      if (isCancelledOrCrashed()) {
-        Log.warn("Cancelling all N-fold cross-validation jobs.");
-        break;
-      }
       Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
-      final String identifier = origDest.toString() + "_cv_" + (i+1);
-      final String weightName = "weights";
 
-      // Training/Validation share the same data, but will have exclusive weights
-      final Frame cvTrain = new Frame(Key.make(identifier+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
-      cvTrain.add(weightName, weights[2*i]);
-      DKV.put(cvTrain);
-      final Frame cvVal = new Frame(Key.make(identifier+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
-      cvVal.add(weightName, weights[2*i+1]);
-      DKV.put(cvVal);
+      // Shallow clone - not everything is a private copy!!!
+      cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
 
-      modelKeys[i] = Key.make(identifier);
-
-      // Build CV model - launch a separate Job
-      Model m = null;
-      {
-        ModelBuilder<M, P, O> cvModelBuilder = null;
-        try {
-          cvModelBuilder = (ModelBuilder<M, P, O>) this.clone();
-          cvModelBuilder._dest = modelKeys[i];
-          cvModelBuilder._key = Key.make(_key.toString() + "_cv" + i);
-          cvModelBuilder._state = JobState.CREATED;
-          cvModelBuilder._description = identifier;
-
-          // Fix up some parameters
-          cvModelBuilder._parms = (P) _parms.clone(); //NOTE: This is not a deep clone - we can only change simple top-level parameters here
-          cvModelBuilder._parms._weights_column = weightName;
-          cvModelBuilder._parms._train = cvTrain._key;
-          cvModelBuilder._parms._valid = cvVal._key;
-          cvModelBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-          cvModelBuilder.modifyParmsForCrossValidationSplits(i, N);
-          cvModelBuilder._start_time = System.currentTimeMillis();
-
-          // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
-          // via calling this series of methods for each of the N CV models:
-          cvModelBuilder.trainModelImpl(-1, true); // builds the CV model, returns immediately
-          cvModelBuilder.block();                  // wait for model completion
-          cvModelBuilder.done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
-          cvModelBuilder.updateModelOutput();      // mirror the Job state in the model
-          m = DKV.getGet(cvModelBuilder.dest());   // now the model is ready for consumption
-          assert(!isDone());
-        } catch(Throwable t) {
-          throw t;
-        } finally {
-          if (cvModelBuilder != null) cvModelBuilder.remove();
-          DKV.remove(cvTrain._key);
-        }
-      }
-
-      // holdout scoring
-      {
-        Frame adaptFr = null;
-        try {
-          if (!isCancelledOrCrashed()) {
-            adaptFr = new Frame(cvVal);
-            m.adaptTestForTrain(adaptFr, true, !isSupervised());
-            mb[i] = m.scoreMetrics(adaptFr);
-
-            if (_parms._keep_cross_validation_predictions) {
-              String predName = "prediction_" + modelKeys[i].toString();
-              predictionKeys[i] = Key.make(predName);
-              m.predictScoreImpl(cvVal, adaptFr, predName);
-            }
-          }
-        } finally {
-          weights[2 * i].remove();
-          weights[2 * i + 1].remove();
-          if (origWeightsName == null) origWeight.remove();
-          if (adaptFr != null) {
-            Model.cleanup_adapt(adaptFr, cvVal);
-            DKV.remove(adaptFr._key);
-          }
-          DKV.remove(cvVal._key);
-        }
-      }
+      // Fix up some parameters of the clone - UGLY - hopefully nothing is missing
+      cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
+      cvModelBuilders[i]._key = Key.make(_key.toString() + "_cv" + i);
+      cvModelBuilders[i]._state = JobState.CREATED;
+      cvModelBuilders[i]._parms =  (P)_parms.clone();
+      cvModelBuilders[i]._parms._weights_column = weightName;
+      cvModelBuilders[i]._parms._train = cvTrain[i]._key;
+      cvModelBuilders[i]._parms._valid = cvValid[i]._key;
+      cvModelBuilders[i]._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+      cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, _parms._model_id);
+      cvModelBuilders[i]._start_time = System.currentTimeMillis();
+      cvModelBuilders[i].trainModelImpl(-1, true); //non-blocking
+      if (!async)
+        cvModelBuilders[i].block();
     }
+    // check that this Job's original _params haven't changed
+    assert(cs == _parms.checksum());
 
     if (!isCancelledOrCrashed()) {
       Log.info("Building main model.");
 
       //HACK:
       // Can't use changeJobState (it assumes that state transitions are monotonic)
-      // instead - we use the
       assert (DKV.get(_key).get() == this);
       assert(_state == JobState.RUNNING);
       assert (((Job)DKV.getGet(_key))._state == JobState.RUNNING);
       _state = JobState.CREATED;
       assert (((Job)DKV.getGet(_key))._state == JobState.CREATED);
-
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
+
       modifyParmsForCrossValidationMainModel(N); //tell the main model that it shouldn't stop early either
-      trainModelImpl(-1, false).block(); // builds the main model and wait for completion
-      Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done
+
+      trainModelImpl(-1, false); //non-blocking
+      if (!async)
+        block();
+
+      // in async case, the CV models can score while the main model is still building
+      Model[] m = new Model[N];
+      for (int i=0; i<N; ++i) {
+        Frame adaptFr = new Frame(cvValid[i]);
+        try {
+          if (isCancelledOrCrashed()) {
+            Log.warn("Cancelling all N-fold cross-validation jobs.");
+            break;
+          } else {
+            // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
+            cvModelBuilders[i].block();
+
+            // mark the job as done
+            cvModelBuilders[i].done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
+            cvModelBuilders[i].updateModelOutput();      // mirror the Job state in the model
+            m[i] = DKV.getGet(cvModelBuilders[i].dest());   // now the model is ready for consumption
+            m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
+            mb[i] = m[i].scoreMetrics(adaptFr);
+
+            if (_parms._keep_cross_validation_predictions) {
+              String predName = "prediction_" + modelKeys[i].toString();
+              predictionKeys[i] = Key.make(predName);
+              m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
+            }
+
+            // free resources
+            DKV.remove(cvTrain[i]._key);
+            DKV.remove(cvValid[i]._key);
+            weights[2 * i].remove();
+            weights[2 * i + 1].remove();
+            cvModelBuilders[i].remove();
+          }
+        } finally {
+          if (adaptFr != null) {
+            Model.cleanup_adapt(adaptFr, cvValid[i]);
+            DKV.remove(adaptFr._key);
+          }
+        }
+      }
+
+      // wait for completion of the main model
+      block();
+      Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done (still needs cv metrics)
 
       // Check that both the job and the model are not yet marked as done (canBeDone() looks at whether N-fold CV is done)
       assert(_state == JobState.RUNNING);
@@ -496,8 +501,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param i which model index [0...N-1]
    * @param N Total number of cross-validation folds
    */
-  public void modifyParmsForCrossValidationSplits(int i, int N) {
+  public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
     _parms._nfolds = 0;
+    if (model_id != null)
+      _parms._model_id = Key.make(model_id.toString());
   }
 
   /**

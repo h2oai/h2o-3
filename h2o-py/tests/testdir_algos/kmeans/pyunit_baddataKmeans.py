@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import string
 
-def baddataKmeans(ip,port):
+def baddataKmeans():
 
   # Connect to a pre-existing cluster
     # connect to localhost:54321

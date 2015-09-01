@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def upload_import_small(ip, port):
+def upload_import_small():
     # Connect to a pre-existing cluster
     
 

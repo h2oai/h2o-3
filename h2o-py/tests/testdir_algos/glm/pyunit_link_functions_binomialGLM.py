@@ -6,7 +6,7 @@ import zipfile
 import statsmodels.api as sm
 
 
-def link_functions_binomial(ip,port):
+def link_functions_binomial():
   
   
 

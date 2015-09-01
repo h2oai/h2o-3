@@ -9,7 +9,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import numpy as np
 
-def var_test(ip,port):
+def var_test():
     
     
 

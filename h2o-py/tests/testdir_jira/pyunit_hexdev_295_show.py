@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def show_jira(ip, port):
+def show_jira():
     
     local_data = [[1, 'a'],[0, 'b']]
     h2o_data = h2o.H2OFrame(python_obj=local_data)

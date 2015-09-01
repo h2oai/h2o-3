@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def offset_gaussian(ip,port):
+def offset_gaussian():
     # Connect to a pre-existing cluster
     
 

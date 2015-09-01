@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def tweedie_weights(ip,port):
+def tweedie_weights():
 
     data = h2o.import_file(h2o.locate("smalldata/glm_test/cancar_logIn.csv"))
     data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()

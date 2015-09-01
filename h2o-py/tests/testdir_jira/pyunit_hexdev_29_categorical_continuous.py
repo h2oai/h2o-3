@@ -8,7 +8,7 @@ import sys, os
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def continuous_or_categorical(ip, port):
+def continuous_or_categorical():
   # connect to h2o
   
 

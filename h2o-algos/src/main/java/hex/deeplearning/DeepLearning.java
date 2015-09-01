@@ -138,8 +138,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   @Override
-  public void modifyParmsForCrossValidationSplits(int i, int N) {
-    super.modifyParmsForCrossValidationSplits(i, N);
+  public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
+    super.modifyParmsForCrossValidationSplits(i, N, model_id);
     if (_parms._overwrite_with_best_model) {
       warn("_overwrite_with_best_model",
               "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");

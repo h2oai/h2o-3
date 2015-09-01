@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import numpy as np
 
-def wide_dataset_large(ip,port):
+def wide_dataset_large():
     
     
 

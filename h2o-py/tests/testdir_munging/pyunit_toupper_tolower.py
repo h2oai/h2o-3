@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def toupper_tolower_check(ip,port):
+def toupper_tolower_check():
     # Connect to a pre-existing cluster
     
 

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def scale_pca_rf_pipe(ip,port):
+def scale_pca_rf_pipe():
 
   from h2o.transforms.preprocessing import H2OScaler
   from h2o.transforms.decomposition import H2OPCA

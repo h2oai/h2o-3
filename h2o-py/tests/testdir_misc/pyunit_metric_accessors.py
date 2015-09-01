@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def metric_accessors(ip,port):
+def metric_accessors():
 
     cars = h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     r = cars[0].runif()

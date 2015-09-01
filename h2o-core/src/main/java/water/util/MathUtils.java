@@ -103,6 +103,7 @@ public class MathUtils {
   }
 
   public static float sumSquares(final float[] a, int from, int to) {
+    assert(from >= 0 && to <= a.length);
     float result = 0;
     final int cols = to-from;
     final int extra=cols-cols%8;
