@@ -397,10 +397,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvModelBuilders[i]._parms._train = cvTrain[i]._key;
       cvModelBuilders[i]._parms._valid = cvValid[i]._key;
       cvModelBuilders[i]._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-      cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N);
+      cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, _parms._model_id);
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
-
-      assert(Arrays.equals(cvModelBuilders[i]._parms._model_id._kb, cvModelBuilders[i]._dest._kb));
       cvModelBuilders[i].trainModelImpl(-1, true); //non-blocking
       if (!async)
         cvModelBuilders[i].block();
@@ -411,7 +409,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (!isCancelledOrCrashed()) {
       Log.info("Building main model.");
 
-      assert(Arrays.equals(_parms._model_id._kb, _dest._kb));
       //HACK:
       // Can't use changeJobState (it assumes that state transitions are monotonic)
       assert (DKV.get(_key).get() == this);
@@ -504,9 +501,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param i which model index [0...N-1]
    * @param N Total number of cross-validation folds
    */
-  public void modifyParmsForCrossValidationSplits(int i, int N) {
+  public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
     _parms._nfolds = 0;
-    _parms._model_id = Key.make(_dest.toString());
+    if (model_id != null)
+      _parms._model_id = Key.make(model_id.toString());
   }
 
   /**
