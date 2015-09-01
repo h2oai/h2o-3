@@ -210,7 +210,7 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         // checkStddev(sval, model._output._singular_vals, 1e-4);
-        // checkEigvec(eigvec, model._output._eigenvectors, 1e-4);
+        // checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-4);
 
         score = model.score(train);
         ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
@@ -325,7 +325,7 @@ public class GLRMTest extends TestUtil {
           model = job.trainModel().get();
           Log.info(100 * missing_fraction + "% missing values: Objective = " + model._output._objective);
           double sd_err = errStddev(sval, model._output._singular_vals) / parms._k;
-          double ev_err = errEigvec(eigvec, model._output._eigenvectors) / parms._k;
+          double ev_err = errEigvec(eigvec, model._output._eigenvectors_raw) / parms._k;
           Log.info("Avg SSE in Std Dev = " + sd_err + "\tAvg SSE in Eigenvectors = " + ev_err);
           sd_map.put(missing_fraction, sd_err);
           ev_map.put(missing_fraction, ev_err);

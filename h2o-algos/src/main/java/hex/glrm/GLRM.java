@@ -446,10 +446,22 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Eigenvectors are V'Z' = (ZV)'
       Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
-      model._output._eigenvectors = eigvec.getArray();
+      model._output._eigenvectors_raw = eigvec.getArray();
 
       // Singular values ordered in weakly descending order by algorithm
       model._output._singular_vals = rrsvd.getSingularValues();
+
+      // Make TwoDimTable objects for prettier output
+      String[] colTypes = new String[_parms._k];
+      String[] colFormats = new String[_parms._k];
+      String[] colHeaders = new String[_parms._k];
+      Arrays.fill(colTypes, "double");
+      Arrays.fill(colFormats, "%5f");
+
+      assert model._output._names_expanded.length == model._output._eigenvectors_raw.length;
+      for (int i = 0; i < colHeaders.length; i++) colHeaders[i] = "Vec" + String.valueOf(i + 1);
+      model._output._eigenvectors = new TwoDimTable("Eigenvectors", null, model._output._names_expanded, colHeaders, colTypes, colFormats, "",
+              new String[model._output._eigenvectors_raw.length][], model._output._eigenvectors_raw);
     }
 
     @Override protected void compute2() {
