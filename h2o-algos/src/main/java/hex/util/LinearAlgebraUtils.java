@@ -138,6 +138,7 @@ public class LinearAlgebraUtils {
         // Extract row of X
         DataInfo.Row xrow = _xinfo.newDenseRow();
         _xinfo.extractDenseRow(xchk, row, xrow);
+        if (xrow.bad) continue;
 
         int bidx = _ncolX;
         for (int p = 0; p < _yt.length; p++) {
@@ -180,6 +181,7 @@ public class LinearAlgebraUtils {
         int cidx;
         for(int p = 0; p < _ainfo._cats; p++) {
           for(int row = 0; row < cs[0]._len; row++) {
+            if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
 
@@ -201,6 +203,7 @@ public class LinearAlgebraUtils {
         int pexp = _ainfo.numStart();
         for(int p = _ainfo._cats; p < _ncolA; p++) {
           for(int row = 0; row  < cs[0]._len; row++) {
+            if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
             a = modifyNumeric(a, pnum, _ainfo);
@@ -264,6 +267,7 @@ public class LinearAlgebraUtils {
         // 1) Extract single expanded row of A
         DataInfo.Row arow = _ainfo.newDenseRow();
         _ainfo.extractDenseRow(achks, row, arow);
+        if (arow.bad) continue;
         double[] aexp = arow.expandCats();
 
         // 2) Solve for single row of Q using forward substitution
