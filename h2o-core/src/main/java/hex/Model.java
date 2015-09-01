@@ -70,9 +70,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  them!
    */
   public abstract static class Parameters extends Iced {
-    public AutoBuffer deepClone() {
-      return write(new AutoBuffer()).flipForReading();
-    }
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1000;
 
