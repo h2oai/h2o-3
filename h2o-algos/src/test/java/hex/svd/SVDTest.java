@@ -484,6 +484,53 @@ public class SVDTest extends TestUtil {
     }
   }
 
+  @Test public void testProstateMissingProb() throws InterruptedException, ExecutionException {
+    long seed = 1234;
+    Frame train = null, score = null;
+    SVDModel model = null;
+    try {
+      train = parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate_cat.csv");
+
+      // Add missing values to the training data
+      Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+      DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
+      FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, 0.25);
+      j.execImpl();
+      j.get(); // MissingInserter is non-blocking, must block here explicitly
+      DKV.remove(frtmp._key); // Delete the frame header (not the data)
+
+      SVDParameters parms = new SVDParameters();
+      parms._train = train._key;
+      parms._nv = 8;
+      parms._only_v = false;
+      parms._keep_u = true;
+      parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._impute_missing = true;
+
+      SVD job = new SVD(parms);
+      try {
+        model = job.trainModel().get();
+        score = model.score(train);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch(Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
   @Test public void testIVVSum() {
     double[][] res = ard(ard(1, 2, 3), ard(2, 5, 6), ard(3, 6, 9));
     double[] v = new double[] {7, 8, 9};

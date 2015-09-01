@@ -577,13 +577,13 @@ public class Vec extends Keyed<Vec> {
   public double min()  { return mins()[0]; }
   /** Vec's 5 smallest values 
    *  @return Vec's 5 smallest values */
-  public double[]mins(){ return rollupStats()._mins; }
+  public double[] mins(){ return rollupStats()._mins; }
   /** Vec's maximum value 
    *  @return Vec's maximum value */
   public double max()  { return maxs()[0]; }
   /** Vec's 5 largest values 
    *  @return Vec's 5 largeest values */
-  public double[]maxs(){ return rollupStats()._maxs; }
+  public double[] maxs(){ return rollupStats()._maxs; }
   /** True if the column contains only a constant value and it is not full of NAs 
    *  @return True if the column is constant */
   public final boolean isConst() { return min() == max(); }
@@ -596,6 +596,13 @@ public class Vec extends Keyed<Vec> {
   /** Vecs's standard deviation
    *  @return Vec's standard deviation */
   public double sigma(){ return rollupStats()._sigma; }
+  /** Vecs's mode
+   * @return Vec's mode */
+  public int mode() {
+    if (!isEnum()) throw H2O.unimpl();
+    long[] bins = bins();
+    return ArrayUtils.maxIndex(bins);
+  }
   /** Count of missing elements
    *  @return Count of missing elements */
   public long  naCnt() { return rollupStats()._naCnt; }

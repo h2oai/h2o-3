@@ -36,8 +36,12 @@ public class LinearAlgebraUtils {
     int cidx;
     for(int col = 0; col < dinfo._cats; col++) {
       if (Double.isNaN(row[col])) {
-        if (dinfo._catMissing[col] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-        else cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
+        if (dinfo._imputeMissing)
+          cidx = dinfo._catModes[col];
+        else if (dinfo._catMissing[col] == 0)
+          continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
+        else
+          cidx = dinfo._catOffsets[col+1]-1;  // Otherwise, missing value turns into extra (last) factor
       } else
         cidx = dinfo.getCategoricalId(col, (int)row[col]);
       if(cidx >= 0) tmp[cidx] = 1;
@@ -60,8 +64,12 @@ public class LinearAlgebraUtils {
     for(int col = 0; col < dinfo._cats; col++) {
       double x = chks[col].atd(row_in_chunk);
       if (Double.isNaN(x)) {
-        if (dinfo._catMissing[col] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-        cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
+        if (dinfo._imputeMissing)
+          cidx = dinfo._catModes[col];
+        else if (dinfo._catMissing[col] == 0)
+          continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
+        else
+          cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
       } else
         cidx = dinfo.getCategoricalId(col, (int)x);
       if(cidx >= 0) tmp[cidx] = 1;
@@ -176,8 +184,12 @@ public class LinearAlgebraUtils {
             double a = cs[p].atd(row);
 
             if (Double.isNaN(a)) {
-              if (_ainfo._catMissing[p] == 0) continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-              cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor
+              if (_ainfo._imputeMissing)
+                cidx = _ainfo._catModes[p];
+              else if (_ainfo._catMissing[p] == 0)
+                continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
+              else
+                cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor
             } else
               cidx = _ainfo.getCategoricalId(p, (int)a);
             if(cidx >= 0) _atq[cidx][k-_ncolA] += q;   // Ignore categorical levels outside domain
@@ -185,15 +197,16 @@ public class LinearAlgebraUtils {
         }
 
         // Numeric columns
+        int pnum = 0;
         int pexp = _ainfo.numStart();
         for(int p = _ainfo._cats; p < _ncolA; p++) {
           for(int row = 0; row  < cs[0]._len; row++) {
             double q = cs[k].atd(row);
             double a = cs[p].atd(row);
-            a = modifyNumeric(a, p, _ainfo);
+            a = modifyNumeric(a, pnum, _ainfo);
             _atq[pexp][k-_ncolA] += q * a;
           }
-          pexp++;
+          pexp++; pnum++;
         }
         assert pexp == _atq.length;
       }

@@ -295,7 +295,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           u = btsk.outputFrame(model._output._u_key, null, null);
         }
 
-        model._output._d = Arrays.copyOfRange(svdJ.getSingularValues(), 0, _parms._nv);
+        model._output._d = Arrays.copyOfRange(svdJ.getSingularValues(),0,_parms._nv);
         model._output._v = svdJ.getV().getMatrix(0,qta[0].length-1,0,_parms._nv-1).getArray();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);

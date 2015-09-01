@@ -257,7 +257,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
-        parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
+        // parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
+        parms._svd_method = SVDModel.SVDParameters.Method.Probabilistic;
         parms._seed = _parms._seed;
         parms._only_v = false;
         parms._keep_u = true;
@@ -276,7 +277,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           centers_exp = ArrayUtils.transpose(svd._output._v);
 
           // Set X and Y appropriately given SVD of A = UDV'
-          // a) Set Y = D^(1/2)V'S
+          // a) Set Y = D^(1/2)V'S where S = diag(\sigma)
           final double[] dsqrt = new double[_parms._k];
           for(int i = 0; i < _parms._k; i++) {
             dsqrt[i] = Math.sqrt(svd._output._d[i]);
