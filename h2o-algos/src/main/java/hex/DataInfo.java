@@ -165,7 +165,7 @@ public class DataInfo extends Keyed {
     _catMissing = new int[ncats];
     int len = _catOffsets[0] = 0;
     for(int i = 0; i < ncats; ++i) {
-      _catModes[i] = train.vec(cats[i]).mode();
+      _catModes[i] = imputeCat(train.vec(cats[i]));
       _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
@@ -253,13 +253,17 @@ public class DataInfo extends Keyed {
     _catModes = new int[_cats];
     _numMeans = new double[_nums];
     for(int i = 0; i < _cats; i++)
-      _catModes[i] = _adaptedFrame.vec(_cats+i).mode();
+      _catModes[i] = imputeCat(_adaptedFrame.vec(i));
     for(int i = 0; i < _nums; i++)
       _numMeans[i] = _adaptedFrame.vec(_cats+i).mean();
     setPredictorTransform(predictor_transform);
     setResponseTransform(response_transform);
   }
 
+  public static int imputeCat(Vec v) {
+    if(v.isEnum()) return v.mode();
+    return (int)Math.round(v.mean());
+  }
 
   public DataInfo filterExpandedColumns(int [] cols){
     assert _predictor_transform != null;
