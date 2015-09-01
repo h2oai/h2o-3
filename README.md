@@ -6,7 +6,7 @@ H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
-* [Using H2O Dev Artifacts](#Artifacts)
+* [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
 * [Building H2O on Hadoop](#BuildingHadoop)
