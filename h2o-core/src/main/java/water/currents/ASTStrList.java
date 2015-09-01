@@ -154,7 +154,12 @@ class ASTAsNumeric extends ASTPrim {
   @Override String str() { return "as.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.numeric requires a single column");
-    return new ValFrame(new Frame(fr._names, new Vec[]{fr.anyVec().toNumeric()}));
+    Vec[] nvecs = new Vec[fr.numCols()];
+    Vec vv;
+    for(int c=0;c<nvecs.length;++c) {
+      vv = fr.vec(c);
+      nvecs[c] = ( vv.isInt() || vv.isEnum() ) ? vv.toInt() : vv.makeCopy();
+    }
+    return new ValFrame(new Frame(fr._names, nvecs));
   }
 }

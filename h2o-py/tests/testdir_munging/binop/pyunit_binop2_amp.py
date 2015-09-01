@@ -54,7 +54,7 @@ def binop_amp(ip,port):
 
     # LHS: H2OVec, RHS: H2OVec
     res = 1.2 + iris[2]
-    res2 = iris[1,:] & res[7,:]
+    res2 = iris[1,:] & res[7,:].flatten()
     res2.show()
 
     # # LHS: H2OVec, RHS: scaler

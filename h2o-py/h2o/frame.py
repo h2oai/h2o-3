@@ -166,7 +166,7 @@ class H2OFrame:
   def __le__  (self, i): return H2OFrame(expr=ExprNode("<=",  self,i))
   def __lt__  (self, i): return H2OFrame(expr=ExprNode("<",   self,i))
   def __eq__  (self, i): return H2OFrame(expr=ExprNode("==",  self,i))
-  def __ne__  (self, i): return H2OFrame(expr=ExprNode("N",  self,i))
+  def __ne__  (self, i): return H2OFrame(expr=ExprNode("!=",  self,i))
   def __pow__ (self, i): return H2OFrame(expr=ExprNode("^",   self,i))
   # rops
   def __rmod__(self, i): return H2OFrame(expr=ExprNode("mod",i,self))

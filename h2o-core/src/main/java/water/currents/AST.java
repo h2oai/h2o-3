@@ -159,6 +159,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTMode());
     init(new ASTRunif());
     init(new ASTTable());
+    init(new ASTUnique());
     init(new ASTVariance());
 
     // Generic data mungers
