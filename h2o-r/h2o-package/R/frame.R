@@ -727,14 +727,11 @@ summary.Frame <- function(object, factors=6L, ...) {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-h2o.mean <- function(x, na.rm=TRUE) { op <- if(na.rm) "meanNA" else "mean"; .eval.frame(.newExpr(op,x)):data }
+h2o.mean <- function(x, na.rm=TRUE) .eval.frame(.newExpr("mean",x,na.rm)):data
 
 #' @rdname h2o.mean
 #' @export
-mean.Frame <- function(x, ...) {
-  if( is.Frame(x) ) h2o.mean(x,...)
-  else base::mean(x,...)
-}
+mean.Frame <- h2o.mean
 
 #' H2O Median
 #'
@@ -751,10 +748,7 @@ h2o.median <- function(x, na.rm = TRUE) .eval.frame(.newExpr("median",x,na.rm)):
 
 #' @rdname h2o.median
 #' @export
-median.Frame <- function(x, ...) {
-  if( is.Frame(x) ) h2o.median(x,...)
-  else base::median(x,...)
-}
+median.Frame <- h2o.median
 
 #' Cut  Numeric Data to Factor
 #'
@@ -1682,8 +1676,13 @@ apply <- function(X, MARGIN, FUN, ...) {
   }
 
   # Look for an H2O function that works on a Frame; it will be handed a Frame of 1 col
-  if( exists(paste0(fname,".Frame")) )
-    return(.newExpr("apply",X,MARGIN,fname))
+  fr.name <- paste0(fname,".Frame")
+  if( exists(fr.name) ) {
+    # Add in any default args
+    args <- formals(get(fr.name))[-1L]
+    fcn <- paste0("{ X . (",fname," X ",paste(args,collapse=" "),")}")
+    return(.newExpr("apply",X,MARGIN,fcn))
+  }
 
   # Explode anonymous function into a Currents AST.  Pass along the dynamic
   # environment (not the static environment the H2O wrapper itself is compiled

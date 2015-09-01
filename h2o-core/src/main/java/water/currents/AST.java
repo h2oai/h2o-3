@@ -127,7 +127,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTMax());
     init(new ASTMaxNA());
     init(new ASTMean());
-    init(new ASTMeanNA());
     init(new ASTMedian());
     init(new ASTMin());
     init(new ASTMinNA());

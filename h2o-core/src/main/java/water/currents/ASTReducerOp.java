@@ -254,37 +254,15 @@ class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double 
 
 // ----------------------------------------------------------------------------
 // Unlike the other reducer ops, this one only works on a single column
-class ASTMeanNA extends ASTPrim {
-  @Override int nargs() { return 1+1; }
-  @Override String str() { return "meanNA"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols()==1 ) {
-      if( !fr.anyVec().isNumeric() ) return new ValNum(Double.NaN);
-      return new ValNum(fr.anyVec().mean());
-    }
-    Futures fs = new Futures();
-    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key);
-    NewChunk chunk = new NewChunk(v, 0);
-    for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).mean():Double.NaN);
-    chunk.close(0,fs);
-    Vec vec = v.close(fs);
-    fs.blockForPending();
-    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
-    DKV.put(fr2);
-    return new ValFrame(fr2);
-  }
-}
-
 class ASTMean extends ASTPrim {
   @Override String str() { return "mean"; }
-  @Override int nargs() { return 1+1; }
+  @Override int nargs() { return 1+2; } // (mean X na.rm)
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    boolean narm = asts[2].exec(env).getNum()==1;
     if( fr.numCols() == 1) {
       if( !fr.anyVec().isNumeric() ) return new ValNum(Double.NaN);
-      if( fr.anyVec().length()==0 || fr.anyVec().naCnt() >0 ) return new ValNum(Double.NaN);
+      if( !narm && (fr.anyVec().length()==0 || fr.anyVec().naCnt() >0) ) return new ValNum(Double.NaN);
       return new ValNum(fr.anyVec().mean());
     }
     Futures fs = new Futures();
