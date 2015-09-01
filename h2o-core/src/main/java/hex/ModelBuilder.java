@@ -44,6 +44,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
+  private Key[] cvModelBuilderKeys;
+
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
@@ -223,21 +225,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     }
-    return !nFoldCV() ? trainModelImpl(progressUnits(), true) :
-            // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-            start(new H2O.H2OCountedCompleter() {
-              @Override
-              protected void compute2() {
-                computeCrossValidation();
-                tryComplete();
-              }
-
-              @Override
-              public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-                failed(ex);
-                return true;
-              }
-            }, (_parms._nfolds + 1) * progressUnits(), true);
+    if(!nFoldCV()) {
+      return trainModelImpl(progressUnits(), true);
+    } else {
+      int work;
+      if (_parms._fold_column != null) {
+        Vec fc = train().vec(_parms._fold_column);
+        work = ((int)fc.max()-(int)fc.min()) + 1;
+      } else {
+        work = _parms._nfolds + 1;
+      }
+      // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
+      return start(new H2O.H2OCountedCompleter() {
+        @Override protected void compute2() {
+          computeCrossValidation();
+          tryComplete();
+        }
+        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+          failed(ex);
+          return true;
+        }
+      }, work * progressUnits(), true);
+    }
   }
 
   /**
@@ -259,6 +268,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   @Override
   protected boolean canBeDone() {
     return !nFoldCV();
+  }
+
+  @Override
+  public void cancel() {
+    super.cancel();
+    // parent job cancels all running CV child jobs
+    if (cvModelBuilderKeys != null) {
+      for (int i = 0; i < cvModelBuilderKeys.length; ++i) {
+        ModelBuilder<M, P, O> mb = DKV.getGet(cvModelBuilderKeys[i]);
+        if (mb != null) {
+          assert (mb.cvModelBuilderKeys == null); //prevent infinite recursion
+          mb.cancel();
+        }
+      }
+    }
   }
 
   /**
@@ -381,16 +405,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     long cs = _parms.checksum();
     final boolean async = false;
+    cvModelBuilderKeys = new Key[N];
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
+      if (isCancelledOrCrashed()) break;
       Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
 
       // Shallow clone - not everything is a private copy!!!
       cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
 
       // Fix up some parameters of the clone - UGLY - hopefully nothing is missing
+      cvModelBuilderKeys[i] = Key.make(_key.toString() + "_cv" + i);
+      cvModelBuilders[i]._key = cvModelBuilderKeys[i];
+      cvModelBuilders[i].cvModelBuilderKeys = null; //children cannot have children
       cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
-      cvModelBuilders[i]._key = Key.make(_key.toString() + "_cv" + i);
       cvModelBuilders[i]._state = JobState.CREATED;
       cvModelBuilders[i]._parms =  (P)_parms.clone();
       cvModelBuilders[i]._parms._weights_column = weightName;
