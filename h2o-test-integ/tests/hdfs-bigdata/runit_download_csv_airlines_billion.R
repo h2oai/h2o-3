@@ -37,7 +37,7 @@ library(R.utils)
 myFile <- paste(getwd(), "delete_this_file.csv", sep = .Platform$file.sep)
 h2o.downloadCSV(predictions1, myFile)
 
-predictions2 <- h2o.importFile(myFile)
+predictions2 <- h2o.uploadFile(myFile)
 file.remove(myFile)
 
 r1 <- nrow(predictions1)
