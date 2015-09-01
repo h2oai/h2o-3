@@ -44,6 +44,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
+  private Key[] cvModelBuilderKeys;
+
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
@@ -271,19 +273,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   @Override
   public void cancel() {
     super.cancel();
-    if (cvModelBuildersKey == null)
-      return;
-    for (int i=0; i<cvModelBuildersKey.length; ++i) {
-      ModelBuilder<M,P,O> mb = DKV.getGet(cvModelBuildersKey[i]);
-      if (mb != null) {
-        Log.info("Cancelling CV model " + mb);
-        mb.cancel();
-        assert(mb.isCancelledOrCrashed());
+    // parent job cancels all running CV child jobs
+    if (cvModelBuilderKeys != null) {
+      for (int i = 0; i < cvModelBuilderKeys.length; ++i) {
+        ModelBuilder<M, P, O> mb = DKV.getGet(cvModelBuilderKeys[i]);
+        if (mb != null) {
+          assert (mb.cvModelBuilderKeys == null); //prevent infinite recursion
+          mb.cancel();
+        }
       }
     }
   }
-
-  Key[] cvModelBuildersKey;
 
   /**
    * Default naive (serial) implementation of N-fold cross-validation
@@ -405,18 +405,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     long cs = _parms.checksum();
     final boolean async = false;
-    cvModelBuildersKey = new Key[N];
+    cvModelBuilderKeys = new Key[N];
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
       if (isCancelledOrCrashed()) break;
       Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
+
       // Shallow clone - not everything is a private copy!!!
       cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
-      cvModelBuilders[i]._key = Key.make(_key.toString() + "_cv" + i);
-      cvModelBuildersKey[i] =  cvModelBuilders[i]._key;
-      cvModelBuilders[i].cvModelBuildersKey = null;
 
       // Fix up some parameters of the clone - UGLY - hopefully nothing is missing
+      cvModelBuilderKeys[i] = Key.make(_key.toString() + "_cv" + i);
+      cvModelBuilders[i]._key = cvModelBuilderKeys[i];
+      cvModelBuilders[i].cvModelBuilderKeys = null; //children cannot have children
       cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
       cvModelBuilders[i]._state = JobState.CREATED;
       cvModelBuilders[i]._parms =  (P)_parms.clone();
