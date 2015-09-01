@@ -904,7 +904,7 @@ class H2OFrame:
     :param na_rm: True or False to remove NAs from computation.
     :return: The mean of the column.
     """
-    return H2OFrame(expr=ExprNode("meanNA" if na_rm else "mean", self))._scalar()
+    return H2OFrame(expr=ExprNode("mean", self, na_rm))._scalar()
 
   def median(self, na_rm=False):
     """

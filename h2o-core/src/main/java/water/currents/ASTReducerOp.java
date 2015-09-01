@@ -253,7 +253,6 @@ class ASTMinNA extends ASTNARollupOp { String str() { return "minNA" ; } double 
 class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 // ----------------------------------------------------------------------------
-// Unlike the other reducer ops, this one only works on a single column
 class ASTMean extends ASTPrim {
   @Override String str() { return "mean"; }
   @Override int nargs() { return 1+2; } // (mean X na.rm)
