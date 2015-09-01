@@ -415,6 +415,7 @@ class ASTScale extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
+    // Peel out the bias/shift/mean
     double[] means;
     if( asts[2] instanceof ASTNumList ) {
       means = ((ASTNumList)asts[2]).expand();
@@ -427,6 +428,7 @@ class ASTScale extends ASTPrim {
       else throw new IllegalArgumentException("Only true or false allowed");
     }
 
+    // Peel out the scale/stddev
     double[] mults;
     if( asts[3] instanceof ASTNumList ) {
       mults = ((ASTNumList)asts[3]).expand();
@@ -439,76 +441,17 @@ class ASTScale extends ASTPrim {
       else throw new IllegalArgumentException("Only true or false allowed");
     }
 
-    throw H2O.unimpl();
+    // Update in-place.
+    final double[] fmeans = means; // Make final copy for closure
+    final double[] fmults = mults; // Make final copy for closure
+    new MRTask() {
+      @Override public void map( Chunk[] cs ) {
+        for( int i=0; i<cs.length; i++ )
+          for( int row=0; row<cs[i]._len; row++ )
+            cs[i].set(row,(cs[i].atd(row)-fmeans[i])*fmults[i]);
+      }
+    }.doAll(fr);
+    return new ValFrame(fr);
   }
-
-//  @Override void apply(Env env) {
-//    Frame fr = env.popAry();
-//    for (int i = 0; i < fr.numCols(); ++i) if (fr.vecs()[i].isEnum()) throw new IllegalArgumentException(("All columns must be numeric."));
-//    if (!(_centers == null) && _centers.length != fr.numCols()) throw new IllegalArgumentException("`centers` must be logical or have length equal to the number of columns in the dataset.");
-//    if (!(_scales  == null) && _scales.length  != fr.numCols()) throw new IllegalArgumentException("`scales` must be logical or have length equal to the number of columns in the dataset.");
-//    final boolean use_mean = _centers == null && _center;
-//    final double[] centers = _centers;
-//    final boolean use_sig  = _scales == null && _scale;
-//    final boolean use_rms  = !use_mean && _scale;
-//    final double[] scales  = _scales;
-//    if (!_center && !_scale && (_centers == null) && (_scales == null)) {
-//      //nothing to do, return the frame as is
-//      env.pushAry(fr);
-//      return;
-//    }
-//
-//    boolean doCenter = use_mean || _centers != null;
-//    boolean doScale  = use_sig || use_rms || _scales != null;
-//
-//    Frame centered = new Frame(fr);
-//    if (doCenter) {
-//      centered = new MRTask() {
-//        @Override
-//        public void map(Chunk[] cs, NewChunk[] ncs) {
-//          int rows = cs[0]._len;
-//          int cols = cs.length;
-//          for (int r = 0; r < rows; ++r)
-//            for (int c = 0; c < cols; ++c) {
-//              double numer = cs[c].atd(r) - (use_mean
-//                      ? cs[c].vec().mean()
-//                      : centers == null ? 0 : centers[c]);
-//              ncs[c].addNum(numer);
-//            }
-//        }
-//      }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
-//    }
-//
-//    double[] rms_vals = null;
-//    if (use_rms) {
-//      rms_vals = new double[fr.numCols()];
-//      double nrows = fr.numRows();
-//      for (int i = 0; i < rms_vals.length; ++i) {
-//        Vec v = centered.vecs()[i];
-//        ASTVar.CovarTask t = new ASTVar.CovarTask(0,0).doAll(new Frame(v,v));
-//        rms_vals[i] = Math.sqrt(t._ss / (nrows - 1));
-//      }
-//    }
-//    final double[] rms = rms_vals;
-//
-//    Frame scaled = new Frame(centered);
-//    if (doScale) {
-//      scaled = new MRTask() {
-//        @Override
-//        public void map(Chunk[] cs, NewChunk[] ncs) {
-//          int rows = cs[0]._len;
-//          int cols = cs.length;
-//          for (int r = 0; r < rows; ++r)
-//            for (int c = 0; c < cols; ++c) {
-//              double denom = cs[c].atd(r) / (use_rms
-//                      ? rms[c] : use_sig ? cs[c].vec().sigma()
-//                      : scales == null ? 1 : scales[c]);
-//              ncs[c].addNum(denom);
-//            }
-//        }
-//      }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
-//    }
-//    env.pushAry(scaled);
-//  }
 }
 

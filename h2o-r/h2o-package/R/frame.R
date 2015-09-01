@@ -1659,18 +1659,18 @@ apply <- function(X, MARGIN, FUN, ...) {
   # Deal with extra arguments
   l <- list(...)
   if(length(l) > 0L) {
-    tmp <- sapply(l, function(x) { !class(x) %in% c("Frame", "numeric", "character", "logical") } )
-    if(any(tmp)) stop("H2O only recognizes Frame, numeric, and character objects.")
-
-    idx <- which(sapply(l, function(x) is(x, "Frame")))
-    extra_arg_names <- as.list(match.call())
-    for (i in idx) {
-      key <- as.character(extra_arg_names[[i]])
-      if( is.Frame(x)) next
-      x <- l[idx]
-      h2o.assign(x, key)
-      l[idx] <- x
-    }
+#    tmp <- sapply(l, function(x) { !class(x) %in% c("Frame", "numeric", "character", "logical") } )
+#    if(any(tmp)) stop("H2O only recognizes Frame, numeric, and character objects.")
+#
+#    idx <- which(sapply(l, function(x) is(x, "Frame")))
+#    extra_arg_names <- as.list(match.call())
+#    for (i in idx) {
+#      key <- as.character(extra_arg_names[[i]])
+#      if( is.Frame(x)) next
+#      x <- l[idx]
+#      h2o.assign(x, key)
+#      l[idx] <- x
+#    }
     stop("Currents 'apply' does not accept extra function arguments")
   }
 

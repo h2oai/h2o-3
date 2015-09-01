@@ -35,7 +35,6 @@
 }
 
 .process.body <- function(b,formalz,envs) {
-browser()
   stmnts <- as.list(b)
   tmp1 <- ""; tmp2 <- ""
   # Leading { means a list of statements, there is no trailing close-}
@@ -138,8 +137,11 @@ browser()
         is.logical(s1))      # Got atomic logical
       return(s1)
 
-  # Got an Op; function call of some sort
   fname <- as.character(substitute(s1))
+  if( fname=="T" ) return(TRUE)
+  if( fname=="F" ) return(FALSE)
+
+  # Got an Op; function call of some sort
   if( length(stmnt) > 1L && (typeof(s1) == "builtin" || typeof(s1)=="symbol") ) {
     # Convert all args to a list of Currents strings
     args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard, formalz, envs )
@@ -151,9 +153,9 @@ browser()
     # Slice '[]' needs a little work: row and col break out into 2 nested calls,
     # and row/col numbers need conversion from 1-based to zero based.
     if( fname=="[" ) {
-      if( length(args)==2 ) { "hex[qux]"
+      if( length(args)==2 ) { # "hex[qux]"
         stop("hex[qux]")
-      } else if( length(args)==3 ) { "hex[row,col]"
+      } else if( length(args)==3 ) { # "hex[row,col]"
         res <- .row_col_adjust(args[[1L]],args[[3L]],"cols")
         return(.row_col_adjust( res      ,args[[2L]],"rows"))
       } else stop("Only 1 or 2 args allowed for slice")
