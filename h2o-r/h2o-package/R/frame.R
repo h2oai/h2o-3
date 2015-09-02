@@ -387,13 +387,13 @@ NULL
   # Here's the breakdown: 
   #   Style          Type #args  Description
   # df[]           - na na 2    both missing, identity with df
+  # df["colname"]  - c  na 2    single column by name, df$colname
+  # df[3]          - X  na 2    if ncol > 1 then column else row
   # df[,]          - na na 3    both missing, identity with df
   # df[2,]         - r  na 3    constant row, all cols
   # df[1:150,]     - r  na 3    selection of rows, all cols
-  # df[3]          - c  na 2    constant column, not constant row
   # df[,3]         - na c  3    constant column
   # df[,1:10]      - na c  3    selection of columns
-  # df["colname"]  - c  na 2    single column by name, df$colname
   # df[,"colname"] - na c  3    single column by name
   # df[2,"colname"]- r  c  3    row slice and column-by-name
   # df[2,3]        - r  c  3    single element
@@ -401,7 +401,10 @@ NULL
   # df[a<b,]       - f  na 3    boolean row slice
   # df[a<b,c]      - f  c  3    boolean row slice
 
-  if( nargs() == 2 ) {      # Only row, no column; nargs==2 distiguishes "df[2,]" (row==2) from "df[2]" (col==2)
+  if( nargs() == 2 &&   # Only row, no column; nargs==2 distiguishes "df[2,]" (row==2) from "df[2]" (col==2)
+      # is.char tells cars["cylinders"], or if there are multiple columns.
+      # Single column with numeric selector is row: car$cylinders[100]
+      (is.character(row) || ncol(data) > 1) ) {
     # Row is really column: cars[3] or cars["cylinders"] or cars$cylinders
     col <- row
     row <- NA
