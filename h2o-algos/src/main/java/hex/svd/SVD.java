@@ -271,22 +271,21 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = qfrm.vec(i);
         Frame aqfrm = new Frame(vecs);
 
-        // 1) Form the matrix B = Q'A = (A'Q)'
+        // 1) Form the matrix B' = A'Q = (Q'A)'
         update(1, "Forming small matrix B = Q'A for direct SVD");
         SMulTask stsk = new SMulTask(dinfo, _parms._nv);
         stsk.doAll(aqfrm);
-        double[][] qta = ArrayUtils.transpose(stsk._atq);
 
-        // 2) Compute SVD of small matrix B = WDV'
+        // 2) Compute SVD of small matrix: If B' = WDV', then B = VDW'
         update(1, "Calculating SVD of small matrix locally");
-        Matrix qtaJ = new Matrix(qta);
-        SingularValueDecomposition svdJ = qtaJ.svd();
+        Matrix atqJ = new Matrix(stsk._atq);
+        SingularValueDecomposition svdJ = atqJ.svd();
 
         // 3) Form orthonormal matrix U = QW
         update(1, "Forming distributed orthonormal matrix U");
         if (!_parms._only_v && _parms._keep_u) {
           model._output._u_key = Key.make(_parms._u_name);
-          double[][] svdJ_u = svdJ.getU().getMatrix(0,qta.length-1,0,_parms._nv-1).getArray();
+          double[][] svdJ_u = svdJ.getV().getMatrix(0,atqJ.getColumnDimension()-1,0,_parms._nv-1).getArray();
 
           qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
           DKV.put(qinfo._key, qinfo);
@@ -296,7 +295,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
 
         model._output._d = Arrays.copyOfRange(svdJ.getSingularValues(),0,_parms._nv);
-        model._output._v = svdJ.getV().getMatrix(0,qta[0].length-1,0,_parms._nv-1).getArray();
+        model._output._v = svdJ.getU().getMatrix(0,atqJ.getRowDimension()-1,0,_parms._nv-1).getArray();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
