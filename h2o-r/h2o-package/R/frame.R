@@ -346,7 +346,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
 }
 
 #'
-#' Filter NA Coluns
+#' Filter NA Columns
 #'
 #' @param data A dataset to filter on.
 #' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
@@ -2879,7 +2879,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 })
 
 #'
-#' Compute A Histgram
+#' Compute A Histogram
 #'
 #' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
 #' in computing bin width. Note that we do not beautify the breakpoints as R does.
