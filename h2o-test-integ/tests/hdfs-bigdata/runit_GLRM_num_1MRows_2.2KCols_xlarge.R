@@ -36,7 +36,7 @@ sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = rows, cols
                                               integer_fraction = 0.0, binary_fraction = 0.0, 
                                               missing_fraction = 0, has_response = FALSE))
 
-print(paste("Time it took to create frame:", as.numeric(sst[3]))
+print(paste("Time it took to create frame:", as.numeric(sst[3])))
 
 print("Running GLRM on frame with quadratic loss and no regularization")
 aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=myframe, k=k_dim, init="PlusPlus", loss="L2", regularization_x="None", regularization_y="None", max_iterations=100))
