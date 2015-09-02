@@ -336,7 +336,7 @@ constant. It is usually used with the log link $g(\mu_i)= \log(\mu_i)$, or the i
 
 The model is fitted by solving the following likelihood maximization
 
-$$  \max_{\beta,\beta_0} \  \frac{1}{N}  \sum_{i=1}^N  \ -\frac{y_i}{x_i^{\top}\beta+\beta_0 } - \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
+$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
 %\[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
 The corresponding deviance is equal to
@@ -355,10 +355,9 @@ argument.
 
 \subsubsection{Tweedie models}
 
-Tweedie models are a class of distributions which include Gamma, Normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros (e.g. Gamma distribution).
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros. The variance of the tweedie distribution is proportional to the $p$-th power of the mean. 
 
-Tweedie is parametrized by variance power $p$ which can be one of the following:
-
+The tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 \begin{itemize}
 \item  $p=0$: Normal
 \item  $p=1$: Poisson
@@ -368,17 +367,27 @@ Tweedie is parametrized by variance power $p$ which can be one of the following:
 \item $p>3$:  Stable, with support on the positive reals% (was 2?)
 \end{itemize}
 
+The normal and Poisson examples have already been covered in the previous sections. For $p>1$, the model likelihood to maximize has the form
+$$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{x\mu^{1-p}}{1-p} - \kappa(\mu,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
+where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log(\mu)$ for $p=2$ and where the function $a(y_i,\phi)$ is evaluated using series expansion since it does not have an analytical solution. The link function in the GLM representation of the tweedie distribution is $g(\mu) = \mu^{1-p} = \eta = X\beta$. 
+%
+%have the form of the distribution \\
+%link function can be taken as $\mu^{1-p}$ when p is not equal to 1\\
+%giving: link $\mu=g^{-1}(\eta)$ or $\eta=X\beta = g(\mu)$ \\
+%satisfies being the identity when p=0 cause $\eta = \mu^1$\\
+%for p=2 satisfies the inverse link $\eta = \mu^-1$\\
+%for $p=3$ satisfies the link which is the $inverse^2$ for the inverse gaussian.\\
+%so when write the distribution for the tweedie we can replcae $\mu$ by Ginverse of eta and we will have Xbeta in the expression. 
+%Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
 
-TODO fit in likelihood 
-
-Deviance for variance $p$ ($p != 1$ and $p != 2$) is :
-$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)} $$
+The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to
+$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)}. $$
 
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
 
-\waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
+%\waterExampleInPython
+%\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
