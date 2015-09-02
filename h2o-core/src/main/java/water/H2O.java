@@ -1612,7 +1612,6 @@ final public class H2O {
     // Initialize NPS
     {
       String flow_dir;
-      URI flow_uri = null;
 
       if (ARGS.flow_dir != null) {
         flow_dir = ARGS.flow_dir;
@@ -1624,18 +1623,12 @@ final public class H2O {
       if (flow_dir != null) {
         flow_dir = flow_dir.replace("\\", "/");
         Log.info("Flow dir: '" + flow_dir + "'");
-
-        try {
-          flow_uri = new URI(flow_dir);
-        } catch (Exception e) {
-          throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
-        }
       }
       else {
         Log.info("Flow dir is undefined; saving flows not available");
       }
 
-      NPS = new NodePersistentStorage(flow_uri);
+      NPS = new NodePersistentStorage(flow_dir);
     }
 
     // Start network services, including heartbeats
