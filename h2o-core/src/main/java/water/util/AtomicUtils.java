@@ -65,10 +65,11 @@ public abstract class AtomicUtils {
       assert idx >= 0 && idx < ary.length;
       return _Lbase + idx * _Lscale;
     }
-    static public void incr( long ls[], int i ) {
+    static public void incr( long ls[], int i ) { add(ls,i,1); }
+    static public void add( long ls[], int i, long x ) {
       long adr = rawIndex(ls,i);
       long old = ls[i];
-      while( !_unsafe.compareAndSwapLong(ls,adr, old, old+1) )
+      while( !_unsafe.compareAndSwapLong(ls,adr, old, old+x) )
         old = ls[i];
     }
   }

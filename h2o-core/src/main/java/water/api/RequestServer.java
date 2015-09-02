@@ -90,6 +90,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Interaction","POST",InteractionHandler.class,"run"        , null,"Create interactions between categorical columns.");
     register("/3/MissingInserter" ,"POST",MissingInserterHandler.class,"run", null,"Insert missing values.");
     register("/99/DCTTransformer" ,"POST",DCTTransformerHandler.class,"run" , null,"Row-by-Row discrete cosine transforms in 1D, 2D and 3D.");
+    register("/99/Tabulate"  ,"POST",TabulateHandler.class,"run",            null,"Tabulate one column vs another.");
     register("/3/ImportFiles","GET",ImportFilesHandler.class,"importFiles" , null,"Import raw data files into a single-column H2O Frame.");
     register("/3/ImportFiles","POST",ImportFilesHandler.class,"importFiles" , null,"Import raw data files into a single-column H2O Frame.");
     register("/3/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  , null,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
