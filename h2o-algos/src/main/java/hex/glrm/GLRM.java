@@ -260,7 +260,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
         parms._svd_method = SVDModel.SVDParameters.Method.Probabilistic;
         parms._seed = _parms._seed;
-        parms._only_v = false;
         parms._keep_u = true;
         parms._impute_missing = true;
 

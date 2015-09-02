@@ -284,7 +284,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 3) Form orthonormal matrix U = QV
         update(1, "Forming distributed orthonormal matrix U");
-        if (!_parms._only_v && _parms._keep_u) {
+        if (_parms._keep_u) {
           model._output._u_key = Key.make(_parms._u_name);
           double[][] svdJ_u = svdJ.getU().getMatrix(0,qta.length-1,0,_parms._nv-1).getArray();
 
@@ -375,7 +375,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             System.arraycopy(v[i], 0, model._output._v[i], 0, _parms._nv);
 
           // Calculate left singular vectors U = AVD^(-1) if requested
-          if(!_parms._only_v && _parms._keep_u) {
+          if(_parms._keep_u) {
             model._output._u_key = Key.make(_parms._u_name);
             double[][] vt = ArrayUtils.transpose(model._output._v);
             for (int k = 0; k < _parms._nv; k++)
