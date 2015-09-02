@@ -120,10 +120,8 @@ class ASTGroup extends ASTPrim {
     }
 
     // do the group by work now
-    long start = System.currentTimeMillis();
-    GBTask p1 = new GBTask(gbCols, aggs).doAll(fr);
-    final G[] grps = p1._gss.keySet().toArray(new G[p1._gss.size()]);
-    Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
+    IcedHashMap<G,String> gss = doGroups(fr,gbCols,aggs);
+    final G[] grps = gss.keySet().toArray(new G[gss.size()]);
 
     // apply an ORDER by here...
     Arrays.sort(grps,new java.util.Comparator<G>() {
@@ -175,7 +173,7 @@ class ASTGroup extends ASTPrim {
   }
 
   // Argument check helper
-  private ASTNumList check( long dstX, AST ast ) {
+  static ASTNumList check( long dstX, AST ast ) {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
     ASTNumList dim;
     if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
@@ -188,9 +186,23 @@ class ASTGroup extends ASTPrim {
     return dim;
   }
 
+  // Do all the grouping work.  Find groups in frame 'fr', grouped according to
+  // the selected 'gbCols' columns, and for each group compute aggregrate
+  // results using 'aggs'.  Return an array of groups, with the aggregate results.
+  static IcedHashMap<G,String> doGroups(Frame fr, int[] gbCols, AGG[] aggs) {
+    // do the group by work now
+    long start = System.currentTimeMillis();
+    GBTask p1 = new GBTask(gbCols, aggs).doAll(fr);
+    Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
+    return p1._gss;
+  }
+
+  // Utility for ASTDdply; return a single aggregate for counting rows-per-group
+  static AGG[] aggNRows() { return new AGG[]{new AGG(FCN.nrow,0,NAHandling.IGNORE,0)};  }
+
   // Description of a single aggregate, including the reduction function, the
   // column and specified NA handling
-  private static class AGG extends Iced {
+  static class AGG extends Iced {
     final FCN _fcn;
     final int _col;
     final NAHandling _na;
@@ -220,7 +232,7 @@ class ASTGroup extends ASTPrim {
   // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
   // groups and all aggregates
   static class GBTask extends MRTask<GBTask> {
-    private final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
+    final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
     GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); }

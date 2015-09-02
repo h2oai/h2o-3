@@ -158,6 +158,28 @@ public class GroupByTest extends TestUtil {
     }
   }
 
+  @Test public void testBasicDdply() {
+    Frame fr = null;
+    String tree = "(h2o.ddply hex [1] { x . (mean (col 2) TRUE)})"; // Group-By on col 1 (not 0) mean of col 2
+    try {
+      fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
+      chkDim(fr,2,23);
+      chkFr(fr,0,0,2.0);        // Group 2.0, mean is 3.5
+      chkFr(fr,1,0,3.5);
+      chkFr(fr,0,1,2.2);        // Group 2.2, mean is 4.5
+      chkFr(fr,1,1,4.5);
+      chkFr(fr,0,7,2.8);        // Group 2.8, mean is 5.043, largest group
+      chkFr(fr,1,7,5.042857142857143);
+      chkFr(fr,0,22,4.4);       // Group 4.4, mean is 1.5, last group
+      chkFr(fr,1,22,1.5);
+
+    } finally {
+      if( fr != null ) fr.delete();
+      Keyed.remove(Key.make("hex"));
+    }
+  }
+
+
   private void chkDim( Frame fr, int col, int row ) {
     Assert.assertEquals(col,fr.numCols());
     Assert.assertEquals(row,fr.numRows());
