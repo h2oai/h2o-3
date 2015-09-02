@@ -165,10 +165,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame randSubIter(DataInfo dinfo, SVDModel model, int max_iterations, long seed) {
+    private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed) {
       DataInfo yinfo = null;
-      Frame yinit = null, ybig = null, qfrm = null, ayqfrm = null;
-      final int ncolA = dinfo._adaptedFrame.numCols();
+      Frame yqfrm = null;
 
       try {
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
@@ -176,23 +175,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
-        yinit = rtsk.outputFrame(Key.make(), null, null);
+        yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
 
-        // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
+        // Make input frame [A,Q] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
         // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
-        ayqfrm = new Frame(dinfo._adaptedFrame);
-        ayqfrm.add(yinit);
-        for (int i = 0; i < _parms._nv; i++)
-          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
-        Frame ayfrm = ayqfrm.subframe(0, ncolA + _parms._nv);   // [A,Y]
-        Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // [Y,Q]
-        Frame aqfrm = ayqfrm.subframe(0, ncolA);
-        aqfrm.add(ayqfrm.subframe(ncolA + _parms._nv, ayqfrm.numCols()));   // [A,Q]
-        ybig = ayfrm.subframe(ncolA, ayfrm.numCols());
+        //       Q frame is used to save both intermediate Y calculation and final orthonormal Q matrix
+        Frame aqfrm = new Frame(dinfo._adaptedFrame);
+        aqfrm.add(yqfrm);
 
-        // Calculate Cholesky of Gram to get R' = L matrix
+        // Calculate Cholesky of Y Gram to get R' = L matrix
         update(1, "Computing QR factorization of Y");
-        yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+        yinfo = new DataInfo(Key.make(), yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
         gtsk.doAll(yinfo._adaptedFrame);
@@ -200,43 +193,37 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Matrix ygram = new Matrix(gtsk._gram.getXX());
         CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
 
-        // Get Q from Y = QR giving R' = L
-        QRfromChol qrtsk = new QRfromChol(yinfo, chol, gtsk._nobs, _parms._nv);
+        // [A,Y_0] -> [A,Q_0]: Compute Q from Y = QR given R' = L, and overwrite Y with result
+        QRfromCholInPlace qrtsk = new QRfromCholInPlace(yinfo, chol, gtsk._nobs);
         qrtsk.doAll(yqfrm);
 
         int iters = 0;
-        long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
-        while (qrtsk._err / qobs > TOLERANCE && iters < max_iterations) {
+        while (iters < max_iterations) {
           update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(dinfo, _parms._nv);
-          stsk.doAll(aqfrm);    // Pass in [A,Q]
+          stsk.doAll(aqfrm);
 
           Matrix ysmall = new Matrix(stsk._atq);
           QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
-          double[][] ysmall_q = ysmall_qr.getQ().getArray();
+          double[][] qtilde = ysmall_qr.getQ().getArray();
 
-          // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q));
-          tsk.doAll(ayfrm);     // TODO: Can we reuse [A,Q] frame and write Y_j into old Q_{j-1}?
+          // 3) [A,Q_{j-1}] -> [A,Y_j]: Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
+          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(qtilde));
+          tsk.doAll(aqfrm);
 
-          // Calculate Cholesky of Gram to get R' = L matrix
+          // Calculate Cholesky of Y_j Gram to get R' = L matrix
           gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
           gtsk.doAll(yinfo._adaptedFrame);
           // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
           ygram = new Matrix(gtsk._gram.getXX());
           chol = new CholeskyDecomposition(ygram);
 
-          qrtsk = new QRfromChol(yinfo, chol, gtsk._nobs, _parms._nv);
-          qrtsk.doAll(yqfrm);   // Pass in [Y,Q]
+          qrtsk = new QRfromCholInPlace(yinfo, chol, gtsk._nobs);
+          qrtsk.doAll(yqfrm);
           iters++;
         }
-
-        // 4) Extract and save final Q_j from [A,Q] frame
-        qfrm = ayqfrm.extractFrame(ncolA + _parms._nv, ayqfrm.numCols());
-        qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
-        DKV.put(qfrm);
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
@@ -248,14 +235,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
       } finally {
         if( yinfo != null ) yinfo.remove();
-        if( yinit != null ) yinit.delete();
-        if( ybig != null ) ybig.delete();
-        if( ayqfrm != null ) {
-          for(int i = ncolA; i < ncolA+_parms._nv; i++)
-            ayqfrm.vec(i).remove();
-        }
       }
-      return qfrm;
+      return yqfrm;
     }
 
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
@@ -451,7 +432,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             utsk.doAll(u);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
-          qfrm = randSubIter(dinfo, model, _parms._max_iterations, _parms._seed);
+          qfrm = randSubIter(dinfo, _parms._max_iterations, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);

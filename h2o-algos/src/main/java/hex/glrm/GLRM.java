@@ -255,9 +255,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._nv = _parms._k;
-        parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
+        // parms._max_iterations = _parms._max_iterations;
         // parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
+        _parms._max_iterations = _parms._k;
         parms._svd_method = SVDModel.SVDParameters.Method.Probabilistic;
         parms._seed = _parms._seed;
         parms._keep_u = true;

@@ -228,6 +228,7 @@ public class SVDTest extends TestUtil {
       parms._keep_u = true;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._max_iterations = 4;
 
       SVD job = new SVD(parms);
       try {
@@ -422,6 +423,7 @@ public class SVDTest extends TestUtil {
       parms._keep_u = false;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._max_iterations = 7;
 
       SVD job = new SVD(parms);
       try {
@@ -456,7 +458,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/logreg/benign.csv");
+      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 5;
@@ -464,6 +466,7 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.DEMEAN;
       parms._svd_method = SVDParameters.Method.Probabilistic;
       parms._impute_missing = true;
+      parms._max_iterations = 20;
 
       SVD job = new SVD(parms);
       try {
@@ -512,6 +515,7 @@ public class SVDTest extends TestUtil {
       parms._keep_u = true;
       parms._svd_method = SVDParameters.Method.Probabilistic;
       parms._impute_missing = true;
+      parms._max_iterations = 20;
 
       SVD job = new SVD(parms);
       try {
