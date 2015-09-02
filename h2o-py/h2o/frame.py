@@ -974,6 +974,14 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("strsplit", self, pattern))
 
+  def countmatches(self, substr):
+    """
+    Split the strings in the target column on the given pattern
+
+    :return: H2OFrame
+    """
+    return H2OFrame(expr=ExprNode("countmatches", self, substr))
+
   def trim(self):
     """
     Trim the edge-spaces in a column of strings (only operates on frame with one column)
