@@ -3,17 +3,45 @@ package hex.util;
 import Jama.CholeskyDecomposition;
 import hex.DataInfo;
 import hex.FrameTask;
-import water.DKV;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
-
 public class LinearAlgebraUtils {
+
+  /*
+   * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
+   */
+  public static final double[] forwardSolve(double[][] L, double[] b) {
+    assert L != null && L.length == L[0].length && L.length == b.length;
+    double[] res = new double[b.length];
+
+    for(int i = 0; i < b.length; i++) {
+      res[i] = b[i];
+      for(int j = 0; j < i; j++)
+        res[i] -= L[i][j] * res[j];
+      res[i] /= L[i][i];
+    }
+    return res;
+  }
+
+  /*
+   * Backward substitution: Solve Ux = b for x = U = upper triangular matrix, b = real vector
+   */
+  public static final double[] backwardSolve(double[][] U, double[] b) {
+    assert U != null && U.length == U[0].length && U.length == b.length;
+    double[] res = new double[b.length];
+
+    for(int i = b.length-1; i >= 0; i--) {
+      res[i] = b[i];
+      for(int j = i+1; j < b.length; j++)
+        res[i] -= U[i][j] * res[j];
+      res[i] /= U[i][i];
+    }
+    return res;
+  }
 
   /*
    * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
@@ -227,41 +255,26 @@ public class LinearAlgebraUtils {
    */
   public static class QRfromChol extends MRTask<QRfromChol> {
     final DataInfo _ainfo;   // Info for frame A
-    final int _ncolA;     // Number of cols in A
-    final int _ncolQ;     // Number of cols in Q
+    final int _ncols;     // Number of cols in A and in Q
     final double[][] _L;
 
     public double _err;    // Output: l2 norm of difference between old and new Q
 
-    public QRfromChol(DataInfo ainfo, CholeskyDecomposition chol, double nobs, int ncolQ) {
+    public QRfromChol(DataInfo ainfo, CholeskyDecomposition chol, double nobs) {
       _ainfo = ainfo;
-      _ncolA = ainfo._adaptedFrame.numCols();
-      _ncolQ = ncolQ;
+      _ncols = ainfo._adaptedFrame.numCols();
 
       _L = chol.getL().getArray();
       ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
       _err = 0;
     }
 
-    public final double[] forwardSolve(double[][] L, double[] b) {
-      assert L != null && L.length == L[0].length && L.length == b.length;
-      double[] res = new double[b.length];
-
-      for(int i = 0; i < b.length; i++) {
-        res[i] = b[i];
-        for(int j = 0; j < i; j++)
-          res[i] -= L[i][j] * res[j];
-        res[i] /= L[i][i];
-      }
-      return res;
-    }
-
     @Override public void map(Chunk cs[]) {
-      assert (_ncolA + _ncolQ) == cs.length;
+      assert 2 * _ncols == cs.length;
 
       // Copy over only A frame chunks
-      Chunk[] achks = new Chunk[_ncolA];
-      for(int i = 0; i <_ncolA; i++) achks[i] = cs[i];
+      Chunk[] achks = new Chunk[_ncols];
+      for(int i = 0; i <_ncols; i++) achks[i] = cs[i];
 
       for(int row = 0; row < cs[0]._len; row++) {
         // 1) Extract single expanded row of A
@@ -275,7 +288,7 @@ public class LinearAlgebraUtils {
 
         // 3) Save row of solved values into Q
         int i = 0;
-        for(int d = _ncolA; d < _ncolA+_ncolQ; d++) {
+        for(int d = _ncols; d < 2 * _ncols; d++) {
           double qold = cs[d].atd(row);
           double diff = qrow[i] - qold;
           _err += diff * diff;    // Calculate SSE between Q_new and Q_old
@@ -286,5 +299,48 @@ public class LinearAlgebraUtils {
     }
 
     @Override protected void postGlobal() { _err = Math.sqrt(_err); }
+  }
+
+  /**
+   * Given Cholesky L from A'A = LL', compute Q from A = QR decomposition, where R = L'
+   * Dimensions: A is n by p, Q is n by p, R = L' is p by p
+   * Input: A (large frame) passed to doAll, where we overwrite each row of A with its row of Q
+   */
+  public static class QRfromCholInPlace extends MRTask<QRfromCholInPlace> {
+    final DataInfo _ainfo;   // Info for frame A
+    final int _ncols;     // Number of cols in A
+    final double[][] _L;
+
+    public QRfromCholInPlace(DataInfo ainfo, CholeskyDecomposition chol, double nobs) {
+      _ainfo = ainfo;
+      _ncols = ainfo._adaptedFrame.numCols();
+
+      _L = chol.getL().getArray();
+      ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
+    }
+
+    @Override public void map(Chunk cs[]) {
+      assert _ncols == cs.length;
+
+      // Copy over only A frame chunks
+      Chunk[] achks = new Chunk[_ncols];
+      for(int i = 0; i < _ncols; i++) achks[i] = cs[i];
+
+      for(int row = 0; row < cs[0]._len; row++) {
+        // 1) Extract single expanded row of A
+        DataInfo.Row arow = _ainfo.newDenseRow();
+        _ainfo.extractDenseRow(achks, row, arow);
+        if (arow.bad) continue;
+        double[] aexp = arow.expandCats();
+
+        // 2) Solve for single row of Q using forward substitution
+        double[] qrow = forwardSolve(_L, aexp);
+        assert qrow.length == _ncols;
+
+        // 3) Overwrite row of A with row of solved values Q
+        for(int d = 0; d < _ncols; d++)
+          cs[d].set(row, qrow[d]);
+      }
+    }
   }
 }
