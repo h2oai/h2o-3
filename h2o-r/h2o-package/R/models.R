@@ -1903,7 +1903,7 @@ h2o.sdev <- function(object) {
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' df <- as.h2o(iris)
-#' h2o.tabulate(data = df, x = "sepal_length", y = "species",
+#' h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
 #' }
 #' @export
