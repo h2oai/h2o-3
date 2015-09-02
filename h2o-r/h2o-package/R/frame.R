@@ -1620,6 +1620,93 @@ h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
+# TODO: Cleanup the cruft!
+#' Split H2O Dataset, Apply Function, and Return Results
+#'
+#' For each subset of an H2O data set, apply a user-specified function, then combine the results.
+#'
+#' @param .data An \linkS4class{Frame} object to be processed.
+#' @param .variables Variables to split \code{.data} by, either the indices or names of a set of columns.
+#' @param .fun Function to apply to each subset grouping.
+#' @param \dots Additional arguments passed on to \code{.fun}.
+#' @param .progress Name of the progress bar to use. #TODO: (Currently unimplemented)
+#' @return Returns a \linkS4class{Frame} object containing the results from the split/apply operation, arranged
+#          row-by-row
+#' @seealso \code{\link[plyr]{ddply}} for the plyr library implementation.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#'
+#' # Import iris dataset to H2O
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
+#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath, destination_frame = "iris.hex")
+#' # Add function taking mean of sepal_len column
+#' fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
+#' # Apply function to groups by class of flower
+#' # uses h2o's ddply, since iris.hex is a Frame object
+#' res = h2o.ddply(iris.hex, "class", fun)
+#' head(res)
+#' @export
+h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
+  .h2o.gc()
+  chk.Frame(.data)
+
+  # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
+  # as column names.  This is a bit complicated
+  if(is.character(.variables)) {
+    vars <- match(.variables, colnames(.data))
+    if (any(is.na(vars)))
+      stop('No column named ', .variables, ' in ', substitute(.data), '.')
+  } else if(is(.variables, 'H2Oquoted')) {
+    vars <- match(.variables, colnames(.data))
+  } else if(inherits(.variables, 'quoted')) { # plyr overwrote our . fn
+    vars <- match(.variables, colnames(.data))
+  } else if(is.integer(.variables)) {
+    vars <- .variables
+  } else if(is.numeric(.variables)) {   # this will happen eg c(1,2,3)
+    vars <- as.integer(.variables)
+  }
+
+  # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
+  vars <- vars - 1L
+
+  if(vars < 0L || vars > (ncol(.data)-1L))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
+
+  # Deal with extra arguments
+  l <- list(...)
+  extra_args = list()
+  if(length(l) > 0L)
+    extra_args <- sapply(l, .process.stmnt, list(), sys.parent(1))
+
+  # Process the function. Decide if it's an anonymous fcn, or a named one.
+  fname <- as.character(substitute(FUN))
+  if( typeof(FUN) == "builtin" || typeof(FUN) == "symbol") {
+    if( fname %in% .h2o.primitives ) return(.newExpr("apply",X,MARGIN,fname))
+    stop(paste0("Function '",fname,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
+  }
+
+  # Look for an H2O function that works on a Frame; it will be handed a Frame of 1 col
+  fr.name <- paste0(fname,".Frame")
+  if( exists(fr.name) ) {
+    FUN <- get(fr.name)         # Resolve function to the H2O flavor
+    # Add in any default args
+    args <- formals(FUN)[-1L]
+    nargs <- length(args) - length(extra_args)
+    if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
+    fcn <- if( length(extra_args)==0 ) fname 
+           else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
+    return(.newExpr("apply",X,MARGIN,fcn))
+  }
+
+  # Explode anonymous function into a Currents AST.  Pass along the dynamic
+  # environment (not the static environment the H2O wrapper itself is compiled
+  # in).  Unknown variables in the function body will be looked up in the
+  # dynamic scope.
+  funstr <- .fun.to.ast(FUN, list(), sys.parent(1))
+  .newExpr("h2o.ddply",.data,vars,funstr)
+}
+
 #' Apply on H2O Datasets
 #'
 #' Method for apply on \linkS4class{Frame} objects.
