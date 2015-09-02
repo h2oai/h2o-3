@@ -253,6 +253,7 @@ public abstract class ASTOp extends AST {
     // string mungers
     putPrefix(new ASTGSub());
     putPrefix(new ASTStrSplit());
+    putPrefix(new ASTCountMatches());
     putPrefix(new ASTStrSub());
     putPrefix(new ASTToLower());
     putPrefix(new ASTToUpper());
