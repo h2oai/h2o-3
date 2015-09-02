@@ -14,7 +14,7 @@
 \textsc{\Large\bf{Gradient Boosted Machines with H2O}}
 \\
 \bigskip
-\textsc{\small{Cliff Click \hspace{20pt} Michal Malohlava \hspace{20pt} Viraj Parmar \hspace{20pt} Hank Roark \hspace{20pt} Jessica Lanford}}
+\textsc{\small{Cliff Click \hspace{20pt} Jessica Lanford \hspace{20pt} Michal Malohlava \hspace{20pt} Viraj Parmar \hspace{20pt} Hank Roark }}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -30,7 +30,7 @@ August 2015: Third Edition
 {\raggedright\vfill\ 
 
 Gradient Boosted Machines with H2O\\
-  by Cliff Click, Michal Malohlava, Viraj Parmar, Hank Roark, \&\ Jessica Lanford \\
+  by Cliff Click, Jessica Lanford, Michal Malohlava, Viraj Parmar, \&\  Hank Roark\\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -101,7 +101,7 @@ The document source itself can be found here:
 %----------------------------------------------------------------------
 \section{Gradient Boosting Overview}
 
-A gradient boosted model is an ensemble of tree models that can be either regression or classification.
+A gradient boosted model is an ensemble of either regression or classification tree models.
 Both are forward-learning ensemble methods that obtain predictive results through gradually improved estimations.
 Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees.
 By sequentially applying weak classification algorithms to the incrementally changed data,
@@ -124,11 +124,11 @@ H2O's GBM functionalities include:
 
 \subsection{ Model Parameters}
 
-This section describes the functions of the parameters for GBM (TODO, lots of params, maybe copy to appendix and only put most important ones here):
+This section describes the functions of the parameters for GBM. %%(TODO, lots of params, maybe copy to appendix and only put most important ones here):
 
 \begin{itemize}
-\item {\texttt{x}}: A vector containing the names of the predictors to use while building the GBM model. No default.
-\item {\texttt{y}}: A character string or index that represents the response variable in the model. No default.
+\item {\texttt{x}}: A vector containing the names of the predictors to use while building the GBM model. 
+\item {\texttt{y}}: A character string or index that represents the response variable in the model.  
 \item {\texttt{training\_frame}}: An \texttt{H2OFrame} object containing the variables in the model. 
 \item {\texttt{validation\_frame}}: An \texttt{H2OParsedData} object containing the validation dataset used to construct confusion matrix. If  blank, the training data is used by default.
 \item {\texttt{nfolds}}: Number of folds for cross-validation. If \texttt{nfolds >=2}, then \texttt{validation\_frame} must remain blank. Default is 0. %%validation_frame = correct? just says "validation" in R doc...
@@ -136,23 +136,23 @@ This section describes the functions of the parameters for GBM (TODO, lots of pa
 \item {\texttt{ntrees}}: A non-negative integer that defines the number of trees. The default is 50.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
-\item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point The default is 20.
-\item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024
-\item {\texttt{seed}}: Seed for random numbers that affect sampling.
+\item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
+\item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024.
+\item {\texttt{seed}}: Seed containing random numbers that affects sampling.
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
 \item {\texttt{distribution}}: Enter {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}} to select the distribution function. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  Default is false.
 \item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
 \item \texttt{fold\_column}:  Column with cross-validation fold index assignment per observation. 
-\item \texttt{offset\_column}: Specify the offset column. Note: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
-\item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+\item \texttt{offset\_column}: Specify the offset column. {\textbf{Note}}: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+\item \texttt{weights\_column}: Specify the weights column. {\textbf{Note}}: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item {\texttt{balance\_classes}}: Balance training data class counts via over or undersampling for imbalanced data. The default is {\texttt{FALSE}}.
-\item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number classes) for confusion matrices to be printed in the H2O logs.  Default it 20.
-\item {\texttt{max\_hit\_ratio\_k}}: Maximum number (top K) of predictions to use for hit ratio computation.  Use for multi-class only, 0 to disable.  Default is 10.
+\item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number of classes) for confusion matrices to print in the H2O logs.  Default it 20.
+\item {\texttt{max\_hit\_ratio\_k}}: (for multi-class only) Maximum number (top K) of predictions to use for hit ratio computation.  Use 0 to disable.  Default is 10.
 \item {\texttt{r2\_stopping}}: Stop making trees when the $R^2$ metric equals or exceeds this value.  Default is 0.999999.
-\item {\texttt{build\_tree\_one\_node}}: Boolean indicating if GBM will be run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.  Default is False.
+\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  Default is False.
 \item {\texttt{tweedie\_power}}: A numeric specifying the power for the tweedie function when \texttt{distribution = "tweedie"}.  Default is 1.5.
-\item {\texttt{checkpoint}}: TODO
+\item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 \item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   Default is False.
 \item {\texttt{class\_sampling\_factors}}: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires \texttt{balance\_classes}.
 \item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5.
@@ -173,6 +173,7 @@ Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 
 
 \bf{\footnotesize{GBM for classification}}
+\normalfont
 \\
 \line(1,0){500}
 \\
@@ -197,10 +198,12 @@ Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 \\
 \line(1,0){500}
 
-In the above algorithm, for $k$-classification, H2O builds $k$-regression trees to represent one classification tree. The index $m$ tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. In this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model, and then to fit a regression tree to these gradient computations. This fitting process is distributed and parallelized, and details on this framework can be found on the h2o.ai blog at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
+
+
+In the above algorithm, for $k$-classification, H2O builds $k$-regression trees to represent one classification tree. The index $m$ tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. In this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model, and then to fit a regression tree to these gradient computations. This fitting process is distributed and parallelized. Details on this framework are available at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
 \\
 \\
-The final procedure in the inner loop is to add to the current model to the fitted regression tree, which improves the accuracy of the model during the inherent gradient descent step. After $M$ iterations, the final ``boosted" model can be tested out on new data.
+The final procedure in the inner loop is to add the current model to the fitted regression tree, which improves the accuracy of the model during the inherent gradient descent step. After $M$ iterations, the final ``boosted" model can be tested out on new data.
 
 \subsection{Loss Function}
 The AdaBoost method builds an additive logistic regression model:
@@ -214,11 +217,10 @@ $$L(y, F(x)) = exp(-y  F (x)) $$
 \subsection{Distributed Trees}
 
 H2O's implementation of GBM uses distributed trees. H2O overlays trees on the data by assigning a tree node to each row.
-The nodes are numbered and the number of each node is stored in a temporary vector as "Node\_ID" for each row. H2O makes
-a pass over all the rows using the most efficient method, which may not necessarily be  numerical order. A local
+The nodes are numbered and the number of each node is stored in a temporary vector as {\texttt{Node\_ID}} for each row. H2O makes a pass over all the rows using the most efficient method, which may not necessarily be  numerical order. A local
 histogram using only local data is created in parallel for each row on each node. The histograms are then assembled and a split column is selected to make the decision. The rows are re-assigned to nodes and the entire process is repeated.
 
-For example, for an initial tree, all rows start on node 0. A MapReduce (MR) task computes the statistics and uses
+For example, with an initial tree, all rows start on node 0. A MapReduce (MR) task computes the statistics and uses
 them to make an algorithmically-based decision, such as lowest mean squared error (MSE). In the next layer in the
 tree (and the next MR task), a decision is made for each row: if X $<$ 1.5, go right in the tree; otherwise, go left.
 H2O computes the stats for each new leaf in the tree, and each pass across all the rows builds the entire layer.
@@ -243,8 +245,7 @@ Since H2O does the per-level compute in parallel, which requires sending histogr
 of data can become very large for a very deep tree.
 
 High max-bin sizes slow down generation of deep trees, but this is not a problem for GBM tree depths as GBM
-typically uses very shallow trees. (TODO: Check, this probably isn't true anymore)  Bin limits over 20 have been shown to provide very little improvement on
-the quality of the GBM model.
+typically uses very shallow trees. (TODO: Check, this probably isn't true anymore)  Bin limits over 20 have been shown to provide very little improvement on the quality of the GBM model.
 
 For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report
 uses the first tree, so the first two reports are not equal. The reported MSE is the inclusive effect of all
@@ -261,12 +262,11 @@ When the specified GBM model includes factors, those factors are analyzed by ass
 factor level, and then binning the ordered integers according to the user-specified number of bins ($N$ bins). Split
 points are determined by considering the end points of each bin and the one-versus-many split for each bin.
 
-For example, if the factor is split into five bins, H2O orders the bins by bin number, then considers the split b
-etween the first and second bin, then the second and third, then the third and fourth, and the fourth and fifth.
+For example, if the factor is split into five bins, H2O orders the bins by bin number, then considers the split between the first and second bin, then the second and third, then the third and fourth, and the fourth and fifth.
 Additionally, the split that results from splitting the first bin from the other four and all analogous splits for
 the other four bins are considered. To specify a model that considers all factors individually, set the value for
 $N$ bins equal to the number of factor levels. This can be done for over 1024 levels (the maximum number of levels
-that can be handled in R), though this increases the time to fully generate a model.
+that can be handled in R), though this increases the time required to fully generate a model.
 
 Increasing the number of bins is less useful for covering factor columns, but is more important for the
 one-versus-many approach. The "split-by-a-numerical-value" is basically a random split of the factors, so the
@@ -372,7 +372,7 @@ new data, which can then be used for further tasks in the interactive modeling p
 
 \subsection{Web interface}
 
-TODO update this next paragraph
+%%TODO update this next paragraph - This section has been updated (JL)
 
 H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After
 loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345)
@@ -382,10 +382,10 @@ about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frame
 \subsection{Variable importances}
 
 GBM algorithm will automatically calculate variable importances. The display includes the
-the absolute and relative predictive strength of each feature in the prediction task. From R, access these strengths
-using the command \texttt{h2o.varimp(air.model)} to extract the variable importances from the model;
-from Python, access these strengths using the command
-\texttt{TODO PUT SOME PYTHON HERE}.  You can also view a visualization of the variable
+the absolute and relative predictive strength of each feature in the prediction task. From R, use the command \texttt{h2o.varimp(air.model)} to extract the variable importances from the model;
+from Python, use the command 
+%%\texttt{TODO PUT SOME PYTHON HERE}}.  
+You can also view a visualization of the variable
 importances on the web interface.
 
 \subsection{Supported Output}
