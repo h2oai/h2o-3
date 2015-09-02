@@ -355,21 +355,22 @@ argument.
 
 \subsubsection{Tweedie models}
 
-Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros. The variance of the tweedie distribution is proportional to the $p$-th power of the mean. 
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros. The variance of the tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. 
 
 The tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
+
 \begin{itemize}
 \item  $p=0$: Normal
 \item  $p=1$: Poisson
 \item $p\in(1, 2)$: Compound Poisson, non-negative with mass at zero
 \item $p=2$: Gamma
 \item $p=3$: Inverse-Gaussian
-\item $p>3$:  Stable, with support on the positive reals% (was 2?)
+\item $p>2$:  Stable, with support on the positive reals % (was 2?)
 \end{itemize}
 
 The normal and Poisson examples have already been covered in the previous sections. For $p>1$, the model likelihood to maximize has the form
-$$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{x\mu^{1-p}}{1-p} - \kappa(\mu,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
-where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log(\mu)$ for $p=2$ and where the function $a(y_i,\phi)$ is evaluated using series expansion since it does not have an analytical solution. The link function in the GLM representation of the tweedie distribution is $g(\mu) = \mu^{1-p} = \eta = X\beta$. 
+$$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{y_i\mu_i^{1-p}}{1-p} - \kappa(\mu_i,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
+where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log(\mu)$ for $p=2$ and where the function $a(y_i,\phi)$ is evaluated using series expansion since it does not have an analytical solution. The link function in the GLM representation of the tweedie distribution defaults to $g(\mu) = \mu^{q} = \eta = X\beta$ with $q=1-p$. The link power $q$ can be set to other values, including $q=0$ which is interpreted as $\log(\mu)=\eta$. 
 %
 %have the form of the distribution \\
 %link function can be taken as $\mu^{1-p}$ when p is not equal to 1\\
@@ -381,7 +382,7 @@ where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log
 %Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
 
 The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to
-$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)}. $$
+$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)}. $$\\
 
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
