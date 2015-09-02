@@ -281,7 +281,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Matrix atqJ = new Matrix(stsk._atq);
         SingularValueDecomposition svdJ = atqJ.svd();
 
-        // 3) Form orthonormal matrix U = QW
+        // 3) Form orthonormal matrix U = QV
         update(1, "Forming distributed orthonormal matrix U");
         if (!_parms._only_v && _parms._keep_u) {
           model._output._u_key = Key.make(_parms._u_name);
@@ -420,7 +420,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           for (int k = 1; k < _parms._nv; k++) {
             if (!isRunning()) break;
-            update(1, "Iteration" + String.valueOf(k+1) + "of power method");   // One unit of work
+            update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
             model._output._v[k] = powerLoop(gram_update, _parms._seed);
