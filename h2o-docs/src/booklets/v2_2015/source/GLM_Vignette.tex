@@ -355,9 +355,7 @@ argument.
 
 \subsubsection{Tweedie models}
 
-Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros. The variance of the tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. 
-
-The tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros. The variance of the tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. The tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 
 \begin{itemize}
 \item  $p=0$: Normal
@@ -385,6 +383,9 @@ The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to
 $$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)}. $$\\
 
 \waterExampleInR
+\\
+This example loads the Insurance data from the HDtweedie library, imports it into H2O and runs a tweedie model that predicts the aggregate claim loss (in thousand dollars) based on 56 predictors including the car type, job class etc.
+
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
 
 %\waterExampleInPython
