@@ -12,7 +12,7 @@ import water.util.SB;
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
-    public Method _svd_method = Method.Power;   // Method for computing PCA
+    public Method _svd_method = Method.GramSVD;   // Method for computing SVD
     public int _nv = 1;    // Number of right singular vectors to calculate
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
