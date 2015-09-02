@@ -39,10 +39,12 @@
 .process.body <- function(b,formalz,envs) {
   stmnts <- as.list(b)
   tmp1 <- ""; tmp2 <- ""
-  # Leading { means a list of statements, there is no trailing close-}
-  if( identical(stmnts[[1L]], quote(`{`))) {
-    stmnts <- stmnts[-1L]       # Lose the lone open-curly
-    tmp1 <- "(, "; tmp2 <- ")"  # Wrap result in a comma-operator
+  # Leading '{' means a list of statements, there is no trailing close '}'
+  if( identical(stmnts[[1L]], quote(`{`)) ) {
+    stmnts <- stmnts[-1L]         # Lose the lone open-curly
+    if( length(stmnts) > 1 ) {    # If there multiple statements, wrap them in a comma operator
+      tmp1 <- "(, "; tmp2 <- ")"  # Wrap result in a comma-operator
+    }
   }
   # return a list of ast_stmnts
   stmnts_str <- lapply(stmnts, .stmnt.to.ast.switchboard, formalz, envs)
@@ -174,7 +176,7 @@
       if( exists(fr.name) ) { # Append any missing default args
         formal_args <- formals(get(fr.name))
         nargs <- length(formal_args) - length(args)
-        if( nargs > 0 ) args <- c(args,lapply( tail(formal_args,nargs)), .stmnt.to.ast.switchboard, formalz, envs )
+        if( nargs > 0 ) args <- c(args,lapply( tail(formal_args,nargs), .stmnt.to.ast.switchboard, formalz, envs ))
       }
       return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
     }
@@ -191,7 +193,7 @@
     if( is.list(sym) ) { # Found something?
       sym <- sym[[1L]]   # List-of-1 means: "found something" and nothing more.  Peel the list wrapper off.
       if( typeof(sym) == "closure" )
-       return(.fun.to.ast(sym,formalz,envs))
+       return(paste0("(",.fun.to.ast(sym,formalz,envs)," ",paste0(args,collapse=" "),")"))
       if( typeof(sym) == "double" )
         return(as.character(sym))
       stop(paste0("Found symbol ",fname," of type ",typeof(sym),", but do not know how to convert to a Currents expression"))
