@@ -63,19 +63,19 @@ public class DeepLearningMNIST extends TestUtil {
         // populate model parameters
         p._model_id = Key.make("dl_mnist_model");
         p._train = frame._key;
-        p._valid = vframe._key;
+//        p._valid = vframe._key;
         p._response_column = "C785"; // last column is the response
-//        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-        p._activation = DeepLearningParameters.Activation.MaxoutWithDropout;
-        p._hidden = new int[]{80,80};
-        p._train_samples_per_iteration = -1;
+        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+//        p._activation = DeepLearningParameters.Activation.MaxoutWithDropout;
+        p._hidden = new int[]{800,800};
         p._input_dropout_ratio = 0.2;
         p._mini_batch_size = 1;
-//        p._train_samples_per_iteration = -1;
-        p._shuffle_training_data = true;
+        p._train_samples_per_iteration = 50000;
+        p._score_duty_cycle = 0;
+//        p._shuffle_training_data = true;
 //        p._l1= 1e-5;
 //        p._max_w2= 10;
-        p._epochs = 500;
+        p._epochs = 10*5./6;
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
