@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def link_functions_tweedie_basic(ip,port):
+def link_functions_tweedie_basic():
     
     
 

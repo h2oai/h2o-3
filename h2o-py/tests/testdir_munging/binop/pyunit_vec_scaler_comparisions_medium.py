@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def vec_scaler_comparisons(ip,port):
+def vec_scaler_comparisons():
     # Connect to a pre-existing cluster
     
 

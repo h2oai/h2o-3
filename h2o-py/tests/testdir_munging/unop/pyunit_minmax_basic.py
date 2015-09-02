@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import numpy as np
 
-def minmax_basic(ip,port):
+def minmax_basic():
     
     
 

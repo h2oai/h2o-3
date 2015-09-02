@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def iris_ignore(ip,port):
+def iris_ignore():
     
     
 

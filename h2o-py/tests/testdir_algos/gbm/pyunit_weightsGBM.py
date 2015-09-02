@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import copy
 
-def weights_check(ip,port):
+def weights_check():
     
     
 

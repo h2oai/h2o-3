@@ -23,9 +23,7 @@ def lazy_import(path):
   :param path: A path to a data file (remote or local).
   :return: A new H2OFrame
   """
-  if isinstance(path,(list,tuple)): return [_import(p)[0] for p in path]
-  elif os.path.isdir(path):         return _import(path)
-  else:                             return [_import(path)[0]]
+  return [_import(p)[0] for p in path] if isinstance(path,(list,tuple)) else _import(path)
 
 def _import(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)

@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[twoside]{article}
 \setcounter{secnumdepth}{5}
 \setcounter{tocdepth}{5}
 \usepackage[english]{babel}
@@ -21,8 +21,12 @@
 \usepackage[fit]{truncate}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\fancyhead[RO,LE]{\truncate{.95\headwidth}{\leftmark}}
-\fancyfoot[C]{\thepage}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[RO, RE]{\thepage}
+\fancyhead[LO, LE]{\rightmark}
+\renewcommand{\sectionmark}[1]{\markboth{}{\textsc{\thesection~#1}}}
+
 \usepackage{xcolor} 
 
 \xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 

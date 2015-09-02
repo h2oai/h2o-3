@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def offset_gamma(ip,port):
+def offset_gamma():
     # Connect to a pre-existing cluster
     
 

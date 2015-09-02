@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def km_num_iterations(ip,port):
+def km_num_iterations():
     # Connect to a pre-existing cluster
       # connect to localhost:54321
 

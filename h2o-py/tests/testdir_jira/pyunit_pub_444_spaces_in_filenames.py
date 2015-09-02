@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def pub_444_spaces_in_filenames(ip,port):
+def pub_444_spaces_in_filenames():
     
     
 

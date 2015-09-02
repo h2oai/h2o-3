@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def parametersKmeans(ip,port):
+def parametersKmeans():
 
     print "Getting data..."
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))

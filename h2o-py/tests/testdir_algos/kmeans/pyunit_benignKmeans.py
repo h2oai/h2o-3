@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Imputer
 
-def benignKmeans(ip,port):
+def benignKmeans():
     # Connect to a pre-existing cluster
       # connect to localhost:54321
 

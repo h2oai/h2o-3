@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def pyunit_ischaracter_isnumeric(ip,port):
+def pyunit_ischaracter_isnumeric():
 
     iris = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
     assert iris[0].isnumeric(), "Expected the first column of iris to be numeric"

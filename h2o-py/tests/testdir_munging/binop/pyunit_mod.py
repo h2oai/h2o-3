@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def frame_as_list(ip,port):
+def frame_as_list():
   
   
 

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def pubdev_1953(ip, port):
+def pubdev_1953():
 
     # small_test = [h2o.locate("bigdata/laptop/citibike-nyc/2013-10.csv")]
     # data = h2o.import_file(path=small_test)

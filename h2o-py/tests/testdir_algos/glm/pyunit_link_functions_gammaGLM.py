@@ -5,7 +5,7 @@ import pandas as pd
 import zipfile
 import statsmodels.api as sm
 
-def link_functions_gamma(ip,port):
+def link_functions_gamma():
 	
 	
 

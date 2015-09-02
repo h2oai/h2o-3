@@ -2,7 +2,7 @@ import os, sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def deeplearning_multi(ip, port):
+def deeplearning_multi():
     
 
     print("Test checks if Deep Learning works fine with a multiclass training and test dataset")

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def score_history_test(ip,port):
+def score_history_test():
     
     
 

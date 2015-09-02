@@ -4,7 +4,7 @@ import h2o, tests
 import numpy as np
 import random
 
-def test_prod(ip,port):
+def test_prod():
 
     data = [[random.uniform(1,10)] for c in range(10)]
     h2o_data = h2o.H2OFrame(python_obj=data)

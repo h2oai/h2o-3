@@ -5,7 +5,7 @@ import h2o, tests
 import numpy as np
 from sklearn import ensemble
 
-def smallcatGBM(ip,port):
+def smallcatGBM():
   # Training set has 26 categories from A to Z
   # Categories A, C, E, G, ... are perfect predictors of y = 1
   # Categories B, D, F, H, ... are perfect predictors of y = 0

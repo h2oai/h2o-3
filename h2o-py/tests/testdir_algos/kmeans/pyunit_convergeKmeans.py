@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def convergeKmeans(ip,port):
+def convergeKmeans():
 
   # Connect to a pre-existing cluster
     # connect to localhost:54321

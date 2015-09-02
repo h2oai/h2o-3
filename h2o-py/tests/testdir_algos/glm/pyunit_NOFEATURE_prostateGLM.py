@@ -4,7 +4,7 @@ import h2o, tests
 import pandas as pd
 import statsmodels.api as sm
 
-def prostate(ip,port):
+def prostate():
 
   
   

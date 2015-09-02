@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def pubdev_1696(ip, port):
+def pubdev_1696():
     
 
     iris = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
