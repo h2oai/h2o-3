@@ -4,7 +4,7 @@ from h2o.transforms.preprocessing import *
 from h2o import H2OFrame
 
 h2o.init()
-fr = h2o.import_file("smalldata/iris/iris_wheader.csv")                                                                          # import data
+fr = h2o.import_file(h2o.locate("smalldata/iris/iris_wheader.csv"))                                                              # import data
 
 assembly = H2OAssembly(steps=[("col_select",      H2OColSelect(["sepal_len", "petal_len", "class"])),                            # col selection
                               ("cos_sep_len",     H2OColOp(fun=H2OFrame.cos, col="sepal_len", append=False)),                    # math operation
