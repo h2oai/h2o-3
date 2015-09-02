@@ -108,19 +108,16 @@ class ASTCountMatches extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.popAry();
     if (fr.numCols() != 1) throw new IllegalArgumentException("countmatches requires a single column.");
+    if( !fr.anyVec().isEnum() ) throw new IllegalArgumentException("countmatches column must be categorical. Got: " + fr.anyVec().get_type_str());
     final int[] matchCounts = countMatches(fr.anyVec().domain());
 
     Frame fr2 = new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
-          if( !c.isNA(i) ) {
-            int idx = (int) c.at8(i);
-            ncs[0].addNum(matchCounts[idx]);
-          } else ncs[i].addNA();
-        }
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i = 0; i < c._len; ++i)
+          if( c.isNA(i) ) nc.addNA();
+          else            nc.addNum(matchCounts[ (int) c.at8(i)],0);
       }
-    }.doAll(1, fr).outputFrame(null, null, null);
+    }.doAll(1, fr).outputFrame();
     env.pushAry(fr2);
   }
 

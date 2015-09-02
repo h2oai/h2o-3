@@ -974,13 +974,13 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("strsplit", self, pattern))
 
-  def countmatches(self, substr):
+  def countmatches(self, pattern):
     """
     Split the strings in the target column on the given pattern
 
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("countmatches", self, substr))
+    return H2OFrame(expr=ExprNode("countmatches", self, pattern))
 
   def trim(self):
     """
