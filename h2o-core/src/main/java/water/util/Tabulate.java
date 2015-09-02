@@ -128,6 +128,8 @@ public class Tabulate extends Job<Tabulate> {
     if (y!=null && y.cardinality() > 2)
       warn("_response", "Response column has more than two factor levels - mean response depends on lexicographic order of factors!");
     Vec w = _dataset.vec(_weight); //can be null
+    if (w != null && (!w.isNumeric() && w.min() < 0))
+      error("_weight", "Observation weights must be numeric with values >= 0");
 
     if (error_count() > 0){
       Tabulate.this.updateValidationMessages();
@@ -139,8 +141,8 @@ public class Tabulate extends Job<Tabulate> {
     _count_table = sp.tabulationTwoDimTable();
     _response_table = sp.responseCharTwoDimTable();
 
-    Log.info(_count_table);
-    Log.info(_response_table);
+    Log.info(_count_table.toString(2, false));
+    Log.info(_response_table.toString(2, false));
     return sp;
   }
 
@@ -191,7 +193,7 @@ public class Tabulate extends Job<Tabulate> {
     if (_response_data == null) return null;
     int predN = _count_data.length;
     int respN = _count_data[0].length;
-    String tableHeader = "Tabulation between '" + _predictor + "' vs '" + _response + "'";
+    String tableHeader = "(Weighted) co-occurrence counts of '" + _predictor + "' and '" + _response + "'";
     String[] rowHeaders = new String[predN * respN];
     String[] colHeaders = new String[3]; //predictor response wcount
     String[] colTypes = new String[colHeaders.length];
@@ -203,7 +205,7 @@ public class Tabulate extends Job<Tabulate> {
     Vec resp = DKV.getGet(_respVec);
     colTypes[0] = "string"; colFormats[0] = "%s";
     colTypes[1] = "string"; colFormats[1] = "%s";
-    colHeaders[2] = "volume";   colTypes[2] = "double"; colFormats[2] = "%f";
+    colHeaders[2] = "counts";   colTypes[2] = "double"; colFormats[2] = "%f";
     TwoDimTable table = new TwoDimTable(
             tableHeader, null/*tableDescription*/, rowHeaders, colHeaders,
             colTypes, colFormats, null);
@@ -224,7 +226,7 @@ public class Tabulate extends Job<Tabulate> {
 
   public TwoDimTable responseCharTwoDimTable() {
     if (_response_data == null) return null;
-    String tableHeader = "Characteristics between '" + _predictor + "' and '" + _response + "'";
+    String tableHeader = "Mean value of '" + _response  + "' and (weighted) counts for '" + _predictor + "' values";
     int predN = _count_data.length;
     String[] rowHeaders = new String[predN]; //X
     String[] colHeaders = new String[3];    //Y
@@ -236,7 +238,7 @@ public class Tabulate extends Job<Tabulate> {
     colHeaders[0] = _predictor;
     colTypes[0] = "string"; colFormats[0] = "%s";
     colHeaders[1] = "mean " + _response; colTypes[2] = "double"; colFormats[2] = "%f";
-    colHeaders[2] = "volume";            colTypes[1] = "double"; colFormats[1] = "%f";
+    colHeaders[2] = "counts";            colTypes[1] = "double"; colFormats[1] = "%f";
 
     TwoDimTable table = new TwoDimTable(
             tableHeader, null/*tableDescription*/, rowHeaders, colHeaders,
