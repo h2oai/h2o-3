@@ -1652,21 +1652,9 @@ apply <- function(X, MARGIN, FUN, ...) {
 
   # Deal with extra arguments
   l <- list(...)
-  if(length(l) > 0L) {
-#    tmp <- sapply(l, function(x) { !class(x) %in% c("Frame", "numeric", "character", "logical") } )
-#    if(any(tmp)) stop("H2O only recognizes Frame, numeric, and character objects.")
-#
-#    idx <- which(sapply(l, function(x) is(x, "Frame")))
-#    extra_arg_names <- as.list(match.call())
-#    for (i in idx) {
-#      key <- as.character(extra_arg_names[[i]])
-#      if( is.Frame(x)) next
-#      x <- l[idx]
-#      h2o.assign(x, key)
-#      l[idx] <- x
-#    }
-    stop("Currents 'apply' does not accept extra function arguments")
-  }
+  extra_args = list()
+  if(length(l) > 0L)
+    extra_args <- sapply(l, .process.stmnt, list(), sys.parent(1))
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
   fname <- as.character(substitute(FUN))
@@ -1678,9 +1666,13 @@ apply <- function(X, MARGIN, FUN, ...) {
   # Look for an H2O function that works on a Frame; it will be handed a Frame of 1 col
   fr.name <- paste0(fname,".Frame")
   if( exists(fr.name) ) {
+    FUN <- get(fr.name)         # Resolve function to the H2O flavor
     # Add in any default args
-    args <- formals(get(fr.name))[-1L]
-    fcn <- paste0("{ X . (",fname," X ",paste(args,collapse=" "),")}")
+    args <- formals(FUN)[-1L]
+    nargs <- length(args) - length(extra_args)
+    if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
+    fcn <- if( length(extra_args)==0 ) fname 
+           else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
     return(.newExpr("apply",X,MARGIN,fcn))
   }
 
@@ -1688,7 +1680,8 @@ apply <- function(X, MARGIN, FUN, ...) {
   # environment (not the static environment the H2O wrapper itself is compiled
   # in).  Unknown variables in the function body will be looked up in the
   # dynamic scope.
-  .newExpr("apply",X,MARGIN,.fun.to.ast(FUN, list(), sys.parent(1) ))
+  funstr <- .fun.to.ast(FUN, list(), sys.parent(1))
+  .newExpr("apply",X,MARGIN,funstr)
 }
 
 #' Inserting Missing Values to an H2O DataFrame

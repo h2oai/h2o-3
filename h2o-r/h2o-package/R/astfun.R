@@ -21,17 +21,19 @@
 #`
 #`  2.
 #`      A. Recognize the call
-#`      B. If there's not an existing definition *in the current scope*, make one. TODO: handle closures more gracefully -- they aren't handled at all currently.
+#`      B. If there's not an existing definition *in the current scope*, make
+#`      one. TODO: handle closures more gracefully -- they aren't handled at all
+#`      currently.
 #`
 #`
 #` The result is something like the following:
 #` {arg1 arg2 arg3 . body}
 .fun.to.ast <- function(fun,oldformals,envnum) {
   force(envnum)
-  f <- formals(fun)
+  fs <- formals(fun)
   b <- body(fun)
-  stmnts <- .process.body(b,c(names(f),oldformals),envnum)
-  paste0("{ ",paste0(names(f), collapse=" ")," . ",stmnts," }")
+  stmnts <- .process.body(b,c(names(fs),oldformals),envnum)
+  paste0("{ ",paste0(names(fs), collapse=" ")," . ",stmnts," }")
 }
 
 .process.body <- function(b,formalz,envs) {
@@ -43,7 +45,8 @@
     tmp1 <- "(, "; tmp2 <- ")"  # Wrap result in a comma-operator
   }
   # return a list of ast_stmnts
-  paste0(tmp1,paste0(lapply(stmnts, .stmnt.to.ast.switchboard, formalz, envs),collapse=" "),tmp2)
+  stmnts_str <- lapply(stmnts, .stmnt.to.ast.switchboard, formalz, envs)
+  paste0(tmp1,paste0(stmnts_str,collapse=" "),tmp2)
 }
 
 
@@ -124,6 +127,8 @@
 #`
 #` Each of the above types of statements will handle their own arguments and return an appropriate AST
 .process.stmnt <- function(stmnt, formalz, envs) {
+  force(formalz)
+  force(envs)
   # convenience variable
   stmnt_list <- as.list(stmnt)
   s1 <- stmnt_list[[1L]]
@@ -146,10 +151,6 @@
     # Convert all args to a list of Currents strings
     args <- lapply( stmnt_list[-1L], .stmnt.to.ast.switchboard, formalz, envs )
 
-    # H2O primitives we invoke directly
-    if( fname %in% .h2o.primitives || exists(paste0(fname,".Frame")) )
-      return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
-
     # Slice '[]' needs a little work: row and col break out into 2 nested calls,
     # and row/col numbers need conversion from 1-based to zero based.
     if( fname=="[" ) {
@@ -166,6 +167,17 @@
       stopifnot(length(args)==2)
       return(paste0("[",args[1L],":",args[2L],"]"))
     }
+
+    # H2O primitives we invoke directly
+    fr.name <- paste0(fname,".Frame")
+    if( fname %in% .h2o.primitives || exists(fr.name) ) {
+      if( exists(fr.name) ) { # Append any missing default args
+        formal_args <- formals(get(fr.name))
+        nargs <- length(formal_args) - length(args)
+        if( nargs > 0 ) args <- c(args,lapply( tail(formal_args,nargs)), .stmnt.to.ast.switchboard, formalz, envs )
+      }
+      return(paste0("(",fname," ",paste0(args,collapse=" "),")"))
+    }
   }
 
   # Look up unknown symbols calls in the calling environment, and directly
@@ -179,7 +191,7 @@
     if( is.list(sym) ) { # Found something?
       sym <- sym[[1L]]   # List-of-1 means: "found something" and nothing more.  Peel the list wrapper off.
       if( typeof(sym) == "closure" )
-        return(paste0("(",.fun.to.ast(sym,formalz,envs)," ",paste0(args,collapse=" "),")"))
+       return(.fun.to.ast(sym,formalz,envs))
       if( typeof(sym) == "double" )
         return(as.character(sym))
       stop(paste0("Found symbol ",fname," of type ",typeof(sym),", but do not know how to convert to a Currents expression"))
