@@ -51,6 +51,14 @@ abstract class ASTBinOp extends ASTPrim {
       default: throw H2O.fail();
       }
 
+    case Val.ROW:
+      double dslf[] = left.getRow();
+      switch( rite.type() ) {
+      case Val.NUM:  throw H2O.unimpl();
+      case Val.ROW:  return row_op_row(dslf,rite.getRow());
+      default: throw H2O.fail();
+      }
+
     default: throw H2O.fail();
     }
   }
@@ -200,6 +208,13 @@ abstract class ASTBinOp extends ASTPrim {
           }
         }
       }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame(lf._names,null));
+  }
+
+  private ValRow row_op_row( double[] lf, double[] rt ) {
+    double[] res = new double[lf.length];
+    for( int i=0; i<lf.length; i++ )
+      res[i] = op(lf[i],rt[i]);
+    return new ValRow(res);
   }
 
   private ValFrame vec_op_frame( Vec vec, Frame fr ) {

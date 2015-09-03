@@ -175,6 +175,12 @@ public class CurrentsTest extends TestUtil {
 
     tree = "(apply a.hex 1 max)";
     checkTree(tree);
+
+    tree = "(apply a.hex 1 {x . (sum x)})";
+    checkTree(tree);
+
+    tree = "(apply a.hex 1 {x . (sum (* x x))})";
+    checkTree(tree);
   }
 
   @Test public void testMath() {

@@ -61,19 +61,23 @@ abstract class ASTReducerOp extends ASTPrim {
 //    @Override public void reduce( NaRmRedOp s ) { _d = op(_d, s._d); }
 //  }
 
-  @Override double rowApply( double ds[] ) {
-    double d = ds[0];
-    for( int i=1; i<ds.length; i++ )
-      d = op(d,ds[i]);
-    return d;
-  }
 }
 
 /** Optimization for the RollupStats: use them directly */
 abstract class ASTRollupOp extends ASTReducerOp {
   abstract double rup( Vec vec );
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Val arg1 = asts[1].exec(env);
+    if( arg1.isRow() ) {        // Row-wise operation
+      double[] ds = arg1.getRow();
+      double d = ds[0];
+      for( int i=1; i<ds.length; i++ )
+        d = op(d,ds[i]);
+      return new ValNum(d);
+    }
+
+    // Normal column-wise operation
+    Frame fr = stk.track(arg1).getFrame();
     Vec[] vecs = fr.vecs();
     if( vecs.length==0 || vecs[0].naCnt() > 0 ) return new ValNum(Double.NaN);
     double d = rup(vecs[0]);

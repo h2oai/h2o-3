@@ -14,6 +14,10 @@ class ASTApply extends ASTPrim {
     double margin= stk.track(asts[2].exec(env)).getNum();
     AST fun      = stk.track(asts[3].exec(env)).getFun();
 
+    int nargs = fun.nargs();
+    if( nargs != -1 && nargs != 2 )
+      throw new IllegalArgumentException("Incorrect number of arguments; '"+fun+"' expects "+nargs+" but was passed "+2);
+
     switch( (int)margin ) {
     case 1:  return rowwise(env,    fr,fun);
     case 2:  return colwise(env,stk,fr,fun); 
@@ -23,24 +27,19 @@ class ASTApply extends ASTPrim {
    
   // --------------------------------------------------------------------------
   private Val colwise( Env env, Env.StackHelp stk, Frame fr, AST fun ) {
-    
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
     Vec vecs[] = fr.vecs();
     Val vals[] = new Val[vecs.length];
-    int nargs = fun.nargs();
-    if( nargs != -1 && nargs != 2 )
-      throw new IllegalArgumentException("Incorrect number of arguments; '"+fun+"' expects "+nargs+" but was passed "+2);
-    AST asts[] = new AST[2];
-    asts[0] = fun;
+    AST[] asts = new AST[]{fun,null};
     for( int i=0; i<vecs.length; i++ ) {
       asts[1] = new ASTFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
       try (Env.StackHelp stk_inner = env.stk()) {
           vals[i] = stk.track(stk_inner.returning(fun.apply(env,stk_inner,asts)));
         }
     }
-    
+
     // All the resulting Vals must be the same scalar type (and if ValFrames,
     // the columns must be the same count and type).  Build a Frame result with
     // 1 row column per applied function result (per column), and as many rows
@@ -69,49 +68,24 @@ class ASTApply extends ASTPrim {
   }
 
   // --------------------------------------------------------------------------
-  private Val rowwise( final Env env, Frame fr, final AST ast ) {
-    int nargs = ast.nargs();
-    if( nargs != -1 && nargs != 2 )
-      throw new IllegalArgumentException("Incorrect number of arguments; '"+ast+"' expects "+nargs+" but was passed "+2);
+  private Val rowwise( final Env env, Frame fr, final AST fun ) {
 
-    // Common case of executing a user-defined function (not primitive).
-    // Extend the environment for this function for all rows, all at once,
-    // instead of doing it per-row.
-    ASTFun old = env._scope;
-    if( ast instanceof ASTFun ) {
-      final ASTFun fun = (ASTFun)ast;
-      env._scope = new ASTFun(fun,null/*no args*/,fun._parent);
-      // Iterate over the frame, applying 'ast' per-row.
-      // Limited to simple scalar return
-      ValFrame res = new ValFrame(new MRTask() {
-          @Override public void map( Chunk chks[], NewChunk nc ) {
-            double ds[] = new double[chks.length];
-            for( int row=0; row<chks[0]._len; row++ ) {
-              for( int col=0; col<chks.length; col++ )
-                ds[col] = chks[col].atd(row);
-              nc.addNum(fun._body.rowApply(ds));
-            }
-          }
-        }.doAll(1,fr).outputFrame());
-      // Pop back to the old scope
-      env._scope = old;
-      return res;
-    }
-
-    // Primitives:
-    // Iterate over the frame, applying 'ast' per-row.
-    // Limited to simple scalar return
-    return new ValFrame(new MRTask() {
+    // Break each row into it's own Row, then execute the function passing the
+    // 1 argument.  All rows are independent, and run in parallel
+    Frame res = new MRTask() {
         @Override public void map( Chunk chks[], NewChunk nc ) {
-          double ds[] = new double[chks.length];
+          double ds[] = new double[chks.length]; // Working row
+          AST[] asts = new AST[]{fun,new ASTRow(ds)}; // Arguments to be called; they are reused endlessly
           for( int row=0; row<chks[0]._len; row++ ) {
-            for( int col=0; col<chks.length; col++ )
+            for( int col=0; col<chks.length; col++ ) // Fill the row
               ds[col] = chks[col].atd(row);
-            nc.addNum(ast.rowApply(ds));
+            try (Env.StackHelp stk_inner = env.stk()) {
+                nc.addNum(fun.apply(env,stk_inner,asts).getNum()); // Make the call per-row
+              }
           }
         }
-      }.doAll(1,fr).outputFrame());
-
+      }.doAll(1,fr).outputFrame();
+    return new ValFrame(res);
   }
 }
 

@@ -9,17 +9,20 @@ abstract public class Val extends Iced {
   final public static int NUM = 1;     // scalar
   final public static int STR = 2;     // string scalar
   final public static int FRM = 3;     // Frame, not a Vec.  Can be a Frame of 1 Vec
-  final public static int FUN = 4;     // Function
+  final public static int ROW = 4;     // Row of data; limited to a single array of doubles
+  final public static int FUN = 5;     // Function
 
   abstract public int type();
   boolean isNum() { return false; }
   boolean isStr() { return false; }
   boolean isFrame() { return false; }
+  boolean isRow() { return false; }
   boolean isFun() { return false; }
 
   public double getNum() { throw new IllegalArgumentException("Expected a number but found a "+getClass()); }
   public String getStr() { throw new IllegalArgumentException("Expected a String but found a "+getClass()); }
   public Frame  getFrame(){throw new IllegalArgumentException("Expected a Frame but found a "+getClass()); }
+  public double[]getRow(){ throw new IllegalArgumentException("Expected a Row but found a "+getClass()); }
   public AST    getFun() { throw new IllegalArgumentException("Expected a function but found a "+getClass()); }
 }
 
@@ -48,6 +51,15 @@ class ValFrame extends Val {
   @Override public int type () { return FRM; }
   @Override boolean isFrame() { return true; }
   @Override public Frame getFrame() { return _fr; }
+}
+
+class ValRow extends Val {
+  final double[] _ds;
+  ValRow(double[] ds) { _ds = ds; }
+  @Override public String toString() { return java.util.Arrays.toString(_ds); }
+  @Override public int type () { return ROW; }
+  @Override boolean isRow() { return true; }
+  @Override public double[] getRow() { return _ds; }
 }
 
 class ValFun extends Val {

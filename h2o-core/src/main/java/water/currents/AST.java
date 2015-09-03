@@ -26,10 +26,6 @@ abstract public class AST extends Iced<AST> {
   // arguments", but short-circuit evaluation may not execute all args.
   Val apply( Env env, Env.StackHelp stk, AST asts[] ) { throw water.H2O.fail(); }
 
-  // Row-wise apply.  All arguments evaluated down to an array of primitive
-  // doubles.  Only allowed to return a simple double.
-  double rowApply( double ds[] ) { throw water.H2O.fail(); }
-
   // Short name (there's lots of the simple math primtives, and we want them to
   // fit on one line)
   abstract String str();
@@ -247,6 +243,15 @@ class ASTFrame extends AST {
   ASTFrame(Frame fr) { _fr = new ValFrame(fr); }
   @Override public String str() { return _fr.toString(); }
   @Override Val exec(Env env) { return _fr; }
+  @Override int nargs() { return 1; }
+}
+
+/** A Row.  Execution is just to return the constant. */
+class ASTRow extends AST {
+  final double[] _ds;
+  ASTRow(double[] ds) { _ds = ds; }
+  @Override public String str() { return _ds.toString(); }
+  @Override Val exec(Env env) { return _ds; }
   @Override int nargs() { return 1; }
 }
 
