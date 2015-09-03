@@ -166,7 +166,7 @@ H2O employs the strong rules as described in \citetalias{strong} to filter out i
 
 \subsection{Model fitting}
 As discussed above, GLM models are fitted by finding the set of parameters that maximizes the likelihood of the data. For the Gaussian family, maximum likelihood simply corresponds to 
-minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. The same holds when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. Thus, we must use an iterative method such as IRLSM, L-BFGS, the newton method, gradient descent or coordinate descent with the naive or covariance updates. The solver can be selected by the user after selecting the model by specifying the exponential density. 
+minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. The same holds when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. Thus, we must use an iterative method such as IRLSM, L-BFGS, the newton method or gradient descent. The solver can be selected by the user after selecting the model by specifying the exponential density. 
 
 \subsection{Model validation}
 
@@ -336,7 +336,7 @@ constant. It is usually used with the log link $g(\mu_i)= \log(\mu_i)$, or the i
 
 The model is fitted by solving the following likelihood maximization
 
-$$  \max_{\beta,\beta_0} \  \frac{1}{N}  \sum_{i=1}^N  \ -\frac{y_i}{x_i^{\top}\beta+\beta_0 } - \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
+$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
 %\[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
 The corresponding deviance is equal to
@@ -355,9 +355,7 @@ argument.
 
 \subsubsection{Tweedie models}
 
-Tweedie models are a class of distributions which include Gamma, Normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros (e.g. Gamma distribution).
-
-Tweedie is parametrized by variance power $p$ which can be one of the following:
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros. The variance of the tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. The tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 
 \begin{itemize}
 \item  $p=0$: Normal
@@ -365,20 +363,33 @@ Tweedie is parametrized by variance power $p$ which can be one of the following:
 \item $p\in(1, 2)$: Compound Poisson, non-negative with mass at zero
 \item $p=2$: Gamma
 \item $p=3$: Inverse-Gaussian
-\item $p>3$:  Stable, with support on the positive reals% (was 2?)
+\item $p>2$:  Stable, with support on the positive reals % (was 2?)
 \end{itemize}
 
+The normal and Poisson examples have already been covered in the previous sections. For $p>1$, the model likelihood to maximize has the form
+$$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{y_i\mu_i^{1-p}}{1-p} - \kappa(\mu_i,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
+where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log(\mu)$ for $p=2$ and where the function $a(y_i,\phi)$ is evaluated using series expansion since it does not have an analytical solution. The link function in the GLM representation of the tweedie distribution defaults to $g(\mu) = \mu^{q} = \eta = X\beta$ with $q=1-p$. The link power $q$ can be set to other values, including $q=0$ which is interpreted as $\log(\mu)=\eta$. 
+%
+%have the form of the distribution \\
+%link function can be taken as $\mu^{1-p}$ when p is not equal to 1\\
+%giving: link $\mu=g^{-1}(\eta)$ or $\eta=X\beta = g(\mu)$ \\
+%satisfies being the identity when p=0 cause $\eta = \mu^1$\\
+%for p=2 satisfies the inverse link $\eta = \mu^-1$\\
+%for $p=3$ satisfies the link which is the $inverse^2$ for the inverse gaussian.\\
+%so when write the distribution for the tweedie we can replcae $\mu$ by Ginverse of eta and we will have Xbeta in the expression. 
+%Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
 
-TODO fit in likelihood 
-
-Deviance for variance $p$ ($p != 1$ and $p != 2$) is :
-$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)} $$
+The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to
+$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)}. $$\\
 
 \waterExampleInR
+\\
+This example loads the Insurance data from the HDtweedie library, imports it into H2O and runs a tweedie model that predicts the aggregate claim loss (in thousand dollars) based on 56 predictors including the car type, job class etc.
+
 \lstinputlisting[style=R]{glm/glm_tweedie_example.R}
 
-\waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
+%\waterExampleInPython
+%\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -390,8 +401,7 @@ of rows and works extremely well for datasets with a limited number of active pr
 
 \subsection{Classification vs. regression}
 
-GLM can produce two categories of models: classification (binary classification only) and regression.  Binary
-classification in GLM is also called logistic regression.
+GLM can produce two categories of models: classification (binary classification only) and regression. Logistic regression is the GLM to perform binary classification.
 
 The data type of the response column determines the model category.  If the response is a categorical variable
 (also called a factor or an enum), then a classification model is created.  If the response column data type is
@@ -421,17 +431,17 @@ If a validation dataset is not specified during training, there are functions th
 
 \subsection{Predictor and response variables}
 
-Every model must specify its predictors and response.  Predictors and response are specified by the \texttt{x}
-and \texttt{y} parameters.
+Every model must specify its predictors and response.  Predictors and response are specified by the $x$
+and $y$ parameters.
 
-\texttt{x} contains the list of column names or column indices referring to vectors from the training frame; it can
+$x$ contains the list of column names or column indices referring to vectors from the training frame; it can
 not contain periods.
 
-\texttt{y} is a column name or index referring to a vector from the training frame.
+$y$ is a column name or index referring to a vector from the training frame.
 
 \subsubsection{Categorical variables}
 
-If the response column is categorical, then a classification model is created.  GLM only supports binomial
+If the response column is categorical, then a classification model is created.  GLM only supports binary
 classification, so the response column may only have two levels.
 
 Categorical predictor columns may have more than two levels.
@@ -444,8 +454,8 @@ manually for other frameworks.
 
 \subsection{Family and link}
 
-Family and Link are both optional parameters. The default family is \texttt{Gaussian} and the default link is a
-canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link = `log'}.
+Family and Link are optional parameters. The default family is \texttt{Gaussian} and the default link is a
+canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link =`$\log$'}.
 While it is possible to select something other than a canonical link, doing so can lead to an unstable
 computation. 
 
@@ -462,7 +472,7 @@ below in greater detail.
 \subsubsection{alpha and lambda}
 
 \texttt{alpha} controls the distribution between  $\ell_1$ (Lasso) and  $\ell_2$ (Ridge regression) penalties.  An \texttt{alpha} 
-of 1.0 indicates only Lasso, and an \texttt{alpha} of 0.0 indicates only ridge.
+of 1.0 indicates only lasso, and an \texttt{alpha} of 0.0 indicates only ridge.
 
 \texttt{lambda} controls the amount of regularization applied.  For a \texttt{lambda} value of 0.0, no 
 regularization is applied, and the \texttt{alpha} parameter is ignored.  The default value for \texttt{lambda} is
@@ -470,21 +480,20 @@ calculated by H2O using a heuristic based on the training data.  If you let H2O 
 see the chosen value in the model output.
 
 \subsubsection{Lambda Search}
-Lambda search enables efficient and automatic search for optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization strength and then keep decreasing it until overfitting. The resulting model will be based on the best \texttt{lambda} value. When looking for sparse solution (\texttt{alpha} $>$ 0), lambda serach can also be used to efficiently handle very wide datasets as it can filter out inactive predictors (noise) and only build models for a small subset of predictors. Common use of lambda search is to run on a dataset with many predictors but limit the number of active predictors to relatively small value.  
+Lambda search enables efficient and automatic search for optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization strength and then keep decreasing it until overfitting. The resulting model will be based on the best \texttt{lambda} value. When looking for sparse solution (\texttt{alpha} $>$ 0), lambda serach can also be used to efficiently handle very wide datasets as it can filter out inactive predictors (noise) and only build models for a small subset of predictors. Common use of lambda search is to run on a dataset with many predictors but limit the number of active predictors to a relatively small value.  
 
 Lambda search can be turned on by setting \texttt{lambda\_search} and can be further customized by following arguments:
 
 \begin{itemize}
-\item \texttt{alpha} - regularization distribution between  $\ell_1$ and  $\ell_2$
+\item \texttt{alpha} - regularization distribution between  $\ell_1$ and  $\ell_2$.
 \item \texttt{validation\_frame} and\/or \texttt{n\_folds}:
-The best lambda is selected based on performance on the cross-validation or validation or training data. If available, cross-validation performance takes preference. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed as GLM can not overfit on a trainign dataset.
+The best lambda is selected based on performance of cross-validation or the validation or training data. If available, cross-validation performance takes preference. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed as GLM can not overfit on a training dataset.
  
-\textbf{Note:} If running lambda search with validation dataset and no cross-validation, validation data set is used to select the lambda value, validation dataset is thus contaminated and performance should be evaluated on another independent dataset.
-
+\textbf{Note:} If running lambda search with a validation dataset and no cross-validation, the chosen lambda value corresponds to the one giving the lowest validation error. Therefore, the validation dataset is used in selecting the model and the model performance should be evaluated on another independent test dataset. 
 
 \item \texttt{lambda\_min\_ratio} and \texttt{nlambdas}: 
 
-The sequence of $\lambda$-s is automatically generated as an exponentially decreasing sequence, going from $\lambda_{max}$,
+The sequence of $\lambda$s is automatically generated as an exponentially decreasing sequence. It ranges from $\lambda_{max}$,
 the smallest $\lambda$ such that the solution is a model with all 0s, to $\lambda_{min} =
 $ \textit{lambda\_min\_ratio} * $ \lambda_{max}$.
 
@@ -502,14 +511,14 @@ neighboring lambdas are ``close" to each other. The default values are \texttt{n
 = \lambda_{max} 1e^{-4}$, which gives us the ratio of 0.912.  For best results when using strong rules, keep the
 ratio close to the default.
 
-\item \texttt{max\_active\_predictors}: Limit the number of active predictors (the actual number of non-zero predictors in the model is going to be slightly lower), usefull when obtaining a sparse solution to avoid costly computation of models with too many predictors.
+\item \texttt{max\_active\_predictors}: This limits the number of active predictors (the actual number of non-zero predictors in the model is going to be slightly lower). It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
 \end{itemize}
 
 
 \subsection{Handling wide data and building sparse models}
 
-H2O's GLM offers two different approaches to handling wide datasets:   $\ell_1$ regularization and the L\_BFGS solver.
+H2O's GLM offers two different approaches to handling wide datasets: $\ell_1$ regularization and the L-BFGS solver.
 
 Quick recommendations:
 
@@ -517,18 +526,18 @@ Quick recommendations:
 \item For a sparse solution (i.e. some predictors are dropped from the final model), use the IRLSM solver with 
       \texttt{alpha} greater than 0.0 (so you get at least some  $\ell_1$ penalty) and enable \texttt{lambda\_search}.
 
-\item For a dense solution (i.e. all predictors are in the final model), use the L\_BFGS solver with
+\item For a dense solution (i.e. all predictors are in the final model), use the L-BFGS solver with
       \texttt{alpha} of 0 so there is no  $\ell_1$ penalty, only  $\ell_2$ penalty.
 \item If not sure whether the solution should be sparse or dense, try both cases and pick the better one based on validation (cross-validation) data.      
 \end{itemize}
 
 \subsubsection{Solver selection}
 
-The two solvers provided in H2O are Iterative Reweighted Least Squares Method (IRLSM) and Limited-memory Broyden-Fletcher-Goldfarb-Shanno (L\_BFGS).  IRLSM uses
+The two solvers provided in H2O are Iteratively Reweighted Least Squares Method (IRLSM) and Limited-memory Broyden-Fletcher-Goldfarb-Shanno (L-BFGS).  IRLSM uses
 a Gram Matrix approach underneath the hood, which is very efficient for tall and narrow datasets and when running lambda search with sparse solution.  For wider and dense
-datasets (thousands of predictors and up), the L\_BFGS solver scales better.
+datasets (thousands of predictors and up), the L-BFGS solver scales better. %comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
 
-For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L\_BFGS solver, since
+For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
 model building can be slower. It is often better to run lambda search with IRLSM solver instead.
 
 \subsubsection{Stopping criteria}
@@ -543,8 +552,6 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
-
-
 
 \subsection{Advanced features}
 
