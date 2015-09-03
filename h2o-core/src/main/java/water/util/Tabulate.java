@@ -30,21 +30,21 @@ public class Tabulate extends Job<Tabulate> {
   public String _predictor;
   public String _response;
   public String _weight;
-  int _binsPredictor = 20;
-  int _binsResponse = 10;
+  int _nbins_predictor = 20;
+  int _nbins_response = 10;
 
   // result
-  double[][] _countData;
-  double[][] _responseData;
-  public TwoDimTable _countTable;
-  public TwoDimTable _responseTable;
+  double[][] _count_data;
+  double[][] _response_data;
+  public TwoDimTable _count_table;
+  public TwoDimTable _response_table;
 
   public Tabulate() {
     super(Key.<Tabulate>make(), "Tabulate job");
   }
 
   private int bins(boolean response) {
-    return response ? _binsResponse : _binsPredictor;
+    return response ? _nbins_response : _nbins_predictor;
   }
 
   private int res(Vec v) {
@@ -91,43 +91,45 @@ public class Tabulate extends Job<Tabulate> {
   public Tabulate execImpl() {
     if (_dataset == null)
       error("_dataset", "Dataset not found");
-    if (_binsPredictor < 1)
+    if (_nbins_predictor < 1)
       error("_binsPredictor", "Number of bins for predictor must be >= 1");
-    if (_binsResponse < 1)
+    if (_nbins_response < 1)
       error("_binsResponse", "Number of bins for response must be >= 1");
     Vec x = _dataset.vec(_predictor);
     if (x == null)
       error("_predictor", "Predictor column " + _predictor + " not found");
-    else if (x.cardinality() > _binsPredictor) {
+    else if (x.cardinality() > _nbins_predictor) {
       Interaction in = new Interaction();
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_predictor};
-      in._max_factors = _binsPredictor -1;
+      in._max_factors = _nbins_predictor -1;
       in._dest = Key.make();
       in.execImpl();
       x = ((Frame)DKV.getGet(in._dest)).anyVec();
       in.remove();
-    } else if (x.isInt() && (x.max() - x.min() + 1) <= _binsPredictor) {
+    } else if (x.isInt() && (x.max() - x.min() + 1) <= _nbins_predictor) {
       x = x.toEnum();
     }
     Vec y = _dataset.vec(_response);
     if (y == null)
       error("_response", "Response column " + _response + " not found");
-    else if (y.cardinality() > _binsResponse) {
+    else if (y.cardinality() > _nbins_response) {
       Interaction in = new Interaction();
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_response};
-      in._max_factors = _binsResponse -1;
+      in._max_factors = _nbins_response -1;
       in._dest = Key.make();
       in.execImpl();
       y = ((Frame)DKV.getGet(in._dest)).anyVec();
       in.remove();
-    } else if (y.isInt() && (y.max() - y.min() + 1) <= _binsResponse) {
+    } else if (y.isInt() && (y.max() - y.min() + 1) <= _nbins_response) {
       y = y.toEnum();
     }
     if (y!=null && y.cardinality() > 2)
       warn("_response", "Response column has more than two factor levels - mean response depends on lexicographic order of factors!");
     Vec w = _dataset.vec(_weight); //can be null
+    if (w != null && (!w.isNumeric() && w.min() < 0))
+      error("_weight", "Observation weights must be numeric with values >= 0");
 
     if (error_count() > 0){
       Tabulate.this.updateValidationMessages();
@@ -136,11 +138,11 @@ public class Tabulate extends Job<Tabulate> {
     if (x!=null) _predVec = x._key;
     if (y!=null) _respVec = y._key;
     Tabulate sp = w != null ? new CoOccurrence(this).doAll(x, y, w)._sp : new CoOccurrence(this).doAll(x, y)._sp;
-    _countTable = sp.tabulationTwoDimTable();
-    _responseTable = sp.responseCharTwoDimTable();
+    _count_table = sp.tabulationTwoDimTable();
+    _response_table = sp.responseCharTwoDimTable();
 
-    Log.info(_countTable);
-    Log.info(_responseTable);
+    Log.info(_count_table.toString(2, false));
+    Log.info(_response_table.toString(2, false));
     return sp;
   }
 
@@ -149,8 +151,8 @@ public class Tabulate extends Job<Tabulate> {
     CoOccurrence(Tabulate sp) {_sp = sp;}
     @Override
     protected void setupLocal() {
-      _sp._countData = new double[_sp.res(_fr.vec(0))][_sp.res(_fr.vec(1))];
-      _sp._responseData = new double[_sp.res(_fr.vec(0))][2];
+      _sp._count_data = new double[_sp.res(_fr.vec(0))][_sp.res(_fr.vec(1))];
+      _sp._response_data = new double[_sp.res(_fr.vec(0))][2];
     }
 
     @Override
@@ -164,34 +166,34 @@ public class Tabulate extends Job<Tabulate> {
         int ybin = _sp.bin(y.vec(), y.atd(r));
         double weight = w.atd(r);
         if (Double.isNaN(weight)) continue;
-        AtomicUtils.DoubleArray.add(_sp._countData[xbin], ybin, weight); //increment co-occurrence count by w
+        AtomicUtils.DoubleArray.add(_sp._count_data[xbin], ybin, weight); //increment co-occurrence count by w
         if (!y.isNA(r)) {
-          AtomicUtils.DoubleArray.add(_sp._responseData[xbin], 0, weight * y.atd(r)); //add to mean response for x
-          AtomicUtils.DoubleArray.add(_sp._responseData[xbin], 1, weight); //increment total for x
+          AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 0, weight * y.atd(r)); //add to mean response for x
+          AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 1, weight); //increment total for x
         }
       }
     }
 
     @Override
     public void reduce(CoOccurrence mrt) {
-      if (_sp._responseData == mrt._sp._responseData) return;
-      ArrayUtils.add(_sp._responseData, mrt._sp._responseData);
+      if (_sp._response_data == mrt._sp._response_data) return;
+      ArrayUtils.add(_sp._response_data, mrt._sp._response_data);
     }
 
     @Override
     protected void postGlobal() {
       //compute mean response
-      for (int i=0; i<_sp._responseData.length; ++i) {
-        _sp._responseData[i][0] /= _sp._responseData[i][1];
+      for (int i=0; i<_sp._response_data.length; ++i) {
+        _sp._response_data[i][0] /= _sp._response_data[i][1];
       }
     }
   }
 
   public TwoDimTable tabulationTwoDimTable() {
-    if (_responseData == null) return null;
-    int predN = _countData.length;
-    int respN = _countData[0].length;
-    String tableHeader = "Tabulation between '" + _predictor + "' vs '" + _response + "'";
+    if (_response_data == null) return null;
+    int predN = _count_data.length;
+    int respN = _count_data[0].length;
+    String tableHeader = "(Weighted) co-occurrence counts of '" + _predictor + "' and '" + _response + "'";
     String[] rowHeaders = new String[predN * respN];
     String[] colHeaders = new String[3]; //predictor response wcount
     String[] colTypes = new String[colHeaders.length];
@@ -203,7 +205,7 @@ public class Tabulate extends Job<Tabulate> {
     Vec resp = DKV.getGet(_respVec);
     colTypes[0] = "string"; colFormats[0] = "%s";
     colTypes[1] = "string"; colFormats[1] = "%s";
-    colHeaders[2] = "volume";   colTypes[2] = "double"; colFormats[2] = "%f";
+    colHeaders[2] = "counts";   colTypes[2] = "double"; colFormats[2] = "%f";
     TwoDimTable table = new TwoDimTable(
             tableHeader, null/*tableDescription*/, rowHeaders, colHeaders,
             colTypes, colFormats, null);
@@ -215,7 +217,7 @@ public class Tabulate extends Job<Tabulate> {
         for (int c=0; c<3; ++c) {
           table.set(r*predN + p, 0, plabel);
           table.set(r*predN + p, 1, rlabel);
-          table.set(r*predN + p, 2, _countData[p][r]);
+          table.set(r*predN + p, 2, _count_data[p][r]);
         }
       }
     }
@@ -223,9 +225,9 @@ public class Tabulate extends Job<Tabulate> {
   }
 
   public TwoDimTable responseCharTwoDimTable() {
-    if (_responseData == null) return null;
-    String tableHeader = "Characteristics between '" + _predictor + "' and '" + _response + "'";
-    int predN = _countData.length;
+    if (_response_data == null) return null;
+    String tableHeader = "Mean value of '" + _response  + "' and (weighted) counts for '" + _predictor + "' values";
+    int predN = _count_data.length;
     String[] rowHeaders = new String[predN]; //X
     String[] colHeaders = new String[3];    //Y
     String[] colTypes = new String[colHeaders.length];
@@ -236,7 +238,7 @@ public class Tabulate extends Job<Tabulate> {
     colHeaders[0] = _predictor;
     colTypes[0] = "string"; colFormats[0] = "%s";
     colHeaders[1] = "mean " + _response; colTypes[2] = "double"; colFormats[2] = "%f";
-    colHeaders[2] = "volume";            colTypes[1] = "double"; colFormats[1] = "%f";
+    colHeaders[2] = "counts";            colTypes[1] = "double"; colFormats[1] = "%f";
 
     TwoDimTable table = new TwoDimTable(
             tableHeader, null/*tableDescription*/, rowHeaders, colHeaders,
@@ -245,8 +247,8 @@ public class Tabulate extends Job<Tabulate> {
     for (int p=0; p<predN; ++p) {
       String plabel = labelForBin(pred, p);
       table.set(p, 0, plabel);
-      table.set(p, 1, _responseData[p][0]);
-      table.set(p, 2, _responseData[p][1]);
+      table.set(p, 1, _response_data[p][0]);
+      table.set(p, 2, _response_data[p][1]);
     }
     return table;
   }

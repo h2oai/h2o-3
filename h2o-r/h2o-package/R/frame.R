@@ -418,7 +418,7 @@ h2o.table <- function(x, y = NULL) {
 
 #' H2O Median
 #'
-#' Compute the airthmetic mean of a \linkS4class{H2OFrame}.
+#' Compute the arithmetic mean of a \linkS4class{H2OFrame}.
 #'
 #' @param x An \linkS4class{H2OFrame} object.
 #' @param na.rm a logical, indicating whether na's are omitted.
@@ -782,7 +782,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
 #  .newH2OFrame("H2OFrame", conn=x@conn, frame_id=res$dest_key, logic=FALSE, finalizers=x@finalizers)
 #}
 
-#' Produe a Vector of Random Uniform Numbers
+#' Produce a Vector of Random Uniform Numbers
 #'
 #' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
 #' dataset.

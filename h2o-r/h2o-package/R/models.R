@@ -1886,3 +1886,52 @@ h2o.sdev <- function(object) {
   result
 }
 
+#' Tabulation between Two Columns of a H2O Frame
+#'
+#' Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset.
+#' Uses histogram of given resolution in X and Y.
+#' Handles numerical/categorical data and missing values. Supports observation weights.
+#'
+#' @param data An \linkS4class{H2OFrame} object.
+#' @param predictor predictor column
+#' @param response response column
+#' @param weights (optional) observation weights column
+#' @param nbins_predictor number of bins for predictor column
+#' @param nbins_response number of bins for response column
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' df <- as.h2o(iris)
+#' h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
+#'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
+#' }
+#' @export
+h2o.tabulate <- function(data, x, y,
+                         weights_column = NULL,
+                         nbins_x = 50,
+                         nbins_y = 50
+                         ) {
+  delete <- !.is.eval(data)
+  if (delete) {
+    temp_key <- data@frame_id
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
+  }
+  args <- .verify_dataxy(data, x, y)
+  if(!is.numeric(nbins_x)) stop("`nbins_x` must be a positive number")
+  if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
+
+  parms = list()
+  parms$dataset <- data@frame_id
+  parms$predictor <- args$x
+  parms$response <- args$y
+  if( !missing(weights_column) )            parms$weight <- weights_column
+  parms$nbins_predictor <- nbins_x
+  parms$nbins_response <- nbins_y
+
+  res <- .h2o.__remoteSend(conn = data@conn, method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
+  print(res)
+  count_table <- res$count_table
+  response_table <- res$response_table
+  list(count_table = count_table, response_table = response_table)
+}
