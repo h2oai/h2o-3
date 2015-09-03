@@ -1,7 +1,6 @@
 package hex;
 
 import water.*;
-import water.Job.JobCancelledException;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
@@ -93,7 +92,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * and adapts response according to the CaseMode/CaseValue if set.
    */
   @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
-    if (_jobKey != null && !Job.isRunning(_jobKey)) throw new JobCancelledException();
+    if (_jobKey != null && !Job.isRunning(_jobKey)) return;
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     boolean doWork = chunkInit();
