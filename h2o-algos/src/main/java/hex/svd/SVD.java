@@ -1,6 +1,5 @@
 package hex.svd;
 
-import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
@@ -27,7 +26,7 @@ import java.util.Arrays;
  * Singular Value Decomposition
  * <a href = "http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf">SVD via Power Method Algorithm</a>
  * <a href = "https://www.cs.cmu.edu/~venkatg/teaching/CStheory-infoage/book-chapter-4.pdf">Proof of Convergence for Power Method</a>
- * <a href = "http://arxiv.org/pdf/0909.4061.pdf">Probabilistic Algorithms for Matrix Approximation</a>
+ * <a href = "http://arxiv.org/pdf/0909.4061.pdf">Randomized Algorithms for Matrix Approximation</a>
  * @author anqi_fu
  */
 public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
@@ -55,7 +54,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         return 2;
       case Power:
         return 1 + _parms._nv;
-      case Probabilistic:
+      case Randomized:
         return 5 + _parms._max_iterations;
       default: return _parms._nv;
     }
@@ -486,7 +485,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             DivideU utsk = new DivideU(model._output._d);
             utsk.doAll(u);
           }
-        } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
+        } else if(_parms._svd_method == SVDParameters.Method.Randomized) {
           qfrm = randSubIter(dinfo, _parms._max_iterations, _parms._seed);
           u = directSVD(dinfo, qfrm, model);
         } else

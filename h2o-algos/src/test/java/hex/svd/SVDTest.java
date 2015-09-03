@@ -2,10 +2,7 @@ package hex.svd;
 
 import hex.DataInfo;
 import hex.SplitFrame;
-import hex.gram.Gram;
 import hex.svd.SVDModel.SVDParameters;
-import org.apache.commons.math3.analysis.function.Pow;
-import org.apache.commons.math3.analysis.function.Power;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,8 +12,6 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.Exec;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -227,7 +222,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._keep_u = true;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._svd_method = SVDParameters.Method.Randomized;
       parms._max_iterations = 4;
 
       SVD job = new SVD(parms);
@@ -422,7 +417,7 @@ public class SVDTest extends TestUtil {
       parms._use_all_factor_levels = true;
       parms._keep_u = false;
       parms._transform = DataInfo.TransformType.NONE;
-      parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._svd_method = SVDParameters.Method.Randomized;
       parms._max_iterations = 7;
 
       SVD job = new SVD(parms);
@@ -464,7 +459,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 5;
       parms._keep_u = true;
       parms._transform = DataInfo.TransformType.DEMEAN;
-      parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._svd_method = SVDParameters.Method.Randomized;
       parms._impute_missing = true;
       parms._max_iterations = 20;
 
@@ -513,7 +508,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 8;
       parms._only_v = false;
       parms._keep_u = true;
-      parms._svd_method = SVDParameters.Method.Probabilistic;
+      parms._svd_method = SVDParameters.Method.Randomized;
       parms._impute_missing = true;
       parms._max_iterations = 20;
 
