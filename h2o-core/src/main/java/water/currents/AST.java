@@ -248,10 +248,10 @@ class ASTFrame extends AST {
 
 /** A Row.  Execution is just to return the constant. */
 class ASTRow extends AST {
-  final double[] _ds;
-  ASTRow(double[] ds) { _ds = ds; }
-  @Override public String str() { return _ds.toString(); }
-  @Override Val exec(Env env) { return _ds; }
+  final ValRow _row;
+  ASTRow(double[] ds) { _row = new ValRow(ds); }
+  @Override public String str() { return _row.toString(); }
+  @Override ValRow exec(Env env) { return _row; }
   @Override int nargs() { return 1; }
 }
 
