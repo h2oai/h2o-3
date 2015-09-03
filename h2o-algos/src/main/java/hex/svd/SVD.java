@@ -1,6 +1,5 @@
 package hex.svd;
 
-import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
@@ -167,7 +166,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed, boolean auto_converge) {
-      return auto_converge ? randSubIterInPlace(dinfo, max_iterations, seed) : randSubIter(dinfo, max_iterations, seed);
+      return auto_converge ? randSubIter(dinfo, max_iterations, seed) : randSubIterInPlace(dinfo, max_iterations, seed);
     }
 
     // Keeps track of change in Q each iteration ||Q_j - Q_{j-1}||_2 to check convergence (more memory, automatic convergence)
