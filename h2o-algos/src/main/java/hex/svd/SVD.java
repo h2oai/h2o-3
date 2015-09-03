@@ -10,6 +10,7 @@ import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
+import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.*;
 import water.*;
 import water.fvec.Chunk;
@@ -165,7 +166,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed) {
+    private Frame randSubIterInPlace(DataInfo dinfo, int max_iterations, long seed) {
       DataInfo yinfo = null;
       Frame yqfrm = null;
 
@@ -187,15 +188,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Computing QR factorization of Y");
         yinfo = new DataInfo(Key.make(), yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
-        GramTask gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
-        gtsk.doAll(yinfo._adaptedFrame);
-        // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
-        Matrix ygram = new Matrix(gtsk._gram.getXX());
-        CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
-
-        // [A,Y_0] -> [A,Q_0]: Compute Q from Y = QR given R' = L, and overwrite Y with result
-        QRfromCholInPlace qrtsk = new QRfromCholInPlace(yinfo, chol, gtsk._nobs);
-        qrtsk.doAll(yqfrm);
+        LinearAlgebraUtils.computeQInPlace(self(), yinfo);
 
         int iters = 0;
         while (iters < max_iterations) {
@@ -212,16 +205,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 3) [A,Q_{j-1}] -> [A,Y_j]: Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
           BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(qtilde));
           tsk.doAll(aqfrm);
-
-          // Calculate Cholesky of Y_j Gram to get R' = L matrix
-          gtsk = new GramTask(self(), yinfo);  // Gram is Y'Y/n where n = nrow(Y)
-          gtsk.doAll(yinfo._adaptedFrame);
-          // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
-          ygram = new Matrix(gtsk._gram.getXX());
-          chol = new CholeskyDecomposition(ygram);
-
-          qrtsk = new QRfromCholInPlace(yinfo, chol, gtsk._nobs);
-          qrtsk.doAll(yqfrm);
+          LinearAlgebraUtils.computeQInPlace(self(), yinfo);
           iters++;
         }
       } catch( Throwable t ) {
@@ -237,6 +221,78 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( yinfo != null ) yinfo.remove();
       }
       return yqfrm;
+    }
+
+    // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
+    // This function keeps track of change in Q each iteration ||Q_j - Q_{j-1}||_2 to check convergence
+    private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed) {
+      DataInfo yinfo = null;
+      Frame ybig = null, qfrm = null;
+      final int ncolA = dinfo._adaptedFrame.numCols();
+
+      try {
+        // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
+        update(1, "Initializing random subspace of training data Y");
+        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
+        RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
+        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
+        ybig = rtsk.outputFrame(Key.make(), null, null);
+
+        // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
+        // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
+        Frame ayqfrm = new Frame(dinfo._adaptedFrame);
+        ayqfrm.add(ybig);
+        for (int i = 0; i < _parms._nv; i++)
+          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
+        Frame ayfrm = ayqfrm.subframe(0, ncolA + _parms._nv);   // [A,Y]
+        Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // [Y,Q]
+        Frame aqfrm = ayqfrm.subframe(0, ncolA);
+        aqfrm.add(ayqfrm.subframe(ncolA + _parms._nv, ayqfrm.numCols()));   // [A,Q]
+
+        // Calculate Cholesky of Gram to get R' = L matrix
+        update(1, "Computing QR factorization of Y");
+        yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+        DKV.put(yinfo._key, yinfo);
+        double qerr = LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
+
+        int iters = 0;
+        long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
+        while (qerr / qobs > TOLERANCE && iters < max_iterations) {
+          update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
+
+          // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
+          SMulTask stsk = new SMulTask(dinfo, _parms._nv);
+          stsk.doAll(aqfrm);    // Pass in [A,Q]
+
+          Matrix ysmall = new Matrix(stsk._atq);
+          QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
+          double[][] ysmall_q = ysmall_qr.getQ().getArray();
+
+          // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
+          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q));
+          tsk.doAll(ayfrm);
+          qerr = LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
+          iters++;
+        }
+
+        // 4) Extract and save final Q_j from [A,Q] frame
+        qfrm = ayqfrm.extractFrame(ncolA + _parms._nv, ayqfrm.numCols());
+        qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
+        DKV.put(qfrm);
+      } catch( Throwable t ) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
+      } finally {
+        if( yinfo != null ) yinfo.remove();
+        if( ybig != null ) ybig.delete();
+      }
+      return qfrm;
     }
 
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)

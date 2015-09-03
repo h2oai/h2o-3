@@ -1,11 +1,14 @@
 package hex.util;
 
 import Jama.CholeskyDecomposition;
+import Jama.Matrix;
 import hex.DataInfo;
 import hex.FrameTask;
+import hex.gram.Gram;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 
@@ -249,23 +252,66 @@ public class LinearAlgebraUtils {
   }
 
   /**
-   * Given Cholesky L from A'A = LL', compute Q from A = QR decomposition, where R = L'
+   * Get R = L' from Cholesky decomposition Y'Y = LL' (same as R from Y = QR)
+   * @param jobKey Job key for Gram calculation
+   * @param yinfo DataInfo for Y matrix
+   * @param transpose Should result be transposed to get L?
+   * @return L or R matrix from Cholesky of Y Gram
+   */
+  public static double[][] computeR(Key jobKey, DataInfo yinfo, boolean transpose) {
+    // Calculate Cholesky of Y Gram to get R' = L matrix
+    Gram.GramTask gtsk = new Gram.GramTask(jobKey, yinfo);  // Gram is Y'Y/n where n = nrow(Y)
+    gtsk.doAll(yinfo._adaptedFrame);
+    // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
+    Matrix ygram = new Matrix(gtsk._gram.getXX());
+    CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
+
+    double[][] L = chol.getL().getArray();
+    ArrayUtils.mult(L, Math.sqrt(gtsk._nobs));  // Must scale since Cholesky of Y'Y/n where nobs = nrow(Y)
+    return transpose ? L : ArrayUtils.transpose(L);
+  }
+
+  /**
+   * Solve for Q from Y = QR factorization and write into new frame
+   * @param jobKey Job key for Gram calculation
+   * @param yinfo DataInfo for Y matrix
+   * @param ywfrm Input frame [Y,W] where we write into W
+   * @return l2 norm of Q - W, where W is old matrix in frame, Q is computed factorization
+   */
+  public static double computeQ(Key jobKey, DataInfo yinfo, Frame ywfrm) {
+    double[][] cholL = computeR(jobKey, yinfo, true);
+    ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
+    qrtsk.doAll(ywfrm);
+    return qrtsk._err;      // ||Q - W||_2
+  }
+
+  /**
+   * Solve for Q from Y = QR factorization and write into Y frame
+   * @param jobKey Job key for Gram calculation
+   * @param yinfo DataInfo for Y matrix
+   */
+  public static void computeQInPlace(Key jobKey, DataInfo yinfo) {
+    double[][] cholL = computeR(jobKey, yinfo, true);
+    ForwardSolveInPlace qrtsk = new ForwardSolveInPlace(yinfo, cholL);
+    qrtsk.doAll(yinfo._adaptedFrame);
+  }
+
+  /**
+   * Given lower triangular L, solve for Q in QL' = A (LQ' = A') using forward substitution
    * Dimensions: A is n by p, Q is n by p, R = L' is p by p
    * Input: [A,Q] (large frame) passed to doAll, where we write to Q
    */
-  public static class QRfromChol extends MRTask<QRfromChol> {
+  public static class ForwardSolve extends MRTask<ForwardSolve> {
     final DataInfo _ainfo;   // Info for frame A
     final int _ncols;     // Number of cols in A and in Q
     final double[][] _L;
-
     public double _err;    // Output: l2 norm of difference between old and new Q
 
-    public QRfromChol(DataInfo ainfo, CholeskyDecomposition chol, double nobs) {
+    public ForwardSolve(DataInfo ainfo, double[][] L) {
+      assert L != null && L.length == L[0].length && L.length == ainfo._adaptedFrame.numCols();
       _ainfo = ainfo;
       _ncols = ainfo._adaptedFrame.numCols();
-
-      _L = chol.getL().getArray();
-      ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
+      _L = L;
       _err = 0;
     }
 
@@ -302,21 +348,20 @@ public class LinearAlgebraUtils {
   }
 
   /**
-   * Given Cholesky L from A'A = LL', compute Q from A = QR decomposition, where R = L'
+   * Given lower triangular L, solve for Q in QL' = A (LQ' = A') using forward substitution
    * Dimensions: A is n by p, Q is n by p, R = L' is p by p
    * Input: A (large frame) passed to doAll, where we overwrite each row of A with its row of Q
    */
-  public static class QRfromCholInPlace extends MRTask<QRfromCholInPlace> {
+  public static class ForwardSolveInPlace extends MRTask<ForwardSolveInPlace> {
     final DataInfo _ainfo;   // Info for frame A
     final int _ncols;     // Number of cols in A
     final double[][] _L;
 
-    public QRfromCholInPlace(DataInfo ainfo, CholeskyDecomposition chol, double nobs) {
+    public ForwardSolveInPlace(DataInfo ainfo, double[][] L) {
+      assert L != null && L.length == L[0].length && L.length == ainfo._adaptedFrame.numCols();
       _ainfo = ainfo;
       _ncols = ainfo._adaptedFrame.numCols();
-
-      _L = chol.getL().getArray();
-      ArrayUtils.mult(_L, Math.sqrt(nobs));   // Must scale since Cholesky of A'A/nobs where nobs = nrow(A)
+      _L = L;
     }
 
     @Override public void map(Chunk cs[]) {

@@ -215,9 +215,9 @@ public class SVDTest extends TestUtil {
     // Expected right singular values and vectors
     double[] d_expected = new double[] {11.024148, 6.964086, 4.179904, 2.915146};
     double[][] v_expected = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
-            ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
-            ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
-            ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
+                                ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
+                                ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
+                                ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
     SVDModel model = null;
     Frame train = null, score = null;
     try {
