@@ -297,7 +297,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           } finally {
             if (job != null) job.remove();
             if (glrm != null) {
-              glrm._parms._loading_key.get().delete();
+              // glrm._parms._loading_key.get().delete();
+              glrm._output._loading_key.get().delete();
               glrm.remove();
             }
           }

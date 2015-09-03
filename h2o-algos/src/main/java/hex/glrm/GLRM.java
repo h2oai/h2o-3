@@ -87,7 +87,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
+    // if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
+    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
+      _parms._loading_name = "GLRMLoading_" + Key.rand();
     if (!_parms._loss.isForNumeric()) error("_loss", _parms._loss + " is not a univariate loss function");
     if (!_parms._multi_loss.isForCategorical()) error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
     if (_parms._period <= 0) error("_period", "_period must be a positive integer");
@@ -581,6 +583,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // 4) Save solution to model output
+        model._output._loading_key = Key.make(_parms._loading_name);
+        model._output._step_size = step;
+        model._output._archetypes_raw = yt;  // Need full archetypes object for scoring
+        model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
+
         // Save X frame for user reference later
         Vec[] xvecs = new Vec[_ncolX];
         String[] xnames = new String[_ncolX];
@@ -595,15 +602,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        x = new Frame(_parms._loading_key, xnames, xvecs);
+        x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
-
-        model._output._step_size = step;
-        model._output._loading_key = _parms._loading_key;
-        model._output._archetypes_raw = yt;  // Need full archetypes object for scoring
-        model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
         // Impute and compute error metrics on training/validation frame

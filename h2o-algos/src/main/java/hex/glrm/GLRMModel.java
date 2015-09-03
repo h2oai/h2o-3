@@ -40,7 +40,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    public Key<Frame> _loading_key;               // Key to save X matrix
+    // public Key<Frame> _loading_key;               // Key to save X matrix
+    public String _loading_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
