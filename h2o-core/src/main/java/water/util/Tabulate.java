@@ -11,8 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.util.Arrays;
-
 /**
  * Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset
  * Uses histogram of given resolution in X and Y
@@ -40,14 +38,14 @@ public class Tabulate extends Job<Tabulate> {
 
   // helper to speed up stuff
   static private class Stats {
-    Stats(Vec x) {
-      _min = x.min();
-      _max = x.max();
-      _isEnum = x.isEnum();
-      _isInt = x.isInt();
-      _cardinality = x.cardinality();
-      _missing = x.naCnt() > 0 ? 1 : 0;
-      _domain = x.domain();
+    Stats(Vec v) {
+      _min = v.min();
+      _max = v.max();
+      _isEnum = v.isEnum();
+      _isInt = v.isInt();
+      _cardinality = v.cardinality();
+      _missing = v.naCnt() > 0 ? 1 : 0;
+      _domain = v.domain();
     }
     final double _min;
     final double _max;
@@ -253,8 +251,6 @@ public class Tabulate extends Job<Tabulate> {
     String[] colHeaders = new String[3];    //Y
     String[] colTypes = new String[colHeaders.length];
     String[] colFormats = new String[colHeaders.length];
-
-    Vec pred = DKV.getGet(_vecs[0]);
 
     colHeaders[0] = _predictor;
     colTypes[0] = "string"; colFormats[0] = "%s";
