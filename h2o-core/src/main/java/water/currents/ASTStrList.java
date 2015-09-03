@@ -98,7 +98,7 @@ class ASTIsFactor extends ASTPrim {
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isEnum() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"TRUE","FALSE"});
+    vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.factor"}, new Vec[]{vec}));
   }
 }
@@ -114,7 +114,7 @@ class ASTIsNumeric extends ASTPrim {
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"TRUE","FALSE"});
+    vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.numeric"}, new Vec[]{vec}));
   }
 }
@@ -130,7 +130,7 @@ class ASTIsCharacter extends ASTPrim {
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isString() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"TRUE","FALSE"});
+    vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.character"}, new Vec[]{vec}));
   }
 }

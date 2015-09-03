@@ -452,6 +452,11 @@
   processTables(res)
 }
 
+.format.helper <- function(x, format) {
+  if( is.list(x) ) lapply(x, .format.helper, format)
+  else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+}
+
 #' Print method for H2OTable objects
 #'
 #' This will print a truncated view of the table if there are more than 20 rows.

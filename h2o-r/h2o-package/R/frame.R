@@ -153,7 +153,12 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     print(paste0("EXPR: ",exec_str))
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:id, method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-    if( !is.null(res$scalar) ) .set(x,"data",res$scalar)
+    if( !is.null(res$scalar) ) {
+      y <- res$scalar
+      if( y=="TRUE" ) y <- TRUE
+      else if( y=="FALSE" ) y <- FALSE
+      .set(x,"data", y)
+    }
     # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
@@ -304,6 +309,10 @@ is.factor <- function(x) {
   base::is.factor(x)
 }
 
+is.numeric <- function(x) {
+  if( !is.Frame(x) ) .Primitive("is.numeric")(x)
+  else .eval.frame(.newExpr("is.numeric",x)):data
+}
 
 #' Print An H2O Frame
 #'
