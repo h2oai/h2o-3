@@ -200,12 +200,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * So there is a race condition when returning a model (e.g., via the REST layer) after the ModelBuilder is DONE, but the model object is not yet updated.
    */
   protected void updateModelOutput() {
-    // TODO: Remove this check
-    final ModelBuilder<M,P,O> j = DKV.getGet(_key);
-    assert(j._start_time == _start_time);
-    assert(j._end_time == _end_time);
-    assert(j._state == _state);
-
     new TAtomic<M>() {
       @Override
       public M atomic(M old) {
