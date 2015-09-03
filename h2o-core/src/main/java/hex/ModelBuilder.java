@@ -523,8 +523,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert (!isDone());
       done(true); //now, we can mark the job as done
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
-    } else {
-
     }
     return this;
   }
