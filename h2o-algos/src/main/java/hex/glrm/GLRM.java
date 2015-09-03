@@ -105,13 +105,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
-    // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
     _ncolY = _train.numColsExp(true, false);
-    int k_min = (int) Math.min(_ncolY, _train.numRows());
     if (_ncolY > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm may be slow.");
 
-    if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min + " inclusive");
+    if (_parms._k < 1 || _parms._k > _ncolY) error("_k", "_k must be between 1 and " + _ncolY + " inclusive");
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
       if (_parms._init != GLRM.Initialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
@@ -134,6 +132,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
     }
 
+    for(int i = 0; i < _train.numCols(); i++) {
+      if(_train.vec(i).isString() || _train.vec(i).isUUID())
+        throw H2O.unimpl("GLRM cannot handle String or UUID data");
+    }
+
     if (null != _parms._loss_by_col) {
       if (_parms._loss_by_col.length > _train.numCols())
         error("_loss_by_col", "Number of loss functions specified must be <= " + _train.numCols());
@@ -145,7 +148,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for(int i = 0; i < _lossFunc.length; i++)
-          _lossFunc[i] = _train.vec(i).isNumeric() ? _parms._loss : _parms._multi_loss;
+          _lossFunc[i] = _train.vec(i).isEnum() ? _parms._multi_loss : _parms._loss;
 
         for(int i = 0; i < _parms._loss_by_col.length; i++) {
           // Check that specified column loss is in allowable set for column type
@@ -167,7 +170,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for (int i = 0; i < _lossFunc.length; i++)
-          _lossFunc[i] = _train.vec(i).isNumeric() ? _parms._loss : _parms._multi_loss;
+          _lossFunc[i] = _train.vec(i).isEnum() ? _parms._multi_loss : _parms._loss;
       }
     }
 
@@ -261,7 +264,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // parms._max_iterations = _parms._max_iterations;
         // parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
         _parms._max_iterations = _parms._k;
-        parms._svd_method = SVDModel.SVDParameters.Method.Probabilistic;
+        parms._svd_method = SVDModel.SVDParameters.Method.Randomized;
         parms._seed = _parms._seed;
         parms._keep_u = true;
         parms._impute_missing = true;
@@ -469,7 +472,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override protected void compute2() {
       GLRMModel model = null;
       DataInfo dinfo = null, xinfo = null, tinfo = null;
-      Frame fr = null, x = null;
+      Frame fr = null;
       boolean overwriteX = false;
 
       try {
@@ -537,7 +540,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt._archetypes);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
-        model.update(_key);  // Update model in K/V store
+        model.update(self());  // Update model in K/V store
 
         double step = _parms._init_step_size;   // Initial step size
         int steps_in_row = 0;                   // Keep track of number of steps taken that decrease objective
@@ -602,7 +605,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        x = new Frame(model._output._loading_key, xnames, xvecs);
+        Frame x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
@@ -939,7 +942,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _ncolA = ncolA;
       _ncolX = ncolX;
 
-      // dinfo contains [A,X,W], but we only use its info on A (cols 1 to ncolA)
+      // Info on A (cols 1 to ncolA of frame)
       assert ncats <= ncolA;
       _ncats = ncats;
       _weightId = weightId;
@@ -956,7 +959,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       for(int row = 0; row < cs[0]._len; row++) {
         double[] grad = new double[_ncolX];
-        double[] xnew = new double[_ncolX];
 
         // Additional user-specified weight on loss for this row
         double cweight = chkweight.atd(row);
@@ -1017,7 +1019,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
           // _xreg += _parms.regularize_x(xnew[k]);
         }
-        xnew = _parms.rproxgrad_x(u, _alpha, rand);
+        double[] xnew = _parms.rproxgrad_x(u, _alpha, rand);
         _xreg += _parms.regularize_x(xnew);
         for(int k = 0; k < _ncolX; k++)
           chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
@@ -1031,11 +1033,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // Numeric columns
+        int js = 0;
         for(int j = _ncats; j < _ncolA; j++) {
-          int js = j - _ncats;
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double xy = _yt.lmulNumCol(xnew, js);
           _loss += _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          js++;
         }
         _loss *= cweight;
       }
@@ -1075,7 +1078,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _yreg = 0;
       // _ytnew = new double[_ncolA][_ncolX];
 
-      // dinfo contains [A,X,W], but we only use its info on A (cols 1 to ncolA)
+      // Info on A (cols 1 to ncolA of frame)
       assert ncats <= ncolA;
       _ncats = ncats;
       _weightId = weightId;
@@ -1116,8 +1119,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
 
       // Numeric columns
+      int js = 0;
       for(int j = _ncats; j < _ncolA; j++) {
-        int js = j - _ncats;
         int yidx = _ytold.getNumCidx(js);
 
         // Compute gradient of objective at column
@@ -1139,6 +1142,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           for(int k = 0; k < _ncolX; k++)
             _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
         }
+        js++;
       }
     }
 
@@ -1229,16 +1233,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // Numeric columns
+        int js = 0;
         for(int j = _ncats; j < _ncolA; j++) {
           double a = cs[j].atd(row);
           if (Double.isNaN(a)) continue;   // Skip missing observations in row
 
           // Inner product x_i * y_j
           double xy = 0;
-          int js = j - _ncats;
           for(int k = 0; k < _ncolX; k++)
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt.getNum(js, k);
           _loss += _parms.loss(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          js++;
         }
         _loss *= cweight;
 
