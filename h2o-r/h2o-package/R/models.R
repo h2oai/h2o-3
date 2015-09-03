@@ -1893,11 +1893,14 @@ h2o.sdev <- function(object) {
 #' Handles numerical/categorical data and missing values. Supports observation weights.
 #'
 #' @param data An \linkS4class{H2OFrame} object.
-#' @param predictor predictor column
-#' @param response response column
-#' @param weights (optional) observation weights column
-#' @param nbins_predictor number of bins for predictor column
-#' @param nbins_response number of bins for response column
+#' @param x predictor column
+#' @param y response column
+#' @param weights_column (optional) observation weights column
+#' @param nbins_x number of bins for predictor column
+#' @param nbins_y number of bins for response column
+#' @return Returns two TwoDimTables of 3 columns each
+#'        count_table:    X     Y counts
+#'        response_table: X meanY counts
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -1917,14 +1920,14 @@ h2o.tabulate <- function(data, x, y,
     temp_key <- data@frame_id
     .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
   }
-  args <- .verify_dataxy(data, x, y)
+  args <- .verify_datacols(data, c(x,y))
   if(!is.numeric(nbins_x)) stop("`nbins_x` must be a positive number")
   if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
 
   parms = list()
   parms$dataset <- data@frame_id
-  parms$predictor <- args$x
-  parms$response <- args$y
+  parms$predictor <- args$cols[1]
+  parms$response <- args$cols[2]
   if( !missing(weights_column) )            parms$weight <- weights_column
   parms$nbins_predictor <- nbins_x
   parms$nbins_response <- nbins_y

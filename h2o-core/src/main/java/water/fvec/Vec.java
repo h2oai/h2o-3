@@ -189,6 +189,7 @@ public class Vec extends Keyed<Vec> {
 
   public static final boolean DO_HISTOGRAMS = true;
   public static final boolean NO_HISTOGRAMS = false;
+  final private Key _rollupStatsKey;
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -240,6 +241,7 @@ public class Vec extends Keyed<Vec> {
     _type = type;
     _espc = espc;
     _domain = domain;
+    _rollupStatsKey = chunkKey(-2);
   }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
@@ -752,7 +754,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,6,cidx); // chunk#
     return Key.make(bits);
   }
-  Key rollupStatsKey() { return chunkKey(-2); }
+  Key rollupStatsKey() { return _rollupStatsKey; }
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
