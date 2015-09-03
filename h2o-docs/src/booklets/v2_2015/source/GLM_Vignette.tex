@@ -249,7 +249,7 @@ $$ \hat{y} = x^T\beta + \beta_0.$$
 
 The model is fitted by solving the least squares problem, which is equivalent to maximizing the likelihood for the gaussian family
 
-$$ \max_{\beta,\beta_0} \ \frac{1}{2N} \sum_{i=1}^N  (x_i^{\top}\beta + \beta_0 - y_i)^2  - \lambda \left(  \alpha \|\beta \|_1 +  \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right).$$
+$$ \max_{\beta,\beta_0} \ - \frac{1}{2N} \sum_{i=1}^N  (x_i^{\top}\beta + \beta_0 - y_i)^2  - \lambda \left(  \alpha \|\beta \|_1 +  \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right).$$
 %$$ \max_{\beta,\beta_0} \frac{1}{2N} \sum_{i=1}^n (x_i^{\top}\beta + \beta_0 - y_i)^2 $$ %- \lambda \left( \alpha \|\beta \|_1 + \frac{(1-\alpha )}{ 2}  \| \beta \|_2^2 \right) $$
 
 The deviance is simply the sum of squared prediction errors
@@ -285,7 +285,7 @@ $$  \log \left( \frac{\hat{y}}{ 1- \hat{y} } \right)  = \log \left(  \frac{Pr(y=
 %$$\log \left( \frac{\hat{y}}{ 1- \hat{y} } \right) = \log \left( \frac{Pr(y=1|x)}{Pr(y=0|x)} \right) = x^{\top} \beta + \beta_0.$$
 
 The model is fitted by maximizing the following penalized likelihood 
-$$  \max_{\beta,\beta_0} \   \frac{1}{N} \sum_{i=1}^{N} \left( \ y_i (x_i^{\top}\beta  + \beta_0) - \log (1 + e^{x_i^{\top}\beta  + \beta_0} ) \right)  - \lambda \left( \alpha \|\beta \|_1 +  \frac{1}{2}(1- \alpha)  \| \beta \|_2^2 \right). $$
+$$  \max_{\beta,\beta_0} \  \frac{1}{N} \sum_{i=1}^{N} \left( \ y_i (x_i^{\top}\beta  + \beta_0) - \log (1 + e^{x_i^{\top}\beta  + \beta_0} ) \right)  - \lambda \left( \alpha \|\beta \|_1 +  \frac{1}{2}(1- \alpha)  \| \beta \|_2^2 \right). $$
 
 The corresponding deviance is equal to 
 $$D = -2\sum_{i=1}^{n} \left(y_i \log(\hat{y}_i) + (1 - y_i)\log(1-\hat{y}_i)  \right).$$
@@ -380,7 +380,7 @@ where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log
 %Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
 
 The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to
-$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)}. $$\\
+$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y_i^{2 - p} - \hat{y}_i^{2 - p})}{(2 - p)}. $$\\
 
 \waterExampleInR
 \\
