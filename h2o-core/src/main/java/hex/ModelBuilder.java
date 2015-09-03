@@ -453,6 +453,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (!async)
         block();
     }
+    else {
+      DKV.remove(dest()); //remove prior main model (must have been built by a prior job)
+    }
 
     // in async case, the CV models can score while the main model is still building
     Model[] m = new Model[N];
@@ -461,7 +464,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       try {
         adaptFr = new Frame(cvValid[i]);
         // score CV models
-        if (!isCancelledOrCrashed()) {
+        if (!isCancelledOrCrashed()) { //don't waste time scoring if the CV run is cancelled
           // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
           cvModelBuilders[i].block();
 
@@ -479,7 +482,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           }
         }
       } finally {
-        // free resources
+        // free resources as early as possible
         if (adaptFr != null) {
           Model.cleanup_adapt(adaptFr, cvValid[i]);
           DKV.remove(adaptFr._key);
@@ -520,6 +523,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert (!isDone());
       done(true); //now, we can mark the job as done
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
+    } else {
+
     }
     return this;
   }
