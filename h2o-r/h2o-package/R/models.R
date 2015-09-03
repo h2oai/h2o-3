@@ -1898,6 +1898,9 @@ h2o.sdev <- function(object) {
 #' @param weights_column (optional) observation weights column
 #' @param nbins_x number of bins for predictor column
 #' @param nbins_y number of bins for response column
+#' @return Returns two TwoDimTables of 3 columns each
+#'        count_table:    X     Y counts
+#'        response_table: X meanY counts
 #' @examples
 #' \donttest{
 #' library(h2o)
