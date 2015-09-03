@@ -44,7 +44,8 @@
     stmnts <- stmnts[-1L]         # Lose the lone open-curly
     if( length(stmnts) > 1 ) {    # If there multiple statements, wrap them in a comma operator
       tmp1 <- "(, "; tmp2 <- ")"  # Wrap result in a comma-operator
-    }
+    } else if( length(stmnts)==0 )
+      stmnts = list(NaN)
   }
   # return a list of ast_stmnts
   stmnts_str <- lapply(stmnts, .stmnt.to.ast.switchboard, formalz, envs)

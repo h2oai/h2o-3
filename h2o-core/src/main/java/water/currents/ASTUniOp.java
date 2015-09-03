@@ -114,6 +114,15 @@ class ASTRunif extends ASTPrim {
   }
 }
 
+class ASTNcol extends ASTPrim {
+  @Override int nargs() { return 1+1; }
+  @Override String str() { return "ncol"; }
+  @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    return new ValNum(fr.numCols());
+  }
+}
+
 class ASTNrow extends ASTPrim {
   @Override int nargs() { return 1+1; }
   @Override String str() { return "nrow"; }
@@ -122,7 +131,6 @@ class ASTNrow extends ASTPrim {
     return new ValNum(fr.numRows());
   }
 }
-
 
 class ASTNLevels extends ASTPrim {
   @Override int nargs() { return 1+1; } // (nlevels x)

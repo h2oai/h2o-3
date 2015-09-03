@@ -20,9 +20,13 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #'
 #' Map of operations known to H2O
 #'
-.h2o.primitives = c("*","+","/","-","abs","cos", "sin", "acos", "ceiling", "floor", "cosh", "exp", "log", "sqrt", "tan", "tanh", "mean", "sum", "prod", "all", "any", "min", "max" )
-
-
+.h2o.primitives = c( 
+  "*", "+", "/", "-", 
+  "cos", "sin", "acos", "cosh", "tan", "tanh", "exp", "log", "sqrt", 
+  "abs", "ceiling", "floor", 
+  "mean", "sd", "sum", "prod", "all", "any", "min", "max", 
+  "is.factor", "nrow", "ncol", "length" 
+)
 
 
 .type.map <- rbind(data.frame(type = "logical",   scalar = TRUE,  row.names = "boolean",      stringsAsFactors = FALSE),

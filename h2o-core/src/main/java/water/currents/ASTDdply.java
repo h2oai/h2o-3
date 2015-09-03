@@ -17,7 +17,7 @@ import java.util.Arrays;
  */
 class ASTDdply extends ASTPrim {
   @Override int nargs() { return 4; } // (ddply data [group-by-cols] fcn )
-  @Override public String str() { return "h2o.ddply"; }
+  @Override public String str() { return "ddply"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();

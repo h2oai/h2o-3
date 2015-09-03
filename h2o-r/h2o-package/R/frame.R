@@ -202,6 +202,9 @@ is.na.Frame <- function(x) .newExpr("is.na", x)
 #' @export
 dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(data))) }
 
+nrow.Frame <- function(x) { .fetch.data(x,1); x:nrow }
+ncol.Frame <- function(x) { ncol(.fetch.data(x,1)) }
+
 #` Column names of an H2O Frame
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
@@ -1647,20 +1650,20 @@ h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 #' res = h2o.ddply(iris.hex, "class", fun)
 #' head(res)
 #' @export
-h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
+h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
   .h2o.gc()
-  chk.Frame(.data)
+  chk.Frame(X)
 
   # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
   # as column names.  This is a bit complicated
   if(is.character(.variables)) {
-    vars <- match(.variables, colnames(.data))
+    vars <- match(.variables, colnames(X))
     if (any(is.na(vars)))
-      stop('No column named ', .variables, ' in ', substitute(.data), '.')
+      stop('No column named ', .variables, ' in ', substitute(X), '.')
   } else if(is(.variables, 'H2Oquoted')) {
-    vars <- match(.variables, colnames(.data))
+    vars <- match(.variables, colnames(X))
   } else if(inherits(.variables, 'quoted')) { # plyr overwrote our . fn
-    vars <- match(.variables, colnames(.data))
+    vars <- match(.variables, colnames(X))
   } else if(is.integer(.variables)) {
     vars <- .variables
   } else if(is.numeric(.variables)) {   # this will happen eg c(1,2,3)
@@ -1668,8 +1671,8 @@ h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
   }
 
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-  if(vars <= 0L || vars > ncol(.data))
-    stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
+  if(vars <= 0L || vars > ncol(X))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(X), '.')
   vars <- .row.col.selector(vars)
 
   # Deal with extra arguments
@@ -1681,7 +1684,7 @@ h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
   # Process the function. Decide if it's an anonymous fcn, or a named one.
   fname <- as.character(substitute(FUN))
   if( typeof(FUN) == "builtin" || typeof(FUN) == "symbol") {
-    if( fname %in% .h2o.primitives ) return(.newExpr("apply",X,MARGIN,fname))
+    if( fname %in% .h2o.primitives ) return(.newExpr("ddply",X,vars,fname))
     stop(paste0("Function '",fname,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
   }
 
@@ -1695,7 +1698,7 @@ h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
     if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
     fcn <- if( length(extra_args)==0 ) fname 
            else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
-    return(.newExpr("apply",X,MARGIN,fcn))
+    return(.newExpr("ddply",X,vars,fcn))
   }
 
   # Explode anonymous function into a Currents AST.  Pass along the dynamic
@@ -1703,7 +1706,7 @@ h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
   # in).  Unknown variables in the function body will be looked up in the
   # dynamic scope.
   funstr <- .fun.to.ast(FUN, list(), sys.parent(1))
-  .newExpr("h2o.ddply",.data,vars,funstr)
+  .newExpr("ddply",X,vars,funstr)
 }
 
 #' Apply on H2O Datasets
