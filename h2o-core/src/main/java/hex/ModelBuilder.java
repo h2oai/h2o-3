@@ -452,53 +452,53 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       trainModelImpl(-1, false); //non-blocking
       if (!async)
         block();
+    }
 
-      // in async case, the CV models can score while the main model is still building
-      Model[] m = new Model[N];
-      for (int i=0; i<N; ++i) {
-        Frame adaptFr = new Frame(cvValid[i]);
-        try {
-          if (isCancelledOrCrashed()) {
-            Log.warn("Cancelling all N-fold cross-validation jobs.");
-            break;
-          } else {
-            // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
-            cvModelBuilders[i].block();
+    // in async case, the CV models can score while the main model is still building
+    Model[] m = new Model[N];
+    for (int i=0; i<N; ++i) {
+      Frame adaptFr = null;
+      try {
+        adaptFr = new Frame(cvValid[i]);
+        // score CV models
+        if (!isCancelledOrCrashed()) {
+          // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
+          cvModelBuilders[i].block();
 
-            // mark the job as done
-            cvModelBuilders[i].done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
-            cvModelBuilders[i].updateModelOutput();      // mirror the Job state in the model
-            m[i] = DKV.getGet(cvModelBuilders[i].dest());   // now the model is ready for consumption
-            m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
-            mb[i] = m[i].scoreMetrics(adaptFr);
+          // mark the job as done
+          cvModelBuilders[i].done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
+          cvModelBuilders[i].updateModelOutput();      // mirror the Job state in the model
+          m[i] = DKV.getGet(cvModelBuilders[i].dest());   // now the model is ready for consumption
+          m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
+          mb[i] = m[i].scoreMetrics(adaptFr);
 
-            if (_parms._keep_cross_validation_predictions) {
-              String predName = "prediction_" + modelKeys[i].toString();
-              predictionKeys[i] = Key.make(predName);
-              m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
-            }
-
-            // free resources
-            DKV.remove(cvTrain[i]._key);
-            DKV.remove(cvValid[i]._key);
-            weights[2 * i].remove();
-            weights[2 * i + 1].remove();
-            cvModelBuilders[i].remove();
-          }
-        } finally {
-          if (adaptFr != null) {
-            Model.cleanup_adapt(adaptFr, cvValid[i]);
-            DKV.remove(adaptFr._key);
+          if (_parms._keep_cross_validation_predictions) {
+            String predName = "prediction_" + modelKeys[i].toString();
+            predictionKeys[i] = Key.make(predName);
+            m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
           }
         }
+      } finally {
+        // free resources
+        if (adaptFr != null) {
+          Model.cleanup_adapt(adaptFr, cvValid[i]);
+          DKV.remove(adaptFr._key);
+        }
+        if (cvTrain[i] != null) DKV.remove(cvTrain[i]._key);
+        if (cvValid[i] != null) DKV.remove(cvValid[i]._key);
+        if (weights[2 * i] != null) weights[2 * i].remove();
+        if (weights[2 * i + 1] != null) weights[2 * i + 1].remove();
+        if (cvModelBuilders[i] != null) cvModelBuilders[i].remove();
       }
+    }
 
-      // wait for completion of the main model
+    // wait for completion of the main model
+    if (!isCancelledOrCrashed()) {
       block();
       Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done (still needs cv metrics)
 
       // Check that both the job and the model are not yet marked as done (canBeDone() looks at whether N-fold CV is done)
-      assert(_state == JobState.RUNNING);
+      assert (_state == JobState.RUNNING);
 
       // Compute and put the cross-validation metrics into the main model
       Log.info("Computing " + N + "-fold cross-validation metrics.");
@@ -517,7 +517,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Now, the main model is complete (has cv metrics)
       DKV.put(mainModel);
 
-      assert(!isDone());
+      assert (!isDone());
       done(true); //now, we can mark the job as done
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
     }
