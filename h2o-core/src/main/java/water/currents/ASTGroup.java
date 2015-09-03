@@ -141,20 +141,11 @@ class ASTGroup extends ASTPrim {
       });
 
     // Build the output!
-    // the names of columns
-    final int nCols = gbCols.length+naggs;
-    String[] names = new String[nCols];
-    String[][] domains = new String[nCols][];
-    for( int i=0;i<gbCols.length; i++ ) {
-      names  [i] = fr.name     (gbCols[i]);
-      domains[i] = fr.domains()[gbCols[i]];
-    }
+    String[] fcnames = new String[aggs.length];
     for( int i=0; i<aggs.length; i++ )
-      names[i+gbCols.length] = aggs[i]._fcn.toString()+"_"+fr.name(aggs[i]._col);
-    Vec v = Vec.makeZero(grps.length); // dummy layout vec
+      fcnames[i] = aggs[i]._fcn.toString()+"_"+fr.name(aggs[i]._col);
 
-    // Convert the output arrays into a Frame, also doing the post-pass work
-    Frame f=new MRTask() {
+    MRTask mrfill = new MRTask() {
       @Override public void map(Chunk[] c, NewChunk[] ncs) {
         int start=(int)c[0].start();
         for( int i=0;i<c[0]._len;++i) {
@@ -166,9 +157,9 @@ class ASTGroup extends ASTPrim {
             ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a],g._ns[a]));
         }
       }
-    }.doAll(nCols,v).outputFrame(names,domains);
-    v.remove();
+      };
 
+    Frame f = buildOutput(gbCols, naggs, fr, fcnames, grps.length, mrfill);
     return new ValFrame(f);
   }
 
@@ -199,6 +190,29 @@ class ASTGroup extends ASTPrim {
 
   // Utility for ASTDdply; return a single aggregate for counting rows-per-group
   static AGG[] aggNRows() { return new AGG[]{new AGG(FCN.nrow,0,NAHandling.IGNORE,0)};  }
+
+  // Build output frame from the multi-column results
+  static Frame buildOutput(int[] gbCols, int noutCols, Frame fr, String[] fcnames, int ngrps, MRTask mrfill) {
+    // Build the output!
+    // the names of columns
+    final int nCols = gbCols.length+noutCols;
+    String[] names = new String[nCols];
+    String[][] domains = new String[nCols][];
+    for( int i=0;i<gbCols.length; i++ ) {
+      names  [i] = fr.name     (gbCols[i]);
+      domains[i] = fr.domains()[gbCols[i]];
+    }
+    for( int i=0; i<fcnames.length; i++ )
+      names[i+gbCols.length] = fcnames[i];
+    Vec v = Vec.makeZero(ngrps); // dummy layout vec
+
+    // Convert the output arrays into a Frame, also doing the post-pass work
+    Frame f= mrfill.doAll(nCols,v).outputFrame(names,domains);
+    v.remove();
+    return f;
+  }
+
+
 
   // Description of a single aggregate, including the reduction function, the
   // column and specified NA handling

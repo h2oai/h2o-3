@@ -1668,10 +1668,9 @@ h2o.ddply <- function (.data, .variables, FUN, ..., .progress = 'none') {
   }
 
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-  vars <- vars - 1L
-
-  if(vars < 0L || vars > (ncol(.data)-1L))
+  if(vars <= 0L || vars > ncol(.data))
     stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
+  vars <- .row.col.selector(vars)
 
   # Deal with extra arguments
   l <- list(...)

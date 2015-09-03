@@ -78,18 +78,19 @@ class ASTFun extends AST {
   }
 
   // Apply this function: evaluate all arguments, push a lexical scope mapping
-  // the IDs to the ARGs, then evalute the body.
+  // the IDs to the ARGs, then evaluate the body.  After execution pop the
+  // lexical scope and return the results.
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // Evaluation all arguments
     Val[] args = new Val[asts.length];
     for( int i=1; i<asts.length; i++ )
       args[i] = stk.track(asts[i].exec(env));
     ASTFun old = env._scope;
-    env._scope = new ASTFun(this,args,_parent);
+    env._scope = new ASTFun(this,args,_parent); // Push a new lexical scope, extended from the old
     
     Val res = _body.exec(env);
     
-    env._scope = old;
+    env._scope = old;           // Pop the lexical scope off (by restoring the old unextended scope)
     return res;
   }
 }

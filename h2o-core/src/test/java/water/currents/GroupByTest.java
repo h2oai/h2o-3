@@ -160,7 +160,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testBasicDdply() {
     Frame fr = null;
-    String tree = "(h2o.ddply hex [1] { x . (mean (col 2) TRUE)})"; // Group-By on col 1 (not 0) mean of col 2
+    String tree = "(h2o.ddply hex [1] { x . (mean (cols x 2) TRUE)})"; // Group-By on col 1 (not 0) mean of col 2
     try {
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
@@ -172,6 +172,11 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,1,7,5.042857142857143);
       chkFr(fr,0,22,4.4);       // Group 4.4, mean is 1.5, last group
       chkFr(fr,1,22,1.5);
+      fr.delete();
+
+      fr = chkTree("(h2o.ddply hex [1] { x . (sum (* (cols x 2) (cols x 3)))})","smalldata/iris/iris_wheader.csv");
+      chkDim(fr,2,23);
+
 
     } finally {
       if( fr != null ) fr.delete();
