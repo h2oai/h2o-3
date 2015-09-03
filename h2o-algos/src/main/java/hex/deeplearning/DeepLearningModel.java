@@ -808,7 +808,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model.");
+      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
@@ -944,7 +944,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model.");
+      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
