@@ -62,6 +62,7 @@ public class TestNGUtil extends Iced {
         _initial_keycnt = H2O.store_size();
     }
 
+/** Temporarily Remove this due to unneeded
     @AfterClass
     public static void checkLeakedKeys() {
         int leaked_keys = H2O.store_size() - _initial_keycnt;
@@ -84,7 +85,7 @@ public class TestNGUtil extends Iced {
         assertTrue(leaked_keys <= 0, "No keys leaked");
         _initial_keycnt = H2O.store_size();
     }
-
+*/
     // ==== Data Frame Creation Utilities ====
 
     /** Hunt for test files in likely places.  Null if cannot find.
