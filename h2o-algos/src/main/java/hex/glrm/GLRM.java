@@ -258,7 +258,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._transform = _parms._transform;
         // parms._max_iterations = _parms._max_iterations;
         // parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
-        _parms._max_iterations = _parms._k;
+        parms._max_iterations = _parms._k;
+        parms._auto_converge = false;   // Run for exactly k iterations
         parms._svd_method = SVDModel.SVDParameters.Method.Probabilistic;
         parms._seed = _parms._seed;
         parms._keep_u = true;

@@ -166,65 +166,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame randSubIterInPlace(DataInfo dinfo, int max_iterations, long seed) {
-      DataInfo yinfo = null;
-      Frame yqfrm = null;
-
-      try {
-        // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
-        update(1, "Initializing random subspace of training data Y");
-        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
-        RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
-        yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
-
-        // Make input frame [A,Q] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
-        // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
-        //       Q frame is used to save both intermediate Y calculation and final orthonormal Q matrix
-        Frame aqfrm = new Frame(dinfo._adaptedFrame);
-        aqfrm.add(yqfrm);
-
-        // Calculate Cholesky of Y Gram to get R' = L matrix
-        update(1, "Computing QR factorization of Y");
-        yinfo = new DataInfo(Key.make(), yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
-        DKV.put(yinfo._key, yinfo);
-        LinearAlgebraUtils.computeQInPlace(self(), yinfo);
-
-        int iters = 0;
-        while (iters < max_iterations) {
-          update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
-
-          // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-          SMulTask stsk = new SMulTask(dinfo, _parms._nv);
-          stsk.doAll(aqfrm);
-
-          Matrix ysmall = new Matrix(stsk._atq);
-          QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
-          double[][] qtilde = ysmall_qr.getQ().getArray();
-
-          // 3) [A,Q_{j-1}] -> [A,Y_j]: Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(qtilde));
-          tsk.doAll(aqfrm);
-          LinearAlgebraUtils.computeQInPlace(self(), yinfo);
-          iters++;
-        }
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
-      } finally {
-        if( yinfo != null ) yinfo.remove();
-      }
-      return yqfrm;
+    private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed, boolean auto_converge) {
+      return auto_converge ? randSubIterInPlace(dinfo, max_iterations, seed) : randSubIter(dinfo, max_iterations, seed);
     }
 
-    // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
-    // This function keeps track of change in Q each iteration ||Q_j - Q_{j-1}||_2 to check convergence
+    // Keeps track of change in Q each iteration ||Q_j - Q_{j-1}||_2 to check convergence (more memory, automatic convergence)
     private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed) {
       DataInfo yinfo = null;
       Frame ybig = null, qfrm = null;
@@ -293,6 +239,64 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( ybig != null ) ybig.delete();
       }
       return qfrm;
+    }
+
+    // Runs for exactly max_iterations, so user must know beforehand how many iterations to converge!
+    private Frame randSubIterInPlace(DataInfo dinfo, int max_iterations, long seed) {
+      DataInfo yinfo = null;
+      Frame yqfrm = null;
+
+      try {
+        // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
+        update(1, "Initializing random subspace of training data Y");
+        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
+        RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
+        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
+        yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
+
+        // Make input frame [A,Q] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
+        // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
+        //       Q frame is used to save both intermediate Y calculation and final orthonormal Q matrix
+        Frame aqfrm = new Frame(dinfo._adaptedFrame);
+        aqfrm.add(yqfrm);
+
+        // Calculate Cholesky of Y Gram to get R' = L matrix
+        update(1, "Computing QR factorization of Y");
+        yinfo = new DataInfo(Key.make(), yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
+        DKV.put(yinfo._key, yinfo);
+        LinearAlgebraUtils.computeQInPlace(self(), yinfo);
+
+        int iters = 0;
+        while (iters < max_iterations) {
+          update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
+
+          // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
+          SMulTask stsk = new SMulTask(dinfo, _parms._nv);
+          stsk.doAll(aqfrm);
+
+          Matrix ysmall = new Matrix(stsk._atq);
+          QRDecomposition ysmall_qr = new QRDecomposition(ysmall);
+          double[][] qtilde = ysmall_qr.getQ().getArray();
+
+          // 3) [A,Q_{j-1}] -> [A,Y_j]: Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
+          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(qtilde));
+          tsk.doAll(aqfrm);
+          LinearAlgebraUtils.computeQInPlace(self(), yinfo);
+          iters++;
+        }
+      } catch( Throwable t ) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
+      } finally {
+        if( yinfo != null ) yinfo.remove();
+      }
+      return yqfrm;
     }
 
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
@@ -487,7 +491,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             utsk.doAll(u);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Probabilistic) {
-          qfrm = randSubIter(dinfo, _parms._max_iterations, _parms._seed);
+          qfrm = randSubIter(dinfo, _parms._max_iterations, _parms._seed, _parms._auto_converge);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
