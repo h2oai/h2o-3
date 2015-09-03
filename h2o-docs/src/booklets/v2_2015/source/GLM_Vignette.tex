@@ -166,7 +166,7 @@ H2O employs the strong rules as described in \citetalias{strong} to filter out i
 
 \subsection{Model fitting}
 As discussed above, GLM models are fitted by finding the set of parameters that maximizes the likelihood of the data. For the Gaussian family, maximum likelihood simply corresponds to 
-minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. The same holds when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. Thus, we must use an iterative method such as IRLSM, L-BFGS, the newton method, gradient descent or coordinate descent with the naive or covariance updates. The solver can be selected by the user after selecting the model by specifying the exponential density. 
+minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. The same holds when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. Thus, we must use an iterative method such as IRLSM, L-BFGS, the newton method or gradient descent. The solver can be selected by the user after selecting the model by specifying the exponential density. 
 
 \subsection{Model validation}
 
@@ -552,8 +552,6 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
-
-
 
 \subsection{Advanced features}
 
