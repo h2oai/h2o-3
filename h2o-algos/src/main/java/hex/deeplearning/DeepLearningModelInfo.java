@@ -652,12 +652,11 @@ public class DeepLearningModelInfo extends Iced {
 
       // Abort the run if weights or biases are unreasonably large (Note that all input values are normalized upfront)
       // This can happen with Rectifier units when L1/L2/max_w2 are all set to 0, especially when using more than 1 hidden layer.
-      final double w_thresh = 1e10;
-      final double b_thresh = 100;
-      unstable |= mean_bias[y] > b_thresh || isNaN(mean_bias[y])
-              || rms_bias[y] > b_thresh || isNaN(rms_bias[y])
-              || mean_weight[y] > w_thresh || isNaN(mean_weight[y])
-              || rms_weight[y] > w_thresh || isNaN(rms_weight[y]);
+      final double thresh = 1e10;
+      unstable |= mean_bias[y] > thresh || isNaN(mean_bias[y])
+              || rms_bias[y] > thresh || isNaN(rms_bias[y])
+              || mean_weight[y] > thresh || isNaN(mean_weight[y])
+              || rms_weight[y] > thresh || isNaN(rms_weight[y]);
     }
   }
 
