@@ -761,12 +761,9 @@ public abstract class Neurons {
         _a.set(row, Math.exp(_a.get(row) - max));
         scaling += _a.get(row);
       }
+      scaling = 1./scaling;
       for( int row = 0; row < rows; row++ ) {
-        _a.raw()[row] /= scaling;
-        if (Double.isNaN(_a.get(row))) {
-          _minfo.set_unstable();
-          throw new RuntimeException("Numerical instability, predicted NaN.");
-        }
+        _a.raw()[row] *= scaling;
       }
     }
 
