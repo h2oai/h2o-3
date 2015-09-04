@@ -20,6 +20,7 @@ import java.util.List;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
+import static water.H2O.technote;
 
 /**
  * The Deep Learning model
@@ -808,7 +809,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model.");
+      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
@@ -944,7 +945,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model.");
+      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
@@ -1335,9 +1336,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  transient private final String unstable_msg = "Job was aborted due to observed numerical instability (exponential growth)."
+  transient private final String unstable_msg = technote(4,"Job was aborted due to observed numerical instability (exponential growth)."
           + "\nTry a different initial distribution, a bounded activation function or adding"
-          + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.";
+          + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.");
 
   @Override protected long checksum_impl() {
     return super.checksum_impl() * model_info.checksum_impl();

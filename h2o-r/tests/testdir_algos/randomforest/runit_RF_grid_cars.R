@@ -27,7 +27,7 @@ check.rf.grid.cars <- function(conn) {
   Log.info(paste0("Predictors: ", paste(predictors, collapse=',')))
   Log.info(paste0("Response: ", response_col))
 
-  grid_space = makeRandomGridSpace(algo="drf", ncols=length(predictors))
+  grid_space = makeRandomGridSpace(algo="randomForest", ncols=length(predictors))
   Log.info(lapply(names(grid_space), function(n) paste0("The ",n," search space: ", grid_space[n])))
 
   if ( problem == 1 || problem == 2 ) {
@@ -35,15 +35,15 @@ check.rf.grid.cars <- function(conn) {
     train[,response_col] <- as.factor(train[,response_col])
     if ( validation_scheme == 3 ) { valid[,response_col] <- as.factor(valid[,response_col]) } }
 
-  Log.info("Constructing the grid of drf models...")
+  Log.info("Constructing the grid of randomForest models...")
   if ( validation_scheme == 1 ) {
-    cars_drf_grid = h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train,
+    cars_drf_grid = h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                              hyper_params=grid_space)
   } else if ( validation_scheme == 2 ) {
-    cars_drf_grid = h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train,
+    cars_drf_grid = h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                              nfolds=nfolds, hyper_params=grid_space)
   } else {
-    cars_drf_grid = h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train,
+    cars_drf_grid = h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                              validation_frame=valid, hyper_params=grid_space) }
 
   Log.info("Performing various checks of the constructed grid...")
@@ -58,13 +58,13 @@ check.rf.grid.cars <- function(conn) {
   Log.info(lapply(names(new_grid_space), function(n) paste0("The new ",n," search space: ", new_grid_space[n])))
   Log.info("Constructing the new grid of drf models...")
   if ( validation_scheme == 1 ) {
-    cars_drf_grid2 = h2o.grid("drf", grid_id="drf_grid_cars_test2", x=predictors, y=response_col, training_frame=train,
+    cars_drf_grid2 = h2o.grid("randomForest", grid_id="drf_grid_cars_test2", x=predictors, y=response_col, training_frame=train,
                              hyper_params=new_grid_space)
   } else if ( validation_scheme == 2 ) {
-    cars_drf_grid2 = h2o.grid("drf", grid_id="drf_grid_cars_test2", x=predictors, y=response_col, training_frame=train,
+    cars_drf_grid2 = h2o.grid("randomForest", grid_id="drf_grid_cars_test2", x=predictors, y=response_col, training_frame=train,
                              nfolds=nfolds, hyper_params=new_grid_space)
   } else {
-    cars_drf_grid2 = h2o.grid("drf", grid_id="drf_grid_cars_test2", x=predictors, y=response_col, training_frame=train,
+    cars_drf_grid2 = h2o.grid("randomForest", grid_id="drf_grid_cars_test2", x=predictors, y=response_col, training_frame=train,
                              validation_frame=valid, hyper_params=new_grid_space) }
   expect_equal(length(cars_drf_grid@model_ids), length(cars_drf_grid2@model_ids))
 

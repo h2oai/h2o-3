@@ -609,8 +609,8 @@ h2o.year <- function(x){
 
 #' Convert Milliseconds to Months in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 0 to
-#' 11 scale).
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 1 to
+#' 12 scale).
 #'
 #' @param x An \linkS4class{H2OFrame} object.
 #' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to months of
