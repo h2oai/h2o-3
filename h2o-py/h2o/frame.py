@@ -499,6 +499,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def summary(self):
     """
     Generate summary of the frame on a per-Vec basis.
+
     :return: None
     """
     self._eager()
@@ -627,8 +628,12 @@ class H2OFrame(H2OFrameWeakRefMixin):
     Build a fold assignments column for cross-validation. Rows are assigned a fold according
     to the current row number modulo n_folds.
 
-    :param n_folds: 
-    :return:
+    Parameters
+    ----------
+      n_folds : int
+        The number of folds to build.
+
+    :return: An H2OFrame holding a single column of the fold assignments.
     """
 
   def structure(self):
@@ -983,7 +988,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     Split the strings in the target column on the given pattern
 
-    :param pattern:
+    Parameters
+    ----------
+      pattern : str
+        The split pattern.
 
     :return: H2OFrame
     """
@@ -993,7 +1001,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     Split the strings in the target column on the given pattern
 
-    :param substr:
+    Parameters
+    ----------
+      pattern : str
+        The pattern to count matches on in each string.
 
     :return: H2OFrame
     """
@@ -1009,8 +1020,12 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def table(self, data2=None):
     """
-    :param data2:
-    :return: a frame of the counts at each combination of factor levels
+    Parameters
+    ----------
+      data2 : H2OFrame
+        Default is None, can be an optional single column to aggregate counts by.
+
+    :return: An H2OFrame of the counts at each combination of factor levels
     """
     return H2OFrame(expr=ExprNode("table",self,data2))
 
