@@ -1,12 +1,14 @@
 package hex.deeplearning;
 
 
-import hex.Distribution;
+import hex.*;
+
 import static hex.Distribution.Family.*;
-import hex.ModelMetricsAutoEncoder;
-import hex.ModelMetricsRegression;
+
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -483,7 +485,7 @@ public class DeepLearningTest extends TestUtil {
       } finally {
         if (job != null) job.remove();
       }
-      Assert.assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+      assertTrue(job._state == Job.JobState.DONE); //HEX-1817
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
@@ -500,15 +502,15 @@ public class DeepLearningTest extends TestUtil {
       res = model.score(test);
 
       if (classification) {
-        Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
-                Arrays.deepEquals(mm.cm()._cm, expCM));
+        assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
+            Arrays.deepEquals(mm.cm()._cm, expCM));
 
         String[] cmDom = model._output._domains[model._output._domains.length - 1];
         Assert.assertArrayEquals("CM domain differs!", expRespDom, cmDom);
         Log.info("\nTraining CM:\n" + mm.cm().toASCII());
         Log.info("\nTraining CM:\n" + hex.ModelMetrics.getFromDKV(model, test).cm().toASCII());
       } else {
-        Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
+        assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
         Log.info("\nOOB Training MSE: " + mm.mse());
         Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());
       }
@@ -516,7 +518,7 @@ public class DeepLearningTest extends TestUtil {
       hex.ModelMetrics.getFromDKV(model, test);
 
       // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(test,res,1e-5));
+      assertTrue(model.testJavaScoring(test, res, 1e-5));
 
     } finally {
       if (frTrain!=null) frTrain.remove();
@@ -696,7 +698,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.31481334186707816, mse, 1e-8);
 
-      Assert.assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
+      assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -775,7 +777,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.3164307133994674, mse, 1e-8);
 
-      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+      assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -858,7 +860,7 @@ public class DeepLearningTest extends TestUtil {
         } finally {
           if (job != null) job.remove();
         }
-        Assert.assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+        assertTrue(job._state == Job.JobState.DONE); //HEX-1817
 
 
       } finally {
@@ -908,9 +910,9 @@ public class DeepLearningTest extends TestUtil {
         if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.MeanSquare)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
-          Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
+          assertTrue(mm._mean_residual_deviance != mm._MSE);
 
-        Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+        assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
 
         job.remove();
       } finally {
@@ -919,6 +921,48 @@ public class DeepLearningTest extends TestUtil {
         if (dl != null) dl.delete();
         Scope.exit();
       }
+    }
+  }
+
+  @Test
+  public void testUnstable() {
+    Frame tfr = null, vfr = null;
+    DeepLearningModel dl = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
+      for (String s : new String[]{
+          "Class"
+      }) {
+        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+      }
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = "Class";
+      parms._epochs = 0.1;
+      parms._reproducible = true;
+      parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+      parms._initial_weight_distribution = DeepLearningParameters.InitialWeightDistribution.Uniform;
+      parms._initial_weight_scale = 1e10;
+      parms._seed = 0xdecaf;
+
+      // Build a first model; all remaining models should be equal
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+        Assert.fail("Should toss exception instead of reaching here");
+      } catch( RuntimeException de ) {
+        assertTrue(de.getMessage().contains("Numerical instability, predicted NaN."));
+      } finally {
+        job.remove();
+      }
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (dl != null) dl.delete();
+      Scope.exit();
     }
   }
 
@@ -961,9 +1005,9 @@ public class DeepLearningTest extends TestUtil {
         if (dist == gaussian || dist == AUTO)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
-          Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
+          assertTrue(mm._mean_residual_deviance != mm._MSE);
 
-        Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+        assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
 
         job.remove();
       } finally {
@@ -1007,7 +1051,7 @@ public class DeepLearningTest extends TestUtil {
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
       Assert.assertEquals(0.0712931422088762, mm._MSE, 1e-2);
 
-      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+      assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
 
       job.remove();
     } finally {
