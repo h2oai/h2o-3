@@ -1337,8 +1337,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   transient private final String unstable_msg = technote(4,
       "Trying to predict with an unstable model." +
           "\nJob was aborted due to observed numerical instability (exponential growth)."
+          + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
           + "\nTry a different initial distribution, a bounded activation function or adding"
-          + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.");
+          + "\nregularization with Dropout, L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.");
 
   @Override protected long checksum_impl() {
     return super.checksum_impl() * model_info.checksum_impl();
