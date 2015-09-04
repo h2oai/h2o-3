@@ -17,11 +17,11 @@ test.movielens.demo <- function(conn) {
   k_dim <- 15
   frac_known <- 0.10
   
-  Log.info("Import and parse MovieLens user-rating matrix...")
+  Log.info("Import and parse MovieLens user-movie rating matrix...")
   ratings <- h2o.uploadFile(locate("smalldata/demos/movielens_1m.zip"), header = TRUE)
   print(summary(ratings))
   
-  Log.info(paste("Run GLRM on user-rating matrix with k =", k_dim, "and loss = Quadratic"))
+  Log.info(paste("Run GLRM on user rating matrix with k =", k_dim, "and loss = Quadratic"))
   fitH2O <- h2o.glrm(ratings, x = 2:ncol(ratings), k = k_dim, ignore_const_cols = FALSE, transform = "NONE", init = "PlusPlus", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000, seed = SEED)
   print(fitH2O)
   
