@@ -160,9 +160,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     @Override protected void compute2() {
       try {
         long cs = _parms.checksum();
-
-        Scope.enter();
-        // Init parameters
         init(true);
         // Read lock input
         _parms.read_lock_frames(DeepLearning.this);
@@ -181,11 +178,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         } else {
           done();                 // Job done!
         }
-//      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } finally {
         updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
-        Scope.exit();
       }
       tryComplete();
     }
@@ -273,8 +268,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             }
           }
         }
-      } catch(NullPointerException npe) {
-
       } finally {
         Scope.exit(keep.toArray(new Key[0]));
       }

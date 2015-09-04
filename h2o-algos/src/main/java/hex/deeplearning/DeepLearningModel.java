@@ -807,32 +807,31 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    throw new UnsupportedOperationException(unstable_msg);
-//    if (model_info().unstable()) {
-//      throw new UnsupportedOperationException(unstable_msg);
-//    }
-//    Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-//    ((Neurons.Input)neurons[0]).setInput(-1, data);
-//    DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
-//    double[] out = neurons[neurons.length - 1]._a.raw();
-//    if (_output.isClassifier()) {
-//      assert (preds.length == out.length + 1);
-//      for (int i = 0; i < preds.length - 1; ++i) {
-//        preds[i + 1] = out[i];
-//        if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
-//      }
-//      // label assignment happens later - explicitly mark it as invalid here
-//      preds[0] = -1;
-//    } else {
-//      if (model_info().data_info()._normRespMul != null) //either both are null or none
-//        preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
-//      else
-//        preds[0] = (double)out[0];
-//      // transform prediction to response space
-//      preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
-//      if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
-//    }
-//    return preds;
+    if (model_info().unstable()) {
+      throw new UnsupportedOperationException(unstable_msg);
+    }
+    Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+    ((Neurons.Input)neurons[0]).setInput(-1, data);
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
+    double[] out = neurons[neurons.length - 1]._a.raw();
+    if (_output.isClassifier()) {
+      assert (preds.length == out.length + 1);
+      for (int i = 0; i < preds.length - 1; ++i) {
+        preds[i + 1] = out[i];
+        if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
+      }
+      // label assignment happens later - explicitly mark it as invalid here
+      preds[0] = -1;
+    } else {
+      if (model_info().data_info()._normRespMul != null) //either both are null or none
+        preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+      else
+        preds[0] = (double)out[0];
+      // transform prediction to response space
+      preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
+      if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
+    }
+    return preds;
   }
 
 
@@ -943,32 +942,31 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
-    throw new UnsupportedOperationException(unstable_msg);
-//    if (model_info().unstable()) {
-//      throw new UnsupportedOperationException(unstable_msg);
-//    }
-//    ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
-//    DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
-//    double[] in  = neurons[0]._a.raw(); //input (expanded)
-//    double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
-//    assert(in.length == out.length);
-//
-//    // First normalize categorical reconstructions to be probabilities
-//    // (such that they can be better compared to the input where one factor was 1 and the rest was 0)
-////    model_info().data_info().softMaxCategoricals(out,out); //only modifies the categoricals
-//
-//    // Compute MSE of reconstruction in expanded space (with categorical probabilities)
-//    double l2 = 0;
-//    for (int i = 0; i < in.length; ++i)
-//      l2 += Math.pow((out[i] - in[i]), 2);
-//    l2 /= in.length;
-//
-//    if (preds!=null) {
-//      // Now scale back numerical columns to original data space (scale + shift)
-//      model_info().data_info().unScaleNumericals(out, out); //only modifies the numericals
-//      System.arraycopy(out, 0, preds, 0, out.length); //copy reconstruction into preds
-//    }
-//    return l2;
+    if (model_info().unstable()) {
+      throw new UnsupportedOperationException(unstable_msg);
+    }
+    ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
+    double[] in  = neurons[0]._a.raw(); //input (expanded)
+    double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
+    assert(in.length == out.length);
+
+    // First normalize categorical reconstructions to be probabilities
+    // (such that they can be better compared to the input where one factor was 1 and the rest was 0)
+//    model_info().data_info().softMaxCategoricals(out,out); //only modifies the categoricals
+
+    // Compute MSE of reconstruction in expanded space (with categorical probabilities)
+    double l2 = 0;
+    for (int i = 0; i < in.length; ++i)
+      l2 += Math.pow((out[i] - in[i]), 2);
+    l2 /= in.length;
+
+    if (preds!=null) {
+      // Now scale back numerical columns to original data space (scale + shift)
+      model_info().data_info().unScaleNumericals(out, out); //only modifies the numericals
+      System.arraycopy(out, 0, preds, 0, out.length); //copy reconstruction into preds
+    }
+    return l2;
   }
 
   /**
