@@ -1,6 +1,11 @@
 \input{common/conf_top.tex}
 
 \input{common/conf_titles.tex}
+%
+% Use fancy table
+%
+\usepackage{tabularx}
+\usepackage{booktabs}
 
 \begin{document}
 
@@ -61,10 +66,29 @@ Printed in the United States of America.
 \newpage
 \input{common/what_is_h2o.tex}
 \newpage
-\section{Introduction}
+
+%
+% Include introduction for SW
+%
+\include{sw/sections/intro}
+
+%
+% SW design
+%
+\newpage
+\include{sw/sections/design}
+%
+% Exposed public Scala API
+%
+\newpage
+\include{sw/sections/api}
+%
+% Building standalone applications with Sparklint Water
+%
+\newpage
+\include{sw/sections/apps}
 
 \newpage
-
 \section{Appendix A: Complete parameter list}
 
 
@@ -72,3 +96,4 @@ Printed in the United States of America.
 \section{Appendix B: References}
 
 \end{document}
+

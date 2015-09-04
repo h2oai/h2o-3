@@ -43,7 +43,7 @@ There are multiple resources to help you get started with Flow in the **Help** s
 >
 >To display the sidebar if it is hidden, click the **<<** button. ![Flow - Hide Sidebar](images/Flow_SidebarDisplay.png)
 
-To access this documentation, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+To access this documentation, select the **Flow Web UI...** link below the **General** heading in the Help sidebar. 
 
 You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows:
 
@@ -86,7 +86,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
    
    >**Note**: Markdown formatting is not applied until you run the cell by:
    > 
-   >- clicking the **Run** button
+   >- clicking the **Run** button ![Flow - Run Button](images/Flow_RunButton.png)
         > or
       
    >- pressing **Ctrl+Enter**
@@ -115,7 +115,7 @@ In edit mode, the cell is yellow with a blinking bar to indicate where text can 
 
 ###Changing Cell Formats
 
-To change the cell's format (for example, from code to Markdown), make sure you are in not in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
+To change the cell's format (for example, from code to Markdown), make sure you are in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format. 
 
 Cell Mode     | Keyboard Shortcut
 ------------- | -----------------
@@ -150,15 +150,16 @@ The series of buttons at the top of the page below the menus run cells in a flow
 
 
 ###Running Flows
-When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
+When you run the flow, a progress bar indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
 
   ![Flow Progress Bar](images/Flow_progressbar.png)
 
-When the flow is complete, a message displays in the upper right. 
->**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
+When the flow is complete, a message displays in the upper right.
 
   ![Flow - Completed Successfully](images/Flow_run_pass.png)
   ![Flow - Did Not Complete](images/Flow_run_fail.png) 
+ 
+>**Note**: If there is an error in the flow, H2O Flow stops at the cell that contains the error. 
 
 
 ###Using Keyboard Shortcuts
@@ -215,7 +216,7 @@ If you don't have any data of your own to work with, you can find some example d
 
 There are multiple ways to import data in H2O flow:
 
-- Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
+- Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and confirm it by clicking the **Add All** link.
  ![Flow - Import Files Auto-Suggest](images/Flow_Import_AutoSuggest.png)
  
 - In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
@@ -256,6 +257,8 @@ Ok, now that your data is available in H2O Flow, let's move on to the next step:
 
 After you have imported your data, parse the data.
 
+ ![Flow - Parse options](images/Flow_parse_setup.png)
+
 The read-only **Sources** field displays the file path for the imported data selected for parsing. 
 
 The **ID** contains the auto-generated name for the parsed data (by default, the file name of the imported file with `.hex` as the file extension). Use the default name or enter a custom name in this field. 
@@ -285,7 +288,7 @@ Select any necessary additional options:
 - **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
 A preview of the data displays in the "Edit Column Names and Types" section. 
- ![Flow - Parse options](images/Flow_parse_setup.png)
+
 
 To change or add a column name, edit or enter the text in the column's entry field. In the screenshot below, the entry field for column 16 is highlighted in red.  
   
@@ -490,7 +493,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **tweedie_link_power**: ([GLM](#GLM)) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
-
 - **activation**: ([DL](#DL)) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier. 
 
 - **hidden**: ([DL](#DL)) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. The specified value(s) must be positive. 
@@ -569,7 +571,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **score\_training\_samples**: ([DL](#DL)) Specify the number of training set samples for scoring. To use all training samples, enter 0.  
 
-- **score\_validation\_samples**: ([DL](#DL)) (Requires selection from the **Validation_Frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.  
+- **score\_validation\_samples**: ([DL](#DL)) (Requires selection from the **validation_frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.  
 
 - **score\_duty\_cycle**: ([DL](#DL)) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The value must be greater than 0 and less than 1. 
 
@@ -580,7 +582,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **keep\_cross\_validation\_predictions**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) To keep the cross-validation predictions, check this checkbox. 
 
-- **class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+- **class\_sampling\_factors**: ([GLM](#GLM), [DRF](#DRF), [Naïve Bayes)](#NB), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled. 
 
 - **overwrite\_with\_best\_model**: ([DL](#DL)) Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
@@ -620,7 +622,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **sparse**: ([DL](#DL)) Check this checkbox to use sparse iterators for the input layer. This option is not selected by default as it rarely improves performance. 
 
-- **col_major**: ([DL](#DL)) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
+  >**Note**: This parameter has been deprecated.
+
+- **col_major**: ([DL](#DL)) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default.  
+  
+  >**Note**: This parameter has been deprecated. 
 
 - **average_activation**: ([DL](#DL)) Specify the average activation for the sparse autoencoder. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
@@ -675,8 +681,6 @@ To generate a Plain Old Java Object (POJO) that can use the model outside of H2O
 
 >**Note**: A POJO can be run in standalone mode or it can be integrated into a platform, such as [Hadoop's Storm](https://github.com/h2oai/h2o-training/blob/master/tutorials/streaming/storm/README.md). To make the POJO work in your Java application, you will also need the `h2o-genmodel.jar` file (available in `h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar`).
 
-To learn how to make predictions, continue to the next section. 
-
 ---
 
 ###Interpreting Model Results
@@ -706,10 +710,7 @@ The lower-left side of the graph represents less tolerance for false positives w
 
  ![ROC Curve example](images/Flow_ROC.png)
 
-
-
-
-
+To learn how to make predictions, continue to the next section. 
 
 ---
 
@@ -1012,7 +1013,7 @@ To view the logs for a specific node, select it from the drop-down **Select Node
 <a name="DL_Logs"></a>
 ## Downloading Logs
 
-To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to [support@h2o.ai](mailto:support@h2o.ai) for issue resolution. 
+To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to [h2ostream](mailto:h2ostream@googlegroups.com) or [file a JIRA ticket](#ReportIssue) for issue resolution. 
 
 ---
 
@@ -1036,7 +1037,7 @@ To view network test results, click the **Admin** menu, then click **Network Tes
 
 ## Accessing the Profiler
 
-The Profiler looks across the cluster to see where the same stack trace occurs, and can be helpful for identifying what the currently used CPU is doing. 
+The Profiler looks across the cluster to see where the same stack trace occurs, and can be helpful for identifying activity on the current CPU. 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
 
  ![Profiler](images/Flow_profiler.png)
@@ -1063,6 +1064,7 @@ To obtain the most recent information, click the **Refresh** button.
 
 ---
 
+<a name="ReportIssue"></a>
 ##Reporting Issues
 
 If you experience an error with Flow, you can submit a JIRA ticket to notify our team. 

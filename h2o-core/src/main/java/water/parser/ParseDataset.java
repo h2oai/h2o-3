@@ -97,6 +97,7 @@ public final class ParseDataset extends Job<Frame> {
       // estimate total size in bytes
       totalParseSize += getByteVec(k).length();
     }
+    Log.info("Total file size: "+ PrettyPrint.bytes(totalParseSize));
 
     // set the parse chunk size for files
     for( int i = 0; i < keys.length; ++i ) {

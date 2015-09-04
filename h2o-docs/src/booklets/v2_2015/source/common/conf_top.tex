@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[a4paper, twoside]{article}
 \setcounter{secnumdepth}{5}
 \setcounter{tocdepth}{5}
 \usepackage[english]{babel}
@@ -12,7 +12,7 @@
 \usepackage{spverbatim}
 \usepackage{hyperref}
 \usepackage{microtype}
-\hypersetup{colorlinks=true, urlcolor=black, linkcolor=black}
+\hypersetup{colorlinks=false}
 \usepackage{graphicx}
 \graphicspath{ {images/} }
 \usepackage{parskip}
@@ -21,8 +21,12 @@
 \usepackage[fit]{truncate}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\fancyhead[RO,LE]{\truncate{.95\headwidth}{\leftmark}}
-\fancyfoot[C]{\thepage}
+\fancyhead{}
+\fancyhead[RO, RE]{\thepage}
+\fancyhead[LO, LE]{\rightmark}
+\renewcommand{\sectionmark}[1]{\markboth{}{\textsc{\thesection~#1}}}
+\fancyfoot[C]{}%hide footer
 \usepackage{xcolor} 
+\usepackage[scaled=1]{couriers}
 
 \xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 

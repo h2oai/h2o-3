@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def offsets_and_distributions(ip,port):
+def offsets_and_distributions():
 
     # cars
     cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))

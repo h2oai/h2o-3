@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o, tests
 
-def rf_mean_residual_deviance(ip,port):
+def rf_mean_residual_deviance():
 
     cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars[0].runif()

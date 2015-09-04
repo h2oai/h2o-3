@@ -346,7 +346,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
 }
 
 #'
-#' Filter NA Coluns
+#' Filter NA Columns
 #'
 #' @param data A dataset to filter on.
 #' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
@@ -418,7 +418,7 @@ h2o.table <- function(x, y = NULL) {
 
 #' H2O Median
 #'
-#' Compute the airthmetic mean of a \linkS4class{H2OFrame}.
+#' Compute the arithmetic mean of a \linkS4class{H2OFrame}.
 #'
 #' @param x An \linkS4class{H2OFrame} object.
 #' @param na.rm a logical, indicating whether na's are omitted.
@@ -609,8 +609,8 @@ h2o.year <- function(x){
 
 #' Convert Milliseconds to Months in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 0 to
-#' 11 scale).
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 1 to
+#' 12 scale).
 #'
 #' @param x An \linkS4class{H2OFrame} object.
 #' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to months of
@@ -782,7 +782,7 @@ h2o.listTimezones <- function(conn=h2o.getConnection()) {
 #  .newH2OFrame("H2OFrame", conn=x@conn, frame_id=res$dest_key, logic=FALSE, finalizers=x@finalizers)
 #}
 
-#' Produe a Vector of Random Uniform Numbers
+#' Produce a Vector of Random Uniform Numbers
 #'
 #' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
 #' dataset.
@@ -2879,7 +2879,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 })
 
 #'
-#' Compute A Histgram
+#' Compute A Histogram
 #'
 #' Compute a histogram over a numeric column. If breaks=="FD", the MAD is used over the IQR
 #' in computing bin width. Note that we do not beautify the breakpoints as R does.

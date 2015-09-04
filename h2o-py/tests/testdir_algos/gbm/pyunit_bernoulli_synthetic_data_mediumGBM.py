@@ -9,7 +9,7 @@ import scipy.stats
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def bernoulli_synthetic_data_mediumGBM(ip,port):
+def bernoulli_synthetic_data_mediumGBM():
     
     
 

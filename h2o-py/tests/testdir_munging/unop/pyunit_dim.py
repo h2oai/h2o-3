@@ -10,7 +10,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import numpy as np
 
-def dim_checks(ip,port):
+def dim_checks():
   
   
 

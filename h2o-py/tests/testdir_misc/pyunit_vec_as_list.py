@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def vec_as_list(ip,port):
+def vec_as_list():
     
     
 

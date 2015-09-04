@@ -177,8 +177,8 @@ h2o.getFutureModel <- function(object) {
     if (!is.null(params$x)) { x <- params$x; params$x <- NULL }
     if (!is.null(params$y)) { y <- params$y; params$y <- NULL }
     args <- .verify_dataxy(params$training_frame, x, y)
-    if( !is.null(params$offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
-    if( !is.null(params$weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
+    if( !is.null(params$offset_column) && !is.null(params$offset_column))  args$x_ignore <- args$x_ignore[!( params$offset_column == args$x_ignore )]
+    if( !is.null(params$weights_column) && !is.null(params$weights_column)) args$x_ignore <- args$x_ignore[!( params$weights_column == args$x_ignore )]
     params$ignored_columns <- args$x_ignore
     params$response_column <- args$y
   } else {
@@ -1886,3 +1886,55 @@ h2o.sdev <- function(object) {
   result
 }
 
+#' Tabulation between Two Columns of a H2O Frame
+#'
+#' Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset.
+#' Uses histogram of given resolution in X and Y.
+#' Handles numerical/categorical data and missing values. Supports observation weights.
+#'
+#' @param data An \linkS4class{H2OFrame} object.
+#' @param x predictor column
+#' @param y response column
+#' @param weights_column (optional) observation weights column
+#' @param nbins_x number of bins for predictor column
+#' @param nbins_y number of bins for response column
+#' @return Returns two TwoDimTables of 3 columns each
+#'        count_table:    X     Y counts
+#'        response_table: X meanY counts
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' df <- as.h2o(iris)
+#' h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
+#'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
+#' }
+#' @export
+h2o.tabulate <- function(data, x, y,
+                         weights_column = NULL,
+                         nbins_x = 50,
+                         nbins_y = 50
+                         ) {
+  delete <- !.is.eval(data)
+  if (delete) {
+    temp_key <- data@frame_id
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
+  }
+  args <- .verify_datacols(data, c(x,y))
+  if(!is.numeric(nbins_x)) stop("`nbins_x` must be a positive number")
+  if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
+
+  parms = list()
+  parms$dataset <- data@frame_id
+  parms$predictor <- args$cols[1]
+  parms$response <- args$cols[2]
+  if( !missing(weights_column) )            parms$weight <- weights_column
+  parms$nbins_predictor <- nbins_x
+  parms$nbins_response <- nbins_y
+
+  res <- .h2o.__remoteSend(conn = data@conn, method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
+  print(res)
+  count_table <- res$count_table
+  response_table <- res$response_table
+  list(count_table = count_table, response_table = response_table)
+}

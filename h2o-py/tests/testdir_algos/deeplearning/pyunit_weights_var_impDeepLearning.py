@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import copy
 
-def weights_vi(ip,port):
+def weights_vi():
     
     
     random.seed(1234)

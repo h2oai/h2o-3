@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def distribution_behaviorGBM(ip,port):
+def distribution_behaviorGBM():
   
   
 

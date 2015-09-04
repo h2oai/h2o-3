@@ -446,7 +446,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // and update the progress message
     Job.Progress prog = DKV.getGet(progressKey);
     float progress = prog == null ? 0 : prog.progress();
-    String msg = "Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
+    String msg = "Map/Reduce Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
     ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
@@ -491,8 +491,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
         if (!get_params()._quiet_mode) {
-          if (iteration>=1)
-            Log.info("Map/Reduce iteration #" + String.format("%,d", iteration));
           Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
                   + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
                   + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
@@ -810,7 +808,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model.");
+      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
@@ -946,7 +944,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model.");
+      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
@@ -1147,6 +1145,39 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   @Override protected boolean toJavaCheckTooBig() { return (model_info.size() > 1e6); }
 
+  private SB pureMatVec(final SB bodySb) {
+    bodySb.i(1).p("int cols = ACTIVATION[i-1].length;").nl();
+    bodySb.i(1).p("int rows = ACTIVATION[i].length;").nl();
+    bodySb.i(1).p("int extra=cols-cols%8;").nl();
+    bodySb.i(1).p("int multiple = (cols/8)*8-1;").nl();
+    bodySb.i(1).p("int idx = 0;").nl();
+    bodySb.i(1).p("float[] a = WEIGHT[i];").nl();
+    bodySb.i(1).p("double[] x = ACTIVATION[i-1];").nl();
+    bodySb.i(1).p("double[] y = BIAS[i];").nl();
+    bodySb.i(1).p("double[] res = ACTIVATION[i];").nl();
+    bodySb.i(1).p("for (int row=0; row<rows; ++row) {").nl();
+    bodySb.i(2).p("double psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
+    bodySb.i(2).p("for (int col = 0; col < multiple; col += 8) {").nl();
+    bodySb.i(3).p("int off = idx + col;").nl();
+    bodySb.i(3).p("psum0 += a[off    ] * x[col    ];").nl();
+    bodySb.i(3).p("psum1 += a[off + 1] * x[col + 1];").nl();
+    bodySb.i(3).p("psum2 += a[off + 2] * x[col + 2];").nl();
+    bodySb.i(3).p("psum3 += a[off + 3] * x[col + 3];").nl();
+    bodySb.i(3).p("psum4 += a[off + 4] * x[col + 4];").nl();
+    bodySb.i(3).p("psum5 += a[off + 5] * x[col + 5];").nl();
+    bodySb.i(3).p("psum6 += a[off + 6] * x[col + 6];").nl();
+    bodySb.i(3).p("psum7 += a[off + 7] * x[col + 7];").nl();
+    bodySb.i(2).p("}").nl();
+    bodySb.i(2).p("res[row] += psum0 + psum1 + psum2 + psum3;").nl();
+    bodySb.i(2).p("res[row] += psum4 + psum5 + psum6 + psum7;").nl();
+    bodySb.i(2).p("for (int col = extra; col < cols; col++)").nl();
+    bodySb.i(3).p("res[row] += a[idx + col] * x[col];").nl();
+    bodySb.i(2).p("res[row] += y[row];").nl();
+    bodySb.i(2).p("idx += cols;").nl();
+    bodySb.i(1).p("}").nl();
+    return bodySb;
+  }
+
   @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
     SB model = new SB();
     final DeepLearningParameters p = model_info.get_params();
@@ -1199,51 +1230,24 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     bodySb.i().p("for (i=1; i<ACTIVATION.length; ++i) {").nl();
     bodySb.i(1).p("java.util.Arrays.fill(ACTIVATION[i],0);").nl();
     if (maxout) {
-      bodySb.i(1).p("double rmax = 0;").nl();
-      bodySb.i(1).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
-      bodySb.i(2).p("final int cols = ACTIVATION[i-1].length;").nl();
-      bodySb.i(2).p("double cmax = Float.NEGATIVE_INFINITY;").nl();
-      bodySb.i(2).p("for (int c=0; c<cols; ++c) {").nl();
-      bodySb.i(3).p("if " + stopping + " cmax = Math.max(ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c], cmax);").nl();
-      bodySb.i(3).p("else ACTIVATION[i][r] += ACTIVATION[i-1][c] * WEIGHT[i][r*cols+c];").nl();
-      bodySb.i(2).p("}").nl();
-      bodySb.i(2).p("if "+ stopping +" ACTIVATION[i][r] = Double.isInfinite(cmax) ? 0f : cmax;").nl();
-      bodySb.i(2).p("ACTIVATION[i][r] += BIAS[i][r];").nl();
-      bodySb.i(2).p("if " + stopping + " rmax = Math.max(rmax, ACTIVATION[i][r]);").nl();
-      bodySb.i(1).p("}").nl();
+      bodySb.i(1).p("int _k = 2; // channels").nl();
+      bodySb.i(1).p("if " + stopping + " {").nl();
+      bodySb.i(2).p("double[] channel = new double[_k];").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
-      bodySb.i(3).p("if (rmax > 1 ) ACTIVATION[i][r] /= rmax;").nl();
+        bodySb.i(3).p("final int cols = ACTIVATION[i-1].length;").nl();
+        bodySb.i(3).p("short maxK = 0;").nl();
+        bodySb.i(3).p("for (short k = 0; k < _k; ++k) {").nl();
+          bodySb.i(4).p("channel[k] = 0;").nl();
+          bodySb.i(4).p("for (int c=0; c<cols; ++c) {").nl();
+            bodySb.i(5).p("channel[k] += WEIGHT[i][_k*(r * cols + c) + k] * ACTIVATION[i-1][c];").nl();
+          bodySb.i(4).p("}").nl();
+          bodySb.i(4).p("channel[k] += BIAS[i][_k*r+k];").nl();
+          bodySb.i(4).p("if (channel[k] > channel[maxK]) maxK=k;").nl();
+        bodySb.i(3).p("}").nl();
+        bodySb.i(3).p("ACTIVATION[i][r] = channel[maxK];").nl();
     } else {
       // optimized
-      bodySb.i(1).p("int cols = ACTIVATION[i-1].length;").nl();
-      bodySb.i(1).p("int rows = ACTIVATION[i].length;").nl();
-      bodySb.i(1).p("int extra=cols-cols%8;").nl();
-      bodySb.i(1).p("int multiple = (cols/8)*8-1;").nl();
-      bodySb.i(1).p("int idx = 0;").nl();
-      bodySb.i(1).p("float[] a = WEIGHT[i];").nl();
-      bodySb.i(1).p("double[] x = ACTIVATION[i-1];").nl();
-      bodySb.i(1).p("double[] y = BIAS[i];").nl();
-      bodySb.i(1).p("double[] res = ACTIVATION[i];").nl();
-      bodySb.i(1).p("for (int row=0; row<rows; ++row) {").nl();
-      bodySb.i(2).p("double psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;").nl();
-      bodySb.i(2).p("for (int col = 0; col < multiple; col += 8) {").nl();
-      bodySb.i(3).p("int off = idx + col;").nl();
-      bodySb.i(3).p("psum0 += a[off    ] * x[col    ];").nl();
-      bodySb.i(3).p("psum1 += a[off + 1] * x[col + 1];").nl();
-      bodySb.i(3).p("psum2 += a[off + 2] * x[col + 2];").nl();
-      bodySb.i(3).p("psum3 += a[off + 3] * x[col + 3];").nl();
-      bodySb.i(3).p("psum4 += a[off + 4] * x[col + 4];").nl();
-      bodySb.i(3).p("psum5 += a[off + 5] * x[col + 5];").nl();
-      bodySb.i(3).p("psum6 += a[off + 6] * x[col + 6];").nl();
-      bodySb.i(3).p("psum7 += a[off + 7] * x[col + 7];").nl();
-      bodySb.i(2).p("}").nl();
-      bodySb.i(2).p("res[row] += psum0 + psum1 + psum2 + psum3;").nl();
-      bodySb.i(2).p("res[row] += psum4 + psum5 + psum6 + psum7;").nl();
-      bodySb.i(2).p("for (int col = extra; col < cols; col++)").nl();
-      bodySb.i(3).p("res[row] += a[idx + col] * x[col];").nl();
-      bodySb.i(2).p("res[row] += y[row];").nl();
-      bodySb.i(2).p("idx += cols;").nl();
-      bodySb.i(1).p("}").nl();
+      pureMatVec(bodySb);
       // Activation function
       bodySb.i(1).p("if " + stopping + " {").nl();
       bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
@@ -1258,9 +1262,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       bodySb.i(4).p("ACTIVATION[i][r] *= HIDDEN_DROPOUT_RATIOS[i-1];").nl();
       bodySb.i(3).p("}").nl();
     }
-//    if (maxout) bodySb.i(1).p("}").nl();
     bodySb.i(2).p("}").nl();
-    if (!maxout) bodySb.i(1).p("}").nl();
+    bodySb.i(1).p("}").nl();
+    if (maxout) {
+      bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
+      pureMatVec(bodySb);
+      bodySb.i(1).p("}").nl();
+    }
     if (_output.isClassifier()) {
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // softmax

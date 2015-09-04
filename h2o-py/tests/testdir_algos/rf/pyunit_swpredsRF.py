@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def swpredsRF(ip,port):
+def swpredsRF():
     # Training set has two predictor columns
     # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
     # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)

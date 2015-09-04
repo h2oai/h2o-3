@@ -4,7 +4,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def slicing_shape(ip,port):
+def slicing_shape():
     # Connect to a pre-existing cluster
     
 

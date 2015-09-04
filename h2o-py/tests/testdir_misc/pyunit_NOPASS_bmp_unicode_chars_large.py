@@ -3,7 +3,7 @@ sys.path.insert(1,"../../")
 import h2o, tests
 
 
-def bmp_unicode_chars(ip,port):
+def bmp_unicode_chars():
     
     
 

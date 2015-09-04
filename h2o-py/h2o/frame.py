@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
@@ -8,11 +8,30 @@ from group_by import GroupBy
 
 # TODO: Automatically convert column names into Frame properties!
 
-class H2OFrame:
+
+class H2OFrameWeakRefMixin:
+  __refs__ = collections.defaultdict(list)
+  def __init__(self):
+    self.__refs__[self.__class__].append(weakref.ref(self))
+
+  @classmethod
+  def get_instance_ids(cls):
+    for inst_ref in cls.__refs__[cls]:
+      inst = inst_ref()
+      if inst is not None:
+        yield inst._id
+
+  @classmethod
+  def drop_instance(cls, inst):
+    cls.__refs__[cls].remove(weakref.ref(inst))
+
+class H2OFrame(H2OFrameWeakRefMixin):
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+  COUNTING = True
+  dropped_instances = []  # keep track of dropped instances while not counting
 
   def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None):
     """
@@ -35,6 +54,7 @@ class H2OFrame:
     :param text_key: A raw key resulting from an upload_file.
     :return: An instance of an H2OFrame object.
     """
+    H2OFrameWeakRefMixin.__init__(self)
     self._id        = _py_tmp_key()  # gets overwritten if a parse happens
     self._keep      = False
     self._nrows     = None
@@ -719,7 +739,19 @@ class H2OFrame:
   def __float__(self): return self._scalar()
 
   def __del__(self):
+    if not H2OFrame.COUNTING:
+      H2OFrame.dropped_instances.append(self._id)
+      return
     if not self._keep and self._computed: h2o.remove(self)
+
+  @staticmethod
+  def del_dropped():
+    live_frames = list(H2OFrame.get_instance_ids())
+    dead_frames = H2OFrame.dropped_instances
+    for fr in dead_frames:
+      if fr not in live_frames:
+        h2o.remove(fr)
+    H2OFrame.dropped_instances = []
 
   def keep(self):
     self._keep = True
@@ -941,6 +973,14 @@ class H2OFrame:
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("strsplit", self, pattern))
+
+  def countmatches(self, substr):
+    """
+    Split the strings in the target column on the given pattern
+
+    :return: H2OFrame
+    """
+    return H2OFrame(expr=ExprNode("countmatches", self, substr))
 
   def trim(self):
     """

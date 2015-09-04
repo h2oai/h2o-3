@@ -1,8 +1,8 @@
 import sys
-sys.path.insert(1, "../../../")
+sys.path.insert(1, "../../")
 import h2o, tests
 
-def demo_glm(ip,port):
+def demo_glm():
 
     h2o.demo(func="glm", interactive=False, test=True)
 
