@@ -56,7 +56,7 @@ def deeplearning_autoencoder(ip, port):
     cm.show()
 
     # 10% error +/- 0.001
-    assert abs(cm.cell_values[10][10] - 0.082) < 0.001, "Error. Expected 0.082, but got {0}".format(cm.cell_values[10][10])
+    assert abs(cm.cell_values[10][10] - 0.1079) < 0.001, "Error. Expected 0.1079, but got {0}".format(cm.cell_values[10][10])
 
 if __name__ == '__main__':
     tests.run_test(sys.argv, deeplearning_autoencoder)
