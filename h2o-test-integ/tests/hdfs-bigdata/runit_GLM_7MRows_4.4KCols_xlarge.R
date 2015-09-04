@@ -32,7 +32,7 @@ print(parse_time)
 
 # Start modeling   
 # GLM gaussian
-response=C1 #1:1000 imbalance
+response="C1" #1:1000 imbalance
 predictors=c(3:ncol(data.hex))
 
 glm_time <- system.time(mdl.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family="gaussian", solver = "L_BFGS"))
@@ -41,7 +41,7 @@ print("Time it took to build GLM")
 print(glm_time)
 
 # GLM binomial
-response=C2 #1:1000 imbalance
+response="C2" #1:1000 imbalance
 predictors=c(4:ncol(data.hex))
 
 glm2_time <- system.time(mdl2.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family="binomial", solver = "L_BFGS"))
