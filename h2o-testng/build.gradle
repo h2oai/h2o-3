@@ -34,6 +34,8 @@ test {
         if (singleNode) { suites("src/test/resources/singleNode.xml") }
         else { suites("src/test/resources/multipleNode.xml") }
     }
+    
+    testLogging.setShowStandardStreams(true)
 
     reports {
         html.enabled = false

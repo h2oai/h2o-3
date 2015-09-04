@@ -13,6 +13,7 @@ import java.util.HashMap;
 
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
+import org.testng.Reporter;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -42,7 +43,7 @@ public class TestNG extends TestNGUtil {
 	}
 
 	@DataProvider(name = "SingleTestcase")
-	public static Object[][] drfCases() {
+	public static Object[][] dataProvider() {
 
 		Object[][] result = null;
 
@@ -83,6 +84,8 @@ public class TestNG extends TestNGUtil {
 			Dataset train_dataset, Dataset validate_dataset, String algorithm, boolean isNegativeTestcase,
 			HashMap<String, String> rawInput) {
 
+		String testcaseStatus = "passed";
+
 		RecordingTestcase rt = new RecordingTestcase();
 
 		Param[] params = null;
@@ -90,6 +93,8 @@ public class TestNG extends TestNGUtil {
 		Model.Parameters modelParameter = null;
 		String invalidMessage = null;
 		String notImplMessage = null;
+
+		// Reporter.log("\n", true);
 
 		redirectStandardStreams();
 
@@ -130,11 +135,14 @@ public class TestNG extends TestNGUtil {
 						validate_dataset_id, train_dataset, validate_dataset, rawInput);
 
 				FunctionUtils.basicTesting(algorithm, modelParameter, isNegativeTestcase);
-				System.out.println(rawInput);
 			}
+
+		}
+		catch (AssertionError ae) {
+			testcaseStatus = "failed";
+			throw ae;
 		}
 		finally {
-
 			// TODO: get memory by H2O's API
 			System.out.println("Total Memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
 			System.out.println("Total Time used in testcase:" + (rt.getTimeRecording()) + "millis");
@@ -148,6 +156,8 @@ public class TestNG extends TestNGUtil {
 			}
 
 			resetStandardStreams();
+
+			Reporter.log("Testcase is " + testcaseStatus, true);
 		}
 	}
 
