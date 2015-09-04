@@ -64,9 +64,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
+    // Closed form solution only if quadratic loss, no regularization or quadratic regularization (same for X and Y), and no missing values
     public final boolean hasClosedForm() {
-      return (_loss == Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
-              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic));
+      long na_cnt = 0;
+      Frame train = _train.get();
+      for(int i = 0; i < train.numCols(); i++)
+        na_cnt += train.vec(i).naCnt();
+      return hasClosedForm(na_cnt);
+    }
+
+    public final boolean hasClosedForm(long na_cnt) {
+      return na_cnt == 0 && ((_loss == Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
+              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic)));
     }
 
     // L(u,a): Loss function

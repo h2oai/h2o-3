@@ -8,6 +8,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SB;
 import water.util.TwoDimTable;
@@ -103,7 +104,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
     double[] clus = new double[1];
     score0(tmp, clus);   // this saves cluster number into clus[0]
-    assert clus[0] >= 0 && clus[0] < preds.length;
+
+    assert preds != null && ArrayUtils.l2norm2(preds) == 0 : "preds must be a vector of all zeros";
+    assert clus[0] >= 0 && clus[0] < preds.length : "Cluster number must be an integer in [0," + String.valueOf(preds.length) + ")";
     preds[(int)clus[0]] = 1;
     return preds;
   }

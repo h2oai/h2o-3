@@ -325,7 +325,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
-          if(frob != 0 && !Double.isNaN(frob) && na_cnt == 0 && !_parms.hasClosedForm()) {
+          if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm(na_cnt)) {
             // Frame pred = km.score(_parms.train());
             Log.info("Initializing X to matrix of indicator columns corresponding to cluster assignments");
             InitialXKMeans xtsk = new InitialXKMeans(_parms, km, _ncolA, _ncolX);
@@ -529,7 +529,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         update(1, "Initializing X and Y matrices");   // One unit of work
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
-        if (na_cnt == 0 && _parms.hasClosedForm())
+        if (_parms.hasClosedForm(na_cnt))
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
@@ -553,6 +553,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           xtsk.doAll(dinfo._adaptedFrame);
+          System.out.println(dinfo._adaptedFrame.toString());
           
           // 2) Update Y matrix given fixed X
           UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
@@ -901,10 +902,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override public void map( Chunk chks[] ) {
       double tmp [] = new double[_ncolA];
-      double preds[] = new double[_ncolX];
       Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
 
       for(int row = 0; row < chks[0]._len; row++) {
+        double preds[] = new double[_ncolX];
         double p[] = _model.score_indicator(chks, row, tmp, preds);
         p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
         for(int c = 0; c < preds.length; c++) {
