@@ -403,6 +403,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           Log.info(model);
           Log.info("==============================================================================================================================================================================");
         }
+      } catch (RuntimeException ex) {
+        failed(ex);
+        throw ex;
       }
       finally {
         if (model != null) {
