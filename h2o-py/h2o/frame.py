@@ -618,6 +618,15 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("kfold_column",self,n_folds,seed))._frame()
 
+  def modulo_kfold_column(self, n_folds=3):
+    """
+    Build a fold assignments column for cross-validation. Rows are assigned a fold according
+    to the current row number modulo n_folds.
+
+    :param n_folds: 
+    :return:
+    """
+
   def structure(self):
     """
     Similar to R's str method: Compactly Display the Structure of this H2OFrame instance.
