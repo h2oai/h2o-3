@@ -510,7 +510,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         }
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
-        model_info().computeStats();
+//        model_info().computeStats();
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -668,7 +668,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
       }
       if (model_info().unstable()) {
-        Log.warn(unstable_msg);
         keep_running = false;
       } else if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
               || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
@@ -808,8 +807,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
-      Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
+      throw new UnsupportedOperationException(unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
@@ -944,8 +942,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
-      Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
+      throw new UnsupportedOperationException(unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
@@ -1336,7 +1333,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  transient private final String unstable_msg = technote(4,"Job was aborted due to observed numerical instability (exponential growth)."
+  transient private final String unstable_msg = technote(4,
+      "Trying to predict with an unstable model." +
+          "\nJob was aborted due to observed numerical instability (exponential growth)."
           + "\nTry a different initial distribution, a bounded activation function or adding"
           + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.");
 

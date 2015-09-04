@@ -598,6 +598,7 @@ public class DeepLearningModelInfo extends Iced {
    * Compute statistics about this model on all nodes
    */
   public void computeStats() {
+    Log.info("computing stats");
     float[][] rate = get_params()._adaptive_rate ? new float[units.length - 1][] : null;
 
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
@@ -658,6 +659,7 @@ public class DeepLearningModelInfo extends Iced {
               || mean_weight[y] > thresh || isNaN(mean_weight[y])
               || rms_weight[y] > thresh || isNaN(rms_weight[y]);
     }
+    Log.info("done computing stats");
   }
 
   /**
