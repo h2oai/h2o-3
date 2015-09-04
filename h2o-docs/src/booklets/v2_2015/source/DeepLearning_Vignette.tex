@@ -31,7 +31,7 @@
 
 
 \bigskip
-\textsc{\small{Arno Candel \hspace{40pt} Jessica Lanford \hspace{40pt} Erin LeDell \hspace{40pt} Viraj Parmar \hspace{40pt} } }
+\textsc{\small{Arno Candel \hspace{40pt} Jessica Lanford \hspace{40pt} Erin LeDell \hspace{40pt} Viraj Parmar \hspace{40pt} Anisha Arora \hspace{40pt} } }
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -48,7 +48,7 @@ August 2015: Third Edition
 {\raggedright\vfill\ 
 
 Deep Learning with H2O\\
-  by Arno Candel, Jessica Lanford, Erin LeDell \&\ Viraj Parmar\\
+  by Arno Candel, Jessica Lanford, Erin LeDell, Viraj Parmar \&\ Anisha Arora\\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -400,7 +400,7 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 
 \newpage
 \waterExampleInR
-%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
+%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.(Note: Define max_mem_size if needed)
 \lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
 
 \waterExampleInPython
@@ -772,7 +772,7 @@ Default is 0.
 %  // batch gradient descent: mini-batch size = # training rows
 %  public int _mini_batch_size = 1;
 
-\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values''Äù that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values''ÔøΩÔøΩ that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 \item \texttt{weights\_column}: Specify the weights column by column name. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
@@ -786,6 +786,39 @@ Default is 0 (no cross-validation is performed).
 \item \texttt{keep\_cross\_validation\_predictions}: Logical.  Specify whether to keep the predictions of the cross-validation models.  Default is false.
 
 \end{itemize}
+
+\newpage
+
+\section{Appendix B: Common Command Summary in R}
+\begin{itemize}
+
+\item \texttt{library(h2o)}: Opens the required packages.
+
+\item \texttt{localH2O = h20.init()}:  Connects to an instance of H2O
+
+\item \texttt{h2o.shutdown()}: Shuts down h2o.
+
+\item \texttt{h2o.importFile(server,path)}: Imports a file into h2o.
+
+\item \texttt{h2o.deepLearning(x,training_frame,autoencoder,hidden,epochs)}: Creates a Deep Learning model.
+
+\item \texttt{h2o.grid(algorithm, grid_id, ..., hyper_params = list(), conn = h2o.getConnection())}: Starts h2o grid support and gives results.
+
+\item \texttt{h2o.predict(model, newdata)}: Does a prediction on a h2o model.
+
+\end{itemize}
+
+\newpage
+
+\section{Appendix B: Common Command Summary in Python}
+\begin{itemize}
+
+\item \texttt{library(h2o)}: Opens required package.
+
+
+\end{itemize}
+
+
 
 
 \newpage

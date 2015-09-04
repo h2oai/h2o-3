@@ -458,9 +458,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
       // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
       // Note: actual communication time is estimated by the NetworkTest's collective test.
-      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2) {
+      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && iteration > 0) {
         Log.info("Auto-tuning train_samples_per_iteration.");
-        double correction = 1;
         if (time_for_communication_us > 1e4) {
           Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
           Log.info("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_last_iter_millis, true));
@@ -468,17 +467,19 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           Log.info("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
           Log.info("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
           Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-          correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
-          correction = Math.max(0.1,Math.min(2, correction)); //it's ok to train up to 10x more training rows per iteration, but not fewer than half.
+          double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
+          correction = Math.max(0.5,Math.min(2, correction)); //it's ok to train up to 2x more training rows per iteration, but not fewer than half.
           if (actual_train_samples_per_iteration/correction <= 10*tspiGuess && actual_train_samples_per_iteration/correction >= 0.1*tspiGuess) { //stay within 10x of original guess
             if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
               actual_train_samples_per_iteration /= correction;
               actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
               Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+            } else {
+              Log.info("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
             }
           }
-          if (correction == 1) {
-            Log.info("Keeping value of train_samples_per_iteration the same : " + actual_train_samples_per_iteration);
+          else {
+            Log.info("Keeping value of train_samples_per_iteration the same (would deviate too much from initial estimate): " + actual_train_samples_per_iteration);
           }
         } else {
           Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
@@ -510,7 +511,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         }
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
-        model_info().computeStats();
+        model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
         DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -668,7 +669,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
       }
       if (model_info().unstable()) {
-        Log.warn(unstable_msg);
         keep_running = false;
       } else if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
               || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
@@ -808,8 +808,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().unstable()) {
-      Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
+      throw new UnsupportedOperationException(unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
@@ -944,8 +943,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
-      Log.warn(unstable_msg);
-      throw new UnsupportedOperationException("Trying to predict with an unstable model. " + unstable_msg);
+      throw new UnsupportedOperationException(unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
@@ -1336,7 +1334,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  transient private final String unstable_msg = technote(4,"Job was aborted due to observed numerical instability (exponential growth)."
+  transient private final String unstable_msg = technote(4,
+      "Trying to predict with an unstable model." +
+          "\nJob was aborted due to observed numerical instability (exponential growth)."
           + "\nTry a different initial distribution, a bounded activation function or adding"
           + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.");
 

@@ -122,6 +122,7 @@ h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
                           x
                         })
   failure_details <- lapply(json$failure_details, function(msg) { msg })
+  failure_stack_traces <- lapply(json$failure_stack_traces, function(msg) { msg })
   failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
 
   #print(json$failed_raw_params)
@@ -134,6 +135,7 @@ h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
       hyper_names = hyper_names,
       failed_params = failed_params,
       failure_details = failure_details,
+      failure_stack_traces = failure_stack_traces,
       failed_raw_params = failed_raw_params)
 }
 
