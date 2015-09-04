@@ -792,15 +792,15 @@ Default is 0 (no cross-validation is performed).
 \section{Appendix B: Common Command Summary in R}
 \begin{itemize}
 
-\item \texttt{library(h2o)}: Opens required package.
+\item \texttt{library(h2o)}: Opens the required packages.
 
-\item \texttt{localH2O = h20.init()}: Which connects to an instance of H2O
+\item \texttt{localH2O = h20.init()}:  Connects to an instance of H2O
 
 \item \texttt{h2o.shutdown()}: Shuts down h2o.
 
-\item \texttt{h2o.importFile(server,path)}:Imports file into h2o.
+\item \texttt{h2o.importFile(server,path)}: Imports a file into h2o.
 
-\item \texttt{h2o.deepLearning(x,training_frame,autoencoder,hidden,epochs)}:Imports file into h2o.
+\item \texttt{h2o.deepLearning(x,training_frame,autoencoder,hidden,epochs)}: Creates a Deep Learning model.
 
 \item \texttt{h2o.grid(algorithm, grid_id, ..., hyper_params = list(), conn = h2o.getConnection())}: Starts h2o grid support and gives results.
 
