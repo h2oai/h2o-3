@@ -159,7 +159,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
-        byte[] cs = new AutoBuffer().put(_parms).buf();
+        long cs = _parms.checksum();
 
         Scope.enter();
         // Init parameters
@@ -173,19 +173,15 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         buildModel();
         //check that _parms isn't changed during DL model training
-        byte[] cs2 = new AutoBuffer().put(_parms).buf();
-        assert(Arrays.equals(cs, cs2));
-
-        done();                 // Job done!
-//      if (n_folds > 0) CrossValUtils.crossValidate(this);
-      } catch( Throwable t ) {
+        long cs2 = _parms.checksum();
+        assert(cs == cs2);
         Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
+        if (thisJob != null && thisJob._state == JobState.CANCELLED) {
           Log.info("Job cancelled by user.");
         } else {
-          failed(t);
-          throw t;
+          done();                 // Job done!
         }
+//      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } finally {
         updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
@@ -254,29 +250,34 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
       // clean up, but don't delete the model and the training/validation model metrics
       List<Key> keep = new ArrayList<>();
-      keep.add(dest());
-      keep.add(cp.model_info().data_info()._key);
-      // Do not remove training metrics
-      keep.add(cp._output._training_metrics._key);
-      // And validation model metrics
-      if (cp._output._validation_metrics != null) {
-        keep.add(cp._output._validation_metrics._key);
-      }
-      if (cp._output.weights != null && cp._output.biases != null) {
-        for (Key k : Arrays.asList(cp._output.weights)) {
-          keep.add(k);
-          for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
-            keep.add(vk._key);
+      try {
+        keep.add(dest());
+        keep.add(cp.model_info().data_info()._key);
+        // Do not remove training metrics
+        keep.add(cp._output._training_metrics._key);
+        // And validation model metrics
+        if (cp._output._validation_metrics != null) {
+          keep.add(cp._output._validation_metrics._key);
+        }
+        if (cp._output.weights != null && cp._output.biases != null) {
+          for (Key k : Arrays.asList(cp._output.weights)) {
+            keep.add(k);
+            for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+              keep.add(vk._key);
+            }
+          }
+          for (Key k : Arrays.asList(cp._output.biases)) {
+            keep.add(k);
+            for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+              keep.add(vk._key);
+            }
           }
         }
-        for (Key k : Arrays.asList(cp._output.biases)) {
-          keep.add(k);
-          for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
-            keep.add(vk._key);
-          }
-        }
+      } catch(NullPointerException npe) {
+
+      } finally {
+        Scope.exit(keep.toArray(new Key[0]));
       }
-      Scope.exit(keep.toArray(new Key[0]));
     }
 
 
@@ -375,7 +376,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model), ++iteration).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepLearningTask (self(),        model.model_info(), rowFraction(train, mp, model), ++iteration).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
         }
-        while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
+        while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
 
         // replace the model with the best model so far (if it's better)
         if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
@@ -401,11 +402,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           Log.info(model);
           Log.info("==============================================================================================================================================================================");
         }
-      }
-      catch(Throwable ex) {
-        model = DKV.get(dest()).get();
-        Log.info("Deep Learning model building was cancelled.");
-        throw new RuntimeException(ex);
       }
       finally {
         if (model != null) {
