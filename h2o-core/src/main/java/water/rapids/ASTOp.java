@@ -1121,10 +1121,11 @@ abstract class ASTTimeOp extends ASTUniPrefixOp {
   abstract long op( MutableDateTime dt );
 
   @Override void apply(Env env) {
+    final DateTimeZone dtz = ParseTime.getTimezone();
     // Single instance of MDT for the single call
     if( !env.isAry() ) {        // Single point
       double d = env.peekDbl();
-      if( !Double.isNaN(d) ) d = op(new MutableDateTime((long)d));
+      if( !Double.isNaN(d) ) d = op(new MutableDateTime((long)d, dtz));
       env.poppush(1, new ValNum(d));
       return;
     }
@@ -1133,7 +1134,7 @@ abstract class ASTTimeOp extends ASTUniPrefixOp {
     final ASTTimeOp uni = this;
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-        MutableDateTime dt = new MutableDateTime(0);
+        MutableDateTime dt = new MutableDateTime(0, dtz);
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
           Chunk c = chks[i];
