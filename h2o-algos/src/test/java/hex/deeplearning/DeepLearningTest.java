@@ -924,7 +924,7 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Test
+  @Ignore @Test
   public void testNumericalExplosion() {
     Frame tfr = null, vfr = null;
     DeepLearningModel dl = null;
