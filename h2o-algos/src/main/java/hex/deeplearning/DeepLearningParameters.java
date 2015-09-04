@@ -825,6 +825,12 @@ public class DeepLearningParameters extends Model.Parameters {
         toParms._rho = 0;
         toParms._epsilon = 0;
       }
+      if (fromParms._activation == Activation.Rectifier || fromParms._activation == Activation.RectifierWithDropout) {
+        if (fromParms._max_w2 == Float.POSITIVE_INFINITY) {
+          Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
+          toParms._max_w2 = 1e3f;
+        }
+      }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
           Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");

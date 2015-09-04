@@ -389,6 +389,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :param rows: Number of rows to display.
     :param cols: Number of columns to display.
+    :param show:
+    :param as_pandas: 
     :return: None
     """
     self._eager()
@@ -441,8 +443,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     Works on a single categorical vector. New domains must be aligned with the old domains. This call has SIDE
     EFFECTS and mutates the column in place (does not make a copy).
 
-    :param level: The level at which the column will be set (a string)
-    :param x: A single categorical column.
+    
     :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
     old levels.
     :return: None
@@ -562,12 +563,14 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def prod(self,na_rm=False):
     """
+    :param na_rm: True or False to remove NAs from computation.
     :return: The product of the column.
     """
     return H2OFrame(expr=ExprNode("prod",self,na_rm))._scalar()
 
   def any(self,na_rm=False):
     """
+    :param na_rm: True or False to remove NAs from computation.
     :return: True if any element is True in the column.
     """
     return H2OFrame(expr=ExprNode("any",self,na_rm))._scalar()
@@ -614,6 +617,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     having the same data layout as the calling object.
 
     :param n_folds: Number of folds.
+    :param seed:Seed for random numbers (affects sampling when balance_classes=T)
     :return: A column of fold IDs.
     """
     return H2OFrame(expr=ExprNode("kfold_column",self,n_folds,seed))._frame()
@@ -820,7 +824,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
     Split a frame into distinct subsets of size determined by the given ratios.
     The number of subsets is always 1 more than the number of ratios given.
 
-    :param data: The dataset to split.
     :param ratios: The fraction of rows for each split.
     :param destination_frames: names of the split frames
     :return: a list of frames
@@ -938,6 +941,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def sd(self, na_rm=False):
     """
+    :param na_rm: True or False to remove NAs from computation.
     :return: Standard deviation of the H2OVec elements.
     """
     return H2OFrame(expr=ExprNode("sd", self,na_rm))._scalar()
@@ -970,6 +974,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     Split the strings in the target column on the given pattern
 
+    :param pattern:
+
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("strsplit", self, pattern))
@@ -977,6 +983,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def countmatches(self, substr):
     """
     Split the strings in the target column on the given pattern
+
+    :param substr:
 
     :return: H2OFrame
     """
@@ -992,6 +1000,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def table(self, data2=None):
     """
+    :param data2:
     :return: a frame of the counts at each combination of factor levels
     """
     return H2OFrame(expr=ExprNode("table",self,data2))
@@ -1047,6 +1056,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     sub and gsub perform replacement of the first and all matches respectively.
     Of note, mutates the frame.
 
+    :param pattern:
+    :param replacement:
+    :param ignore_case:
+
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("sub",pattern,replacement,self,ignore_case))
@@ -1055,6 +1068,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     sub and gsub perform replacement of the first and all matches respectively.
     Of note, mutates the frame.
+
+    :param pattern:
+    :param replacement:
+    :param ignore_case:
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("gsub", pattern, replacement, self, ignore_case))
@@ -1112,12 +1129,14 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def signif(self, digits=6):
     """
+    :param digits:
     :return: The rounded values in the H2OFrame to the specified number of significant digits.
     """
     return H2OFrame(expr=ExprNode("signif", self, digits))
 
   def round(self, digits=0):
     """
+    :param digits:
     :return: The rounded values in the H2OFrame to the specified number of decimal digits.
     """
     return H2OFrame(expr=ExprNode("round", self, digits))
@@ -1192,6 +1211,9 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def match(self, table, nomatch=0):
     """
     Makes a vector of the positions of (first) matches of its first argument in its second.
+
+    :param table:
+    :param nomatch:
 
     :return: bit H2OVec
     """

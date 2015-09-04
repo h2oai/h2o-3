@@ -360,6 +360,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
+          Log.info("Scoring the null model of the autoencoder.");
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
         }
         // put the initial version of the model into DKV
@@ -511,7 +512,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (H2O.CLOUD.size() == 1 || mp._single_node_mode) {
           tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
         }
-        tspi = Math.max(1, tspi); //at least 1 point
+        tspi = Math.max(1, tspi); //at least 1 row
+        tspi = Math.min(100000, tspi); //at most 100k rows for initial guess - can always relax later on
 
         if (!mp._quiet_mode) {
           Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
