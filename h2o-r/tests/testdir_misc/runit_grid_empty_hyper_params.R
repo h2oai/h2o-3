@@ -18,7 +18,7 @@ test.grid.empty.hyper.parameter.space <- function(conn) {
   expect_equal(length(g@model_ids),1)
 
   # drf
-  g <- h2o.grid("drf",training_frame=iris, x=1:4, y=5)
+  g <- h2o.grid("randomForest",training_frame=iris, x=1:4, y=5)
   print("drf: ")
   print(g)
   expect_equal(length(g@model_ids),1)
