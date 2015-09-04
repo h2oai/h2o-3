@@ -925,7 +925,7 @@ public class DeepLearningTest extends TestUtil {
   }
 
   @Test
-  public void testUnstable() {
+  public void testNumericalExplosion() {
     Frame tfr = null, vfr = null;
     DeepLearningModel dl = null;
 
@@ -954,7 +954,7 @@ public class DeepLearningTest extends TestUtil {
         dl = job.trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
       } catch( RuntimeException de ) {
-        assertTrue(de.getMessage().contains("Numerical instability, predicted NaN."));
+        assertTrue(de.getMessage().contains("Trying to predict with an unstable model."));
       } finally {
         job.remove();
       }
