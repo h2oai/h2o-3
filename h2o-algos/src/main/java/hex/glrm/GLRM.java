@@ -538,6 +538,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId, regX);
         objtsk.doAll(dinfo._adaptedFrame);
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt._archetypes);
+        model._output._archetypes_raw = yt;
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
         model.update(self());  // Update model in K/V store
@@ -567,7 +568,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // step = 1.0 / model._output._iterations;   // Step size \alpha_k = 1/iters
           if(model._output._avg_change_obj > 0) {   // Objective decreased this iteration
-            model._output._archetypes_raw = yt = ytnew;
+            yt = ytnew;
+            model._output._archetypes_raw = ytnew;  // Need full archetypes object for scoring
             model._output._objective = obj_new;
             step *= 1.05;
             steps_in_row = Math.max(1, steps_in_row+1);
@@ -586,11 +588,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // 4) Save solution to model output
-        model._output._loading_key = Key.make(_parms._loading_name);
-        model._output._step_size = step;
-        model._output._archetypes_raw = yt;  // Need full archetypes object for scoring
-        model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
-
         // Save X frame for user reference later
         Vec[] xvecs = new Vec[_ncolX];
         String[] xnames = new String[_ncolX];
@@ -605,10 +602,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
+        model._output._loading_key = Key.make(_parms._loading_name);
         Frame x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
+
+        model._output._step_size = step;
+        model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
         // Impute and compute error metrics on training/validation frame
@@ -1200,7 +1201,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _ncolX = ncolX;
       _ncats = ncats;
       _regX = regX;
-      _loss = _xold_reg = 0;
 
       _weightId = weightId;
       _normSub = normSub;
@@ -1210,6 +1210,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
+      _loss = _xold_reg = 0;
 
       for(int row = 0; row < cs[0]._len; row++) {
         // Additional user-specified weight on loss for this row
@@ -1261,6 +1262,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           _xold_reg += _parms.regularize_x(xrow);
         }
       }
+    }
+
+    @Override public void reduce(ObjCalc other) {
+      _loss += other._loss;
+      _xold_reg += other._xold_reg;
     }
   }
 
