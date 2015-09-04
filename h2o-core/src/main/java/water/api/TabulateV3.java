@@ -18,17 +18,17 @@ public class TabulateV3 extends JobV3<Tabulate, TabulateV3> {
   public FrameV3.ColSpecifierV3 weight;
 
   @API(help="Number of bins for predictor column")
-  public int binsPredictor;
+  public int nbins_predictor;
 
   @API(help="Number of bins for response column")
-  public int binsResponse;
+  public int nbins_response;
 
   // OUTPUT
   @API(help="Counts table", direction = API.Direction.OUTPUT)
-  public TwoDimTableBase countTable;
+  public TwoDimTableBase count_table;
 
   @API(help="Response table", direction = API.Direction.OUTPUT)
-  public TwoDimTableBase responseTable;
+  public TwoDimTableBase response_table;
 
   @Override
   public TabulateV3 fillFromImpl(Tabulate impl) {

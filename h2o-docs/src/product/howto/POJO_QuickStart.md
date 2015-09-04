@@ -86,7 +86,7 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 	Class probabilities: 0.4790490513429604,0.5209509486570396
 	```
 
-#Extracting Models from H2O
+##Extracting Models from H2O
 
 Generated models can be extracted from H2O in the following ways:
 
@@ -140,7 +140,7 @@ TODO: provide pointer of doing this from Sparkling Water
 
 -->
 
-#Use Cases
+##Use Cases
 The following use cases are demonstrated with code examples:
 
 - **Reading new data from a CSV file and predicting on it**:
@@ -149,7 +149,7 @@ The PredictCsv class is used by the H2O test harness to make predictions on new 
 - **Getting a new observation from a JSON request and returning a prediction**
 - **Calling a user-defined function directly from hive**: See the [H2O-3 training github repository](https://github.com/h2oai/h2o-world-2015-training/tree/master/tutorials/hive_udf_template).
 
-#FAQ
+##FAQ
 
 - **How do I score new cases in real-time in a production environment?**
 

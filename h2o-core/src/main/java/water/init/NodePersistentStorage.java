@@ -8,7 +8,6 @@ import water.util.FileUtils;
 import water.util.Log;
 
 import java.io.*;
-import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
@@ -23,21 +22,21 @@ public class NodePersistentStorage {
     public long _timestamp_millis;
   }
 
-  public NodePersistentStorage(URI npsDirURI) {
-    if (npsDirURI == null) {
+  public NodePersistentStorage(String npsDir) {
+    if (npsDir == null) {
       NPS_DIR = null;
       NPS_SEPARATOR = null;
       return;
     }
 
-    if (PersistManager.isHdfsPath(npsDirURI.toString())) {
+    if (PersistManager.isHdfsPath(npsDir)) {
       NPS_SEPARATOR = "/";
     }
     else {
       NPS_SEPARATOR = File.separator;
     }
 
-    String s = npsDirURI.toString();
+    String s = npsDir.toString();
     if (s.startsWith("file://")) {
       s = s.substring(7);
     }
