@@ -53,6 +53,11 @@
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip"
         }
+        {
+            "distribution" : "mapr5.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr5.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr5.0.zip"
+        }
     ],
 
     "user_documents" : [
