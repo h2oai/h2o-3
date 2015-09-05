@@ -104,7 +104,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     if(_parms._nv < 1 || _parms._nv > _ncolExp)
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
 
-    if (expensive && error_count() == 0) checkMemoryFootPrint();
+    if (_parms._svd_method != SVDParameters.Method.Randomized && expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   // Compute ivv_sum - vec * vec' for symmetric array ivv_sum
@@ -165,14 +165,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
-    private Frame randSubIterInPlace(DataInfo dinfo, int max_iterations, long seed) {
+    private Frame randSubIterInPlace(DataInfo dinfo, SVDModel model) {
       DataInfo yinfo = null;
       Frame yqfrm = null;
 
       try {
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
         update(1, "Initializing random subspace of training data Y");
-        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
+        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
@@ -189,9 +189,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         DKV.put(yinfo._key, yinfo);
         LinearAlgebraUtils.computeQInPlace(self(), yinfo);
 
-        int iters = 0;
-        while (iters < max_iterations) {
-          update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
+        model._output._iterations = 0;
+        while (model._output._iterations < _parms._max_iterations) {
+          if(!isRunning()) break;
+          update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(dinfo, _parms._nv);
@@ -205,7 +206,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(qtilde));
           tsk.doAll(aqfrm);
           LinearAlgebraUtils.computeQInPlace(self(), yinfo);
-          iters++;
+          model._output._iterations++;
+          model.update(self());
         }
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
@@ -224,7 +226,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 4.4: Randomized subspace iteration from Halk et al (http://arxiv.org/pdf/0909.4061.pdf)
     // This function keeps track of change in Q each iteration ||Q_j - Q_{j-1}||_2 to check convergence
-    private Frame randSubIter(DataInfo dinfo, int max_iterations, long seed) {
+    private Frame randSubIter(DataInfo dinfo, SVDModel model) {
       DataInfo yinfo = null;
       Frame ybig = null, qfrm = null;
       final int ncolA = dinfo._adaptedFrame.numCols();
@@ -232,7 +234,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       try {
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
         update(1, "Initializing random subspace of training data Y");
-        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, seed);
+        double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
         rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         ybig = rtsk.outputFrame(Key.make(), null, null);
@@ -252,12 +254,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Computing QR factorization of Y");
         yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
-        double qerr = LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
+        LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
 
-        int iters = 0;
+        model._output._iterations = 0;
         long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
-        while (qerr / qobs > TOLERANCE && iters < max_iterations) {
-          update(1, "Iteration " + String.valueOf(iters+1) + " of randomized subspace iteration");
+        double qerr = 2 * TOLERANCE * qobs;   // Stop when average SSE between Q_j and Q_{j-2} below tolerance
+        while ((model._output._iterations < 10 || qerr / qobs > TOLERANCE) && model._output._iterations < _parms._max_iterations) {   // Run at least 10 iterations before tolerance cutoff
+          if(!isRunning()) break;
+          update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(dinfo, _parms._nv);
@@ -271,7 +275,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q));
           tsk.doAll(ayfrm);
           qerr = LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
-          iters++;
+          model._output._iterations++;
+          model.update(self());
         }
 
         // 4) Extract and save final Q_j from [A,Q] frame
@@ -446,6 +451,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             uvecs = new Vec[_parms._nv];
             computeSigmaU(dinfo, model, 0, ivv_sum, uvecs);  // Compute first singular value \sigma_1
           }
+          model._output._iterations = 1;
           model.update(self()); // Update model in K/V store
 
           // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
@@ -471,6 +477,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             // gram_update = ArrayUtils.multArrArr(ivv_sum, ArrayUtils.multArrArr(gram, ivv_sum));  // Too slow on wide arrays
             guptsk = new GramUpdate(self(), dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
             gram_update = guptsk._gram;
+            model._output._iterations++;
             model.update(self()); // Update model in K/V store
           }
 
@@ -486,7 +493,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             utsk.doAll(u);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Randomized) {
-          qfrm = randSubIter(dinfo, _parms._max_iterations, _parms._seed);
+          qfrm = randSubIter(dinfo, model);
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);

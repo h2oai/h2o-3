@@ -29,6 +29,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
   }
 
   public static class SVDOutput extends Model.Output {
+    // Iterations executed (Power and Randomized methods only)
+    public int _iterations;
+
     // Right singular vectors (V)
     public double[][] _v;
 

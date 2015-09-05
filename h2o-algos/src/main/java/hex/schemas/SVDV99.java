@@ -18,6 +18,7 @@ public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV9
 				"ignore_const_cols",
 				"score_each_iteration",
 				"transform",
+                "svd_method",
 				"nv",
 				"max_iterations",
 				"seed",

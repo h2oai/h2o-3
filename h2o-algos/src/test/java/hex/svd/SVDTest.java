@@ -466,7 +466,7 @@ public class SVDTest extends TestUtil {
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
-        Assert.assertArrayEquals(d_expected, model._output._d, 1e-5);
+        Assert.assertArrayEquals(d_expected, model._output._d, 1e-4);
         score = model.score(train);
       } catch (Throwable t) {
         t.printStackTrace();
