@@ -1,6 +1,6 @@
-# TO DO: Check this code
+# TO DO: Fix bug below
 
-best_model = h2o.loadModel("/tmp/mymodel")
+best_model <- h2o.loadModel("/tmp/mymodel")  #this is not working
 
 # Continue training the loaded model (for one additional epoch)
 best_model_new = h2o.deeplearning(x = 1:784, y = 785, 

@@ -1,11 +1,5 @@
-# TO DO: Check this code
-
 # Specify a model and the file path where it is to be saved
-h2o.saveModel(object = grid@model[[1]], 
-              name = "/tmp/mymodel", 
-              force = TRUE)
-
-# Alternatively, save the model key in some directory (here we use /tmp)
-h2o.saveModel(object = grid@model[[1]], 
-              dir = "/tmp", 
+best_model <- h2o.getModel(model_grid@model_ids[[2]])
+h2o.saveModel(object = good_model, 
+              path = "/tmp/mymodel", 
               force = TRUE)
