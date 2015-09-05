@@ -160,9 +160,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     @Override protected void compute2() {
       try {
         long cs = _parms.checksum();
-
-        Scope.enter();
-        // Init parameters
         init(true);
         // Read lock input
         _parms.read_lock_frames(DeepLearning.this);
@@ -181,11 +178,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         } else {
           done();                 // Job done!
         }
-//      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } finally {
         updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
-        Scope.exit();
       }
       tryComplete();
     }
@@ -273,8 +268,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             }
           }
         }
-      } catch(NullPointerException npe) {
-
       } finally {
         Scope.exit(keep.toArray(new Key[0]));
       }
@@ -403,6 +396,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           Log.info(model);
           Log.info("==============================================================================================================================================================================");
         }
+      } catch (RuntimeException ex) {
+        Log.err(ex);
+        failed(ex);
+        throw ex;
       }
       finally {
         if (model != null) {
@@ -411,6 +408,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           if (model.actual_best_model_key != null) {
             assert (model.actual_best_model_key != model._key);
             DKV.remove(model.actual_best_model_key);
+          }
+          if (_state == JobState.FAILED) {
+//            Log.err("Deleting failed model.");
+//            model.delete();
           }
         }
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames

@@ -926,29 +926,32 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testNumericalExplosion() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     DeepLearningModel dl = null;
 
     Scope.enter();
     try {
       tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
       for (String s : new String[]{
-          "Class"
+              "Class"
       }) {
         Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
       }
-      DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
-      parms._response_column = "Class";
-      parms._epochs = 0.1;
+      parms._epochs = 0.01;
+      parms._autoencoder = true;
       parms._reproducible = true;
-      parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+      parms._train_samples_per_iteration = 10;
+      parms._hidden = new int[]{10,10,10,10,10,10,10,10};
       parms._initial_weight_distribution = DeepLearningParameters.InitialWeightDistribution.Uniform;
       parms._initial_weight_scale = 1e10;
       parms._seed = 0xdecaf;
+      parms._max_w2 = 1e20f;
+      parms._model_id = Key.make();
 
       // Build a first model; all remaining models should be equal
       DeepLearning job = new DeepLearning(parms);
@@ -960,9 +963,13 @@ public class DeepLearningTest extends TestUtil {
       } finally {
         job.remove();
       }
+      dl = DKV.getGet(parms._model_id);
+      if (dl != null) {
+        assertTrue(dl.model_info().unstable());
+        assertTrue(dl._output._status == Job.JobState.FAILED);
+      }
     } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
+      if (tfr != null) tfr.delete();
       if (dl != null) dl.delete();
       Scope.exit();
     }

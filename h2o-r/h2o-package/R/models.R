@@ -276,9 +276,9 @@ h2o.getFutureModel <- function(object) {
     if (length(k) > 0)
       for (n in k)
         if (paramValue[n] == Inf)
-          paramValue[n] <<- "Infinity"
+          paramValue[n] <- "Infinity"
         else
-          paramValue[n] <<- "-Infinity"
+          paramValue[n] <- "-Infinity"
     if (collapseArrays) {
       if (type == "character")
         paramValue <- .collapse.char(paramValue)
@@ -319,20 +319,24 @@ h2o.getFutureModel <- function(object) {
         }
         # If there is no error then transform hyper values
         if (!nzchar(e)) {
-          transf_hyper_vals <- sapply(hyper_vals, function(hv) {
-                                      # R does not treat integers as numeric
-                                      if (is.integer(hv)) {
-                                        hv <- as.numeric(hv)
-                                      }
-                                      mapping <- .type.map[paramDef$type,]
-                                      type <- mapping[1L, 1L]
-                                      # Force evaluation of frames and fetch frame_id as
-                                      # a side effect
-                                      if (type == "H2OFrame") {
-                                        hv <- .h2o.checkFrameParam(hv, name)@frame_id
-                                      }
-                                      .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
-                                })
+          mapping <- .type.map[paramDef$type,]
+          type <- mapping[1L, 1L]
+          transf_hyper_vals <- sapply(hyper_vals,
+                                      simplify = !is.list(hyper_vals),
+                                      function(hv) {
+                                        # R does not treat integers as numeric
+                                        if (is.integer(hv)) {
+                                          hv <- as.numeric(hv)
+                                        }
+                                        # Force evaluation of frames and fetch frame_id as
+                                        # a side effect
+                                        if (type == "H2OFrame") {
+                                          hv <- .h2o.checkFrameParam(hv, name)@frame_id
+                                        }
+                                        # Returns transformed value
+                                        hv <- .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                                        hv
+                                      })
           hyper_params[[name]] <<- transf_hyper_vals
         }
       }

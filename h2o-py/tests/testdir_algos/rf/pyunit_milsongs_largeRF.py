@@ -1,4 +1,4 @@
-import sys, shutil
+import sys, os
 sys.path.insert(1, "../../../")
 import h2o, tests
 import random
@@ -19,9 +19,9 @@ def milsong_checkpoint():
                                validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
 
     # save the model, then load the model
-    model_path = h2o.save_model(model1,force=True)
+    path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"../..","results")
+    model_path = h2o.save_model(model1, path=path, force=True)
     restored_model = h2o.load_model(model_path)
-    shutil.rmtree(model_path)
 
     # continue building the model
     ntrees2 = ntrees1 + 50

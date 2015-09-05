@@ -193,13 +193,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
             model = buildModel(params, grid);
           } catch (RuntimeException e) { // Catch everything
             Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
-            grid.appendFailedModelParameters(params, e.getMessage());
+            grid.appendFailedModelParameters(params, e);
           }
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
           Object[] rawParams = it.getCurrentRawParameters();
-          grid.appendFailedModelParameters(rawParams, e.getMessage());
+          grid.appendFailedModelParameters(rawParams, e);
         } finally {
           // Update progress by 1 increment
           this.update(1L);
