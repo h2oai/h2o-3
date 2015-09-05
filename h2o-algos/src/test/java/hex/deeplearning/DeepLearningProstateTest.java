@@ -226,6 +226,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                               testcount++;
                                             } catch(Throwable t) {
                                               model1 = DKV.getGet(p._model_id);
+                                              if (model1 != null)
+                                                Assert.assertTrue(model1._output._status == Job.JobState.FAILED);
+                                              throw t;
                                             } finally {
                                               dl.remove();
                                             }
@@ -294,10 +297,15 @@ public class DeepLearningProstateTest extends TestUtil {
                                               model2 = dl.trainModel().get();
                                             } catch(Throwable t) {
                                               model2 = DKV.getGet(p2._model_id);
+                                              if (model2 != null)
+                                                Assert.assertTrue(model2._output._status == Job.JobState.FAILED);
+                                              throw t;
                                             } finally {
                                               dl.remove();
                                             }
                                           }
+                                          Assert.assertTrue(model1._output._status == Job.JobState.DONE);
+                                          Assert.assertTrue(model2._output._status == Job.JobState.DONE);
 
                                           assert(model1._parms != p2);
                                           assert(model1.model_info().get_params() != model2.model_info().get_params());
