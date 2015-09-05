@@ -163,10 +163,11 @@ Syncing smalldata is not required after each pull, but if tests fail due to miss
     pip install grip
     pip install tabulate
     pip install wheel
+    pip install scikit-learn
 
 Python tests require:
 
-    pip install sklearn
+    pip install scikit-learn
     pip install numpy
     pip install scipy
     pip install pandas
