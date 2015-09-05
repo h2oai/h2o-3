@@ -632,31 +632,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             Log.info("Error reduced from " + _bestError + " to " + error() + ".");
           _bestError = error();
           putMeAsBestModel(actual_best_model_key);
-
-          // debugging check
-          //if (false) {
-          //  DeepLearningModel bestModel = DKV.get(actual_best_model_key).get();
-          //  final Frame fr = ftest != null ? ftest : ftrain;
-          //  final Frame bestPredict = bestModel.score(fr);
-          //  final Frame hitRatio_bestPredict = new Frame(bestPredict);
-          //  final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-          //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _mymodel.isClassifier() && _mymodel.nclasses() == 2 ? new AUC(null,null) : null, null);
-          //  if (_mymodel.isClassifier())
-          //    assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
-          //  else
-          //    assert (ftest != null ? Math.abs(err.validation_MSE - err3) < 1e-5 : Math.abs(err.training_MSE - err3) < 1e-5);
-          //  bestPredict.delete();
-          //}
         }
-//        else {
-//          // keep output JSON small
-//          if (errors.length > 1) {
-//            if (last_scored().training_AUC != null) last_scored().training_AUC.clear();
-//            if (last_scored().validation_AUC != null) last_scored().validation_AUC.clear();
-//            last_scored()._variable_importances = null;
-//          }
-//        }
-
       }
       // print the freshly scored model to ASCII
       if (keep_running && printme)
@@ -670,6 +646,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
     if (model_info().isBogus()) {
       Log.warn("The model has diverged. Please inspect the model weights and biases and try different hyper-parameters. Cancelling model building.");
+      //TODO: store this information in the model output (user-facing)...
       keep_running = false;
     }
     update(job_key);
