@@ -1036,6 +1036,7 @@ public class DeepLearningTest extends TestUtil {
           Vec resp = tfr.vec(s).toEnum();
           tfr.remove(s).remove();
           tfr.add(s, resp);
+          DKV.put(tfr);
         }
         DeepLearningParameters parms = new DeepLearningParameters();
         parms._train = tfr._key;
