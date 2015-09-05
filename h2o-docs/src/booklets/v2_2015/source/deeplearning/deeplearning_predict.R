@@ -1,6 +1,6 @@
-# Perform classification on the test set
+# Perform classification on the test set (predict class labels)
 # This also returns the probability for each class
 prediction <- h2o.predict(model, newdata = test)
 
-# If desired, you can copy predictions from H2O to R
-pred  <- as.data.frame(prediction)
+# Take a look at the predictions
+head(pred)
