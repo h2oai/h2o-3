@@ -1,4 +1,4 @@
-# TO DO: Check this code
+# TO DO: Check this code (where is this file?)
 
 # Upload ECG train and test data
 train_ecg <- h2o.importFile(path = "ecg_train.csv", 
