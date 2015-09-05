@@ -397,6 +397,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           Log.info("==============================================================================================================================================================================");
         }
       } catch (RuntimeException ex) {
+        Log.err(ex);
         failed(ex);
         throw ex;
       }
@@ -407,6 +408,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           if (model.actual_best_model_key != null) {
             assert (model.actual_best_model_key != model._key);
             DKV.remove(model.actual_best_model_key);
+          }
+          if (_state == JobState.FAILED) {
+//            Log.err("Deleting failed model.");
+//            model.delete();
           }
         }
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
