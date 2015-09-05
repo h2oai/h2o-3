@@ -767,6 +767,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().isUnstable()) {
+      Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
@@ -896,6 +897,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().isUnstable()) {
+      Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
@@ -1291,8 +1293,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       "\n\nTrying to predict with an unstable model." +
           "\nJob was aborted due to observed numerical instability (exponential growth)."
           + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
-          + "\nTry a different initial distribution, a bounded activation function or adding regularization"
-          + "\nwith max_w2, L1, L2 and/or use a smaller learning rate or faster annealing.");
+          + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
+          + "\n(via max_w2, l1, l2, dropout) or learning rate (either enable adaptive_rate or use a smaller learning rate or faster annealing).");
 
   @Override protected long checksum_impl() {
     return super.checksum_impl() * model_info.checksum_impl();
