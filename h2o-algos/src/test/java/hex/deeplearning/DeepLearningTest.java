@@ -131,7 +131,7 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Ignore @Test public void testBadData() throws Throwable {
+  @Test public void testBadData() throws Throwable {
     basicDLTest_Classification(
             "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
             new PrepData() {
@@ -141,8 +141,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(6, 0),
-                    ard(9, 1)),
+            ard(ard(0, 17),
+                    ard(0, 17)),
             s("0", "1"),
             DeepLearningParameters.Activation.Rectifier);
   }
@@ -235,7 +235,6 @@ public class DeepLearningTest extends TestUtil {
             DeepLearningParameters.Activation.TanhWithDropout);
   }
 
-  @Ignore
   @Test public void testCreditProstateMaxout() throws Throwable {
     basicDLTest_Classification(
             "./smalldata/logreg/prostate.csv", "prostateMaxout.hex",
@@ -246,14 +245,13 @@ public class DeepLearningTest extends TestUtil {
                 return fr.find("CAPSULE");
               }
             },
-            1,
-            ard(ard(57, 170),
-                    ard(8, 145)),
+            100,
+            ard(ard(189, 38),
+                    ard(30, 123)),
             s("0", "1"),
             DeepLearningParameters.Activation.Maxout);
   }
 
-  @Ignore
   @Test public void testCreditProstateMaxoutDropout() throws Throwable {
     basicDLTest_Classification(
             "./smalldata/logreg/prostate.csv", "prostateMaxoutDropout.hex",
@@ -264,9 +262,9 @@ public class DeepLearningTest extends TestUtil {
                 return fr.find("CAPSULE");
               }
             },
-            1,
-            ard(ard(58, 169),
-                    ard(13, 140)),
+            100,
+            ard(ard(183, 44),
+                    ard(40, 113)),
             s("0", "1"),
             DeepLearningParameters.Activation.MaxoutWithDropout);
   }
@@ -303,7 +301,6 @@ public class DeepLearningTest extends TestUtil {
 
   }
 
-  @Ignore
   @Test public void testCreditProstateRegressionMaxout() throws Throwable {
     basicDLTest_Regression(
         "./smalldata/logreg/prostate.csv", "prostateRegressionMaxout.hex",
@@ -314,8 +311,8 @@ public class DeepLearningTest extends TestUtil {
             return fr.find("AGE");
           }
         },
-        1,
-        42.894661346549356,
+        100,
+        32.79983057944052,
         DeepLearningParameters.Activation.Maxout);
 
   }
@@ -421,10 +418,10 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            ard(ard(1, 44999),
-                    ard(0, 45000)),
+            ard(ard(7, 44993),
+                    ard(2, 44998)),
             s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+            DeepLearningParameters.Activation.Tanh);
   }
 
 
@@ -926,7 +923,6 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testNumericalExplosion() {
     Frame tfr = null;
