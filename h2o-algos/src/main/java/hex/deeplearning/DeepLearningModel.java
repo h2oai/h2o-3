@@ -644,11 +644,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
       keep_running = false;
     }
-    if (model_info().isBogus()) {
-      Log.warn("The model has diverged. Please inspect the model weights and biases and try different hyper-parameters. Cancelling model building.");
-      //TODO: store this information in the model output (user-facing)...
-      keep_running = false;
-    }
     update(job_key);
     return keep_running;
   }
