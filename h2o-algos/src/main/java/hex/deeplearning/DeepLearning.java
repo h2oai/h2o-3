@@ -377,7 +377,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
 
         // replace the model with the best model so far (if it's better)
-        if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
+        if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0 && !model.model_info().isBogus()) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode) {

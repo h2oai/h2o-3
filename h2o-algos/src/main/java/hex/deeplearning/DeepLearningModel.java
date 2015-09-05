@@ -668,6 +668,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
       keep_running = false;
     }
+    if (model_info().isBogus()) {
+      Log.warn("The model has diverged. Please inspect the model weights and biases and try different hyper-parameters. Cancelling model building.");
+      keep_running = false;
+    }
     update(job_key);
     return keep_running;
   }
@@ -807,9 +811,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       preds[0] = -1;
     } else {
       if (model_info().data_info()._normRespMul != null) //either both are null or none
-        preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+        preds[0] = (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
-        preds[0] = (double)out[0];
+        preds[0] = out[0];
       // transform prediction to response space
       preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
       if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
@@ -836,7 +840,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          //store the per-row reconstruction error (MSE) in the last column
           mse[0].addNum(score_autoencoder(tmp, null, neurons));
         }
       }

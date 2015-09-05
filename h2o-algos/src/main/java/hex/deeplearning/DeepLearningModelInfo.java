@@ -127,10 +127,6 @@ public class DeepLearningModelInfo extends Iced {
     if (!unstable) computeStats();
     unstable = true;
   }
-  public void setBogus() {
-    if (!bogus) computeStats();
-    bogus = true;
-  }
 
   private long processed_global;
   public synchronized long get_processed_global() { return processed_global; }
@@ -659,7 +655,7 @@ public class DeepLearningModelInfo extends Iced {
       // Abort the run if weights or biases are unreasonably large (Note that all input values are normalized upfront)
       // This can happen with Rectifier units when L1/L2/max_w2 are all set to 0, especially when using more than 1 hidden layer.
       final double thresh = 1e10;
-      final double bthresh = 1000;
+      final double bthresh = 100;
       unstable |= isNaN(mean_bias[y]) || isNaN(rms_bias[y])
               || Math.abs(mean_weight[y]) > thresh || isNaN(mean_weight[y])
               || rms_weight[y] > thresh || isNaN(rms_weight[y]);
