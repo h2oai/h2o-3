@@ -469,17 +469,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
         double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
         correction = Math.max(0.5,Math.min(2, correction)); //it's ok to train up to 2x more training rows per iteration, but not fewer than half.
-        if (actual_train_samples_per_iteration/correction <= 10*tspiGuess && actual_train_samples_per_iteration/correction >= 0.1*tspiGuess) { //stay within 10x of original guess
-          if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
-            actual_train_samples_per_iteration /= correction;
-            actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
-            Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-          } else {
-            Log.info("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
-          }
-        }
-        else {
-          Log.info("Keeping value of train_samples_per_iteration the same (would deviate too much from initial estimate): " + actual_train_samples_per_iteration);
+        if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
+          actual_train_samples_per_iteration /= correction;
+          actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        } else {
+          Log.info("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
         }
       } else {
         Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
