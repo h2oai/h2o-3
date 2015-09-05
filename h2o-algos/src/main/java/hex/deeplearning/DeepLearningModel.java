@@ -11,6 +11,7 @@ import water.api.ModelSchema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.*;
 
@@ -686,34 +687,30 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
-      String prefix = "reconstr_";
       assert(model_info().data_info()._responses == 0);
       String[] coefnames = model_info().data_info().coefNames();
       assert(len == coefnames.length);
-      Frame adaptFrm = new Frame(adaptedFr);
-      for( int c=0; c<len; c++ )
-        adaptFrm.add(prefix+coefnames[c],adaptFrm.anyVec().makeZero());
-      new MRTask() {
-        @Override public void map( Chunk chks[] ) {
+      String[] names = new String[len];
+      for(int i = 0; i < names.length; ++i) {
+        names[i] = "reconstr_" + coefnames[i];
+      }
+      Frame f = new MRTask() {
+        @Override public void map( Chunk chks[], NewChunk recon[] ) {
           double tmp [] = new double[_output._names.length];
           double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
             double p[] = score_autoencoder(chks, row, tmp, preds, neurons);
-            for( int c=0; c<preds.length; c++ )
-              chks[_output._names.length+c].set(row,p[c]);
+            for( int c=0; c<len; c++ )
+              recon[c].addNum(p[c]);
           }
         }
-      }.doAll(adaptFrm);
+      }.doAll(len,adaptedFr).outputFrame();
 
-      // Return the predicted columns
-      int x=_output._names.length, y=adaptFrm.numCols();
-      Frame f = adaptFrm.extractFrame(x, y); //this will call vec_impl() and we cannot call the delete() below just yet
-
-      f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
-      DKV.put(f);
+      Frame of = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), names, f.vecs());
+      DKV.put(of);
       makeMetricBuilder(null).makeModelMetrics(this, orig);
-      return f;
+      return of;
     }
   }
 
@@ -836,26 +833,21 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
     final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
-    Vec v0 = adaptFrm.anyVec().makeZero();
-    Scope.enter();
     adaptTestForTrain(adaptFrm,true, false);
-    adaptFrm.add("Reconstruction.MSE", v0);
-    new MRTask() {
-      @Override public void map( Chunk chks[] ) {
+    Frame mse = new MRTask() {
+      @Override public void map( Chunk chks[], NewChunk[] mse ) {
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
           //store the per-row reconstruction error (MSE) in the last column
-          chks[len].set(row, score_autoencoder(tmp, null, neurons));
+          mse[0].addNum(score_autoencoder(tmp, null, neurons));
         }
       }
-    }.doAll(adaptFrm);
-    Scope.exit();
+    }.doAll(1,adaptFrm).outputFrame();
 
-    Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
-    res = new Frame(destination_key, res.names(), res.vecs());
+    Frame res = new Frame(destination_key, new String[]{"Reconstruction.MSE"}, mse.vecs());
     DKV.put(res);
     _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean() /*mean MSE*/));
     return res;
@@ -1325,7 +1317,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
-  transient private final String unstable_msg = technote(4,
+  private final String unstable_msg = technote(4,
       "\n\nTrying to predict with an unstable model." +
           "\nJob was aborted due to observed numerical instability (exponential growth)."
           + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
