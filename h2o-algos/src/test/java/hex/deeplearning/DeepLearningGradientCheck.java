@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -26,13 +27,14 @@ public class DeepLearningGradientCheck extends TestUtil {
     Frame tfr = null;
     DeepLearningModel dl = null;
 
-    Scope.enter();
     try {
       tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
       for (String s : new String[]{
               "Merit", "Class"
       }) {
-        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        Vec f = tfr.vec(s).toEnum();
+        tfr.remove(s).remove();
+        tfr.add(s, f);
       }
       DKV.put(tfr);
 
@@ -96,10 +98,11 @@ public class DeepLearningGradientCheck extends TestUtil {
                   dl = job.trainModel().get();
 
                   if (!classification) {
-                    dl.score(tfr);
+                    Frame p = dl.score(tfr);
                     hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(dl, tfr);
                     double resdev = ((ModelMetricsRegression) mm)._mean_residual_deviance;
                     Log.info("Mean residual deviance: " + resdev);
+                    p.delete();
                   }
 
                   DeepLearningModelInfo modelInfo = dl.model_info().deep_clone(); //golden version
@@ -254,7 +257,6 @@ public class DeepLearningGradientCheck extends TestUtil {
 
     } finally {
       if (tfr != null) tfr.remove();
-      Scope.exit();
     }
   }
 
