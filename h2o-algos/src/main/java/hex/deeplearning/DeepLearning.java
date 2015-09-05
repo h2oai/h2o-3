@@ -169,7 +169,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         }
         buildModel();
-        done();                 // Job done!
+        if (isRunning()) done();                 // Job done!
         //check that _parms isn't changed during DL model training
         long cs2 = _parms.checksum();
         assert(cs == cs2);
@@ -396,8 +396,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
-          Log.info("Finished training the Deep Learning model (" + iteration + " Map/Reduce iterations)");
-          Log.info(model);
+          if (isCancelledOrCrashed()) {
+            Log.info("Deep Learning model training was interrupted.");
+          } else {
+            Log.info("Finished training the Deep Learning model (" + iteration + " Map/Reduce iterations)");
+            Log.info(model);
+          }
           Log.info("==============================================================================================================================================================================");
         }
       }
