@@ -629,6 +629,8 @@ public class DeepLearningTest extends TestUtil {
         dl._export_weights_and_biases = true;
         dl._hidden = new int[]{64, 64};
         dl._quiet_mode = false;
+        dl._max_w2 = 10;
+        dl._l1 = 1e-5;
         dl._replicate_training_data = false; //every node only has a piece of the data
         dl._force_load_balance = true; //use multi-node
 
