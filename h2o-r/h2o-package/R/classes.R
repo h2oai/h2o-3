@@ -728,6 +728,8 @@ str.H2OFrame <- function(object, cols=FALSE, ...) {
 #' @slot failed_params  list of model parameters which caused a failure during model building, 
 #'                      it can contain a null value
 #' @slot failure_details  list of detailed messages which correspond to failed parameters field
+#' @slot failure_stack_traces  list of stack traces corresponding to model failures reported by
+#'                             failed_params and failure_details fields
 #' @slot failed_raw_params list of failed raw parameters
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @aliases H2OGrid
@@ -738,6 +740,7 @@ setClass("H2OGrid", representation(conn = "H2OConnection",
                                    hyper_names = "list",
                                    failed_params = "list",
                                    failure_details = "list",
+                                   failure_stack_traces = "list",
                                    failed_raw_params = "matrix"))
 
 #' Format grid object in user-friendly way
@@ -750,7 +753,7 @@ setMethod("show", "H2OGrid", function(object) {
   cat("================\n\n")
   cat("Grid ID:", object@grid_id, "\n")
   cat("Used hyper parameters: \n")
-  lapply(object@hyper_names, function(name) { cat("  ", name, "\n") })
+  lapply(object@hyper_names, function(name) { cat("  - ", name, "\n") })
   cat("Number of models:", length(object@model_ids), "\n")
   cat("Number of failed models:", length(object@failed_params), "\n\n")
   hyper_names <- object@hyper_names
@@ -790,5 +793,35 @@ setMethod("show", "H2OGrid", function(object) {
     cat("-------------\n")
     print(df_failed, row.names = FALSE)
   }
+})
+#' Format grid object in user-friendly way
+#'
+#' @rdname H2OGrid-class
+#' @param object an \code{H2OGrid} object.
+#' @param show_stack_traces  a flag to show stack traces for model failures
+#' @export
+setMethod("summary", "H2OGrid",
+          function(object, show_stack_traces = F) {
+            show(object)
+            cat("H2O Grid Summary\n")
+            cat("================\n\n")
+            cat("Grid ID:", object@grid_id, "\n")
+            cat("Used hyper parameters: \n")
+            lapply(object@hyper_names, function(name) { cat("  - ", name, "\n") })
+            cat("Number of models:", length(object@model_ids), "\n")
+            for (idx in 1:length(object@model_ids)) {
+              cat("  - ", object@model_ids[[idx]], "\n")
+            }
+            cat("\nNumber of failed models:", length(object@failed_params), "\n")
+            for (idx in 1:length(object@failed_params)) {
+              cat("  - ", object@failure_details[[idx]])
+              if (show_stack_traces) {
+                cat(object@failure_stack_traces[[idx]], "\n")
+              }
+            }
+
+            if (!show_stack_traces && length(object@failed_params) > 0) {
+              cat("\nNote: To see exception stack traces please pass parameter `show_stack_traces = T` to this function.\n")
+            }
 })
 
