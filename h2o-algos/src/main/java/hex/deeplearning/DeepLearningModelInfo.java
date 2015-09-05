@@ -656,9 +656,9 @@ public class DeepLearningModelInfo extends Iced {
       final double thresh = 1e10;
       final double bthresh = 1000;
       unstable |= isNaN(mean_bias[y]) || isNaN(rms_bias[y])
-              || mean_weight[y] > thresh || isNaN(mean_weight[y])
+              || Math.abs(mean_weight[y]) > thresh || isNaN(mean_weight[y])
               || rms_weight[y] > thresh || isNaN(rms_weight[y]);
-      bogus |= mean_bias[y] > bthresh || rms_bias[y] > bthresh;
+      bogus |= Math.abs(mean_bias[y]) > bthresh || rms_bias[y] > bthresh;
     }
   }
 
