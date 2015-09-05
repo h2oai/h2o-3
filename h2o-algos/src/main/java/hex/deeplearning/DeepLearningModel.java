@@ -667,9 +667,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         Log.info(toString());
       if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
     }
-    if (model_info().unstable()) {
-      keep_running = false;
-    } else if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
+    if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
         || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
       Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
       keep_running = false;
@@ -800,7 +798,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    if (model_info().unstable()) {
+    if (model_info().isUnstable()) {
       throw new UnsupportedOperationException(unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
@@ -935,7 +933,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
-    if (model_info().unstable()) {
+    if (model_info().isUnstable()) {
       throw new UnsupportedOperationException(unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet

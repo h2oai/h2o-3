@@ -237,7 +237,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 } catch(RuntimeException ex) {
                   dl = DKV.getGet(parms._model_id);
                   if (dl != null)
-                    Assert.assertTrue(dl.model_info().unstable());
+                    Assert.assertTrue(dl.model_info().isUnstable());
                   else
                     Assert.assertTrue(job.isCancelledOrCrashed());
                 } finally {

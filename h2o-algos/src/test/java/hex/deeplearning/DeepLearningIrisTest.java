@@ -119,10 +119,12 @@ public class DeepLearningIrisTest extends TestUtil {
                               Vec resp = _train.lastVec().toEnum();
                               _train.remove(respname).remove();
                               _train.add(respname, resp);
+                              DKV.put(_train);
 
                               Vec vresp = _test.lastVec().toEnum();
                               _test.remove(respname).remove();
                               _test.add(respname, vresp);
+                              DKV.put(_test);
                             }
                             while( _train.lastVec().cardinality() < 3);
 

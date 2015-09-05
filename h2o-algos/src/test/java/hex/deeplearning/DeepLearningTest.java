@@ -932,13 +932,14 @@ public class DeepLearningTest extends TestUtil {
     Frame tfr = null;
     DeepLearningModel dl = null;
 
-    Scope.enter();
     try {
       tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
       for (String s : new String[]{
               "Class"
       }) {
-        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        Vec resp = tfr.vec(s).toEnum();
+        tfr.remove(s).remove();
+        tfr.add(s, resp);
       }
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
@@ -965,13 +966,12 @@ public class DeepLearningTest extends TestUtil {
       }
       dl = DKV.getGet(parms._model_id);
       if (dl != null) {
-        assertTrue(dl.model_info().unstable());
+        assertTrue(dl.model_info().isUnstable());
         assertTrue(dl._output._status == Job.JobState.FAILED);
       }
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.delete();
-      Scope.exit();
     }
   }
 

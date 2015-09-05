@@ -121,10 +121,15 @@ public class DeepLearningModelInfo extends Iced {
 
   private volatile boolean bogus = false;
   private volatile boolean unstable = false;
-  public boolean unstable() { return unstable; }
-  public void set_unstable() {
+  public boolean isBogus() { return bogus; }
+  public boolean isUnstable() { return unstable; }
+  public void setUnstable() {
     if (!unstable) computeStats();
     unstable = true;
+  }
+  public void setBogus() {
+    if (!bogus) computeStats();
+    bogus = true;
   }
 
   private long processed_global;
