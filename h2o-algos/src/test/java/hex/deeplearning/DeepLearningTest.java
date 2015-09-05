@@ -21,7 +21,7 @@ import water.util.Log;
 import java.util.Arrays;
 
 public class DeepLearningTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -388,7 +388,7 @@ public class DeepLearningTest extends TestUtil {
                 "DepTime", "ArrTime", "ActualElapsedTime",
                 "AirTime", "ArrDelay", "DepDelay", "Cancelled",
                 "CancellationCode", "CarrierDelay", "WeatherDelay",
-                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed", "TailNum"
             }) {
               fr.remove(s).remove();
             }
@@ -396,10 +396,8 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         7,
-        ard(ard(4051, 15612), //for 5-node
-            ard(1397, 20322)),
-//            a(a(4396, 15269), //for 1-node
-//              a(1740, 19993)),
+        ard(ard(9251, 11636),
+            ard(3053, 200038)),
         s("NO", "YES"),
         DeepLearningParameters.Activation.Rectifier);
   }
