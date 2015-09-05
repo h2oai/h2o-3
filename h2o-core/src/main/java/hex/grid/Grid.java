@@ -59,7 +59,7 @@ public class Grid<MP extends Model.Parameters>
   /**
    * Collected stack trace for failure.
    */
-  private String[] _failure_stack_trace;
+  private String[] _failure_stack_traces;
 
   /**
    * Contains "raw" representation of parameters which fail The parameters are represented in
@@ -100,7 +100,7 @@ public class Grid<MP extends Model.Parameters>
     _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
     _failure_details = new String[]{};
     _failed_raw_params = new String[][]{};
-    _failure_stack_trace = new String[]{};
+    _failure_stack_traces = new String[]{};
     _field_naming_strategy = fieldNaming;
   }
 
@@ -196,10 +196,10 @@ public class Grid<MP extends Model.Parameters>
     nrp[rp.length] = rawParams;
     _failed_raw_params = nrp;
     // Append stack trace
-    String[] st = _failure_stack_trace;
+    String[] st = _failure_stack_traces;
     String[] nst = Arrays.copyOf(st, st.length + 1);
     nst[st.length] = stackTrace;
-    _failure_stack_trace = nst;
+    _failure_stack_traces = nst;
   }
 
   /**
@@ -292,6 +292,13 @@ public class Grid<MP extends Model.Parameters>
    */
   public String[] getFailureDetails() {
     return _failure_details;
+  }
+
+  /** Returns string representation of model build failures'
+   * stack traces.
+   */
+  public String[] getFailureStackTraces() {
+    return _failure_stack_traces;
   }
 
   /**
