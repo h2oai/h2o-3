@@ -160,9 +160,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     @Override protected void compute2() {
       try {
         long cs = _parms.checksum();
-
-        Scope.enter();
-        // Init parameters
         init(true);
         // Read lock input
         _parms.read_lock_frames(DeepLearning.this);
@@ -172,20 +169,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         }
         buildModel();
+        if (isRunning()) done();                 // Job done!
         //check that _parms isn't changed during DL model training
         long cs2 = _parms.checksum();
         assert(cs == cs2);
+      } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
-        if (thisJob != null && thisJob._state == JobState.CANCELLED) {
+        if (thisJob._state == JobState.CANCELLED) {
           Log.info("Job cancelled by user.");
         } else {
-          done();                 // Job done!
+          t.printStackTrace();
+          failed(t);
+          throw t;
         }
-//      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } finally {
         updateModelOutput();
         _parms.read_unlock_frames(DeepLearning.this);
-        Scope.exit();
       }
       tryComplete();
     }
@@ -273,8 +272,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             }
           }
         }
-      } catch(NullPointerException npe) {
-
       } finally {
         Scope.exit(keep.toArray(new Key[0]));
       }
@@ -380,7 +377,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration));
 
         // replace the model with the best model so far (if it's better)
-        if (!isCancelledOrCrashed() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
+        if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode) {
@@ -399,8 +396,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
-          Log.info("Finished training the Deep Learning model (" + iteration + " Map/Reduce iterations)");
-          Log.info(model);
+          if (isCancelledOrCrashed()) {
+            Log.info("Deep Learning model training was interrupted.");
+          } else {
+            Log.info("Finished training the Deep Learning model (" + iteration + " Map/Reduce iterations)");
+            Log.info(model);
+          }
           Log.info("==============================================================================================================================================================================");
         }
       }
