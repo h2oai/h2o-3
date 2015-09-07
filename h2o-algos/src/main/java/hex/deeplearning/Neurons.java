@@ -412,7 +412,7 @@ public abstract class Neurons {
     if (params._autoencoder && params._sparsity_beta > 0 && !(this instanceof Output) && !(this instanceof Input) && (_index != params._hidden.length)) {
       _b.add(b, -(rate * params._sparsity_beta * (_avg_a.raw()[b] - params._average_activation)));
     }
-    if (Double.isInfinite(_b.get(b))) _minfo.set_unstable();
+    if (Double.isInfinite(_b.get(b))) _minfo.setUnstable();
   }
 
 

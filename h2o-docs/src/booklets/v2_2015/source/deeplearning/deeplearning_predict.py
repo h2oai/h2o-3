@@ -1,7 +1,6 @@
-# Perform classification on the held out data
-prediction = model.predict(test)
+# Perform classification on the test set (predict class labels)
+# This also returns the probability for each class
+pred = model.predict(test)
 
-# Copy predictions from H2O to Python
-pred = prediction.as_data_frame()
-
+# Take a look at the predictions
 pred.head()

@@ -796,7 +796,6 @@ setMethod("show", "H2OGrid", function(object) {
 })
 #' Format grid object in user-friendly way
 #'
-#' @rdname H2OGrid-class
 #' @param object an \code{H2OGrid} object.
 #' @param show_stack_traces  a flag to show stack traces for model failures
 #' @export

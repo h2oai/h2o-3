@@ -11,6 +11,5 @@ train <- h2o.importFile(train_file, header = FALSE, sep = ",")
 test <- h2o.importFile(test_file, header = FALSE, sep = ",")
 
 # To see a brief summary of the data, run the following command
-
 summary(train)
 summary(test)

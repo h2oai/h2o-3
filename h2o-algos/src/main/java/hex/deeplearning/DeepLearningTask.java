@@ -177,7 +177,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _localmodel.add(other._localmodel);
         _chunk_node_count += other._chunk_node_count;
       }
-      if (other._localmodel.unstable()) _localmodel.set_unstable();
+      if (other._localmodel.isUnstable()) _localmodel.setUnstable();
     }
   }
 
