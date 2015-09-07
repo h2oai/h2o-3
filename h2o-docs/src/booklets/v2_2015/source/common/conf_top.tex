@@ -10,7 +10,7 @@
 \usepackage[left=1.1in,top=1in,right=1.1in]{geometry}% http://ctan.org/pkg/geometry
 \usepackage{listings}% http://ctan.org/pkg/listings
 \usepackage{spverbatim}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \usepackage{microtype}
 \hypersetup{colorlinks=false}
 \usepackage{graphicx}
@@ -22,8 +22,8 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhead{}
-\fancyhead[RO, RE]{\thepage}
-\fancyhead[LO, LE]{\rightmark}
+\fancyhead[RE]{\rightmark \hfill \thepage}
+\fancyhead[LO]{\thepage \hfill \rightmark}
 \renewcommand{\sectionmark}[1]{\markboth{}{\textsc{\thesection~#1}}}
 \fancyfoot[C]{}%hide footer
 \usepackage{xcolor} 

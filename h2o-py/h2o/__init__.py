@@ -404,6 +404,6 @@ from frame import H2OFrame
 from group_by import GroupBy
 from expr import ExprNode
 from two_dim_table import H2OTwoDimTable
-from assembly import H2OAssembly
+# from assembly import H2OAssembly
 
 __all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable", "GroupBy"]

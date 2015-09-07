@@ -7,6 +7,8 @@ import java.util.Arrays;
 import water.Key;
 import water.Job;
 import water.exceptions.H2OIllegalArgumentException;
+import water.Value;
+import water.H2O;
 
 /**
  * A vector of plain Bytes.
@@ -56,7 +58,7 @@ public class ByteVec extends Vec {
   public InputStream openStream(final Key job_key) {
     return new InputStream() {
       final long [] sz = new long[1];
-      private int _cidx, _sz;
+      private int _cidx, _pidx, _sz;
       private C1NChunk _c0;
       @Override public int available() {
         if( _c0 == null || _sz >= _c0._len) {
@@ -74,7 +76,16 @@ public class ByteVec extends Vec {
         return available() == 0 ? -1 : 0xFF&_c0._mem[_sz++];
       }
       @Override public int read(byte[] b, int off, int len) {
-        if( b==null ) return _cidx;// Back-channel read of cidx
+        if( b==null ) { // Back-channel read of cidx
+          if ( _cidx > _pidx) { // Remove prev chunk from memory
+            Value v = H2O.get(chunkKey(_pidx++));
+            if (v != null && v.isPersisted()) {
+              v.freePOJO();           // Eagerly toss from memory
+              v.freeMem();
+            } // Else not found, or not on disk somewhere
+          }
+          return _cidx;
+        }
         int sz = available();
         if( sz == 0 )
           return -1;
