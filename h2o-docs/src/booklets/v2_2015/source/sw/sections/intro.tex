@@ -1,0 +1,58 @@
+\section{Sparkling Water Introduction}
+
+Sparkling Water integrates H2O's fast scalable machine learning engine with Spark.
+
+\subsection{Typical Use-Case}
+Sparkling Water excels in leveraging existing Spark-based workflows that need to call advanced machine learning algorithms. A typical example involves data munging with help of Spark API, where a prepared table is passed to the H2O DeepLearning algorithm. The constructed DeepLearning model estimates different metrics based on the testing data, which can be used in the rest of the Spark workflow.
+
+\subsection{Provided Features}
+
+Sparkling Water provides transparent integration for the H2O engine and its machine learning algorithms into the Spark platform, enabling:
+
+\begin{itemize}
+ \item Use of H2O algorithms in Spark workflow
+ \item Transformation between H2O and Spark data structures
+ \item Sse of Spark RDDs and DataFrames as input for H2O algorithms
+ \item Transparent execution of Sparkling Water applications on top of Spark
+\end{itemize}
+
+\subsection{Supported Data Sources}
+
+Currently, Sparkling Water can use the following data source types:
+
+\begin{itemize}
+ \item Standard RDD API to load data and transform them into H2OFrame
+ \item H2O API to load data directly into H2OFrame from file(s) stored on:
+  \begin{itemize}
+    \item local filesystem
+    \item HDFS
+    \item S3)
+    \item HTTP/HTTPS
+  \end{itemize}
+\end{itemize}
+
+\subsection{Supported Data Formats}
+
+Sparkling Water can read data stored in the following formats:
+
+\begin{itemize}
+  \item CSV
+  \item SVMLight
+  \item ARFF
+\end{itemize}
+
+\subsection{Supported Spark Execution Environments}
+
+Sparkling Water can run on top of Spark in the following ways:
+
+\begin{itemize}
+  \item as a local cluster (master points to one of values \texttt{local},
+\texttt{local[*]}, or \texttt{local-cluster[...]})
+  \item as a standalone cluster\footnote{See Spark documentation
+\href{http://spark.apache.org/docs/latest/spark-standalone.html}{Spark
+Standalone Model}}
+  \item in a YARN environment\footnote{See Spark documentation \href{http://spark.apache.org/docs/latest/running-on-yarn.html}{Running
+Spark on YARN}}
+
+\end{itemize}
+

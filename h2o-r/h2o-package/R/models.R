@@ -276,9 +276,9 @@ h2o.getFutureModel <- function(object) {
     if (length(k) > 0)
       for (n in k)
         if (paramValue[n] == Inf)
-          paramValue[n] <<- "Infinity"
+          paramValue[n] <- "Infinity"
         else
-          paramValue[n] <<- "-Infinity"
+          paramValue[n] <- "-Infinity"
     if (collapseArrays) {
       if (type == "character")
         paramValue <- .collapse.char(paramValue)
@@ -319,20 +319,24 @@ h2o.getFutureModel <- function(object) {
         }
         # If there is no error then transform hyper values
         if (!nzchar(e)) {
-          transf_hyper_vals <- sapply(hyper_vals, function(hv) {
-                                      # R does not treat integers as numeric
-                                      if (is.integer(hv)) {
-                                        hv <- as.numeric(hv)
-                                      }
-                                      mapping <- .type.map[paramDef$type,]
-                                      type <- mapping[1L, 1L]
-                                      # Force evaluation of frames and fetch frame_id as
-                                      # a side effect
-                                      if (type == "H2OFrame") {
-                                        hv <- .h2o.checkFrameParam(hv, name)@frame_id
-                                      }
-                                      .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
-                                })
+          mapping <- .type.map[paramDef$type,]
+          type <- mapping[1L, 1L]
+          transf_hyper_vals <- sapply(hyper_vals,
+                                      simplify = !is.list(hyper_vals),
+                                      function(hv) {
+                                        # R does not treat integers as numeric
+                                        if (is.integer(hv)) {
+                                          hv <- as.numeric(hv)
+                                        }
+                                        # Force evaluation of frames and fetch frame_id as
+                                        # a side effect
+                                        if (type == "H2OFrame") {
+                                          hv <- .h2o.checkFrameParam(hv, name)@frame_id
+                                        }
+                                        # Returns transformed value
+                                        hv <- .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                                        hv
+                                      })
           hyper_params[[name]] <<- transf_hyper_vals
         }
       }
@@ -1893,17 +1897,20 @@ h2o.sdev <- function(object) {
 #' Handles numerical/categorical data and missing values. Supports observation weights.
 #'
 #' @param data An \linkS4class{H2OFrame} object.
-#' @param predictor predictor column
-#' @param response response column
-#' @param weights (optional) observation weights column
-#' @param nbins_predictor number of bins for predictor column
-#' @param nbins_response number of bins for response column
+#' @param x predictor column
+#' @param y response column
+#' @param weights_column (optional) observation weights column
+#' @param nbins_x number of bins for predictor column
+#' @param nbins_y number of bins for response column
+#' @return Returns two TwoDimTables of 3 columns each
+#'        count_table:    X     Y counts
+#'        response_table: X meanY counts
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' localH2O <- h2o.init()
 #' df <- as.h2o(iris)
-#' h2o.tabulate(data = df, x = "sepal_length", y = "species",
+#' h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
 #' }
 #' @export
@@ -1917,14 +1924,14 @@ h2o.tabulate <- function(data, x, y,
     temp_key <- data@frame_id
     .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
   }
-  args <- .verify_dataxy(data, x, y)
+  args <- .verify_datacols(data, c(x,y))
   if(!is.numeric(nbins_x)) stop("`nbins_x` must be a positive number")
   if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
 
   parms = list()
   parms$dataset <- data@frame_id
-  parms$predictor <- args$x
-  parms$response <- args$y
+  parms$predictor <- args$cols[1]
+  parms$response <- args$cols[2]
   if( !missing(weights_column) )            parms$weight <- weights_column
   parms$nbins_predictor <- nbins_x
   parms$nbins_response <- nbins_y

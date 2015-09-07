@@ -1,5 +1,7 @@
 # TO DO: Add Python version
+# (Python Grid API is not complete yet)
 
+# Example R version below
 # # print out all prediction errors and run times of the models
 # grid
 # 

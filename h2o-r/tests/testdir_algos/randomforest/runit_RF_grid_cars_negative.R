@@ -47,14 +47,14 @@ check.drf.grid.cars.negative <- function(conn) {
 
   Log.info("Constructing the grid of drf models with some invalid drf parameters...")
   if ( validation_scheme == 1 ) {
-    cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space))
+    cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space))
   } else if ( validation_scheme == 2 ) {
-    cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space))
+    cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space))
   } else {
-    cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
+    cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    expect_error(h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
@@ -78,13 +78,13 @@ check.drf.grid.cars.negative <- function(conn) {
   Log.info(paste0("Constructing the grid of drf models with non-gridable parameter: ", non_gridable_parameter ,
                   " (1:build_tree_one_node, 2:binomial_double_trees). Expecting failure..."))
   if ( validation_scheme == 1 ) {
-    expect_error(cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
+    expect_error(cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, hyper_params=grid_space))
   } else if ( validation_scheme == 2 ) {
-    expect_error(cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
+    expect_error(cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, nfolds=nfolds, hyper_params=grid_space))
   } else {
-    expect_error(cars_drf_grid <- h2o.grid("drf", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
+    expect_error(cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
 
   testEnd()

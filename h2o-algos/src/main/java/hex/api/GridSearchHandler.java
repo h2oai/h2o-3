@@ -158,6 +158,8 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
         throw new IllegalArgumentException("Cannot find field '" + name + "'", e);
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Cannot set field '" + name + "'", e);
+      } catch (RuntimeException e) {
+        throw new IllegalArgumentException("Cannot set field '" + name + "'", e);
       }
       return this;
     }

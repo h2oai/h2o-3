@@ -1,4 +1,4 @@
-activation_opt <- c("Tanh", "Maxout")
+activation_opt <- c("Tanh", "Rectifier")
 hidden_opt <- list(c(100,100), c(100,200,100))
 hyper_params <- list(activation = activation_opt, 
                      hidden = hidden_opt)
