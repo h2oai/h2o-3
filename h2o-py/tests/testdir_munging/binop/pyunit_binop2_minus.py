@@ -25,7 +25,6 @@ def binop_minus():
 
     ###################################################################
 
-<<<<<<< HEAD
     # LHS: 1x1 H2OFrame, RHS: H2OFrame
     try:
       res = 1.2 - iris[2]
@@ -43,18 +42,6 @@ def binop_minus():
       assert False, "Expected Frame dimension mismatch error"
     except Exception:
       pass
-=======
-    # LHS: scaler, RHS: H2OFrame
-    res = 1.2 - iris[2]
-    res2 = res[21,:] - iris
-    res_rows, res_cols = res2.dim
-    assert res_rows == rows and res_cols == cols, "dimension mismatch"
-
-    # LHS: scaler, RHS: H2OVec
-    res = 1.2 - iris[2]
-    res2 = res[21,:] - iris[1]
-    res2.show()
->>>>>>> master
 
     # LHS: scaler, RHS: scaler
     res = 1.1 - iris[2]

@@ -474,8 +474,4 @@ class ModelBase(object):
     :return: None
     """
     if len(y_actual) != len(y_predicted):
-<<<<<<< HEAD
       raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))
-=======
-      raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))
->>>>>>> master

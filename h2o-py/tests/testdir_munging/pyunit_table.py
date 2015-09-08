@@ -19,8 +19,4 @@ def table_check():
     print table2
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     tests.run_test(sys.argv, table_check)
-=======
-    tests.run_test(sys.argv, table_check)
->>>>>>> master

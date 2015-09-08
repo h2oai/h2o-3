@@ -2,11 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-<<<<<<< HEAD
-def test_in(ip,port):
-=======
 def test_in():
->>>>>>> master
     iris = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
 
     assert 5.1 in iris[0], "expected 5.1 to be in the first column, but it wasn't"
