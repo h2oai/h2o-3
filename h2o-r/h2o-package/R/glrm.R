@@ -67,7 +67,7 @@
 #' localH2O <- h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
-#' h2o.glrm(training_frame = australia.hex, k = 5, loss = "L2", regularization_x = "L1", 
+#' h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1", 
 #'          gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' @export
 h2o.glrm <- function(training_frame, x, k, model_id,
