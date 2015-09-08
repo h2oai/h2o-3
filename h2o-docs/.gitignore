@@ -1,3 +1,9 @@
 web/
 routes.json
 schemas.json
+
+# Ignore latex stuff
+*.aux
+*.log
+*.out
+*.toc

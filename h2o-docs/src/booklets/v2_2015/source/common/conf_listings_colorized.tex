@@ -1,0 +1,116 @@
+% TO DO: Find better templates for R and Python
+
+
+
+%----------------------------------------------------------------------
+% Definition for "lstlisting" blocks
+%----------------------------------------------------------------------
+% --- USAGE ---
+%
+% \begin{lstlisting}[style=R}
+% ...
+% \end{lstlisting}
+%
+% % \begin{lstlisting}[style=output}
+% ...
+% \end{lstlisting}
+%----------------------------------------------------------------------
+
+% By default, make listings all black so it's easy to spot the ones that aren't set to a style.
+% This is just a debugging technique.
+%\lstset{backgroundcolor=\color{black}}
+
+% http://latexcolor.com/
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+%\definecolor{tan}{rgb}{0.98, 0.92, 0.84}  %antiquewhite
+%\definecolor{r_bkgd}{rgb}{1.0, 0.92, 0.8}  %blacnedalmond
+\definecolor{py_bkgd}{rgb}{0.94, 0.97, 1.0}  %aliceblue
+\definecolor{ashgrey}{rgb}{0.7, 0.75, 0.71}
+\definecolor{battleshipgrey}{rgb}{0.52, 0.52, 0.51}
+%\definecolor{r_bkgd}{rgb}{0.97, 0.91, 0.81}  %champagne
+\definecolor{r_bkgd}{rgb}{0.98, 0.92, 0.84}  %moccasin
+
+\definecolor{Code}{rgb}{0,0,0}
+\definecolor{Decorators}{rgb}{0.5,0.5,0.5}
+\definecolor{Numbers}{rgb}{0.5,0,0}
+\definecolor{MatchingBrackets}{rgb}{0.25,0.5,0.5}
+\definecolor{Keywords}{rgb}{0,0,1}
+\definecolor{self}{rgb}{0,0,0}
+\definecolor{Strings}{rgb}{0,0.63,0}
+\definecolor{Comments}{rgb}{0,0.63,1}
+\definecolor{Backquotes}{rgb}{0,0,0}
+\definecolor{Classname}{rgb}{0,0,0}
+\definecolor{FunctionName}{rgb}{0,0,0}
+\definecolor{Operators}{rgb}{0,0,0}
+\definecolor{Background}{rgb}{0.98,0.98,0.98}
+
+% KEYWORDS
+% http://tex.stackexchange.com/questions/186092/how-can-i-delete-non-letter-keywords-such-as
+
+\lstdefinestyle{R}{
+  language={R},
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  %commentstyle=\textsl\color{Comments},% comment style
+  commentstyle=\itshape\color{battleshipgrey},% comment style
+  keywordstyle=\ttfamily\color{deepblue},
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{r_bkgd},
+  showstringspaces=false,
+  stringstyle=\color{deepgreen},
+  %morekeywords={TRUE, FALSE, for, if},
+  keywordstyle={\color{Keywords}\bfseries},
+  keywords={TRUE, FALSE},
+  deletekeywords={grid, frame, variable, model, vi, predict, file},
+  otherkeywords={!,!=,~,$,*,\&,\%/\%,\%*\%,\%\%,<-,<<-},
+  %morekeywords={TRUE, FALSE, list, c}
+}
+
+
+
+\lstdefinestyle{python}{
+  language={Python},
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  commentstyle=\itshape\color{battleshipgrey},% comment style
+  %commentstyle=\textsl,% comment style
+  %keywordstyle=\ttfamily\color{deepblue},
+  %keywordstyle=\color{WildStrawberry},
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{white},
+  showstringspaces=false,
+  stringstyle=\color{deepgreen},
+  backgroundcolor=\color{py_bkgd},
+  % keywords
+morekeywords={import,from,class,def,for,while,if,is,in,elif,else,not,and,or,print,break,continue,return,True,False,None,access,as,,del,except,exec,finally,global,import,lambda,pass,print,raise,try,assert},
+ keywordstyle={\color{Keywords}\bfseries},
+}
+
+\definecolor{mygray}{rgb}{0.92,0.92,0.92}
+
+\lstdefinestyle{output}{
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{mygray},
+  showstringspaces=false 
+}
+
+\newcommand{\waterExampleInR} {
+\textbf{Example in R} \\
+}
+
+\newcommand{\waterExampleInPython} {
+\textbf{Example in Python} \\
+}

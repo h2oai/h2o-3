@@ -120,8 +120,8 @@ public class DeepLearningModelInfo extends Iced {
   public double[] mean_a;
 
   private volatile boolean unstable = false;
-  public boolean unstable() { return unstable; }
-  public void set_unstable() {
+  public boolean isUnstable() { return unstable; }
+  public void setUnstable() {
     if (!unstable) computeStats();
     unstable = true;
   }
@@ -653,10 +653,15 @@ public class DeepLearningModelInfo extends Iced {
       // Abort the run if weights or biases are unreasonably large (Note that all input values are normalized upfront)
       // This can happen with Rectifier units when L1/L2/max_w2 are all set to 0, especially when using more than 1 hidden layer.
       final double thresh = 1e10;
-      unstable |= mean_bias[y] > thresh || isNaN(mean_bias[y])
-              || rms_bias[y] > thresh || isNaN(rms_bias[y])
-              || mean_weight[y] > thresh || isNaN(mean_weight[y])
-              || rms_weight[y] > thresh || isNaN(rms_weight[y]);
+      final double bthresh = 1e5;
+      unstable |= isNaN(mean_bias[y]) || isNaN(rms_bias[y])
+          || isNaN(mean_weight[y]) || isNaN(rms_weight[y])
+          // large weights
+          || Math.abs(mean_weight[y]) > thresh
+          || rms_weight[y] > thresh
+          // large biases
+          || Math.abs(mean_bias[y]) > bthresh
+          || rms_bias[y] > bthresh;
     }
   }
 

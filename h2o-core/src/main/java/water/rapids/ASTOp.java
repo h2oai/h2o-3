@@ -182,6 +182,7 @@ public abstract class ASTOp extends AST {
 
     // Misc
     putPrefix(new ASTKFold());
+    putPrefix(new ASTModuloKFold());
     putPrefix(new ASTPop());
     putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
@@ -337,6 +338,30 @@ public abstract class ASTOp extends AST {
     if (isUDF(op)) return UDF_OPS.get(op);
     if (PREFIX_OPS.containsKey(op)) return PREFIX_OPS.get(op);
     throw H2O.unimpl("Unimplemented: Could not find the operation or function " + op);
+  }
+
+  public static Vec kfoldColumn(Vec v, final int nfolds, final long seed) {
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        long start = c.start();
+        for( int i=0; i<c._len; ++i ) {
+          int fold = Math.abs(getRNG(start + seed + i).nextInt()) % nfolds;
+          c.set(i,fold);
+        }
+      }
+    }.doAll(v);
+    return v;
+  }
+
+  public static Vec moduloKfoldColumn(Vec v, final int nfolds) {
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        long start = c.start();
+        for( int i=0; i<c._len; ++i)
+          c.set(i, (int) ((start + i) % nfolds));
+      }
+    }.doAll(v);
+    return v;
   }
 }
 
@@ -2244,17 +2269,26 @@ class ASTKFold extends ASTUniPrefixOp {
   }
   @Override public void apply(Env e) {
     Vec foldVec = e.popAry().anyVec().makeZero();
-    if( _seed == -1 ) _seed = new Random().nextLong();
-    new MRTask() {
-      @Override public void map(Chunk c) {
-        long start = c.start();
-        for (int i = 0; i < c._len; ++i) {
-          int fold = Math.abs(getRNG(start + _seed + i).nextInt()) % _nfolds;
-          c.set(i, fold);
-        }
-      }
-    }.doAll(foldVec);
-    e.pushAry(new Frame(foldVec));
+    e.pushAry(new Frame(kfoldColumn(foldVec, _nfolds, _seed == -1 ? new Random().nextLong() : _seed)));
+  }
+}
+
+class ASTModuloKFold extends ASTUniPrefixOp {
+  int _nfolds;
+  @Override String opStr() { return "modulo_kfold_column"; }
+  @Override ASTOp make() { return new ASTModuloKFold(); }
+  public ASTModuloKFold() { super(new String[]{"x","nfolds"});}
+  ASTModuloKFold parse_impl(Exec E) {
+    AST ary = E.parse();
+    _nfolds = (int)E.nextDbl();
+    E.eatEnd();
+    ASTModuloKFold res = (ASTModuloKFold)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Vec foldVec = e.popAry().anyVec().makeZero();
+    e.pushAry(new Frame(moduloKfoldColumn(foldVec, _nfolds)));
   }
 }
 

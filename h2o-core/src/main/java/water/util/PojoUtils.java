@@ -319,6 +319,9 @@ public class PojoUtils {
       catch (InstantiationException e) {
         Log.err("Instantiation exception trying to copy field: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
       }
+      catch (Exception e) {
+        Log.err(e.getClass().getCanonicalName() + " Exception: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
+      }
     }
   }
 
