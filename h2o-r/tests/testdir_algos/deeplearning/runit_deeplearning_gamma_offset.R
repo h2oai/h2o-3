@@ -25,11 +25,15 @@ test <- function(h) {
                       offset_column = "offset",training_frame = hdf,validation_frame=hdf) 
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
-	expect_equal(mean_deviance,8.300230097)
-	ph = as.data.frame(h2o.predict(hh,newdata = hdf)) 
-	expect_equal(50.33791576, mean(ph[,1]) )
-	expect_equal(0.9577758703, min(ph[,1]) )
-	expect_equal(404.8805212, max(ph[,1]) )
+	ph = as.data.frame(h2o.predict(hh,newdata = hdf))
+	print(mean_deviance)
+	print(mean(ph[,1]))
+	print(min(ph[,1]))
+	print(max(ph[,1]))
+	expect_equal(mean_deviance,8.3, 1e-2)
+	expect_equal(50.7, mean(ph[,1]), 1e-2 )
+	expect_equal(0.941, min(ph[,1]), 1e-2 )
+	expect_equal(415, max(ph[,1]), 1e-2 )
 
 	testEnd()
 }

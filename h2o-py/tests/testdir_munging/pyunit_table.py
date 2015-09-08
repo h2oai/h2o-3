@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def table_check(ip,port):
+def table_check():
     # Connect to a pre-existing cluster
     
 
@@ -19,4 +19,8 @@ def table_check(ip,port):
     print table2
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     tests.run_test(sys.argv, table_check)
+=======
+    tests.run_test(sys.argv, table_check)
+>>>>>>> master

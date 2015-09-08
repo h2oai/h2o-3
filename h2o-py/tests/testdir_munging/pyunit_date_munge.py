@@ -18,7 +18,7 @@ def refine_date_col(data, col, pattern):
   data["Season"]  = data["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
 
 
-def date_munge(ip,port):
+def date_munge():
   crimes_path = h2o.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
   crimes = h2o.import_file(path=crimes_path)
   crimes.describe()

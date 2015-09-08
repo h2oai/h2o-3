@@ -2,7 +2,11 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
+<<<<<<< HEAD
 def pyunit_types(ip,port):
+=======
+def pyunit_types():
+>>>>>>> master
 
   pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
   types = pros.types

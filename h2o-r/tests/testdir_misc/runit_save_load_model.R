@@ -17,7 +17,7 @@ test.save_load_dlmodel <- function() {
   Log.info("Build Deep Learning model and save to disk")
   prostate.dl = h2o.deeplearning(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.train, validation_frame = prostate.test)
   print(prostate.dl)
-  prostate.dl.path = h2o.saveModel(object = prostate.dl, dir = temp_dir, force = TRUE)
+  prostate.dl.path = h2o.saveModel(object = prostate.dl, path=temp_dir, force = TRUE)
 
   Log.info(paste("Load Deep Learning model saved at", prostate.dl.path))
   prostate.dl2 = h2o.loadModel(prostate.dl.path)

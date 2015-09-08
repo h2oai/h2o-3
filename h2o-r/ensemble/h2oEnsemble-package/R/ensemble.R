@@ -176,6 +176,7 @@ h2o.ensemble <- function(x, y, training_frame,
                     seed = seed, fold_column = "fold_id", 
                     simplify = FALSE)
   
+  runtime <- list()
   runtime$cv <- lapply(fitlist, function(ll) ll$fittime)
   names(runtime$cv) <- learner
   basefits <- lapply(fitlist, function(ll) ll$fit)  #Base fits (trained on full data) to be saved

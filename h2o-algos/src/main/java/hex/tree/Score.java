@@ -57,7 +57,7 @@ public class Score extends MRTask<Score> {
         _bldr.score2(chks, weight, offset, cdists, row); // Use the training data directly (per-row predictions already made)
       else            // Must score "the hard way"
         m.score0(chks, weight, offset, row, tmp, cdists);
-      if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, tmp, m.defaultThreshold()); // Fill in prediction
+      if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
     }

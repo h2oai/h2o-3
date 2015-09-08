@@ -153,10 +153,6 @@ H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net ar
 
 ---
 
-<!---
-
-#commenting out as still in dev but wanted to save for later
-
 **Are there any H2O examples using text for classification?**
 
 Currently, the following examples are available for Sparkling Water: 
@@ -167,7 +163,8 @@ https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/mlconf_201
 b) Use Word2Vec Skip-gram model + GBM for classifying job titles 
 https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.scala 
 
--->
+---
+
 
 ##Building H2O
 
@@ -300,7 +297,18 @@ Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value betw
 
 If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
 
+---
 
+**What types of data columns does H2O support?**
+
+Currently, H2O supports: 
+
+- float (any IEEE double)
+- integer (up to 64bit, but compressed according to actual range)
+- factor (same as integer, but with a String mapping, often handled differently in the algorithms)
+- time (same as 64bit integer, but with a time-since-Unix-epoch interpretation)
+- UUID (128bit integer, no math allowed)
+- String
 
 ---
 
@@ -491,10 +499,17 @@ This error message means that there is a space (or other unsupported character) 
 
 ---
 
+**Does H2O support GPUs?**
+
+Currently, we do not support this capability. If you are interested in contributing your efforts to support this feature to our open-source code database, please contact us at [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
+
+
+---
+
+
 ##Hadoop
 
-<!---
->commenting out as in progress per Michal
+
 **Why did I get an error in R when I tried to save my model to my home directory in Hadoop?**
 
 To save the model in HDFS, prepend the save directory with `hdfs://`:
@@ -511,7 +526,6 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 ```
 
 ---
--->
 
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
@@ -554,12 +568,6 @@ Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test
 When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
 
 ---
-
-
-
-
-
-
 
 ##Java
 
@@ -738,6 +746,14 @@ fr.describe()
 
 ##R
 
+**Which versions of R are compatible with H2O?**
+
+Currently, the only version of R that is known to not work well with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using this version, we recommend upgrading the R version before using H2O. 
+
+
+
+---
+
 **How can I install the H2O R package if I am having permissions problems?**
 
 This issue typically occurs for Linux users when the R software was installed by a root user. For more information, refer to the following [link](https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html). 
@@ -800,7 +816,7 @@ if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statm
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 ```
@@ -943,7 +959,63 @@ EOF
 
 ---
 
+<!---
 
+in progress - commenting out until complete
+
+**How do I extract the variable importance from the output in R?**
+
+Launch R, then enter the following: 
+
+```
+library(h2o)
+h <- h2o.init()
+as.h2o(iris)
+as.h2o(testing)
+m <- h2o.gbm(x=1:4, y=5, data=hex, importance=T)
+
+m@model$varimp
+             Relative importance Scaled.Values Percent.Influence
+Petal.Width          7.216290000  1.0000000000       51.22833426
+Petal.Length         6.851120500  0.9493965043       48.63600147
+Sepal.Length         0.013625654  0.0018881799        0.09672831
+Sepal.Width          0.005484723  0.0007600474        0.03893596
+```
+
+The variable importances are returned as an R data frame and you can extract the names and values of the data frame as follows:
+
+```
+is.data.frame(m@model$varimp)
+# [1] TRUE
+
+names(m@model$varimp)
+# [1] "Relative importance" "Scaled.Values"       "Percent.Influence"  
+
+rownames(m@model$varimp)
+# [1] "Petal.Width"  "Petal.Length" "Sepal.Length" "Sepal.Width"
+
+m@model$varimp$"Relative importance"
+# [1] 7.216290000 6.851120500 0.013625654 0.005484723
+```
+
+-->
+
+
+---
+
+**How does the `col.names` argument work in `group_by`?**
+
+You need to add the `col.names` inside the `gb.control` list. Refer to the following example:
+
+```
+newframe <- h2o.group_by(dd, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
+    sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+newframe$avg_email_event_click_ct2 = newframe$total_email_event_click_ct / newframe$count
+```
+
+
+
+---
 
 ##Sparkling Water
 

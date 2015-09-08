@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def binop_amp(ip,port):
+def binop_amp():
     
     
 
@@ -12,6 +12,7 @@ def binop_amp(ip,port):
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
+<<<<<<< HEAD
     # amp_res = 5 & iris
     # amp_rows, amp_cols = amp_res.dim
     # assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
@@ -22,6 +23,18 @@ def binop_amp(ip,port):
     # assert amp_rows == rows, "dimension mismatch"
     # new_rows = iris[amp_res].nrow
     # assert new_rows == rows, "wrong number of rows returned"
+=======
+    amp_res = 5 & iris
+    amp_rows, amp_cols = amp_res.dim
+    assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
+
+    # LHS: scaler, RHS: H2OVec
+    amp_res = 1 & iris[1]
+    amp_rows = amp_res.nrow
+    assert amp_rows == rows, "dimension mismatch"
+    new_rows = iris[amp_res].nrow
+    assert new_rows == rows, "wrong number of rows returned"
+>>>>>>> master
 
     ###################################################################
 

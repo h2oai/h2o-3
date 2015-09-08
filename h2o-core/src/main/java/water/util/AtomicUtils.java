@@ -67,12 +67,12 @@ public abstract class AtomicUtils {
       assert idx >= 0 && idx < ary.length;
       return _Lbase + idx * _Lscale;
     }
-    static public boolean CAS( long[] ls, int i, long old, long newl ) {
-      return _unsafe.compareAndSwapLong(ls,rawIndex(ls,i), old, newl );
-    }
-    static public void incr( long ls[], int i ) {
-      long old;
-      while( !CAS(ls,i, old=ls[i], old+1) ) ;
+    static public void incr( long ls[], int i ) { add(ls,i,1); }
+    static public void add( long ls[], int i, long x ) {
+      long adr = rawIndex(ls,i);
+      long old = ls[i];
+      while( !_unsafe.compareAndSwapLong(ls,adr, old, old+x) )
+        old = ls[i];
     }
   }
   // Atomically-updated int array.  Instead of using the similar JDK pieces,

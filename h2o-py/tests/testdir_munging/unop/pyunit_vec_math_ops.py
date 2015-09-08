@@ -6,7 +6,7 @@ import random
 import math
 import scipy.special
 
-def vec_math_ops(ip,port):
+def vec_math_ops():
     
     
 
@@ -52,7 +52,11 @@ def vec_math_ops(ip,port):
     tests.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
     tests.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
     tests.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
+<<<<<<< HEAD
     h2o_val = h2o_data3[c].gamma()[5,:]._scalar()
+=======
+    h2o_val = h2o_data3[c].gamma()[5,:]
+>>>>>>> master
     num_val = math.gamma(h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and" \

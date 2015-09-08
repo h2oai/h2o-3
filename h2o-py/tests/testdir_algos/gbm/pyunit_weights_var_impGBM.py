@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def weights_var_imp(ip,port):
+def weights_var_imp():
     
     
 

@@ -55,7 +55,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double [] beta() { return _output._global_beta;}
   public String [] names(){ return _output._names;}
 
-
+  @Override
+  public double deviance(double w, double y, double f) {
+    if (w == 0) {
+      return 0;
+    } else if (w == 1) {
+      return _parms.deviance(y, f);
+    } else {
+      return Double.NaN; //TODO: add deviance(w, y, f)
+    }
+  }
 
   public static class GLMParameters extends Model.Parameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
@@ -76,7 +85,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
     public boolean _intercept = true;
-    public double _beta_epsilon = 1e-4;
+    public double _beta_epsilon = 1e-5;
     public double _objective_epsilon = 1e-5;
     public double _gradient_epsilon = 1e-4;
 
@@ -364,7 +373,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log,inverse, tweedie}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS /*, COORDINATE_DESCENT*/}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT}
 
     // helper function
     static final double y_log_y(double y, double mu) {

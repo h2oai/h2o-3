@@ -47,6 +47,7 @@
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
+#' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -107,6 +108,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
+                    max_active_predictors = -1,
                     ...
                     )
 {
@@ -131,8 +133,9 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
@@ -154,6 +157,10 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(intercept) )                 parms$intercept              <- intercept
+  if( !missing(fold_column) )               parms$fold_column            <- fold_column
+  if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
+  if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
 
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.

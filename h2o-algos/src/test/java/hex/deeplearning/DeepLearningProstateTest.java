@@ -25,7 +25,7 @@ import static hex.ConfusionMatrix.buildCM;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() throws Exception { runFraction(0.000015f); }
+  @Test public void run() throws Exception { runFraction(0.00001f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -102,7 +102,7 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.Rectifier,
                           DeepLearningParameters.Activation.RectifierWithDropout,
                           DeepLearningParameters.Activation.Maxout,
-//                      DeepLearningParameters.Activation.MaxoutWithDropout
+                          DeepLearningParameters.Activation.MaxoutWithDropout,
                   }) {
                     boolean reproducible=false;
                     switch (dist) {
@@ -167,11 +167,13 @@ public class DeepLearningProstateTest extends TestUtil {
                                           Log.info("Starting test #" + count);
                                           Log.info("**************************)");
                                           final double epochs = 7 + rng.nextDouble() + rng.nextInt(4);
-                                          final int[] hidden = new int[]{1 + rng.nextInt(4), 1 + rng.nextInt(6)};
+                                          final int[] hidden = new int[]{3 + rng.nextInt(4), 3 + rng.nextInt(6)};
                                           Frame valid = null; //no validation
                                           if (vf == 1) valid = frame; //use the same frame for validation
                                           else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
                                           long myseed = rng.nextLong();
+                                          boolean replicate2 = rng.nextBoolean();
+                                          boolean elastic_averaging2 = rng.nextBoolean();
 
                                           // build the model, with all kinds of shuffling/rebalancing/sampling
                                           DeepLearningParameters p = new DeepLearningParameters();
@@ -268,14 +270,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._response_column = frame._names[resp];
                                             p2._overwrite_with_best_model = overwrite_with_best_model;
                                             p2._quiet_mode = true;
-                                            p2._epochs = epochs;
-                                            p2._replicate_training_data = rng.nextBoolean();
+                                            p2._epochs = 2*epochs; //final amount of training epochs
+                                            p2._replicate_training_data = replicate2;
                                             p2._seed = myseed;
 //                                              p2._loss = loss; //fall back to default
 //                                              p2._distribution = dist; //fall back to default
                                             p2._train_samples_per_iteration = train_samples_per_iteration;
                                             p2._balance_classes = classification && balance_classes;
-                                            p2._elastic_averaging = rng.nextBoolean();
+                                            p2._elastic_averaging = elastic_averaging2;
                                             DeepLearning dl = new DeepLearning(p2);
                                             try {
                                               model2 = dl.trainModel().get();

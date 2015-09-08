@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def metric_accessors(ip,port):
+def metric_accessors():
 
     cars = h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     r = cars[0].runif()
@@ -176,6 +176,49 @@ def metric_accessors(ip,port):
     assert "valid" in auc.keys() and "xval" in auc.keys(), "expected validation and cross validation metrics to be returned, but got {0}".format(auc.keys())
     assert len(auc) == 2, "expected validation and cross validation metrics to be returned, but got {0}".format(auc.keys())
     assert isinstance(auc["valid"], float) and isinstance(auc["xval"], float), "validation and cross validation metrics to be floats, but got {0} and {1}".format(type(auc["valid"]), type(auc["xval"]))
+
+    # roc
+    (fprs1, tprs1) = gbm.roc(train=True,  valid=False, xval=False)
+    assert isinstance(fprs1, list)
+    assert isinstance(tprs1, list)
+
+    (fprs2, tprs2) = gbm.roc(train=False, valid=True,  xval=False)
+    assert isinstance(fprs2, list)
+    assert isinstance(tprs2, list)
+
+    (fprs3, tprs3) = gbm.roc(train=False, valid=False, xval=True)
+    assert isinstance(fprs3, list)
+    assert isinstance(tprs3, list)
+
+    roc = gbm.roc(train=True,  valid=True,  xval=False)
+    assert "train" in roc.keys() and "valid" in roc.keys(), "expected training and validation metrics to be returned, but got {0}".format(roc.keys())
+    assert len(roc) == 2, "expected only training and validation metrics to be returned, but got {0}".format(roc.keys())
+    assert isinstance(roc["train"], tuple) and isinstance(roc["valid"], tuple), "expected training and validation metrics to be tuples, but got {0} and {1}".format(type(roc["train"]), type(roc["valid"]))
+    assert roc["valid"][0] == fprs2
+    assert roc["valid"][1] == tprs2
+
+    roc = gbm.roc(train=True,  valid=False, xval=True)
+    assert "train" in roc.keys() and "xval" in roc.keys(), "expected training and cross validation metrics to be returned, but got {0}".format(roc.keys())
+    assert len(roc) == 2, "expected only training and cross validation metrics to be returned, but got {0}".format(roc.keys())
+    assert isinstance(roc["train"], tuple) and isinstance(roc["xval"], tuple), "expected training and cross validation metrics to be tuples, but got {0} and {1}".format(type(roc["train"]), type(roc["xval"]))
+    assert roc["xval"][0] == fprs3
+    assert roc["xval"][1] == tprs3
+
+    roc = gbm.roc(train=True,  valid=True,  xval=True)
+    assert "train" in roc.keys() and "valid" in roc.keys() and "xval" in roc.keys(), "expected training, validation, and cross validation metrics to be returned, but got {0}".format(roc.keys())
+    assert len(roc) == 3, "expected training, validation and cross validation metrics to be returned, but got {0}".format(roc.keys())
+    assert isinstance(roc["train"], tuple) and isinstance(roc["valid"], tuple) and isinstance(roc["xval"], tuple), "expected training, validation, and cross validation metrics to be tuples, but got {0}, {1}, and {2}".format(type(roc["train"]), type(roc["valid"]), type(roc["xval"]))
+
+    (fprs, tprs) = gbm.roc(train=False, valid=False, xval=False) # default: return training metrics
+    assert isinstance(fprs, list)
+    assert isinstance(tprs, list)
+    assert fprs == fprs1
+    assert tprs == tprs1
+
+    roc = gbm.roc(train=False, valid=True,  xval=True)
+    assert "valid" in roc.keys() and "xval" in roc.keys(), "expected validation and cross validation metrics to be returned, but got {0}".format(roc.keys())
+    assert len(roc) == 2, "expected validation and cross validation metrics to be returned, but got {0}".format(roc.keys())
+    assert isinstance(roc["valid"], tuple) and isinstance(roc["xval"], tuple), "validation and cross validation metrics to be tuples, but got {0} and {1}".format(type(roc["valid"]), type(roc["xval"]))
 
     #   logloss
     logloss1 = gbm.logloss(train=True,  valid=False, xval=False)

@@ -110,9 +110,8 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  # , "/exec.R", "/ops.R", "/ast.R"
-  to_src <- c("/astfun.R", "/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R", "/grid.R")
-  require(rjson); require(RCurl)
+  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R", "/grid.R")
+  require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 

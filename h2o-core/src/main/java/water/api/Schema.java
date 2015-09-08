@@ -1,18 +1,40 @@
 package water.api;
 
-import hex.schemas.ModelBuilderSchema;
 import org.reflections.Reflections;
-import water.*;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import hex.schemas.ModelBuilderSchema;
+import water.DKV;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
-import water.util.*;
-
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import water.util.IcedHashMap;
+import water.util.Log;
+import water.util.MarkdownBuilder;
+import water.util.Pair;
+import water.util.PojoUtils;
+import water.util.ReflectionUtils;
 
 
 /**
@@ -464,6 +486,17 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   /**
+   * Fill this Schema object from a set of parameters.
+   *
+   * @param parms  parameters - set of tuples (parameter name, parameter value)
+   * @return this schema
+   *
+   * @see #fillFromParms(Properties, boolean)
+   */
+  public S fillFromParms(Properties parms) {
+    return fillFromParms(parms, true);
+  }
+  /**
    * Fill this Schema from a set of (generally HTTP) parameters.
    * <p>
    * Using reflection this process determines the type of the target field and
@@ -477,17 +510,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * It also does various sanity checks for broken Schemas, for example fields must
    * not be private, and since input fields get filled here they must not be final.
    * @param parms Properties map of parameter values
-   * @return this
-   * @throws H2OIllegalArgumentException for bad parameters
+   * @param checkRequiredFields  perform check for missing required fields
+   * @return this schema
+   * @throws H2OIllegalArgumentException for bad/missing parameters
    */
-  public S fillFromParms(Properties parms) {
+  public S fillFromParms(Properties parms, boolean checkRequiredFields) {
     // Get passed-in fields, assign into Schema
     Class thisSchemaClass = this.getClass();
 
     Map<String, Field> fields = new HashMap<>();
     Field current = null; // declare here so we can print in catch{}
     try {
-      Class clz = getClass();
+      Class clz = thisSchemaClass;
       do {
         Field[] some_fields = clz.getDeclaredFields();
 
@@ -541,25 +575,32 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // checked for unknown or extra parms.
 
     // Confirm required fields are set
-    for( Field f : fields.values() ) {
-      int mods = f.getModifiers();
-      if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
-        continue;             // Ignore transient & static
-      try {
-        API api = (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
-        if (api.required()) {
-          if (parms.getProperty(f.getName()) == null) {
-            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
-            values.put("schema", this.getClass().getSimpleName());
-            values.put("argument", f.getName());
-            throw new H2OIllegalArgumentException("Required field " + f.getName() + " not specified",
-                    "Required field " + f.getName() + " not specified for schema class: " + this.getClass(),
-                    values);
+    if (checkRequiredFields) {
+      for (Field f : fields.values()) {
+        int mods = f.getModifiers();
+        if (Modifier.isTransient(mods) || Modifier.isStatic(mods))
+          continue;             // Ignore transient & static
+        try {
+          API
+              api =
+              (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
+          if (api.required()) {
+            if (parms.getProperty(f.getName()) == null) {
+              IcedHashMap.IcedHashMapStringObject
+                  values =
+                  new IcedHashMap.IcedHashMapStringObject();
+              values.put("schema", this.getClass().getSimpleName());
+              values.put("argument", f.getName());
+              throw new H2OIllegalArgumentException(
+                  "Required field " + f.getName() + " not specified",
+                  "Required field " + f.getName() + " not specified for schema class: " + this
+                      .getClass(),
+                  values);
+            }
           }
+        } catch (ArrayIndexOutOfBoundsException e) {
+          throw H2O.fail("Missing annotation for API field: " + f.getName());
         }
-      }
-      catch (ArrayIndexOutOfBoundsException e) {
-        throw H2O.fail("Missing annotation for API field: " + f.getName());
       }
     }
     return (S) this;
@@ -612,34 +653,52 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
 
+  static <E> Object parsePrimitve(String s, Class fclz) {
+    if (fclz.equals(String.class)) return s; // Strings already the right primitive type
+    if (fclz.equals(int.class)) return parseInteger(s, int.class);
+    if (fclz.equals(long.class)) return parseInteger(s, long.class);
+    if (fclz.equals(short.class)) return parseInteger(s, short.class);
+    if (fclz.equals(boolean.class)) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
+    if (fclz.equals(byte.class)) return parseInteger(s, byte.class);
+    if (fclz.equals(double.class)) return Double.valueOf(s);
+    if (fclz.equals(float.class)) return Float.valueOf(s);
+    //FIXME: if (fclz.equals(char.class)) return Character.valueOf(s);
+    throw H2O.fail("Unknown primitive type to parse: " + fclz.getSimpleName());
+  }
+
   // URL parameter parse
   static <E> Object parse(String field_name, String s, Class fclz, boolean required, Class schemaClass) {
-    try {
-      if (fclz.equals(String.class)) return s; // Strings already the right primitive type
-      if (fclz.equals(int.class)) return parseInteger(s, int.class);
-      if (fclz.equals(long.class)) return parseInteger(s, long.class);
-      if (fclz.equals(short.class)) return parseInteger(s, short.class);
-      if (fclz.equals(boolean.class)) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
-      if (fclz.equals(byte.class)) return parseInteger(s, byte.class);
-      if (fclz.equals(double.class)) return Double.valueOf(s);
-      if (fclz.equals(float.class)) return Float.valueOf(s);
-    } catch (NumberFormatException ne) {
-      String msg = "Illegal argument for field: " + field_name + " of schema: " +  schemaClass.getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
-      throw new H2OIllegalArgumentException(msg);
+    if (fclz.isPrimitive() || String.class.equals(fclz)) {
+      try {
+        return parsePrimitve(s, fclz);
+      } catch (NumberFormatException ne) {
+        String msg = "Illegal argument for field: " + field_name + " of schema: " +  schemaClass.getSimpleName() + ": cannot convert \"" + s + "\" to type " + fclz.getSimpleName();
+        throw new H2OIllegalArgumentException(msg);
+      }
     }
-    if (fclz.isArray()) {      // An array?
-      if (s.equals("null") || s.length() == 0) return null;
-      read(s, 0, '[', fclz);
-      read(s, s.length() - 1, ']', fclz);
-
-      String inside = s.substring(1, s.length() - 1).trim();
-      String[] splits; // "".split(",") => {""} so handle the empty case explicitly
-      if (inside.length() == 0)
-        splits = new String[]{};
-      else
-        splits = splitArgs(inside);
+    // An array?
+    if (fclz.isArray()) {
+      // Get component type
       Class<E> afclz = (Class<E>) fclz.getComponentType();
+      // Result
       E[] a = null;
+      // Handle simple case with null-array
+      if (s.equals("null") || s.length() == 0) return null;
+      // Splitted values
+      String[] splits; // "".split(",") => {""} so handle the empty case explicitly
+      if (s.startsWith("[") && s.endsWith("]") ) { // It looks like an array
+        read(s, 0, '[', fclz);
+        read(s, s.length() - 1, ']', fclz);
+        String inside = s.substring(1, s.length() - 1).trim();
+        if (inside.length() == 0)
+          splits = new String[]{};
+        else
+          splits = splitArgs(inside);
+      } else { // Lets try to parse single value as an array!
+        // See PUBDEV-1955
+        splits = new String[] { s.trim() };
+      }
+
       // Can't cast an int[] to an Object[].  Sigh.
       if (afclz == int.class) { // TODO: other primitive types. . .
         a = (E[]) Array.newInstance(Integer.class, splits.length);

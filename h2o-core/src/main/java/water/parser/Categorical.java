@@ -5,7 +5,6 @@ import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  *  Basically a wrapper around non blocking hash map.
  *  In the first pass, we just collect set of unique strings per column
- *  (if there are less than MAX_ENUM_SIZE unique elements).
+ *  (if there are less than MAX_CATEGORICAL_COUNT unique elements).
  *  
  *  After pass1, the keys are sorted and indexed alphabetically.
  *  In the second pass, map is used only for lookup and never updated.
@@ -25,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class Categorical extends Iced {
 
-  public static final int MAX_ENUM_SIZE = 10000000;
+  public static final int MAX_CATEGORICAL_COUNT = 10000000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   volatile NonBlockingHashMap<ValueString, Integer> _map;
@@ -33,13 +32,6 @@ public final class Categorical extends Iced {
 
   Categorical() { _map = new NonBlockingHashMap<>(); }
 
-  private Categorical(int id, NonBlockingHashMap<ValueString, Integer> map) {
-    _id = new AtomicInteger(id);
-    _map = map;
-  }
-  Categorical deepCopy() {
-    return new Categorical(_id.get(), _map==null ? null : (NonBlockingHashMap<ValueString,Integer>)_map.clone());
-  }
   /** Add key to this map (treated as hash set in this case). */
   int addKey(ValueString str) {
     // _map is shared and be cast to null (if enum is killed) -> grab local copy
@@ -51,7 +43,7 @@ public final class Categorical extends Iced {
     int newVal = _id.incrementAndGet();
     res = m.putIfAbsent(new ValueString(str), newVal);
     if( res != null ) return res;
-    if( m.size() > MAX_ENUM_SIZE ) maxEnumExceeded = true;
+    if( m.size() > MAX_CATEGORICAL_COUNT) maxEnumExceeded = true;
     return newVal;
   }
   final boolean containsKey(ValueString key){ return _map.containsKey(key); }
@@ -61,30 +53,12 @@ public final class Categorical extends Iced {
 
   int getTokenId( ValueString str ) { return _map.get(str); }
   
-  void merge(Categorical other){
-    if( this == other ) return;
-    if( isMapFull() ) return;
-    if( !other.isMapFull() ) {   // do the merge
-      Map<ValueString, Integer> myMap = _map;
-      Map<ValueString, Integer> otMap = other._map;
-      if( myMap == otMap ) return;
-      for( ValueString str : otMap.keySet() )
-        myMap.put(str, 1);
-      if( myMap.size() <= MAX_ENUM_SIZE ) return;
-    }
-    maxEnumExceeded = true; // too many values, enum should be killed!
-  }
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
   int size() { return _map.size(); }
   boolean isMapFull() { return maxEnumExceeded; }
 
-  // assuming single threaded
-  ValueString [] computeColumnDomain() {
-    ValueString vs[] = _map.keySet().toArray(new ValueString[_map.size()]);
-    Arrays.sort(vs);            // Alpha sort to be nice
-    for( int j = 0; j < vs.length; ++j )
-      _map.put(vs[j], j);       // Renumber in the map
-    return vs;
+  ValueString [] getColumnDomain() {
+    return  _map.keySet().toArray(new ValueString[_map.size()]);
   }
 
   // Since this is a *concurrent* hashtable, writing it whilst its being

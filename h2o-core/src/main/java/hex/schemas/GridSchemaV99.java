@@ -34,6 +34,9 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   @API(help = "List of detailed failure messages", direction = API.Direction.OUTPUT)
   public String[] failure_details;
 
+  @API(help = "List of raw parameters causing model building failure", direction = API.Direction.OUTPUT)
+  public String[][] failed_raw_params;
+
   @Override
   public Grid createImpl() {
     return Grid.GRID_PROTO;

@@ -1,14 +1,24 @@
 package water.api;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import hex.Model;
-import water.*;
+import water.AutoBuffer;
+import water.DKV;
+import water.H2O;
+import water.Key;
+import water.Value;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
-
-import java.lang.reflect.Field;
-import java.util.*;
 
 /**
  * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iterations for KMeans).
@@ -42,7 +52,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
   public FrameKeyV3 training_frame;
 
-  @API(help="Validation frame", direction=API.Direction.INOUT)
+  @API(help="Validation frame", direction=API.Direction.INOUT, gridable = true)
   public FrameKeyV3 validation_frame;
 
   @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
@@ -51,7 +61,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 
-  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT, gridable = true)
   public FrameV3.ColSpecifierV3 response_column;
 
   @API(help = "Column with observation weights", level = API.Level.secondary, is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)

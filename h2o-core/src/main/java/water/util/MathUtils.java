@@ -1,7 +1,16 @@
 package water.util;
 
-import water.MRTask;
+import water.fvec.Frame;
+
+import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
+import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
+import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
+import edu.emory.mathcs.utils.ConcurrencyUtils;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.MRTask;
 
 import java.util.Arrays;
 
@@ -94,6 +103,7 @@ public class MathUtils {
   }
 
   public static float sumSquares(final float[] a, int from, int to) {
+    assert(from >= 0 && to <= a.length);
     float result = 0;
     final int cols = to-from;
     final int extra=cols-cols%8;
@@ -221,6 +231,133 @@ public class MathUtils {
   public static double sign(double d) {
     if(d == 0)return 0;
     return d < 0?-1:1;
+  }
+
+  public static class DCT {
+
+    public static void initCheck(Frame input, int width, int height, int depth) {
+      ConcurrencyUtils.setNumberOfThreads(1);
+      if (width < 1 || height < 1 || depth < 1)
+        throw new H2OIllegalArgumentException("dimensions must be >= 1");
+      if (width*height*depth != input.numCols())
+        throw new H2OIllegalArgumentException("dimensions HxWxD must match the # columns of the frame");
+      for (Vec v : input.vecs()) {
+        if (v.naCnt() > 0)
+          throw new H2OIllegalArgumentException("DCT can not be computed on rows with missing values");
+        if (!v.isNumeric())
+          throw new H2OIllegalArgumentException("DCT can only be computed on numeric columns");
+      }
+    }
+
+    /**
+     * Compute the 1D discrete cosine transform for each row in the given Frame, and return a new Frame
+     *
+     * @param input   Frame containing numeric columns with data samples
+     * @param N       Number of samples (must be less or equal than number of columns)
+     * @param inverse Whether to compute the inverse
+     * @return Frame containing 1D (inverse) DCT of each row (same dimensionality)
+     */
+    public static Frame transform1D(Frame input, final int N, final boolean inverse) {
+      initCheck(input, N, 1, 1);
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          double[] a = new double[N];
+          for (int row = 0; row < cs[0]._len; ++row) {
+            // fill 1D array
+            for (int i = 0; i < N; ++i)
+              a[i] = cs[i].atd(row);
+
+            // compute DCT for each row
+            if (!inverse)
+              new DoubleDCT_1D(N).forward(a, true);
+            else
+              new DoubleDCT_1D(N).inverse(a, true);
+
+            // write result to NewChunk
+            for (int i = 0; i < N; ++i)
+              ncs[i].addNum(a[i]);
+          }
+        }
+      }.doAll(input.numCols(), input).outputFrame();
+    }
+
+    /**
+     * Compute the 2D discrete cosine transform for each row in the given Frame, and return a new Frame
+     *
+     * @param input   Frame containing numeric columns with data samples
+     * @param height  height
+     * @param width   width
+     * @param inverse Whether to compute the inverse
+     * @return Frame containing 2D DCT of each row (same dimensionality)
+     */
+    public static Frame transform2D(Frame input, final int height, final int width, final boolean inverse) {
+      initCheck(input, height, width, 1);
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          double[][] a = new double[height][width];
+          // each row is a 2D sample
+          for (int row = 0; row < cs[0]._len; ++row) {
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                a[i][j] = cs[i * width + j].atd(row);
+
+            // compute 2D DCT
+            if (!inverse)
+              new DoubleDCT_2D(height, width).forward(a, true);
+            else
+              new DoubleDCT_2D(height, width).inverse(a, true);
+
+            // write result to NewChunk
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                ncs[i * width + j].addNum(a[i][j]);
+
+          }
+        }
+      }.doAll(height * width, input).outputFrame();
+    }
+
+    /**
+     * Compute the 3D discrete cosine transform for each row in the given Frame, and return a new Frame
+     *
+     * @param input   Frame containing numeric columns with data samples
+     * @param height  height
+     * @param width   width
+     * @param depth   depth
+     * @param inverse Whether to compute the inverse
+     * @return Frame containing 3D DCT of each row (same dimensionality)
+     */
+    public static Frame transform3D(Frame input, final int height, final int width, final int depth, final boolean inverse) {
+      initCheck(input, height, width, depth);
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          double[][][] a = new double[height][width][depth];
+
+          // each row is a 3D sample
+          for (int row = 0; row < cs[0]._len; ++row) {
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                for (int k = 0; k < depth; ++k)
+                  a[i][j][k] = cs[i*(width*depth) + j*depth + k].atd(row);
+
+            // compute 3D DCT
+            if (!inverse)
+              new DoubleDCT_3D(height, width, depth).forward(a, true);
+            else
+              new DoubleDCT_3D(height, width, depth).inverse(a, true);
+
+            // write result to NewChunk
+            for (int i = 0; i < height; ++i)
+              for (int j = 0; j < width; ++j)
+                for (int k = 0; k < depth; ++k)
+                  ncs[i*(width*depth) + j*depth + k].addNum(a[i][j][k]);
+          }
+        }
+      }.doAll(height*width*depth, input).outputFrame();
+    }
   }
 
   public static class SquareError extends MRTask<SquareError> {

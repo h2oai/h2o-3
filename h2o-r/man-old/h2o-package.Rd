@@ -15,7 +15,7 @@ Type: \tab Package\cr
 Version: \tab 2.9.0.99999\cr
 Date: \tab 2014-05-15\cr
 License: \tab Apache License (== 2.0)\cr
-Depends: \tab R (>= 2.13.0), RCurl, rjson, statmod, tools, methods, utils\cr
+Depends: \tab R (>= 2.13.0), RCurl, jsonlite, statmod, tools, methods, utils\cr
 }
 
 This package allows the user to run basic H2O commands using R commands. In order to use it, you must first have H2O running (See \href{http://docs.0xdata.com/newuser/quickstart_jar.html}{How to Start H2O}). To run H2O on your local machine, call \code{h2o.init} without any arguments, and H2O will be automatically launched on \url{http://127.0.0.1:54321}, where the IP is "127.0.0.1" and the port is 54321. If H2O is running on a cluster, you must provide the IP and port of the remote machine as arguments to the h2o.init() call. 

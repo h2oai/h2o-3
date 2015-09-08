@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o, tests
 
-def imbalance(ip, port):
+def imbalance():
     
 
     print "Test checks if Deep Learning works fine with an imbalanced dataset"

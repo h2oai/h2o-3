@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def binop_neq(ip,port):
+def binop_neq():
     
     
 
@@ -51,6 +51,7 @@ def binop_neq(ip,port):
     new_rows = iris[res].nrow
     assert new_rows == 0, "wrong number of rows returned"
 
+<<<<<<< HEAD
     # #vec/scaler
     # res = iris[0] != 4.7
     # res_rows = res.nrow
@@ -63,6 +64,20 @@ def binop_neq(ip,port):
     # assert res_rows == rows, "dimension mismatch"
     # new_rows = iris[res].nrow
     # assert new_rows == 144, "wrong number of rows returned"
+=======
+    #vec/scaler
+    res = iris[0] != 4.7
+    res_rows = res.nrow
+    assert res_rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow
+    assert new_rows == 148, "wrong number of rows returned"
+
+    res = 3.5 != iris[1]
+    res_rows = res.nrow
+    assert res_rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow
+    assert new_rows == 144, "wrong number of rows returned"
+>>>>>>> master
 
     # frame/frame
     res = iris != iris

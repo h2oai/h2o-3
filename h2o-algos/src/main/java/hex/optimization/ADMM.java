@@ -153,13 +153,15 @@ public class ADMM {
         if (rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
           computeErr(z, solver.gradient(z), l1pen, lb, ub);
-          if ((gerr > _eps && abstol > 1e-10 && reltol > 1e-8) /* || solver.improving() */){// && (allzeros || i < 5 /* let some warm up before giving up */ /*|| Math.abs(oldGerr - gerr) > _eps * 0.1*/)) {
+          if ((gerr > _eps) /* || solver.improving() */){// && (allzeros || i < 5 /* let some warm up before giving up */ /*|| Math.abs(oldGerr - gerr) > _eps * 0.1*/)) {
             Log.debug("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
-            abstol *= .1;
+            if(abstol > 1e-12) abstol *= .1;
+            if(reltol > 1e-10) reltol *= .1;
             reltol *= .1;
             continue;
           }
-          if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
+          if(gerr > _eps)
+            Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
           iter = i;
           Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
           return true;

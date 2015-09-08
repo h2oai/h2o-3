@@ -3,7 +3,11 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 
+<<<<<<< HEAD
 def levels_nlevels_setlevel_set_levels_test(ip,port):
+=======
+def levels_nlevels_setlevel_setLevels_test():
+>>>>>>> master
     
     
 
@@ -50,7 +54,11 @@ def levels_nlevels_setlevel_set_levels_test(ip,port):
 
     ################### reimport, set new domains, rerun tests ###################################
     iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+<<<<<<< HEAD
     iris[4] = iris[4].set_levels(levels=["a", "b", "c"])
+=======
+    iris[4] = iris[4].setLevels(levels=["a", "b", "c"])
+>>>>>>> master
 
     # frame (default)
     levels = iris.levels()
@@ -96,4 +104,8 @@ def levels_nlevels_setlevel_set_levels_test(ip,port):
     assert one_column_frame[0,0] == 'c'
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     tests.run_test(sys.argv, levels_nlevels_setlevel_set_levels_test)
+=======
+    tests.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)
+>>>>>>> master

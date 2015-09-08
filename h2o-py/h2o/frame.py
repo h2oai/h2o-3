@@ -1,16 +1,41 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
+<<<<<<< HEAD
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy
+=======
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref
+>>>>>>> master
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
 
 
-class H2OFrame:
+# TODO: Automatically convert column names into Frame properties!
+
+
+class H2OFrameWeakRefMixin:
+  __refs__ = collections.defaultdict(list)
+  def __init__(self):
+    self.__refs__[self.__class__].append(weakref.ref(self))
+
+  @classmethod
+  def get_instance_ids(cls):
+    for inst_ref in cls.__refs__[cls]:
+      inst = inst_ref()
+      if inst is not None:
+        yield inst._id
+
+  @classmethod
+  def drop_instance(cls, inst):
+    cls.__refs__[cls].remove(weakref.ref(inst))
+
+class H2OFrame(H2OFrameWeakRefMixin):
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+  COUNTING = True
+  dropped_instances = []  # keep track of dropped instances while not counting
 
   def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None):
     """
@@ -33,6 +58,7 @@ class H2OFrame:
     :param text_key: A raw key resulting from an upload_file.
     :return: An instance of an H2OFrame object.
     """
+    H2OFrameWeakRefMixin.__init__(self)
     self._id        = _py_tmp_key()  # gets overwritten if a parse happens
     self._keep      = False
     self._nrows     = None
@@ -334,7 +360,11 @@ class H2OFrame:
     """
     self.head(rows=10,cols=sys.maxint,show=True,as_pandas=as_pandas)  # all columns
 
+<<<<<<< HEAD
   def head(self, rows=10, cols=200, show=False, as_pandas=False):
+=======
+  def head(self, rows=10, cols=200, show=False, as_pandas=False): # TODO: add 1 to both HEAD and TAIL
+>>>>>>> master
     """
     Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
@@ -349,7 +379,11 @@ class H2OFrame:
     ncols = min(self.ncol, cols)
     colnames = self.names[:ncols]
     head = self[0:nrows,0:ncols]
+<<<<<<< HEAD
     res = head.as_data_frame(as_pandas)[1:]
+=======
+    res = head.as_data_frame(as_pandas) if as_pandas else head.as_data_frame(as_pandas)[1:]
+>>>>>>> master
     if show: self._do_show(as_pandas,res,colnames)
     return res if as_pandas else head
 
@@ -377,9 +411,7 @@ class H2OFrame:
     tail = self[start_idx:(start_idx+nrows),:ncols]
     res = tail.as_data_frame(False)
     colnames = res.pop(0)
-    if show:
-      print "Last {} rows and first {} columns: ".format(nrows,ncols)
-      h2o.H2ODisplay(res,colnames)
+    if show: self._do_show(as_pandas,res,colnames)
     return tail
 
   def levels(self, col=None):
@@ -437,7 +469,11 @@ class H2OFrame:
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
+<<<<<<< HEAD
     h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()),id=self._id)
+=======
+    h2o.rapids(ExprNode("colnames=", self, range(self.ncol), names)._eager())
+>>>>>>> master
     self._update()
     return self
 
@@ -451,7 +487,11 @@ class H2OFrame:
     """
     if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol == 1: col = 0
+<<<<<<< HEAD
     h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()),id=self._id)
+=======
+    h2o.rapids(ExprNode("colnames=", self, col, name)._eager())
+>>>>>>> master
     self._update()
     return self
 
@@ -673,16 +713,22 @@ class H2OFrame:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
+<<<<<<< HEAD
     if isinstance(item, (int,basestring,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
     elif isinstance(item, slice):
       item = slice(item.start,min(self.ncol,item.stop))
       return H2OFrame(expr=ExprNode("cols",self,item))
     elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
+=======
+    if isinstance(item, (int,basestring,list,slice)): return H2OFrame(expr=ExprNode("[", self, None, item))  # just columns
+    elif isinstance(item, H2OFrame):                  return H2OFrame(expr=ExprNode("[",self,item,None))
+>>>>>>> master
     elif isinstance(item, tuple):
       rows = item[0]
       cols = item[1]
       allrows = False
       allcols = False
+<<<<<<< HEAD
       if isinstance(cols, slice):  allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
       if isinstance(rows, slice):  allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
@@ -692,6 +738,18 @@ class H2OFrame:
 
       res = H2OFrame(expr=ExprNode("rows", ExprNode("cols",self,item[1]),item[0]))
       return res.flatten() if isinstance(item[0], (basestring,int)) and isinstance(item[1],(basestring,int)) else res
+=======
+      if isinstance(cols, slice): allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
+      if isinstance(rows, slice): allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
+
+      if allrows and allcols: return self                                # fr[:,:]    -> all rows and columns.. return self
+      if allrows: return H2OFrame(expr=ExprNode("[",self,None,item[1]))  # fr[:,cols] -> really just a column slice
+      if allcols: return H2OFrame(expr=ExprNode("[",self,item[0],None))  # fr[rows,:] -> really just a row slices
+
+      if isinstance(item[0], (basestring,int)) and isinstance(item[1],(basestring,int)):
+        return H2OFrame(expr=ExprNode("[", self, item[0], item[1]))._scalar()
+      return H2OFrame(expr=ExprNode("[",self,item[0],item[1]))
+>>>>>>> master
 
   def __setitem__(self, b, c):
     """
@@ -701,6 +759,7 @@ class H2OFrame:
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
     """
+<<<<<<< HEAD
     col_expr=None
     row_expr=None
     colname=None
@@ -731,6 +790,23 @@ class H2OFrame:
     src = c._frame() if isinstance(c,H2OFrame) else float("nan") if c is None else c
     expr = ExprNode("=",self,src,col_expr,row_expr) if colname is None else ExprNode("=",self,src,col_expr,row_expr,colname)
     h2o.rapids(ExprNode._collapse_sb(expr._eager()), self._id)
+=======
+    update_index=-1
+    if isinstance(b, basestring): update_index=self.col_names.index(b) if b in self.col_names else self._ncols
+    elif isinstance(b, int): update_index=b
+
+    if isinstance(b, tuple):
+      bb = b[1]
+      if isinstance(bb, basestring): update_index=self.col_names.index(bb) if bb in self.col_names else self._ncols
+      elif isinstance(bb, int): update_index=bb
+      lhs = ExprNode("[", self,b[0],b[1])
+    else:
+      lhs = ExprNode("[", self, b, None) if isinstance(b,H2OFrame) else ExprNode("[", self, None, update_index)
+    rhs = c._frame() if isinstance(c,H2OFrame) else c
+    col_name = b if (update_index==self._ncols and isinstance(b, basestring)) else ( c._col_names[0] if isinstance(c, H2OFrame) else "" )
+    sb  = ExprNode(",", ExprNode("=",lhs,rhs), ExprNode("colnames=",self,update_index,col_name))._eager() if update_index >= self.ncol else ExprNode("=",lhs,rhs)._eager()
+    h2o.rapids(ExprNode._collapse_sb(sb))
+>>>>>>> master
     self._update()
 
   def __int__(self):   return int(self._scalar())
@@ -738,9 +814,23 @@ class H2OFrame:
   def __float__(self): return self._scalar()
 
   def __del__(self):
+    if not H2OFrame.COUNTING:
+      H2OFrame.dropped_instances.append(self._id)
+      return
     if not self._keep and self._computed: h2o.remove(self)
 
-  def keep(self): self._keep = True
+  @staticmethod
+  def del_dropped():
+    live_frames = list(H2OFrame.get_instance_ids())
+    dead_frames = H2OFrame.dropped_instances
+    for fr in dead_frames:
+      if fr not in live_frames:
+        h2o.remove(fr)
+    H2OFrame.dropped_instances = []
+
+  def keep(self):
+    self._keep = True
+    return self
 
   def drop(self, i):
     """
@@ -750,6 +840,7 @@ class H2OFrame:
     :return: Returns an H2OFrame
     """
     if isinstance(i, basestring): i = self._find_idx(i)
+<<<<<<< HEAD
     return H2OFrame(expr=ExprNode("cols", self,-(i+1)))._frame()
 
   def pop(self,i):
@@ -761,6 +852,22 @@ class H2OFrame:
     """
     if isinstance(i, basestring): i=self._find_idx(i)
     col = H2OFrame(expr=ExprNode("pop",self,i))._frame()
+    self._update()
+    return col
+=======
+    return H2OFrame(expr=ExprNode("[", self, None,-(i+1)))._frame()
+>>>>>>> master
+
+  def pop(self,i):
+    """
+    Pop a colunn out of an H2OFrame.
+
+    :param i: The index or name of the column to pop.
+    :return: The column dropped from the frame.
+    """
+    if isinstance(i, basestring): i=self._find_idx(i)
+    col = H2OFrame(expr=ExprNode("pop",self,i))._frame()
+    if self._keep: col.keep()
     self._update()
     return col
 
@@ -845,7 +952,11 @@ class H2OFrame:
     """
     if isinstance(column, basestring): column = self._find_idx(column)
     if isinstance(by, basestring):     by     = self._find_idx(by)
+<<<<<<< HEAD
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()   #  (h2o.impute data col method combine_method groupby in.place)
+=======
+    return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
+>>>>>>> master
 
   def merge(self, other, allLeft=False, allRite=False):
     """
@@ -917,6 +1028,7 @@ class H2OFrame:
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
+<<<<<<< HEAD
     return H2OFrame(expr=ExprNode("var",self,self if y is None else y,use))._get()
 
   def sd(self):
@@ -924,6 +1036,15 @@ class H2OFrame:
     :return: Standard deviation of the H2OVec elements.
     """
     return H2OFrame(expr=ExprNode("sd", self))._scalar()
+=======
+    return H2OFrame(expr=ExprNode("var", self,y,na_rm,use))._get()
+
+  def sd(self, na_rm=False):
+    """
+    :return: Standard deviation of the H2OVec elements.
+    """
+    return H2OFrame(expr=ExprNode("sd", self,na_rm))._scalar()
+>>>>>>> master
 
   def asfactor(self):
     """
@@ -957,6 +1078,14 @@ class H2OFrame:
     """
     return H2OFrame(expr=ExprNode("strsplit", self, pattern))
 
+  def countmatches(self, substr):
+    """
+    Split the strings in the target column on the given pattern
+
+    :return: H2OFrame
+    """
+    return H2OFrame(expr=ExprNode("countmatches", self, substr))
+
   def trim(self):
     """
     Trim the edge-spaces in a column of strings (only operates on frame with one column)
@@ -981,8 +1110,13 @@ class H2OFrame:
     """
     frame = H2OFrame(expr=ExprNode("hist", self, breaks))._frame()
 
+<<<<<<< HEAD
     total = frame["counts"].sum(True)
     densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow)]
+=======
+    total = frame["counts"].sum()
+    densities = [(frame["counts"][i,:]/total)._scalar()*(1/(frame["breaks"][i,:]._scalar()-frame["breaks"][i-1,:]._scalar())) for i in range(1,frame["counts"].nrow)]
+>>>>>>> master
     densities.insert(0,0)
     densities_frame = H2OFrame(python_obj=[[d] for d in densities])
     densities_frame.set_names(["density"])
@@ -1188,6 +1322,7 @@ class H2OFrame:
 
   # flow-coding result methods
   def _scalar(self):
+<<<<<<< HEAD
     self._eager()  # scalar should be stashed into self._data
     if self._data is None:
       res = self.as_data_frame(False)[1:]
@@ -1200,6 +1335,16 @@ class H2OFrame:
   @staticmethod
   def _get_scalar(res):
     if res == '' or res=="NaN": return float("nan")
+=======
+    res = self.as_data_frame(False)[1:]
+    if len(res)==1: return H2OFrame._get_scalar(res)
+    else:
+      return [H2OFrame._get_scalar(r) for r in res]
+  @staticmethod
+  def _get_scalar(res):
+    if res[0] == '': return float("nan")
+    res = res[0][0]
+>>>>>>> master
     if res == "TRUE": return True
     if res == "FALSE":return False
     try:    return float(res)
@@ -1215,9 +1360,17 @@ class H2OFrame:
     self._eager()
     return self
 
+<<<<<<< HEAD
   ##### WARNING: MAGIC REF COUNTING CODE BELOW.
   #####          CHANGE AT YOUR OWN RISK.
   ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
+=======
+  def _get(self):  # either frame or scalar, decide after computation
+    self._eager()
+    return self._scalar() if self.shape==(1,1) else self
+
+  ##### DO NOT ADD METHODS BELOW THIS LINE (pretty please) #####
+>>>>>>> master
   def _eager(self, pytmp=True):
     if not self._computed:
       # top-level call to execute all subparts of self._ast

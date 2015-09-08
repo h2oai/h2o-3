@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def impute2(ip,port):
+def impute2():
     # Connect to a pre-existing cluster
     
 

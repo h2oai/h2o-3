@@ -126,13 +126,18 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  if (method == "GET") {
-    h = basicHeaderGatherer()
-    tmp = tryCatch(getURL(url = url,
-                          headerfunction = h$update,
-                          useragent = R.version.string,
-                          timeout = timeout_secs),
-                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if ((method == "GET") || (method == "DELETE")) {
+    h <- basicHeaderGatherer()
+    t <- basicTextGatherer(.mapUnicode = FALSE)
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -141,7 +146,7 @@
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
-    t = basicTextGatherer()
+    t = basicTextGatherer(.mapUnicode = FALSE)
     tmp = tryCatch(postForm(uri = url,
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
@@ -158,7 +163,7 @@
     }
   } else if (method == "POST") {
     h = basicHeaderGatherer()
-    t = basicTextGatherer()
+    t = basicTextGatherer(.mapUnicode = FALSE)
     tmp = tryCatch(curlPerform(url = url,
                                postfields = postBody,
                                writefunction = t$update,

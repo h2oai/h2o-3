@@ -1,7 +1,7 @@
 package water.api;
 
-import hex.grid.Grid;
 import hex.Model;
+import hex.grid.Grid;
 import hex.schemas.GridSchemaV99;
 import water.H2O;
 import water.Key;
@@ -34,15 +34,20 @@ public class GridsHandler extends Handler {
     s.hyper_names = grid.getHyperNames();
     s.failed_params = toModelParametersSchema(grid.getFailedParameters());
     s.failure_details = grid.getFailureDetails();
+    s.failed_raw_params = grid.getFailedRawParameters();
     return s;
   }
 
   private ModelParametersSchema[] toModelParametersSchema(Model.Parameters[] modelParameters) {
     ModelParametersSchema[] result = new ModelParametersSchema[modelParameters.length];
     for (int i = 0; i < modelParameters.length; i++) {
-      result[i] =
-          (ModelParametersSchema) Schema.schema(Schema.getLatestVersion(), modelParameters[i])
-              .fillFromImpl(modelParameters[i]);
+      if (modelParameters[i] != null) {
+        result[i] =
+            (ModelParametersSchema) Schema.schema(Schema.getLatestVersion(), modelParameters[i])
+                .fillFromImpl(modelParameters[i]);
+      } else {
+        result[i] = null;
+      }
     }
     return result;
   }

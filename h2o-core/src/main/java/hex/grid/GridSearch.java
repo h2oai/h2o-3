@@ -5,11 +5,12 @@ import java.util.Map;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
-import hex.grid.HyperSpaceWalker.CartezianWalker;
+import hex.grid.HyperSpaceWalker.CartesianWalker;
 import water.DKV;
 import water.H2O;
 import water.Job;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
@@ -96,19 +97,27 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
 
   GridSearch start() {
     final int gridSize = _hyperSpaceWalker.getHyperSpaceSize();
-    Log.info("Starting gridsearch: estimated size of search space =" + gridSize);
+    Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
     // this function the grid object is in DKV and accessible.
     Grid<MP> grid = DKV.getGet(dest());
     if (grid != null) {
+      Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
+      Frame oldTrainFrame = grid.getTrainingFrame();
+      if (!specTrainFrame._key.equals(oldTrainFrame._key) ||
+          specTrainFrame.checksum() != oldTrainFrame.checksum()) {
+        throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models"
+                                              + " to a grid with different training input");
+      }
       grid.write_lock(jobKey());
     } else {
       grid =
           new Grid<>(dest(),
                      _hyperSpaceWalker.getParams(),
                      _hyperSpaceWalker.getHyperParamNames(),
-                     _modelFactory.getModelName());
+                     _modelFactory.getModelName(),
+                     _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(jobKey());
     }
     // Java trick
@@ -164,19 +173,55 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * @param grid grid object to save results
    */
   private void gridSearch(Grid<MP> grid) {
-    MP params = null;
     Model model = null;
     try {
-      while ((params = _hyperSpaceWalker.nextModelParameters(model)) != null) {
+      HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+      while (it.hasNext(model)) {
+        // Handle end-user cancel request
         if (!isRunning()) {
+          // FIXME: propagate cancellation event to sub jobs, block till they are cancelled
           cancel();
           return;
         }
-        // Sequential model building
-        model = buildModel(params, grid);
+        MP params = null;
+        try {
+          // Get parameters for next model
+          params = it.nextModelParameters(model);
+          // Sequential model building, should never propagate
+          // exception up, just mark combination of model parameters as wrong
+          try {
+            model = buildModel(params, grid);
+          } catch (RuntimeException e) { // Catch everything
+            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+            grid.appendFailedModelParameters(params, e.getMessage());
+          }
+        } catch (IllegalArgumentException e) {
+          Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
+          // Model parameters cannot be constructed for some reason
+          Object[] rawParams = it.getCurrentRawParameters();
+          grid.appendFailedModelParameters(rawParams, e.getMessage());
+        } finally {
+          // Update progress by 1 increment
+          this.update(1L);
+          // Always update grid in DKV after model building attempt
+          grid.update(jobKey());
+        }
       }
       // Grid search is done
       done();
+    } catch(Throwable e) {
+      // Something wrong happened during hyper-space walking
+      // So cancel this job
+      // FIXME: should I delete grid here? it failed but user can be interested in partial result
+      Job thisJob = DKV.getGet(jobKey());
+      if (thisJob._state == JobState.CANCELLED) {
+        Log.info("Job " + jobKey() + " cancelled by user.");
+      } else {
+        // Mark job as failed
+        failed(e);
+        // And propagate unknown exception up
+        throw e;
+      }
     } finally {
       // Unlock grid object
       grid.unlock(jobKey());
@@ -210,17 +255,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = null;
-    try {
-      m = (Model) (startBuildModel(params, grid).get());
-      grid.putModel(checksum, m._key);
-    } catch (RuntimeException e) {
-      Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
-      grid.appendFailedModelParameters(params, e.getMessage());
-    } finally {
-      // Always update grid in DKV after model building attempt
-      grid.update(jobKey());
-    }
+    Model m = (Model) (startBuildModel(params, grid).get());
+    grid.putModel(checksum, m._key);
     return m;
   }
 
@@ -252,7 +288,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     if (fr._key == null) {
       throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
     }
-    return Key.make("Grid_" + modelName + "_" + fr._key.toString());
+    return Key.make("Grid_" + modelName + "_" + fr._key.toString() + H2O.calcNextUniqueModelId(""));
   }
 
 
@@ -281,9 +317,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       final ModelFactory<MP> modelFactory,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
     // Create a walker to traverse hyper space of model parameters
-    CartezianWalker<MP>
+    CartesianWalker<MP>
         hyperSpaceWalker =
-        new CartezianWalker<>(params, hyperParams, paramsBuilderFactory);
+        new CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
 
     return startGridSearch(destKey, modelFactory, hyperSpaceWalker);
   }
@@ -355,6 +391,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     @Override
     public ModelParametersBuilder<MP> get(MP initialParams) {
       return new SimpleParamsBuilder<>(initialParams);
+    }
+
+    @Override
+    public PojoUtils.FieldNaming getFieldNamingStrategy() {
+      return PojoUtils.FieldNaming.CONSISTENT;
     }
 
     /**

@@ -6,7 +6,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def hdfs_basic(ip, port):
+def hdfs_basic():
     
 
     # Check if we are running inside the H2O network by seeing if we can touch

@@ -66,22 +66,22 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
 
     //
 
-    @API(help = "Laplace smoothing parameter")
+    @API(help = "Laplace smoothing parameter", gridable = true)
     public double laplace;
 
-    @API(help = "Min. standard deviation to use for observations with not enough data")
+    @API(help = "Min. standard deviation to use for observations with not enough data", gridable = true)
     public double min_sdev;
 
-    @API(help = "Cutoff below which standard deviation is replaced with min_sdev")
+    @API(help = "Cutoff below which standard deviation is replaced with min_sdev", gridable = true)
     public double eps_sdev;
 
-    @API(help = "Min. probability to use for observations with not enough data")
+    @API(help = "Min. probability to use for observations with not enough data", gridable = true)
     public double min_prob;
 
-    @API(help = "Cutoff below which probability is replaced with min_prob")
+    @API(help = "Cutoff below which probability is replaced with min_prob", gridable = true)
     public double eps_prob;
 
-    @API(help = "Compute metrics on training data")
+    @API(help = "Compute metrics on training data", gridable = true)
     public boolean compute_metrics;
   }
 }

@@ -25,7 +25,6 @@ public class DeepLearningModelInfo extends Iced {
 
   // model is described by parameters and the following arrays
   private Storage.DenseRowMatrix[] dense_row_weights; //one 2D weight matrix per layer (stored as a 1D array each)
-  private Storage.DenseColMatrix[] dense_col_weights; //one 2D weight matrix per layer (stored as a 1D array each)
   private Storage.DenseVector[] biases; //one 1D bias array per layer
   private Storage.DenseVector[] avg_activations; //one 1D array per hidden layer
 
@@ -33,12 +32,10 @@ public class DeepLearningModelInfo extends Iced {
   // Note: These two arrays *could* be made transient and then initialized freshly in makeNeurons() and in DeepLearningTask.initLocal()
   // But then, after each reduction, the weights would be lost and would have to restart afresh -> not *exactly* right, but close...
   private Storage.DenseRowMatrix[] dense_row_weights_momenta;
-  private Storage.DenseColMatrix[] dense_col_weights_momenta;
   private Storage.DenseVector[] biases_momenta;
 
   // helpers for AdaDelta
   private Storage.DenseRowMatrix[] dense_row_ada_dx_g;
-  private Storage.DenseColMatrix[] dense_col_ada_dx_g;
   private Storage.DenseVector[] biases_ada_dx_g;
 
   private boolean[] _saw_missing_cats;  // whether missing value was encountered for each categorical predictor - needed for varimp
@@ -47,8 +44,7 @@ public class DeepLearningModelInfo extends Iced {
   // momenta are not counted here, but they are needed for model building
   public long size() {
     long siz = 0;
-    for (Storage.Matrix w : dense_row_weights) if (w != null) siz += w.size();
-    for (Storage.Matrix w : dense_col_weights) if (w != null) siz += w.size();
+    for (Storage.DenseRowMatrix w : dense_row_weights) if (w != null) siz += w.size();
     for (Storage.Vector b : biases) siz += b.size();
     return siz;
   }
@@ -76,24 +72,24 @@ public class DeepLearningModelInfo extends Iced {
     return get_params()._adaptive_rate;
   }
 
-  public final Storage.Matrix get_weights(int i) {
-    return dense_row_weights[i] == null ? dense_col_weights[i] : dense_row_weights[i];
+  public final Storage.DenseRowMatrix get_weights(int i) {
+    return dense_row_weights[i];
   }
 
   public final Storage.DenseVector get_biases(int i) {
     return biases[i];
   }
 
-  public final Storage.Matrix get_weights_momenta(int i) {
-    return dense_row_weights_momenta[i] == null ? dense_col_weights_momenta[i] : dense_row_weights_momenta[i];
+  public final Storage.DenseRowMatrix get_weights_momenta(int i) {
+    return dense_row_weights_momenta[i];
   }
 
   public final Storage.DenseVector get_biases_momenta(int i) {
     return biases_momenta[i];
   }
 
-  public final Storage.Matrix get_ada_dx_g(int i) {
-    return dense_row_ada_dx_g[i] == null ? dense_col_ada_dx_g[i] : dense_row_ada_dx_g[i];
+  public final Storage.DenseRowMatrix get_ada_dx_g(int i) {
+    return dense_row_ada_dx_g[i];
   }
 
   public final Storage.DenseVector get_biases_ada_dx_g(int i) {
@@ -115,13 +111,13 @@ public class DeepLearningModelInfo extends Iced {
     parameters = (DeepLearningParameters) p.clone();
   }
 
-  private float[] mean_rate;
-  private float[] rms_rate;
-  private float[] mean_bias;
-  private float[] rms_bias;
-  private float[] mean_weight;
-  public float[] rms_weight;
-  public float[] mean_a;
+  private double[] mean_rate;
+  private double[] rms_rate;
+  private double[] mean_bias;
+  private double[] rms_bias;
+  private double[] mean_weight;
+  public double[] rms_weight;
+  public double[] mean_a;
 
   private volatile boolean unstable = false;
   public boolean unstable() { return unstable; }
@@ -229,33 +225,37 @@ public class DeepLearningModelInfo extends Iced {
       }
     }
 
+    int[] mult = new int[layers + 1];
+    for (int i=0;i<layers;++i) {
+      mult[i] = (get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout) ? 2 : 1;
+    }
+    mult[layers]=1; //Output is never Maxout
+
     // weights (to connect layers)
     dense_row_weights = new Storage.DenseRowMatrix[layers + 1];
-    dense_col_weights = new Storage.DenseColMatrix[layers + 1];
-
-    // decide format of weight matrices row-major or col-major
-    if (get_params()._col_major) dense_col_weights[0] = new Storage.DenseColMatrix(units[1], units[0]);
-    else dense_row_weights[0] = new Storage.DenseRowMatrix(units[1], units[0]);
+    dense_row_weights[0] = new Storage.DenseRowMatrix(mult[0]*units[1], units[0]);
     for (int i = 1; i <= layers; ++i)
-      dense_row_weights[i] = new Storage.DenseRowMatrix(units[i + 1] /*rows*/, units[i] /*cols*/);
+      dense_row_weights[i] = new Storage.DenseRowMatrix(mult[i] * units[i + 1] /*rows*/, units[i] /*cols*/);
 
     // biases (only for hidden layers and output layer)
     biases = new Storage.DenseVector[layers + 1];
-    for (int i = 0; i <= layers; ++i) biases[i] = new Storage.DenseVector(units[i + 1]);
+    for (int i = 0; i <= layers; ++i)
+      biases[i] = new Storage.DenseVector(mult[i] * units[i+1]);
     // average activation (only for hidden layers)
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
       avg_activations = new Storage.DenseVector[layers];
-      mean_a = new float[layers];
-      for (int i = 0; i < layers; ++i) avg_activations[i] = new Storage.DenseVector(units[i + 1]);
+      mean_a = new double[layers];
+      for (int i = 0; i < layers; ++i)
+        avg_activations[i] = new Storage.DenseVector(mult[i] * units[i + 1]);
     }
     allocateHelperArrays();
     // for diagnostics
-    mean_rate = new float[units.length];
-    rms_rate = new float[units.length];
-    mean_bias = new float[units.length];
-    rms_bias = new float[units.length];
-    mean_weight = new float[units.length];
-    rms_weight = new float[units.length];
+    mean_rate = new double[units.length-1];
+    rms_rate = new double[units.length-1];
+    mean_bias = new double[units.length-1];
+    rms_bias = new double[units.length-1];
+    mean_weight = new double[units.length-1];
+    rms_weight = new double[units.length-1];
   }
 
   // deep clone all weights/biases
@@ -270,33 +270,31 @@ public class DeepLearningModelInfo extends Iced {
    * Allocate helper arrays for momentum/learning rate, etc.
    */
   void allocateHelperArrays() {
+    int[] mult = new int[units.length-1];
+    for (int i=0;i<units.length-1;++i) {
+      mult[i] = (get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout) ? 2 : 1;
+    }
+    mult[units.length-2]=1; //Output is never Maxout
+
     if (has_momenta()) {
       dense_row_weights_momenta = new Storage.DenseRowMatrix[dense_row_weights.length];
-      dense_col_weights_momenta = new Storage.DenseColMatrix[dense_col_weights.length];
       if (dense_row_weights[0] != null)
-        dense_row_weights_momenta[0] = new Storage.DenseRowMatrix(units[1], units[0]);
-      else
-        dense_col_weights_momenta[0] = new Storage.DenseColMatrix(units[1], units[0]);
+        dense_row_weights_momenta[0] = new Storage.DenseRowMatrix(mult[0]*units[1], units[0]);
       for (int i = 1; i < dense_row_weights_momenta.length; ++i)
-        dense_row_weights_momenta[i] = new Storage.DenseRowMatrix(units[i + 1], units[i]);
-
+        dense_row_weights_momenta[i] = new Storage.DenseRowMatrix(mult[i]*units[i + 1], units[i]);
       biases_momenta = new Storage.DenseVector[biases.length];
-      for (int i = 0; i < biases_momenta.length; ++i) biases_momenta[i] = new Storage.DenseVector(units[i + 1]);
+      for (int i = 0; i < biases_momenta.length; ++i)
+        biases_momenta[i] = new Storage.DenseVector(mult[i]*units[i + 1]);
     } else if (adaDelta()) {
       dense_row_ada_dx_g = new Storage.DenseRowMatrix[dense_row_weights.length];
-      dense_col_ada_dx_g = new Storage.DenseColMatrix[dense_col_weights.length];
       //AdaGrad
-      if (dense_row_weights[0] != null) {
-        dense_row_ada_dx_g[0] = new Storage.DenseRowMatrix(units[1], 2 * units[0]);
-      } else {
-        dense_col_ada_dx_g[0] = new Storage.DenseColMatrix(2 * units[1], units[0]);
-      }
+      dense_row_ada_dx_g[0] = new Storage.DenseRowMatrix(mult[0]*2*units[1], units[0]);
       for (int i = 1; i < dense_row_ada_dx_g.length; ++i) {
-        dense_row_ada_dx_g[i] = new Storage.DenseRowMatrix(units[i + 1], 2 * units[i]);
+        dense_row_ada_dx_g[i] = new Storage.DenseRowMatrix(mult[i]*units[i + 1], 2 * units[i]);
       }
       biases_ada_dx_g = new Storage.DenseVector[biases.length];
       for (int i = 0; i < biases_ada_dx_g.length; ++i) {
-        biases_ada_dx_g[i] = new Storage.DenseVector(2 * units[i + 1]);
+        biases_ada_dx_g[i] = new Storage.DenseVector(mult[i]*2* units[i + 1]);
       }
     }
   }
@@ -306,17 +304,18 @@ public class DeepLearningModelInfo extends Iced {
    * @return
    */
   TwoDimTable createSummaryTable() {
+    computeStats();
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",
-            (get_params()._diagnostics ? "" : "diagnostics disabled, ") +
             (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
                     (get_params()._autoencoder ? "auto-encoder" :
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
                     + ", " + get_params()._distribution + " distribution, " + get_params()._loss + " loss, "
                     + String.format("%,d", size()) + " weights/biases, " + PrettyPrint.bytes(byte_size) + ", "
-                    + String.format("%,d", get_processed_global()) + " training samples",
+                    + String.format("%,d", get_processed_global()) + " training samples, "
+                    + "mini-batch size " + String.format("%,d", get_params()._mini_batch_size),
             new String[neurons.length],
             new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
                     "Mean Rate", "Rate RMS", "Momentum",
@@ -348,13 +347,13 @@ public class DeepLearningModelInfo extends Iced {
       }
       table.set(i, 4, neurons[i].params._l1);
       table.set(i, 5, neurons[i].params._l2);
-      table.set(i, 6, (get_params()._adaptive_rate ? mean_rate[i] : neurons[i].rate(get_processed_total())));
-      table.set(i, 7, (get_params()._adaptive_rate ? rms_rate[i] : 0));
+      table.set(i, 6, (get_params()._adaptive_rate ? mean_rate[i-1] : neurons[i].rate(get_processed_total())));
+      table.set(i, 7, (get_params()._adaptive_rate ? rms_rate[i-1] : 0));
       table.set(i, 8, get_params()._adaptive_rate ? 0 : neurons[i].momentum(get_processed_total()));
-      table.set(i, 9, mean_weight[i]);
-      table.set(i, 10, rms_weight[i]);
-      table.set(i, 11, mean_bias[i]);
-      table.set(i, 12, rms_bias[i]);
+      table.set(i, 9, mean_weight[i-1]);
+      table.set(i, 10, rms_weight[i-1]);
+      table.set(i, 11, mean_bias[i-1]);
+      table.set(i, 12, rms_bias[i-1]);
     }
     summaryTable = table;
     return summaryTable;
@@ -366,7 +365,7 @@ public class DeepLearningModelInfo extends Iced {
    */
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    if (get_params()._diagnostics && !get_params()._quiet_mode) {
+    if (!get_params()._quiet_mode) {
       if (get_params()._sparsity_beta > 0) {
         for (int k = 0; k < get_params()._hidden.length; k++) {
           sb.append("Average activation in hidden layer ").append(k).append(" is  ").append(mean_a[k]).append(" \n");
@@ -463,29 +462,29 @@ public class DeepLearningModelInfo extends Iced {
    * Multiply all weights/biases by a real-valued number
    * @param N
    */
-  protected void mult(float N) {
-    div(1f / N);
+  protected void mult(double N) {
+    div(1 / N);
   }
 
   /**
    * Divide all weights/biases by a real-valued number
    * @param N
    */
-  protected void div(float N) {
+  protected void div(double N) {
     for (int i = 0; i < dense_row_weights.length; ++i)
-      ArrayUtils.div(get_weights(i).raw(), N);
+      ArrayUtils.div(get_weights(i).raw(), (float)N);
     for (Storage.Vector bias : biases) ArrayUtils.div(bias.raw(), N);
     if (avg_activations != null)
       for (Storage.Vector avgac : avg_activations)
         ArrayUtils.div(avgac.raw(), N);
     if (has_momenta()) {
       for (int i = 0; i < dense_row_weights_momenta.length; ++i)
-        ArrayUtils.div(get_weights_momenta(i).raw(), N);
+        ArrayUtils.div(get_weights_momenta(i).raw(), (float)N);
       for (Storage.Vector bias_momenta : biases_momenta) ArrayUtils.div(bias_momenta.raw(), N);
     }
     if (adaDelta()) {
       for (int i = 0; i < dense_row_ada_dx_g.length; ++i) {
-        ArrayUtils.div(get_ada_dx_g(i).raw(), N);
+        ArrayUtils.div(get_ada_dx_g(i).raw(), (float)N);
       }
     }
   }
@@ -599,7 +598,6 @@ public class DeepLearningModelInfo extends Iced {
    * Compute statistics about this model on all nodes
    */
   public void computeStats() {
-    if (!get_params()._diagnostics) return;
     float[][] rate = get_params()._adaptive_rate ? new float[units.length - 1][] : null;
 
     if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
@@ -611,50 +609,46 @@ public class DeepLearningModelInfo extends Iced {
       }
     }
 
-    for (int y = 1; y < units.length; y++) {
+    for (int y = 0; y < units.length-1; y++) {
       mean_rate[y] = rms_rate[y] = 0;
       mean_bias[y] = rms_bias[y] = 0;
       mean_weight[y] = rms_weight[y] = 0;
-      for (int u = 0; u < biases[y - 1].size(); u++) {
-        mean_bias[y] += biases[y - 1].get(u);
+      for (int u = 0; u < biases[y].size(); u++) {
+        mean_bias[y] += biases[y].get(u);
       }
-      if (rate != null) rate[y - 1] = new float[get_weights(y - 1).raw().length];
-      for (int u = 0; u < get_weights(y - 1).raw().length; u++) {
-        mean_weight[y] += get_weights(y - 1).raw()[u];
+      if (rate != null) rate[y] = new float[get_weights(y).raw().length];
+      for (int u = 0; u < get_weights(y).raw().length; u++) {
+        mean_weight[y] += get_weights(y).raw()[u];
         if (rate != null) {
-//            final float RMS_dx = (float)Math.sqrt(ada[y-1][2*u]+(float)get_params().epsilon);
-//            final float invRMS_g = (float)(1/Math.sqrt(ada[y-1][2*u+1]+(float)get_params().epsilon));
-          final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y - 1).raw()[2 * u] + (float) get_params()._epsilon);
-          final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y - 1).raw()[2 * u + 1] + (float) get_params()._epsilon);
-          rate[y - 1][u] = RMS_dx * invRMS_g; //not exactly right, RMS_dx should be from the previous time step -> but close enough for diagnostics.
-          mean_rate[y] += rate[y - 1][u];
+//            final float RMS_dx = (float)Math.sqrt(ada[y][2*u]+(float)get_params().epsilon);
+//            final float invRMS_g = (float)(1/Math.sqrt(ada[y][2*u+1]+(float)get_params().epsilon));
+          final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y).raw()[2 * u] + (float) get_params()._epsilon);
+          final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y).raw()[2 * u + 1] + (float) get_params()._epsilon);
+          rate[y][u] = RMS_dx * invRMS_g; //not exactly right, RMS_dx should be from the previous time step -> but close enough for diagnostics.
+          mean_rate[y] += rate[y][u];
         }
       }
-
-
-      mean_bias[y] /= biases[y - 1].size();
-
-      mean_weight[y] /= get_weights(y - 1).size();
-      if (rate != null) mean_rate[y] /= rate[y - 1].length;
-
-      for (int u = 0; u < biases[y - 1].size(); u++) {
-        final double db = biases[y - 1].get(u) - mean_bias[y];
+      mean_bias[y] /= biases[y].size();
+      mean_weight[y] /= get_weights(y).size();
+      if (rate != null) mean_rate[y] /= rate[y].length;
+      for (int u = 0; u < biases[y].size(); u++) {
+        final double db = biases[y].get(u) - mean_bias[y];
         rms_bias[y] += db * db;
       }
-      for (int u = 0; u < get_weights(y - 1).size(); u++) {
-        final double dw = get_weights(y - 1).raw()[u] - mean_weight[y];
+      for (int u = 0; u < get_weights(y).size(); u++) {
+        final double dw = get_weights(y).raw()[u] - mean_weight[y];
         rms_weight[y] += dw * dw;
         if (rate != null) {
-          final double drate = rate[y - 1][u] - mean_rate[y];
+          final double drate = rate[y][u] - mean_rate[y];
           rms_rate[y] += drate * drate;
         }
       }
-      rms_bias[y] = MathUtils.approxSqrt(rms_bias[y] / biases[y - 1].size());
-      rms_weight[y] = MathUtils.approxSqrt(rms_weight[y] / get_weights(y - 1).size());
-      if (rate != null) rms_rate[y] = MathUtils.approxSqrt(rms_rate[y] / rate[y - 1].length);
-//        rms_bias[y] = (float)Math.sqrt(rms_bias[y]/biases[y-1].length);
-//        rms_weight[y] = (float)Math.sqrt(rms_weight[y]/weights[y-1].length);
-//        if (rate != null) rms_rate[y] = (float)Math.sqrt(rms_rate[y]/rate[y-1].length);
+      rms_bias[y] = MathUtils.approxSqrt(rms_bias[y] / biases[y].size());
+      rms_weight[y] = MathUtils.approxSqrt(rms_weight[y] / get_weights(y).size());
+      if (rate != null) rms_rate[y] = MathUtils.approxSqrt(rms_rate[y]/ rate[y].length);
+//        rms_bias[y] = (float)Math.sqrt(rms_bias[y]/biases[y].length);
+//        rms_weight[y] = (float)Math.sqrt(rms_weight[y]/weights[y].length);
+//        if (rate != null) rms_rate[y] = (float)Math.sqrt(rms_rate[y]/rate[y].length);
 
       // Abort the run if weights or biases are unreasonably large (Note that all input values are normalized upfront)
       // This can happen with Rectifier units when L1/L2/max_w2 are all set to 0, especially when using more than 1 hidden layer.
@@ -670,15 +664,17 @@ public class DeepLearningModelInfo extends Iced {
    * Unique identifier for this model's state, based on raw numbers
    */
   protected long checksum_impl() {
-    long cs = parameters._seed;
-    cs ^= size() * get_processed_total();
-    cs ^= (long) (2234.3424 * ArrayUtils.sum(mean_bias));
-    cs *= (long) (9234.1343 * ArrayUtils.sum(rms_bias));
-    cs ^= (long) (9723.9734 * ArrayUtils.sum(mean_weight));
-    cs *= (long) (9234.1783 * ArrayUtils.sum(rms_weight));
-    cs ^= (long) (4273.2344 * (Math.E + ArrayUtils.sum(mean_rate)));
-    cs *= (long) (3378.1999 * (Math.PI + ArrayUtils.sum(rms_rate)));
-    return cs;
+    computeStats();
+    Random rng = new Random(0xDECAFBBB);
+    double cs = Double.longBitsToDouble(get_params()._seed);
+    cs += size() * get_processed_total();
+    for (double d : mean_bias) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : rms_bias) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : mean_weight) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : rms_weight) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : mean_rate) cs += (rng.nextDouble() * (d+123.23));
+    for (double d : rms_rate) cs += (rng.nextDouble() * (d+123.23));
+    return Double.doubleToRawLongBits(cs);
   }
 
   /**
@@ -717,4 +713,18 @@ public class DeepLearningModelInfo extends Iced {
     return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
+  static public class GradientCheck {
+    GradientCheck(int l, int r, int c) { layer=l; row=r; col=c; gradient=0;}
+    int layer;
+    int row;
+    int col;
+    double gradient;
+    void apply(int l, int r, int c, double g) {
+      if (r==row && c==col && l==layer) {
+        assert(gradient == 0); //there can only be one match
+        gradient = g;
+      }
+    }
+  }
+  static public GradientCheck gradientCheck = null;
 }

@@ -77,12 +77,12 @@ public class Distribution extends Iced {
         return w * (y - f) * (y - f);
       case huber:
         if (Math.abs(y-f) < 1) {
-          return w * (y-f) * (y-f);
+          return w * (y - f) * (y - f);
         } else {
-          return w * 2 * Math.abs(y-f) - 1;
+          return 2 * w * Math.abs(y-f) - 1;
         }
       case laplace:
-        return w*Math.abs(y-f);
+        return 2 * w * Math.abs(y-f);
       case bernoulli:
         return -2 * w * (y * f - log(1 + exp(f)));
       case poisson:
@@ -119,10 +119,10 @@ public class Distribution extends Iced {
         if (Math.abs(y-f) < 1) {
           return y - f;
         } else {
-          return f - 1 >= y ? -2 : 2;
+          return f - 1 >= y ? -1 : 1;
         }
       case laplace:
-        return f > y ? -1f : 1f;
+        return f > y ? -1 : 1;
       default:
         throw H2O.unimpl();
     }

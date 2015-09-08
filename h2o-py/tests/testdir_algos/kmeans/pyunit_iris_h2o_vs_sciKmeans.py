@@ -5,7 +5,7 @@ import h2o, tests
 import numpy as np
 from sklearn.cluster import KMeans
 
-def iris_h2o_vs_sciKmeans(ip,port):
+def iris_h2o_vs_sciKmeans():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 

@@ -2,7 +2,7 @@ import os, sys
 sys.path.insert(1,"../../../")
 import h2o, tests
 
-def deeplearning_autoencoder(ip, port):
+def deeplearning_autoencoder():
     
 
     resp = 784
@@ -56,7 +56,11 @@ def deeplearning_autoencoder(ip, port):
     cm.show()
 
     # 10% error +/- 0.001
+<<<<<<< HEAD
     assert abs(cm.cell_values[10][10] - 0.1079) < 0.001, "Error. Expected 0.1079, but got {0}".format(cm.cell_values[10][10])
+=======
+    assert abs(cm.cell_values[10][10] - 0.082) < 0.001, "Error. Expected 0.082, but got {0}".format(cm.cell_values[10][10])
+>>>>>>> master
 
 if __name__ == '__main__':
     tests.run_test(sys.argv, deeplearning_autoencoder)

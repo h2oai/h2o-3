@@ -41,8 +41,8 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(25, 0, 0),
-                    ard(0, 17, 1),
-                    ard(2, 1, 15)),
+                    ard(0, 16, 2),
+                    ard(0, 1, 17)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -62,8 +62,8 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(41, 0, 0),
-                    ard(1, 39, 2),
-                    ard(1, 3, 41)),
+                    ard(0, 39, 3),
+                    ard(0, 3, 42)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -83,10 +83,10 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(0, 0, 0, 0, 0),
-                    ard(3, 65, 0, 1, 0),
+                    ard(0, 60, 0, 9, 0),
                     ard(0, 1, 0, 0, 0),
-                    ard(0, 0, 1, 30, 0),
-                    ard(0, 0, 0, 1, 39)),
+                    ard(0, 0, 0, 31, 0),
+                    ard(0, 0, 0, 0, 40)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -104,11 +104,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(3, 0, 0, 0, 0),
-                    ard(2, 177, 1, 4, 0),
+            ard(ard(0, 3, 0, 0, 0),
+                    ard(0, 171, 2, 11, 0),
                     ard(0, 1, 1, 0, 0),
-                    ard(0, 2, 2, 69, 1),
-                    ard(0, 0, 0, 3, 87)),
+                    ard(0, 2, 2, 68, 2),
+                    ard(0, 0, 0, 0, 90)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -576,7 +576,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20934191392060025, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.21149731277917921, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -654,6 +654,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -692,6 +693,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -730,6 +732,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 2; //in terms of weighted rows
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -806,6 +809,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);

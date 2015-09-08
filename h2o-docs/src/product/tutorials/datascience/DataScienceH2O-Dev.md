@@ -20,33 +20,33 @@ K-Means falls in the general category of clustering algorithms.
 
 ###Defining a K-Means Model
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **Ignore\_const\_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **ignore\_const\_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **K**: Specify the number of clusters.  
+- **k***: Specify the number of clusters.  
 
-- **User_points**: Specify a vector of initial cluster centers.
+- **user_points**: Specify a vector of initial cluster centers.
 
-- **Max_iterations**: Specify the maximum number of training iterations. 
+- **max_iterations**: Specify the maximum number of training iterations. 
 
-- **Init**: Select the initialization mode. The options are Random, Furthest, PlusPlus, or User. **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+- **init**: Select the initialization mode. The options are Random, Furthest, PlusPlus, or User. **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+- **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Standardize**: To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
+- **standardize**: To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
  >**Note**: If standardization is enabled, each column of numeric data is centered and scaled so that its mean is zero and its standard deviation is one before the algorithm is used. At the end of the process, the cluster centers on both the standardized scale (`centers_std`) and the de-standardized scale (`centers`) are displayed. 
  >To de-standardize the centers, the algorithm multiplies by the original standard deviation of the corresponding column and adds the original mean. Enabling standardization is mathematically equivalent to using `h2o.scale` in R with `center` = TRUE and `scale` = TRUE on the numeric columns. Therefore, there will be no discernible difference if standardization is enabled or not for K-Means, since H2O calculates unstandardized centroids. 
  
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a K-Means Model
 
@@ -166,74 +166,74 @@ The GLM suite includes:
 
 ###Defining a GLM Model
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Nfolds**: Specify the number of folds for cross-validation. 
+- **nfolds**: Specify the number of folds for cross-validation. 
 
-- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+- **fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
+- **response_column**: (Required) Select the column to use as the independent variable.
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Offset_column**: Select a column to use as the offset. 
+- **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+- **family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
 
-- **Tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
+- **tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
 
-- **Tweedie_link_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
+- **tweedie_link_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
-- **Solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
+- **solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
 
-- **Alpha**: Specify the regularization distribution between L2 and L2.  
+- **alpha**: Specify the regularization distribution between L2 and L2.  
 
-- **Lambda**:  Specify the regularization strength. 
+- **lambda**:  Specify the regularization strength. 
 
-- **Lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
+- **lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
 
-- **Standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
+- **standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
-- **Non-negative**: To force coefficients to have non-negative values, check this checkbox. 
+- **non-negative**: To force coefficients to have non-negative values, check this checkbox. 
 
-- **Beta constraints**: To use beta constraints, select a dataset from the drop-down menu. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. 
+- **beta_constraints**: To use beta constraints, select a dataset from the drop-down menu. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+- **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Max_iterations**: Specify the number of training iterations.   
+- **max_iterations**: Specify the number of training iterations.   
 
-- **Link**: Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
+- **link**: Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
-- **Max\_confusion\_matrix\_size**: Specify the maximum size (number of classes) for the confusion matrices printed in the logs. 
+- **max\_confusion\_matrix\_size**: Specify the maximum size (number of classes) for the confusion matrices printed in the logs. 
 
-- **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
+- **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter `0`. 
 
-- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
+- **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
+- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
-- **Intercept**: To include a constant term in the model, check this checkbox. This option is selected by default. 
+- **intercept**: To include a constant term in the model, check this checkbox. This option is selected by default. 
 
-- **Objective_epsilon**: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
+- **objective_epsilon**: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged. 
 
-- **Beta_epsilon**: Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
+- **beta_epsilon**: Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
-- **Gradient_epsilon**: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
+- **gradient_epsilon**: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
-- **Prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  
+- **prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  
 
-- **Max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
+- **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
 
 ###Interpreting a GLM Model
@@ -282,6 +282,11 @@ By default, the following output displays:
 - **What if there are a large number of categorical factor levels?**
 
   GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
+
+- **When building the model, does GLM use all features or a selection of the best features?**
+
+  Typically, GLM picks the best predictors, especially if lasso is used (`alpha = 1`). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors. 
+
 
 ###GLM Algorithm
 
@@ -386,72 +391,87 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
 
+The current version of DRF is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
+
+- Improved ability to train on categorical variables (using the `nbins_cats` parameter)
+- Minor changes in histogramming logic for some corner cases
+- By default, DRF now builds half as many trees for binomial problems, similar to GBM: one tree to estimate class 0, probability p0, class 1 probability is 1-p0. 
+
+There was some code cleanup and refactoring to support the following features:
+
+- Per-row observation weights
+- Per-row offsets
+- N-fold cross-validation
+
+DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram), since it was not applicable to cases with observation weights or for cross-validation. 
+
+
 ###Defining a DRF Model
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Nfolds**: Specify the number of folds for cross-validation. 
+- **nfolds**: Specify the number of folds for cross-validation. 
 
-- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+- **fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
+- **response_column**: (Required) Select the column to use as the independent variable.
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Offset_column**: Select a column to use as the offset. 
+- **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Ntrees**: Specify the number of trees.  
+- **ntrees**: Specify the number of trees.  
 
-- **Max\_depth**: Specify the maximum tree depth.
+- **max\_depth**: Specify the maximum tree depth.
 
-- **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R).  
+- **min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R).  
 
-- **Nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
+- **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
 
-- **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
+- **nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
 
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Mtries**: Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).   
+- **mtries**: Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).   
 
-- **Sample\_rate**: Specify the sample rate. The range is 0 to 1.0. 
+- **sample\_rate**: Specify the sample rate. The range is 0 to 1.0. 
 
-- **Checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
+- **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
  
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+- **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. 
+- **balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. 
 
-- **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+- **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
-- **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+- **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees. 
+- **r2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees. 
 
-- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
+- **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
-- **Binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
+- **binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
-- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
+- **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
+- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
-- **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
+- **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
+- **max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
-- **Nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
+- **nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
 
 
 ###Interpreting a DRF Model
@@ -474,7 +494,7 @@ By default, the following output displays:
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values do not alter the tree building in any way (i.e., they are not counted as a point when computing means or errors). Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
+  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
 
 - **How does the algorithm handle missing values during testing?**
 
@@ -522,36 +542,36 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 
 ###Defining a Naïve Bayes Model
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
+- **response_column**: (Required) Select the column to use as the independent variable.
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Laplace**: Specify the Laplace smoothing parameter.  
+- **laplace**: Specify the Laplace smoothing parameter.  
 
-- **Min\_sdev**: Specify the minimum standard deviation to use for observations without enough data.   
+- **min\_sdev**: Specify the minimum standard deviation to use for observations without enough data.   
 
-- **Eps\_sdev**: Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.  
+- **eps\_sdev**: Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.  
 
-- **Min\_prob**: Specify the minimum probability to use for observations without enough data.   
+- **min\_prob**: Specify the minimum probability to use for observations without enough data.   
 
-- **Eps\_prob**: Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.  
+- **eps\_prob**: Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.  
 
-- **Compute_metrics**: To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
+- **compute_metrics**: To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+- **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+- **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
-- **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+- **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
 
 
@@ -691,35 +711,35 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 ###Defining a PCA Model
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+- **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default.   
+- **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default.   
 
-- **PCA_method**: Select the algorithm to use for computing the principal components: 
+- **pca_method**: Select the algorithm to use for computing the principal components: 
 	- *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
 	- *Power*: Computes the SVD using the power iteration method
 	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
-- **Use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first factor level of each categorical column when expanding into indicator columns. 
+- **use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first factor level of each categorical column when expanding into indicator columns. 
 
-- **Loading_name**: (Applicable only if *Power* is selected for **PCA_method**) Specify a name for the frame to save left singular vectors from SVD. 
+- **loading_name**: (Applicable only if *Power* is selected for **PCA_method**) Specify a name for the frame to save left singular vectors from SVD. 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+- **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Transform**: Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
+- **transform**: Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
 
-- **K**: Specify the rank of matrix approximation. The default is 1.  
+- **k***: Specify the rank of matrix approximation. The default is 1.  
 
-- **Max_iterations**: Specify the number of training iterations. The default is 1000.
+- **max_iterations**: Specify the number of training iterations. The default is 1000.
 
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 
 ###Interpreting a PCA Model
@@ -891,72 +911,84 @@ Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and
 
 Gradient Boosted Regression and Gradient Boosted Classification are forward learning ensemble methods. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O's GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
 
+The current version of GBM is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
+
+- Improved ability to train on categorical variables (using the `nbins_cats` parameter)
+- Minor changes in histogramming logic for some corner cases
+
+There was some code cleanup and refactoring to support the following features:
+
+- Per-row observation weights
+- Per-row offsets
+- N-fold cross-validation
+- Support for more distribution functions (such as Gamma, Poisson, and Tweedie)
+
 ###Defining a GBM Model
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Nfolds**: Specify the number of folds for cross-validation. 
+- **nfolds**: Specify the number of folds for cross-validation. 
 
-- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+- **fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
 
-- **Response_column**: (Required) Select the column to use as the independent variable.
+- **response_column**: (Required) Select the column to use as the independent variable.
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Offset_column**: Select a column to use as the offset. 
+- **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Ntrees**: Specify the number of trees.  
+- **ntrees**: Specify the number of trees.  
 
-- **Max\_depth**: Specify the maximum tree depth.  
+- **max\_depth**: Specify the maximum tree depth.  
 
-- **Min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R).   
+- **min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R).   
 
-- **Nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
+- **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
 
-- **Nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.   
+- **nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.   
 
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Learn_rate**: Specify the learning rate. The range is 0.0 to 1.0. 
+- **learn_rate**: Specify the learning rate. The range is 0.0 to 1.0. 
 
-- **Distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
+- **distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
 
-- **Tweedie_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
+- **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
-- **Score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+- **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
-- **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+- **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
-- **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+- **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **Checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
+- **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
-- **R2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees.   
+- **r2_stopping**: Specify a threshold for the coefficient of determination (\(r^2\)) metric value. When this threshold is met or exceeded, H2O stops making trees.   
 
-- **Build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+- **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
-- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
+- **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
+- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
  
-- **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
+- **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
+- **max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
-- **Nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
+- **nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
 
 
 ###Interpreting a GBM Model
@@ -976,7 +1008,7 @@ The output for GBM includes the following:
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values do not alter the tree building in any way (i.e., they are not counted as a point when computing means or errors). Rows containing missing values do affect tree building, but the missing values don't change the split-point of the column they are in.
+  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
 
 - **How does the algorithm handle missing values during testing?**
 
@@ -1004,7 +1036,22 @@ The output for GBM includes the following:
 
 - **What if there are a large number of categorical factor levels?**
 
-  Large number of categoricals are handled very efficiently - there is never any one-hot encoding.
+  Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
+
+- **Given the same training set and the same GBM parameters, will GBM produce a different model with two different validation data sets, or the same model?**
+
+  The same model will be generated. 
+
+- **How deterministic is GBM?**
+
+  The `nfolds` and `balance_classes` parameters use the seed directly. Otherwise, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). Any observed variations in the AUC curve should be the same up to at least three to four significant digits. 
+
+- **When fitting a random number between 0 and 1 as a single feature, the training ROC curve is consistent with `random` for low tree numbers and overfits as the number of trees is increased, as expected. However, when a random number is included as part of a set of hundreds of features, as the number of trees increases, the random number increases in feature importance. Why is this?**
+ 
+This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
+
+
+
 
 ###GBM Algorithm 
 
@@ -1074,123 +1121,123 @@ H2O’s Deep Learning is based on a multi-layer feed-forward artificial neural n
 
 H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
 
-- **Model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
+- **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Required) Select the dataset used to build the model. 
+- **training_frame**: (Required) Select the dataset used to build the model. 
 **NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
-- **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
+- **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **Nfolds**: Specify the number of folds for cross-validation. 
+- **nfolds**: Specify the number of folds for cross-validation. 
 
-- **Fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
+- **fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
 
-- **Response_column**: Select the column to use as the independent variable.
+- **response_column**: Select the column to use as the independent variable.
 
-- **Ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Select All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Deselect All** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
+- **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons. 
 
-- **Ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
+- **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **Offset_column**: Select a column to use as the offset. 
+- **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **Activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).   
+- **activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).   
 
-- **Hidden**: Specify the hidden layer sizes (e.g., 100,100).  
+- **hidden**: Specify the hidden layer sizes (e.g., 100,100).  
 
-- **Epochs**: Specify the number of times to iterate (stream) the dataset. The value can be a fraction.   
+- **epochs**: Specify the number of times to iterate (stream) the dataset. The value can be a fraction.   
 
-- **Variable_importances**: Check this checkbox to compute variable importance. This option is not selected by default. 
+- **variable_importances**: Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **Balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter. 
+- **balance_classes**: Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter. 
 
-- **Max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+- **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
-- **Max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+- **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
-- **Checkpoint**: Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
+- **checkpoint**: Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
 
-- **Use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
+- **use\_all\_factor\_levels**: Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. 
 
-- **Train\_samples\_per\_iteration**: Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2.   
+- **train\_samples\_per\_iteration**: Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2.   
 
-- **Adaptive_rate**: Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. 
+- **adaptive_rate**: Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. 
 
-- **Input\_dropout\_ratio**: Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2.  
+- **input\_dropout\_ratio**: Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2.  
 
-- **L1**: Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. 
+- **l1**: Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. 
 
-- **L2**: Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
+- **l2**: Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
 
-- **Loss**:  Select the loss function. The options are automatic, mean square, cross-entropy, Huber, or Absolute and the default value is automatic. 
+- **loss**:  Select the loss function. The options are automatic, mean square, cross-entropy, Huber, or Absolute and the default value is automatic. 
 
-- **Distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+- **distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
-- **Tweedie_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
+- **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
-- **Score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring.  
+- **score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring.  
 
-- **Score\_training\_samples**: Specify the number of training set samples for scoring. To use all training samples, enter 0.  
+- **score\_training\_samples**: Specify the number of training set samples for scoring. To use all training samples, enter 0.  
 
-- **Score\_duty\_cycle**: Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. 
+- **score\_duty\_cycle**: Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. 
 
-- **Autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
+- **autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
-- **Keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
+- **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
-- **Fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
+- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
 
-- **Class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
+- **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
-- **Max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
+- **max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0. 
 
-- **Overwrite\_with\_best\_model**: Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
+- **overwrite\_with\_best\_model**: Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default. 
 
-- **Target\_ratio\_comm\_to\_comp**: Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning).  
+- **target\_ratio\_comm\_to\_comp**: Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning).  
 
-- **Seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Rho**: Specify the adaptive learning rate time decay factor.   
+- **rho**: Specify the adaptive learning rate time decay factor.   
 
-- **Epsilon**: Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. 
+- **epsilon**: Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. 
 
-- **Max_W2**: Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier).  
+- **max_w2**: Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier).  
 
-- **Initial\_weight\_distribution**: Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal).   
+- **initial\_weight\_distribution**: Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal).   
 
-- **Regression_stop**: Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.  
+- **regression_stop**: Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.  
 
-- **Diagnostics**: Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
+- **diagnostics**: Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
-- **Fast_mode**: Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default. 
+- **fast_mode**: Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default. 
 
-- **Force\_load\_balance**: Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
+- **force\_load\_balance**: Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default. 
 
-- **Single\_node\_mode**: Check this checkbox to force H2O to run on a single node for fine-tuning of model parameters. This option is not selected by default. 
+- **single\_node\_mode**: Check this checkbox to force H2O to run on a single node for fine-tuning of model parameters. This option is not selected by default. 
 
-- **Shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
+- **shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **Missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
+- **missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
 
-- **Quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
+- **quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
-- **Sparse**: Check this checkbox to use sparse data handling. This option is not selected by default. 
+- **sparse**: Check this checkbox to use sparse data handling. This option is not selected by default. 
 
-- **Col_major**: Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
+- **col_major**: Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
-- **Average_activation**: Specify the average activation for the sparse autoencoder.  
+- **average_activation**: Specify the average activation for the sparse autoencoder.  
 
-- **Sparsity_beta**: Specify the sparsity-based regularization optimization. For more information, refer to the following [link](http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf).  
+- **sparsity_beta**: Specify the sparsity-based regularization optimization. For more information, refer to the following [link](http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf).  
   
 
-- **Max\_categorical\_features**: Specify the maximum number of categorical features enforced via hashing.
+- **max\_categorical\_features**: Specify the maximum number of categorical features enforced via hashing.
 
-- **Reproducible**: To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
+- **reproducible**: To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
 
-- **Export\_weights\_and\_biases**: To export the neural network weights and biases as H2O frames, check this checkbox. 
+- **export\_weights\_and\_biases**: To export the neural network weights and biases as H2O frames, check this checkbox. 
 
 
 ###Interpreting a Deep Learning Model
@@ -1241,11 +1288,58 @@ To view the results, click the View button. The output for the Deep Learning mod
   
 - **What if there are a large number of categorical factor levels?**
 
-	This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max_categorical_features` to use feature hashing to reduce the dimensionality.
+  This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using `h2o.interaction()` from R), or specifying `max_categorical_features` to use feature hashing to reduce the dimensionality.
 
 - **How does your Deep Learning Autoencoder work? Is it deep or shallow?**
 
-	H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer.  The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers.  We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R). 
+  H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer.  The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers.  We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R). 
+
+- **When building the model, does Deep Learning use all features or a selection of the best features?**
+
+  For Deep Learning, all features are used, unless you manually specify that columns should be ignored. Adding an L1 penalty can make the model sparse, but it is still the full size. 
+
+- **What is the relationship between iterations, epochs, and the `train_samples_per_iteration` parameter?**
+
+  Epochs measures the amount of training. An iteration is one MapReduce (MR) step - essentially, one pass over the data. The `train_samples_per_iteration` parameter is the amount of data to use for training for each MR step, which can be more or less than the number of rows. 
+
+
+- **When do `reduce()` calls occur, after each iteration or each epoch?**
+
+  Neither; `reduce()` calls occur after every two `map()` calls, between threads and ultimately between nodes. There are many `reduce()` calls, much more than one per MapReduce step (also known as an "iteration"). Epochs are not related to MR iterations, unless you specify `train_samples_per_iteration` as `0` or `-1` (or to number of rows/nodes). Otherwise, one MR iteration can train with an arbitrary number of training samples (as specified by `train_samples_per_iteration`). 
+
+- **Does each Mapper task work on a separate neural-net model that is combined during reduction, or is each Mapper manipulating a shared object that's persistent across nodes?**
+
+   Neither; there's one model per compute node, so multiple Mappers/threads share one model, which is why H2O is not reproducible unless a small dataset is used and `force_load_balance=F` or `reproducible=T`, which effectively rebalances to a single chunk and leads to only one thread to launch a `map()`. The current behavior is simple model averaging; between-node model averaging via "Elastic Averaging" is currently [in progress](https://0xdata.atlassian.net/browse/HEXDEV-206). 
+
+- **Is the loss function and backpropagation performed after each individual training sample, each iteration, or at the epoch level?**
+
+  Loss function and backpropagation are performed after each training sample (mini-batch size 1 == online stochastic gradient descent). 
+
+- **When using Hinton's dropout and specifying an input dropout ratio of ~20% and `train_samples_per_iteration` is set to 50, will each of the 50 samples have a different set of the 20% input neurons suppressed?** 
+
+  Yes - suppression is not done at the iteration level across as samples in that iteration. The dropout mask is different for each training sample. 
+
+- **When using dropout parameters such as `input_dropout_ratio`, what happens if you use only `Rectifier` instead of `RectifierWithDropout` in the activation parameter?**
+
+  The amount of dropout on the input layer can be specified for all activation functions, but hidden layer dropout is only supported is set to `WithDropout`. The default hidden dropout is 50%, so you don't need to specify anything but the activation type to get good results, but you can set the hidden dropout values for each layer separately. 
+
+- **When using the `score_validation_sampling` and `score_training_samples` parameters, is scoring done at the end of the Deep Learning run?** 
+
+  The majority of scoring takes place after each MR iteration. After the iteration is complete, it may or may not be scored, depending on two criteria: the time since the last scoring and the time needed for scoring. 
+
+  The maximum time between scoring (`score_interval`, default = 5 seconds) and the maximum fraction of time spent scoring (`score_duty_cycle`) independently of loss function, backpropagation, etc. 
+
+  Of course, using more training or validation samples will increase the time for scoring, as well as scoring more frequently. For more information about how this affects runtime, refer to the [Deep Learning Performance Guide](http://h2o.ai/blog/2015/02/deep-learning-performance/).
+
+- **How does the validation frame affect the built neuron network?**
+
+  The validation frame is only used for scoring and does not directly affect the model. However, the validation frame can be used stopping the model early if `overwrite_with_best_model = T`, which is the default. If this parameter is enabled, the model with the lowest validation error is displayed at the end of the training. 
+
+  By default, the validation frame is used to tune the model parameters (such as number of epochs) and will return the best model as measured by the validation metrics, depending on how often the validation metrics are computed (`score_duty_cycle`) and whether the validation frame itself was sampled. 
+
+  Model-internal sampling of the validation frame (`score_validation_samples` and `score_validation_sampling` for optional stratification) will affect early stopping quality. If you specify a validation frame but set `score_validation_samples` to more than the number of rows in the validation frame (instead of 0, which represents the entire frame), the validation metrics received at the end of training will not be reproducible, since the model does internal sampling. 
+
+---
 
 ###Deep Learning Algorithm 
 

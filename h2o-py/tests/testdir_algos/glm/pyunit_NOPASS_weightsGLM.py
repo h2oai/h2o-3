@@ -4,9 +4,7 @@ import h2o, tests
 import random
 import copy
 
-def weights_check(ip,port):
-    
-    
+def weights_check():
 
     def check_same(data1, data2):
         glm1_regression = h2o.glm(x=data1[2:20], y=data1[1])

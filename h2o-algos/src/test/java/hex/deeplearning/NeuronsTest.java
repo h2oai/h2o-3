@@ -11,7 +11,6 @@ import java.util.Random;
 public class NeuronsTest extends water.TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Ignore
   @Test
   public void matrixVecTest() {
     int rows = 2048;
@@ -23,9 +22,9 @@ public class NeuronsTest extends water.TestUtil {
     float nnz_ratio_mat = 0.1f; //fraction of non-zeroes for matrix
 
     float [] a = new float[rows*cols];
-    float [] x = new float[cols];
-    float [] y = new float[rows];
-    float [] res = new float[rows];
+    double [] x = new double[cols];
+    double [] y = new double[rows];
+    double [] res = new double[rows];
     byte [] bits = new byte[rows];
 
     for (int row=0;row<rows;++row) {
@@ -71,26 +70,6 @@ public class NeuronsTest extends water.TestUtil {
       gemv_row_optimized(res, a, x, y, bits);
       sum += res[rows/2];
     }
-    for (int l=0;l<warmup_loops;++l) {
-      gemv(dres, dca, dx, dy, bits);
-      sum += res[rows/2];
-    }
-    for (int l=0;l<warmup_loops;++l) {
-      gemv(dres, dra, sx, dy, bits);
-      sum += res[rows/2];
-    }
-    for (int l=0;l<warmup_loops;++l) {
-      gemv(dres, dca, sx, dy, bits);
-      sum += res[rows/2];
-    }
-    for (int l=0;l<warmup_loops;++l) {
-      gemv(dres, sra, sx, dy, bits);
-      sum += res[rows/2];
-    }
-    for (int l=0;l<warmup_loops;++l) {
-      gemv(dres, sca, sx, dy, bits);
-      sum += res[rows/2];
-    }
 
     /**
      * naive version
@@ -128,66 +107,6 @@ public class NeuronsTest extends water.TestUtil {
     }
     System.out.println("result: " + sum + " and " + ArrayUtils.sum(res));
     System.out.println("optimized dense row * dense time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
-
-
-
-    System.out.println("\nstarting dense col * dense.");
-    sum = 0;
-    start = System.currentTimeMillis();
-    for (int l=0;l<loops;++l) {
-      gemv(dres, dca, dx, dy, bits);
-      sum += res[rows/2]; //do something useful
-    }
-    System.out.println("result: " + sum + " and " + ArrayUtils.sum(res));
-    System.out.println("dense col * dense time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
-
-
-
-    System.out.println("\nstarting dense row * sparse.");
-    sum = 0;
-    start = System.currentTimeMillis();
-    for (int l=0;l<loops;++l) {
-      gemv(dres, dra, sx, dy, bits);
-      sum += res[rows/2]; //do something useful
-    }
-    System.out.println("result: " + sum + " and " + ArrayUtils.sum(res));
-    System.out.println("dense row * sparse time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
-
-
-
-    System.out.println("\nstarting dense col * sparse.");
-    sum = 0;
-    start = System.currentTimeMillis();
-    for (int l=0;l<loops;++l) {
-      gemv(dres, dca, sx, dy, bits);
-      sum += res[rows/2]; //do something useful
-    }
-    System.out.println("result: " + sum + " and " + ArrayUtils.sum(res));
-    System.out.println("dense col * sparse time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
-
-
-
-    System.out.println("\nstarting sparse row * sparse.");
-    sum = 0;
-    start = System.currentTimeMillis();
-    for (int l=0;l<loops;++l) {
-      gemv(dres, sra, sx, dy, bits);
-      sum += res[rows/2]; //do something useful
-    }
-    System.out.println("result: " + sum + " and " + ArrayUtils.sum(res));
-    System.out.println("sparse row * sparse time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
-
-
-
-    System.out.println("\nstarting sparse col * sparse.");
-    sum = 0;
-    start = System.currentTimeMillis();
-    for (int l=0;l<loops;++l) {
-      gemv(dres, sca, sx, dy, bits);
-      sum += res[rows/2]; //do something useful
-    }
-    System.out.println("result: " + sum + " and " + ArrayUtils.sum(res));
-    System.out.println("sparse col * sparse time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
   }
 
   @Test

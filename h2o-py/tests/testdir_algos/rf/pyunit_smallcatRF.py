@@ -6,7 +6,7 @@ import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def smallcatRF(ip,port):
+def smallcatRF():
 
     # Training set has 26 categories from A to Z
     # Categories A, C, E, G, ... are perfect predictors of y = 1

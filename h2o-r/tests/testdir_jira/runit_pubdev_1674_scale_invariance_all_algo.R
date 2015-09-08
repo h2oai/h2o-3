@@ -4,7 +4,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test <- function() {
-	s=c(1e-2,1e2,1e-4,1e4,1e-10,1e10)
+	s=c(1e-2,1e2,1e-4,1e4,1e-8,1e8)
 	
 	print("GBM")
 	
@@ -46,7 +46,7 @@ test <- function() {
 	print(summary(scaled_pr))
 	print(summary(pr))
 	expect_equal(mean(pr[,1]), mean(scaled_pr),tolerance = 1e-2 )
-	expect_equal(min(pr[,1]), min(scaled_pr) ,tolerance = 1e-2 )
+	expect_equal(min(pr[,1]), min(scaled_pr) ,tolerance = 1e-1 )
 	expect_equal(max(pr[,1]), max(scaled_pr) ,tolerance = 1e-2 )
 	}
 
@@ -90,7 +90,7 @@ test <- function() {
 	scaled_pr = ph[,1]*scale
 	print(summary(scaled_pr))
 	print(summary(pr))
-	expect_equal(mean(pr[,1]), mean(scaled_pr),tolerance = 1e-2 )
+	expect_equal(mean(pr[,1]), mean(scaled_pr),tolerance = 2e-2 )
 	expect_equal(min(pr[,1]), min(scaled_pr) ,tolerance = 6e-1 )
 	expect_equal(max(pr[,1]), max(scaled_pr) ,tolerance = 6e-1 )
 	}

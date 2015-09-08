@@ -12,7 +12,6 @@ function() {
               "import.R", "frame.R", "kvstore.R",
               "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R",
               "gbm.R", "deeplearning.R", "naivebayes.R", "randomForest.R", "svd.R", "locate.R")
-  # "exec.R", "ops.R", "ast.R"
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }
@@ -21,3 +20,4 @@ src()
 
 h <- conn <- h2o.init()
 #hex <- as.h2o(iris)
+#hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))

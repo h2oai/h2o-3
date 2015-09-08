@@ -76,7 +76,7 @@ my.glm <- h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial",stand
 
 # Get the normalized coefficients of the best model
 #n_coeff <- abs(my.glm@models[[best_model]]@model$normalized_coefficients)
-glm.VI <- my.glm@model$standardized_coefficients_magnitude
+glm.VI <- my.glm@model$standardized_coefficient_magnitudes
 print("Variable importance from GLM")
 print(glm.VI)
 

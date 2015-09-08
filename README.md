@@ -2,11 +2,11 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Scala, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
-* [Using H2O Dev Artifacts](#Artifacts)
+* [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
 * [Building H2O on Hadoop](#BuildingHadoop)
@@ -29,7 +29,7 @@ While most of this README is written for developers who do their own builds, mos
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA (PUBDEV contains issues for the current H2O-3 project; PUB contains issues for H2O-Classic)
+*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) contains issues for the current H2O-3 project; [PUB](https://0xdata.atlassian.net/projects/PUB/issues) contains issues for H2O-Classic)
     * <http://jira.h2o.ai>
 *  h2ostream community forum - ask your questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
@@ -182,7 +182,7 @@ Install [Node.js](http://nodejs.org/download/) and add the installed directory `
 To install these packages from within an R session, enter:
 
     R> install.packages("RCurl")
-    R> install.packages("rjson")
+    R> install.packages("jsonlite")
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
@@ -197,7 +197,7 @@ To manually install packages, download the releases of the following R packages:
 - [digest](http://cran.r-project.org/package=digest)
 - [Rcpp](http://cran.r-project.org/package=Rcpp)
 - [RCurl](http://cran.r-project.org/package=RCurl)
-- [rjson](http://cran.r-project.org/package=rjson)
+- [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [roxygen2](http://cran.r-project.org/package=roxygen2)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [stringr](http://cran.r-project.org/package=stringr)
@@ -207,7 +207,7 @@ To manually install packages, download the releases of the following R packages:
     cd Downloads
     R CMD INSTALL bitops_x.x-x.zip
     R CMD INSTALL RCurl_x.xx-x.x.zip
-    R CMD INSTALL rjson_x.x.xx.zip
+    R CMD INSTALL jsonlite_x.x.xx.zip
     R CMD INSTALL statmod_x.x.xx.zip
     R CMD INSTALL Rcpp_x.xx.x.zip
     R CMD INSTALL digest_x.x.x.zip
@@ -271,7 +271,7 @@ Install [R](http://www.r-project.org/) and add the bin directory to your PATH if
 Install the following R packages: 
 
 - [RCurl](http://cran.r-project.org/package=RCurl)
-- [rjson](http://cran.r-project.org/package=rjson)
+- [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [devtools](http://cran.r-project.org/package=devtools)
 - [roxygen2](http://cran.r-project.org/package=roxygen2) 
@@ -281,7 +281,7 @@ Install the following R packages:
     cd Downloads
     R CMD INSTALL bitops_x.x-x.tgz
     R CMD INSTALL RCurl_x.xx-x.x.tgz
-    R CMD INSTALL rjson_x.x.xx.tgz
+    R CMD INSTALL jsonlite_x.x.xx.tgz
     R CMD INSTALL statmod_x.x.xx.tgz
     R CMD INSTALL Rcpp_x.xx.x.tgz
     R CMD INSTALL digest_x.x.x.tgz
@@ -293,7 +293,7 @@ Install the following R packages:
 To install these packages from within an R session:
 
     R> install.packages("RCurl")
-    R> install.packages("rjson")
+    R> install.packages("jsonlite")
     R> install.packages("statmod")
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
@@ -386,7 +386,8 @@ For users of Eclipse, generate project files with:
 
 Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-3.
 
-To build H2O with Hadoop support yourself, enter the following from the top-level h2o-3 directory:
+To build H2O with Hadoop support yourself, first install sphinx for python: `pip install sphinx`
+Then start the build by entering  the following from the top-level h2o-3 directory:
 
     (export BUILD_HADOOP=1; ./gradlew build -x test)
     ./gradlew dist
@@ -403,7 +404,7 @@ You need to:
 1.  Add a new driver directory and assembly directory (each with a `build.gradle` file) in `h2o-hadoop`
 2.  Add these new projects to `h2o-3/settings.gradle`
 3.  Add the new Hadoop version to `HADOOP_VERSIONS` in `make-dist.sh`
-4.  Add the new Hadoop version to the `wget` list in `h2o-dist/index.html`
+4.  Add the new Hadoop version to the list in `h2o-dist/buildinfo.json`
 
 ### Debugging HDFS
 
@@ -491,7 +492,7 @@ Documentation for each bleeding edge nightly build is available on the [nightly 
 ## 9. Community
 
 We will breathe & sustain a vibrant community with the focus of taking a software engineering approach to data science and empowering everyone interested in data to be able to hack data using math and algorithms.
-Join us on google groups [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
+Join us on google groups at [h2ostream](https://groups.google.com/forum/#!forum/h2ostream) and feel free to file issues directly on our [JIRA](http://jira.h2o.ai). 
 
 Team & Committers
 
@@ -538,8 +539,6 @@ Stacie Spreitzer
 Vinod Iyengar
 Charlene Windom
 Parag Sanghavi
-
-
 ```
 
 <a name="Advisors"></a>

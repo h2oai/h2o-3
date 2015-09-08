@@ -34,7 +34,7 @@ public class GBMGridSearchHandler extends GridSearchHandler<GBMGridSearchHandler
   public static class GBMGrid extends Grid<GBMModel.GBMParameters> {
 
     public GBMGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

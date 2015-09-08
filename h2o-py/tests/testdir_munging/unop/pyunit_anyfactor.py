@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def anyfactor(ip,port):
+def anyfactor():
     
     
 

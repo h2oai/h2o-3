@@ -32,7 +32,7 @@ public class KMeansGridSearchHandler extends GridSearchHandler<KMeansGridSearchH
   public static class KmeansGrid extends Grid<KMeansModel.KMeansParameters> {
 
     public KmeansGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

@@ -329,6 +329,14 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  objects). */
   final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
+
+  public double [] toDoubleArray(){
+    double [] res = new double[_len];
+    for(int i = 0; i < _len; ++i)
+      res[i] = atd(i);
+    return res;
+  }
+
   /** Set the element as missing, using absolute row numbers.
    *
    *  <p>As with all the {@code set} calls, if the value written does not fit
@@ -571,11 +579,11 @@ public abstract class Chunk extends Iced implements Cloneable {
     return s;
   }
 
-
-
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
-  abstract public AutoBuffer write_impl( AutoBuffer ab );
+  public AutoBuffer write_impl(AutoBuffer bb) {
+    return bb.putA1(_mem, _mem.length);
+  }
 
   /** Custom deserializers, implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already.  Init _start to -1, so we know we have
@@ -617,8 +625,8 @@ public abstract class Chunk extends Iced implements Cloneable {
 //  }
 
   /** Used by the parser to help report various internal bugs.  Not intended for public use. */
-  public final void reportBrokenEnum( int i, int j, long l, int[][] emap, int levels ) {
-    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
+  public final void reportBrokenEnum( int i, int j, long l, int[] emap, int levels ) {
+    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap.length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
     int k = 0;
     for(; k < Math.min(5,_len); ++k)
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");

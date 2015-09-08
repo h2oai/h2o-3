@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def init_err_casesKmeans(ip,port):
+def init_err_casesKmeans():
     # Connect to a pre-existing cluster
       # connect to localhost:54321
 

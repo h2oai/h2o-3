@@ -32,7 +32,7 @@ public class DeepLearningGridSearchHandler
   public static class DeepLearningGrid extends Grid<DeepLearningParameters> {
 
     public DeepLearningGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

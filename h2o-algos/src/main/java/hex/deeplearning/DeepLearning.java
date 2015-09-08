@@ -138,8 +138,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   @Override
-  public void modifyParmsForCrossValidationSplits(int i, int N) {
-    super.modifyParmsForCrossValidationSplits(i, N);
+  public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
+    super.modifyParmsForCrossValidationSplits(i, N, model_id);
     if (_parms._overwrite_with_best_model) {
       warn("_overwrite_with_best_model",
               "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");
@@ -244,15 +244,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           assert (actualNewP != oldP);
           DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
 
-          actualNewP._epochs += previous.epoch_counter; //add new epochs to existing model
           Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
-
-          if (actualNewP._nfolds != 0) {
-            Log.info("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
-
-            H2O.unimpl("writing to n_folds field needs to be uncommented");
-            // actualNewP._n_folds = 0;
-          }
           cp.update(self());
         } finally {
           if (cp != null) cp.unlock(self());
@@ -359,12 +351,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
-        if(!mp._shuffle_training_data && mp._balance_classes && !mp._reproducible) {
-          Log.info("Enabling training data shuffling, because balance_classes is enabled.");
+        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == train.numRows() && train.anyVec().nChunks()==1) {
+          Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
           mp._shuffle_training_data = true;
         }
 
-        if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
+        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error

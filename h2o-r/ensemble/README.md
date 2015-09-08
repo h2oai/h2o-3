@@ -4,6 +4,32 @@ The `h2oEnsemble` R package provides functionality to create ensembles from the 
 
 
 ## Install
+
+### Prerequisites
+The current version of `h2oEnsemble` requires the latest version of the `h2o` R package to run.  If it's your first time installing the `h2o` package, you can download the required R dependencies as follows:
+```
+if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
+if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
+if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
+if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
+if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
+if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
+if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+```
+
+To update or download the latest version of the `h2o` package, type these commands into your R shell:
+```
+# The following two commands remove any previously installed H2O packages for R.
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+
+# Now we download, install and initialize the H2O package for R.
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-simons/7/R")))
+library(h2o)
+```
+
+### Install H2O Ensemble
 The `h2oEnsemble` package can be installed using either of the following methods.
 - Clone the main h2o repository and install the package:
 ```

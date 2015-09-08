@@ -189,6 +189,7 @@ public class Vec extends Keyed<Vec> {
 
   public static final boolean DO_HISTOGRAMS = true;
   public static final boolean NO_HISTOGRAMS = false;
+  final private Key _rollupStatsKey;
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -240,6 +241,7 @@ public class Vec extends Keyed<Vec> {
     _type = type;
     _espc = espc;
     _domain = domain;
+    _rollupStatsKey = chunkKey(-2);
   }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
@@ -750,7 +752,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
   }
-  Key rollupStatsKey() { return chunkKey(-2); }
+  Key rollupStatsKey() { return _rollupStatsKey; }
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
@@ -1025,7 +1027,7 @@ public class Vec extends Keyed<Vec> {
         for (int r = 0; r < c0._len; r++) c0.set(r, vec.at(srow + r));
       }
     }.doAll(avec);
-    avec._domain = _domain;
+    avec._domain = vec._domain;
     return avec;
   }
 
@@ -1054,8 +1056,8 @@ public class Vec extends Keyed<Vec> {
     int min = (int) min(), max = (int) max();
     // try to do the fast domain collection
     long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-    if (dom.length > Categorical.MAX_ENUM_SIZE)
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
+    if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
     return copyOver(dom);
   }
 

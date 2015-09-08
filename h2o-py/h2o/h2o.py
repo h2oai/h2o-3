@@ -26,9 +26,13 @@ def lazy_import(path):
   :param path: A path to a data file (remote or local).
   :return: A new H2OFrame
   """
+<<<<<<< HEAD
   if isinstance(path,(list,tuple)): return [_import(p)[0] for p in path]
   elif os.path.isdir(path):         return _import(path)
   else:                             return [_import(path)[0]]
+=======
+  return [_import(p)[0] for p in path] if isinstance(path,(list,tuple)) else _import(path)
+>>>>>>> master
 
 def _import(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
@@ -349,7 +353,11 @@ def download_csv(data, filename):
   """
   data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
+<<<<<<< HEAD
   url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
+=======
+  url = "http://{}:{}/3/DownloadDataset.bin?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
+>>>>>>> master
   with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 def download_all_logs(dirname=".",filename=None):
@@ -1086,6 +1094,27 @@ def list_timezones():
   """
   return H2OFrame(expr=ExprNode("listTimeZones"))._frame()
 
+
+def turn_off_ref_cnts():
+  """
+  Reference counting on H2OFrame's allows for eager deletion of H2OFrames that go out of
+  scope. If multiple threads are spawned, however, and data is to live beyond the use of
+  the thread (e.g. when launching multiple jobs via Parallel in scikit-learn), then there
+  may be referers outside of the current context. Use this to prevent deletion of H2OFrame
+  instances.
+
+  :return: None
+  """
+  H2OFrame.COUNTING=False
+
+def turn_on_ref_cnts():
+  """
+  See the note in turn_off_ref_cnts
+
+  :return: None
+  """
+  H2OFrame.del_dropped()
+  H2OFrame.COUNTING=True
 
 class H2ODisplay:
   """

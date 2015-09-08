@@ -24,9 +24,8 @@
 
 #` Fetch the first N rows on demand, caching them in x$data; also cache x$nrow
 .fetch.data <- function(x,N) {
-  stopifnot( is.Frame(x) )
   stopifnot(!missing(N))
-  .eval.frame(x)
+  .eval.frame(chk.Frame(x))
   if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:id, "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
@@ -61,6 +60,7 @@
 .flush.data <- function(x) {
   rm("data",envir=x);
   rm("nrow",envir=x);
+  x
 }
 
 #'

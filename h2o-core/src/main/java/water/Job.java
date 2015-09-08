@@ -214,6 +214,7 @@ public class Job<T extends Keyed> extends Keyed {
           if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
             System.err.println("barrier onExCompletion for "+fjtask);
             ex.printStackTrace();
+            Job.this.failed(ex);
           }
           return true;
         }
