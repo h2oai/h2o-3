@@ -1,12 +1,12 @@
 package water.util;
 
+import water.MemoryManager;
+
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
-
-import water.MemoryManager;
 
 import static water.util.RandomUtils.getRNG;
 

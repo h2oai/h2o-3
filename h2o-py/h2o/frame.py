@@ -635,6 +635,24 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: An H2OFrame holding a single column of the fold assignments.
     """
+    return H2OFrame(expr=ExprNode("modulo_kfold_column",self,n_folds))._frame()
+
+  def stratified_kfold_column(self, n_folds=3, seed=-1):
+    """
+    Build a fold assignment column with the constraint that each fold has the same class
+    distribution as the fold column.
+
+    Parameters
+    ----------
+      n_folds: int
+        The number of folds to build.
+      seed: int
+        A random seed.
+
+    :return: An H2OFrame holding a single column of the fold assignments.
+    """
+    return H2OFrame(expr=ExprNode("stratified_kfold_column",self,n_folds,seed))._frame()
+
 
   def structure(self):
     """
