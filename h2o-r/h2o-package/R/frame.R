@@ -46,6 +46,7 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
   fld <- as.character(substitute(y))
   if( exists(fld,x,inherits=FALSE) ) get(fld,envir=x, inherits=FALSE)
   else NULL
+}
 
 .h2o.gc <- function() {
   print("H2O triggered a GC in R")
@@ -86,7 +87,6 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
   reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
   node
 }
-
 
 #' Data Frame Creation in H2O
 #'
@@ -447,6 +447,7 @@ h2o.cut <- function(x, breaks, labels = NULL, include.lowest = FALSE, right = TR
   .newExpr("cut", chk.Frame(x), breaks, labels, include.lowest, right, dig.lab)
 }
 
+#' @rdname h2o.cut
 #' @export
 cut.Frame <- h2o.cut
 
@@ -484,7 +485,7 @@ match.Frame <- h2o.match
 #' @export
 `%in%` <- function(x,table) {
   if( is.Frame(x) ) h2o.match(x,table,nomatch=0)
-  else base::`%in%`(x,table) 
+  else base::`%in%`(x,table)
 }
 
 #' Remove Rows With NAs
@@ -748,7 +749,7 @@ h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 .row.col.selector <- function( sel ) {
   if( is.numeric(sel) ) { # number list for column selection; zero based
     sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
-    .num.list(sel2) 
+    .num.list(sel2)
   } else if( is.null(sel) ) "[]"  # Empty selector
   else as.character(sel)
 }
@@ -774,7 +775,7 @@ NULL
   chk.Frame(data)
 
   # This function is called with a huge variety of argument styles
-  # Here's the breakdown: 
+  # Here's the breakdown:
   #   Style          Type #args  Description
   # df[]           - na na 2    both missing, identity with df
   # df["colname"]  - c  na 2    single column by name, df$colname
@@ -839,7 +840,7 @@ NULL
 
 #
 # Overload Assignment!
-# 
+#
 # Trying to remove excessive temp generation, by having the R interpreter tell
 # H2O that some computation may be used, or not.  If the expression is only
 # ever used once, then no temp is needed and the cluster can optimize the
@@ -902,7 +903,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   if( !is.character(x:id) ) {
     exec_str <- .eval.impl(x)
     if( !is.character(x:id) ) # Top-level gets a name always
-      .set(x,"id", id <- .key.make("RTMP")) 
+      .set(x,"id", id <- .key.make("RTMP"))
     # Execute the AST on H2O
     print(paste0("EXPR: ",exec_str))
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:id, method = "POST")
@@ -926,17 +927,27 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 #'
 #' Methods for group generic functions and H2O objects.
 #'
-Ops.Frame <- function(x,y) 
+#' @rdname Frame
+#' @export
+Ops.Frame <- function(x,y)
   .newExpr(.Generic,
            if( is.character(x) ) .quote(x) else x,
            if( is.character(y) ) .quote(y) else y)
 
+#' @rdname Frame
+#' @export
 Math.Frame <- function(x) .newExpr(.Generic,x)
 
+#' @rdname Frame
+#' @export
 Math.Frame <- function(x,y) .newExpr(.Generic,x,y)
 
+#' @rdname Frame
+#' @export
 Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 
+#' @rdname Frame
+#' @export
 Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl")
   # Eagerly evaluation, to produce a scalar
@@ -944,8 +955,14 @@ Summary.Frame <- function(x,...,na.rm) {
   if( .Generic=="all" ) as.logical(res) else res
 }
 
+
+#' @rdname Frame
+#' @export
 is.na.Frame <- function(x) .newExpr("is.na", x)
 
+
+#' @rdname Frame
+#' @export
 `!.Frame` <- function(x) .newExpr("!!",x)
 
 #' Returns the Dimensions of an H2O Frame
@@ -961,7 +978,12 @@ is.na.Frame <- function(x) .newExpr("is.na", x)
 #' @export
 dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(data))) }
 
+#' @rdname Frame
+#' @export
 nrow.Frame <- function(x) { .fetch.data(x,1); x:nrow }
+
+#' @rdname Frame
+#' @export
 ncol.Frame <- function(x) { ncol(.fetch.data(x,1)) }
 
 #` Column names of an H2O Frame
@@ -975,8 +997,12 @@ colnames <- function(x, do.NULL=TRUE, prefix = "col") {
   return(names.Frame(x))
 }
 
-#` Length - number of columns
+#' @rdname Frame
+#' @export
 length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
+
+#' @rdname Frame
+#' @export
 h2o.length <- length.Frame
 
 #'
@@ -1001,6 +1027,7 @@ h2o.levels <- function(x, i) levels(.fetch.data(x,1)[,i])
 #' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
 #' @export
 h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.Frame(x), levels)
+
 
 #'
 #' Return the Head or Tail of an H2O Dataset.
@@ -1176,10 +1203,14 @@ str.Frame <- function(x, cols=FALSE, ...) {
 #' @export
 `[[<-.Frame` <- function(data,name,value) `[<-`(data, row=name,value=chk.Frame(value))
 
+#' @rdname Frame
+#' @export
 `names<-.Frame` <- function(x, value) {
   .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), .str.list(value))
 }
 
+#' @rdname Frame
+#' @export
 `colnames<-` <- function(x, value) {
   if( !is.Frame(x) ) return(base::`colnames<-`(x,value))
   return(`names<-.Frame`(x,if( is.Frame(value) ) colnames(value) else value))
@@ -1237,6 +1268,7 @@ h2o.quantile <- function(x,
   col
 }
 
+#' @rdname Frame
 #' @export
 quantile.Frame <- h2o.quantile
 
@@ -1431,7 +1463,7 @@ mean.Frame <- h2o.mean
 #' var(prostate.hex$AGE)
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
-  if( na.rm ) stop("na.rm versions not impl") 
+  if( na.rm ) stop("na.rm versions not impl")
   if( is.null(y) ) y <- x
   if(!missing(use)) {
     if (use %in% c("pairwise.complete.obs", "na.or.complete"))
@@ -1464,7 +1496,7 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' sd(prostate.hex$AGE)
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
-  if( na.rm ) stop("na.rm versions not impl") 
+  if( na.rm ) stop("na.rm versions not impl")
   .eval.frame(.newExpr("sd",x)):data
 }
 
@@ -1599,13 +1631,13 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @export
 as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 
-#` 
+#`
 as.double.Frame <- function(x) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
     res <- res[1,1]
-  } 
+  }
   .Primitive("as.double")(res)
 }
 
@@ -1614,7 +1646,7 @@ as.logical.Frame <- function(x) {
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
     res <- res[1,1]
-  } 
+  }
   .Primitive("as.logical")(res)
 }
 
@@ -1725,7 +1757,7 @@ h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
 ifelse <- function(test, yes, no) {
   if( is.atomic(test) ) {
-    if (typeof(test) != "logical") 
+    if (typeof(test) != "logical")
       storage.mode(test) <- "logical"
     if (length(test) == 1 && is.null(attributes(test))) {
       if (is.na(test)) {
@@ -1939,7 +1971,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   # Append the aggregates!  Append triples: aggregate, column, na-handling
   for( idx in 1:nAggs ) {
-    args <- c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx])) 
+    args <- c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx]))
   }
 
   # Create the group by AST
@@ -2112,7 +2144,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
     args <- formals(FUN)[-1L]
     nargs <- length(args) - length(extra_args)
     if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
-    fcn <- if( length(extra_args)==0 ) fname 
+    fcn <- if( length(extra_args)==0 ) fname
            else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
     return(.newExpr("ddply",X,vars,fcn))
   }
@@ -2179,7 +2211,7 @@ apply <- function(X, MARGIN, FUN, ...) {
     args <- formals(FUN)[-1L]
     nargs <- length(args) - length(extra_args)
     if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
-    fcn <- if( length(extra_args)==0 ) fname 
+    fcn <- if( length(extra_args)==0 ) fname
            else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
     return(.newExpr("apply",X,MARGIN,fcn))
   }
