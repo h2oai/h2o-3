@@ -338,6 +338,15 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return copy.deepcopy(self._types)
 
+  @property
+  def frame_id(self):
+    """
+    Get the frame name.
+
+    :return: Get the name of this frame.
+    """
+    return self._id
+
   def unique(self):
     """
     Extract the unique values in the column.
