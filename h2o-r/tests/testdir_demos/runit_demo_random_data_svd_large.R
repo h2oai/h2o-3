@@ -31,6 +31,7 @@ check.demo_random_svd <- function(conn) {
     for(k in 1:length(vecs)) {
       nvecs <- vecs[k]
       vec_grid[k] <- nvecs
+      print(paste('Rows:', rows))
       print(paste('Cols:', cols[j]))
       print(paste('Vecs:', vecs[k]))
       names <- c(names, ncols * nvecs)    # set the name to be the problem size
@@ -43,7 +44,7 @@ check.demo_random_svd <- function(conn) {
       create_frm_time[k,j] = as.numeric(sst[3])
       mem <- h2o.ls(conn)
       frm_size[k,j] <- as.numeric(mem[1,1])
-      # head(myframe)
+      head(myframe)
 
       aat <- system.time(myframe.svd <- h2o.svd(training_frame=myframe, nv=nvecs, svd_method="Randomized"))
       algo_run_time[k,j] <- aat[3]
@@ -67,9 +68,15 @@ check.demo_random_svd <- function(conn) {
   dimnames(data) <- list(vec_grid,col_grid)
   #R# dimnames(algo_run_time_cmp) <- list(vec_grid,col_grid)
   
+  # format timing data from R
+  #R# data_R = algo_run_time_R
+  #R# dimnames(data_R)<-list(row_grid,col_grid)
+  
   # Report timing results
   print("H2O Runtime:")
   print(data)
+  #R# print("R Runtime:")
+  #R# data_R
   
   # Report comparision, relative to h2o (h2o - R)
   #R# print("(H2O - R) Runtime:")
