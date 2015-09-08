@@ -1038,14 +1038,14 @@ public class DeepLearningTest extends TestUtil {
         }
         DeepLearningParameters parms = new DeepLearningParameters();
         parms._train = tfr._key;
-        parms._epochs = 0.01;
+        parms._epochs = 100;
         parms._response_column = "Class";
         parms._autoencoder = ae;
         parms._reproducible = true;
         parms._train_samples_per_iteration = 10;
-        parms._hidden = new int[]{10,10,10,10,10,10,10,10};
+        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10};
         parms._initial_weight_distribution = DeepLearningParameters.InitialWeightDistribution.Uniform;
-        parms._initial_weight_scale = 1e10;
+        parms._initial_weight_scale = 1e20;
         parms._seed = 0xdecaf;
         parms._max_w2 = 1e20f;
         parms._model_id = Key.make();
