@@ -2,19 +2,12 @@ package h2o.testng.utils;
 
 import hex.Model;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
-
-import water.Key;
-import water.TestNGUtil;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.parser.ParseDataset;
+import org.testng.Reporter;
 
 public class Param {
 
@@ -57,31 +50,6 @@ public class Param {
 		return false;
 	}
 
-	public static Frame createFrame(String fileName, String key) {
-
-		System.out.println("Create frame with " + fileName);
-
-		key = key + ".hex";
-
-		Frame fr = null;
-		File file = TestNGUtil.find_test_file_static(fileName);
-		assert file.exists();
-
-		NFSFileVec nfs_dataset = NFSFileVec.make(file);
-		Key key_dataset = Key.make(key);
-
-		try {
-			fr = ParseDataset.parse(key_dataset, nfs_dataset._key);
-		}
-		catch (Exception e) {
-			nfs_dataset.remove();
-			key_dataset.remove();
-			throw e;
-		}
-
-		return fr;
-	}
-
 	public static String validateAutoSetParams(Param[] params, HashMap<String, String> rawInput) {
 
 		String result = null;
@@ -122,7 +90,7 @@ public class Param {
 		while (clazz != null) {
 			try {
 				Field field = clazz.getDeclaredField(name);
-				System.out.println(String.format("  %s = %s", name, field.get(params)));
+				Reporter.log(String.format("  %s = %s", name, field.get(params)));
 				return;
 
 			}
@@ -181,8 +149,7 @@ public class Param {
 		return result;
 	}
 
-	// TODO: change to private
-	public boolean parseAndSet(Object params, String value) {
+	private boolean parseAndSet(Object params, String value) {
 
 		value = value.trim();
 		Object v = null;
@@ -229,7 +196,7 @@ public class Param {
 					break;
 
 				default:
-					System.out.println("Unrecognized type: " + type);
+					Reporter.log("Unrecognized type: " + type);
 					break;
 			}
 		}
@@ -239,7 +206,7 @@ public class Param {
 			try {
 				Field field = clazz.getDeclaredField(name);
 				// field.setAccessible(true); // is this needed?!?
-				System.out.println("Set " + name + ": " + value);
+				Reporter.log("Set " + name + ": " + value);
 				field.set(params, v);
 				return true;
 

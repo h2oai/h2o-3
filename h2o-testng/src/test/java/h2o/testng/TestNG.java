@@ -37,8 +37,9 @@ public class TestNG extends TestNGUtil {
 
 		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
 
-		System.out.println(String.format("run TestNG with algorithm: %s, size: %s, testcaseId: %s", algorithm, size,
-				testcaseId));
+		Reporter.log(
+				String.format("run TestNG with algorithm: %s, size: %s, testcaseId: %s", algorithm, size, testcaseId),
+				true);
 
 	}
 
@@ -67,7 +68,7 @@ public class TestNG extends TestNGUtil {
 			}
 
 			if (i == data.length) {
-				System.out.println("Can not find testcase_id:" + testcaseId);
+				Reporter.log("Can not find testcase_id:" + testcaseId, true);
 				return null;
 			}
 
@@ -84,8 +85,6 @@ public class TestNG extends TestNGUtil {
 			Dataset train_dataset, Dataset validate_dataset, String algorithm, boolean isNegativeTestcase,
 			HashMap<String, String> rawInput) {
 
-		String testcaseStatus = "passed";
-
 		RecordingTestcase rt = new RecordingTestcase();
 
 		Param[] params = null;
@@ -93,10 +92,6 @@ public class TestNG extends TestNGUtil {
 		Model.Parameters modelParameter = null;
 		String invalidMessage = null;
 		String notImplMessage = null;
-
-		// Reporter.log("\n", true);
-
-		redirectStandardStreams();
 
 		switch (algorithm) {
 			case FunctionUtils.drf:
@@ -112,7 +107,7 @@ public class TestNG extends TestNGUtil {
 				break;
 
 			default:
-				System.out.println("do not implement for algorithm: " + algorithm);
+				Reporter.log("do not implement for algorithm: " + algorithm);
 		}
 
 		try {
@@ -122,11 +117,11 @@ public class TestNG extends TestNGUtil {
 			}
 
 			if (StringUtils.isNotEmpty(invalidMessage)) {
-				System.out.println(invalidMessage);
+				Reporter.log(invalidMessage, true);
 				Assert.fail(String.format(invalidMessage));
 			}
 			else if (StringUtils.isNotEmpty(notImplMessage)) {
-				System.out.println(notImplMessage);
+				Reporter.log(notImplMessage, true);
 				Assert.fail(String.format(notImplMessage));
 			}
 			else {
@@ -138,14 +133,10 @@ public class TestNG extends TestNGUtil {
 			}
 
 		}
-		catch (AssertionError ae) {
-			testcaseStatus = "failed";
-			throw ae;
-		}
 		finally {
 			// TODO: get memory by H2O's API
-			System.out.println("Total Memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
-			System.out.println("Total Time used in testcase:" + (rt.getTimeRecording()) + "millis");
+			Reporter.log("Total Memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
+			Reporter.log("Total Time used in testcase:" + (rt.getTimeRecording()) + "millis");
 
 			// wait 100 mili-sec for output/error to be stored
 			try {
@@ -154,10 +145,6 @@ public class TestNG extends TestNGUtil {
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
 			}
-
-			resetStandardStreams();
-
-			Reporter.log("Testcase is " + testcaseStatus, true);
 		}
 	}
 

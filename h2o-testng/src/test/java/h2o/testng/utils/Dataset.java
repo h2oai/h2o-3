@@ -3,6 +3,7 @@ package h2o.testng.utils;
 import java.io.File;
 
 import org.apache.commons.lang.StringUtils;
+import org.testng.Reporter;
 
 import water.Key;
 import water.TestNGUtil;
@@ -53,7 +54,7 @@ public class Dataset {
 	public boolean isAvailabel() {
 
 		if (!isAvailabel) {
-			System.out.println("Dataset characteristic is not availabel");
+			Reporter.log("Dataset characteristic is not availabel");
 		}
 		return isAvailabel;
 	}
@@ -77,26 +78,26 @@ public class Dataset {
 
 	public void printDataset() {
 
-		System.out.println("dataSetId: " + dataSetId);
-		System.out.println("dataSetDirectory: " + dataSetDirectory);
-		System.out.println("fileName: " + fileName);
-		System.out.println("responseColumn: " + responseColumn);
+		Reporter.log("dataSetId: " + dataSetId);
+		Reporter.log("dataSetDirectory: " + dataSetDirectory);
+		Reporter.log("fileName: " + fileName);
+		Reporter.log("responseColumn: " + responseColumn);
 
-		System.out.print("columnNames: ");
+		String columnName = "columnNames: ";
 		if (columnNames != null) {
 			for (String e : columnNames) {
-				System.out.print(e + splitByRegex);
+				columnName = columnName + e + splitByRegex;
 			}
 		}
-		System.out.println();
+		Reporter.log(columnName);
 
-		System.out.print("columnTypes: ");
+		String columnType = "columnTypes: ";
 		if (columnTypes != null) {
 			for (String e : columnTypes) {
-				System.out.print(e + splitByRegex);
+				columnType = columnType + e + splitByRegex;
 			}
 		}
-		System.out.println();
+		Reporter.log(columnType);
 	}
 
 	// ---------------------------------------------- //
@@ -117,7 +118,7 @@ public class Dataset {
 
 	private void setAvailabel() {
 
-		System.out.println("validate dataset characterictis: " + dataSetId);
+		Reporter.log("validate dataset characterictis: " + dataSetId);
 		printDataset();
 
 		isAvailabel = true;
@@ -127,22 +128,22 @@ public class Dataset {
 			isAvailabel = false;
 		}
 		else if (columnNames == null || columnNames.length == 0) {
-			System.out.println("columnNames is empty");
+			Reporter.log("columnNames is empty");
 			isAvailabel = false;
 		}
 		else if (columnTypes == null || columnTypes.length == 0) {
-			System.out.println("columnTypes is empty");
+			Reporter.log("columnTypes is empty");
 			isAvailabel = false;
 		}
 	}
 
 	private void createFrame() {
 
-		System.out.println("Create frame with " + fileName);
-		this.printDataset();
+		Reporter.log("Create frame with " + fileName, true);
+		printDataset();
 
 		if (!isAvailabel()) {
-			System.out.println("Dataset is not available");
+			Reporter.log("Dataset is not available", true);
 			return;
 		}
 
@@ -164,7 +165,7 @@ public class Dataset {
 
 		file = TestNGUtil.find_test_file_static(filePath + fileName);
 		if (file == null || !file.exists()) {
-			System.out.println("cannot find dataset: " + filePath + fileName);
+			Reporter.log("cannot find dataset: " + filePath + fileName, true);
 			assert file.exists();
 		}
 

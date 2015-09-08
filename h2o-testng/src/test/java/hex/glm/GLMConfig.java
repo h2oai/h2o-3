@@ -45,8 +45,8 @@ public class GLMConfig {
 	); 
 	
 	public static OptionsGroupParam solverOptionsParams = new OptionsGroupParam(
-			new String[] {"auto","irlsm", "lbfgs"},
-			new Object[] {Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}
+			new String[] {"auto","irlsm", "lbfgs", "coordinate_descent_naive", "coordinate_descent"},
+			new Object[] {Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}
 	); 
 
 	public static List<String> listHeaders = new ArrayList<String>(
@@ -60,6 +60,8 @@ public class GLMConfig {
 					"auto",
 					"irlsm",
 					"lbfgs",
+					"coordinate_descent_naive",
+					"coordinate_descent",
 					
 					"_nfolds",
 					"_fold_column",
