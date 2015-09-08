@@ -469,17 +469,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
         double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
         correction = Math.max(0.5,Math.min(2, correction)); //it's ok to train up to 2x more training rows per iteration, but not fewer than half.
-        if (actual_train_samples_per_iteration/correction <= 10*tspiGuess && actual_train_samples_per_iteration/correction >= 0.1*tspiGuess) { //stay within 10x of original guess
-          if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
-            actual_train_samples_per_iteration /= correction;
-            actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
-            Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
-          } else {
-            Log.info("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
-          }
-        }
-        else {
-          Log.info("Keeping value of train_samples_per_iteration the same (would deviate too much from initial estimate): " + actual_train_samples_per_iteration);
+        if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
+          actual_train_samples_per_iteration /= correction;
+          actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        } else {
+          Log.info("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
         }
       } else {
         Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
@@ -637,31 +632,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             Log.info("Error reduced from " + _bestError + " to " + error() + ".");
           _bestError = error();
           putMeAsBestModel(actual_best_model_key);
-
-          // debugging check
-          //if (false) {
-          //  DeepLearningModel bestModel = DKV.get(actual_best_model_key).get();
-          //  final Frame fr = ftest != null ? ftest : ftrain;
-          //  final Frame bestPredict = bestModel.score(fr);
-          //  final Frame hitRatio_bestPredict = new Frame(bestPredict);
-          //  final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-          //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _mymodel.isClassifier() && _mymodel.nclasses() == 2 ? new AUC(null,null) : null, null);
-          //  if (_mymodel.isClassifier())
-          //    assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
-          //  else
-          //    assert (ftest != null ? Math.abs(err.validation_MSE - err3) < 1e-5 : Math.abs(err.training_MSE - err3) < 1e-5);
-          //  bestPredict.delete();
-          //}
         }
-//        else {
-//          // keep output JSON small
-//          if (errors.length > 1) {
-//            if (last_scored().training_AUC != null) last_scored().training_AUC.clear();
-//            if (last_scored().validation_AUC != null) last_scored().validation_AUC.clear();
-//            last_scored()._variable_importances = null;
-//          }
-//        }
-
       }
       // print the freshly scored model to ASCII
       if (keep_running && printme)
@@ -796,6 +767,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (model_info().isUnstable()) {
+      Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
@@ -812,9 +784,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       preds[0] = -1;
     } else {
       if (model_info().data_info()._normRespMul != null) //either both are null or none
-        preds[0] = ((double)out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
+        preds[0] = (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
-        preds[0] = (double)out[0];
+        preds[0] = out[0];
       // transform prediction to response space
       preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
       if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
@@ -841,7 +813,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          //store the per-row reconstruction error (MSE) in the last column
           mse[0].addNum(score_autoencoder(tmp, null, neurons));
         }
       }
@@ -926,6 +897,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().isUnstable()) {
+      Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
@@ -1321,8 +1293,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       "\n\nTrying to predict with an unstable model." +
           "\nJob was aborted due to observed numerical instability (exponential growth)."
           + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
-          + "\nTry a different initial distribution, a bounded activation function or adding regularization"
-          + "\nwith max_w2, L1, L2 and/or use a smaller learning rate or faster annealing.");
+          + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
+          + "\n(via max_w2, l1, l2, dropout) or learning rate (either enable adaptive_rate or use a smaller learning rate or faster annealing).");
 
   @Override protected long checksum_impl() {
     return super.checksum_impl() * model_info.checksum_impl();

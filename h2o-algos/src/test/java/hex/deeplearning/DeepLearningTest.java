@@ -388,7 +388,7 @@ public class DeepLearningTest extends TestUtil {
                 "DepTime", "ArrTime", "ActualElapsedTime",
                 "AirTime", "ArrDelay", "DepDelay", "Cancelled",
                 "CancellationCode", "CarrierDelay", "WeatherDelay",
-                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed", "TailNum"
             }) {
               fr.remove(s).remove();
             }
@@ -396,10 +396,8 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         7,
-        ard(ard(4051, 15612), //for 5-node
-            ard(1397, 20322)),
-//            a(a(4396, 15269), //for 1-node
-//              a(1740, 19993)),
+        ard(ard(9251, 11636),
+            ard(3053, 200038)),
         s("NO", "YES"),
         DeepLearningParameters.Activation.Rectifier);
   }
@@ -1036,6 +1034,7 @@ public class DeepLearningTest extends TestUtil {
           Vec resp = tfr.vec(s).toEnum();
           tfr.remove(s).remove();
           tfr.add(s, resp);
+          DKV.put(tfr);
         }
         DeepLearningParameters parms = new DeepLearningParameters();
         parms._train = tfr._key;

@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
@@ -222,7 +223,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                             try {
                                               model1 = dl.trainModel().get();
                                               checkSums.add(model1.checksum());
-                                            } catch (Throwable t) {
+                                              testcount++;
+                                            } catch(Throwable t) {
+                                              model1 = DKV.getGet(p._model_id);
+                                              if (model1 != null)
+                                                Assert.assertTrue(model1._output._status == Job.JobState.FAILED);
                                               throw t;
                                             } finally {
                                               dl.remove();
@@ -290,12 +295,17 @@ public class DeepLearningProstateTest extends TestUtil {
                                             DeepLearning dl = new DeepLearning(p2);
                                             try {
                                               model2 = dl.trainModel().get();
-                                            } catch (Throwable t) {
+                                            } catch(Throwable t) {
+                                              model2 = DKV.getGet(p2._model_id);
+                                              if (model2 != null)
+                                                Assert.assertTrue(model2._output._status == Job.JobState.FAILED);
                                               throw t;
                                             } finally {
                                               dl.remove();
                                             }
                                           }
+                                          Assert.assertTrue(model1._output._status == Job.JobState.DONE);
+                                          Assert.assertTrue(model2._output._status == Job.JobState.DONE);
 
                                           assert(model1._parms != p2);
                                           assert(model1.model_info().get_params() != model2.model_info().get_params());
@@ -333,10 +343,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert(model2.model_info().get_params()._l2 == 1e-3);
 
                                           if (valid == null) valid = frame;
-                                          double threshold = 0;
+                                          double threshold;
                                           if (model2._output.isClassifier()) {
                                             Frame pred = null, pred2 = null;
-                                            Vec labels = null, predlabels = null, pred2labels = null;
+                                            Vec labels, predlabels, pred2labels;
                                             try {
                                               pred = model2.score(valid);
                                               // Build a POJO, validate same results
@@ -397,9 +407,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
                                           }
                                           Log.info("Parameters combination " + count + ": PASS");
-                                          testcount++;
+                                        } catch (H2OModelBuilderIllegalArgumentException t) {
+                                          H2O.fail("should not get here");
                                         } catch (IllegalArgumentException t) {
-                                          continue; //next model
+                                          H2O.fail("should not get here");
+                                        } catch (RuntimeException t) {
+                                          Assert.assertTrue(t.getMessage().contains("unstable"));
                                         } catch (Throwable t) {
                                           t.printStackTrace();
                                           throw new RuntimeException(t);
@@ -428,10 +441,13 @@ public class DeepLearningProstateTest extends TestUtil {
         vframe.delete();
       }
     }
-    Assert.assertTrue(checkSums.size() == testcount);
     Log.info("\n\n=============================================");
     Log.info("Tested " + testcount + " out of " + count + " parameter combinations.");
     Log.info("=============================================");
+    if (checkSums.size() != testcount) {
+      Log.info("Only found " + checkSums.size() + " unique checksums.");
+    }
+    Assert.assertTrue(checkSums.size() == testcount);
     }
 
     public static class Mid extends DeepLearningProstateTest {

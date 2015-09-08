@@ -6,9 +6,7 @@ import os.path
 import re
 import urllib
 import urllib2
-import json
 import imp
-import random
 import tabulate
 from connection import H2OConnection
 from job import H2OJob
@@ -16,9 +14,6 @@ from expr import ExprNode
 from frame import H2OFrame, _py_tmp_key
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
-
-
-__PROGRESS_BAR__ = True  # display & update progress bar while polling
 
 
 def lazy_import(path):
@@ -275,17 +270,15 @@ def no_progress():
 
   :return: None
   """
-  global __PROGRESS_BAR__
-  __PROGRESS_BAR__=False
+  H2OJob.__PROGRESS_BAR__ = False
 
-def do_progress():
+def show_progress():
   """
   Enable the progress bar. (Progress bar is enabled by default).
 
   :return: None
   """
-  global __PROGRESS_BAR__
-  __PROGRESS_BAR__=True
+  H2OJob.__PROGRESS_BAR__ = True
 
 def log_and_echo(message):
   """
