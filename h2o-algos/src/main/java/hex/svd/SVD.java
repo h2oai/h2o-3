@@ -19,6 +19,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -497,6 +498,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
+        model._output._model_summary = createModelSummaryTable(model._output);
         model.update(self());
         done();
       } catch( Throwable t ) {
@@ -525,6 +527,19 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     Key self() {
       return _key;
     }
+  }
+
+  private TwoDimTable createModelSummaryTable(SVDModel.SVDOutput output) {
+    if(null == output._d) return null;
+
+    String[] colTypes = new String[_parms._nv];
+    String[] colFormats = new String[_parms._nv];
+    String[] colHeaders = new String[_parms._nv];
+    Arrays.fill(colTypes, "double");
+    Arrays.fill(colFormats, "%5f");
+    for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "sval" + String.valueOf(i + 1);
+    return new TwoDimTable("Singular values", null, new String[1],
+            colHeaders, colTypes, colFormats, "", new String[1][], new double[][]{output._d});
   }
 
   private static class CalcSigmaU extends FrameTask<CalcSigmaU> {
