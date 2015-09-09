@@ -2,7 +2,7 @@
 ANQIS.ROOT.PATH <- "/Users/anqi_fu/Documents/workspace/"
 ANQIS.WIN.PATH <- "C:/Users/Anqi/Documents/Work/"
 SPENCERS.ROOT.PATH <- "/Users/spencer/0xdata/"
-ROOT.PATH <- ANQIS.ROOT.PATH
+ROOT.PATH <- SPENCERS.ROOT.PATH
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
