@@ -553,7 +553,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           xtsk.doAll(dinfo._adaptedFrame);
-          System.out.println(dinfo._adaptedFrame.toString());
           
           // 2) Update Y matrix given fixed X
           UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
