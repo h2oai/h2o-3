@@ -24,9 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.testng.Assert;
-import org.testng.Reporter;
 
 import water.Key;
 import water.Scope;
@@ -52,7 +50,7 @@ public class FunctionUtils {
 	public static String validate(Param[] params, String train_dataset_id, Dataset train_dataset,
 			HashMap<String, String> rawInput) {
 
-		Reporter.log("Validate DRFParameters object with testcase: " + rawInput.get(CommonHeaders.testcase_id), true);
+		System.out.println("Validate Parameters object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 		String result = null;
 
 		if (StringUtils.isEmpty(train_dataset_id)) {
@@ -84,7 +82,7 @@ public class FunctionUtils {
 	 */
 	public static String checkImplemented(HashMap<String, String> rawInput) {
 
-		Reporter.log("check modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id), true);
+		System.out.println("check modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 		String result = null;
 
 		if (StringUtils.isNotEmpty(rawInput.get(CommonHeaders.family_gaussian).trim())
@@ -114,8 +112,6 @@ public class FunctionUtils {
 	 * @return null if testcase do not require betaconstraints otherwise return beta constraints frame
 	 */
 	private static Frame createBetaConstraints(HashMap<String, String> rawInput, Frame trainFrame, String responseColumn) {
-
-		Reporter.log("Create beta constraints", true);
 
 		Frame betaConstraints = null;
 		boolean isBetaConstraints = Param.parseBoolean(rawInput.get("betaConstraints"));
@@ -160,7 +156,7 @@ public class FunctionUtils {
 			String validate_dataset_id, Dataset train_dataset, Dataset validate_dataset,
 			HashMap<String, String> rawInput) {
 
-		Reporter.log("Create modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id), true);
+		System.out.println("Create modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 
 		Model.Parameters modelParameter = null;
 
@@ -173,7 +169,7 @@ public class FunctionUtils {
 				Family drfFamily = (Family) DRFConfig.familyParams.getValue(rawInput);
 
 				if (drfFamily != null) {
-					Reporter.log("Set _distribution: " + drfFamily);
+					System.out.println("Set _distribution: " + drfFamily);
 					modelParameter._distribution = drfFamily;
 				}
 				break;
@@ -182,17 +178,17 @@ public class FunctionUtils {
 
 				modelParameter = new GLMParameters();
 
-				Solver s = (Solver) GLMConfig.solverOptionsParams.getValue(rawInput);
 				hex.glm.GLMModel.GLMParameters.Family glmFamily = (hex.glm.GLMModel.GLMParameters.Family) GLMConfig.familyOptionsParams
 						.getValue(rawInput);
+				Solver s = (Solver) GLMConfig.solverOptionsParams.getValue(rawInput);
 
-				if (s != null) {
-					Reporter.log("Set _solver: " + s);
-					((GLMParameters) modelParameter)._solver = s;
-				}
 				if (glmFamily != null) {
-					Reporter.log("Set _family: " + glmFamily);
+					System.out.println("Set _family: " + glmFamily);
 					((GLMParameters) modelParameter)._family = glmFamily;
+				}
+				if (s != null) {
+					System.out.println("Set _solver: " + s);
+					((GLMParameters) modelParameter)._solver = s;
 				}
 				break;
 
@@ -204,13 +200,13 @@ public class FunctionUtils {
 				Family gbmFamily = (Family) GBMConfig.familyParams.getValue(rawInput);
 
 				if (gbmFamily != null) {
-					Reporter.log("Set _distribution: " + gbmFamily);
+					System.out.println("Set _distribution: " + gbmFamily);
 					modelParameter._distribution = gbmFamily;
 				}
 				break;
 
 			default:
-				Reporter.log("Can not parse to object parameter with algorithm: " + algorithm, true);
+				System.out.println("can not parse to object parameter with algorithm: " + algorithm);
 		}
 
 		// set AutoSet params
@@ -226,11 +222,11 @@ public class FunctionUtils {
 
 		try {
 
-			Reporter.log("Create train frame: " + train_dataset_id, true);
+			System.out.println("Create train frame: " + train_dataset_id);
 			trainFrame = train_dataset.getFrame();
 
 			if (StringUtils.isNotEmpty(train_dataset_id) && validate_dataset != null && validate_dataset.isAvailabel()) {
-				Reporter.log("Create validate frame: " + train_dataset_id, true);
+				System.out.println("Create validate frame: " + train_dataset_id);
 				validateFrame = validate_dataset.getFrame();
 			}
 
@@ -254,21 +250,19 @@ public class FunctionUtils {
 			throw e;
 		}
 
-		Reporter.log("Set train frame");
+		System.out.println("Set train frame");
 		modelParameter._train = trainFrame._key;
 
 		if (validateFrame != null) {
-			Reporter.log("Set validate frame");
+			System.out.println("Set validate frame");
 			modelParameter._valid = validateFrame._key;
 		}
 
-		Reporter.log("Create success DRFParameters object.", true);
+		System.out.println("Create success modelParameter object.");
 		return modelParameter;
 	}
 
 	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase) {
-
-		String testcaseStatus = "passed";
 
 		Frame trainFrame = null;
 		Frame score = null;
@@ -292,13 +286,13 @@ public class FunctionUtils {
 			switch (algorithm) {
 				case FunctionUtils.drf:
 
-					Reporter.log("Build model", true);
+					System.out.println("Build model");
 					drfJob = new DRF((DRFModel.DRFParameters) parameter);
 
-					Reporter.log("Train model:", true);
+					System.out.println("Train model:");
 					drfModel = drfJob.trainModel().get();
 
-					Reporter.log("Predict testcase", true);
+					System.out.println("Predict testcase");
 					score = drfModel.score(trainFrame);
 
 					modelMetrics = drfModel._output._training_metrics;
@@ -307,15 +301,15 @@ public class FunctionUtils {
 
 				case FunctionUtils.glm:
 
-					Reporter.log("Build model", true);
+					System.out.println("Build model");
 					glmJob = new GLM(modelKey, "basic glm test", (GLMParameters) parameter);
 
-					Reporter.log("Train model", true);
+					System.out.println("Train model");
 					glmModel = glmJob.trainModel().get();
 
 					coef = glmModel.coefficients();
 
-					Reporter.log("Predict testcase", true);
+					System.out.println("Predict testcase ");
 					score = glmModel.score(trainFrame);
 
 					modelMetrics = glmModel._output._training_metrics;
@@ -323,13 +317,13 @@ public class FunctionUtils {
 
 				case FunctionUtils.gbm:
 
-					Reporter.log("Build model", true);
+					System.out.println("Build model ");
 					gbmJob = new GBM((GBMParameters) parameter);
 
-					Reporter.log("Train model", true);
+					System.out.println("Train model");
 					gbmModel = gbmJob.trainModel().get();
 
-					Reporter.log("Predict testcase", true);
+					System.out.println("Predict testcase ");
 					score = gbmModel.score(trainFrame);
 
 					modelMetrics = gbmModel._output._training_metrics;
@@ -337,50 +331,42 @@ public class FunctionUtils {
 			}
 
 			if (isNegativeTestcase) {
-				testcaseStatus = "failed";
-				Reporter.log("It is negative testcase", true);
 				Assert.fail("It is negative testcase");
 			}
 			else {
-				Reporter.log("Testcase is passed.");
-				Reporter.log("MSE: " + modelMetrics._MSE);
+				System.out.println("Testcase passed.");
+				System.out.println("MSE: " + modelMetrics._MSE);
 				if (modelMetrics.auc() != null) {
-					Reporter.log("AUC: " + modelMetrics.auc()._auc);
+					System.out.println("AUC: " + modelMetrics.auc()._auc);
 				}
 				else {
-					Reporter.log("AUC: NA");
+					System.out.println("AUC: NA");
 				}
 			}
 		}
 		catch (Exception ex) {
 
-			Reporter.log("Testcase is failed");
-			Reporter.log(ExceptionUtils.getStackTrace(ex));
-
+			System.out.println("Testcase failed");
+			ex.printStackTrace();
 			if (!isNegativeTestcase) {
-				testcaseStatus = "failed";
-				Assert.fail("Testcase is failed", ex);
+				Assert.fail("Testcase failed", ex);
 			}
 			else {
-				Reporter.log("This is negative testcase");
+				System.out.println("This is negative testcase");
 			}
 		}
 		catch (AssertionError ae) {
 
-			Reporter.log("Testcase is failed");
-			Reporter.log(ExceptionUtils.getStackTrace(ae));
-
+			System.out.println("Testcase failed");
+			ae.printStackTrace();
 			if (!isNegativeTestcase) {
-				testcaseStatus = "failed";
-				Assert.fail("Testcase is failed", ae);
+				Assert.fail("Testcase failed", ae);
 			}
 			else {
-				Reporter.log("This is negative testcase");
+				System.out.println("This is negative testcase");
 			}
 		}
 		finally {
-			Reporter.log("Testcase is " + testcaseStatus, true);
-
 			if (drfJob != null) {
 				drfJob.remove();
 			}
@@ -415,7 +401,6 @@ public class FunctionUtils {
 		if (StringUtils.isNotEmpty(algorithm)) {
 			return readAllTestcaseOneAlgorithm(dataSetCharacteristic, algorithm);
 		}
-
 		Object[][] result = null;
 		int nrows = 0;
 		int ncols = 0;
@@ -491,7 +476,7 @@ public class FunctionUtils {
 				break;
 
 			default:
-				Reporter.log("Do not implement for algorithm: " + algorithm, true);
+				System.out.println("do not implement for algorithm: " + algorithm);
 				return null;
 		}
 
@@ -548,14 +533,12 @@ public class FunctionUtils {
 	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic,
 			List<String> listHeaders, String fileName, int indexRowHeader, String algorithm, boolean isNegativeTestcase) {
 
-		Reporter.log("Read file: " + fileName, true);
-
 		Object[][] result = null;
 		List<String> lines = null;
 		String[] hearderRow = null;
 
 		if (StringUtils.isEmpty(fileName)) {
-			Reporter.log("File Not found: " + fileName, true);
+			System.out.println("Not found file: " + fileName);
 			return null;
 		}
 
@@ -564,7 +547,7 @@ public class FunctionUtils {
 			lines = Files.readAllLines(TestNGUtil.find_test_file_static(fileName).toPath(), Charset.defaultCharset());
 		}
 		catch (Exception ignore) {
-			Reporter.log("Cannot open file: " + fileName, true);
+			System.out.println("Cannot open file: " + fileName);
 			ignore.printStackTrace();
 			return null;
 		}
@@ -575,7 +558,7 @@ public class FunctionUtils {
 		hearderRow = lines.remove(0).split(regexToSplitTestcase, -1);
 
 		if (!validateTestcaseFile(listHeaders, fileName, hearderRow)) {
-			Reporter.log("Testcase file is wrong format", true);
+			System.out.println("Testcase file is wrong format");
 			return null;
 		}
 
@@ -598,23 +581,21 @@ public class FunctionUtils {
 			r++;
 		}
 
-		Reporter.log("Read file successful", true);
 		return result;
 	}
 
 	private static boolean validateTestcaseFile(List<String> listHeaders, String fileName, String[] headerRow) {
 
-		Reporter.log("Validate file: " + fileName, true);
+		System.out.println("validate file: " + fileName);
 
 		for (String header : listHeaders) {
 			if (Arrays.asList(headerRow).indexOf(header) < 0) {
-				Reporter.log(String.format("find not found %s column in %s", header, fileName), true);
+				System.out.println(String.format("find not found %s column in %s", header, fileName));
 				return false;
 			}
 
 		}
 
-		Reporter.log("Validate successfully file: " + fileName, true);
 		return true;
 	}
 
@@ -666,7 +647,7 @@ public class FunctionUtils {
 		}
 
 		if (r == 0) {
-			Reporter.log(String.format("dataset characteristic have no size what is: %s.", size), true);
+			System.out.println(String.format("dataset characteristic have no size what is: %s.", size));
 		}
 		else {
 
@@ -700,24 +681,24 @@ public class FunctionUtils {
 		List<String> lines = null;
 
 		try {
-			Reporter.log("read dataset characteristic", true);
+			System.out.println("read dataset characteristic");
 			file = TestNGUtil.find_test_file_static(dataSetCharacteristicFilePath);
 			lines = Files.readAllLines(file.toPath(), Charset.defaultCharset());
 		}
 		catch (Exception e) {
-			Reporter.log("Cannot open dataset characteristic file: " + dataSetCharacteristicFilePath, true);
+			System.out.println("Cannot open dataset characteristic file: " + dataSetCharacteristicFilePath);
 			e.printStackTrace();
 		}
 
 		for (String line : lines) {
-			Reporter.log("read line: " + line);
+			System.out.println("read line: " + line);
 			String[] arr = line.trim().split(",", -1);
 
 			if (arr.length < numCols) {
-				Reporter.log("length of line is short", true);
+				System.out.println("length of line is short");
 			}
 			else {
-				Reporter.log("parse to DataSet object");
+				System.out.println("parse to DataSet object");
 				Dataset dataset = new Dataset(arr[dataSetId], arr[dataSetDirectory], arr[fileName],
 						arr[responseColumn], arr[columnNames], arr[columnTypes]);
 

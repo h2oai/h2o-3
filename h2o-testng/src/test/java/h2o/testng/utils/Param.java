@@ -7,7 +7,6 @@ import java.util.HashMap;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
-import org.testng.Reporter;
 
 public class Param {
 
@@ -90,7 +89,7 @@ public class Param {
 		while (clazz != null) {
 			try {
 				Field field = clazz.getDeclaredField(name);
-				Reporter.log(String.format("  %s = %s", name, field.get(params)));
+				System.out.println(String.format("  %s = %s", name, field.get(params)));
 				return;
 
 			}
@@ -149,7 +148,8 @@ public class Param {
 		return result;
 	}
 
-	private boolean parseAndSet(Object params, String value) {
+	// TODO: change to private
+	public boolean parseAndSet(Object params, String value) {
 
 		value = value.trim();
 		Object v = null;
@@ -196,7 +196,7 @@ public class Param {
 					break;
 
 				default:
-					Reporter.log("Unrecognized type: " + type);
+					System.out.println("Unrecognized type: " + type);
 					break;
 			}
 		}
@@ -206,7 +206,7 @@ public class Param {
 			try {
 				Field field = clazz.getDeclaredField(name);
 				// field.setAccessible(true); // is this needed?!?
-				Reporter.log("Set " + name + ": " + value);
+				System.out.println("Set " + name + ": " + value);
 				field.set(params, v);
 				return true;
 

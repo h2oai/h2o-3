@@ -2,12 +2,11 @@ package water;
 
 import org.testng.Reporter;
 import org.testng.annotations.*;
-import testngframework.NodeContainer;
 
+import testngframework.NodeContainer;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-
 import static org.testng.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -117,11 +116,20 @@ public class TestNGUtil extends Iced {
 
     //@AfterMethod(alwaysRun = true)
     public void resetStandardStreams() {
-        Reporter.log(baOutStream.toString());
-        baOutStream.reset();
 
+    	// wait 100 mili-sec for output/error to be stored
+		try {
+			Thread.sleep(100);
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		}
+    	
         System.setOut(stdout);
         System.setErr(stderr);
+        
+        Reporter.log(baOutStream.toString(), true);
+        baOutStream.reset();
     }
 
 
