@@ -321,6 +321,7 @@ public class PojoUtils {
       }
       catch (Exception e) {
         Log.err(e.getClass().getCanonicalName() + " Exception: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
+        throw e;
       }
     }
   }
