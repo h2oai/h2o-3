@@ -107,7 +107,7 @@ R code for the examples in this document are available here:
 
 Python code for the examples in this document can be found here:
 
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/DeepLearning_Vignette.ipynb}
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/DeepLearning_Vignette.py}
 
 The document source itself can be found here:
 
@@ -535,12 +535,11 @@ In this example, we specified three different network topologies and two differe
 \lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch_result.py}
 
 
-% HERE (Have not edited the rest of Ch 6  - 7; Appendix has been edited though)
 \subsection{Checkpoint model}
 
 To resume model training, use checkpoint model keys for incrementally training a particular model with more iterations, more data, different data, and so forth. To train our initial model further, we can use it (or its key) as a checkpoint argument for a new model.
 
-In the command below, \texttt{mnist\_model\_grid@model[[1]]} represents the highest performing model from the grid search used for additional training. For checkpoint restarts, the training and validation datasets, as well as the response column, must match.
+In the command below, \texttt{model\_grid@model\_ids[[1]]} represents the highest performing model from the grid search used for additional training. For checkpoint restarts, the training and validation datasets, as well as the response column, must match.  In addition, any non-default model parameters, such as \texttt{hidden = c(200,200)} in the example below.
 
 %\begin{lstlisting}[style=R]
 %mnist_checkpoint_model = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, %checkpoint=mnist_model_grid@model[[1]], validation = test_images.hex, epochs=9)
