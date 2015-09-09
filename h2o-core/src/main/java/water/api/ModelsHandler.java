@@ -216,7 +216,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     keysToExport.addAll(model.getPublishedKeys());
     try {
       URI targetUri = FileUtils.getURI(mexport.dir);
-      new ObjectTreeBinarySerializer().save(keysToExport, targetUri);
+      new ObjectTreeBinarySerializer(mexport.force).save(keysToExport, targetUri);
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? targetUri.getPath() : targetUri.toString();
     } catch (IOException e) {
