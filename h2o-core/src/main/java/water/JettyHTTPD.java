@@ -20,7 +20,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Connector;
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import water.UDPRebooted.ShutdownTsk;
 import water.api.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
@@ -626,18 +626,28 @@ public class JettyHTTPD {
         FileUtils.copyStream(is, os, 1024);
       } finally {
         logRequest(method, request, response);
-
         // Handle shutdown if it was requested.
         if (H2O.getShutdownRequested()) {
           (new Thread() {
             public void run() {
+              boolean [] confirmations = new boolean[H2O.CLOUD.size()];
+              confirmations[H2O.SELF.index()] = true;
+              for(H2ONode n:H2O.CLOUD._memary) {
+                if(n != H2O.SELF)
+                  new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();
+              }
               try { Thread.sleep(2000); }
               catch (Exception ignore) {}
-              H2O.shutdown(0);
+              int failedToShutdown = 0;
+              // shutdown failed
+              for(boolean b:confirmations)
+                if(!b) failedToShutdown++;
+              Log.info("Orderly shutdown: " + (failedToShutdown > 0? failedToShutdown + " nodes failed to shut down! ":"") + " Shutting down now.");
+              H2O.closeAll();
+              H2O.exit(failedToShutdown);
             }
           }).start();
         }
-
         endTransaction();
       }
     }
