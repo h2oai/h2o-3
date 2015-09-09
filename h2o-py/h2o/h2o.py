@@ -609,7 +609,7 @@ def save_model(model, dir="", name="", filename="", force=False):
   if not isinstance(force, bool): raise ValueError("`force` must be True or False")
   path = filename if filename != "" else os.path.join(dir, name)
 
-  kwargs = dict([("dir",path), ("force",int(force)), ("_rest_version", 99)])
+  kwargs = dict([("dir",path), ("force",force), ("_rest_version", 99)])
   H2OConnection.get("Models.bin/"+model._model_json['model_id']['name'], **kwargs)
   return path
 
