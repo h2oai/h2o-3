@@ -513,5 +513,3 @@ Regression Poisson/Gamma/Tweedie Dense Data : coordinate_descent,Regression_Pois
 Regression Poisson/Gamma/Tweedie Sparse Data : coordinate_descent,Regression_Poisson_coordinate_descent_Sparse,glm_testcase_505,x,,,,x,,,,,,,x,,,,,,,,,,,,,,,,,,Regression,x,,synthetic_sparse_poisson_train,synthetic_sparse_poisson_test,,,,,,,,,,
 ,Regression_Gamma_coordinate_descent_Sparse,glm_testcase_506,x,,,,,x,,,,,,x,,,,,,,,,,,,,,,,,,Regression,x,,synthetic_sparse_gamma_train,synthetic_sparse_gamma_test,,,,,,,,,,
 ,Regression_Tweedie_coordinate_descent_Sparse,glm_testcase_507,x,,,,,,x,,,,,x,,,,,,,,,,,,,,,,,,Regression,x,,synthetic_sparse_tweedie_train,synthetic_sparse_tweedie_test,,,,,,,,,,
-,,glm_testcase_508,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-,,glm_testcase_509,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
