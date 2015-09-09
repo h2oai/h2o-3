@@ -304,7 +304,6 @@ public class ASTddply extends ASTOp {
       Frame aa = new Frame(_key, f._names, gvecs);
       DKV.put(_key,aa); // _key is homed to this node!
       assert _key.home(): "Key should be homed to the node! Somehow remapped during this compute2.";
-      assert DKV.getGet(_key) !=null;
       tryComplete();
     }
   }

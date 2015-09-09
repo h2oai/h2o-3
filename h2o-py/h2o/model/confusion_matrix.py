@@ -56,7 +56,8 @@ class ConfusionMatrix(object):
     for i in range(len(row_header)):
       cell_values[i].insert(0, row_header[i])
 
-    self.table = H2OTwoDimTable(row_header, col_header, None, table_header, None, None, cell_values)
+    self.table = H2OTwoDimTable(row_header=row_header, col_header=col_header,
+                                table_header=table_header, cell_values=cell_values)
 
   def show(self):
     self.table.show()
