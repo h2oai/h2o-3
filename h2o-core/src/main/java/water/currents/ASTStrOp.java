@@ -90,7 +90,10 @@ class ASTCountMatches extends ASTPrim {
   @Override String str() { return "countmatches"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String pattern = asts[2].exec(env).getStr();
+    String[] pattern;
+    if( asts[2] instanceof ASTStrList ) pattern = ((ASTStrList)asts[2])._strs;
+    else                                pattern = new String[]{asts[2].exec(env).getStr()};
+
     if (fr.numCols() != 1) throw new IllegalArgumentException("countmatches requires a single column.");
     final int[] matchCounts = countMatches(fr.anyVec().domain(),pattern);
 
@@ -104,14 +107,15 @@ class ASTCountMatches extends ASTPrim {
           } else ncs[i].addNA();
         }
       }
-    }.doAll(1, fr).outputFrame(null, null, null);
-    return new ValFrame(fr);
+    }.doAll(1, fr).outputFrame();
+    return new ValFrame(fr2);
   }
 
-  int[] countMatches(String[] domain, String pattern) {
+  int[] countMatches(String[] domain, String[] pattern) {
     int[] res = new int[domain.length];
     for (int i=0; i < domain.length; i++)
-      res[i] += StringUtils.countMatches(domain[i],pattern);
+      for (String aPattern : pattern)
+        res[i] += StringUtils.countMatches(domain[i], aPattern);
     return res;
   }
 }

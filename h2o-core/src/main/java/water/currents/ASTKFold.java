@@ -12,12 +12,6 @@ import static water.util.RandomUtils.getRNG;
 public class ASTKFold extends ASTPrim {
   @Override public int nargs() { return 1+3; } // (kfold_column x nfolds seed)
   @Override String str() { return "kfold_column"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
-    int nfolds = (int)asts[2].exec(env).getNum();
-    long seed  = (long)asts[3].exec(env).getNum();
-    return new ValFrame(new Frame(kfoldColumn(foldVec,nfolds,seed==-1?new Random().nextLong():seed)));
-  }
 
   public static Vec kfoldColumn(Vec v, final int nfolds, final long seed) {
     new MRTask() {
@@ -95,6 +89,12 @@ public class ASTKFold extends ASTPrim {
     }.doAll(new Frame(y,y.makeZero()))._fr.vec(1);
   }
 
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
+    int nfolds = (int)asts[2].exec(env).getNum();
+    long seed  = (long)asts[3].exec(env).getNum();
+    return new ValFrame(new Frame(kfoldColumn(foldVec,nfolds,seed==-1?new Random().nextLong():seed)));
+  }
 }
 
 class ASTModuloKFold extends ASTPrim {
