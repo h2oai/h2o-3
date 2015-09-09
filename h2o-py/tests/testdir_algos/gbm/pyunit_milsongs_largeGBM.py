@@ -20,7 +20,7 @@ def milsong_checkpoint():
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
     # save the model, then load the model
-    path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"../..","results")
+    path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","results"))
     model_path = h2o.save_model(model1, path=path, force=True)
     restored_model = h2o.load_model(model_path)
 
