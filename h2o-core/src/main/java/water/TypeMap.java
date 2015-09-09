@@ -1,13 +1,12 @@
 package water;
 
+import java.util.Arrays;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.CloudV3;
 import water.api.H2OErrorV3;
 import water.api.TypeaheadV3;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
-
-import java.util.Arrays;
 
 /** Internal H2O class used to build and maintain the cloud-wide type mapping.
  *  Only public to expose a few constants to subpackages.  No exposed user
@@ -195,7 +194,13 @@ public class TypeMap {
   }
 
   static Iced newInstance(int id) { return (Iced) newFreezable(id); }
-  static Freezable newFreezable(int id) {
+
+  /** Create a new freezable object based on its unique ID.
+   *
+   * @param id  freezable unique id (provided by TypeMap)
+   * @return new instance of Freezable object
+   */
+  public static Freezable newFreezable(int id) {
     Freezable iced = theFreezable(id);
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
     return (Freezable) iced.clone();

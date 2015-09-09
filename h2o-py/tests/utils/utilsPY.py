@@ -127,8 +127,8 @@ def javapredict(algo, train, test, x, y, **kwargs):
     print model
 
     print "Downloading Java prediction model code from H2O"
-    tmpdir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results/{0}".format(model._id))
-    os.makedirs(tmpdir)
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id))
+    os.mkdir(tmpdir)
     h2o.download_pojo(model,path=tmpdir)
 
     print "Predicting in H2O"
@@ -151,7 +151,9 @@ def javapredict(algo, train, test, x, y, **kwargs):
     subprocess.call(["javac", "-cp", os.path.join(tmpdir,"h2o-genmodel.jar"), "-J-Xmx4g", "-J-XX:MaxPermSize=256m", os.path.join(tmpdir,model._id+".java")], stderr=subprocess.STDOUT)
     subprocess.call(["java", "-ea", "-cp", os.path.join(tmpdir,"h2o-genmodel.jar")+":{0}".format(tmpdir), "-Xmx4g", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id, "--input", os.path.join(tmpdir,"in.csv"), "--output", os.path.join(tmpdir,"out_pojo.csv")], stderr=subprocess.STDOUT)
 
-    predictions2 = h2o.import_file(os.path.join(tmpdir,"out_pojo.csv"))
+    out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
+    assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
+    predictions2 = h2o.import_file(path=out_pojo_csv)
 
     print "Comparing predictions between H2O and Java POJO"
     # Dimensions

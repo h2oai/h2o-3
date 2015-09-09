@@ -1,9 +1,11 @@
-package water;
+package water.serial;
 
 import java.nio.channels.FileChannel;
 
-import water.*;
-import water.util.Log;
+import water.AutoBuffer;
+import water.Freezable;
+import water.H2O;
+import water.TypeMap;
 
 /** Simple wrapper around {@link AutoBuffer}
  * which uses class names instead of type ids.
@@ -11,12 +13,12 @@ import water.util.Log;
  * @see AutoBuffer
  * @see TypeMap
  */
-public class AutoBufferWithoutTypeIds extends AutoBuffer {
+class AutoBufferWithClassNames extends AutoBuffer {
 
-    public AutoBufferWithoutTypeIds() { super(); }
-    public AutoBufferWithoutTypeIds(byte[] b) { super(b); }
+    public AutoBufferWithClassNames() { super(); }
+    public AutoBufferWithClassNames(byte[] b) { super(b); }
 
-    public AutoBufferWithoutTypeIds(FileChannel fc, boolean read) {
+    public AutoBufferWithClassNames(FileChannel fc, boolean read) {
       super(fc,read, (byte) 0);
     }
 
