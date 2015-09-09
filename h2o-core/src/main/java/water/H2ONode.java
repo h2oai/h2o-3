@@ -324,11 +324,13 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
           _bb.limit(_bb.capacity());
           return;
         } catch(IOException ioe) {
-          Log.err(ioe);
+          if(!H2O.getShutdownRequested())
+            Log.err(ioe);
           if(_rawChannel != null)
             try {_rawChannel.close();} catch (Throwable t) {}
           _rawChannel = null;
-          Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
+          if(!H2O.getShutdownRequested())
+            Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
           sleep = Math.min(5000,(sleep + 1) << 1);
           try {Thread.sleep(sleep);} catch (InterruptedException e) {}
         }
