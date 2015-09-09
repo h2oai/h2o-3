@@ -227,7 +227,7 @@ H2O supports elastic net regularization, which is a combination of the $\ell_1$ 
 in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM with \textbf{ridge regression}, while if $\alpha = 1$ it does so with the \textbf{lasso} penalty.
 \item $\lambda$ controls the penalty strength; its range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
-the empty model (all zeros except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
+all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
 \end{itemize}
 
 
@@ -536,7 +536,7 @@ The two solvers provided in H2O are the Iteratively Reweighted Least Squares Met
 a Gram Matrix approach underneath the hood. It is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
 datasets (thousands of predictors and up), the L-BFGS solver scales better. %comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
 
-IRLSM can be run with two algorithms to solve the innermost loop: the ADMM algorithm, or cyclical coordinate descent. The latter is used in glmnet and is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance if the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. Coordinate descent can be implemented in the naive way or with covariance updates as explained in the glmnet paper. The covariance updates version is faster when $p>N$. 
+IRLSM can be run with two algorithms to solve its innermost loop: ADMM and cyclical coordinate descent. The latter is used in glmnet. It is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$. 
 
 In summary, the options are:
 \begin{itemize}
