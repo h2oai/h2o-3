@@ -408,6 +408,7 @@ public final class ParseDataset extends Job<Frame> {
       final Categorical[] _colCats = MultiFileParseTask._enums.get(_k);
       int i = 0;
       for (int col : _catColIdxs) {
+        _colCats[col].convertToUTF8();
         _perColDomains[i] = _colCats[col].getColumnDomain();
         Arrays.sort(_perColDomains[i]);
         _packedDomains[i] = packDomain(_perColDomains[i]);
