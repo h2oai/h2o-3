@@ -1610,7 +1610,14 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
     } else if( col.type == "enum" ) {
       domains <- col.sum$domain
       domain.cnts <- col.sum$histogram_bins
-      if( length(domain.cnts) < length(domains) ) domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
+      if( length(domain.cnts) < length(domains) ) {
+        if( length(domain.cnts) == 1 )  {   # Constant categorical column
+          cnt <- domain.cnts[1]
+          domain.cnts <- rep(NA, length(domains))
+          domain.cnts[col.sum$mean+1] <- cnt
+        } else
+          domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
+      }
       missing.count <- 0L
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
       # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
@@ -1902,7 +1909,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   }
 
   # Substitute NAs for blank cells rather than skipping
-  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
+  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", ...)
   # df <- read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
   close(tcon)
   df

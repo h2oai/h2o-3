@@ -67,6 +67,23 @@ public class ArrayUtils {
       sum += x[i]*x[i];
     return sum;
   }
+  public static double l2norm2(double[] x, double[] y) {  // Computes \sum_{i=1}^n (x_i - y_i)^2
+    assert x.length == y.length;
+    double sse = 0;
+    for(int i = 0; i < x.length; i++) {
+      double diff = x[i] - y[i];
+      sse += diff * diff;
+    }
+    return sse;
+  }
+  public static double l2norm2(double[][] x, double[][] y) {
+    assert x.length == y.length && x[0].length == y[0].length;
+    double sse = 0;
+    for(int i = 0; i < x.length; i++)
+      sse += l2norm2(x[i], y[i]);
+    return sse;
+  }
+
   public static double l1norm(double [] x){ return l1norm(x, false); }
   public static double l1norm(double [] x, boolean skipLast){
     double sum = 0;
@@ -88,6 +105,8 @@ public class ArrayUtils {
   public static double l2norm(double [] x, boolean skipLast){
     return Math.sqrt(l2norm2(x, skipLast));
   }
+  public static double l2norm(double[] x, double[] y) { return Math.sqrt(l2norm2(x,y)); }
+  public static double l2norm(double[][] x, double[][] y) { return Math.sqrt(l2norm2(x,y)); }
 
   // Add arrays, element-by-element
   public static byte[] add(byte[] a, byte[] b) {
@@ -210,6 +229,11 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+  public static double[][] mult(double[][] ary, double n) {
+    if(ary == null) return null;
+    for (int i=0; i<ary.length; i++) mult(ary[i], n);
+    return ary;
   }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
