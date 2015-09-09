@@ -421,7 +421,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       fail = true;
     }
     if (byte_size > Value.MAX || fail)
-      throw new IllegalArgumentException("Model is too large: PUBDEV-941");
+      throw new IllegalArgumentException(technote(5, "Model is too large"));
   }
 
   public long _timeLastScoreEnter; //not transient: needed for HTML display page
