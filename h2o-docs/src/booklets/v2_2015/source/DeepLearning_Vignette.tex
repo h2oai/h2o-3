@@ -22,7 +22,8 @@
 
 
 \begin{document}
-\input{common/conf_listings.tex}
+%\input{common/conf_listings.tex}
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \thispagestyle{empty} %removes page number  
 
@@ -31,7 +32,7 @@
 
 
 \bigskip
-\textsc{\small{Arno Candel \hspace{40pt} Jessica Lanford \hspace{40pt} Erin LeDell \hspace{40pt} Viraj Parmar \hspace{40pt} } }
+\textsc{\small{Arno Candel \hspace{20pt} Jessica Lanford \hspace{20pt} Erin LeDell \hspace{20pt} Viraj Parmar \hspace{20pt} Anisha Arora } }
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -48,7 +49,7 @@ August 2015: Third Edition
 {\raggedright\vfill\ 
 
 Deep Learning with H2O\\
-  by Arno Candel, Jessica Lanford, Erin LeDell, \&\ Viraj Parmar\\
+  by Arno Candel, Jessica Lanford, Erin LeDell, Viraj Parmar \&\ Anisha Arora\\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -204,7 +205,7 @@ Function & Formula & Range \\ [0.5ex] % inserts table
 \hline % inserts single horizontal line 
 Tanh & $f(\alpha) = \frac{e^{\alpha} - e ^{-\alpha}}{e^\alpha + e ^{-\alpha}}$ & $f(\cdot) \in [-1,1]$ \\ % inserting body of the table 
 Rectified Linear & $f(\alpha) = \max(0,\alpha)$ & $f(\cdot) \in \mathbb{R}_+$ \\
-Maxout & $f(\cdot) = \max(w_i x_i + b) \text{, rescale if} \max f(\cdot) \geq 1 $ & $f(\cdot) \in [-\infty,1]$\\  % [1ex] adds vertical space
+Maxout & $f(\cdot) = \max(w_i x_i + b) $ & $f(\cdot) \in \mathbb{R}$\\  % [1ex] adds vertical space
 \hline %inserts single line 
 \end{tabular} 
 \label{table:nonlin} % is used to refer this table in the text 
@@ -400,7 +401,7 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 
 \newpage
 \waterExampleInR
-%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
+%Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.(Note: Define max_mem_size if needed)
 \lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
 
 \waterExampleInPython
@@ -434,12 +435,13 @@ The model runs for only 10 epochs since it is just meant  as a trial run. In thi
 We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
 
 \waterExampleInR
-\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
+%\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
+\lstinputlisting[style=R]{deeplearning/deeplearning_extractmodelparams.R}
 
 % TO DO: Add this code (currently commented out)
 \waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
-
+%\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
+\lstinputlisting[style=python]{deeplearning/deeplearning_extractmodelparams.py}
 
 
 \noindent
@@ -540,41 +542,63 @@ To resume model training, use checkpoint model keys for incrementally training a
 
 In the command below, \texttt{mnist\_model\_grid@model[[1]]} represents the highest performing model from the grid search used for additional training. For checkpoint restarts, the training and validation datasets, as well as the response column, must match.
 
-\begin{lstlisting}[style=R]
-mnist_checkpoint_model = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, checkpoint=mnist_model_grid@model[[1]], validation = test_images.hex, epochs=9)
+%\begin{lstlisting}[style=R]
+%mnist_checkpoint_model = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, %checkpoint=mnist_model_grid@model[[1]], validation = test_images.hex, epochs=9)
+%\end{lstlisting}
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_checkpoint.R}
 
-\end{lstlisting}
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_checkpoint.py}
+
 \noindent
 Checkpointing can also be used to reload existing models that were saved to disk in a previous session. For example, we can save and reload the best model from the grid search by running the following commands.
 
-\begin{lstlisting}[style=R]
-#Specify a model and the file path where it is to be saved
-h2o.saveModel(object = mnist_model_grid@model[[1]], name = "/tmp/mymodel", force = TRUE)
+%\begin{lstlisting}[style=R]
+%#Specify a model and the file path where it is to be saved
+%h2o.saveModel(object = mnist_model_grid@model[[1]], name = "/tmp/mymodel", force = TRUE)
+%
+%#Alternatively, save the model key in some directory (here we use /tmp)
+%#h2o.saveModel(object = mnist_model_grid@model[[1]], dir = "/tmp", force = TRUE)
+%
+%\end{lstlisting}
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_savemodel.R}
 
-#Alternatively, save the model key in some directory (here we use /tmp)
-#h2o.saveModel(object = mnist_model_grid@model[[1]], dir = "/tmp", force = TRUE)
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_savemodel.py}
 
-\end{lstlisting}
+
 \normalsize
 
 \noindent
 After restarting  H2O, load the saved model by specifying the host and saved model file path. \textbf{Note}: The saved model must be reloaded using a compatible H2O version (i.e., the same version used to save the model).
 
-\begin{lstlisting}[style=R]
-best_mnist_grid.load = h2o.loadModel(h2o_server, "/tmp/mymodel")
-
-#Continue training the loaded model
-best_mnist_grid.continue = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, checkpoint=best_mnist_grid.load, validation = test_images.hex, epochs=1)
-
-\end{lstlisting}
+%\begin{lstlisting}[style=R]
+%best_mnist_grid.load = h2o.loadModel(h2o_server, "/tmp/mymodel")
+%
+%#Continue training the loaded model
+%best_mnist_grid.continue = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, checkpoint=best_mnist_grid.load, validation = test_images.hex, epochs=1)
+%
+%\end{lstlisting}
 \normalsize
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_loadmodel_checkpoint.R}
+
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_loadmodel_checkpoint.py}
+
+
 
 \noindent
 Additionally, you can also use the command
-\begin{lstlisting}[style=R]
-model = h2o.getModel(h2o_server, key)
-
-\end{lstlisting}
+%\begin{lstlisting}[style=R]
+%model = h2o.getModel(h2o_server, key)
+%
+%\end{lstlisting}
 \noindent
 to retrieve a model from its H2O key. This command is useful, for example, if you have created an H2O model using the web interface and wish to proceed with the modeling process in R.
 
@@ -603,30 +627,38 @@ So far, we have discussed purely supervised deep learning tasks. However, deep l
 Consider the deep autoencoder model described above. Given enough training data that resembles some underlying pattern, the network will train itself to easily learn the identity when confronted with that pattern. However, if some ``anomalous" test point that does not match the learned pattern arrives, the autoencoder will likely have a high error in reconstructing this data, which indicates it is anomalous data.
 \\
 \\
-We use this framework to develop an anomaly detection demonstration using a deep autoencoder. The dataset is an ECG time series of heartbeats and the goal is to determine which heartbeats are outliers. The training data (20 ``good" heartbeats) and the test data (training data with 3 ``bad" heartbeats appended for simplicity) can be downloaded from the H2O GitHub repository for the H2O Deep Learning documentation at http://bit.ly/1yywZzi%%update.%% 
-Each row represents a single heartbeat. The autoencoder is trained as follows: 
+We use this framework to develop an anomaly detection demonstration using a deep autoencoder. The dataset is an ECG time series of heartbeats and the goal is to determine which heartbeats are outliers. The training data (20 ``good" heartbeats) and the test data (training data with 3 ``bad" heartbeats appended for simplicity) can be downloaded directly into the H2O cluster, as shown below.  Each row represents a single heartbeat. The autoencoder is trained as follows: 
 
-\begin{lstlisting}[style=R]
-train_ecg.hex = h2o.uploadFile(h2o_server, path="ecg_train.csv", header=F, sep=",", key="train_ecg.hex") 
-test_ecg.hex = h2o.uploadFile(h2o_server, path="ecg_test.csv", header=F, sep=",", key="test_ecg.hex") 
+%\begin{lstlisting}[style=R]
+%train_ecg.hex = h2o.uploadFile(h2o_server, path="ecg_train.csv", header=F, sep=",", key="train_ecg.hex") 
+%test_ecg.hex = h2o.uploadFile(h2o_server, path="ecg_test.csv", header=F, sep=",", key="test_ecg.hex") 
+%
+%#Train deep autoencoder learning model on "normal" training data, y ignored 
+%anomaly_model = h2o.deeplearning(x=1:210, y=1, train_ecg.hex, activation = "Tanh", classification=F, autoencoder=T, hidden = c(50,20,50), l1=1E-4, 
+%epochs=100)                 
+%                              
+%#Compute reconstruction error with the Anomaly detection app (MSE between output layer and input layer)
+%recon_error.hex = h2o.anomaly(test_ecg.hex, anomaly_model)
+%                              
+%#Pull reconstruction error data into R and plot to find outliers (last 3 heartbeats)
+%recon_error = as.data.frame(recon_error.hex)
+%recon_error
+%plot.ts(recon_error)
+%
+%#Note: Testing = Reconstructing the test dataset
+%test_recon.hex = h2o.predict(anomaly_model, test_ecg.hex) 
+%head(test_recon.hex)              
+%
+%\end{lstlisting}
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_anomaly.R}
 
-#Train deep autoencoder learning model on "normal" training data, y ignored 
-anomaly_model = h2o.deeplearning(x=1:210, y=1, train_ecg.hex, activation = "Tanh", classification=F, autoencoder=T, hidden = c(50,20,50), l1=1E-4, 
-epochs=100)                 
-                              
-#Compute reconstruction error with the Anomaly detection app (MSE between output layer and input layer)
-recon_error.hex = h2o.anomaly(test_ecg.hex, anomaly_model)
-                              
-#Pull reconstruction error data into R and plot to find outliers (last 3 heartbeats)
-recon_error = as.data.frame(recon_error.hex)
-recon_error
-plot.ts(recon_error)
+%\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_anomaly.py}
 
-#Note: Testing = Reconstructing the test dataset
-test_recon.hex = h2o.predict(anomaly_model, test_ecg.hex) 
-head(test_recon.hex)              
 
-\end{lstlisting}
+
 \noindent
 
 \newpage
@@ -772,7 +804,7 @@ Default is 0.
 %  // batch gradient descent: mini-batch size = # training rows
 %  public int _mini_batch_size = 1;
 
-\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values''Äù that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values''ÔøΩÔøΩ that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 \item \texttt{weights\_column}: Specify the weights column by column name. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
@@ -788,8 +820,48 @@ Default is 0 (no cross-validation is performed).
 \end{itemize}
 
 
+
+
+% TO DO:  Replicate this in other booklets (or move the generic part to ./common)
 \newpage
-\section{Appendix B: References}
+
+\section{Appendix B: Common Command Summary in R}
+\begin{itemize}
+
+\item \texttt{library(h2o)}: Opens the required packages.
+
+\item \texttt{localH2O = h2o.init()}:  Connects to an instance of H2O
+
+\item \texttt{h2o.shutdown()}: Shuts down h2o.
+
+\item \texttt{h2o.importFile(server, path)}: Imports a file into h2o.
+
+\item \texttt{h2o.deepLearning(x, training\_frame,autoencoder, hidden, epochs)}: Creates a Deep Learning model.
+
+\item \texttt{h2o.grid(algorithm, grid\_id, ..., hyper\_params = list(), conn = h2o.getConnection())}: Starts h2o grid support and gives results.
+
+\item \texttt{h2o.predict(model, newdata)}: Does a prediction on a h2o model.
+
+\end{itemize}
+
+
+
+% TO DO:  Replicate this in other booklets (or move the generic part to ./common)
+\newpage
+
+\section{Appendix C: Common Command Summary in Python}
+\begin{itemize}
+
+\item \texttt{}:
+
+
+\end{itemize}
+
+
+
+
+\newpage
+\section{Appendix D: References}
 
 \textbf{H2O website}:  {\url{http://h2o.ai/}}
 
@@ -825,13 +897,13 @@ Default is 0 (no cross-validation is performed).
 
 \textbf{On the importance of initialization and momentum in deep learning}.  {Sutskever et al, 2014}.  \href{http://www.cs.toronto.edu/~fritz/absps/momentum.pdf}{http://www.cs.toronto.edu/~fritz/absps/momentum.pdf}
 
-\textbf{ADADELTA: AN ADAPTIVE LEARNING RATE METHOD}. {Zeiler, 2012}.  \\
+\textbf{ADADELTA: An Adaptive Learning Rate Method}. {Zeiler, 2012}.  \\
  \href{http://arxiv.org/pdf/1212.5701v1.pdf}{http://arxiv.org/pdf/1212.5701v1.pdf}
 
 \textbf{H2O GitHub repository for the H2O Deep Learning documentation} \\
  \href{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}
 
-\textbf{{MNIST database}}  \href{http://yann.lecun.com/exdb/mnist/}{http://yann.lecun.com/exdb/mnist/}
+\textbf{{MNIST database.}}  \href{http://yann.lecun.com/exdb/mnist/}{http://yann.lecun.com/exdb/mnist/}
 
 \textbf{Reducing the Dimensionality of
 Data with Neural Networks}.  {Hinton et al, 2006}. \\

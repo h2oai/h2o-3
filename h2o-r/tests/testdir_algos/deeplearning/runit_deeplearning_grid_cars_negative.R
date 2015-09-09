@@ -19,15 +19,15 @@ check.deeplearning.grid.cars.negative <- function() {
 
   ## Invalid deeplearning parameters
   grid_space <- list()
-  grid_space$activation <- lapply(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 2), function (x) x)
+  grid_space$activation <- sapply(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 2), function (x) x)
   grid_space$activation[[3]] <- "Foo"
-  grid_space$epochs <- list(1, 2)
-  grid_space$distribution <- list(sample(c('bernoulli','multinomial','gaussian'), 1))
+  grid_space$epochs <- c(1, 2)
+  grid_space$distribution <- c(sample(c('bernoulli','multinomial','gaussian'), 1))
   Log.info(lapply(names(grid_space), function(n) paste0("The provided ",n," search space: ", grid_space[n])))
 
   expected_grid_space <- list()
   expected_grid_space$activation <- grid_space$activation[grid_space$activation != "Foo"]
-  expected_grid_space$epochs <- list(1, 2)
+  expected_grid_space$epochs <- c(1, 2)
   expected_grid_space$distribution <- grid_space$distribution
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 

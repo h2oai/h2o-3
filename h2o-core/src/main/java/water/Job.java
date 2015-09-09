@@ -2,14 +2,13 @@ package water;
 
 import jsr166y.CountedCompleter;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
 
 import hex.ModelBuilder;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.Log;
+import water.util.StringUtils;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -294,10 +293,7 @@ public class Job<T extends Keyed> extends Keyed {
   /** Signal exceptional cancellation of this job.
    *  @param ex exception causing the termination of job. */
   public void failed(Throwable ex) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    ex.printStackTrace(pw);
-    String stackTrace = sw.toString();
+    String stackTrace = StringUtils.toString(ex);
     changeJobState("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
     //if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
   }

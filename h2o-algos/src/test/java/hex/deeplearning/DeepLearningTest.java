@@ -1,12 +1,14 @@
 package hex.deeplearning;
 
 
-import hex.Distribution;
+import hex.*;
+
 import static hex.Distribution.Family.*;
-import hex.ModelMetricsAutoEncoder;
-import hex.ModelMetricsRegression;
+
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -50,258 +52,255 @@ public class DeepLearningTest extends TestUtil {
   @Test public void testClassIris5() throws Throwable {
     // iris ntree=50
     basicDLTest_Classification(
-            "./smalldata/iris/iris.csv", "iris5.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.numCols() - 1;
-              }
-            },
-            5,
-            ard(ard(50, 0, 0),
-                    ard(0, 39, 11),
-                    ard(0, 8, 42)),
-            s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/iris/iris.csv", "iris5.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            return fr.numCols() - 1;
+          }
+        },
+        5,
+        ard(ard(50, 0, 0),
+            ard(0, 39, 11),
+            ard(0, 8, 42)),
+        s("Iris-setosa", "Iris-versicolor", "Iris-virginica"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testClassCars1() throws Throwable {
     // cars ntree=1
     basicDLTest_Classification(
-            "./smalldata/junit/cars.csv", "cars.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("name").remove();
-                return fr.find("cylinders");
-              }
-            },
-            1,
-            ard(ard(0, 4, 0, 0, 0),
-                    ard(0, 193, 5, 9, 0),
-                    ard(0, 2, 1, 0, 0),
-                    ard(0, 65, 3, 16, 0),
-                    ard(0, 11, 0, 7, 90)),
-            s("3", "4", "5", "6", "8"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/junit/cars.csv", "cars.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("name").remove();
+            return fr.find("cylinders");
+          }
+        },
+        1,
+        ard(ard(0, 4, 0, 0, 0),
+            ard(0, 193, 5, 9, 0),
+            ard(0, 2, 1, 0, 0),
+            ard(0, 65, 3, 16, 0),
+            ard(0, 11, 0, 7, 90)),
+        s("3", "4", "5", "6", "8"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testClassCars5() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/junit/cars.csv", "cars5.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("name").remove();
-                return fr.find("cylinders");
-              }
-            },
-            5,
-            ard(ard(0, 4, 0, 0, 0),
-                    ard(0, 206, 0, 1, 0),
-                    ard(0, 2, 0, 1, 0),
-                    ard(0, 14, 0, 69, 1),
-                    ard(0, 0, 0, 6, 102)),
-            s("3", "4", "5", "6", "8"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/junit/cars.csv", "cars5.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("name").remove();
+            return fr.find("cylinders");
+          }
+        },
+        5,
+        ard(ard(0, 4, 0, 0, 0),
+            ard(0, 206, 0, 1, 0),
+            ard(0, 2, 0, 1, 0),
+            ard(0, 14, 0, 69, 1),
+            ard(0, 0, 0, 6, 102)),
+        s("3", "4", "5", "6", "8"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testConstantCols() throws Throwable {
     try {
       basicDLTest_Classification(
-              "./smalldata/poker/poker100", "poker.hex",
-              new PrepData() {
-                @Override
-                int prep(Frame fr) {
-                  for (int i = 0; i < 7; i++) {
-                    fr.remove(3).remove();
-                  }
-                  return 3;
-                }
-              },
-              1,
-              null,
-              null,
-              DeepLearningParameters.Activation.Rectifier);
+          "./smalldata/poker/poker100", "poker.hex",
+          new PrepData() {
+            @Override
+            int prep(Frame fr) {
+              for (int i = 0; i < 7; i++) {
+                fr.remove(3).remove();
+              }
+              return 3;
+            }
+          },
+          1,
+          null,
+          null,
+          DeepLearningParameters.Activation.Rectifier);
       Assert.fail();
     } catch( H2OModelBuilderIllegalArgumentException iae ) {
     /*pass*/
     }
   }
 
-  @Ignore @Test public void testBadData() throws Throwable {
+  @Test public void testBadData() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.find("DateofBirth");
-              }
-            },
-            1,
-            ard(ard(6, 0),
-                    ard(9, 1)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            return fr.find("DateofBirth");
+          }
+        },
+        1,
+        ard(ard(0, 17),
+            ard(0, 17)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   //@Test
   public void testCreditSample1() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/kaggle/creditsample-training.csv.gz", "credit.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("MonthlyIncome").remove();
-                return fr.find("SeriousDlqin2yrs");
-              }
-            },
-            1,
-            ard(ard(46294, 202),
-                    ard(3187, 107)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/kaggle/creditsample-training.csv.gz", "credit.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("MonthlyIncome").remove();
+            return fr.find("SeriousDlqin2yrs");
+          }
+        },
+        1,
+        ard(ard(46294, 202),
+            ard(3187, 107)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Rectifier);
 
   }
 
   @Test public void testCreditProstate1() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/logreg/prostate.csv", "prostate.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
-            1,
-            ard(ard(97, 130),
-                ard(28, 125)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/logreg/prostate.csv", "prostate.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("CAPSULE");
+          }
+        },
+        1,
+        ard(ard(97, 130),
+            ard(28, 125)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Test public void testCreditProstateReLUDropout() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/logreg/prostate.csv", "prostateReLUDropout.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
-            1,
-            ard(ard(4, 223),
-              ard(0, 153)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.RectifierWithDropout);
+        "./smalldata/logreg/prostate.csv", "prostateReLUDropout.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("CAPSULE");
+          }
+        },
+        1,
+        ard(ard(4, 223),
+            ard(0, 153)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.RectifierWithDropout);
 
   }
 
   @Test public void testCreditProstateTanh() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/logreg/prostate.csv", "prostateTanh.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
-            1,
-            ard(ard(141, 86),
-                ard(25, 128)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Tanh);
+        "./smalldata/logreg/prostate.csv", "prostateTanh.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("CAPSULE");
+          }
+        },
+        1,
+        ard(ard(141, 86),
+            ard(25, 128)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Tanh);
   }
 
   @Test public void testCreditProstateTanhDropout() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/logreg/prostate.csv", "prostateTanhDropout.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
-            1,
-            ard(ard(110, 117),
-                    ard(23, 130)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.TanhWithDropout);
+        "./smalldata/logreg/prostate.csv", "prostateTanhDropout.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("CAPSULE");
+          }
+        },
+        1,
+        ard(ard(110, 117),
+            ard(23, 130)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.TanhWithDropout);
   }
 
-  @Ignore
   @Test public void testCreditProstateMaxout() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/logreg/prostate.csv", "prostateMaxout.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
-            1,
-            ard(ard(57, 170),
-                    ard(8, 145)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Maxout);
+        "./smalldata/logreg/prostate.csv", "prostateMaxout.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("CAPSULE");
+          }
+        },
+        100,
+        ard(ard(189, 38),
+            ard(30, 123)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Maxout);
   }
 
-  @Ignore
   @Test public void testCreditProstateMaxoutDropout() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/logreg/prostate.csv", "prostateMaxoutDropout.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("CAPSULE");
-              }
-            },
-            1,
-            ard(ard(58, 169),
-                    ard(13, 140)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.MaxoutWithDropout);
+        "./smalldata/logreg/prostate.csv", "prostateMaxoutDropout.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("CAPSULE");
+          }
+        },
+        100,
+        ard(ard(183, 44),
+            ard(40, 113)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.MaxoutWithDropout);
   }
 
   @Test public void testCreditProstateRegression1() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegression.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            1,
-            46.2696942006363,
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/logreg/prostate.csv", "prostateRegression.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        1,
+        46.2696942006363,
+        DeepLearningParameters.Activation.Rectifier);
 
   }
 
   @Test public void testCreditProstateRegressionTanh() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegressionTanh.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            1,
-            43.458837416075966,
-            DeepLearningParameters.Activation.Tanh);
+        "./smalldata/logreg/prostate.csv", "prostateRegressionTanh.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        1,
+        43.458837416075966,
+        DeepLearningParameters.Activation.Tanh);
 
   }
 
-  @Ignore
   @Test public void testCreditProstateRegressionMaxout() throws Throwable {
     basicDLTest_Regression(
         "./smalldata/logreg/prostate.csv", "prostateRegressionMaxout.hex",
@@ -312,8 +311,8 @@ public class DeepLearningTest extends TestUtil {
             return fr.find("AGE");
           }
         },
-        1,
-        42.894661346549356,
+        100,
+        32.79983057944052,
         DeepLearningParameters.Activation.Maxout);
 
   }
@@ -336,93 +335,91 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void testCreditProstateRegression50() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/logreg/prostate.csv", "prostateRegression50.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                fr.remove("ID").remove();
-                return fr.find("AGE");
-              }
-            },
-            50,
-            37.894819598316246,
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/logreg/prostate.csv", "prostateRegression50.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            fr.remove("ID").remove();
+            return fr.find("AGE");
+          }
+        },
+        50,
+        37.894819598316246,
+        DeepLearningParameters.Activation.Rectifier);
 
   }
   @Test public void testAlphabet() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.find("y");
-              }
-            },
-            10,
-            ard(ard(2080, 0),
-                    ard(0, 2080)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            return fr.find("y");
+          }
+        },
+        10,
+        ard(ard(2080, 0),
+            ard(0, 2080)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Rectifier);
   }
   @Test public void testAlphabetRegression() throws Throwable {
     basicDLTest_Regression(
-            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.find("y");
-              }
-            },
-            10,
-            1.6201002863836856E-4,
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            return fr.find("y");
+          }
+        },
+        10,
+        1.6201002863836856E-4,
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                for (String s : new String[]{
-                        "DepTime", "ArrTime", "ActualElapsedTime",
-                        "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-                        "CancellationCode", "CarrierDelay", "WeatherDelay",
-                        "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
-                }) {
-                  fr.remove(s).remove();
-                }
-                return fr.find("IsDepDelayed");
-              }
-            },
-            7,
-            ard(ard(4051, 15612), //for 5-node
-                    ard(1397, 20322)),
-//            a(a(4396, 15269), //for 1-node
-//              a(1740, 19993)),
-            s("NO", "YES"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            for (String s : new String[]{
+                "DepTime", "ArrTime", "ActualElapsedTime",
+                "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+                "CancellationCode", "CarrierDelay", "WeatherDelay",
+                "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed", "TailNum"
+            }) {
+              fr.remove(s).remove();
+            }
+            return fr.find("IsDepDelayed");
+          }
+        },
+        7,
+        ard(ard(9251, 11636),
+            ard(3053, 200038)),
+        s("NO", "YES"),
+        DeepLearningParameters.Activation.Rectifier);
   }
 
   @Ignore //PUBDEV-1001
   @Test public void testCzechboard() throws Throwable {
     basicDLTest_Classification(
-            "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                Vec resp = fr.remove("C2");
-                fr.add("C2", resp.toEnum());
-                resp.remove();
-                return fr.find("C3");
-              }
-            },
-            1,
-            ard(ard(1, 44999),
-                    ard(0, 45000)),
-            s("0", "1"),
-            DeepLearningParameters.Activation.Rectifier);
+        "./smalldata/gbm_test/czechboard_300x300.csv", "czechboard_300x300.hex",
+        new PrepData() {
+          @Override
+          int prep(Frame fr) {
+            Vec resp = fr.remove("C2");
+            fr.add("C2", resp.toEnum());
+            resp.remove();
+            return fr.find("C3");
+          }
+        },
+        1,
+        ard(ard(7, 44993),
+            ard(2, 44998)),
+        s("0", "1"),
+        DeepLearningParameters.Activation.Tanh);
   }
 
 
@@ -483,7 +480,7 @@ public class DeepLearningTest extends TestUtil {
       } finally {
         if (job != null) job.remove();
       }
-      Assert.assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+      assertTrue(job._state == Job.JobState.DONE); //HEX-1817
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
@@ -500,15 +497,15 @@ public class DeepLearningTest extends TestUtil {
       res = model.score(test);
 
       if (classification) {
-        Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
-                Arrays.deepEquals(mm.cm()._cm, expCM));
+        assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
+            Arrays.deepEquals(mm.cm()._cm, expCM));
 
         String[] cmDom = model._output._domains[model._output._domains.length - 1];
         Assert.assertArrayEquals("CM domain differs!", expRespDom, cmDom);
         Log.info("\nTraining CM:\n" + mm.cm().toASCII());
         Log.info("\nTraining CM:\n" + hex.ModelMetrics.getFromDKV(model, test).cm().toASCII());
       } else {
-        Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
+        assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
         Log.info("\nOOB Training MSE: " + mm.mse());
         Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());
       }
@@ -516,7 +513,7 @@ public class DeepLearningTest extends TestUtil {
       hex.ModelMetrics.getFromDKV(model, test);
 
       // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(test,res,1e-5));
+      assertTrue(model.testJavaScoring(test, res, 1e-5));
 
     } finally {
       if (frTrain!=null) frTrain.remove();
@@ -627,6 +624,8 @@ public class DeepLearningTest extends TestUtil {
         dl._export_weights_and_biases = true;
         dl._hidden = new int[]{64, 64};
         dl._quiet_mode = false;
+        dl._max_w2 = 10;
+        dl._l1 = 1e-5;
         dl._replicate_training_data = false; //every node only has a piece of the data
         dl._force_load_balance = true; //use multi-node
 
@@ -696,7 +695,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.31481334186707816, mse, 1e-8);
 
-      Assert.assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
+      assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -775,7 +774,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.3164307133994674, mse, 1e-8);
 
-      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+      assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -858,7 +857,7 @@ public class DeepLearningTest extends TestUtil {
         } finally {
           if (job != null) job.remove();
         }
-        Assert.assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+        assertTrue(job._state == Job.JobState.DONE); //HEX-1817
 
 
       } finally {
@@ -876,16 +875,16 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
-            DeepLearningParameters.Loss.Automatic,
-            DeepLearningParameters.Loss.MeanSquare,
-            DeepLearningParameters.Loss.Huber,
-            DeepLearningParameters.Loss.Absolute,
+        DeepLearningParameters.Loss.Automatic,
+        DeepLearningParameters.Loss.MeanSquare,
+        DeepLearningParameters.Loss.Huber,
+        DeepLearningParameters.Loss.Absolute,
     }) {
       Scope.enter();
       try {
         tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
-                "Merit", "Class"
+            "Merit", "Class"
         }) {
           Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
         }
@@ -908,9 +907,9 @@ public class DeepLearningTest extends TestUtil {
         if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.MeanSquare)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
-          Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
+          assertTrue(mm._mean_residual_deviance != mm._MSE);
 
-        Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+        assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
 
         job.remove();
       } finally {
@@ -928,17 +927,17 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     for (Distribution.Family dist : new Distribution.Family[] {
-            AUTO,
-            gaussian,
-            poisson,
-            gamma,
-            tweedie,
+        AUTO,
+        gaussian,
+        poisson,
+        gamma,
+        tweedie,
     }) {
       Scope.enter();
       try {
         tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
-                "Merit", "Class"
+            "Merit", "Class"
         }) {
           Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
         }
@@ -961,9 +960,9 @@ public class DeepLearningTest extends TestUtil {
         if (dist == gaussian || dist == AUTO)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
-          Assert.assertTrue(mm._mean_residual_deviance != mm._MSE);
+          assertTrue(mm._mean_residual_deviance != mm._MSE);
 
-        Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+        assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
 
         job.remove();
       } finally {
@@ -984,7 +983,7 @@ public class DeepLearningTest extends TestUtil {
     try {
       tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
       for (String s : new String[]{
-              "Merit", "Class"
+          "Merit", "Class"
       }) {
         Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
       }
@@ -1007,7 +1006,7 @@ public class DeepLearningTest extends TestUtil {
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
       Assert.assertEquals(0.0712931422088762, mm._MSE, 1e-2);
 
-      Assert.assertTrue(dl.testJavaScoring(tfr,dl.score(tfr),1e-5));
+      assertTrue(dl.testJavaScoring(tfr, dl.score(tfr), 1e-5));
 
       job.remove();
     } finally {
@@ -1018,4 +1017,57 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testNumericalExplosion() {
+    for (boolean ae : new boolean[]{
+        true,
+        false
+    }) {
+      Frame tfr = null;
+      DeepLearningModel dl = null;
+
+      try {
+        tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
+        for (String s : new String[]{
+            "Class"
+        }) {
+          Vec resp = tfr.vec(s).toEnum();
+          tfr.remove(s).remove();
+          tfr.add(s, resp);
+          DKV.put(tfr);
+        }
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._epochs = 100;
+        parms._response_column = "Class";
+        parms._autoencoder = ae;
+        parms._reproducible = true;
+        parms._train_samples_per_iteration = 10;
+        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10};
+        parms._initial_weight_distribution = DeepLearningParameters.InitialWeightDistribution.Uniform;
+        parms._initial_weight_scale = 1e20;
+        parms._seed = 0xdecaf;
+        parms._max_w2 = 1e20f;
+        parms._model_id = Key.make();
+
+        // Build a first model; all remaining models should be equal
+        DeepLearning job = new DeepLearning(parms);
+        try {
+          dl = job.trainModel().get();
+          Assert.fail("Should toss exception instead of reaching here");
+        } catch( RuntimeException de ) {
+          assertTrue(de.getMessage().contains("Trying to predict with an unstable model."));
+        } finally {
+          job.remove();
+        }
+        dl = DKV.getGet(parms._model_id);
+        assertTrue(dl.model_info().isUnstable());
+        assertTrue(dl._output._status == Job.JobState.FAILED);
+      } finally {
+        if (tfr != null) tfr.delete();
+        if (dl != null) dl.delete();
+      }
+    }
+  }
 }
+

@@ -393,6 +393,17 @@ public class Frame extends Lockable<Frame> {
     return card;
   }
 
+  /** Majority class for enum columns; -1 for non-enum columns.
+   * @return the majority class for enum columns */
+  public int[] modes() {
+    Vec[] vecs = vecs();
+    int[] modes = new int[vecs.length];
+    for( int i = 0; i < vecs.length; i++ ) {
+      modes[i] = vecs[i].isEnum() ? vecs[i].mode() : -1;
+    }
+    return modes;
+  }
+
   /** All the column means.
    *  @return the mean of each column */
   public double[] means() {

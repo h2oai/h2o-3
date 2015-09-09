@@ -8,7 +8,7 @@
 
     "project_version" : "SUBST_PROJECT_VERSION",
     "branch_name" : "SUBST_BRANCH_NAME",
-    "build_number" : "SUBST_BUILD_NUMBER",
+    "build_number" : SUBST_BUILD_NUMBER,
     "last_commit_hash" : "SUBST_LAST_COMMIT_HASH",
 
     "zip_file_name" : "h2o-SUBST_PROJECT_VERSION.zip",
@@ -52,6 +52,11 @@
             "distribution" : "mapr4.0.1",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip"
+        },
+        {
+            "distribution" : "mapr5.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr5.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr5.0.zip"
         }
     ],
 

@@ -15,6 +15,7 @@ import water.util.IcedHashMap;
 import water.util.IcedLong;
 import water.util.PojoUtils;
 import water.util.PojoUtils.FieldNaming;
+import water.util.StringUtils;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.  Lazily filled in,
@@ -56,6 +57,11 @@ public class Grid<MP extends Model.Parameters>
   private String[] _failure_details;
 
   /**
+   * Collected stack trace for failure.
+   */
+  private String[] _failure_stack_traces;
+
+  /**
    * Contains "raw" representation of parameters which fail The parameters are represented in
    * textual form, since simple <code>java.lang.Object</code> cannot be serialized by H2O
    * serialization.
@@ -94,6 +100,7 @@ public class Grid<MP extends Model.Parameters>
     _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
     _failure_details = new String[]{};
     _failed_raw_params = new String[][]{};
+    _failure_stack_traces = new String[]{};
     _field_naming_strategy = fieldNaming;
   }
 
@@ -169,8 +176,9 @@ public class Grid<MP extends Model.Parameters>
    * @param params    model parameters which caused model builder failure, can be null
    * @param rawParams array of "raw" parameter values
    * @params failureDetails  textual description of model building failure
+   * @params stackTrace  stringify stacktrace
    */
-  private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails) {
+  private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
     assert rawParams != null : "API has to always pass rawParams";
     // Append parameter
     MP[] a = _failed_params;
@@ -187,6 +195,11 @@ public class Grid<MP extends Model.Parameters>
     String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
     nrp[rp.length] = rawParams;
     _failed_raw_params = nrp;
+    // Append stack trace
+    String[] st = _failure_stack_traces;
+    String[] nst = Arrays.copyOf(st, st.length + 1);
+    nst[st.length] = stackTrace;
+    _failure_stack_traces = nst;
   }
 
   /**
@@ -198,12 +211,12 @@ public class Grid<MP extends Model.Parameters>
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param params model parameters which caused model builder failure
-   * @params failureDetails textual description of model building failure
+   * @params e  exception causing a failure
    */
-  void appendFailedModelParameters(MP params, String failureDetails) {
+  void appendFailedModelParameters(MP params, Exception e) {
     assert params != null : "Model parameters should be always != null !";
     String[] rawParams = ArrayUtils.toString(getHyperValues(params));
-    appendFailedModelParameters(params, rawParams, failureDetails);
+    appendFailedModelParameters(params, rawParams, e.getMessage(), StringUtils.toString(e));
   }
 
   /**
@@ -215,11 +228,11 @@ public class Grid<MP extends Model.Parameters>
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-   * @params failureDetails textual description of model building failure
+   * @params e exception causing a failure
    */
-  /* package */ void appendFailedModelParameters(Object[] rawParams, String failureDetails) {
+  /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
-    appendFailedModelParameters(null, ArrayUtils.toString(rawParams), failureDetails);
+    appendFailedModelParameters(null, ArrayUtils.toString(rawParams), e.getMessage(), StringUtils.toString(e));
   }
 
   /**
@@ -279,6 +292,13 @@ public class Grid<MP extends Model.Parameters>
    */
   public String[] getFailureDetails() {
     return _failure_details;
+  }
+
+  /** Returns string representation of model build failures'
+   * stack traces.
+   */
+  public String[] getFailureStackTraces() {
+    return _failure_stack_traces;
   }
 
   /**

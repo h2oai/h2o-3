@@ -262,9 +262,9 @@ h2o.getFutureModel <- function(object) {
     if (length(k) > 0)
       for (n in k)
         if (paramValue[n] == Inf)
-          paramValue[n] <<- "Infinity"
+          paramValue[n] <- "Infinity"
         else
-          paramValue[n] <<- "-Infinity"
+          paramValue[n] <- "-Infinity"
     if (collapseArrays) {
       if (type == "character")
         paramValue <- .collapse.char(paramValue)

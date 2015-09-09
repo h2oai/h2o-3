@@ -412,7 +412,7 @@ public abstract class Neurons {
     if (params._autoencoder && params._sparsity_beta > 0 && !(this instanceof Output) && !(this instanceof Input) && (_index != params._hidden.length)) {
       _b.add(b, -(rate * params._sparsity_beta * (_avg_a.raw()[b] - params._average_activation)));
     }
-    if (Double.isInfinite(_b.get(b))) _minfo.set_unstable();
+    if (Double.isInfinite(_b.get(b))) _minfo.setUnstable();
   }
 
 
@@ -763,10 +763,6 @@ public abstract class Neurons {
       }
       for( int row = 0; row < rows; row++ ) {
         _a.raw()[row] /= scaling;
-        if (Double.isNaN(_a.get(row))) {
-          _minfo.set_unstable();
-          throw new RuntimeException("Numerical instability, predicted NaN.");
-        }
       }
     }
 
