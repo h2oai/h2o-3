@@ -219,7 +219,7 @@ public class DeepLearningParameters extends Model.Parameters {
   public double _l1 = 0.0;
 
   /**
-   * A regularization method that constrdains the sum of the squared
+   * A regularization method that constrains the sum of the squared
    * weights. This method introduces bias into parameter estimates, but
    * frequently produces substantial gains in modeling as estimate variance is
    * reduced.

@@ -6,10 +6,10 @@ test[,785] <- as.factor(test[,785])
 model <- h2o.deeplearning(x = 1:784, 
                           y = 785, 
                           training_frame = train,
+                          validation_frame = test,   
                           distribution = "multinomial",
                           activation = "RectifierWithDropout", 
                           hidden = c(200,200,200), 
                           input_dropout_ratio = 0.2, 
                           l1 = 1e-5, 
-                          validation_frame = test, 
                           epochs = 10)

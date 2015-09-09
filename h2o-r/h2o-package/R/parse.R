@@ -43,7 +43,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
             delete_on_done = parse.params$delete_on_done,
             blocking = blocking
             )
-
+  
   linkToGC <- !nzchar(destination_frame)
 
   # Perform the parse

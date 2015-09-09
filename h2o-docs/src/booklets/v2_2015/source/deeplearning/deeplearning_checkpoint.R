@@ -2,8 +2,8 @@
 # using the `checkpoint` argument
 model_chkp <- h2o.deeplearning(x = 1:784, y = 785, 
                                training_frame = train, 
+                               validation_frame = test,                                
                                checkpoint = model_grid@model_ids[[1]],
-                               hidden = c(100,100),
-                               activation = "Tanh",
+                               hidden = c(200,200),
                                validation_frame = test, 
                                epochs = 9)

@@ -1,5 +1,5 @@
 import h2o
-h2o.init()
+h2o.init()  # Will set up H2O cluster using all available cores
 
 train_file = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/mnist/train.csv.gz"
 test_file = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/mnist/test.csv.gz"

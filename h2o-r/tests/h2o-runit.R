@@ -120,7 +120,7 @@ function(ROOT.PATH) {
 #'
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R", "/gridR.R")
+  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/glrmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R", "/gridR.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 

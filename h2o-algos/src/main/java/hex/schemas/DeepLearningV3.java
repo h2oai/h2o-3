@@ -345,7 +345,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public double l1;
 
     /**
-     *  A regularization method that constrdains the sum of the squared
+     *  A regularization method that constrains the sum of the squared
      * weights. This method introduces bias into parameter estimates, but
      * frequently produces substantial gains in modeling as estimate variance is
      * reduced.

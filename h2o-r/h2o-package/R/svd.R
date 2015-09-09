@@ -19,6 +19,11 @@
 #'        column; "DESCALE" for dividing by the standard deviation of each
 #'        column; "STANDARDIZE" for demeaning and descaling; and "NORMALIZE"
 #'        for demeaning and dividing each column by its range (max - min).
+#' @param svd_method A character string that indicates how SVD should be calculated.
+#'        Possible values are "GramSVD": distributed computation of the Gram matrix
+#'        followed by a local SVD using the JAMA package, "Power": computation of
+#'        the SVD using the power iteration method, "Randomized": approximate SVD
+#'        by projecting onto a random subspace (see references).
 #' @param seed (Optional) Random seed used to initialize the right singular vectors
 #'        at the beginning of each power method iteration.
 #' @param use_all_factor_levels (Optional) A logical value indicating whether all
@@ -26,6 +31,7 @@
 #'        If FALSE, the indicator column corresponding to the first factor level
 #'        of every categorical variable will be dropped. Defaults to TRUE.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+#' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
@@ -38,6 +44,7 @@ h2o.svd <- function(training_frame, x, nv,
                     destination_key,                   # h2o generates its own default parameters
                     max_iterations = 1000,
                     transform = "NONE",
+                    svd_method = c("GramSVD", "Power", "Randomized"),
                     seed,
                     use_all_factor_levels)
 {
@@ -69,6 +76,8 @@ h2o.svd <- function(training_frame, x, nv,
     parms$max_iterations <- max_iterations
   if(!missing(transform))
     parms$transform <- transform
+  if(!missing(svd_method))
+    parms$svd_method <- svd_method
   if(!missing(seed))
     parms$seed <- seed
   if(!missing(use_all_factor_levels))
