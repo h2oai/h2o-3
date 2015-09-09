@@ -2,7 +2,7 @@
 ANQIS.ROOT.PATH <- "/Users/anqi_fu/Documents/workspace/"
 ANQIS.WIN.PATH <- "C:/Users/Anqi/Documents/Work/"
 SPENCERS.ROOT.PATH <- "/Users/spencer/0xdata/"
-ROOT.PATH <- SPENCERS.ROOT.PATH
+ROOT.PATH <- ANQIS.ROOT.PATH
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
@@ -12,7 +12,7 @@ function() {
   to_src <- c("classes.R", "connection.R", "constants.R", "logging.R", "communication.R", 
               "kvstore.R", "exec.R", "ops.R", "frame.R", "ast.R", "astfun.R", "import.R", 
               "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R", 
-              "gbm.R", "deeplearning.R", "naivebayes.R", "randomForest.R", "svd.R", "locate.R")
+              "gbm.R", "grid.R", "deeplearning.R", "naivebayes.R", "randomForest.R", "svd.R", "locate.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }

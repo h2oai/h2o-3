@@ -1,8 +1,11 @@
 import imp
 import random
-import sys
+import re
+import subprocess
+import sys, os
 sys.path.insert(1, "../../")
-from h2o import H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, H2OClusteringModel, H2OFrame
+import h2o
+from h2o import H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, H2OClusteringModel, H2OFrame, H2OConnection
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
     """
@@ -112,3 +115,59 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
         assert np.absolute(h2o_val - np_val) < 1e-6, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
+
+def javapredict(algo, train, test, x, y, **kwargs):
+    print "Creating model in H2O"
+    if algo == "gbm":
+        model = h2o.gbm(x=train[x], y=train[y], **kwargs)
+    elif algo == "random_forest":
+        model = h2o.random_forest(x=train[x], y=train[y], **kwargs)
+    else:
+        raise(ValueError, "algo {0} is not supported".format(algo))
+    print model
+
+    print "Downloading Java prediction model code from H2O"
+    tmpdir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id))
+    os.makedirs(tmpdir)
+    h2o.download_pojo(model,path=tmpdir)
+
+    print "Predicting in H2O"
+    predictions = model.predict(test)
+    predictions.summary()
+    predictions.head()
+    h2o.download_csv(predictions,os.path.join(tmpdir,"out_h2o.csv"))
+
+    print "Setting up for Java POJO"
+    h2o.download_csv(test[x],os.path.join(tmpdir,"in.csv"))
+    # hack: the PredictCsv driver can't handle quoted strings, so remove them
+    f = open(os.path.join(tmpdir,"in.csv"), 'r+')
+    in_csv = f.read()
+    in_csv = re.sub('\"', '', in_csv)
+    f.seek(0)
+    f.write(in_csv)
+    f.truncate()
+    f.close()
+
+    subprocess.call(["javac", "-cp", os.path.join(tmpdir,"h2o-genmodel.jar"), "-J-Xmx4g", "-J-XX:MaxPermSize=256m", os.path.join(tmpdir,model._id+".java")], stderr=subprocess.STDOUT)
+    subprocess.call(["java", "-ea", "-cp", os.path.join(tmpdir,"h2o-genmodel.jar")+":{0}".format(tmpdir), "-Xmx4g", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id, "--input", os.path.join(tmpdir,"in.csv"), "--output", os.path.join(tmpdir,"out_pojo.csv")], stderr=subprocess.STDOUT)
+
+    predictions2 = h2o.import_file(os.path.join(tmpdir,"out_pojo.csv"))
+
+    print "Comparing predictions between H2O and Java POJO"
+    # Dimensions
+    hr, hc = predictions.dim
+    pr, pc = predictions2.dim
+    assert hr == pr, "Exepcted the same number of rows, but got {0} and {1}".format(hr, pr)
+    assert hc == pc, "Exepcted the same number of cols, but got {0} and {1}".format(hc, pc)
+
+    # Value
+    for r in range(hr):
+        hp = predictions[r,0]
+        if algo == "gbm":
+            pp = float.fromhex(predictions2[r,0])
+            assert abs(hp - pp) < 1e-4, "Expected predictions to be the same (within 1e-4) for row {0}, but got {1} and {2}".format(r,hp, pp)
+        elif algo == "random_forest":
+            pp = predictions2[r,0]
+            assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
+        else:
+            raise(ValueError, "algo {0} is not supported".format(algo))

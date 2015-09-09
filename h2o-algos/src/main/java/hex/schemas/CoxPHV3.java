@@ -271,7 +271,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 //    public double l1 = 0.0;
 //
 //    /**
-//     *  A regularization method that constrdains the sum of the squared
+//     *  A regularization method that constrains the sum of the squared
 //     * weights. This method introduces bias into parameter estimates, but
 //     * frequently produces substantial gains in modeling as estimate variance is
 //     * reduced.

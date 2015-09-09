@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 
 import water.AutoBuffer;
-import water.AutoBufferWithoutTypeIds;
 import water.Freezable;
 
 /**
@@ -64,7 +63,7 @@ abstract class BinarySerializer<T extends Freezable, IO> implements Serializer<T
     // Load it
     T m = null;
     try {
-      m = (T) AutoBufferWithoutTypeIds.newInstance(smCN);
+      m = (T) AutoBufferWithClassNames.newInstance(smCN);
     } catch( Exception e ) {
       throw new IllegalArgumentException("Cannot instantiate the type " + smCN, e);
     }
