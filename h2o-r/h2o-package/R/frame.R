@@ -1882,7 +1882,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
 
-  urlSuffix = sprintf("DownloadDataset.bin?frame_id=%s&hex_string=%d", URLencode(x@frame_id), as.numeric(use_hex_string))
+  urlSuffix = sprintf("DownloadDataset?frame_id=%s&hex_string=%d", URLencode(x@frame_id), as.numeric(use_hex_string))
   ttt <- .h2o.doSafeGET(x@conn, urlSuffix = urlSuffix)
   n <- nchar(ttt)
 
