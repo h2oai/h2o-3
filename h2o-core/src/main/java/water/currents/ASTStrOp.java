@@ -1,5 +1,6 @@
 package water.currents;
 
+import org.apache.commons.lang.StringUtils;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -80,6 +81,38 @@ class ASTStrSplit extends ASTPrim {
     for (HashSet<String> h: strs)
       doms[i++] = h.toArray(new String[h.size()]);
     return doms;
+  }
+}
+
+class ASTCountMatches extends ASTPrim {
+
+  @Override int nargs() { return 1+2; } // (countmatches x pattern)
+  @Override String str() { return "countmatches"; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String pattern = asts[2].exec(env).getStr();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("countmatches requires a single column.");
+    final int[] matchCounts = countMatches(fr.anyVec().domain(),pattern);
+
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        Chunk c = cs[0];
+        for (int i = 0; i < c._len; ++i) {
+          if( !c.isNA(i) ) {
+            int idx = (int) c.at8(i);
+            ncs[0].addNum(matchCounts[idx]);
+          } else ncs[i].addNA();
+        }
+      }
+    }.doAll(1, fr).outputFrame(null, null, null);
+    return new ValFrame(fr);
+  }
+
+  int[] countMatches(String[] domain, String pattern) {
+    int[] res = new int[domain.length];
+    for (int i=0; i < domain.length; i++)
+      res[i] += StringUtils.countMatches(domain[i],pattern);
+    return res;
   }
 }
 

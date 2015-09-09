@@ -450,10 +450,16 @@ class ASTScale extends ASTPrim {
       if( mults.length != ncols )
         throw new IllegalArgumentException("Numlist must be the same length as the columns of the Frame");
     } else {
-      double d = asts[3].exec(env).getNum();
-      if( d==0 )      Arrays.fill(mults = new double[ncols],1.0); // No change on mults, so one-filled
-      else if( d==1 ) mults = fr.mults();
-      else throw new IllegalArgumentException("Only true or false allowed");
+      Val v = asts[3].exec(env);
+      if( v instanceof ValFrame ) {
+        mults = toArray(v.getFrame().anyVec());
+      } else {
+        double d = v.getNum();
+        if (d == 0)
+          Arrays.fill(mults = new double[ncols], 1.0); // No change on mults, so one-filled
+        else if (d == 1) mults = fr.mults();
+        else throw new IllegalArgumentException("Only true or false allowed");
+      }
     }
 
     // Update in-place.
@@ -467,6 +473,13 @@ class ASTScale extends ASTPrim {
       }
     }.doAll(fr);
     return new ValFrame(fr);
+  }
+
+  private static double[] toArray(Vec v) {
+    double[] res = new double[(int)v.length()];
+    for(int i=0;i<res.length;++i)
+      res[i] = v.at(i);
+    return res;
   }
 }
 
