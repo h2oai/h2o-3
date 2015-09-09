@@ -25,14 +25,15 @@ import water.fvec.Vec;
  *
  *  Therefore, the Env class is a stack of values + an API for reference counting.
  */
-public class Env {
+public class Env extends Iced {
 
-  /**
-   * The refcnt API.  Looks like a Stack, because lifetimes are stack-like, but
-   * just counts refs by unary stack-slot counting.
-   */
-  private final ArrayList<Frame> _refcnt = new ArrayList<>();
-  private final HashSet<Vec> _globals = new HashSet<>();
+  /** The refcnt API.  Looks like a Stack, because lifetimes are stack-like,
+   *  but just counts refs by unary stack-slot counting.  */
+
+  // Always alive; supercedes _refcnt
+  private HashSet<Vec> _globals = new HashSet<>();
+  // Mentioned, but dead at function exit
+  private ArrayList<Frame> _refcnt  = new ArrayList<>();
   public int sp() { return _refcnt.size(); }
   public Frame peek(int x) { return _refcnt.get(sp()+x);  }
 
@@ -41,11 +42,12 @@ public class Env {
   StackHelp stk() { return new StackHelp(); }
   class StackHelp implements AutoCloseable {
     final int _sp = sp();
+    // Alive on this function exit (but perhaps not some outer scope)
+    private Frame _ret_fr;      // Optionally return a Frame on stack scope exit
     // Push & track.  Called on every Val that spans a (nested) exec call.
     // Used to track Frames with lifetimes spanning other AST executions.
     public Val track(Val v) {
-      if( v instanceof ValFrame )
-        _refcnt.add(sp(),((ValFrame)v)._fr);
+      if( v instanceof ValFrame ) track(((ValFrame)v)._fr);
       return v; 
     }
     public Frame track(Frame fr) {
@@ -56,7 +58,6 @@ public class Env {
     // track the returned Frame.  Otherwise shared input Vecs who's last use is
     // in this opcode will get deleted as the opcode exits - even if they are
     // shared in the returning output Frame.
-    private Frame _ret_fr;      // Optionally return a Frame on stack scope exit
     public <V extends Val> V returning( V fr ) {
       if( fr instanceof ValFrame )
         _ret_fr = ((ValFrame)fr)._fr;
@@ -84,7 +85,7 @@ public class Env {
     // True if this Vec is alive on the current execution stack somewhere, not
     // counting the current stack frame.
     boolean inUse(Vec vec) {
-      if( _globals.contains(vec) ) return true;
+      if( isPreExistingGlobal(vec) ) return true;
       for( int i=0; i<_sp; i++ )
         if( _refcnt.get(i).find(vec) != -1 )
           return true;
@@ -143,19 +144,21 @@ public class Env {
     return s+"}";
   }
 
-//  @Override public AutoBuffer write_impl(AutoBuffer ab) {
-//    // write _refcnt
-//    ab.put4(_refcnt.size());
-//    for (Frame v: _refcnt.keySet()) { ab.putStr(v._key.toString()); ab.put4(_refcnt.get(v)._val); }
-//    return ab;
-//  }
-//
-//  @Override public Env read_impl(AutoBuffer ab) {
-//    _stack = new ExecStack();
-//    _refcnt = new HashMap<>();
-//    int len = ab.get4();
-//    for (int i = 0; i < len; ++i)
-//      _refcnt.put((Frame)DKV.getGet(ab.getStr()), new IcedInt(ab.get4()));
-//    return this;
-//  }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    ab.put4(_globals.size());   for( Vec vec : _globals ) ab.put(vec._key);
+    ab.put4(sp());              for( Frame fr : _refcnt ) ab.put(fr);
+    return ab;
+  }
+
+  @Override public Env read_impl(AutoBuffer ab) {
+    _globals = new HashSet<>();
+    int len=ab.get4();
+    for( int i=0; i<len; i++ )
+      _globals.add((Vec)DKV.getGet((Key)ab.get()));
+    _refcnt = new ArrayList<>();
+    len=ab.get4();
+    for( int i=0; i<len; i++ )
+      _refcnt.add((Frame)ab.get());
+    return this;
+  }
 }

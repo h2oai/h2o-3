@@ -209,32 +209,31 @@ class ASTTable extends ASTPrim {
     }
 
     @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      //int len=_nd.length;
-      //ab.put4(len);
-      //for( NonBlockingHashSet a_nd : _nd ) {
-      //  if( a_nd==null ) {
-      //    ab.put4(0);
-      //    continue;
-      //  }
-      //  int s = a_nd.size();
-      //  ab.put4(s);
-      //  for (Object d : a_nd) ab.put8d((double)d);
-      //}
-      //return ab;
-      throw water.H2O.unimpl();
+      if( _col0s == null ) return ab.put8(0);
+      ab.put8(_col0s.size());
+      for( long col0 : _col0s.keySetLong() ) {
+        ab.put8(col0);
+        NonBlockingHashMapLong<AtomicLong> col1s = _col0s.get(col0);
+        ab.put8(col1s.size());
+        for( long col1 : col1s.keySetLong() ) {
+          ab.put8(col1);
+          ab.put8(col1s.get(col1).get());
+        }
+      }
+      return ab;
     }
     @Override public SlowCnt read_impl(AutoBuffer ab) {
-      //int len = ab.get4();
-      //_n=len;
-      //_nd=new NonBlockingHashSet[len];
-      //for(int i=0;i<len;++i) {
-      //  _nd[i] = new NonBlockingHashSet<>();
-      //  int s = ab.get4();
-      //  if( s==0 ) continue;
-      //  for(int j=0;j<s;++j) _nd[i].add(ab.get8d());
-      //}
-      //return this;
-      throw water.H2O.unimpl();
+      long len0 = ab.get8();
+      if( len0 == 0 ) return this;
+      _col0s = new NonBlockingHashMapLong<>();
+      for( long i=0; i<len0; i++ ) {
+        NonBlockingHashMapLong<AtomicLong> col1s = new NonBlockingHashMapLong<>();
+        _col0s.put(ab.get8(),col1s);
+        long len1 = ab.get8();
+        for( long j=0; j<len1; j++ )
+          col1s.put(ab.get8(),new AtomicLong(ab.get8()));
+      }
+      return this;
     }
 
     @Override public String toString() {

@@ -9,7 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -160,7 +160,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testBasicDdply() {
     Frame fr = null;
-    String tree = "(h2o.ddply hex [1] { x . (mean (cols x 2) TRUE)})"; // Group-By on col 1 (not 0) mean of col 2
+    String tree = "(ddply hex [1] { x . (mean (cols x 2) TRUE)})"; // Group-By on col 1 (not 0) mean of col 2
     try {
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
@@ -174,7 +174,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,1,22,1.5);
       fr.delete();
 
-      fr = chkTree("(h2o.ddply hex [1] { x . (sum (* (cols x 2) (cols x 3)))})","smalldata/iris/iris_wheader.csv");
+      fr = chkTree("(ddply hex [1] { x . (sum (* (cols x 2) (cols x 3)))})","smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
 
 

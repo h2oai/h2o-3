@@ -79,15 +79,14 @@ public class Exec {
     case '\'': return new ASTStr(this,'\'');
     case '[':  return isQuote(xpeek('[').skipWS()) ? new ASTStrList(this) : new ASTNumList(this);
     case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
+    case '-':  return (peek(1)>='1' && peek(1) <='9') ? new ASTNum(this) : new ASTId(this);
     case '%':  _x++;             // Skip before ID, FALL THRU
-    case '-':
-      if( peekAhead()!=' ' ) return new ASTNum(this);
     default:  return new ASTId(this);
     }    
   }
 
   char peek() { return _x < _str.length() ? _str.charAt(_x) : ' '; } // peek ahead
-  char peekAhead() { return _x < _str.length()-1 ? _str.charAt(_x+1) : ' '; }
+  char peek(int off) { return _x+off < _str.length() ? _str.charAt(_x+off) : ' '; } // peek ahead
   // Peek, and throw if not found an expected character
   Exec xpeek(char c) {
     if( peek() != c )
