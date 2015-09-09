@@ -141,7 +141,7 @@
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
-      payload = tmp
+      payload = t$value()
     }
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
@@ -154,7 +154,8 @@
                                               useragent = R.version.string,
                                               httpheader = c('Expect' = ''),
                                               verbose = FALSE,
-                                              timeout = timeout_secs)),
+                                              timeout = timeout_secs,
+                                              .opts = opts)),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
@@ -171,31 +172,15 @@
                                useragent = R.version.string,
                                httpheader = c('Expect' = ''),
                                verbose = FALSE,
-                               timeout = timeout_secs),
+                               timeout = timeout_secs,
+                               .opts = opts),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
-  } else if (method == "DELETE") {
-    h <- basicHeaderGatherer()
-    t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url,
-                                customrequest = method,
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                verbose = FALSE,
-                                timeout = timeout_secs),
-                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    if (! .__curlError) {
-      httpStatusCode = as.numeric(h$value()["status"])
-      httpStatusMessage = h$value()["statusMessage"]
-      payload = t$value()
-    }
-  }
-  else {
+  } else {
     message = sprintf("Unknown HTTP method %s", method)
     stop(message)
   }
@@ -283,7 +268,7 @@
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
 
-  .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, 
+  .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = method, fileUploadInfo, ...)
 }
 
@@ -457,6 +442,7 @@
   processTables(res)
 }
 
+
 .format.helper <- function(x, format) {
   if( is.list(x) ) lapply(x, .format.helper, format)
   else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
@@ -529,6 +515,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   }
 
   rawREST <- ""
+
   if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
   else                    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
 
