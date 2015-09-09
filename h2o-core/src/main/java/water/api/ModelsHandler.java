@@ -219,7 +219,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
       URI targetUri = FileUtils.getURI(mexport.dir);
       new ObjectTreeBinarySerializer(mexport.force).save(keysToExport, targetUri);
       // Send back
-      mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri.getPath()).getCanonicalPath() : targetUri.toString();
+      mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
       throw new H2OIllegalArgumentException("dir", "exportModel", e);
     }

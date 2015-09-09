@@ -480,7 +480,6 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
-    if( _vec._cache == this ) _vec._cache = null;
     return fs;
   }
 
