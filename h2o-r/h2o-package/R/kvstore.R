@@ -64,6 +64,74 @@
 }
 
 #'
+#' List Keys on an H2O Cluster
+#'
+#' Accesses a list of object keys in the running instance of H2O.
+#'
+#' @return Returns a list of hex keys in the current H2O instance.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.ls()
+#' }
+#' @export
+h2o.ls <- function() {
+  .h2o.gc()
+  .fetch.data(.newExpr("ls"),10L)
+}
+
+#'
+#' Remove All Objects on the H2O Cluster
+#'
+#' Removes the data from the h2o cluster, but does not remove the local references.
+#'
+#' @param timeout_secs Timeout in seconds. Default is no timeout.
+#' @seealso \code{\link{h2o.rm}}
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' h2o.ls()
+#' h2o.removeAll()
+#' h2o.ls()
+#' }
+#' @export
+h2o.removeAll <- function(timeout_secs=0) {
+  tryCatch(
+    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    error = function(e) {
+      print("Timeout on DELETE /DKV from R")
+      print("Attempt thread dump...")
+      h2o.killMinus3()
+      stop(e)
+    })
+}
+
+#
+#' Delete Objects In H2O
+#'
+#' Remove the h2o Big Data object(s) having the key name(s) from ids.
+#'
+#' @param ids The hex key associated with the object to be removed.
+#' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
+#' @export
+h2o.rm <- function(ids) {
+  if( is.Frame(ids) ) {
+    if( is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
+    ids <- ids:id
+  }
+  if(!is.character(ids)) stop("`ids` must be of class character")
+
+  for(i in seq_len(length(ids)))
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
+}
+
+#'
 #' Rename an H2O object.
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
@@ -82,67 +150,6 @@ h2o.assign <- function(data, key) {
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   .newFrame("h2o.assign",key)
 }
-
-#
-#' Delete Objects In H2O
-#'
-#' Remove the h2o Big Data object(s) having the key name(s) from ids.
-#'
-#' @param ids The hex key associated with the object to be removed.
-#' @param pattern A regular expression used to select Frames to remove.
-#' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
-#' @export
-h2o.rm <- function(ids,pattern="") {
-  if( missing(ids) ) {
-    stopifnot(length(pattern) > 1L, is.character(pattern))
-    keys <- h2o.ls()[,"key"]
-    ids <- keys[grep(pattern, keys)]
-  }
-  if( is.Frame(ids) ) {
-    if( is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
-    ids <- ids:id;
-  }
-  if(!is.character(ids)) stop("`ids` must be of class character")
-
-  for(i in seq_len(length(ids)))
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
-}
-
-
-#'
-#' List Keys on an H2O Cluster
-#'
-#' Accesses a list of object keys in the running instance of H2O.
-#'
-#' @return Returns a list of hex keys in the current H2O instance.
-#' @examples
-#' library(h2o)
-#' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' h2o.ls()
-#' @export
-h2o.ls <- function() {
-  .h2o.gc()
-  .fetch.data(.newExpr("ls"),10L)
-}
-
-#'
-#' Remove All Objects on the H2O Cluster
-#'
-#' Removes the data from the h2o cluster, but does not remove the local references.
-#'
-#' of the H2O server.
-#' @seealso \code{\link{h2o.rm}}
-#' @examples
-#' library(h2o)
-#' h2o.init()
-#' iris.h2o <- as.h2o(iris)
-#' h2o.ls()
-#' h2o.removeAll()
-#' h2o.ls()
-#' @export
-h2o.removeAll <- function() invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE"))
 
 #'
 #' Get an R Reference to an H2O Dataset, that will NOT be GC'd by default
@@ -217,11 +224,12 @@ h2o.getModel <- function(model_id) {
     }
   })
 
-  # Convert ignored_columns/response_column to valid R x/y
-  cols <- colnames(h2o.getFrame(parameters$training_frame))
 
-  parameters$x <- setdiff(cols, parameters$ignored_columns)
-  allparams$x <- setdiff(cols, allparams$ignored_columns)
+  # Convert ignored_columns/response_column to valid R x/y
+
+
+  parameters$x <- json$output$names
+  allparams$x  <- json$output$names
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
@@ -242,3 +250,50 @@ h2o.getModel <- function(model_id) {
                model         = model)
 }
 
+#'
+#' Download the Scoring POJO (Plain Old Java Object) of a H2O Model
+#'
+#' @param model An H2OModel
+#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to
+#'             to console. The file name will be a compilable java file name.
+#' @param getjar Whether to also download the h2o-genmodel.jar file needed to compile the POJO 
+#' @return If path is "", then pretty print the POJO to the console.
+#'         Otherwise save it to the specified directory.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h <- h2o.init(nthreads=-1)
+#' fr <- as.h2o(iris)
+#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#'
+#' h2o.download_pojo(my_model)  # print the model to screen
+#' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working 
+#' #                                         directory, NOT RUN
+#' # h2o.download_pojo(my_model, getwd(), getjar = FALSE )  # save only the POJO to the current
+#' #                                                           working directory, NOT RUN
+#' h2o.download_pojo(my_model, getwd())  # save to the current working directory
+#' }
+#' @export
+h2o.download_pojo <- function(model, path="", getjar=TRUE) {
+  model_id <- model@model_id
+  java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
+  file.path <- paste0(path, "/", model_id, ".java")
+  if( path == "" ) cat(java)
+  else {
+    write(java, file=file.path)
+    if (getjar) {
+      .__curlError = FALSE
+      .__curlErrorMessage = ""
+      url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
+      tmp = tryCatch(getBinaryURL(url = url,
+                          useragent = R.version.string),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+      if (! .__curlError) {
+        jar.path <- paste0(path, "/h2o-genmodel.jar")
+        writeBin(tmp, jar.path, useBytes = TRUE)
+      }
+    }
+  }
+
+  if( path!="") print( paste0("POJO written to: ", file.path) )
+}

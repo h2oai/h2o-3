@@ -792,7 +792,7 @@ NULL
   # df[a<b,]       - f  na 3    boolean row slice
   # df[a<b,c]      - f  c  3    boolean row slice
 
-  if( nargs() == 2 &&   # Only row, no column; nargs==2 distiguishes "df[2,]" (row==2) from "df[2]" (col==2)
+  if( nargs() == 2 &&   # Only row, no column; nargs==2 distinguishes "df[2,]" (row==2) from "df[2]" (col==2)
       # is.char tells cars["cylinders"], or if there are multiple columns.
       # Single column with numeric selector is row: car$cylinders[100]
       (is.character(row) || ncol(data) > 1) ) {

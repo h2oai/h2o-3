@@ -59,5 +59,48 @@ h2o.gbm.cv <- function(x, y, training_frame, nfolds = 2,
   parms <- lapply(as.list(match.call()[-1L]), eval, env)
   parms$nfolds <- NULL
 
-  do.call("h2o.crossValidateQ", list(model.type = 'gbm', nfolds = nfolds, params = parms))
+  do.call("h2o.crossValidate", list(model.type = 'gbm', nfolds = nfolds, params = parms))
+}
+
+# general xval utility
+h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
+{
+  output <- data.frame()
+
+  if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
+  if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
+  else if( missing(model) )
+  {
+    if(model.type == "gbm") model.type = "h2o.gbm"
+    else if(model.type == "glm") model.type = "h2o.glm"
+    else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
+
+    model <- do.call(model.type, c(params))
+  }
+  output[1, "fold_num"] <- -1
+  output[1, "model_key"] <- model@model_id
+  # output[1, "model"] <- model@model$mse_valid
+
+  data <- params$training_frame
+  data <- eval(data)
+  data.len <- nrow(data)
+
+  # nfold_vec <- h2o.sample(fr, 1:nfolds)
+  nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
+
+  fnum_id <- as.h2o(nfold_vec)
+  fnum_id <- h2o.cbind(fnum_id, data)
+
+  xval <- lapply(1:nfolds, function(i) {
+      params$training_frame   <- data[fnum_id$x != i, ]
+      params$validation_frame <- data[fnum_id$x == i, ]
+      fold <- do.call(model.type, c(params))
+      output[(i+1), "fold_num"] <<- i - 1
+      output[(i+1), "model_key"] <<- fold@model_id
+      # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
+      fold
+    })
+  print(output)
+
+  model
 }
