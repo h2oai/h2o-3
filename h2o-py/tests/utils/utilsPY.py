@@ -127,7 +127,7 @@ def javapredict(algo, train, test, x, y, **kwargs):
     print model
 
     print "Downloading Java prediction model code from H2O"
-    tmpdir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id)
+    tmpdir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id))
     os.makedirs(tmpdir)
     h2o.download_pojo(model,path=tmpdir)
 
