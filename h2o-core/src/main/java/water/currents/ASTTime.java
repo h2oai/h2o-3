@@ -43,7 +43,7 @@ class ASTSetTimeZone extends ASTPrim {
     final String tz = asts[1].exec(env).getStr();
     Set<String> idSet = DateTimeZone.getAvailableIDs();
     if(!idSet.contains(tz))
-      throw new IllegalArgumentException("Unacceptable timezone name given.  For a list of acceptable names, use listTimezone().");
+      throw new IllegalArgumentException("Unacceptable timezone "+tz+" given.  For a list of acceptable names, use listTimezone().");
     new MRTask() { @Override public void setupLocal() { ParseTime.setTimezone(tz); }    }.doAllNodes();
     return new ValNum(Double.NaN);
   }

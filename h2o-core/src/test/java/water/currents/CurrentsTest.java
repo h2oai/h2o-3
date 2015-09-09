@@ -337,6 +337,7 @@ public class CurrentsTest extends TestUtil {
 
   @Test public void testChicago() {
     Frame weather=null, crimes=null, census=null;
+    String oldtz = Exec.exec("(getTimeZone)").getStr();
     try {
       weather = parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
       crimes  = parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
@@ -446,6 +447,7 @@ public class CurrentsTest extends TestUtil {
       checkSaneFrame();
 
     } finally {
+      Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
       if( weather != null ) weather.remove();
       if( crimes  != null ) crimes .remove();
       if( census  != null ) census .remove();
