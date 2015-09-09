@@ -92,20 +92,21 @@
 }
 
 
-.h2o.modelJob <- function( algo, params, do_future, version=.h2o.__REST_API_VERSION ) {
+.h2o.modelJob <- function( algo, params, do_future, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
+  force(version)
   .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) ) 
     .eval.frame(params$validation_frame)
-  job <- .h2o.startModelJob(algo, params, version)
+  job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
   if( do_future )         job
   else h2o.getFutureModel(job)
 }
 
 
-.h2o.startModelJob <- function(algo, params, version) {
+.h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
-  ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = version, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
   # R treats integer as not numeric: FIXME move into checkAndUnifyModelParameters
   params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
