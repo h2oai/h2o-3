@@ -157,6 +157,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTMode());
     init(new ASTQtile());
     init(new ASTRunif());
+    init(new ASTStratifiedSplit());
     init(new ASTTable());
     init(new ASTUnique());
     init(new ASTVariance());

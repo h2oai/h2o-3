@@ -1277,6 +1277,33 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
 
+  def stratified_split(self,test_frac=0.2,seed=-1):
+    """
+    Construct a column that can be used to perform a random stratified split.
+
+    Parameters
+    ----------
+      test_frac : float
+        The fraction of rows that will belong to the "test".
+      seed      : int
+        For seeding the random splitting.
+
+
+    :return: A categorical column of two levels "train" and "test".
+
+    Examples
+    --------
+      >>> my_stratified_split = my_frame["response"].stratified_split(test_frac=0.3,seed=12349453)
+      >>> train = my_frame[my_stratified_split=="train"]
+      >>> test  = my_frame[my_stratified_split=="test"]
+
+      # check the distributions among the initial frame, and the train/test frames match
+      >>> my_frame["response"].table()["Count"] / my_frame["response"].table()["Count"].sum()
+      >>> train["response"].table()["Count"] / train["response"].table()["Count"].sum()
+      >>> test["response"].table()["Count"] / test["response"].table()["Count"].sum()
+    """
+    return H2OFrame(expr=ExprNode('h2o.random_stratified_split', self, test_frac, seed))._frame()
+
   def match(self, table, nomatch=0):
     """
     Makes a vector of the positions of (first) matches of its first argument in its second.
