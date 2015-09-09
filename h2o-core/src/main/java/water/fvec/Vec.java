@@ -840,15 +840,11 @@ public class Vec extends Keyed<Vec> {
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
   private Chunk chunkForRow_impl(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
-  // Cache of last Chunk accessed via at/set api
-  transient Chunk _cache;
-
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a row# */
   public final Chunk chunkForRow(long i) {
-    Chunk c = _cache;
-    return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow_impl(i));
+    return chunkForRow_impl(i);
   }
 
   // ======= Direct Data Accessors ======
