@@ -215,6 +215,11 @@ abstract public class AST extends Iced<AST> {
     init(new ASTRepLen());
     init(new ASTSeq());
     init(new ASTSeqLen());
+
+    // KFoldColumns
+    init(new ASTKFold());
+    init(new ASTModuloKFold());
+    init(new ASTStratifiedKFold());
   }
 }
 
