@@ -1097,7 +1097,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
     } else if (is.numeric(value))
       rhs <- .eval(substitute(value), parent.frame(), FALSE)
     else
-      stop("`value` can only be an H2OFrame object, numeric or NULL")
+      stop(paste0("`value` can only be an H2OFrame object, numeric or NULL. Got: ", typeof(value)))
 
     ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
     res <- .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@frame_id, finalizers = finalizers)
