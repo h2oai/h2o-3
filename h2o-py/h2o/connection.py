@@ -554,7 +554,10 @@ class H2OConnection(object):
           col_headers = [c["name"] for c in x["columns"]]
           row_headers = ["" for i in range(len(col_headers))]
           cell_values = x["data"]
-          tbl = H2OTwoDimTable(row_headers, col_headers, col_types, table_header, cell_values, col_formats, table_descr)
+          tbl = H2OTwoDimTable(row_header=row_headers, col_header=col_headers,
+                               col_types=col_types, table_header=table_header,
+                               raw_cell_values=cell_values,
+                               col_formats=col_formats,table_description=table_descr)
           x = tbl
         else:
           for k in x:
