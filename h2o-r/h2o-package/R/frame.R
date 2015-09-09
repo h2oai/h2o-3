@@ -1094,7 +1094,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
     if (is(value, "H2OFrame")) {
       finalizers <- c(finalizers, value@finalizers)
       rhs <- .get(value)
-    } else if (is.numeric(value))
+    } else if (is.numeric(value) || is.integer(value))
       rhs <- .eval(substitute(value), parent.frame(), FALSE)
     else
       stop(paste0("`value` can only be an H2OFrame object, numeric or NULL. Got: ", typeof(value)))
