@@ -82,7 +82,9 @@ class UDPRebooted extends UDP {
     switch( cause ) {
     case none:   return;
     case reboot: return;
-    case shutdown: throw H2O.fail("Orderly shutdown should be handled via ShutdownTsk");
+    case shutdown:
+      Log.warn("Orderly shutdown should be handled via ShutdownTsk. Message is from outside of the cloud? Ignoring it.");
+      return;
     case oom:      m = "Out of Memory, Heap Space exceeded, increase Heap Size,";                                break;
     case error:    m = "Error leading to a cloud kill";                                                          break;
     case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
