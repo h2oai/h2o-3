@@ -79,7 +79,7 @@ public class Exec {
     case '\'': return new ASTStr(this,'\'');
     case '[':  return isQuote(xpeek('[').skipWS()) ? new ASTStrList(this) : new ASTNumList(this);
     case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
-    case '-':  return (peek(1)>='1' && peek(1) <='9') ? new ASTNum(this) : new ASTId(this);
+    case '-':  return (peek(1)>='0' && peek(1) <='9') ? new ASTNum(this) : new ASTId(this);
     case '%':  _x++;             // Skip before ID, FALL THRU
     default:  return new ASTId(this);
     }    
