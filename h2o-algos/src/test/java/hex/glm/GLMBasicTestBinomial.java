@@ -722,6 +722,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
   @Test
   public void testNonNegativeNoIntercept() {
+    Scope.enter();
     GLM job = null;
     GLMModel model = null;
 //   glmnet result
@@ -774,10 +775,12 @@ public class GLMBasicTestBinomial extends TestUtil {
         if (job != null) job.remove();
       }
     }
+    Scope.exit();
   }
 
   @Test
   public void testNoInterceptWithOffsetAndWeights() {
+    Scope.enter();
     GLM job = null;
     GLMModel model = null;
     double [] offset_train = new double[] {
@@ -877,12 +880,10 @@ public class GLMBasicTestBinomial extends TestUtil {
         vw.set(i, offset_test[i]);
     }
 
-    Key fKeyTrain = Key.make("prostate_with_offset_train");
-    Key fKeyTest  = Key.make("prostate_with_offset_test");
-    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
+    Frame fTrain = new Frame(Key.make("prostate_with_offset_train"), new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
     DKV.put(fTrain);
-    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+    Frame fTest = new Frame(Key.make("prostate_with_offset_test"), new String[]{"offset"}, new Vec[]{offsetVecTest});
     fTest.add(_prostateTest.names(),_prostateTest.vecs());
     DKV.put(fTest);
 //    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,
@@ -900,7 +901,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     GLMParameters params = new GLMParameters(Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
-    params._train = fKeyTrain;
+    params._train = fTrain._key;
     params._offset_column = "offset";
     params._weights_column = "weights";
     params._lambda = new double[]{0};
@@ -916,7 +917,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
-          params._valid = fKeyTest;
+          params._valid = fTest._key;
           System.out.println("SOLVER = " + s);
           try {
             job = new GLM(Key.make("prostate_model"), "glm test", params);
@@ -973,8 +974,9 @@ public class GLMBasicTestBinomial extends TestUtil {
         }
       }
     } finally {
-      fTrain.delete();
-      fTest.delete();
+      DKV.remove(fTrain._key);
+      DKV.remove(fTest._key);
+      Scope.exit();
     }
   }
 
