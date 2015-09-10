@@ -71,7 +71,7 @@ abstract class ASTTime extends ASTPrim {
       if( fr.numCols() > 1 ) throw water.H2O.unimpl();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk chk, NewChunk cres ) {
-            MutableDateTime mdt = new MutableDateTime(0);
+            MutableDateTime mdt = new MutableDateTime(0,ParseTime.getTimezone());
             for( int i=0; i<chk._len; i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
