@@ -25,6 +25,7 @@
 }
 
 .h2o.calcBaseURL <- function(conn,h2oRestApiVersion, urlSuffix) {
+  if( missing(conn) ) conn <- h2o.getConnection()
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
 
