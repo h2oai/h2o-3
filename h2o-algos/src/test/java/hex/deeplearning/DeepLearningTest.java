@@ -19,6 +19,7 @@ import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -116,7 +117,8 @@ public class DeepLearningTest extends TestUtil {
             @Override
             int prep(Frame fr) {
               for (int i = 0; i < 7; i++) {
-                fr.remove(3).remove();
+                Vec v = fr.remove(3);
+                if (v!=null) v.remove();
               }
               return 3;
             }
@@ -145,25 +147,6 @@ public class DeepLearningTest extends TestUtil {
             ard(0, 17)),
         s("0", "1"),
         DeepLearningParameters.Activation.Rectifier);
-  }
-
-  //@Test
-  public void testCreditSample1() throws Throwable {
-    basicDLTest_Classification(
-        "./smalldata/kaggle/creditsample-training.csv.gz", "credit.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            fr.remove("MonthlyIncome").remove();
-            return fr.find("SeriousDlqin2yrs");
-          }
-        },
-        1,
-        ard(ard(46294, 202),
-            ard(3187, 107)),
-        s("0", "1"),
-        DeepLearningParameters.Activation.Rectifier);
-
   }
 
   @Test public void testCreditProstate1() throws Throwable {
@@ -528,7 +511,7 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void elasticAveragingTrivial() {
     DeepLearningParameters dl;
-    Frame frTrain = null;
+    Frame frTrain;
     int N = 2;
     DeepLearningModel [] models = new DeepLearningModel[N];
     dl = new DeepLearningParameters();
@@ -537,7 +520,8 @@ public class DeepLearningTest extends TestUtil {
       for (int i = 0; i < N; ++i) {
         frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
         Vec resp = frTrain.lastVec().toEnum();
-        frTrain.remove(frTrain.vecs().length - 1).remove();
+        Vec v = frTrain.remove(frTrain.vecs().length - 1);
+        if (v!=null) v.remove();
         frTrain.add("Response", resp);
         DKV.put(frTrain);
         dl._train = frTrain._key;
@@ -575,7 +559,7 @@ public class DeepLearningTest extends TestUtil {
         } finally {
           if (job != null) job.remove();
         }
-        if (frTrain != null) frTrain.remove();
+        frTrain.remove();
       }
       for (int i = 0; i < N; ++i) {
         Log.info(models[i]._output._training_metrics.cm().table().toString());
@@ -597,16 +581,18 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel [] models = new DeepLearningModel[N];
     dl = new DeepLearningParameters();
     Scope.enter();
-    boolean covtype = true;
+    boolean covtype = new Random().nextBoolean();
     if (covtype) {
       frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
       Vec resp = frTrain.lastVec().toEnum();
-      frTrain.remove(frTrain.vecs().length - 1).remove();
+      Vec v = frTrain.remove(frTrain.vecs().length - 1);
+      if (v!=null) v.remove();
       frTrain.add("Response", resp);
     } else {
       frTrain = parse_test_file("./bigdata/server/HIGGS.csv");
       Vec resp = frTrain.vecs()[0].toEnum();
-      frTrain.remove(0).remove();
+      Vec v = frTrain.remove(0);
+      if (v!=null) v.remove();
       frTrain.prepend("Response", resp);
     }
     DKV.put(frTrain);
@@ -658,7 +644,7 @@ public class DeepLearningTest extends TestUtil {
 //        Assert.assertTrue(models[1]._output._training_metrics.cm().err() < models[0]._output._training_metrics.cm().err());
 
     }finally{
-      if (frTrain != null) frTrain.remove();
+      frTrain.remove();
       for (int i=0; i<N; ++i)
         if (models[i] != null)
           models[i].delete();
@@ -668,7 +654,7 @@ public class DeepLearningTest extends TestUtil {
 
   @Test
   public void testNoRowWeights() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
 
     Scope.enter();
     try {
@@ -700,14 +686,13 @@ public class DeepLearningTest extends TestUtil {
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
   }
 
   @Test
   public void testRowWeightsOne() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
 
     Scope.enter();
     try {
@@ -740,14 +725,13 @@ public class DeepLearningTest extends TestUtil {
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
   }
 
   @Test
   public void testNoRowWeightsShuffled() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
 
     Scope.enter();
     try {
@@ -779,14 +763,13 @@ public class DeepLearningTest extends TestUtil {
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
   }
 
   @Test
   public void testRowWeights() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
 
     Scope.enter();
     try {
@@ -819,7 +802,6 @@ public class DeepLearningTest extends TestUtil {
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
   }
@@ -829,49 +811,45 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningParameters dl;
     Frame frTrain = null;
     DeepLearningModel model = null;
-    while(true) {
-      dl = new DeepLearningParameters();
-      Scope.enter();
+    dl = new DeepLearningParameters();
+    Scope.enter();
+    try {
+      frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+      Vec resp = frTrain.lastVec().toEnum();
+      frTrain.remove(frTrain.vecs().length-1);
+      frTrain.add("Response", resp);
+      // Configure DL
+      dl._train = frTrain._key;
+      dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
+      dl._seed = 1234;
+      dl._reproducible = true;
+      dl._epochs = 0.0001;
+      dl._export_weights_and_biases = true;
+      dl._hidden = new int[]{188, 191};
+      dl._elastic_averaging = false;
+
+      // Invoke DL and block till the end
+      DeepLearning job = null;
       try {
-        frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
-        Vec resp = frTrain.lastVec().toEnum();
-        frTrain.remove(frTrain.vecs().length-1);
-        frTrain.add("Response", resp);
-        // Configure DL
-        dl._train = frTrain._key;
-        dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
-        dl._seed = 1234;
-        dl._reproducible = true;
-        dl._epochs = 0.0001;
-        dl._export_weights_and_biases = true;
-        dl._hidden = new int[]{188, 191};
-        dl._elastic_averaging = false;
-
-        // Invoke DL and block till the end
-        DeepLearning job = null;
-        try {
-          job = new DeepLearning(dl);
-          // Get the model
-          model = job.trainModel().get();
-          Log.info(model._output);
-        } finally {
-          if (job != null) job.remove();
-        }
-        assertTrue(job._state == Job.JobState.DONE); //HEX-1817
-
-
+        job = new DeepLearning(dl);
+        // Get the model
+        model = job.trainModel().get();
+        Log.info(model._output);
       } finally {
-        if (frTrain != null) frTrain.remove();
-        if (model != null) model.delete();
-        Scope.exit();
+        if (job != null) job.remove();
       }
+      assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+    } finally {
+      if (frTrain != null) frTrain.remove();
+      if (model != null) model.delete();
+      Scope.exit();
     }
   }
 
   // just a simple sanity check - not a golden test
   @Test
   public void testLossFunctions() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     DeepLearningModel dl = null;
 
     for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
@@ -914,7 +892,6 @@ public class DeepLearningTest extends TestUtil {
         job.remove();
       } finally {
         if (tfr != null) tfr.remove();
-        if (vfr != null) vfr.remove();
         if (dl != null) dl.delete();
         Scope.exit();
       }
@@ -923,7 +900,7 @@ public class DeepLearningTest extends TestUtil {
 
   @Test
   public void testDistributions() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     DeepLearningModel dl = null;
 
     for (Distribution.Family dist : new Distribution.Family[] {
@@ -967,7 +944,6 @@ public class DeepLearningTest extends TestUtil {
         job.remove();
       } finally {
         if (tfr != null) tfr.remove();
-        if (vfr != null) vfr.remove();
         if (dl != null) dl.delete();
         Scope.exit();
       }
@@ -976,7 +952,7 @@ public class DeepLearningTest extends TestUtil {
 
   @Test
   public void testAutoEncoder() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     DeepLearningModel dl = null;
 
     Scope.enter();
@@ -1011,7 +987,6 @@ public class DeepLearningTest extends TestUtil {
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
       if (dl != null) dl.delete();
       Scope.exit();
     }
