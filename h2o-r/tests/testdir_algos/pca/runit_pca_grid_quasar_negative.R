@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 check.pca.grid.quasar.negative <- function(conn) {
-  quasar <- h2o.importFile(conn, locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
+  quasar <- h2o.importFile(locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
   quasar <- quasar[,-1]
 
   ## Invalid pca parameters
