@@ -15,7 +15,7 @@ test.glrm.arrests_miss <- function() {
     f <- missing_frac[i]
     
     Log.info(paste("Copying data and inserting ", 100 * f, "% missing entries:\n", sep = ""))
-    arrests.miss <- h2o.assign(arrests.full, "arrests.miss", deepCopy = TRUE)
+    arrests.miss <- h2o.assign(arrests.full, "arrests.miss")
     h2o.insertMissingValues(data = arrests.miss, fraction = f, seed = SEED)
     print(summary(arrests.miss))
     
