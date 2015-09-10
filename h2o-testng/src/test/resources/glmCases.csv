@@ -513,3 +513,6 @@ Regression Poisson/Gamma/Tweedie Dense Data : coordinate_descent,Regression_Pois
 Regression Poisson/Gamma/Tweedie Sparse Data : coordinate_descent,Regression_Poisson_coordinate_descent_Sparse,glm_testcase_505,x,,,,x,,,,,,,x,,,,,,,,,,,,,,,,,,Regression,x,,synthetic_sparse_poisson_train,synthetic_sparse_poisson_test,,,,,,,,,,
 ,Regression_Gamma_coordinate_descent_Sparse,glm_testcase_506,x,,,,,x,,,,,,x,,,,,,,,,,,,,,,,,,Regression,x,,synthetic_sparse_gamma_train,synthetic_sparse_gamma_test,,,,,,,,,,
 ,Regression_Tweedie_coordinate_descent_Sparse,glm_testcase_507,x,,,,,,x,,,,,x,,,,,,,,,,,,,,,,,,Regression,x,,synthetic_sparse_tweedie_train,synthetic_sparse_tweedie_test,,,,,,,,,,
+Priors enabled with beta constraints,Classification_Balanced data_Binomial_Auto_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_508,,x,,x,,,,x,,,,,,,,,,0,,,x,,x,0,1,,,0,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
+,Classification_Balanced data_Binomial_IRLSM_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_509,,x,,x,,,,,x,,,,,,,,,0,,,x,,x,0,1,,,0.5,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
+,Classification_Balanced data_Binomial_LBFGS_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_510,,x,,x,,,,,,x,,,,,,,,0,,,x,,x,0,1,,,1,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
