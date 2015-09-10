@@ -56,10 +56,11 @@ H2O cloud formation can occur even after H2O.finalizeRegistration.  New H2O node
 
 See <https://github.com/h2oai/h2o-3/blob/master/h2o-core/src/main/java/water/H2O.java>
 
-> Use case:  Adding a new algorithm.
+> Use case:  Adding a new algorithm with a REST API endpoint requires the following parts:
 >
-> 1.  blah
-> 2.  blah
+> 2.  A MyAlgoSchema class that extends water.api.Schema and defines the inputs and outputs of the endpoint.
+> 3.  A MyAlgoHandler class that extends water.api.Handler and implements the endpoint.
+> 1.  A Register class that extends water.api.AbstractRegister.  This calls a registration method of H2O (water.H2O.registerGET() or water.H2O.registerPOST()) to tell the embedded Jetty about the new endpoint. 
 
 
 ## Shutdown
