@@ -281,5 +281,5 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
     if(!missing(nfolds))
       parms$nfolds <- nfolds
 
-    .h2o.startModelJob('glm', parms, version=.h2o.__REST_API_VERSION)
+    .h2o.startModelJob('glm', parms, h2oRestApiVersion=.h2o.__REST_API_VERSION)
 }
