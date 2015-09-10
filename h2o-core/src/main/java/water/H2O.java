@@ -1007,7 +1007,7 @@ final public class H2O {
       } catch( Throwable ex ) {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
-        if( h2o != null ) h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        if( h2o != null ) h2o.completeExceptionally(ex);
         else ex.printStackTrace();
       } finally {
         t._priority = pp;
