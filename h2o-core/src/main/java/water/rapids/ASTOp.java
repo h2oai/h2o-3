@@ -1136,6 +1136,10 @@ class ASTScale extends ASTUniPrefixOp {
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
+              if( cs[c].isNA(r) ) {
+                ncs[c].addNA();
+                continue;
+              }
               if (cs[c].vec().isEnum()) ncs[c].addNum(cs[c].at8(r), 0);
               else {
                 double numer = cs[c].atd(r) - (use_mean
@@ -1169,6 +1173,10 @@ class ASTScale extends ASTUniPrefixOp {
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
+              if( cs[c].isNA(r) ) {
+                ncs[c].addNA();
+                continue;
+              }
               if (cs[c].vec().isEnum()) ncs[c].addNum(cs[c].at8(r), 0);
               else {
                 double denom = cs[c].atd(r) / (use_rms

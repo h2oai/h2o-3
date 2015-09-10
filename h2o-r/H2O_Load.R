@@ -1,5 +1,7 @@
 # Change this global variable to match your own system's path
 CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/"
+ANQIS.ROOT.PATH <- "/Users/anqi_fu/Documents/workspace/"
+ANQIS.WIN.PATH <- "C:/Users/Anqi/Documents/Work/"
 SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 ROOT.PATH <- CLIFF.ROOT.PATH
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"

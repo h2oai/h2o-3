@@ -223,7 +223,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           cp.write_lock(self());
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
-            throw new IllegalArgumentException("Number of (non-constant) predictor columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
+            throw new IllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
           }
           if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
             throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
@@ -297,8 +297,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         model.write_lock(self());
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         final DeepLearningParameters mp = model.model_info().get_params();
-        Frame tra_fr = new Frame(Key.make(mp.train()._key.toString()), _train.names(), _train.vecs());
-        Frame val_fr = _valid != null ? new Frame(Key.make(mp.valid()._key.toString()), _valid.names(), _valid.vecs()) : null;
+
+        // temporary frames of the same "name" as the orig _train/_valid (asking the parameter's Key, not the actual frame)
+        // Note: don't put into DKV or they would overwrite the _train/_valid frames!
+        Frame tra_fr = new Frame(mp._train, _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(mp._valid,_valid.names(), _valid.vecs()) : null;
 
         train = tra_fr;
         if (mp._force_load_balance) {
@@ -322,6 +325,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
+        if( trainScoreFrame != train ) _delete_me.add(trainScoreFrame);
 
         if (!_parms._quiet_mode) Log.info("Number of chunks of the training data: " + train.anyVec().nChunks());
         if (val_fr != null) {
@@ -334,6 +338,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           } else {
             new ProgressUpdate("Sampling validation data...").fork(_progressKey);
             validScoreFrame = sampleFrame(val_fr, mp._score_validation_samples, mp._seed +1);
+            if( validScoreFrame != val_fr ) _delete_me.add(validScoreFrame);
           }
           if (mp._force_load_balance) {
             new ProgressUpdate("Balancing class distribution of validation data...").fork(_progressKey);

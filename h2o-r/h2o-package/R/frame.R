@@ -859,6 +859,7 @@ NULL
   paste0(x:id, ":=", res)
 }
 
+<<<<<<< HEAD
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
 pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
