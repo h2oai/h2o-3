@@ -4,7 +4,7 @@ sys.path.insert(1, "../../")
 import h2o,tests
 
 def stratified_split():
-  fr = h2o.import_file("bigdata/laptop/covtype")
+  fr = h2o.import_file("bigdata/laptop/covtype/covtype.data")
   stratified = fr[54].stratified_split()
   train = fr[stratified=="train"]
   test  = fr[stratified=="test"]
