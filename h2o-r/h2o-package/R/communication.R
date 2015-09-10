@@ -614,10 +614,13 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
   clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
-  is.client <- res$is_client
-  assign("IS_CLIENT", is.client, .pkg.env)
+  is_client <- res$is_client
+  if (is.null(is_client)) {
+    is_client <- FALSE
+  }
+  assign("IS_CLIENT", is_client, .pkg.env)
   m <- ": \n"
-  if( is.client ) m <- " (in client mode): \n"
+  if( is_client ) m <- " (in client mode): \n"
 
   cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
