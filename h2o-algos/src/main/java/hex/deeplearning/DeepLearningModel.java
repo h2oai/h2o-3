@@ -95,6 +95,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
+  public boolean stopped_early;
 
   public long training_rows;
 
@@ -458,7 +459,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
     // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
     // Note: actual communication time is estimated by the NetworkTest's collective test.
-    if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && iteration > 0) {
+    if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && iteration != 0) {
       Log.info("Auto-tuning train_samples_per_iteration.");
       if (time_for_communication_us > 1e4) {
         Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
@@ -482,7 +483,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
 
     _timeLastScoreEnter = now;
-    keep_running = (epoch_counter < model_info().get_params()._epochs);
+    keep_running = (epoch_counter < model_info().get_params()._epochs) && !stopped_early;
     final long sinceLastScore = now -_timeLastScoreStart;
     final long sinceLastPrint = now -_timeLastPrintStart;
     if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
@@ -642,6 +643,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
         || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
       Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
+      stopped_early = true;
       keep_running = false;
     }
     update(job_key);

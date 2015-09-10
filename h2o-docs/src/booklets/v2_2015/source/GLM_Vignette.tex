@@ -227,7 +227,7 @@ H2O supports elastic net regularization, which is a combination of the $\ell_1$ 
 in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM with \textbf{ridge regression}, while if $\alpha = 1$ it does so with the \textbf{lasso} penalty.
 \item $\lambda$ controls the penalty strength; its range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
-the empty model (all zeros except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
+all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
 \end{itemize}
 
 
@@ -257,7 +257,7 @@ $$ D = \sum_{i=1}^{N} (y_i - \hat{y}_i)^2 . $$
 
 \waterExampleInR
 
-Included in the H2O package is a prostate cancer data set. The data was collected by Dr. Donn Young at the Ohio State
+Included in the H2O package is a prostate cancer dataset. The data was collected by Dr. Donn Young at the Ohio State
 University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The
 following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds
 based on features such as age and race.
@@ -292,7 +292,7 @@ $$D = -2\sum_{i=1}^{n} \left(y_i \log(\hat{y}_i) + (1 - y_i)\log(1-\hat{y}_i)  \
 
 \waterExampleInR
 
-Using the prostate data set, this example builds a binomial model that classifies the incidence of penetration of the prostatic
+Using the prostate dataset, this example builds a binomial model that classifies the incidence of penetration of the prostatic
 capsule (CAPSULE). Confirm the entries in the CAPSULE column are binary using the \texttt{h2o.table()}
 function. Change the regression by changing the family to binomial.
 
@@ -515,34 +515,50 @@ ratio close to the default.
 
 \end{itemize}
 
+\subsection{Solver Selection}
 
-\subsection{Handling wide data and building sparse models}
+This section provides general guidelines to help get the best performance out of the H2O GLM implementation options. The choice of the optimal solver depends on the properties of the data at hand and prior information regarding the variables if available. Here, the data are considered sparse when the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. On the other hand a dense solution is one where all predictors have non-zero coefficients in the final model.
 
-H2O's GLM offers two different approaches to handling wide datasets: $\ell_1$ regularization and the L-BFGS solver.
+\subsubsection{Solver details}
 
-Quick recommendations:
+H2O's GLM offers two different solvers: (1) the Iteratively Reweighted Least Squares Method (IRLSM) and (2) the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS). IRLSM uses
+a Gram Matrix approach underneath the hood. It is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
+datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are less than $\sim 500$ predictors in the data, use the default option which runs IRLSM. 
 
+For larger numbers of predictors, it is recommended to run IRLSM with lambda search and compare it to L-BFGS with just the $\ell_2$ penalty. The more advanced user may follow these general guidelines:
+%H2O's GLM offers two different approaches for datasets with more than a thousand predictors.%depending on the expected number of coefficients to be included in the model: % to handling wide datasets: the IRLSM and the L-BFGS solvers.
 \begin{itemize}
-\item For a sparse solution (i.e. some predictors are dropped from the final model), use the IRLSM solver with 
-      \texttt{alpha} greater than 0.0 (so you get at least some  $\ell_1$ penalty) and enable \texttt{lambda\_search}.
-
-\item For a dense solution (i.e. all predictors are in the final model), use the L-BFGS solver with
-      \texttt{alpha} of 0 so there is no  $\ell_1$ penalty, only  $\ell_2$ penalty.
-\item If not sure whether the solution should be sparse or dense, try both cases and pick the better one based on validation (cross-validation) data.      
+\item For a dense solution and a dense dataset, use IRLSM if there are less than $\sim 500$ predictors in the data and L-BFGS otherwise. Set \texttt{alpha} to 0, this way only the $\ell_2$ regularization is included in the elastic net penalty term so no sparsity is induced in the model.
+   %   \texttt{alpha} equal to 0. This way only the $\ell_2$ regularization is included in the elastic net penalty term, and no sparsity is induced in the model. 
+\item For a dense solution with a sparse dataset, use IRLSM if there are less than $\sim 2000$ predictors in the data and L-BFGS otherwise. Set \texttt{alpha} to 0.
+%$< \  \sim5000$ predictors (i.e. one which only keeps some predictors in the final model), use the IRLSM solver with 
+  %    \texttt{alpha} greater than 0. This adds an $\ell_1$ penalty to the elastic net regularization which induces sparsity in the estimated coefficients. Make sure \texttt{lambda\_search} is enabled to get models for the full regularization path. 
+\item For a sparse solution with a dense dataset, use IRLSM with lambda-search if you expect less than $\sim 500$ active predictors in the solution and L-BFGS otherwise. Set \texttt{alpha} to be greater than zero. This adds an $\ell_1$ penalty to the elastic net regularization which induces sparsity in the estimated coefficients. 
+\item For a sparse solution with a sparse dataset, use IRLSM with lambda-search if you expect less than $\sim 5000$ active predictors in the solution and L-BFGS otherwise. Set \texttt{alpha} to be greater than zero. 
+\item If not sure whether the solution should be sparse or dense, try both cases and a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively the performance in cross-validation when not enough data is available to have a separate validation dataset).      
 \end{itemize}
 
-\subsubsection{Solver selection}
+ The above recommendations are rough and the user may want to experiment with the options if the performance of the method seems slow. 
 
-The two solvers provided in H2O are Iteratively Reweighted Least Squares Method (IRLSM) and Limited-memory Broyden-Fletcher-Goldfarb-Shanno (L-BFGS).  IRLSM uses
-a Gram Matrix approach underneath the hood, which is very efficient for tall and narrow datasets and when running lambda search with sparse solution.  For wider and dense
-datasets (thousands of predictors and up), the L-BFGS solver scales better. %comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
+\vspace{0.2cm}
+%\subsection{Solver Selection} %wide data want lambda search with alpha > 0 
+%The two solvers provided in H2O are the Iteratively Reweighted Least Squares Method (IRLSM) and the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS).  
+%comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
+IRLSM can be run with two algorithms to solve its innermost loop: ADMM and cyclical coordinate descent. The latter is used in glmnet. The method is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$ and $p \sim 500$. 
 
-For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
-model building can be slower. It is often better to run lambda search with IRLSM solver instead.
+To summarize, the solver options for fitting a GLM in H2O are:
+\begin{itemize}
+ \item \textbf{L-BFGS}: when the number of predictors is large
+ \item \textbf{IRLSM}: IRLSM with the ADMM solver in the innermost loop when you have a limited number of predictors
+ \item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}: IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop 
+ \item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}\texttt{\char`_}\textbf{NAIVE}: IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
+\end{itemize}
+
+\textbf{Note}: The coordinate descent implementations are experimental and their performance characteristics are still being evaluated. 
 
 \subsubsection{Stopping criteria}
 
-When using  $\ell_1$ penalty with lambda search, you can specify the \texttt{max\_active\_predictors} parameter to stop
+When using the $\ell_1$ penalty with lambda search, you can specify the \texttt{max\_active\_predictors} parameter to stop
 the search before it completes.  Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model.  Models built at the end of the lambda search have
 lower lambda values, incorporate more predictors, and take a longer time to calculate the model. You can also set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
@@ -552,6 +568,9 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
+
+%For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
+%model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
 
 \subsection{Advanced features}
 
@@ -567,7 +586,7 @@ the user to be greater than 0). Only advanced users should disable standardizati
 
 \subsubsection{K-fold cross validation}
 
-All validation values can be computed using either the training data set (the default option) or using K-fold
+All validation values can be computed using either the training dataset (the default option) or using K-fold
 cross-validation (\texttt{kfolds $> 1$)}. When $K$-fold cross-validation is enabled, H2O randomly splits data into $K$
 equally-sized parts, trains each of the $K$ models on $K-1$ parts, and computes validation on the part that was not
 used for training.
