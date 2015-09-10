@@ -419,7 +419,7 @@ def download_pojo(model,path="", get_jar=True):
     url = H2OConnection.make_url("h2o-genmodel.jar")
     filename = path + "/" + "h2o-genmodel.jar"
     response = urllib2.urlopen(url)
-    with open(filename, "w") as f:
+    with open(filename, "wb") as f:
       f.write(response.read())
 
 def download_csv(data, filename):

@@ -270,9 +270,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _names[];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
-    Key _cross_validation_models[];
+    public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
-    Key _cross_validation_predictions[];
+    public Key _cross_validation_predictions[];
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {

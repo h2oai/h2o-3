@@ -306,7 +306,8 @@ public class GBMTest extends TestUtil {
       Frame res = gbm.score(v);
 
       int[] ps = new int[(int)v.numRows()];
-      for( int i=0; i<ps.length; i++ ) ps[i] = (int)res.vecs()[0].at8(i);
+      Vec.Reader vr = res.vecs()[0].new Reader();
+      for( int i=0; i<ps.length; i++ ) ps[i] = (int)vr.at8(i);
       // Expected predictions are X,X,Y,Y,X,Y,Z,X,Y
       // Never predicts W, the extra class in the test set.
       // Badly predicts Z because 1 tree does not pick up that feature#2 can also
