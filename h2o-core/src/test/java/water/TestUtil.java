@@ -135,9 +135,9 @@ public class TestUtil extends Iced {
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
-  protected Frame parse_test_file( Key outputKey, String fname) {
-    File f = find_test_file(fname);
+  protected static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
+  protected static Frame parse_test_file( Key outputKey, String fname) {
+    File f = find_test_file_static(fname);
     assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, nfs._key);
@@ -287,19 +287,6 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
-  public static boolean[] checkProjection(Frame expected, Frame actual, double threshold) {
-    assert expected.numCols() == actual.numCols();
-    int ncomp = expected.numCols();
-    boolean[] flipped = new boolean[ncomp];
-
-    for(int j = 0; j < ncomp; j++) {
-      Vec vexp = expected.vec(j);
-      Vec vact = actual.vec(j);
-      flipped[j] = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
-    }
-    return checkProjection(expected, actual, threshold, flipped);
-  }
-
   public static boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
     assert expected.numCols() == actual.numCols();
     assert expected.numCols() == flipped.length;
@@ -307,8 +294,8 @@ public class TestUtil extends Iced {
     int ncomp = expected.numCols();
 
     for(int j = 0; j < ncomp; j++) {
-      Vec vexp = expected.vec(j);
-      Vec vact = actual.vec(j);
+      Vec.Reader vexp = expected.vec(j).new Reader();
+      Vec.Reader vact = actual.vec(j).new Reader();
       Assert.assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
         Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
