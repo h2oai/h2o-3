@@ -519,6 +519,8 @@ ratio close to the default.
 
 This section provides general guidelines to help get the best performance out of the H2O GLM implementation options. The choice of the optimal solver depends on the properties of the data at hand and prior information regarding the variables if available. The data are considered sparse when the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. On the other hand a dense solution is one where all predictors have non-zero coefficients in the final model.
 
+\subsubsection{Solver details}
+
 H2O's GLM offers two different solvers: (1) the Iteratively Reweighted Least Squares Method (IRLSM) and (2) the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS). IRLSM uses
 a Gram Matrix approach underneath the hood. It is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
 datasets (thousands of predictors and up), the L-BFGS solver scales better. 
@@ -530,10 +532,10 @@ datasets (thousands of predictors and up), the L-BFGS solver scales better.
 \item If there are less than $\sim 500$ predictors in the data, use the default options which run IRLSM.
 \item For a dense solution and a dense dataset, use IRLSM if there are less than $\sim 500$ predictors in the data and L-BFGS otherwise. Set \texttt{alpha} equal to 0, this way only the $\ell_2$ regularization is included in the elastic net penalty term so no sparsity is induced in the model.
    %   \texttt{alpha} equal to 0. This way only the $\ell_2$ regularization is included in the elastic net penalty term, and no sparsity is induced in the model. 
-\item For a dense solution with a sparse dataset, use IRLSM if there are less than $\sim 2000$ predictors and L-BFGS otherwise.  
+\item For a dense solution with a sparse dataset, use IRLSM if there are less than $\sim 2000$ predictors and L-BFGS otherwise. Set \texttt{alpha} equal to 0.
 %$< \  \sim5000$ predictors (i.e. one which only keeps some predictors in the final model), use the IRLSM solver with 
   %    \texttt{alpha} greater than 0. This adds an $\ell_1$ penalty to the elastic net regularization which induces sparsity in the estimated coefficients. Make sure \texttt{lambda\_search} is enabled to get models for the full regularization path. 
-\item For a sparse solution with a dense dataset, use IRLSM with lambda-search if there are less than $\sim 500$ predictors and otherwise L-BFGS. Set \texttt{alpha} to be strictly greater than zero. This adds an $\ell_1$ penalty to the elastic net regularization which induces sparsity in the estimated coefficients. 
+\item For a sparse solution with a dense dataset, use IRLSM with lambda-search if there are less than $\sim 500$ predictors and L-BFGS otherwise. Set \texttt{alpha} to be strictly greater than zero. This adds an $\ell_1$ penalty to the elastic net regularization which induces sparsity in the estimated coefficients. 
 \item For a sparse solution with a sparse dataset, use IRLSM with lambda-search if there are less than $\sim 5000$ predictors and L-BFGS otherwise. Set \texttt{alpha} to be strictly greater than zero. 
 \item If not sure whether the solution should be sparse or dense, try both cases and a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively the performance in cross-validation when not enough data is available to have a separate validation dataset).      
 \end{itemize}
@@ -546,18 +548,15 @@ datasets (thousands of predictors and up), the L-BFGS solver scales better.
 
 IRLSM can be run with two algorithms to solve its innermost loop: ADMM and cyclical coordinate descent. The latter is used in glmnet. The method is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$. \\
 
-To summarize, the options are to choose from in H2O for fitting a GLM are:
+To summarize, the solver options for fitting a GLM in H2O are:
 \begin{itemize}
  \item \textbf{L-BFGS}
- \item \textbf{IRLSM}: IRLSM with the ADMM solver for the innermost loop
- \item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}: IRLSM with the covariance updates version of cyclical coordinate descent for the innermost loop
- \item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}\texttt{\char`_}\textbf{NAIVE}: IRLSM with the naive updates version of cyclical coordinate descent for the innermost loop.
+ \item \textbf{IRLSM}: IRLSM with the ADMM solver in the innermost loop
+ \item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}: IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop
+ \item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}\texttt{\char`_}\textbf{NAIVE}: IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
 \end{itemize}
 
-%For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
-%model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
-
-\subsection{Stopping criteria}
+\subsubsection{Stopping criteria}
 
 When using the $\ell_1$ penalty with lambda search, you can specify the \texttt{max\_active\_predictors} parameter to stop
 the search before it completes.  Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model.  Models built at the end of the lambda search have
@@ -569,6 +568,9 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
+
+%For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
+%model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
 
 \subsection{Advanced features}
 
