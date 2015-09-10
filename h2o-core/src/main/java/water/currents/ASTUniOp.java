@@ -288,7 +288,7 @@ class ASTTranspose extends ASTPrim {
 }
 
 class ASTMMult extends ASTPrim {
-  @Override int nargs() { return 1+2; } // (t X1 X2)
+  @Override int nargs() { return 1+2; } // (x X1 X2)
   @Override String str() { return "x"; }
 
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {

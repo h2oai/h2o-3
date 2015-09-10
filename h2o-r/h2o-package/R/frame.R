@@ -963,12 +963,36 @@ Summary.Frame <- function(x,...,na.rm) {
 
 #' @rdname Frame
 #' @export
-is.na.Frame <- function(x) .newExpr("is.na", x)
-
+`!.Frame` <- function(x) .newExpr("!!",x)
 
 #' @rdname Frame
 #' @export
-`!.Frame` <- function(x) .newExpr("!!",x)
+is.na.Frame <- function(x) .newExpr("is.na", x)
+
+#' @rdname Frame
+#' @export
+t.Frame <- function(x) .newExpr("t",x)
+
+#' @rdname Frame
+#' @export
+log <- function(x, ...) {
+  if( !is.Frame(x) ) .Primitive("log")(x)
+  else .newExpr("log",x)
+}
+
+#' @rdname Frame
+#' @export
+trunc <- function(x, ...) {
+  if( !is.Frame(x) ) .Primitive("trunc")(x)
+  else .newExpr("trunc",x)
+}
+
+#' @rdname Frame
+#' @export
+`%*%` <- function(x, y) {
+  if( !is.Frame(x) ) .Primitive("%*%")(x,y)
+  else .newExpr("x",x,y)
+}
 
 #' Returns the Dimensions of an H2O Frame
 #'
