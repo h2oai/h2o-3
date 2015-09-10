@@ -86,6 +86,14 @@ class ASTNumList extends AST {
     _cnts   = new long  [0];
   }
 
+  ASTNumList(double[] list) {
+    _bases  = list;
+    _strides= new double[list.length];
+    _cnts   = new long[list.length];
+    Arrays.fill(_strides,0);
+    Arrays.fill(_cnts,1);
+  }
+
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack
   @Override Val exec( Env env ) { throw H2O.fail(); }

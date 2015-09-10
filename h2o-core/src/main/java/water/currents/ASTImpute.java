@@ -1,9 +1,15 @@
 package water.currents;
 
 import hex.quantile.QuantileModel;
-import water.*;
-import water.fvec.*;
-import water.util.*;
+import water.MRTask;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.IcedDouble;
+import water.util.IcedHashMap;
+
+import java.util.Arrays;
 
 // (h2o.impute data col method combine_method gb in.place)
 
@@ -38,6 +44,15 @@ public class ASTImpute extends ASTPrim {
     ASTNumList by2;
     if( ast instanceof ASTNumList  ) by2 = (ASTNumList)ast;
     else if( ast instanceof ASTNum ) by2 = new ASTNumList(((ASTNum)ast)._d.getNum());
+    else if( ast instanceof ASTStrList ) {
+      String[] names = ((ASTStrList)ast)._strs;
+      double[] list  = new double[names.length];
+      int i=0;
+      for( String name: ((ASTStrList)ast)._strs)
+        list[i++]=fr.find(name);
+      Arrays.sort(list);
+      by2 = new ASTNumList(list);
+    }
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     final ASTNumList by = by2;  // Make final, for MRTask closure
 
