@@ -5,7 +5,7 @@ import h2o, tests
 def javapredict_smallcat():
 
     # optional parameters
-    params = {'ntrees':100, 'max_depth':5, 'min_rows':10}
+    params = {'epochs':100}
     print "Parameter list:"
     for k,v in zip(params.keys(), params.values()): print "{0}, {1}".format(k,v)
 
@@ -14,7 +14,7 @@ def javapredict_smallcat():
     x = [0,1,2,4]
     y = 3
 
-    tests.javapredict("random_forest", "numeric", train, test, x, y, **params)
+    tests.javapredict("deeplearning", "numeric", train, test, x, y, **params)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, javapredict_smallcat)
