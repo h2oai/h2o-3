@@ -168,12 +168,13 @@ def javapredict(algo, train, test, x, y, **kwargs):
 
     print "Running PredictCsv Java Program"
     out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
-    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar+":{0}".format(tmpdir), "-Xmx4g", "-XX:MaxPermSize=256m",
+    cp_sep = ";" if sys.platform == "win32" else ":"
+    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx4g", "-XX:MaxPermSize=256m",
                 "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id,
                 "--input", in_csv, "--output", out_pojo_csv]
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
-    print "Java output: {0}, error: {1}".format(o, e)
+    print "Java output: {0}".format(o)
     assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
     predictions2 = h2o.import_file(path=out_pojo_csv)
     print "Pojo predictions saved in {0}".format(out_pojo_csv)
