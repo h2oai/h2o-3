@@ -325,6 +325,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
+        if( trainScoreFrame != train ) _delete_me.add(trainScoreFrame);
 
         if (!_parms._quiet_mode) Log.info("Number of chunks of the training data: " + train.anyVec().nChunks());
         if (val_fr != null) {
@@ -337,6 +338,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           } else {
             new ProgressUpdate("Sampling validation data...").fork(_progressKey);
             validScoreFrame = sampleFrame(val_fr, mp._score_validation_samples, mp._seed +1);
+            if( validScoreFrame != val_fr ) _delete_me.add(validScoreFrame);
           }
           if (mp._force_load_balance) {
             new ProgressUpdate("Balancing class distribution of validation data...").fork(_progressKey);
