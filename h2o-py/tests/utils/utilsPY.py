@@ -2,6 +2,7 @@ import imp
 import random
 import re
 import subprocess
+from subprocess import STDOUT,PIPE
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
@@ -130,30 +131,52 @@ def javapredict(algo, train, test, x, y, **kwargs):
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id))
     os.mkdir(tmpdir)
     h2o.download_pojo(model,path=tmpdir)
+    h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
+    assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
+    print "h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar)
+    java_file = os.path.join(tmpdir,model._id+".java")
+    assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
+    print "java code saved in {0}".format(java_file)
 
     print "Predicting in H2O"
     predictions = model.predict(test)
     predictions.summary()
     predictions.head()
-    h2o.download_csv(predictions,os.path.join(tmpdir,"out_h2o.csv"))
+    out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
+    h2o.download_csv(predictions, out_h2o_csv)
+    assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
+    print "H2O Predictions saved in {0}".format(out_h2o_csv)
 
     print "Setting up for Java POJO"
-    h2o.download_csv(test[x],os.path.join(tmpdir,"in.csv"))
+    in_csv = os.path.join(tmpdir,"in.csv")
+    h2o.download_csv(test[x], in_csv)
+
     # hack: the PredictCsv driver can't handle quoted strings, so remove them
-    f = open(os.path.join(tmpdir,"in.csv"), 'r+')
-    in_csv = f.read()
-    in_csv = re.sub('\"', '', in_csv)
+    f = open(in_csv, 'r+')
+    csv = f.read()
+    csv = re.sub('\"', '', csv)
     f.seek(0)
-    f.write(in_csv)
+    f.write(csv)
     f.truncate()
     f.close()
+    assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
+    print "Input CSV to PredictCsv saved in {0}".format(in_csv)
 
-    subprocess.call(["javac", "-cp", os.path.join(tmpdir,"h2o-genmodel.jar"), "-J-Xmx4g", "-J-XX:MaxPermSize=256m", os.path.join(tmpdir,model._id+".java")], stderr=subprocess.STDOUT)
-    subprocess.call(["java", "-ea", "-cp", os.path.join(tmpdir,"h2o-genmodel.jar")+":{0}".format(tmpdir), "-Xmx4g", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id, "--input", os.path.join(tmpdir,"in.csv"), "--output", os.path.join(tmpdir,"out_pojo.csv")], stderr=subprocess.STDOUT)
+    print "Compiling Java Pojo"
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx4g", "-J-XX:MaxPermSize=256m", java_file]
+    subprocess.check_call(javac_cmd)
 
+    print "Running PredictCsv Java Program"
     out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
+    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar+":{0}".format(tmpdir), "-Xmx4g", "-XX:MaxPermSize=256m",
+                "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id,
+                "--input", in_csv, "--output", out_pojo_csv]
+    p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
+    o, e = p.communicate()
+    print "Java output: {0}, error: {1}".format(o, e)
     assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
     predictions2 = h2o.import_file(path=out_pojo_csv)
+    print "Pojo predictions saved in {0}".format(out_pojo_csv)
 
     print "Comparing predictions between H2O and Java POJO"
     # Dimensions
