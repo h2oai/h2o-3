@@ -6,6 +6,7 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.*;
@@ -13,7 +14,6 @@ import water.fvec.*;
 import water.parser.ParseDataset;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -90,16 +90,16 @@ public class GLMBasicTestBinomial extends TestUtil {
     };
 
     Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    Vec.Writer vw = offsetVecTrain.open();
-    for(int i = 0; i < offset_train.length; ++i)
-      vw.set(i,offset_train[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTrain.open() ) {
+      for (int i = 0; i < offset_train.length; ++i)
+        vw.set(i, offset_train[i]);
+    }
 
     Vec offsetVecTest = _prostateTest.anyVec().makeZero();
-    vw = offsetVecTest.open();
-    for(int i = 0; i < offset_test.length; ++i)
-      vw.set(i,offset_test[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTest.open() ) {
+      for (int i = 0; i < offset_test.length; ++i)
+        vw.set(i, offset_test[i]);
+    }
 
     Key fKeyTrain = Key.make("prostate_with_offset_train");
     Key fKeyTest  = Key.make("prostate_with_offset_test");
@@ -179,7 +179,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           // test the actual predictions
-          Vec preds = scoreTest.vec("p1");
+          Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i),CD?1e-4:1e-6);
         } finally {
@@ -291,16 +291,16 @@ public class GLMBasicTestBinomial extends TestUtil {
     };
 
     Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    Vec.Writer vw = offsetVecTrain.open();
-    for(int i = 0; i < offset_train.length; ++i)
-      vw.set(i,offset_train[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTrain.open() ) {
+      for (int i = 0; i < offset_train.length; ++i)
+        vw.set(i, offset_train[i]);
+    }
 
     Vec offsetVecTest = _prostateTest.anyVec().makeZero();
-    vw = offsetVecTest.open();
-    for(int i = 0; i < offset_test.length; ++i)
-      vw.set(i,offset_test[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTest.open() ) {
+      for (int i = 0; i < offset_test.length; ++i)
+        vw.set(i, offset_test[i]);
+    }
 
     Key fKeyTrain = Key.make("prostate_with_offset_train");
     Key fKeyTest  = Key.make("prostate_with_offset_test");
@@ -380,7 +380,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           // test the actual predictions
-          Vec preds = scoreTest.vec("p1");
+          Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i), CD?1e-4:1e-6);// s == Solver.COORDINATE_DESCENT_NAIVE
         } finally {
@@ -482,7 +482,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   }
 
   @Test
-  public void testWeights(){
+  public void testWeights() {
     System.out.println("got " + _prostateTrain.anyVec().nChunks() + " chunks");
     GLM job = null;
     GLMModel model = null, modelUpsampled = null;
@@ -523,10 +523,10 @@ public class GLMBasicTestBinomial extends TestUtil {
     //Arrays.fill(weights, 1);
 
     Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    Vec.Writer vw = offsetVecTrain.open();
-    for(int i = 0; i < weights.length; ++i)
-      vw.set(i,weights[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTrain.open() ) {
+      for (int i = 0; i < weights.length; ++i)
+        vw.set(i, weights[i]);
+    }
 
 //    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
 //    vw = offsetVecTest.open();
@@ -722,6 +722,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
   @Test
   public void testNonNegativeNoIntercept() {
+    Scope.enter();
     GLM job = null;
     GLMModel model = null;
 //   glmnet result
@@ -774,10 +775,12 @@ public class GLMBasicTestBinomial extends TestUtil {
         if (job != null) job.remove();
       }
     }
+    Scope.exit();
   }
 
   @Test
   public void testNoInterceptWithOffsetAndWeights() {
+    Scope.enter();
     GLM job = null;
     GLMModel model = null;
     double [] offset_train = new double[] {
@@ -860,31 +863,29 @@ public class GLMBasicTestBinomial extends TestUtil {
 
 
     Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    Vec.Writer vw = offsetVecTrain.open();
-    for(int i = 0; i < offset_train.length; ++i)
-      vw.set(i,offset_train[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTrain.open() ) {
+      for (int i = 0; i < offset_train.length; ++i)
+        vw.set(i, offset_train[i]);
+    }
 
     Vec weightsVecTrain = _prostateTrain.anyVec().makeZero();
-    vw = weightsVecTrain.open();
-    for(int i = 0; i < weights_train.length; ++i)
-      vw.set(i,weights_train[i]);
-    vw.close();
+    try( Vec.Writer vw = weightsVecTrain.open() ) {
+      for (int i = 0; i < weights_train.length; ++i)
+        vw.set(i, weights_train[i]);
+    }
 
     Vec offsetVecTest = _prostateTest.anyVec().makeZero();
-    vw = offsetVecTest.open();
-    for(int i = 0; i < offset_test.length; ++i)
-      vw.set(i,offset_test[i]);
-    vw.close();
+    try( Vec.Writer vw = offsetVecTest.open() ) {
+      for (int i = 0; i < offset_test.length; ++i)
+        vw.set(i, offset_test[i]);
+    }
 
-    Key fKeyTrain = Key.make("prostate_with_offset_train");
-    Key fKeyTest  = Key.make("prostate_with_offset_test");
-    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
+    Frame fTrain = new Frame(Key.make("prostate_with_offset_train"), new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
-    DKV.put(fKeyTrain,fTrain);
-    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+    DKV.put(fTrain);
+    Frame fTest = new Frame(Key.make("prostate_with_offset_test"), new String[]{"offset"}, new Vec[]{offsetVecTest});
     fTest.add(_prostateTest.names(),_prostateTest.vecs());
-    DKV.put(fKeyTest,fTest);
+    DKV.put(fTest);
 //    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,
 //      data = train, weights = w, offset = offset_train)
 //
@@ -900,7 +901,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     GLMParameters params = new GLMParameters(Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
-    params._train = fKeyTrain;
+    params._train = fTrain._key;
     params._offset_column = "offset";
     params._weights_column = "weights";
     params._lambda = new double[]{0};
@@ -916,7 +917,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
-          params._valid = fKeyTest;
+          params._valid = fTest._key;
           System.out.println("SOLVER = " + s);
           try {
             job = new GLM(Key.make("prostate_model"), "glm test", params);
@@ -933,9 +934,9 @@ public class GLMBasicTestBinomial extends TestUtil {
             assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
           assertEquals(1494, GLMTest.nullDeviance(model), 1);
           assertEquals(1235, GLMTest.residualDeviance(model), 1);
-          assertEquals(252,   GLMTest.nullDOF(model), 0);
-          assertEquals(248,   GLMTest.resDOF(model), 0);
-          assertEquals(1243,   GLMTest.aic(model), 1);
+          assertEquals( 252, GLMTest.nullDOF(model), 0);
+          assertEquals( 248, GLMTest.resDOF(model), 0);
+          assertEquals(1243, GLMTest.aic(model), 1);
 //          assertEquals(88.72363, GLMTest.residualDevianceTest(model),1e-4);
           // test scoring
           try {
@@ -973,62 +974,26 @@ public class GLMBasicTestBinomial extends TestUtil {
         }
       }
     } finally {
-      if (fTrain != null) {
-        fTrain.remove("offset").remove();
-        fTrain.remove("weights").remove();
-        DKV.remove(fTrain._key);
-      }
-      if(fTest != null) {
-        fTest.remove("offset").remove();
-        DKV.remove(fTest._key);
-      }
+      DKV.remove(fTrain._key);
+      DKV.remove(fTest._key);
+      Scope.exit();
     }
   }
 
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-    File f = find_test_file_static("smalldata/glm_test/prostate_cat_train.csv");
-    assert f.exists();
-    NFSFileVec nfs = NFSFileVec.make(f);
-    Key outputKey = Key.make("prostate_cat_train.hex");
-    _prostateTrain = ParseDataset.parse(outputKey, nfs._key);
-
-    f = find_test_file_static("smalldata/glm_test/prostate_cat_test.csv");
-    assert f.exists();
-    nfs = NFSFileVec.make(f);
-    outputKey = Key.make("prostate_cat_test.hex");
-    _prostateTest = ParseDataset.parse(outputKey, nfs._key);
-
-    f = find_test_file_static("smalldata/glm_test/prostate_cat_train_upsampled.csv");
-    assert f.exists();
-    nfs = NFSFileVec.make(f);
-    outputKey = Key.make("prostate_cat_train_upsampled.hex");
-    _prostateTrainUpsampled = ParseDataset.parse(outputKey, nfs._key);
-
-    f = find_test_file_static("smalldata/glm_test/abcd.csv");
-    assert f.exists();
-    nfs = NFSFileVec.make(f);
-    outputKey = Key.make("abcd.hex");
-    _abcd = ParseDataset.parse(outputKey, nfs._key);
-
-    f = find_test_file_static("smalldata/glm_test/abcd.csv");
-    assert f.exists();
-    nfs = NFSFileVec.make(f);
-    outputKey = Key.make("abcd.hex");
-    _abcd = ParseDataset.parse(outputKey, nfs._key);
-
+    _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
+    _prostateTest  = parse_test_file("smalldata/glm_test/prostate_cat_test.csv");
+    _prostateTrainUpsampled = parse_test_file("smalldata/glm_test/prostate_cat_train_upsampled.csv");
+    _abcd = parse_test_file("smalldata/glm_test/abcd.csv");
   }
 
   @AfterClass
   public static void cleanUp() {
-    if(_prostateTrain != null)
-      _prostateTrain.delete();
-    if(_prostateTrainUpsampled != null)
-      _prostateTrainUpsampled.delete();
-    if(_prostateTest != null)
-      _prostateTest.delete();
-    if(_abcd != null)
-      _abcd.delete();
+    if(_abcd != null)  _abcd.delete();
+    if(_prostateTrainUpsampled != null) _prostateTrainUpsampled.delete();
+    if(_prostateTest != null) _prostateTest.delete();
+    if(_prostateTrain != null) _prostateTrain.delete();
   }
 }

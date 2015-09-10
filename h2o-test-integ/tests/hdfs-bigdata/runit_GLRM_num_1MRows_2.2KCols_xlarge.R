@@ -40,7 +40,7 @@ create_frm_time <- as.numeric(sst[3])
 print(paste("Time it took to create frame:", create_frm_time))
 
 print("Running GLRM on frame with quadratic loss and no regularization")
-aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=myframe, k=k_dim, init="PlusPlus", loss="L2", regularization_x="None", regularization_y="None", max_iterations=100))
+aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=myframe, k=k_dim, init="PlusPlus", loss="Quadratic", regularization_x="None", regularization_y="None", max_iterations=100))
 print(myframe.glrm)
 algo_run_time <- as.numeric(aat[3])
 print(paste("Time it took to build model:", algo_run_time))
