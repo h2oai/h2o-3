@@ -188,7 +188,6 @@ public class Vec extends Keyed<Vec> {
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
   public static final boolean DO_HISTOGRAMS = true;
-  public static final boolean NO_HISTOGRAMS = false;
   final private Key _rollupStatsKey;
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
@@ -559,19 +558,6 @@ public class Vec extends Keyed<Vec> {
     return randVec;
   }
 
-  /** Make a new vector initialized to Gaussian random numbers with the given seed */
-  public Vec makeGaus( final long seed ) {
-    Vec gausVec = makeZero();
-    new MRTask() {
-      @Override public void map(Chunk c){
-        Random rng = RandomUtils.getRNG(seed * (c.cidx() + 1));
-        for(int i = 0; i < c._len; ++i)
-          c.set(i, rng.nextGaussian());
-      }
-    }.doAll(gausVec);
-    return gausVec;
-  }
-
   // ======= Rollup Stats ======
 
   /** Vec's minimum value 
@@ -837,15 +823,10 @@ public class Vec extends Keyed<Vec> {
     return c;
   }
 
-  /** The Chunk for a row#.  Warning: this loads the data locally!  */
-  private Chunk chunkForRow_impl(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
-
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a row# */
-  public final Chunk chunkForRow(long i) {
-    return chunkForRow_impl(i);
-  }
+  public final Chunk chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
   // ======= Direct Data Accessors ======
 
@@ -877,6 +858,28 @@ public class Vec extends Keyed<Vec> {
    *  @return {@code i}th element as {@link ValueString} or null if missing, or
    *  throw if not a String */
   public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr_abs(vstr, i); }
+
+  /** A more efficient way to read randomly to a Vec - still single-threaded,
+   *  but much faster than Vec.at(i).  Limited to single-threaded
+   *  single-machine reads.
+   *
+   * Usage:
+   * Vec.Reader vr = vec.new Reader();
+   * x = vr.at(0);
+   * y = vr.at(1);
+   * z = vr.at(2);
+   */
+  public final class Reader {
+    private Chunk _cache;
+    private Chunk chk(long i) {
+      Chunk c = _cache;
+      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    }
+    public final long    at8( long i ) { return chk(i). at8_abs(i); }
+    public final double   at( long i ) { return chk(i).  at_abs(i); }
+    public final boolean isNA(long i ) { return chk(i).isNA_abs(i); }
+    public final long length() { return Vec.this.length(); }
+  }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
@@ -925,27 +928,31 @@ public class Vec extends Keyed<Vec> {
    *  single-machine writes.
    *
    * Usage:
-   * Vec.Writer vw = vec.open();
-   * vw.set(0, 3.32);
-   * vw.set(1, 4.32);
-   * vw.set(2, 5.32);
-   * vw.close();
+   * try( Vec.Writer vw = vec.open() ) {
+   *   vw.set(0, 3.32);
+   *   vw.set(1, 4.32);
+   *   vw.set(2, 5.32);
+   * }
    */
-  public final static class Writer implements java.io.Closeable {
-    final Vec _vec;
-    private Writer(Vec v) { (_vec=v).preWriting(); }
-    public final void set( long i, long   l) { _vec.chunkForRow(i).set_abs(i, l); }
-    public final void set( long i, double d) { _vec.chunkForRow(i).set_abs(i, d); }
-    public final void set( long i, float  f) { _vec.chunkForRow(i).set_abs(i, f); }
-    public final void setNA( long i        ) { _vec.chunkForRow(i).setNA_abs(i); }
-    public final void set( long i, String str) { _vec.chunkForRow(i).set_abs(i, str); }
-    public Futures close(Futures fs) { return _vec.postWrite(_vec.closeLocal(fs)); }
+  public final class Writer implements java.io.Closeable {
+    private Chunk _cache;
+    private Chunk chk(long i) {
+      Chunk c = _cache;
+      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    }
+    private Writer() { preWriting(); }
+    public final void set( long i, long   l) { chk(i).set_abs(i, l); }
+    public final void set( long i, double d) { chk(i).set_abs(i, d); }
+    public final void set( long i, float  f) { chk(i).set_abs(i, f); }
+    public final void setNA( long i        ) { chk(i).setNA_abs(i); }
+    public final void set( long i,String str){ chk(i).set_abs(i, str); }
+    public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
     public void close() { close(new Futures()).blockForPending(); }
   }
 
   /** Create a writer for bulk serial writes into this Vec.
    *  @return A Writer for bulk serial writes */
-  public final Writer open() { return new Writer(this); }
+  public final Writer open() { return new Writer(); }
 
   /** Close all chunks that are local (not just the ones that are homed)
    *  This should only be called from a Writer object */
@@ -1099,7 +1106,7 @@ public class Vec extends Keyed<Vec> {
     boolean useDomain=false;
     Vec newVec = copyOver(null);
     try {
-      int ignored = Integer.parseInt(this._domain[0]);
+      Integer.parseInt(this._domain[0]);
       useDomain=true;
     } catch (NumberFormatException e) {
       // makeCopy and return...
@@ -1314,7 +1321,7 @@ public class Vec extends Keyed<Vec> {
     }
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */
-    private static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
+    private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
       final Key _key;
       int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
       private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
@@ -1341,7 +1348,7 @@ public class Vec extends Keyed<Vec> {
      * Task to atomically add vectors into existing group.
      * @author tomasnykodym
      */
-    private static class ReturnKeysTsk extends TAtomic<VectorGroup>{
+    private final static class ReturnKeysTsk extends TAtomic<VectorGroup>{
       final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
       final int _oldCnt;
       private ReturnKeysTsk(int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}

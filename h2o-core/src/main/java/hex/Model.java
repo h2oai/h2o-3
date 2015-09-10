@@ -270,9 +270,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _names[];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
-    Key _cross_validation_models[];
+    public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
-    Key _cross_validation_predictions[];
+    public Key _cross_validation_predictions[];
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -557,6 +557,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics) {
         vec = test.anyVec().makeCon(1);
+        Scope.track(vec._key);
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
