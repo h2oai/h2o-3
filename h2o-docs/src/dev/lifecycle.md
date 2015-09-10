@@ -26,23 +26,41 @@ The main class for Standalone H2O is H2OApp.
 
 See <https://github.com/h2oai/h2o-3/blob/master/h2o-app/src/main/java/water/H2OApp.java>
 
+H2OApp uses a helper class called H2OStarter.
+
+See <https://github.com/h2oai/h2o-3/blob/master/h2o-core/src/main/java/water/H2OStarter.java>
+
+
 The overall flow is shown below:
 
 ```
-registerExtensions();
-H2O.main(args);
-registerRestApis(relativeResourcePath);
-H2O.finalizeRegistration();
+    H2O.configureLogging();
+    H2O.registerExtensions();
+
+    // Fire up the H2O Cluster
+    H2O.main(args);
+
+    H2O.registerRestApis(relativeResourcePath);
+    H2O.finalizeRegistration();
 ```
-The call to registerExtensions hooks in any H2O extensions found on the classpath.
+The call to registerExtensions hooks in any H2O extensions found on the classpath.  It uses reflection to find all classes that inherit from water.AbstractH2OExtension
+
 
 The call to H2O.main() allocates ports, prepares the web server, and does all kinds of other startup work.
 
-The call to registerRestApis() add REST API routes for their respective subsystems.  (water is from h2o-core and hex is from h2o-algos.)
+The call to registerRestApis() adds REST API routes for their respective subsystems.  (water is from h2o-core and hex is from h2o-algos.)  It uses reflection to find all classes that inherit from water.api.AbstractRegister.
 
 The call to H2O.finalizeRegistration() signals that all routes have been added and tells the in-H2O web server to start accepting REST API requests.
 
 H2O cloud formation can occur even after H2O.finalizeRegistration.  New H2O nodes are allowed to join until the cloud receives a piece of work to do.  Usually this means until the cloud receives a REST API request or writes to the DKV.
+
+See <https://github.com/h2oai/h2o-3/blob/master/h2o-core/src/main/java/water/H2O.java>
+
+> Use case:  Adding a new algorithm.
+>
+> 1.  blah
+> 2.  blah
+
 
 ## Shutdown
 
