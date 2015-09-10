@@ -124,8 +124,7 @@ H2O's GBM functionalities include:
 
 \subsection{ Model Parameters}
 
-This section describes the functions of the parameters for GBM. %%(TODO, lots of params, maybe copy to appendix and only put most important ones here):
-
+This section describes the functions of the parameters for GBM. 
 \begin{itemize}
 \item {\texttt{x}}: A vector containing the names of the predictors to use while building the GBM model. 
 \item {\texttt{y}}: A character string or index that represents the response variable in the model.  
@@ -213,7 +212,6 @@ by stagewise fitting using the loss function:
 $$L(y, F(x)) = exp(-y  F (x)) $$
 
 
-%---- TODO: Check that this is the same
 \subsection{Distributed Trees}
 
 H2O's implementation of GBM uses distributed trees. H2O overlays trees on the data by assigning a tree node to each row.
@@ -245,7 +243,7 @@ Since H2O does the per-level compute in parallel, which requires sending histogr
 of data can become very large for a very deep tree.
 
 High max-bin sizes slow down generation of deep trees, but this is not a problem for GBM tree depths as GBM
-typically uses very shallow trees. (TODO: Check, this probably isn't true anymore)  Bin limits over 20 have been shown to provide very little improvement on the quality of the GBM model.
+typically uses very shallow trees. Bin limits over 20 have been shown to provide very little improvement on the quality of the GBM model.
 
 For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report
 uses the first tree, so the first two reports are not equal. The reported MSE is the inclusive effect of all
@@ -255,7 +253,6 @@ bottom out and then begin to slowly rise on the validation set as overfitting se
 The computing cost is based on the number of leaves, but depending on the dataset, the number of leaves can be
 difficult to predict. The maximum number of leaves is $2^d$, where $d$ represents the tree depth.
 
-%---- TODO: Check that this is the same
 \subsection{Treatment of factors}
 
 When the specified GBM model includes factors, those factors are analyzed by assigning an integer to each distinct
@@ -282,7 +279,6 @@ For categorical problems with $N$ possible values, the split candidate is determ
 For binary classification and regression problems, the number of split candidates is reduced to $N-1$ by sorting
 the categorical feature values by label average.
 
-%---- TODO: Check that this is the same
 \subsection{Key parameters}
 
 In the above example, an important user-specified value is $N$, which represents the number of bins that data are
@@ -321,10 +317,8 @@ our datasets into \texttt{H2OParsedData} objects. For this example, download the
 
 \waterExampleInR
 Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
-% TODO Check this
 \lstinputlisting[style=R]{gbm/gbm_uploadfile_example.R}
 
-% TODO Check this
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_uploadfile_example.py}
 
@@ -372,7 +366,6 @@ new data, which can then be used for further tasks in the interactive modeling p
 
 \subsection{Web interface}
 
-%%TODO update this next paragraph - This section has been updated (JL)
 
 H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After
 loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345)
@@ -384,7 +377,7 @@ about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frame
 GBM algorithm will automatically calculate variable importances. The display includes the
 the absolute and relative predictive strength of each feature in the prediction task. From R, use the command \texttt{h2o.varimp(air.model)} to extract the variable importances from the model;
 from Python, use the command 
-%%\texttt{TODO PUT SOME PYTHON HERE}}.  
+\texttt{air\_model.varimp(return\_list=True)}.
 You can also view a visualization of the variable
 importances on the web interface.
 
@@ -392,7 +385,6 @@ importances on the web interface.
 
 The following algorithm outputs are supported:
 \begin{itemize}
-% --- TODO not just MSE, different error for each distribution
 \item {\bf{Regression}}: Mean Squared Error (MSE), with an option to output variable importances or a Java POJO model
 \item {\bf{Binary Classification}}: Confusion Matrix or Area Under Curve (AUC), with an option to output variable
 importances or a Java POJO model
@@ -420,7 +412,6 @@ To download the model:
 To support grid search capabilities for model tuning,  specify sets of values for parameter arguments to tweak
 certain parameters and observe changes in model behavior. The following is an example of a grid search:
 
-%--- TODO grid search doesn't work on latest nightly in R
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
 

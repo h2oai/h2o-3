@@ -557,7 +557,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics) {
         vec = test.anyVec().makeCon(1);
-        Scope.track(vec._key);
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
