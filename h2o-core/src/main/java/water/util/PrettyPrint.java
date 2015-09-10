@@ -130,8 +130,8 @@ public class PrettyPrint {
       d = (int) (Math.abs(i) / Math.pow(10, 0)) % 10;
       switch (d) {
         case 1: ord = "st"; break;
-        case 2: ord = "st"; break;
-        case 3: ord = "st"; break;
+        case 2: ord = "nd"; break;
+        case 3: ord = "rd"; break;
         default: ord = "th";
       }
     }
