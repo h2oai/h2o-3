@@ -1,14 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.arrests_miss <- function(conn) {
+test.glrm.arrests_miss <- function() {
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
   stats_names <- c("Fraction", "Objective", "AvgChangeObj", "Iterations", "StepSize", "TrainSSE", "ValidSSE", "MissingASE")
   model_stats <- data.frame(matrix(0, nrow = length(missing_frac), ncol = length(stats_names)))
   colnames(model_stats) <- stats_names
   
   Log.info("Importing USArrests.csv data and saving for validation...\n")
-  arrests.full <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"))
+  arrests.full <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"))
   totobs <- nrow(arrests.full) * ncol(arrests.full)
   
   for(i in 1:length(missing_frac)) {

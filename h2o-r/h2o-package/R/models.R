@@ -93,7 +93,6 @@
 
 
 .h2o.modelJob <- function( algo, params, do_future, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
-  force(version)
   .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) ) 
     .eval.frame(params$validation_frame)

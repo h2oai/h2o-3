@@ -4,9 +4,9 @@ source('../../h2o-runit.R')
 NUM_LOSS <- c("Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic")
 CAT_LOSS <- c("Categorical", "Ordinal")
 
-test.glrm.loss_by_col <- function(conn) {
+test.glrm.loss_by_col <- function() {
   Log.info("Importing prostate_cat.csv data...")
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
+  prostate.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
   print(summary(prostate.hex))
   ncols <- ncol(prostate.hex)
   CAT_COLS <- c(1, 3, 4, 5)
