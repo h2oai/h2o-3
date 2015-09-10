@@ -401,6 +401,7 @@
           tbl <- do.call(cbind, lapply(x$data, sapply, function(cell) if (is.null(cell)) "" else cell))
         cnms <- sapply(x$columns, `[[`, "name")
         fmts <- sapply(x$columns, `[[`, "format")
+        descr <- x$description
         if( x$name=="Confusion Matrix" ) {
           colnames(tbl) <- make.unique(cnms)
           rownames(tbl) <- make.unique(c(cnms[1:(length(cnms)-2)], "Totals"))
@@ -437,6 +438,7 @@
         if( x$name == "Confusion Matrix") attr(tbl, "header") <- paste0(x$name, " - (", x$description, ")")
         else                              attr(tbl, "header")  <- x$name
         attr(tbl, "formats") <- fmts
+        attr(tbl, "description")   <- descr
         oldClass(tbl) <- c("H2OTable", "data.frame")
         x <- tbl
       }
@@ -483,8 +485,13 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  if( header && !is.null(attr(x, "header")) )
-    cat(attr(x, "header"), ":\n", sep = "")
+  if( header && !is.null(attr(x, "header")) ) {
+    cat(attr(x, "header"), ":", sep="")
+    if( !is.null(attr(x,"description")) )
+      cat(" ", attr(x, "description"),sep="")
+    cat("\n")
+  }
+
 
   # pretty print the frame if it is large (e.g. > 20 rows)
   nr <- nrow(xx)

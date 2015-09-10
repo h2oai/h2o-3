@@ -605,8 +605,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._loading_key = Key.make(_parms._loading_name);
         Frame x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
-        DKV.put(x._key, x);
-        DKV.put(xinfo._key, xinfo);
+        DKV.put(x);
+        DKV.put(xinfo);
 
         model._output._step_size = step;
         model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
@@ -657,7 +657,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       List<String> colHeaders = new ArrayList<>();
       List<String> colTypes = new ArrayList<>();
       List<String> colFormat = new ArrayList<>();
-      colHeaders.add("Number of Rows"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Number of Observed Entries"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Final Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Final Objective Value"); colTypes.add("double"); colFormat.add("%.5f");
@@ -955,10 +955,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
       Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
-      Random rand = RandomUtils.getRNG(_parms._seed + cs[0].start());
+      Random rand = RandomUtils.getRNG(0);
       _loss = _xreg = 0;
 
       for(int row = 0; row < cs[0]._len; row++) {
+        rand.setSeed(_parms._seed + cs[0].start() + row); //global row ID determines the seed
         double[] grad = new double[_ncolX];
 
         // Additional user-specified weight on loss for this row

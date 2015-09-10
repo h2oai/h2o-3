@@ -3,9 +3,9 @@ package water.parser;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.util.Log;
 import water.nbhm.NonBlockingHashMap;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Class for tracking categorical (enum) columns.
@@ -59,6 +59,26 @@ public final class Categorical extends Iced {
 
   ValueString [] getColumnDomain() {
     return  _map.keySet().toArray(new ValueString[_map.size()]);
+  }
+
+  public void convertToUTF8() {
+    ValueString[] vs = _map.keySet().toArray(new ValueString[_map.size()]);
+    boolean first = true;
+    StringBuilder sb = new StringBuilder();
+    for (int i =0; i < vs.length; i++) {
+      if (!vs[i].equals(vs[i].toString())) {
+        if (first) {
+          Log.info("Found categoricals with non-UTF-8 characters. Converting:");
+          first = false;
+        }
+        int val = _map.get(vs[i]);
+        sb.append(vs[i].bytesToString() +" -> "+vs[i].toString()+",  ");
+        _map.remove(vs[i]);
+        vs[i] = new ValueString(vs[i].toString());
+        _map.put(vs[i],val);
+      }
+    }
+    if (!first) Log.info(sb.toString());
   }
 
   // Since this is a *concurrent* hashtable, writing it whilst its being

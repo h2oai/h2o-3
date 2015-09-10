@@ -40,16 +40,10 @@ public class FileUtils {
   }
 
   public static URI getURI(String path) {
-    File[] roots = File.listRoots();
-    if (path.startsWith("./")) { // It is relative local path
-      return new File(path).toURI();
-    } else {
-      for (File root : roots) { // It is local absolute path
-        if (path.toLowerCase().startsWith(root.getAbsolutePath().toLowerCase())) {
-          return new File(path).toURI();
-        }
-      }
+    if (path.contains(":/")) { // Seems like
       return URI.create(path);
+    } else {
+      return new File(path).toURI();
     }
   }
 

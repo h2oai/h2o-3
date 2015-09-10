@@ -153,10 +153,11 @@ public class TCPReceiverThread extends Thread {
             _bb.position(pos);
           }
           // package the raw bytes into an array and pass it on to FJQ for further processing
-          AutoBuffer ab = new AutoBuffer(_h2o, ary);
-          int ctrl = ab.getCtrl();
-          TimeLine.record_recv(ab, false, 0);
-          H2O.submitTask(new FJPacket(ab, ctrl));
+//          AutoBuffer ab = new AutoBuffer(_h2o, ary);
+//          int ctrl = ab.getCtrl();
+//          TimeLine.record_recv(ab, false, 0);
+          UDPReceiverThread.basic_packet_handling(new AutoBuffer(_h2o, ary));
+//          H2O.submitTask(new FJPacket(ab, ctrl));
           start += sz + 2 + 1;
           if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 2 + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
             _bb.limit(_bb.position());
