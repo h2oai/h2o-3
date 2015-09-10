@@ -270,9 +270,9 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' @return Creates a \linkS4class{Frame} vector of the same type as x
 #' @export
 h2o.rep_len <- function(x, length.out) {
-  if (length.out <= 0)
-    return(NULL)
-  .newExpr("rep_len", chk.Frame(x), length.out)
+  if (length.out <= 0)    NULL
+  else if( is.Frame(x) ) .newExpr("rep_len", chk.Frame(x), length.out)
+  else                   .newExpr("rep_len", x, length.out)
 }
 
 #' Inserting Missing Values to an H2O DataFrame
