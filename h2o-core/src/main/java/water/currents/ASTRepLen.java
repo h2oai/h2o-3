@@ -9,10 +9,11 @@ class ASTRepLen extends ASTPrim {
   @Override int nargs() { return 1+2; } // (rep_len x length)
   @Override String str() { return "rep_len"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
-    Frame ff;
-    if( asts[1] instanceof ASTFrame ) ff = stk.track(asts[1].exec(env)).getFrame();
-    else return new ValFrame(new Frame(Vec.makeCon(asts[1].exec(env).getNum(), (long)asts[2].exec(env).getNum())));
+    Val v = asts[1].exec(env);
     long length = (long) asts[2].exec(env).getNum();
+    Frame ff;
+    if( v instanceof ValFrame ) ff = stk.track(v).getFrame();
+    else return new ValFrame(new Frame(Vec.makeCon(v.getNum(), length)));
 
     final Frame fr = ff;
     if (fr.numCols() == 1) {
