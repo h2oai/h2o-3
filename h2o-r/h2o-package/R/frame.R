@@ -869,7 +869,12 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   if( !is.null( id) && !is.na(id) ) return( id ) # Data already computed under ID
   # Build the eval expression
   stopifnot(is.list(x:eval))
-  res <- paste(sapply(x:eval, function(child) { if( is.Frame(child) ) .eval.impl(child) else child }),collapse=" ")
+  res <- paste(sapply(x:eval, function(child) {
+    if( is.Frame(child) )                             .eval.impl(child)    # recurse
+    else if( is.numeric(  child) && length(child) > 1L ) .num.list(child)  # [ numberz ]  TODO: sup with those NaNs tho
+    else if( is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
+    else                                              child                # base
+  }),collapse=" ")
   res <- paste0("(",x:op," ",res,")")
   # First exec: ID is missing, convert to NA
   # 2nd exec: ID is NA, convert to unique string
