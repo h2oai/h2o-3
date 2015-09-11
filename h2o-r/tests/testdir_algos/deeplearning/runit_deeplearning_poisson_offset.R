@@ -29,10 +29,10 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-408150,mean_deviance,1e-2)
-	expect_equal(20126, mean(ph[,1]), 1e-2 )
-	expect_equal(351,    min(ph[,1]), 1e-1 )
-	expect_equal(216430, max(ph[,1]), 1e-1 )
+	expect_equal(-408150, mean_deviance, tolerance=1e-2)
+	expect_equal(20126, mean(ph[,1]), tolerance=1e-2 )
+	expect_equal(351,    min(ph[,1]), tolerance=1e-1 )
+	expect_equal(216430, max(ph[,1]), tolerance=1e-1 )
 
 	#with offset
 	#gg = gbm(formula = Claims~factor(Class)+factor(Merit)+offset(log(Insured))  , distribution = "poisson",data = ca,
@@ -55,10 +55,10 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-408156.8, mean_deviance, 1e-2)
-	expect_equal(20208.5, mean(ph[,1]), 1e-2 )
-	expect_equal(572.55, min(ph[,1]), 1e-2 )
-	expect_equal(217891.6, max(ph[,1]), 1e-2 )
+	expect_equal(-408156.8, mean_deviance, tolerance=1e-2)
+	expect_equal(20208.5, mean(ph[,1]), tolerance=1e-2 )
+	expect_equal(572.55, min(ph[,1]), tolerance=1e-2 )
+	expect_equal(217891.6, max(ph[,1]), tolerance=1e-2 )
 
 	testEnd()
 }
