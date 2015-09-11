@@ -36,7 +36,9 @@ NULL
 #' @keywords datasets
 #' @name iris
 #' @format A data frame with 150 rows and 5 columns
-#' @source Fisher, R. A. (1936) The use of multiple measurements in taxonomic problems. Annals of Eugenics, 7, Part II, 179–188.
+#' @source Fisher, R. A. (1936) The use of multiple measurements in taxonomic problems. Annals of Eugenics, 7, Part II, 179-188.
+#'
+#' The data were collected by Anderson, Edgar (1935). The irises of the Gaspe Peninsula, Bulletin of the American Iris Society, 59, 2-5.
 NULL
 
 #' Prostate Cancer Study
