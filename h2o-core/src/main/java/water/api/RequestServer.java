@@ -129,7 +129,7 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files", null,
              "Typehead hander for filename completion.");
-    
+
     register("/3/Jobs/(?<job_id>.*)"                               ,"GET",JobsHandler     .class, "fetch", null,
              "Get the status of the given H2O Job (long-running action).");
 
@@ -658,6 +658,7 @@ public class RequestServer extends NanoHTTPD {
     }
 
     switch( type ) {
+    case html: // return JSON for html requests
     case json:
       return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:

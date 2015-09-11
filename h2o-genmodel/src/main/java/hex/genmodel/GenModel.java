@@ -170,8 +170,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** Utility function to get a best prediction from an array of class
    *  prediction distribution.  It returns the index of the max. probability (if that exists).
-   *  In the case of ties, the prior probabilities are used, and if they are the same, resort to a
-   *  pseudo-random way (using the test data).
+   *  In the case of ties, it samples from the tied classes with the likelihood given by the prior probabilities.
    *  @param preds an array of prediction distribution.  Length of arrays is equal to a number of classes+1.
    *  @param priorClassDist prior class probabilities (used to break ties)
    *  @param data Test data

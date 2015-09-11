@@ -2,7 +2,7 @@
 
 ##H2O
 
-###Slater (3.0.2.1) - 09/09/15
+###Slater (3.2.0.1) - 09/11/15
 
 
 ####New Features
@@ -52,7 +52,7 @@ The following changes represent features that have been added since the previous
 - [HEXDEV-381](https://0xdata.atlassian.net/browse/HEXDEV-381): LDAP Integration
 - [HEXDEV-224](https://0xdata.atlassian.net/browse/HEXDEV-224): Added https support
 - [GitHub](https://github.com/h2oai/h2o-3/commit/ced34107f71b5fe3c5ff830c827563be3d0c0286): Added mapr5.0 version to builds
-
+- [GitHub](https://github.com/h2oai/h2o-3/commit/9b92f571cd6c4710b5454a425fce090b99128b35): Add Vec.Reader which replaces lost caching
 
 #####Web UI
 
@@ -89,6 +89,9 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/88ed523b674588607a8af7c27357bef4aa042b49): Use absolute value for mean weight and bias checks.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/6b1073b310d3058b44ac2e10546115338fa5ac23): No longer leak constant chunks during AE scoring/reconstruction.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c5f4c10a7df0cf81f659f09b0814bd76f1c181dc): No longer differentiate between DL model instabilitites (weights vs biases). 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/791f9878007a6a5bd3ecf2794f7b538c8f9cd66a): Make method static, where possible.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/14dedf6dee5a33622f4d9a2be6d5b64627b8273c): Make GLRM seeding independent of number of chunks.
+
 
 #####API
 
@@ -152,6 +155,10 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8c77c2ef785292adec6616f5243a38a6e3105ebc): h2o.levels returns R vector for single column
 - [GitHub](https://github.com/h2oai/h2o-3/commit/08f1e95f17c5dfbff8bcdea6ef3a460751fa8ba2): Uses PredictCsv from genmodel now.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/5cbf42e300df0ef45f0bd4558fa5a339ea97cdaf): Exposed stacktraces in R's summary() call.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/b4dac1e2fb230f7740540ffa9f9379e03a626935): print type of failed value in $<-
+- [GitHub](https://github.com/h2oai/h2o-3/commit/050956e1562ee51ad7de4cd93dcc0e6195b83445): allow value to be integer in $<-
+- [GitHub](https://github.com/h2oai/h2o-3/commit/785111016a2c7a7fcdaa90846d725caadb0f9192): Check for `is_client` being NULL since older H2O clusters may not have `is_client`. 
+
 
 #####Sparkling Water
 
@@ -171,6 +178,8 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/48e7aa47cacade1c964d89920e0218ebedae182b): Remove extra assertion to avoid NPEs after client call of bulk remove after done() is called but before the finally is done with updateModelOutput.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c5a52b88746e8c82c04ea01cbb2c4a6910749a34): Ensures that date time methods return year/month/day values in the currently set timezone.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8789d8a1bbf8260d596bcc1692fe1f41dcdf81aa): Frees memory from streamed zip reads after the chunk has been parsed. 
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c6c76e04b7efb1a3be470603e7c4b44dc8cc7767): Unifies categorical strings to UTF-8 and warns the user about all conversion.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/917bfe406fb59d7a0d9deecea524a91dd049073a): add isNA checks to scale
 
 #####Web UI
 
@@ -205,6 +214,8 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1995](https://0xdata.atlassian.net/browse/PUBDEV-1995): nfold: when user cancels an nfold job, fold data still remains in the cluster memory 
 - [PUBDEV-1994](https://0xdata.atlassian.net/browse/PUBDEV-1994): nfold: cancel results in a  java.lang.AssertionError
 - [PUBDEV-1910](https://0xdata.atlassian.net/browse/PUBDEV-1910): Canceled GBM with CV keeps lock
+- [GitHub](https://github.com/h2oai/h2o-3/commit/02c3b4a20c09a52924a588118a4032edc2208538): Fix DL checkpoint restart with new data.
+
 
 #####API 
 
@@ -236,7 +247,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1693](https://0xdata.atlassian.net/browse/PUBDEV-1693): Python: Options for handling NAs in group_by is broken
 - [PUBDEV-1415](https://0xdata.atlassian.net/browse/PUBDEV-1415): Intermittent Unimplemented rapids exception: pyunit_var.py . Also prior test got unimplemented too, but test didn't fail (client wasn't notified)
 - [PUBDEV-1119](https://0xdata.atlassian.net/browse/PUBDEV-1119): Python: Need to be able to access resource genmodel.jar
-
+- [GitHub](https://github.com/h2oai/h2o-3/commit/fb651714adcff4a407442160173c6499faabc79b): Fix download of pojo in Python.
 
 
 #####R
@@ -277,6 +288,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1992](https://0xdata.atlassian.net/browse/PUBDEV-1992): CreateFrame isn't totally random
 - [GitHub](https://github.com/h2oai/h2o-3/commit/6b12de4c31e5401ae0b7bd3283092f68b99bb45a): Fixes a bug that allowed big buffers to be constantly reallocated when it wasn't needed. This saves memory and time.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/009e888d07e89dcbab51556cb56bcbc6eaffdedc): Fix print statement.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/4c40cf1815c27369aa12c7c0ed19272cbd4a7499): Fixed orderly shutdown to work with flatfile.
 
 #####Web UI
 
