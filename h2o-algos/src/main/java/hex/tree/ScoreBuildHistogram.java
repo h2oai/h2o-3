@@ -222,7 +222,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       Chunk chk = chks[c];
       // For All NIDs
       for( int n=0; n<hcs.length; n++ ) {
-        final DRealHistogram rh = ((DRealHistogram)hcs[n][c]);
+        final DHistogram rh = ((DHistogram)hcs[n][c]);
         if( rh==null ) continue; // Ignore untracked columns in this split
         final int lo = n==0 ? 0 : nh[n-1];
         final int hi = nh[n];

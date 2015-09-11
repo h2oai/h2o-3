@@ -35,7 +35,7 @@ h2o.grid <- function(algorithm,
                      ...,
                      hyper_params = list(),
                      is_supervised = NULL,
-                     do_hyper_params_check = TRUE)
+                     do_hyper_params_check = FALSE)
 {
   # Extract parameters
   dots <- list(...)

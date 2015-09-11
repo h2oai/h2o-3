@@ -15,7 +15,7 @@ def javapredict_cars():
     x = ["name","economy", "displacement","power","weight","acceleration","year"]
     y = "cylinders"
 
-    tests.javapredict("gbm", train,test,x,y,**params)
+    tests.javapredict("gbm", "numeric", train, test, x, y, **params)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, javapredict_cars)

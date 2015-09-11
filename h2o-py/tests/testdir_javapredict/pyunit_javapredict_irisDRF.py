@@ -1,9 +1,8 @@
 import sys
 sys.path.insert(1, "../../")
 import h2o, tests
-import random
 
-def javapredict_smallcat():
+def javapredict_iris_drf():
 
     # optional parameters
     params = {'ntrees':100, 'max_depth':5, 'min_rows':10}
@@ -15,7 +14,7 @@ def javapredict_smallcat():
     x = ["sepal_len","sepal_wid","petal_len","petal_wid"]
     y = "species"
 
-    tests.javapredict("random_forest",train,test,x,y,**params)
+    tests.javapredict("random_forest", "class", train, test, x, y, **params)
 
 if __name__ == "__main__":
-    tests.run_test(sys.argv, javapredict_smallcat)
+    tests.run_test(sys.argv, javapredict_iris_drf)
