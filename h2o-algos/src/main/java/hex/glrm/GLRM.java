@@ -144,11 +144,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (null != _parms._loss_by_col) {
       if (_parms._loss_by_col.length > _train.numCols())
         error("_loss_by_col", "Number of loss functions specified must be <= " + _train.numCols());
-      else if (_parms._loss_by_col.length == _train.numCols())
+      else if (null == _parms._loss_by_col_idx && _parms._loss_by_col.length == _train.numCols())
         _lossFunc = _parms._loss_by_col;
-      else if (null == _parms._loss_by_col_idx || _parms._loss_by_col.length != _parms._loss_by_col_idx.length)
-        error("_loss_by_col_idx", "Must specify same number of column indices as loss functions");
-      else {
+      else if (null != _parms._loss_by_col_idx && _parms._loss_by_col.length == _parms._loss_by_col_idx.length) {
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for(int i = 0; i < _lossFunc.length; i++)
@@ -166,7 +164,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           else
             _lossFunc[_parms._loss_by_col_idx[i]] = _parms._loss_by_col[i];
         }
-      }
+      } else
+        error("_loss_by_col_idx", "Must specify same number of column indices as loss functions");
     } else {
       if (null != _parms._loss_by_col_idx)
         error("_loss_by_col", "Must specify loss function for each column");

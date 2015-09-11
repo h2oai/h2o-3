@@ -27,6 +27,18 @@ NULL
 #' California, Department of Information and Computer Science.
 NULL
 
+#' Edgar Anderson's Iris Data
+#' 
+#' Measurements in centimeters of the sepal length and width and petal length and width, 
+#' repsectively, for three species of iris flowers.
+#' 
+#' @docType data
+#' @keywords datasets
+#' @name iris
+#' @format A data frame with 150 rows and 5 columns
+#' @source Fisher, R. A. (1936) The use of multiple measurements in taxonomic problems. Annals of Eugenics, 7, Part II, 179–188.
+NULL
+
 #' Prostate Cancer Study
 #' 
 #' Baseline exam results on prostate cancer patients from Dr. Donn Young at The Ohio State 
