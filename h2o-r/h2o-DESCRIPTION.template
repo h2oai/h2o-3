@@ -47,6 +47,7 @@ Collate:
          'gbm.R'
          'glm.R'
          'glrm.R'
+         'h2o.R'
          'pca.R'
          'svd.R'
          'deeplearning.R'
