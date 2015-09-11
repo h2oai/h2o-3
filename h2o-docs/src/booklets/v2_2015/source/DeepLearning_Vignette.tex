@@ -773,13 +773,13 @@ Default is 0 (no cross-validation is performed).
 
 \item \texttt{h2o.shutdown()}: Shuts down the H2O cluster.
 
-\item \texttt{h2o.importFile(path, conn = h2o.getConnection())}: Imports a file into H2O.
+\item \texttt{h2o.importFile(path)}: Imports a file into H2O.
 
-\item \texttt{h2o.deepLearning(x, training\_frame, autoencoder, hidden, epochs)}: Creates a Deep Learning model.
+\item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}: Creates a Deep Learning model.
 
-\item \texttt{h2o.grid(algorithm, grid\_id, ..., hyper\_params = list(), conn = h2o.getConnection())}: Starts H2O grid support and gives results.
+\item \texttt{h2o.grid(algorithm, grid\_id, ..., hyper\_params = list())}: Starts H2O grid support and gives results.
 
-\item \texttt{h2o.predict(model, newdata)}: Does a prediction on a H2O model.
+\item \texttt{h2o.predict(model, newdata)}: Generate predictions from an H2O model on a test set.
 
 \end{itemize}
 
@@ -793,6 +793,17 @@ Default is 0 (no cross-validation is performed).
 %TO DO: Anisha
 \item \texttt{import h2o}:  Imports the h2o Python package.
 
+\item \texttt{h2o.init()}:  Connects to (or starts) an H2O cluster.
+
+\item \texttt{h2o.shutdown()}: Shuts down the H2O cluster.
+
+\item \texttt{h2o.import\_file(path)}: Imports a file into H2O.
+
+\item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}: Creates a Deep Learning model.
+
+\item \texttt{h2o.grid} (not yet available): Starts H2O grid support and gives results.
+
+\item \texttt{h2o.predict(model, newdata)}: Generate predictions from an H2O model on a test set.
 
 \end{itemize}
 
