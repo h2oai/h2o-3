@@ -746,7 +746,13 @@ h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 .str.list <- function(sl) paste0('[',paste0('"',sl,'"',collapse=" "),']')
 
 # Convert a row or column selector to zero-based numbering and return a string
-.row.col.selector <- function( sel ) {
+.row.col.selector <- function( sel, raw_sel=NULL, envir=NULL ) {
+  if( !is.symbol(sel) && is.language(sel) && sel[[1]] == ":" ) {
+    sub <- if( eval(sel[[2]], envir=envir) < 0 ) 0 else 1L
+    s <- paste0( "[", eval(sel[[2]], envir=envir) - sub, ":", abs(eval(sel[[3]], envir=envir) - eval(sel[[2]], envir=envir))+1L, "]")
+    return( s )
+  }
+  sel <- if( !is.null(raw_sel) ) raw_sel else eval(sel)
   if( is.numeric(sel) ) { # number list for column selection; zero based
     sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
     .num.list(sel2)
@@ -809,13 +815,13 @@ NULL
       if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
       col <- idx
     }
-    idx <- .row.col.selector(col) # Generic R expression
+    idx <- .row.col.selector(col,envir=parent.frame()) # Generic R expression
     assign("data",.newExpr("cols",data,idx)) # Column selector
   }
   # Have a row selector?
   if( !missing(row) && (is.Frame(row) || !is.na(row)) ) {
     if( !is.Frame(row) )    # Generic R expression
-      row <- .row.col.selector(row)
+      row <- .row.col.selector(substitute(row), row,envir=parent.frame())
     assign("data",.newExpr("rows",data,row)) # Row selector
   }
   data
@@ -1198,7 +1204,7 @@ str.Frame <- function(x, cols=FALSE, ...) {
 
   # Row arg is missing, means "all the rows"
   if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
-  else       rows <- .row.col.selector(row)
+  else       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
@@ -1213,7 +1219,7 @@ str.Frame <- function(x, cols=FALSE, ...) {
     } else idx <- col
     if( is.null(value) ) return(`[.Frame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
     if( idx==ncol(data)+1 && is.na(name) ) name <- paste0("C",idx)
-    cols <- .row.col.selector(idx)
+    cols <- .row.col.selector(idx, envir=parent.frame())
   }
 
   if( is.character(value) ) value <- .quote(value)
@@ -1762,7 +1768,7 @@ h2o.removeVecs <- function(data, cols) {
   if( missing(cols) ) stop("`cols` must be specified")
   del.cols <- cols
   if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
-  .newExpr("cols",data,.row.col.selector(-del.cols))
+  .newExpr("cols",data,.row.col.selector(-del.cols,envir=parent.frame()))
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1933,7 +1939,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   }
   if(group.cols <= 0L || group.cols > ncol(data))
     stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
-  args <- c(args,.row.col.selector(group.cols))
+  args <- c(args,.row.col.selector(group.cols,envir=parent.frame()))
 
   ### ORDER BY ###
   order.by.cols <- NULL
@@ -1949,7 +1955,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
     }
     if(order.by.cols < 1L || order.by.cols > ncol(data)) stop('Column ', order.by.cols, ' out of range for frame columns ', ncol(data), '.')
   }
-  args <- c(args,.row.col.selector(order.by.cols))
+  args <- c(args,.row.col.selector(order.by.cols,envir=parent.frame()))
 
 
   a <- substitute(list(...))
@@ -2093,7 +2099,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
       else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
       if( vars <= 0L || vars > (ncol(data)) )
         stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
-      gb.cols <- .row.col.selector(vars)
+      gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
   res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
@@ -2157,7 +2163,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
   if(vars <= 0L || vars > ncol(X))
     stop('Column ', vars, ' out of range for frame columns ', ncol(X), '.')
-  vars <- .row.col.selector(vars)
+  vars <- .row.col.selector(vars,envir=parent.frame())
 
   # Deal with extra arguments
   l <- list(...)

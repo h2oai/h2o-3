@@ -12,6 +12,8 @@ import java.util.Arrays;
 class ASTNumList extends AST {
   final double _bases[], _strides[];
   final long _cnts[];
+  final boolean _isEx;
+  final boolean _isList;
   ASTNumList( Exec e ) {
     ArrayList<Double> bases  = new ArrayList<>();
     ArrayList<Double> strides= new ArrayList<>();
@@ -57,12 +59,17 @@ class ASTNumList extends AST {
       _strides[i] = strides.get(i);
       if( _cnts[i] != 1 ) isList = false;
     }
-
+    _isList = isList;
     // Complain about unordered bases, unless it's a simple number list
     if( !isList )
       for( int i=1; i<_bases.length; i++ )
         if( _bases[i-1] >= _bases[i] )
           throw new IllegalArgumentException("Bases must be monotonically increasing");
+
+    _isEx = _bases.length > 0 && _bases[0] < 0;  // exclusion list, so flip all bases to positive and 0-based index
+    if( _isEx )
+      for(int i=0; i<_bases.length; i++ )
+        _bases[i] = -1 * _bases[i] - 1;  // negative indexing is 1-based, flip to 0-based
   }
 
   // A simple ASTNumList of 1 number
@@ -70,12 +77,16 @@ class ASTNumList extends AST {
     _bases  = new double[]{d};
     _strides= new double[]{1};
     _cnts   = new long  []{1};
+    _isEx   = false;
+    _isList = true;
   }
   // A simple dense range ASTNumList
   ASTNumList( long lo, long hi_exclusive ) {
     _bases  = new double[]{lo};
     _strides= new double[]{1};
     _cnts   = new long  []{hi_exclusive-lo};
+    _isEx   = false;
+    _isList = false;
   }
 
   // An empty number list
@@ -83,12 +94,16 @@ class ASTNumList extends AST {
     _bases  = new double[0];
     _strides= new double[0];
     _cnts   = new long  [0];
+    _isEx   = false;
+    _isList = true;
   }
 
   ASTNumList(double[] list) {
     _bases  = list;
     _strides= new double[list.length];
     _cnts   = new long[list.length];
+    _isEx   = false;
+    _isList = true;
     Arrays.fill(_strides,0);
     Arrays.fill(_cnts,1);
   }
@@ -157,7 +172,7 @@ class ASTNumList extends AST {
     return is;
   }
 
-  double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
+  double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; }
   double min() { return _bases[0]; }
   long cnt() { return water.util.ArrayUtils.sum(_cnts); }
   boolean isDense() { return _cnts.length==1 && _bases[0]==0 && _strides[0]==1; }
@@ -172,14 +187,14 @@ class ASTNumList extends AST {
       // if no exact base matches, check the ranges of the two "bounding" bases
       int[][] res = new int[2][]; // entry 0 is exact; entry 1 is [lb,ub]
       bsearch(v, res);
-      if( res[0] != null /* exact base match */ ) return true;
+      if( res[0] != null /* exact base match */ ) return !_isEx;
       else {
         int lb = res[1][0], ub = res[1][1];
-        if( _bases[lb] <= v && v < _bases[lb] + _cnts[lb] ) return true;
-        if( _bases[ub] <= v && v < _bases[ub] + _cnts[ub] ) return true;
+        if( _bases[lb] <= v && v < _bases[lb] + _cnts[lb] ) return !_isEx;
+        if( _bases[ub] <= v && v < _bases[ub] + _cnts[ub] ) return !_isEx;
       }
     }
-    return false;
+    return _isEx;
   }
 
   private void bsearch(long v, int[][] res) {
