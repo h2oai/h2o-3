@@ -117,12 +117,14 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         assert np.absolute(h2o_val - np_val) < 1e-6, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
-def javapredict(algo, train, test, x, y, **kwargs):
+def javapredict(algo, equality, train, test, x, y, **kwargs):
     print "Creating model in H2O"
     if algo == "gbm":
         model = h2o.gbm(x=train[x], y=train[y], **kwargs)
     elif algo == "random_forest":
         model = h2o.random_forest(x=train[x], y=train[y], **kwargs)
+    elif algo == "deeplearning":
+        model = h2o.deeplearning(x=train[x], y=train[y], **kwargs)
     else:
         raise(ValueError, "algo {0} is not supported".format(algo))
     print model
@@ -189,11 +191,11 @@ def javapredict(algo, train, test, x, y, **kwargs):
     # Value
     for r in range(hr):
         hp = predictions[r,0]
-        if algo == "gbm":
+        if equality == "numeric":
             pp = float.fromhex(predictions2[r,0])
             assert abs(hp - pp) < 1e-4, "Expected predictions to be the same (within 1e-4) for row {0}, but got {1} and {2}".format(r,hp, pp)
-        elif algo == "random_forest":
+        elif equality == "class":
             pp = predictions2[r,0]
             assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
         else:
-            raise(ValueError, "algo {0} is not supported".format(algo))
+            raise(ValueError, "equality type {0} is not supported".format(equality))
