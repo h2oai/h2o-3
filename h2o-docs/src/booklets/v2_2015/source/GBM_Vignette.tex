@@ -85,13 +85,9 @@ interpret model output, how to make predictions, and various implementation deta
 
 \subsection{Example code}
 
-R code for the examples in this document are available here:
+R and Python code for the examples in this document are available here:
 
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GBM_Vignette.R}
-
-Python code for the examples in this document can be found here:
-
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GBM_Vignette.py}
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/gbm}
 
 The document source itself can be found here:
 
@@ -129,8 +125,8 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{x}}: A vector containing the names of the predictors to use while building the GBM model. 
 \item {\texttt{y}}: A character string or index that represents the response variable in the model.  
 \item {\texttt{training\_frame}}: An \texttt{H2OFrame} object containing the variables in the model. 
-\item {\texttt{validation\_frame}}: An \texttt{H2OParsedData} object containing the validation dataset used to construct confusion matrix. If  blank, the training data is used by default.
-\item {\texttt{nfolds}}: Number of folds for cross-validation. If \texttt{nfolds >=2}, then \texttt{validation\_frame} must remain blank. Default is 0. %%validation_frame = correct? just says "validation" in R doc...
+\item {\texttt{validation\_frame}}: An \texttt{H2OFrame} object containing the validation dataset used to construct confusion matrix. If  blank, the training data is used by default.
+\item {\texttt{nfolds}}: Number of folds for cross-validation. 
 \item {\texttt{ignore\_const\_cols}}: A boolean indicating if constant columns should be ignored.  Default is True.
 \item {\texttt{ntrees}}: A non-negative integer that defines the number of trees. The default is 50.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
@@ -199,17 +195,17 @@ Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 
 
 
-In the above algorithm, for $k$-classification, H2O builds $k$-regression trees to represent one classification tree. The index $m$ tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. In this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model, and then to fit a regression tree to these gradient computations. This fitting process is distributed and parallelized. Details on this framework are available at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
+In the above algorithm, for multi-class classification, H2O builds $k$-regression trees, one tree to represent each target class. The index $m$ tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. In this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model, and then to fit a regression tree to these gradient computations. This fitting process is distributed and parallelized. Details on this framework are available at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
 \\
 \\
 The final procedure in the inner loop is to add the current model to the fitted regression tree, which improves the accuracy of the model during the inherent gradient descent step. After $M$ iterations, the final ``boosted" model can be tested out on new data.
 
-\subsection{Loss Function}
-The AdaBoost method builds an additive logistic regression model:
-$${F(x) = log}\frac{Pr(Y = 1|x)}{Pr(Y = -1|x)} = \sum_{m=1}^{M} \alpha_m f_m (x) $$
-
-by stagewise fitting using the loss function:
-$$L(y, F(x)) = exp(-y  F (x)) $$
+%%\subsection{Loss Function}
+%%The AdaBoost method builds an additive logistic regression model:
+%%$${F(x) = log}\frac{Pr(Y = 1|x)}{Pr(Y = -1|x)} = \sum_{m=1}^{M} \alpha_m f_m (x) $$
+%%
+%%by stagewise fitting using the loss function:
+%%$$L(y, F(x)) = exp(-y  F (x)) $$
 
 
 \subsection{Distributed Trees}
@@ -223,7 +219,7 @@ them to make an algorithmically-based decision, such as lowest mean squared erro
 tree (and the next MR task), a decision is made for each row: if X $<$ 1.5, go right in the tree; otherwise, go left.
 H2O computes the stats for each new leaf in the tree, and each pass across all the rows builds the entire layer.
 
-For multinomial or binomial, the split is determined by the number of columns. The number of columns is evaluated to
+For multinomial or binomial, the split is determined by the number of bins. The number of bins is evaluated to
 find the best split out of the possible combinations. For example, for a hundred-column dataset that uses twenty bins,
 there are 2000 (20x100) possible split points.
 
@@ -242,8 +238,6 @@ parallel and distributed. The processing requirements for more data can be offse
 Since H2O does the per-level compute in parallel, which requires sending histograms over the network, the amount
 of data can become very large for a very deep tree.
 
-High max-bin sizes slow down generation of deep trees, but this is not a problem for GBM tree depths as GBM
-typically uses very shallow trees. Bin limits over 20 have been shown to provide very little improvement on the quality of the GBM model.
 
 For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report
 uses the first tree, so the first two reports are not equal. The reported MSE is the inclusive effect of all
@@ -285,7 +279,7 @@ In the above example, an important user-specified value is $N$, which represents
 partitioned into before the tree's best split point is determined. Split points are determined by considering the
 end points of each bin, and the one-versus-many split for each bin. To model all factors individually, you can
 specify high $N$ values, but this will slow down the modeling process. For shallow trees, we recommend keeping the
-total count of bins across all splits at 1024 (so that a top-level split uses 1024, but a 2nd level split uses 512
+total count of bins across all splits at 1024  for numerical columns (so that a top-level split uses 1024, but a 2nd level split uses 512
 bins, and so forth). This value is then maxed with the input bin count.
 \\
 \\
@@ -297,7 +291,7 @@ performance. Models with $4 \leq J \leq 8$ and a larger number of trees $M$ refl
 Later, we will discuss how to use grid search models to tune these parameters in the model selection process.
 \\
 \\
-You can also specify the shrinkage constant, which controls the learning rate of the model and is actually a
+You can also specify the \texttt{learn\_rate} constant, which controls the learning rate of the model and is actually a
 form of regularization. Shrinkage modifies the algorithm's update of $f_{km}(x)$ instead with the scaled
 addition $\nu \cdot \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$, where the constant $\nu$ is between 0 and 1.
 Smaller values of $\nu$ lead to greater rates of training errors, assuming that $M$ is fixed, but that in general
