@@ -1,8 +1,8 @@
 % TO DO:
-% 5.2.2) Update maxout formula
-% 5.2.3) Update loss functions for Absolute and Huber in Table 2
-% 5.2.3) Starting with this section, use algorithm mode to outline algos like SGD
-% Appendix parameters:  Add notes on acceptable ranges.  ie.  rho in [0,1]?
+% (X) Update maxout formula
+% (X) Update loss functions for Absolute and Huber in Table 2
+% (X) Starting with this section, use algorithm mode to outline algos like SGD
+% (X) Appendix parameters:  Add notes on acceptable ranges.  ie.  rho in [0,1]?
 % Are there any parameters that should be marked as Optional or Experimental?
 
 
@@ -205,7 +205,7 @@ Function & Formula & Range \\ [0.5ex] % inserts table
 \hline % inserts single horizontal line 
 Tanh & $f(\alpha) = \frac{e^{\alpha} - e ^{-\alpha}}{e^\alpha + e ^{-\alpha}}$ & $f(\cdot) \in [-1,1]$ \\ % inserting body of the table 
 Rectified Linear & $f(\alpha) = \max(0,\alpha)$ & $f(\cdot) \in \mathbb{R}_+$ \\
-Maxout & $f(\cdot) = \max(w_i x_i + b) $ & $f(\cdot) \in \mathbb{R}$\\  % [1ex] adds vertical space
+Maxout & $f(\alpha_1,\alpha_2) = \max(\alpha_1,\alpha_2) $ & $f(\cdot) \in \mathbb{R}$\\  % [1ex] adds vertical space
 \hline %inserts single line 
 \end{tabular} 
 \label{table:nonlin} % is used to refer this table in the text 
@@ -215,7 +215,6 @@ It is difficult to determine a ``best" activation function to use; each may outp
 
 The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (target) output and actual output, respectively, for training example $j$; further, let $y$ denote the output units and $O$ the output layer.
 \\
-% TO DO: Update loss functions for Absolute and Huber
 \begin{table}[ht] 
 \caption{Loss functions }
 % title of Table 
@@ -226,8 +225,8 @@ Function & Formula & Typical use \\ [0.5ex] % inserts table
 %heading 
 \hline % inserts single horizontal line 
 Mean Squared Error & $L(W,B | j) = \frac{1}{2}\|t^{(j)} - o^{(j)}\|_2^2$ & Regression \\ % inserting body of the table 
-Absolute & $L(W,B | j)$ = TO DO & Regression \\
-Huber & $L(W,B | j)$ = TO DO & Regression \\
+Absolute & $L(W,B | j) =  \|t^{(j)} - o^{(j)}\|_1$ & Regression \\
+Huber & $L(W,B | j) = \begin{cases} \frac{1}{2}\|t^{(j)} - o^{(j)}\|_2^2 & \textrm{for } \|t^{(j)} - o^{(j)}\|_1 \le 1, \\  \|t^{(j)} - o^{(j)}\|_1- \frac{1}{2} & \textrm{otherwise.}\end{cases}$ & Regression \\
 Cross Entropy & $L(W,B | j) = -\sum\limits_{y \in O} \left(\ln(o_y^{(j)}) \cdot t_y^{(j)} + \ln(1-o_y^{(j)}) \cdot (1-t_y^{(j)})\right) $ & Classification \\
 \hline %inserts single line 
 \end{tabular} 
@@ -241,7 +240,8 @@ The procedure to minimize the loss function $L(W,B$ $|$ $j)$ is a parallelized v
 \\
 {\bf{\footnotesize{Standard stochastic gradient descent}}}
 \\
-\line(1,0){275}
+%\line(1,0){275}
+\line(1,0){440}
 \\
 1. Initialize $W,B$ 
 \\
@@ -254,10 +254,11 @@ The procedure to minimize the loss function $L(W,B$ $|$ $j)$ is a parallelized v
 \hspace{2cm}  $w_{jk} := w_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial w_{jk}}$
 
 \hspace{2cm} $b_{jk} := b_{jk} - \alpha \frac{\partial L(W,B | j)}{\partial b_{jk}}$
-
-\line(1,0){275}
 \\
+%\line(1,0){275}
+\line(1,0){440}
 \\  
+\\
 Stochastic gradient descent is known to be fast and memory-efficient, but not easily parallelizable without becoming slow. We utilize \textsc{Hogwild!}, the recently developed lock-free parallelization scheme from \href{http://i.stanford.edu/hazy/papers/hogwild-nips.pdf}{Niu et al, 2011}, to address this issue. \textsc{Hogwild!} follows a shared memory model where multiple cores  (each handling separate subsets or all of the training data) are able to make independent contributions to the gradient updates $\nabla L(W,B$ $ |$ $j)$ asynchronously. In a multi-node system, this parallelization scheme works on top of H2O's distributed setup where the training data is distributed across the cluster. Each node operates in parallel on its local data until the final parameters $W,B$ are obtained by averaging. Below is a rough summary.
 \\
 \\
@@ -307,21 +308,19 @@ option), it might not be possible to replicate the data, and each compute node c
 The number of training examples globally presented to the distributed SGD worker nodes between model averaging is defined by the parameter \texttt{train\_samples\_per\_iteration}. If the specified value is \texttt{-1}, all nodes process all their local training data per iteration. If \texttt{replicate\_training\_data} is enabled, which is the default setting, this will result in training N epochs (passes over the data) per iteration on N nodes; otherwise, one epoch will be trained per iteration. Another special value is \texttt{0}, which always results in one epoch per iteration, regardless of the number of compute nodes. In general, any user-specified positive number is permissible for this parameter. For large datasets, we recommend specifying a fraction of the dataset. 
 
 For example, if the training data contains $10$ million rows, and we specify the number of training samples per iteration as $100,000$ when running on four nodes, then each node will process $25,000$ examples per iteration, and it will take $40$ distributed iterations to process one epoch. If the value is too high, it might take too long between synchronization and model convergence may be slow.  If the value is too low, network communication overhead will dominate the runtime and computational performance will suffer. A value of \texttt{-2}, which is the default value, enables auto-tuning for this parameter, based on the computational performance of the processors and the network of the system, and attempts to find a good balance between computation and communication. This parameter can affect the convergence rate during training.
-\\
+
 \noindent
 \subsection{Regularization} 
 \label{ssec:Regularization}
 H2O's Deep Learning framework supports regularization techniques to prevent overfitting. 
-\\
-\\
+
 $\ell_1$ (Lasso) and $\ell_2$ (Ridge) regularization enforce the same penalties as they do with other models; that is, modifying the loss function so as to minimize some loss, %%incomplete sentence? or referring to the equation below? should specify what is minimized (loss?)
-\\
+\medskip
 \begin{center}
 $L'(W,B$ $|$ $j) = L(W,B$ $|$ $j) + \lambda_1 R_1(W,B$ $|$ $j) + \lambda_2 R_2(W,B$ $|$ $j)$.
 \end{center}
-
+\medskip
 For $\ell_1$ regularization, $R_1(W,B$ $|$ $j)$ represents of the sum of all $\ell_1$ norms of the weights and biases in the network; $R_2(W,B$ $|$ $j)$ represents the sum of squares of all the weights and biases in the network. The constants $\lambda_1$ and $\lambda_2$ are generally specified as very small, for example $10^{-5}$.
-\\
 
 The second type of regularization available for deep learning is a modern innovation called dropout (\href{http://arxiv.org/pdf/1207.0580.pdf}{Hinton et al., 2012}). % TO DO: Add sparsity regularization (and was there another one -- see argument list)
 Dropout constrains the online optimization so that during forward propagation for a given training example, each neuron in the network suppresses its activation with probability $\textsc{P}$, which is usually less than 0.2 for input neurons and up to 0.5 for hidden neurons. There are two effects: as with $\ell_2$ regularization, the network weight values are scaled toward 0. Furthermore, each training example trains a different model, although they share the same global parameters. As a result, dropout allows an exponentially large number of models to be averaged as an ensemble, which can prevent overfitting and improve generalization. Input dropout can be especially useful when the feature space is large and noisy.
@@ -339,8 +338,7 @@ $\theta_{t+1} = \theta_t + v_{t+1}$
 \end{center}
 Using the momentum parameter can aid in avoiding 
 local minima and the associated instability (\href{http://www.cs.toronto.edu/~fritz/absps/momentum.pdf}{Sutskever et al, 2014}). Too much momentum can lead to instabilities, which is why it is best to ramp up the momentum slowly.  The parameters that control momentum are \texttt{momentum\_start, momentum\_ramp} and \texttt{momentum\_stable}.
-\\
-\\
+
 The Nesterov accelerated gradient method, triggered by the  \texttt{nesterov\_accelerated\_gradient} parameter, is a recommended improvement when using momentum updates. Using this method, the updates are further modified such that 
 \begin{center}
 $v_{t+1} = \mu v_t - \alpha \nabla L(\theta_t + \mu v_t)$
@@ -351,8 +349,7 @@ $W_{t+1} = W_t + v_{t+1}$
 \label{sssec:RateAnnealing}
 
 Throughout training, as the model approaches a minimum, the chance of oscillation or ``optimum skipping" creates the need for a slower learning rate. Instead of specifying a constant learning rate $\alpha$, learning rate annealing gradually reduces the learning rate $\alpha_t$ to ``freeze" into local minima in the optimization landscape (\href{http://arxiv.org/pdf/1212.5701v1.pdf}{Zeiler, 2012}).  
-\\
-\\
+
 For H2O, the annealing rate (\texttt{rate\_annealing}) is the inverse of the number of training samples it takes to cut the learning rate in half (e.g., $10^{-6}$ means that it takes $10^6$ training samples to halve the learning rate).
 
 \subsubsection{Adaptive learning} 
@@ -364,22 +361,21 @@ Typical values are between $10^{-10}$ and $10^{-4}$.
 
 \subsection{Loading data} 
 
-%Loading a dataset for use in H2O in R or Python is slightly different from the usual methodology: datasets must be converted into \texttt{H2OFrame} objects rather than an R \texttt{data.frame} or Python Pandas \texttt{DataFrame} or NumPy array. 
-Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert
-our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. 
+Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. 
 
 \subsubsection{Standardization} 
 
 Along with categorical encoding, H2O's Deep Learning preprocesses the data to be standardized for compatibility with the activation functions (recall Table 1's summary of each activation function's target space). Since the activation function does not generally map into the full spectrum of real numbers, $\mathbb{R}$, we first standardize our data to be drawn from $\mathcal{N}(0,1)$. Standardizing again after network propagation allows us to compute more precise errors in this standardized space, rather than in the raw feature space. 
 
+Note that for autoencoding, the data is normalized (instead of standardized) to the compact interval of $mathcal{U}(-0.5,0.5)$, to allow bounded activation functions like \texttt{Tanh} to better reconstruct the data.
+
+
 \subsection{Additional parameters} 
 
 This section provided some background on the various parameter configurations in H2O's Deep Learning architecture. Since there are dozens of possible parameter arguments when creating models, H2O Deep Learning models may seem daunting. However, most parameters do not need to be modified; the default settings are recommended as safe. The majority of the parameters that support (and in some cases, require) experimentation are discussed in the previous sections but there are a few more that will be discussed in the following sections. 
-\\
-\\
+
 There is no default setting for the hidden layer size, number, or epochs. Experimenting with building deep learning models using different network topologies and different datasets will lead to intuition for these parameters but two general rules of thumb should be applied. First, choose larger network sizes, as they can perform higher-level feature extraction, and techniques like dropout may train only subsets of the network at once. Second, use more epochs for greater predictive accuracy, but only when the computational cost is affordable. Many example tests can be found in the H2O \href{https://github.com/h2oai/h2o-3/}{GitHub} repository for pointers on specific values and results for these (and other) parameters.
-\\
-\\
+
 For a full list of H2O Deep Learning model parameters and default values, see Appendix A.   %Add link to appendix? 
 
 \section{Use case: MNIST digit classification} 
@@ -387,7 +383,7 @@ For a full list of H2O Deep Learning model parameters and default values, see Ap
 
 \subsection{MNIST overview} 
 
-The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known academic dataset used to benchmark classification performance. The data consists of 60,000 training images and 10,000 test images, for which each is a standardized $28^2$ pixel greyscale image of a single handwritten digit.  An example of the scanned handwritten digits is shown in Figure 1. 
+The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known academic dataset used to benchmark classification performance.  The data consists of 60,000 training images and 10,000 test images, for which each is a standardized $28^2$ pixel greyscale image of a single handwritten digit.  An example of the scanned handwritten digits is shown in Figure 1. 
 
 \begin{figure}[ht!]
 \centering
@@ -396,8 +392,8 @@ The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known aca
 \end{figure}
 
 
-For this example, we will download and import the train and test datasets from a public Amazon S3 bucket.%: {\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}}
-The train file is 13MB and the test file is 2.1MB, and below we download the data directly so the speed that the data is imported is limited by download speed.  Files can be uploaded from a variety of sources, including a remote locations and HDFS.
+For this example, we will download and import the train and test datasets from a public Amazon S3 bucket. %: {\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}}
+The train file is 13MB and the test file is 2.1MB, and below we download the data directly so the speed that the data is imported is limited by download speed.  Files can be uploaded from a variety of sources, including remote locations and HDFS.
 
 \newpage
 \waterExampleInR
@@ -411,36 +407,25 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 \label{ssec:TrialRun} 
 The example below illustrates the relative simplicity underlying most H2O Deep Learning model parameter configurations, as a result of the default settings. We use the first $28^2 = 784$ values of each row to represent the full image and the final value to denote the digit class. Rectified linear activation is popular with image processing and has performed well on the MNIST database previously and dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
-% Old R example:
-%\begin{lstlisting}[style=R]
-%#Train the model for digit classification
-%mnist_model = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = c(200,200,200), input_dropout_ratio = 0.2, l1 = 1e-5, validation = test_images.hex, epochs = 10)
-%
-%\end{lstlisting}
-%\normalsize
-
+\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
 
-% TO DO: Add this code (currently commented out)
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
 
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option is to use k-fold validation by specifying, for example, \texttt{nfolds = 5} in addition to / instead of \texttt{validation\_frame = test}.  When \texttt{nfolds} is a positive integer, k-fold cross validation will be performed and the cross-validation metrics will be computed.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  
+The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform k-fold cross-validation by specifying, for example, \texttt{nfolds = 5}.  When \texttt{nfolds} is a positive integer, k-fold cross-validation will be performed and the cross-validation metrics will be computed and stored as model output.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  
 
 \subsubsection{Extracting and handling the results} 
 
 We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
-
+\newpage
 \waterExampleInR
-%\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
 \lstinputlisting[style=R]{deeplearning/deeplearning_extractmodelparams.R}
 
-% TO DO: Add this code (currently commented out)
 \waterExampleInPython
-%\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
 \lstinputlisting[style=python]{deeplearning/deeplearning_extractmodelparams.py}
 
 
@@ -448,16 +433,15 @@ We can extract the parameters of our model, examine the scoring process, and mak
 The second command returns the training and validation errors for the model. The training error value is based on the parameter \texttt{score\_training\_samples}, which specifies the number of randomly sampled training points to be used for scoring (the default uses 10,000 points). The validation error is based on the parameter \texttt{score\_validation\_samples}, which configures the same value on the validation set; by default, this is the entire validation set.
 
 In general, choosing a greater number of sampled points leads to a better understanding of the model's performance on your dataset; setting either of these parameters to 0 automatically uses the entire corresponding dataset for scoring. However, either method allows you to control the minimum and maximum time spent on scoring with the \texttt{score\_interval} and \texttt{score\_duty\_cycle} parameters.
-\\
-\\
+
 These scoring parameters also affect the final model when the parameter \texttt{overwrite\_with\_best\_model} is enabled. This option selects the model that achieved the lowest validation error during training (based on the sampled points used for scoring) as the final model after training. If a dataset is not specified as the validation set, the training data is used by default; in this case, either the \texttt{score\_training\_samples} or \texttt{score\_validation\_samples} parameter will control the error computation during training and, in turn, the selected best model.
-\\
-\\
-Once we have a satisfactory model, the \texttt{h2o.predict()} command can be used to compute and store predictions on new data, which can then be used for further tasks in the interactive data science process.
+
+Once we have a satisfactory model, as determined by the validation or cross-validation metrics, the \texttt{h2o.predict()} command can be used to compute and store predictions on new data, which can then be used for further tasks in the interactive data science process.
 
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_predict.py}
 
@@ -469,14 +453,14 @@ H2O R users have access to an intuitive web interface for H2O, Flow, to mirror t
 
 \subsubsection{Variable importances} 
 
-The variable importances feature can be enabled with the argument \texttt{variable\_importances = TRUE}. This feature allows us to view the absolute and relative predictive strength of each feature in the prediction task.  Each H2O algorithm class has it's own methodology for computing variable importance.  For H2O's Deep Learning, the Gedeon method is used, which can be slow for large networks, so it is turned off by default.  If variable importance is the top priority in your analysis, you may (also) consider training a Random Forest and inspecting the variable importances generated with that method.
+The variable importances feature can be enabled by setting the \texttt{variable\_importances} to true. This feature allows us to view the absolute and relative predictive strength of each feature in the prediction task.  Each H2O algorithm class has it's own methodology for computing variable importance.  For H2O's Deep Learning, the Gedeon method (\href{http://cs.anu.edu.au/people/Tom.Gedeon/pdfs/ContribDataMinv2.pdf}{Gedeon, 1997}) is used, which can be slow for large networks, so it is turned off by default.  If variable importance is the top priority in your analysis, you may (also) consider training a Random Forest and inspecting the variable importances generated with that method.
 
 The following code demonstrates training using the \texttt{variable\_importances} option enabled and how to extract the variable importances from the trained model.  From the web UI, you can also view a visualization of the variable importances.
 
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
 
-%\medskip
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_varimp.py}
 
@@ -488,62 +472,34 @@ Another important feature of the web interface is the Java (POJO) model, accessi
 
 \subsection{Grid search for model comparison} 
 
-H2O supports grid search capabilities for model tuning by allowing users to tweak certain parameters and observe changes in model behavior. This is done by specifying sets of values for parameter arguments. The following example represents a sample grid search:
-
-%\begin{lstlisting}[style=R]
-%#Create a set of network topologies
-%hidden_layers = list(c(200,200), c(100,300,100),c(500,500,500))
-%
-%mnist_model_grid = h2o.deeplearning(x = 1:784, y = 785, data = train_images.hex, activation = "RectifierWithDropout", hidden = hidden_layers, validation = test_images.hex, epochs = 1, l1 = c(1e-5,1e-7), input_dropout_ratio = 0.2)
-%
-%\end{lstlisting}
+H2O supports grid search capabilities for model tuning by allowing users to tweak certain parameters and observe changes in model behavior. This is done by specifying sets of values for parameter arguments. At the time of publication, the Python grid search API is still undergoing development, so we demonstrate an R example below.   
 
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch.R}
 
 %\medskip
-\waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch.py}
+%\waterExampleInPython
+%\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch.py}
 
 
 \normalsize
 \noindent
-In this example, we specified three different network topologies and two different $\ell_1$ norm weights. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. This provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to Appendix A for parameter descriptions and configurable values.
-
-%\begin{lstlisting}[style=R]
-%#print out all prediction errors and run times of the models
-%mnist_model_grid
-%mnist_model_grid@model
-%
-%#print out a *short* summary of each of the models (indexed by parameter)
-%mnist_model_grid@sumtable
-%
-%#print out *full* summary of each of the models
-%all_params = lapply(mnist_model_grid@model, function(x) { x@model$params })
-%all_params
-%
-%#access a particular parameter across all models
-%l1_params = lapply(mnist_model_grid@model, function(x) { x@model$params$l1 })
-%l1_params
-%\end{lstlisting}
+In this example, we specified three different network topologies and two different $\ell_1$ norm weights. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. This provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to Appendix A for parameter descriptions and configurable values. 
 
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch_result.R}
 
 %\medskip
-\waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch_result.py}
+%\waterExampleInPython
+%\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch_result.py}
 
 
 \subsection{Checkpoint model}
 
-To resume model training, use checkpoint model keys for incrementally training a particular model with more iterations, more data, different data, and so forth. To train our initial model further, we can use it (or its key) as a checkpoint argument for a new model.
+To resume model training, use checkpoint model keys (\texttt{model\_id}) for incrementally training a particular model with more iterations, more data, different data, and so forth. To train our initial model further, we can use it (or its key) as a checkpoint argument for a new model.
 
-In the command below, \texttt{model\_grid@model\_ids[[1]]} represents the highest performing model from the grid search used for additional training. For checkpoint restarts, the training and validation datasets, as well as the response column, must match.  In addition, any non-default model parameters, such as \texttt{hidden = c(200,200)} in the example below.
+In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the highest performing model from the grid search used for additional training. For checkpoint restarts, the training and validation datasets, as well as the response column, must match.  In addition, any non-default model parameters, such as \texttt{hidden = c(200,200)} in the example below.  For the Python example, we will use the original ``trial run'' model that we trained previously as the checkpoint model.
 
-%\begin{lstlisting}[style=R]
-%mnist_checkpoint_model = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, %checkpoint=mnist_model_grid@model[[1]], validation = test_images.hex, epochs=9)
-%\end{lstlisting}
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_checkpoint.R}
 
@@ -552,16 +508,8 @@ In the command below, \texttt{model\_grid@model\_ids[[1]]} represents the highes
 \lstinputlisting[style=python]{deeplearning/deeplearning_checkpoint.py}
 
 \noindent
-Checkpointing can also be used to reload existing models that were saved to disk in a previous session. For example, we can save and reload the best model from the grid search by running the following commands.
+Checkpointing can also be used to reload existing models that were saved to disk in a previous session. For example, we can save and reload a model by running the following commands.
 
-%\begin{lstlisting}[style=R]
-%#Specify a model and the file path where it is to be saved
-%h2o.saveModel(object = mnist_model_grid@model[[1]], name = "/tmp/mymodel", force = TRUE)
-%
-%#Alternatively, save the model key in some directory (here we use /tmp)
-%#h2o.saveModel(object = mnist_model_grid@model[[1]], dir = "/tmp", force = TRUE)
-%
-%\end{lstlisting}
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_savemodel.R}
 
@@ -575,13 +523,6 @@ Checkpointing can also be used to reload existing models that were saved to disk
 \noindent
 After restarting  H2O, load the saved model by specifying the host and saved model file path. \textbf{Note}: The saved model must be reloaded using a compatible H2O version (i.e., the same version used to save the model).
 
-%\begin{lstlisting}[style=R]
-%best_mnist_grid.load = h2o.loadModel(h2o_server, "/tmp/mymodel")
-%
-%#Continue training the loaded model
-%best_mnist_grid.continue = h2o.deeplearning(x=1:784, y=785, data=train_images.hex, checkpoint=best_mnist_grid.load, validation = test_images.hex, epochs=1)
-%
-%\end{lstlisting}
 \normalsize
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_loadmodel_checkpoint.R}
@@ -591,19 +532,20 @@ After restarting  H2O, load the saved model by specifying the host and saved mod
 \lstinputlisting[style=python]{deeplearning/deeplearning_loadmodel_checkpoint.py}
 
 
+\noindent
+Additionally, you can also use the following command to retrieve a model from its H2O key. This command is useful, for example, if you have created an H2O model using the web interface and wish to proceed with the modeling process in R.
 
-\noindent
-Additionally, you can also use the command
-%\begin{lstlisting}[style=R]
-%model = h2o.getModel(h2o_server, key)
-%
-%\end{lstlisting}
-\noindent
-to retrieve a model from its H2O key. This command is useful, for example, if you have created an H2O model using the web interface and wish to proceed with the modeling process in R.
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_getmodel.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_getmodel.py}
+
+
 
 \subsection{Achieving world-record performance}
 
-Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (took about 4 hours) on 4 compute nodes, we obtain $0.87\%$ test set error and after training for $8,000$ epochs (took about 10 hours) on 10 nodes, we obtain $0.83\%$ test set error, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R. Details can be found in our \href{http://learn.h2o.ai/content/hands-on_training/deep_learning.html}{hands-on tutorial}. Accuracies around $1\%$ test set errors are typically achieved within 1 hour when running on 1 node.
+Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (took about 4 hours) on 4 compute nodes, we obtain $0.87\%$ test set error and after training for $8,000$ epochs (took about 10 hours) on 10 nodes, we obtain $0.83\%$ test set error, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R. Details can be found in our \href{http://learn.h2o.ai/content/hands-on_training/deep_learning.html}{hands-on tutorial}. Accuracies of around $1\%$ test set error are typically achieved within 1 hour when running on 1 node.
 The parallel scalability of H2O for the MNIST dataset on 1 to 63 compute nodes is shown in the figure below.
 \begin{figure}[h!]
 \centering
@@ -827,19 +769,19 @@ Default is 0 (no cross-validation is performed).
 \section{Appendix B: Common Command Summary in R}
 \begin{itemize}
 
-\item \texttt{library(h2o)}: Opens the required packages.
+\item \texttt{library(h2o)}: Imports the h2o R package.
 
-\item \texttt{localH2O = h2o.init()}:  Connects to an instance of H2O
+\item \texttt{h2o.init()}:  Connects to (or starts) an H2O cluster.
 
-\item \texttt{h2o.shutdown()}: Shuts down h2o.
+\item \texttt{h2o.shutdown()}: Shuts down the H2O cluster.
 
-\item \texttt{h2o.importFile(server, path)}: Imports a file into h2o.
+\item \texttt{h2o.importFile(path)}: Imports a file into H2O.
 
-\item \texttt{h2o.deepLearning(x, training\_frame,autoencoder, hidden, epochs)}: Creates a Deep Learning model.
+\item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}: Creates a Deep Learning model.
 
-\item \texttt{h2o.grid(algorithm, grid\_id, ..., hyper\_params = list(), conn = h2o.getConnection())}: Starts h2o grid support and gives results.
+\item \texttt{h2o.grid(algorithm, grid\_id, ..., hyper\_params = list())}: Starts H2O grid support and gives results.
 
-\item \texttt{h2o.predict(model, newdata)}: Does a prediction on a h2o model.
+\item \texttt{h2o.predict(model, newdata)}: Generate predictions from an H2O model on a test set.
 
 \end{itemize}
 
@@ -850,9 +792,20 @@ Default is 0 (no cross-validation is performed).
 
 \section{Appendix C: Common Command Summary in Python}
 \begin{itemize}
+%TO DO: Anisha
+\item \texttt{import h2o}:  Imports the h2o Python package.
 
-\item \texttt{}:
+\item \texttt{h2o.init()}:  Connects to (or starts) an H2O cluster.
 
+\item \texttt{h2o.shutdown()}: Shuts down the H2O cluster.
+
+\item \texttt{h2o.import\_file(path)}: Imports a file into H2O.
+
+\item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}: Creates a Deep Learning model.
+
+\item \texttt{h2o.grid} (not yet available): Starts H2O grid support and gives results.
+
+\item \texttt{h2o.predict(model, newdata)}: Generate predictions from an H2O model on a test set.
 
 \end{itemize}
 
@@ -866,20 +819,20 @@ Default is 0 (no cross-validation is performed).
 
 \textbf{H2O documentation}:  {\url{http://docs.h2o.ai}}
 
-\textbf{H2O Github Repository}:  {\url{http://github.com/h2oai/h2o.git}}
+\textbf{H2O Github Repository}:  {\url{http://github.com/h2oai/h2o-3.git}}
 
-\textbf{H2O Training}:    {\url{http://learn.h2o.ai/}}
+%%\textbf{H2O Training}:    {\url{http://learn.h2o.ai/}}
 
-\textbf{H2O Training Scripts and Data}: {\url{http://data.h2o.ai/}} 
+%%\textbf{H2O Training Scripts and Data}: {\url{http://data.h2o.ai/}} 
 
 \textbf{Code for this Document}:   \\
  {\url{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}}
 
-\textbf{H2O support}:   {\url{h2ostream@googlegroups.com}}
+\textbf{H2O open-source support}:   {\url{h2ostream@googlegroups.com}}
 
 \textbf{H2O JIRA}: {\url{https://0xdata.atlassian.net/secure/Dashboard.jspa}}
 
-\textbf{YouTube Channel}: {\url{https://www.youtube.com/user/0xdata}}
+\textbf{H2O YouTube Channel}: {\url{https://www.youtube.com/user/0xdata}}
 
 \textbf{Learning Deep Architectures for AI}. Bengio, Yoshua, 2009. \\
  {\url{http://www.iro.umontreal.ca/~lisa/pointeurs/TR1312.pdf}}
@@ -899,16 +852,16 @@ Default is 0 (no cross-validation is performed).
 \textbf{ADADELTA: An Adaptive Learning Rate Method}. {Zeiler, 2012}.  \\
  \href{http://arxiv.org/pdf/1212.5701v1.pdf}{http://arxiv.org/pdf/1212.5701v1.pdf}
 
-\textbf{H2O GitHub repository for the H2O Deep Learning documentation} \\
- \href{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}
-
 \textbf{{MNIST database.}}  \href{http://yann.lecun.com/exdb/mnist/}{http://yann.lecun.com/exdb/mnist/}
 
 \textbf{Reducing the Dimensionality of
 Data with Neural Networks}.  {Hinton et al, 2006}. \\
  \href{http://www.cs.toronto.edu/~hinton/science.pdf}{http://www.cs.toronto.edu/~hinton/science.pdf}
 
-\textbf{Definitive Performance Tuning Guide for Deep Learning}. \href{http://h2o.ai/blog/2015/02/deep-learning-performance/}{http://h2o.ai/blog/2015/02/deep-learning-performance/}
+\textbf{Definitive Performance Tuning Guide for Deep Learning}. \href{http://h2o.ai/blog/2015/08/deep-learning-performance/}{http://h2o.ai/blog/2015/08/deep-learning-performance/}
+
+%\textbf{Data mining of inputs: Analysing magnitude and functional measures}. {Gedeon, 2012}.  \\
+ %\href{http://cs.anu.edu.au/people/Tom.Gedeon/pdfs/ContribDataMinv2.pdf}{http://cs.anu.edu.au/people/Tom.Gedeon/pdfs/ContribDataMinv2.pdf}
 
 %%TODO: add Arno's performance guide blog post after it is updated; need a good way to include bar charts for results - can re-create in Photoshop if needed, but we should definitely include a link to the script
 

@@ -18,7 +18,7 @@ check.pca.grid.quasar.negative <- function(conn) {
 
   Log.info("Constructing the grid of pca models with some invalid pca parameters...")
   quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=FALSE)
-  expect_error(h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space))
+  expect_error(h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=TRUE))
   print(quasar_pca_grid)
 
   Log.info("Performing various checks of the constructed grid...")
@@ -43,7 +43,7 @@ check.pca.grid.quasar.negative <- function(conn) {
 
   Log.info(paste0("Constructing the grid of pca models with non-gridable parameter: ", non_gridable_parameter ,
                   " (1:pca_method, 2:seed, 3:use_all_factor_levels). Expecting failure..."))
-  expect_error(quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space))
+  expect_error(quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=TRUE))
 
   testEnd()
 }
