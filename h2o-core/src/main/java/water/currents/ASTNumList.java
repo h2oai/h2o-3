@@ -1,6 +1,5 @@
 package water.currents;
 
-import water.H2O;
 import water.util.SB;
 
 import java.util.ArrayList;
@@ -96,7 +95,7 @@ class ASTNumList extends AST {
 
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack
-  @Override Val exec( Env env ) { throw H2O.fail(); }
+  @Override Val exec( Env env ) { throw new IllegalArgumentException("Number list not allowed here"); }
 
   @Override public String str() { 
     SB sb = new SB().p('[');
