@@ -497,7 +497,7 @@ final public class H2O {
 
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
-    UDPRebooted.T.shutdown.send(H2O.SELF);
+    (status==0 ? UDPRebooted.T.shutdown : UDPRebooted.T.error).send(H2O.SELF);
     H2O.exit(status);
   }
 
