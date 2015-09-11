@@ -1309,7 +1309,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
-         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,recover_svd=None):
+         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,user_points=None,recover_svd=None):
   """
   Builds a generalized low rank model of a H2O dataset.
   
