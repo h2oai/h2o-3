@@ -1,10 +1,14 @@
-# We first encode the response column as categorical for multinomial classification
-train["C785"] = train["C785"].asfactor()
-test["C785"] = test["C785"].asfactor()
+# Specify the response and predictor columns
+y = "C785"
+x = train.names[0:784]
+
+# We encode the response column as categorical for multinomial classification
+train[y] = train[y].asfactor()
+test[y] = test[y].asfactor()
 
 # Train a Deep Learning model and validate on a test set
-model = h2o.deeplearning(x=train.names[0:784], 
-                         y=train.names[784], 
+model = h2o.deeplearning(x=x, 
+                         y=y, 
                          training_frame=train, 
                          validation_frame=test, 
                          distribution="multinomial",
