@@ -8,4 +8,4 @@ model_chkp = h2o.deeplearning(x=train.names[0:784],
                               distribution="multinomial",
                               activation="RectifierWithDropout",
                               hidden=[200,200,200],
-                              epochs=9)
+                              epochs=10)

@@ -496,7 +496,7 @@ In this example, we specified three different network topologies and two differe
 
 \subsection{Checkpoint model}
 
-To resume model training, use checkpoint model keys for incrementally training a particular model with more iterations, more data, different data, and so forth. To train our initial model further, we can use it (or its key) as a checkpoint argument for a new model.
+To resume model training, use checkpoint model keys (\texttt{model_id}) for incrementally training a particular model with more iterations, more data, different data, and so forth. To train our initial model further, we can use it (or its key) as a checkpoint argument for a new model.
 
 In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the highest performing model from the grid search used for additional training. For checkpoint restarts, the training and validation datasets, as well as the response column, must match.  In addition, any non-default model parameters, such as \texttt{hidden = c(200,200)} in the example below.  For the Python example, we will use the original ``trial run'' model that we trained previously as the checkpoint model.
 
@@ -530,7 +530,6 @@ After restarting  H2O, load the saved model by specifying the host and saved mod
 %\medskip
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_loadmodel_checkpoint.py}
-
 
 
 \noindent

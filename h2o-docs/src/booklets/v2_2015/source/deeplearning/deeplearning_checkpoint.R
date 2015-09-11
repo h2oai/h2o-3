@@ -8,4 +8,4 @@ model_chkp <- h2o.deeplearning(x = 1:784,
                                checkpoint = model_grid@model_ids[[1]],
                                hidden = c(200,200),
                                validation_frame = test, 
-                               epochs = 9)
+                               epochs = 10)
