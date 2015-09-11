@@ -205,7 +205,7 @@ Function & Formula & Range \\ [0.5ex] % inserts table
 \hline % inserts single horizontal line 
 Tanh & $f(\alpha) = \frac{e^{\alpha} - e ^{-\alpha}}{e^\alpha + e ^{-\alpha}}$ & $f(\cdot) \in [-1,1]$ \\ % inserting body of the table 
 Rectified Linear & $f(\alpha) = \max(0,\alpha)$ & $f(\cdot) \in \mathbb{R}_+$ \\
-Maxout & $f(\cdot) = \max(w_i x_i + b) $ & $f(\cdot) \in \mathbb{R}$\\  % [1ex] adds vertical space
+Maxout & $f(\alpha_1,\alpha_2) = \max(\alpha_1,\alpha_2) $ & $f(\cdot) \in \mathbb{R}$\\  % [1ex] adds vertical space
 \hline %inserts single line 
 \end{tabular} 
 \label{table:nonlin} % is used to refer this table in the text 
@@ -366,6 +366,9 @@ Loading a dataset in R or Python for use with H2O is slightly different from the
 \subsubsection{Standardization} 
 
 Along with categorical encoding, H2O's Deep Learning preprocesses the data to be standardized for compatibility with the activation functions (recall Table 1's summary of each activation function's target space). Since the activation function does not generally map into the full spectrum of real numbers, $\mathbb{R}$, we first standardize our data to be drawn from $\mathcal{N}(0,1)$. Standardizing again after network propagation allows us to compute more precise errors in this standardized space, rather than in the raw feature space. 
+
+Note that for autoencoding, the data is normalized (instead of standardized) to the compact interval of $mathcal{U}(-0.5,0.5)$, to allow bounded activation functions like \texttt{Tanh} to better reconstruct the data.
+
 
 \subsection{Additional parameters} 
 
