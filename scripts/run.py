@@ -1122,6 +1122,7 @@ class TestRunner:
                 sys.exit(1)
 
             cmd = ["R",
+                   "--vanilla",  # to isolate from .Rprofile effects; e.g. http://stackoverflow.com/a/32492718/403310
                    "--quiet",
                    "-f",
                    runner_setup_package_r]
