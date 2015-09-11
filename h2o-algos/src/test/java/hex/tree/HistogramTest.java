@@ -69,7 +69,7 @@ public class HistogramTest extends TestUtil {
   }
 
   /**
-   * Helper class to fill two histograms in the same way as DRealHistogram
+   * Helper class to fill two histograms in the same way as DHistogram
    */
   private class Histo {
     Histo(int len) {
