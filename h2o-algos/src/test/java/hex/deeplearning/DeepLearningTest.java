@@ -589,7 +589,7 @@ public class DeepLearningTest extends TestUtil {
       if (v!=null) v.remove();
       frTrain.add("Response", resp);
     } else {
-      frTrain = parse_test_file("./bigdata/server/HIGGS.csv");
+      frTrain = parse_test_file("./smalldata/testng/higgs_test_5k.csv");
       Vec resp = frTrain.vecs()[0].toEnum();
       Vec v = frTrain.remove(0);
       if (v!=null) v.remove();
@@ -612,6 +612,7 @@ public class DeepLearningTest extends TestUtil {
         dl._quiet_mode = false;
         dl._max_w2 = 10;
         dl._l1 = 1e-5;
+        dl._reproducible = true;
         dl._replicate_training_data = false; //every node only has a piece of the data
         dl._force_load_balance = true; //use multi-node
 
