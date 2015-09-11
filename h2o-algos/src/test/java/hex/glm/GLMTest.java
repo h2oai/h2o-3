@@ -1106,6 +1106,7 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._lambda_search = true;
+      params._nlambdas = 5;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
       double [] beta = model1.beta();
