@@ -1,21 +1,16 @@
 package water.util;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.util.regex.Pattern;
-
-import water.DKV;
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.Keyed;
-import water.Value;
-import water.Weaver;
+import water.*;
 import water.api.FrameV3;
 import water.api.KeyV3;
 import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 /**
  * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
@@ -168,14 +163,20 @@ public class PojoUtils {
               // Assigning an array of impl fields to an array of schema fields, e.g. a DeepLearningParameters[] into a DeepLearningParametersV2[]
               //
               Class dest_component_class = dest_field.getType().getComponentType();
-              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
-              int i = 0;
+
+              // NOTE: there can be a race on the source array, so shallow copy it.
+              // If it has shrunk the elements might have dangling references.
+              Iced[] orig_array = (Iced[]) orig_field.get(origin);
+              int length = orig_array.length;
+              Iced[] orig_array_copy = Arrays.copyOf(orig_array, length); // Will null pad if it has shrunk since calling length
+              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, length);
               int version = ((Schema)dest).getSchemaVersion();
 
               // Look up the schema for each element of the array; if not found fall back to the schema for the base class.
-              for (Iced impl : ((Iced[])orig_field.get(origin))) {
+              for (int i = 0; i < length; i++) {
+                Iced impl = orig_array_copy[i];
                 if (null == impl) {
-                  translation[i++] = null;
+                  translation[i++] = null; // also can happen if the array shrank between .length and the copy
                 } else {
                   Schema s = null;
                   try {
@@ -183,7 +184,7 @@ public class PojoUtils {
                   } catch (H2ONotFoundArgumentException e) {
                     s = ((Schema) dest_field.getType().getComponentType().newInstance());
                   }
-                  translation[i++] = s.fillFromImpl(impl);
+                  translation[i] = s.fillFromImpl(impl);
                 }
               }
               dest_field.set(dest, translation);
@@ -194,10 +195,13 @@ public class PojoUtils {
               // We can't check against the actual impl class I, because we can't instantiate the schema base classes to get the impl class from an instance:
               // dest_field.getType().getComponentType().isAssignableFrom(((Schema)f.getType().getComponentType().newInstance()).getImplClass())) {
               Class dest_component_class = dest_field.getType().getComponentType();
-              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
-              int i = 0;
-              for (Schema s : ((Schema[])orig_field.get(origin))) {
-                translation[i++] = s.createImpl();
+              Schema[] orig_array = (Schema[]) orig_field.get(origin);
+              int length = orig_array.length;
+              Schema[] orig_array_copy = Arrays.copyOf(orig_array, length);
+              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, length);
+              for (int i = 0; i < length; i++) {
+                Schema s = orig_array_copy[i];
+                translation[i] = s.createImpl();
               }
               dest_field.set(dest, translation);
             } else {
