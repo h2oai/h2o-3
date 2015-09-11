@@ -7,7 +7,7 @@ myIP = readline("Enter IP address of H2O server: ")
 myPort = readline("Enter port number of H2O server: ")
 remoteH2O = h2o.init(ip = myIP, port = as.numeric(myPort), startH2O = FALSE)
 
-gait.hex <- h2o.uploadFile(localH2O, path = system.file("extdata", "gait.csv", package="h2o"), destination_frame = "gait")
+gait.hex <- h2o.uploadFile(localH2O, path = system.file("extdata", "walking.csv", package="h2o"), destination_frame = "gait")
 summary(gait.hex)
 gait.glrm <- h2o.glrm(training_frame = gait.hex, x = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 print(gait.glrm)

@@ -114,17 +114,21 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (_parms._init != GLRM.Initialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
 
-      if (_parms._user_points.get().numCols() != _train.numCols())
+      Frame user_points = _parms._user_points.get();
+      assert null != user_points;
+
+      if (user_points.numCols() != _train.numCols())
         error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
-      else if (_parms._user_points.get().numRows() != _parms._k)
+      else if (user_points.numRows() != _parms._k)
         error("_user_points", "The user-specified points must have k = " + _parms._k + " rows");
       else {
         int zero_vec = 0;
-        Vec[] centersVecs = _parms._user_points.get().vecs();
+        Vec[] centersVecs = user_points.vecs();
         for (int c = 0; c < _train.numCols(); c++) {
-          if(centersVecs[c].naCnt() > 0) {
-            error("_user_points", "The user-specified points cannot contain any missing values"); break;
-          } else if(centersVecs[c].isConst() && centersVecs[c].max() == 0)
+          if (centersVecs[c].naCnt() > 0) {
+            error("_user_points", "The user-specified points cannot contain any missing values");
+            break;
+          } else if (centersVecs[c].isConst() && centersVecs[c].max() == 0)
             zero_vec++;
         }
         if (zero_vec == _train.numCols())
