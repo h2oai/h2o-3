@@ -5,6 +5,7 @@ import water.H2O;
 import water.Iced;
 import water.util.Log;
 import water.nbhm.NonBlockingHashMap;
+import water.util.PrettyPrint;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,24 +62,29 @@ public final class Categorical extends Iced {
     return  _map.keySet().toArray(new ValueString[_map.size()]);
   }
 
-  public void convertToUTF8() {
+  public static final int MAX_EXAMPLES = 10;
+  public void convertToUTF8(int col){
+    int hexConvCnt = 0;
     ValueString[] vs = _map.keySet().toArray(new ValueString[_map.size()]);
-    boolean first = true;
-    StringBuilder sb = new StringBuilder();
+    StringBuilder hexSB = new StringBuilder();
     for (int i =0; i < vs.length; i++) {
-      if (!vs[i].equals(vs[i].toString())) {
-        if (first) {
-          Log.info("Found categoricals with non-UTF-8 characters. Converting:");
-          first = false;
+      String s = vs[i].toString();
+      if (!vs[i].equals(s)) {
+        if (s.contains("�")) { // make weird chars into hex
+          s = vs[i].bytesToString();
+          if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");
+          if (hexConvCnt == MAX_EXAMPLES) hexSB.append("...");
         }
         int val = _map.get(vs[i]);
-        sb.append(vs[i].bytesToString() +" -> "+vs[i].toString()+",  ");
         _map.remove(vs[i]);
-        vs[i] = new ValueString(vs[i].toString());
-        _map.put(vs[i],val);
+        vs[i] = new ValueString(s);
+        _map.put(vs[i], val);
       }
     }
-    if (!first) Log.info(sb.toString());
+    if (hexConvCnt > 0) Log.info("Found categoricals with non-UTF-8 characters in the "
+        + PrettyPrint.withOrdinalIndicator(col)
+        + " column. Converting unrecognized characters into hex:  "
+        + hexSB.toString());
   }
 
   // Since this is a *concurrent* hashtable, writing it whilst its being
