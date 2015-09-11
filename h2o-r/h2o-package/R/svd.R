@@ -14,10 +14,10 @@
 #' @param max_iterations The maximum number of iterations to run each power
 #'        iteration loop. Must be between 1 and 1e6 inclusive.
 #' @param transform A character string that indicates how the training data
-#'        should be transformed before running PCA. Possible values are "NONE":
-#'        for no transformation, "DEMEAN": for subtracting the mean of each
-#'        column, "DESCALE": for dividing by the standard deviation of each
-#'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+#'        should be transformed before running PCA. Possible values are: "NONE"
+#'        for no transformation; "DEMEAN" for subtracting the mean of each
+#'        column; "DESCALE" for dividing by the standard deviation of each
+#'        column; "STANDARDIZE" for demeaning and descaling; and "NORMALIZE"
 #'        for demeaning and dividing each column by its range (max - min).
 #' @param svd_method A character string that indicates how SVD should be calculated.
 #'        Possible values are "GramSVD": distributed computation of the Gram matrix
@@ -77,5 +77,5 @@ h2o.svd <- function(training_frame, x, nv,
     parms$use_all_factor_levels <- use_all_factor_levels
   
   # Error check and build model
-  .h2o.modelJob('svd', parms, do_future=FALSE, version=99)
+  .h2o.modelJob('svd', parms, do_future=FALSE, h2oRestApiVersion=99)
 }
