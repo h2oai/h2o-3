@@ -632,7 +632,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21926955145068244, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -691,7 +691,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21926955145068244, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1328,9 +1328,9 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
-      assertEquals(0.7262076707473135, mm.auc()._auc, 1e-4); // 1 node
+      assertEquals(0.7264331810371721, mm.auc()._auc, 1e-4); // 1 node
       assertEquals(0.22686348162897116, mm.mse(), 1e-4);
-      assertEquals(0.09026116418495023, mm.r2(), 1e-4);
+      assertEquals(0.09039195554728074, mm.r2(), 1e-4);
       assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
 
       job.remove();
