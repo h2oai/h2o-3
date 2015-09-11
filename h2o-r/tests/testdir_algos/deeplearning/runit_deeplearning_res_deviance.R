@@ -25,8 +25,8 @@ test <- function(h) {
         #print(hh@model$training_metrics@metrics$mean_residual_deviance)
         #print(hh@model$validation_metrics@metrics$mean_residual_deviance)
 
-	expect_equal(mean_deviance,hh@model$training_metrics@metrics$mean_residual_deviance, 1e-8)
-	expect_equal(mean_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance, 1e-8)
+	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
+	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	
 
 	print("tweedie")
@@ -60,8 +60,8 @@ test <- function(h) {
         #print(hh@model$training_metrics@metrics$mean_residual_deviance)
         #print(hh@model$validation_metrics@metrics$mean_residual_deviance)
 
-	expect_equal(mean_deviance,hh@model$training_metrics@metrics$mean_residual_deviance, 1e-8)
-	expect_equal(mean_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance, 1e-8)
+	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
+	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	
 	testEnd()
 }
