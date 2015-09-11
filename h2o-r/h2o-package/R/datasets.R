@@ -1,10 +1,3 @@
-#' h2o.
-#' 
-#' @name h2o
-#' @docType package
-#' @import graphics RCurl jsonlite tools utils
-NULL
-
 #' Australia Coastal Data
 #' 
 #' Temperature, soil moisture, runoff, and other environmental measurements from
@@ -13,7 +6,7 @@ NULL
 #' @docType data
 #' @keywords datasets
 #' @name australia
-#' @format A dataframe with 251 rows and 8 columns
+#' @format A data frame with 251 rows and 8 columns
 NULL
 
 #' United States Congressional Voting Records 1984
@@ -27,24 +20,11 @@ NULL
 #' @docType data
 #' @keywords datasets
 #' @name housevotes
-#' @format A dataframe with 435 rows and 17 columns
+#' @format A data frame with 435 rows and 17 columns
 #' @source Congressional Quarterly Almanac, 98th Congress, 2nd session 1984, Volume XL: Congressional Quarterly Inc., Washington, D.C., 1985
 #' @references Newman, D.J. & Hettich, S. & Blake, C.L. & Merz, C.J. (1998). UCI Repository of machine 
 #' learning databases [http://www.ics.uci.edu/~mlearn/MLRepository.html]. Irvine, CA: University of 
 #' California, Department of Information and Computer Science.
-
-#' Edgar Anderson's Iris Data
-#' 
-#' Measurements in centimeters of the sepal length and width and petal length and width, 
-#' repsectively, for three species of iris flowers.
-#' 
-#' @docType data
-#' @keywords datasets
-#' @name iris
-#' @format A data frame with 150 rows and 5 columns
-#' @source Fisher, R. A. (1936) The use of multiple measurements in taxonomic problems. Annals of Eugenics, 7, Part II, 179–188.
-#' 
-#' The data were collected by Anderson, Edgar (1935). The irises of the Gaspe Peninsula, Bulletin of the American Iris Society, 59, 2–5.
 NULL
 
 #' Prostate Cancer Study
