@@ -207,7 +207,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       double mean = mean(b);
       if( mean != m )
         if( Double.isNaN(m) ) m=mean; // Capture mean of first non-empty bin
-        else if( !MathUtils.compare(m,mean,1e-6,1e-6) ) {
+        else if( !MathUtils.compare(m,mean,1e-5,1e-5) ) {
           Log.warn("Response should be constant, but mean of first non-empty bin is " + m + ", but another bin (" + b + ") has mean(b) = " + mean);
           return false;
         }
