@@ -210,10 +210,14 @@ Maxout & $f(\alpha_1,\alpha_2) = \max(\alpha_1,\alpha_2) $ & $f(\cdot) \in \math
 \end{tabular} 
 \label{table:nonlin} % is used to refer this table in the text 
 \end{table}
-The $\tanh$ function is a rescaled and shifted logistic function and its symmetry around 0 allows the training algorithm to converge faster. The rectified linear activation function has demonstrated high performance on image recognition tasks, and is a more biologically accurate model of neuron activations (\href{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}{LeCun et al, 1998}).  Maxout activation works particularly well with dropout, a regularization method discussed later in this vignette (\href{http://arxiv.org/pdf/1302.4389.pdf}{Goodfellow et al, 2013}). 
+The $\tanh$ function is a rescaled and shifted logistic function and its symmetry around 0 allows the training algorithm to converge faster. The rectified linear activation function has demonstrated high performance on image recognition tasks, and is a more biologically accurate model of neuron activations (\href{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}{LeCun et al, 1998}). Maxout is a generalization of the Rectifier activation, where each neuron picks the larger output of $k$ separate channels, each with its own weights and bias values. The current implementation supports only $k=2$. Maxout activation works particularly well with dropout, a regularization method discussed later in this vignette (\href{http://arxiv.org/pdf/1302.4389.pdf}{Goodfellow et al, 2013}). The Rectifier is the special case of Maxout where one channel always outputs 0.
 It is difficult to determine a ``best" activation function to use; each may outperform the others in separate scenarios, but grid search models (also described later) can help to compare activation functions and other parameters. The default activation function is the Rectifier. Each of these activation functions can be operated with dropout regularization (see below).
 
-The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (target) output and actual output, respectively, for training example $j$; further, let $y$ denote the output units and $O$ the output layer.
+The user can specify the distribution function of the response variable via the \texttt{distribution} argument as one of the following: AUTO, Bernoulli, Multinomial, Poisson, Gamma, Tweedie, Laplace, Huber or Gaussian.  Each distribution is has a primary association with a particular loss function, but some distributions permit the user to specify a non-default loss function from the group of loss functions specified in Table 2.  Bernoulli and Multinomial are primarily associated with Cross Entropy (aka. Log-Loss), Gaussian with Mean Squared Error, Laplace with Absolute loss and Huber with Huber loss.  For Poisson, Gamma and Tweedie distributions, the user cannot change the loss function and so \texttt{loss} must be set to AUTO.    
+
+%The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. 
+
+The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (target) output and actual output, respectively, for training example $j$; further, let $y$ denote the output units and $O$ the output layer.
 \\
 \begin{table}[ht] 
 \caption{Loss functions }
@@ -314,16 +318,16 @@ For example, if the training data contains $10$ million rows, and we specify the
 \label{ssec:Regularization}
 H2O's Deep Learning framework supports regularization techniques to prevent overfitting. 
 
-$\ell_1$ (Lasso) and $\ell_2$ (Ridge) regularization enforce the same penalties as they do with other models; that is, modifying the loss function so as to minimize some loss, %%incomplete sentence? or referring to the equation below? should specify what is minimized (loss?)
+L1 (Lasso) and L2 (Ridge) regularization enforce the same penalties as they do with other models; that is, modifying the loss function so as to minimize some loss, %%incomplete sentence? or referring to the equation below? should specify what is minimized (loss?)
 \medskip
 \begin{center}
 $L'(W,B$ $|$ $j) = L(W,B$ $|$ $j) + \lambda_1 R_1(W,B$ $|$ $j) + \lambda_2 R_2(W,B$ $|$ $j)$.
 \end{center}
 \medskip
-For $\ell_1$ regularization, $R_1(W,B$ $|$ $j)$ represents of the sum of all $\ell_1$ norms of the weights and biases in the network; $R_2(W,B$ $|$ $j)$ represents the sum of squares of all the weights and biases in the network. The constants $\lambda_1$ and $\lambda_2$ are generally specified as very small, for example $10^{-5}$.
+For L1 regularization, $R_1(W,B$ $|$ $j)$ represents of the sum of all $\ell_1$ norms of the weights and biases in the network; L2 regularization via $R_2(W,B$ $|$ $j)$ represents the sum of squares of all the weights and biases in the network. The constants $\lambda_1$ and $\lambda_2$ are generally specified as very small, for example $10^{-5}$.
 
 The second type of regularization available for deep learning is a modern innovation called dropout (\href{http://arxiv.org/pdf/1207.0580.pdf}{Hinton et al., 2012}). % TO DO: Add sparsity regularization (and was there another one -- see argument list)
-Dropout constrains the online optimization so that during forward propagation for a given training example, each neuron in the network suppresses its activation with probability $\textsc{P}$, which is usually less than 0.2 for input neurons and up to 0.5 for hidden neurons. There are two effects: as with $\ell_2$ regularization, the network weight values are scaled toward 0. Furthermore, each training example trains a different model, although they share the same global parameters. As a result, dropout allows an exponentially large number of models to be averaged as an ensemble, which can prevent overfitting and improve generalization. Input dropout can be especially useful when the feature space is large and noisy.
+Dropout constrains the online optimization so that during forward propagation for a given training example, each neuron in the network suppresses its activation with probability $\textsc{P}$, which is usually less than 0.2 for input neurons and up to 0.5 for hidden neurons. There are two effects: as with L2 regularization, the network weight values are scaled toward 0. Furthermore, each training example trains a different model, although they share the same global parameters. As a result, dropout allows an exponentially large number of models to be averaged as an ensemble, which can prevent overfitting and improve generalization. Input dropout specified via \texttt{input\_dropout\_ratio} can be especially useful when the feature space is large and noisy. Note that input dropout can be specified independently from dropout in the hidden layers (which requires \texttt{activation} to be either one of \texttt{TanhWithDropout}, \texttt{RectifierWithDropout} or \texttt{MaxoutWithDropout}). The amount of hidden dropout per hidden layer can be specified via \texttt{hidden\_dropout\_ratios} and defaults to 0.5.
 
 \subsection{Advanced optimization} 
 H2O features manual and automatic versions of advanced optimization. The manual mode features include momentum training and learning rate annealing, while automatic mode features an adaptive learning rate.
@@ -363,11 +367,11 @@ Typical values are between $10^{-10}$ and $10^{-4}$.
 
 Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. 
 
-\subsubsection{Standardization} 
+\subsubsection{Data standardization or normalization} 
 
 Along with categorical encoding, H2O's Deep Learning preprocesses the data to be standardized for compatibility with the activation functions (recall Table 1's summary of each activation function's target space). Since the activation function does not generally map into the full spectrum of real numbers, $\mathbb{R}$, we first standardize our data to be drawn from $\mathcal{N}(0,1)$. Standardizing again after network propagation allows us to compute more precise errors in this standardized space, rather than in the raw feature space. 
 
-Note that for autoencoding, the data is normalized (instead of standardized) to the compact interval of $mathcal{U}(-0.5,0.5)$, to allow bounded activation functions like \texttt{Tanh} to better reconstruct the data.
+For autoencoding, the data is normalized (instead of standardized) to the compact interval of $mathcal{U}(-0.5,0.5)$, to allow bounded activation functions like \texttt{Tanh} to better reconstruct the data.
 
 
 \subsection{Additional parameters} 
@@ -405,6 +409,7 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 
 \subsection{Performing a trial run}
 \label{ssec:TrialRun} 
+
 The example below illustrates the relative simplicity underlying most H2O Deep Learning model parameter configurations, as a result of the default settings. We use the first $28^2 = 784$ values of each row to represent the full image and the final value to denote the digit class. Rectified linear activation is popular with image processing and has performed well on the MNIST database previously and dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
 \newpage
@@ -416,17 +421,32 @@ The example below illustrates the relative simplicity underlying most H2O Deep L
 
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform k-fold cross-validation by specifying, for example, \texttt{nfolds = 5}.  When \texttt{nfolds} is a positive integer, k-fold cross-validation will be performed and the cross-validation metrics will be computed and stored as model output.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  
+The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform N-fold cross-validation by specifying, \texttt{nfolds = 5}, for example.  
+
+\subsubsection{N-fold cross-validation} 
+
+When the \texttt{nfolds} argument is specified is a positive integer, N-fold cross-validation will be performed on the \texttt{training\_frame} and the cross-validation metrics will be computed and stored as model output.  The default for \texttt{nfolds} is 0, for no cross-validation.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  Advanced users can also specify a \texttt{fold\_column} that specifies for each row which holdout fold it belongs to. By default, the holdout \texttt{fold\_assignment} is random, but other schemes such as round-robyn assignment via the modulo operator are also supported. An example for generic N-fold cross-validation is given below.  
+
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_crossval.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_crossval.py}
+
+
+
+
 
 \subsubsection{Extracting and handling the results} 
 
-We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
+We can extract the parameters of our model, examine the scoring process, and make predictions on new data.  The \texttt{h2o.performance} function in R returns all pre-computed performance metrics either the training set, validation set or returns cross-validated metrics for the training set. An equivalent \texttt{model\_performance} method is available in Python.  Utility functions that return specific metrics, such as MSE or AUC are also available.  Examples are shown below using the previously trained \texttt{model} and \texttt{model\_cv} objects.
+
 \newpage
 \waterExampleInR
-\lstinputlisting[style=R]{deeplearning/deeplearning_extractmodelparams.R}
+\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
 
 \waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_extractmodelparams.py}
+\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
 
 
 \noindent
@@ -441,7 +461,6 @@ Once we have a satisfactory model, as determined by the validation or cross-vali
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_predict.py}
 
@@ -449,7 +468,7 @@ Once we have a satisfactory model, as determined by the validation or cross-vali
 
 \subsection{Web interface} 
 
-H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:12345) to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames. 
+H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:54321) to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames. 
 
 \subsubsection{Variable importances} 
 
@@ -460,7 +479,6 @@ The following code demonstrates training using the \texttt{variable\_importances
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_varimp.py}
 
@@ -546,6 +564,10 @@ Additionally, you can also use the following command to retrieve a model from it
 \subsection{Achieving world-record performance}
 
 Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (took about 4 hours) on 4 compute nodes, we obtain $0.87\%$ test set error and after training for $8,000$ epochs (took about 10 hours) on 10 nodes, we obtain $0.83\%$ test set error, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R. Details can be found in our \href{http://learn.h2o.ai/content/hands-on_training/deep_learning.html}{hands-on tutorial}. Accuracies of around $1\%$ test set error are typically achieved within 1 hour when running on 1 node.
+
+\subsection{Computational performance}
+There are many parameters that affect the computational performance of H2O Deep Learning, but the default values should result in good performance for most problems. An in-depth study of the computational performance characteristics of H2O Deep Learning with complete code examples and results can be found in our blog post \href{http://h2o.ai/blog/2015/08/deep-learning-performance/}{Definitive Performance Tuning Guide for Deep Learning}.
+
 The parallel scalability of H2O for the MNIST dataset on 1 to 63 compute nodes is shown in the figure below.
 \begin{figure}[h!]
 \centering
@@ -615,7 +637,7 @@ We use this framework to develop an anomaly detection demonstration using a deep
 
 \item \texttt{model\_id}: (Optional) The unique ID assigned to the resulting model. If not specified, an ID is generated automatically. 
 
-\item \texttt{overwrite\_with\_best\_model}: Logical. If enabled, overwrite the final model with the best model found during training. Default is true.
+\item \texttt{overwrite\_with\_best\_model}: Logical. If enabled, overwrite the final model with the best model that was ever scored during training. Default is true.
 
 \item \texttt{validation\_frame}: (Optional) An \texttt{H2OFrame} object that represents the validation dataset used to construct the confusion matrix. If blank and \texttt{nfolds = 0}, the training data is used by default. 
 
@@ -625,7 +647,7 @@ We use this framework to develop an anomaly detection demonstration using a deep
 
 \item \texttt{use\_all\_factor\_levels}: Logical. Use all factor levels of categorical variance. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.  Default is true.
 
-\item \texttt{activation}: The choice of nonlinear, differentiable activation function used throughout the network. Options are \texttt{Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout}, and the default is \texttt{Rectifier}. Refer to the ``\nameref{sssec:ActivationLoss}'' section for more details.
+\item \texttt{activation}: The choice of nonlinear, differentiable activation function used throughout the network. Options are \texttt{Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout}, and the default is \texttt{Rectifier}. Refer to the ``\nameref{sssec:ActivationLoss}'' or ``\nameref{sssec:Regularization}'' sections for more details.
 
 \item \texttt{hidden}: The number and size of each hidden layer in the model. For example, if \texttt{c(100,200,100)} is specified, a model with 3 hidden layers will be produced, the middle hidden layer will have 200 neurons and the first and third hidden layers will have 100 neurons. The default is \texttt{c(200,200)}. For grid search, use \texttt{list(c(10,10), c(20,20))} etc. Refer to the section on  ``\nameref{ssec:TrialRun}'' for more details. 
 
@@ -673,7 +695,7 @@ Refer to the ``\nameref{sssec:AdaptiveLearning}'' section for more details.
 
 \item \texttt{loss}: Specify one of the loss options: \texttt{Automatic, CrossEntropy} (for classification only), \texttt{MeanSquare, Absolute}, or \texttt{Huber}. Refer to the ``\nameref{sssec:ActivationLoss}'' section for more details.
 
-\item \texttt{distribution}: Specify the distribution function of the response: \texttt{AUTO, bernouilli, multinomial, poisson, gamma, tweedie, laplace, huber,} or \texttt{gaussian}. 
+\item \texttt{distribution}: Specify the distribution function of the response: \texttt{AUTO, bernoulli, multinomial, poisson, gamma, tweedie, laplace, huber,} or \texttt{gaussian}. 
 
 \item \texttt{tweedie\_power}: Specify the tweedie power; applicable only if \texttt{distribution} is set to \texttt{tweedie}. Value must be between 1.0 and 2.0. 
 
@@ -745,7 +767,7 @@ Default is 0.
 %  // batch gradient descent: mini-batch size = # training rows
 %  public int _mini_batch_size = 1;
 
-\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values''�� that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values'' that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 \item \texttt{weights\_column}: Specify the weights column by column name. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 

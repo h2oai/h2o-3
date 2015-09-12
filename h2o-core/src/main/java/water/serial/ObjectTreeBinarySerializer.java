@@ -66,8 +66,12 @@ public class ObjectTreeBinarySerializer implements Serializer<List<Key>, URI> {
     Persist persist = H2O.getPM().getPersistForURI(outputDir);
     // Create the destination folder
     if (!persist.mkdirs(outputDir.toString())) {
-      if (overrideFile) {
+      boolean targetExists = persist.exists(outputDir.toString());
+      if (overrideFile && targetExists) {
         Log.warn("Directory " + outputDir + " already exists.");
+      } else if (overrideFile && !targetExists || !overrideFile && !targetExists) {
+        throw new IllegalArgumentException(
+            "Directory " + outputDir + " cannot be created! Check you access privileges!");
       } else {
         throw new IllegalArgumentException("Directory " + outputDir + " already exists but "
                                            + "the flag for force overwrite is `false`.");
