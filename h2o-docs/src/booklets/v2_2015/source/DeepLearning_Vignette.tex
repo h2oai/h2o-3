@@ -213,7 +213,11 @@ Maxout & $f(\alpha_1,\alpha_2) = \max(\alpha_1,\alpha_2) $ & $f(\cdot) \in \math
 The $\tanh$ function is a rescaled and shifted logistic function and its symmetry around 0 allows the training algorithm to converge faster. The rectified linear activation function has demonstrated high performance on image recognition tasks, and is a more biologically accurate model of neuron activations (\href{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}{LeCun et al, 1998}).  Maxout activation works particularly well with dropout, a regularization method discussed later in this vignette (\href{http://arxiv.org/pdf/1302.4389.pdf}{Goodfellow et al, 2013}). 
 It is difficult to determine a ``best" activation function to use; each may outperform the others in separate scenarios, but grid search models (also described later) can help to compare activation functions and other parameters. The default activation function is the Rectifier. Each of these activation functions can be operated with dropout regularization (see below).
 
-The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (target) output and actual output, respectively, for training example $j$; further, let $y$ denote the output units and $O$ the output layer.
+The user can specify the distribution function of the response variable via the \texttt{distribution} argument as one of the following: AUTO, Bernoulli, Multinomial, Poisson, Gamma, Tweedie, Laplace, Huber or Gaussian.  Each distribution is has a primary association with a particular loss function, but some distributions permit the user to specify a non-default loss function from the group of loss functions specified in Table 2.  Bernoulli and Multinomial are primarily associated with Cross Entropy (aka. Log-Loss), Gaussian with Mean Squared Error, Laplace with Absolute loss and Huber with Huber loss.  For Poisson, Gamma and Tweedie distributions, the user cannot change the loss function and so \texttt{loss} must be set to AUTO.    
+
+%The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. 
+
+The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (target) output and actual output, respectively, for training example $j$; further, let $y$ denote the output units and $O$ the output layer.
 \\
 \begin{table}[ht] 
 \caption{Loss functions }
@@ -763,7 +767,7 @@ Default is 0.
 %  // batch gradient descent: mini-batch size = # training rows
 %  public int _mini_batch_size = 1;
 
-\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values''�� that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+\item \texttt{offset\_column}:  Specify the offset column by column name.  Regression only.  Offsets are per-row ``bias values'' that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response value directly, the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
 \item \texttt{weights\_column}: Specify the weights column by column name. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
