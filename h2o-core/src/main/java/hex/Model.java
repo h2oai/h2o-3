@@ -55,7 +55,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
-  /** Model-specific parameter class.  Each model sub-class contains an
+  /** Model-specific parameter class.  Each model sub-class contains
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a
    *  KMeansParameters extending Model.Parameters; sample parameters include K,
