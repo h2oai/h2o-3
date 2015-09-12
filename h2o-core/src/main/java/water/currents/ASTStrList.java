@@ -43,11 +43,11 @@ class ASTColNames extends ASTPrim {
         throw new IllegalArgumentException("Column naming requires a string-list, but found a "+asts[3].getClass());
       ASTNumList cols = ((ASTNumList)asts[2]);
       ASTStrList nams = ((ASTStrList)asts[3]);
-      double d[] = cols.expand();
+      int d[] = cols.expand4();
       if( d.length != nams._strs.length ) 
         throw new IllegalArgumentException("Must have the same number of column choices as names");
       for( int i=0; i<d.length; i++ )
-        fr._names[(int)d[i]] = nams._strs[i];
+        fr._names[d[i]] = nams._strs[i];
 
     } else if( (asts[2] instanceof ASTNum) ) {
       int col = (int)(asts[2].exec(env).getNum());

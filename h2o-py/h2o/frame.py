@@ -140,6 +140,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def _handle_text_key(self, text_key, check_header=None):
     """
     Handle result of upload_file
+
     :param test_key: A key pointing to raw text to be parsed
     :return: Part of the H2OFrame constructor.
     """
