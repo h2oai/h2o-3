@@ -1845,6 +1845,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
     object <- as.data.frame(object)
   }
   types <- sapply(object, class)
+  types <- gsub("integer64", "numeric", types)
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
   types <- gsub("complex", "numeric", types)
