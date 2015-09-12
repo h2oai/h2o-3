@@ -1,4 +1,4 @@
-% -*- mode: tex; fill-column: 115; -*-
+% -*- mode: tex; fill-column: 115; -*-  
 
 \input{common/conf_top.tex}
 
@@ -9,13 +9,19 @@
 \input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
+\newgeometry{bmargin=0cm, hmargin=0cm}
+
 
 \begin{center}
 \textsc{\Large\bf{Gradient Boosted Machines with H2O}}
+
+\bigskip
+\line(1,0){250}  %inserts  horizontal line 
 \\
 \bigskip
+
 \textsc{\small{Cliff Click \hspace{20pt} Jessica Lanford \hspace{20pt} Michal Malohlava \hspace{20pt} Viraj Parmar \hspace{20pt} Hank Roark }}
-\\
+
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
@@ -27,7 +33,20 @@ August 2015: Third Edition
 \bigskip
 \end{center}
 
-{\raggedright\vfill\ 
+\null\vfill
+\begin{figure}[!b]
+\noindent\makebox[\textwidth]{%
+\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+\end{figure}
+
+\newpage
+\restoregeometry
+
+\null\vfill %move next text block to lower left of new page
+
+\thispagestyle{empty}%remove pg#
+
+{\raggedright 
 
 Gradient Boosted Machines with H2O\\
   by Cliff Click, Jessica Lanford, Michal Malohlava, Viraj Parmar, \&\  Hank Roark\\
@@ -55,6 +74,7 @@ Printed in the United States of America.
 }
 
 \newpage
+\thispagestyle{empty}%remove pg#
 
 \tableofcontents
 
@@ -166,7 +186,7 @@ learning system for predictive tasks. Here we consider gradient boosting in the 
 although the model for regression follows a similar logic. The following analysis follows from the discussion in
 Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 
-
+\newpage
 \bf{\footnotesize{GBM for classification}}
 \normalfont
 \\
@@ -316,7 +336,7 @@ Load the data to your current working directory in your R Console (do this for a
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_uploadfile_example.py}
 
-
+\newpage
 \subsection{Performing a trial run}
 Returning to the Airline dataset, load the dataset with H2O and select the variables to use to predict a chosen
 response. For example, model whether flights are delayed based on the departure's scheduled day of the week and day of
@@ -334,6 +354,7 @@ Since it is meant just as a trial run, the model contains only 100 trees. In thi
 specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify, for example,
 \texttt{nfolds=5}.
 
+\newpage
 \subsection{Extracting and handling the results}
 
 Now, extract the parameters of the model, examine the scoring process, and make predictions on the new data.
@@ -357,7 +378,7 @@ new data, which can then be used for further tasks in the interactive modeling p
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_predict.py}
 
-
+\newpage
 \subsection{Web interface}
 
 
@@ -406,6 +427,7 @@ To download the model:
 To support grid search capabilities for model tuning,  specify sets of values for parameter arguments to tweak
 certain parameters and observe changes in model behavior. The following is an example of a grid search:
 
+\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
 
