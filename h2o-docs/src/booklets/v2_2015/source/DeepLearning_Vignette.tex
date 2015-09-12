@@ -405,6 +405,7 @@ The train file is 13MB and the test file is 2.1MB, and below we download the dat
 
 \subsection{Performing a trial run}
 \label{ssec:TrialRun} 
+
 The example below illustrates the relative simplicity underlying most H2O Deep Learning model parameter configurations, as a result of the default settings. We use the first $28^2 = 784$ values of each row to represent the full image and the final value to denote the digit class. Rectified linear activation is popular with image processing and has performed well on the MNIST database previously and dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
 \newpage
@@ -416,17 +417,32 @@ The example below illustrates the relative simplicity underlying most H2O Deep L
 
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform k-fold cross-validation by specifying, for example, \texttt{nfolds = 5}.  When \texttt{nfolds} is a positive integer, k-fold cross-validation will be performed and the cross-validation metrics will be computed and stored as model output.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  
+The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform k-fold cross-validation by specifying, \texttt{nfolds = 5}, for example.  
+
+\subsubsection{Cross-validation} 
+
+When the \texttt{nfolds} argument is specified is a positive integer, k-fold cross-validation will be performed on the \texttt{training\_frame} and the cross-validation metrics will be computed and stored as model output.  The default for \texttt{nfolds} is 0, for no cross-validation.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  An example is given below.  
+
+\waterExampleInR
+\lstinputlisting[style=R]{deeplearning/deeplearning_crossval.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{deeplearning/deeplearning_crossval.py}
+
+
+
+
 
 \subsubsection{Extracting and handling the results} 
 
-We can extract the parameters of our model, examine the scoring process, and make predictions on new data.
+We can extract the parameters of our model, examine the scoring process, and make predictions on new data.  The \texttt{h2o.performance} function in R returns all pre-computed performance metrics either the training set, validation set or returns cross-validated metrics for the training set. An equivalent \texttt{model\_performance} method is available in Python.  Utility functions that return specific metrics, such as MSE or AUC are also available.  Examples are shown below using the previously trained \texttt{model} and \texttt{model\_cv} objects.
+
 \newpage
 \waterExampleInR
-\lstinputlisting[style=R]{deeplearning/deeplearning_extractmodelparams.R}
+\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
 
 \waterExampleInPython
-\lstinputlisting[style=python]{deeplearning/deeplearning_extractmodelparams.py}
+\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
 
 
 \noindent
@@ -441,7 +457,6 @@ Once we have a satisfactory model, as determined by the validation or cross-vali
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_predict.py}
 
@@ -460,7 +475,6 @@ The following code demonstrates training using the \texttt{variable\_importances
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{deeplearning/deeplearning_varimp.py}
 
@@ -546,6 +560,10 @@ Additionally, you can also use the following command to retrieve a model from it
 \subsection{Achieving world-record performance}
 
 Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (took about 4 hours) on 4 compute nodes, we obtain $0.87\%$ test set error and after training for $8,000$ epochs (took about 10 hours) on 10 nodes, we obtain $0.83\%$ test set error, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R. Details can be found in our \href{http://learn.h2o.ai/content/hands-on_training/deep_learning.html}{hands-on tutorial}. Accuracies of around $1\%$ test set error are typically achieved within 1 hour when running on 1 node.
+
+\subsection{Computational performance}
+There are many parameters that affect the computational performance of H2O Deep Learning, but the default values should result in good performance for most problems. An in-depth study of the computational performance characteristics of H2O Deep Learning with complete code examples and results can be found in our blog post \href{http://h2o.ai/blog/2015/08/deep-learning-performance/}{Definitive Performance Tuning Guide for Deep Learning}.
+
 The parallel scalability of H2O for the MNIST dataset on 1 to 63 compute nodes is shown in the figure below.
 \begin{figure}[h!]
 \centering
@@ -828,7 +846,7 @@ Default is 0 (no cross-validation is performed).
 \textbf{Code for this Document}:   \\
  {\url{https://github.com/h2oai/h2o/tree/master/docs/deeplearning/DeepLearningRVignetteDemo}}
 
-\textbf{H2O open-source support}:   {\url{h2ostream@googlegroups.com}}
+\textbf{H2O open-source support}:   {\url{h2ostream@googlegroups.com} and \url{https://groups.google.com/forum/#!forum/h2ostream}}
 
 \textbf{H2O JIRA}: {\url{https://0xdata.atlassian.net/secure/Dashboard.jspa}}
 

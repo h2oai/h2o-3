@@ -8,7 +8,7 @@ test_ecg <- h2o.importFile(path = "http://h2o-public-test-data.s3.amazonaws.com/
 
 # Train deep autoencoder learning model on "normal" 
 # training data, y ignored 
-anomaly_model <- h2o.deeplearning(x = 1:210, 
+anomaly_model <- h2o.deeplearning(x = names(train), 
                                  training_frame = train_ecg, 
                                  activation = "Tanh", 
                                  autoencoder = TRUE, 

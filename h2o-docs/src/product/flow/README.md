@@ -440,7 +440,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **family**: ([GLM](#GLM)) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
 
-- **solver**: ([GLM](#GLM)) Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
+- **solver**: ([GLM](#GLM)) Select the solver to use (AUTO, IRLSM, L\_BFGS, COORDINATE\_DESCENT\_NAIVE, or COORDINATE\_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. COORDINATE\_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE and COORDINATE\_DESCENT are currently experimental. 
 
 - **link**: ([GLM](#GLM)) Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
@@ -683,6 +683,79 @@ To generate a Plain Old Java Object (POJO) that can use the model outside of H2O
 
 ---
 
+###Exporting and Importing Models
+
+**To export a built model:**
+
+0. Click the **Model** menu at the top of the screen. 
+0. Select *Export Model...*
+0. In the `exportModel` cell that appears, select the model from the drop-down *Model:* list.
+0. Enter a location for the exported model in the *Path:* entry field. 
+	>**Note**: If you specify a location that doesn't exist, it will be created. For example, if you only enter `test` in the *Path:* entry field, the model will be exported to `h2o-3/test`. 
+0. To overwrite any files with the same name, check the *Overwrite:* checkbox. 
+0. Click the **Export** button. A confirmation message displays when the model has been successfully exported. 
+
+  ![Export Model](images/ExportModel.png)
+
+
+**To import a built model:** 
+
+0. Click the **Model** menu at the top of the screen. 
+0. Select *Import Model...*
+0. Enter the location of the model in the *Path:* entry field. 
+	>**Note**: The file path must be complete (e.g., `Users/h2o-user/h2o-3/exported_models`). Do not rename models while importing. 
+0. To overwrite any files with the same name, check the *Overwrite:* checkbox. 
+0. Click the **Import** button. A confirmation message displays when the model has been successfully imported. To view the imported model, click the **View Model** button. 
+
+  ![Import Model](images/ImportModel.png)
+
+---
+
+###Checkpointing Models
+
+Some model types, such as DRF, GBM, and Deep Learning, support checkpointing. A checkpoint resumes model training so that you can iterate your model. The dataset must be the same. The following  model parameters must be the same when restarting a model from a checkpoint:
+
+
+Must be the same as in checkpoint model         |            |      | 
+--------------------|------------------|-----------------------|
+ `drop_na20_cols` | `response_column` | `activation` |
+ `use_all_factor_levels` | `adaptive_rate` | `autoencoder` |
+`rho` | `epsilon` | `sparse` |
+`sparsity_beta` | `col_major` | `rate` |
+`rate_annealing` | `rate_decay` | `momentum_start` |
+`momentum_ramp` | `momentum_stable` | `nesterov_accelerated_gradient`|
+`ignore_const_cols`| `max_categorical_features` |`nfolds`|
+`distribution` | `tweedie_power` | |
+
+
+The following parameters can be modified when restarting a model from a checkpoint: 
+
+Can be modified | | | 
+----------------|-|-|
+`seed` | `checkpoint`| `epochs` | 
+`score_interval`| `train_samples_per_iteration`| `target_ratio_comm_to_comp`
+`score_duty_cycle`| `score_training_samples`| `score_validation_samples`
+`score_validation_sampling`| `classification_stop`| `regression_stop`
+`quiet_mode` | `max_confusion_matrix_size`| `max_hit_ratio_k`
+`diagnostics` | `variable_importances`| `initial_weight_distribution`
+`initial_weight_scale` | `force_load_balance` | `replicate_training_data`
+`shuffle_training_data`| `single_node_mode` | `fast_mode`
+`l1`|`l2`| `max_w2`
+`input_dropout_ratio`| `hidden_dropout_ratios` | `loss`
+`overwrite_with_best_model`| `missing_values_handling` | `average_activation`
+`reproducible` | `export_weights_and_biases`| `elastic_averaging`
+`elastic_averaging_moving_rate`| `elastic_averaging_regularization`| `mini_batch_size`
+
+
+0. After building your model, copy the `model_id`. To view the `model_id`, click the **Model** menu then click **List All Models**. 
+0. Select the model type from the drop-down **Model** menu. 
+	>**Note**: The model type must be the same as the checkpointed model. 
+0. Paste the copied `model_id` in the *checkpoint* entry field. 
+0. Click the **Build Model** button. The model will resume training. 
+
+
+---
+
 ###Interpreting Model Results
 
 **Scoring history**: [GBM](#GBM), [DL](#DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. 
@@ -698,6 +771,7 @@ To generate a Plain Old Java Object (POJO) that can use the model outside of H2O
   ![Confusion Matrix example](images/Flow_ConfusionMatrix.png)
 
 **ROC Curve**: [DL](#DL), [GLM](#GLM) Graph representing the ratio of true positives to false positives. To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list: 
+
 - Max f1
 - Max f2
 - Max f0point5
@@ -713,6 +787,7 @@ The lower-left side of the graph represents less tolerance for false positives w
 To learn how to make predictions, continue to the next section. 
 
 ---
+
 
 <a name="Predict"></a>
 # ... Making Predictions

@@ -5,7 +5,7 @@ test_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smallda
 
 # Train deep autoencoder learning model on "normal" 
 # training data, y ignored
-anomaly_model = h2o.deeplearning(x=train.names[1:210],  
+anomaly_model = h2o.deeplearning(x=train_ecg.names,  
                                  training_frame=train_ecg, 
                                  activation="Tanh", 
                                  autoencoder=True,
