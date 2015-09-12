@@ -1,18 +1,26 @@
 package water.currents;
 
-import water.parser.ParseSetup;
-import water.parser.ParseDataset;
-import java.io.File;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
+import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 
+import java.io.File;
 import java.util.Arrays;
 
 public class CurrentsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
+  @Test public void bigSlice() {
+    // check that large slices do something sane
+    String tree = "(rows %a.hex [0:2147483647])";
+    checkTree(tree);
+  }
 
   @Test public void test1() {
     // Checking `hex + 5`
