@@ -1,7 +1,7 @@
-% -*- mode: tex; fill-column: 115; -*-
+% -*- mode: tex; fill-column: 115; -*-    
 
 \input{common/conf_top.tex}
-
+ 
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 \defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
 \defcitealias{admm}{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers by Boyd et. al}
@@ -14,6 +14,7 @@
 \input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
+\newgeometry{bmargin=0cm, hmargin=0cm}
 
 \begin{center}
 \textsc{\Large\bf{Generalized Linear Modeling with H2O}}
@@ -32,10 +33,24 @@ August 2015: Third Edition
 \bigskip
 \end{center}
 
+\null\vfill
+\begin{figure}[!b]
+\noindent\makebox[\textwidth]{%
+\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+\end{figure}
+
+\newpage
+\restoregeometry
+
+\null\vfill %move next text block to lower left of new page
+
+\thispagestyle{empty}%remove pg#
+
 {\raggedright\vfill\ 
 
 Generalized Linear Modeling with H2O\\
-  by Tomas Nykodym, Ariel Rao, Amy Wang, Tom Kraljevic, Jessica Lanford \& Nadine Hussami\ \\
+  by Tomas Nykodym, Ariel Rao, Amy Wang, \\
+Tom Kraljevic, Jessica Lanford \& Nadine Hussami\ \\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -60,8 +75,10 @@ Printed in the United States of America.
 }
 
 \newpage
+\thispagestyle{empty}%remove pg#
 
 \tableofcontents
+\thispagestyle{empty}%remove pg#
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -264,6 +281,7 @@ based on features such as age and race.
 \bigskip
 \lstinputlisting[style=R]{glm/glm_gaussian_example.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_gaussian_example.py}
 
@@ -376,7 +394,7 @@ where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log
 %satisfies being the identity when p=0 cause $\eta = \mu^1$\\
 %for p=2 satisfies the inverse link $\eta = \mu^-1$\\
 %for $p=3$ satisfies the link which is the $inverse^2$ for the inverse gaussian.\\
-%so when write the distribution for the tweedie we can replcae $\mu$ by Ginverse of eta and we will have Xbeta in the expression. 
+%so when write the distribution for the tweedie we can replace $\mu$ by Ginverse of eta and we will have Xbeta in the expression. 
 %Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
 
 The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to
@@ -480,7 +498,7 @@ calculated by H2O using a heuristic based on the training data.  If you let H2O 
 see the chosen value in the model output.
 
 \subsubsection{Lambda Search}
-Lambda search enables efficient and automatic search for optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization strength and then keep decreasing it until overfitting. The resulting model will be based on the best \texttt{lambda} value. When looking for sparse solution (\texttt{alpha} $>$ 0), lambda serach can also be used to efficiently handle very wide datasets as it can filter out inactive predictors (noise) and only build models for a small subset of predictors. Common use of lambda search is to run on a dataset with many predictors but limit the number of active predictors to a relatively small value.  
+Lambda search enables efficient and automatic search for optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization strength and then keep decreasing it until overfitting. The resulting model will be based on the best \texttt{lambda} value. When looking for sparse solution (\texttt{alpha} $>$ 0), lambda search can also be used to efficiently handle very wide datasets as it can filter out inactive predictors (noise) and only build models for a small subset of predictors. Common use of lambda search is to run on a dataset with many predictors but limit the number of active predictors to a relatively small value.  
 
 Lambda search can be turned on by setting \texttt{lambda\_search} and can be further customized by following arguments:
 
@@ -881,6 +899,7 @@ You can change the threshold manually, for example to 0.3, and recalculate the p
 6       0 0.7272743 0.2727257
 \end{lstlisting}
 
+\newpage
 \subsection{Low-latency predictions with the NanoFast scoring engine}
 
 For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  These are very
@@ -922,14 +941,14 @@ To determine the accuracy of your model:
 
 \begin{itemize}
 \item Look for suspiciously different cross-validation results between folds
-
+\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_compare_cross_validation_folds.R}
 
 \item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$)  
       \begin{itemize}
       \item Too close to 0:  model doesn’t predict well
-      \item Too close to 1:  model predicts “too” well (one of your input columnss is probably a cheating column)
+      \item Too close to 1:  model predicts “too” well (one of your input columns is probably a cheating column)
       \end{itemize}
 \item For logistic regression (i.e. binomial classification) models, look for AUC
       \begin{itemize}
@@ -940,17 +959,17 @@ To determine the accuracy of your model:
       lambda that interests you (performing all the iterations probably means the solution is not good).  This is
       controlled by the \texttt{max\_iterations} parameter.
 \item Too many NAs in your training data is bad (GLM discards rows with NA values)
-     You should always check degrees of freedom of the output model. Degress of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
+     You should always check degrees of freedom of the output model. Degrees of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
 
       \begin{itemize}
       \item If you have few columns with many NAs, you might accidentally be losing all your rows and it's better to exclude them.
-      \item If you have many columns with small fraction of uniformly distributed missing values, every row is lkely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modelling.
+      \item If you have many columns with small fraction of uniformly distributed missing values, every row is likely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modeling.
       \end{itemize}
 \end{itemize}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-
+\newpage
 \section{Implementation Details}
 
 The following sections discuss some of the implementation choices in H2O's GLM.
@@ -1043,17 +1062,17 @@ work around these limitations due to its handling of categoricals and by employi
 inactive predictors.
 
 \subsubsection{L-BFGS solver}
-In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. The cost of the coefficient update is k*N, where N is number of predictors and k is a constant, the cost of gradient computation is $M*N\over pn$ where M is number of observations in the dataset and pnis the number of cpu cores in the cluster. Since k is a (small) constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully paralellized and L-BFGS thus scales almost linearly. 
+In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. The cost of the coefficient update is k*N, where N is number of predictors and k is a constant, the cost of gradient computation is $M*N\over pn$ where M is number of observations in the dataset and $pn$ is the number of CPU cores in the cluster. Since k is a (small) constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully parallelized and L-BFGS thus scales almost linearly. 
 
 \subsection{Data corner cases}
 
 \begin{itemize}
-\item What if: the training data has an NA? All rows conatining (any) missing value are omitted form the training set. 
+\item What if: the training data has an NA? All rows containing (any) missing value are omitted form the training set. 
 
 \item What if: the test data has an NA? The prediction for that observation is NA.
 
 \item What if: a predictor column is categorical, you are making predictions on test data, and the predictor is
-a level that wasn't seen during training? The value is zero for all predictors associated with the particular categorical vairable.
+a level that wasn't seen during training? The value is zero for all predictors associated with the particular categorical variable.
 
 \item What if: the response column is categorical, you are making predictions on test data, and the response is
 a level that wasn't seen during training? Only binomial model is supported, any extra levels in test-response will trigger an error.
@@ -1061,7 +1080,7 @@ a level that wasn't seen during training? Only binomial model is supported, any 
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-
+\newpage
 \input{common/further_info.tex}
 
 %----------------------------------------------------------------------
@@ -1105,7 +1124,7 @@ a level that wasn't seen during training? Only binomial model is supported, any 
 \item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
 \end{itemize}
 %Additional: 
-%Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true.
+%Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 
 %Ignored_cols: No default.
 %Non-negative: Restricts coefficients to be non-negative. Default is false.
 %parallelism: @Is this just a python thing?
