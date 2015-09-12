@@ -2,7 +2,7 @@
 
 ##H2O
 
-###Slater (3.2.0.1) - 09/11/15
+###Slater (3.0.2) - 09/12/15
 
 
 ####New Features
@@ -34,7 +34,7 @@ The following changes represent features that have been added since the previous
 - [PUBDEV-1788](https://0xdata.atlassian.net/browse/PUBDEV-1788): Added a factor function that will allow the user to set the levels for a enum column [GitHub](https://github.com/h2oai/h2o-3/commit/7999075a7cdcdc880d76a3be7e39edeb63d32fc8)
 - [PUBDEV-1881](https://0xdata.atlassian.net/browse/PUBDEV-1881): Fixed bug in h2o.group_by for enumerator columns
 - [GitHub](https://github.com/h2oai/h2o-3/commit/af75976a238d22dd37048eb8d7c100c994bdac08): Refactor SVD method name and add `svd_method` option to R package to set preferred calculation method
-
+- [PUBDEV-2071](https://0xdata.atlassian.net/browse/PUBDEV-2071): Accept columns of type integer64 from R through as.h2o()
 
 #####Sparkling Water
 
@@ -102,6 +102,7 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/99b0fa76e6efe9e268989985967fa545195e2b53): Simplified model builder
 - [GitHub](https://github.com/h2oai/h2o-3/commit/508ad0e28f40f537e906a372a2760ca6730ebe94): Added None as default for "on" field
 - [GitHub](https://github.com/h2oai/h2o-3/commit/f227b8e730314ab3bd30269d44d24ef6c79383cb): Removed all of the unnecessary calls to h2o.init and removed the unnecessary environment variable for version checking during testing
+- [PUBDEV-2064](https://0xdata.atlassian.net/browse/PUBDEV-2064): rename the coordinate decent solvers in the REST API / Flow to <mumble> (experimental)
 
 
 #####Grid Search
@@ -111,6 +112,7 @@ The following changes are improvements to existing features (which includes chan
 - [PUBDEV-1933](https://0xdata.atlassian.net/browse/PUBDEV-1933): Called drf as randomForest in algorithm option [GitHub](https://github.com/h2oai/h2o-3/commit/0334fa3cd76653dfe6233013247ee7fe7d68abfd)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/ef75ceaaab345959f9af07921cc2fcc4272f181a): Validation of grid parameters against algo `/parameters` rest endpoint.
 - [PUBDEV-1979](https://0xdata.atlassian.net/browse/PUBDEV-1979): Train N-fold CV models in parallel [GitHub](https://github.com/h2oai/h2o-3/commit/108e097babe1c97cb83912f04fd68f444b5c6fc1)
+- [PUBDEV-1978](https://0xdata.atlassian.net/browse/PUBDEV-1978): grid: would be good to add to h2o.grid R help example, how to access the individual grid models 
 
 
 #####Python
@@ -180,6 +182,8 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub](https://github.com/h2oai/h2o-3/commit/8789d8a1bbf8260d596bcc1692fe1f41dcdf81aa): Frees memory from streamed zip reads after the chunk has been parsed. 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c6c76e04b7efb1a3be470603e7c4b44dc8cc7767): Unifies categorical strings to UTF-8 and warns the user about all conversion.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/917bfe406fb59d7a0d9deecea524a91dd049073a): add isNA checks to scale
+- [GitHub](https://github.com/h2oai/h2o-3/commit/c98348d7d4f4883d887047670783dbb9ed3eeb32): Do not start UDPRecevier thread (unless running with useUDP option) 
+
 
 #####Web UI
 
@@ -237,6 +241,11 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1877](https://0xdata.atlassian.net/browse/PUBDEV-1877): Grid: if user specify the parameter value he is running the grid on, would be good to warn him/her 
 - [PUBDEV-1938](https://0xdata.atlassian.net/browse/PUBDEV-1938): Grid: randomForest: unsupported grid params and wrong error msg
 
+#####Hadoop
+
+- [PUBDEV-2036](https://0xdata.atlassian.net/browse/PUBDEV-2036): importModel from hdfs doesn't work
+- [PUBDEV-2027](https://0xdata.atlassian.net/browse/PUBDEV-2027): Clicking shutdown in the Flow UI dropdown does not exit the Hadoop cluster
+
 
 #####Python
 
@@ -289,10 +298,18 @@ The following changes are to resolve incorrect software behavior:
 - [GitHub](https://github.com/h2oai/h2o-3/commit/6b12de4c31e5401ae0b7bd3283092f68b99bb45a): Fixes a bug that allowed big buffers to be constantly reallocated when it wasn't needed. This saves memory and time.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/009e888d07e89dcbab51556cb56bcbc6eaffdedc): Fix print statement.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/4c40cf1815c27369aa12c7c0ed19272cbd4a7499): Fixed orderly shutdown to work with flatfile.
+- [PUBDEV-1998](https://0xdata.atlassian.net/browse/PUBDEV-1998): Parse  : Lending club dataset parse => cancelled by user
+- [PUBDEV-2028](https://0xdata.atlassian.net/browse/PUBDEV-2028): Shutdown => unimplemented error on  curl -X POST 172.16.2.186:54321/3/Shutdown.html
+- [PUBDEV-2070](https://0xdata.atlassian.net/browse/PUBDEV-2070): Download frame brings down cluster
+- [PUBDEV-2067](https://0xdata.atlassian.net/browse/PUBDEV-2067):  Cannot mix negative and positive array selection
+- [PUBDEV-2024](https://0xdata.atlassian.net/browse/PUBDEV-2024): Save model to HDFS fails
+
+
 
 #####Web UI
 
 - [PUBDEV-2012](https://0xdata.atlassian.net/browse/PUBDEV-2012): Histograms in Flow are slightly off
+- [PUBDEV-2029](https://0xdata.atlassian.net/browse/PUBDEV-2029): exportModel from Flow to HDFS doesn't work
 
 
 
