@@ -643,7 +643,7 @@ We use this framework to develop an anomaly detection demonstration using a deep
 
 \item \texttt{use\_all\_factor\_levels}: Logical. Use all factor levels of categorical variance. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.  Default is true.
 
-\item \texttt{activation}: The choice of nonlinear, differentiable activation function used throughout the network. Options are \texttt{Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout}, and the default is \texttt{Rectifier}. Refer to the ``\nameref{sssec:ActivationLoss}'' section for more details.
+\item \texttt{activation}: The choice of nonlinear, differentiable activation function used throughout the network. Options are \texttt{Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout}, and the default is \texttt{Rectifier}. Refer to the ``\nameref{sssec:ActivationLoss}'' or ``\nameref{sssec:Regularization}'' sections for more details.
 
 \item \texttt{hidden}: The number and size of each hidden layer in the model. For example, if \texttt{c(100,200,100)} is specified, a model with 3 hidden layers will be produced, the middle hidden layer will have 200 neurons and the first and third hidden layers will have 100 neurons. The default is \texttt{c(200,200)}. For grid search, use \texttt{list(c(10,10), c(20,20))} etc. Refer to the section on  ``\nameref{ssec:TrialRun}'' for more details. 
 
