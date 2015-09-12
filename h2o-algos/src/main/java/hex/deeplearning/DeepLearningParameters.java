@@ -4,7 +4,6 @@ import hex.Distribution;
 import hex.Model;
 import water.H2O;
 import static water.H2O.technote;
-import water.Key;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -457,17 +456,18 @@ public class DeepLearningParameters extends Model.Parameters {
       }
     }
 
-    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
+    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
       dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
-    if (_hidden_dropout_ratios == null) {
-      // ok - nothing to check
-    } else if (_hidden_dropout_ratios.length != _hidden.length) {
-      dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
-    } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
-      if (!_quiet_mode)
-        dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
-    } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
-      dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
+    }
+    if (_hidden_dropout_ratios != null) {
+      if (_hidden_dropout_ratios.length != _hidden.length) {
+        dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
+      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
+        if (!_quiet_mode)
+          dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
+      } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
+        dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
+      }
     }
     if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
       dl.error("_input_dropout_ratio", "Input dropout must be >= 0 and <1.");
