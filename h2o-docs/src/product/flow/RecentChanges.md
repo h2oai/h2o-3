@@ -2,7 +2,7 @@
 
 ##H2O
 
-###Slater (3.0.2) - 09/12/15
+###Slater (3.2.0.1) - 09/12/15
 
 
 ####New Features
@@ -232,10 +232,10 @@ The following changes are to resolve incorrect software behavior:
 
 - [PUBDEV-1876](https://0xdata.atlassian.net/browse/PUBDEV-1876): Grid: progress bar not working for grid jobs
 - [PUBDEV-1875](https://0xdata.atlassian.net/browse/PUBDEV-1875): Grid: the meta info should not be dumped on the R screen, once the grid job is over
-- [GitHub](https://github.com/h2oai/h2o-3/commit/ed586eec9ea847fb10888d6a9caa55766a680678):  [PUBDEV-1876] Fix grid update.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/ed586eec9ea847fb10888d6a9caa55766a680678): [PUBDEV-1876] Fix grid update.
 - [PUBDEV-1874](https://0xdata.atlassian.net/browse/PUBDEV-1874): Grid search: observe issues with model naming/overwriting and error msg propagation [GitHub](https://github.com/h2oai/h2o-3/commit/92a5eaeac52628d8ced9e48487c8b4d6ed003e23)
 - [HEXDEV-402](https://0xdata.atlassian.net/browse/HEXDEV-402): R: kmeans grid search doesn't work
-- [PUBDEV-1901](https://0xdata.atlassian.net/browse/PUBDEV-1901): Grid appends new models even though  models already exist.
+- [PUBDEV-1901](https://0xdata.atlassian.net/browse/PUBDEV-1901): Grid appends new models even though models already exist.
 - [PUBDEV-1874](https://0xdata.atlassian.net/browse/PUBDEV-1874): Grid search: observe issues with model naming/overwriting and error msg propagation
 - [PUBDEV-1940](https://0xdata.atlassian.net/browse/PUBDEV-1940): Grid: glm grid on alpha fails with error "Expected '[' while reading a double[], but found 1.0"
 - [PUBDEV-1877](https://0xdata.atlassian.net/browse/PUBDEV-1877): Grid: if user specify the parameter value he is running the grid on, would be good to warn him/her 
@@ -301,7 +301,7 @@ The following changes are to resolve incorrect software behavior:
 - [PUBDEV-1998](https://0xdata.atlassian.net/browse/PUBDEV-1998): Parse  : Lending club dataset parse => cancelled by user
 - [PUBDEV-2028](https://0xdata.atlassian.net/browse/PUBDEV-2028): Shutdown => unimplemented error on  curl -X POST 172.16.2.186:54321/3/Shutdown.html
 - [PUBDEV-2070](https://0xdata.atlassian.net/browse/PUBDEV-2070): Download frame brings down cluster
-- [PUBDEV-2067](https://0xdata.atlassian.net/browse/PUBDEV-2067):  Cannot mix negative and positive array selection
+- [PUBDEV-2067](https://0xdata.atlassian.net/browse/PUBDEV-2067): Cannot mix negative and positive array selection
 - [PUBDEV-2024](https://0xdata.atlassian.net/browse/PUBDEV-2024): Save model to HDFS fails
 
 
@@ -381,7 +381,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####System
 
-- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04):  Add -JJ command line argument to allow extra JVM arguments to be passed.
+- [GitHub](https://github.com/h2oai/h2o-3/commit/887be2cdcfef7b8e954950447b295d14c7e30b04): Add -JJ command line argument to allow extra JVM arguments to be passed.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/31e5cb6576cd9dd5e738db64f93de5d3f5fe6154): Refactored CSVStream to be more understandable. Fix empty chunk bug.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/dbd87534f7f9cd2321f4e646b1171e769845205d): Add hintFlushRemoteChunk to CSVStream.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/7b5258f0cfc71310d3105cc1a1bb80952632a073): Add parameterized route for frame export
@@ -963,8 +963,8 @@ The following changes are to resolve incorrect software behavior:
 #####Web UI
 
 - [PUBDEV-1545](https://0xdata.atlassian.net/browse/PUBDEV-1545): Flow => Build model => ignored columns table => should have column width resizing based on column names width => looks odd if column names are short
-- [PUBDEV-1546](https://0xdata.atlassian.net/browse/PUBDEV-1546): Flow : Build model => Search for 1 column => select it  => build model shows list of columns instead of 1 column
-- [PUBDEV-1254](https://0xdata.atlassian.net/browse/PUBDEV-1254): Flow:  Add Impute
+- [PUBDEV-1546](https://0xdata.atlassian.net/browse/PUBDEV-1546): Flow: Build model => Search for 1 column => select it  => build model shows list of columns instead of 1 column
+- [PUBDEV-1254](https://0xdata.atlassian.net/browse/PUBDEV-1254): Flow: Add Impute
 
 ####Bug Fixes 
 
@@ -1469,8 +1469,8 @@ The following changes are to resolve incorrect software behavior:
 
 ##### Web UI
 
-- [PUBDEV-1175](https://0xdata.atlassian.net/browse/PUBDEV-1175): Flow:  Good interactive confusion matrix for binomial
-- [PUBDEV-1176](https://0xdata.atlassian.net/browse/PUBDEV-1176): Flow:  Good confusion matrix for multinomial
+- [PUBDEV-1175](https://0xdata.atlassian.net/browse/PUBDEV-1175): Flow: Good interactive confusion matrix for binomial
+- [PUBDEV-1176](https://0xdata.atlassian.net/browse/PUBDEV-1176): Flow: Good confusion matrix for multinomial
 
 ####Enhancements
 
@@ -2801,7 +2801,7 @@ The following changes are to resolve incorrect software behavior:
 - Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(HEXDEV-179)](https://0xdata.atlassian.net/browse/HEXDEV-179)
 - Custom Functions don't work in apply() in R [(PUBDEV-436)](https://0xdata.atlassian.net/browse/PUBDEV-436)
 - got water.DException$DistributedException and then got java.lang.RuntimeException: Categorical renumber task [(HEXDEV-195)](https://0xdata.atlassian.net/browse/HEXDEV-195)
-- H2O-R:  as.h2o parses column name as one of the row entries [(PUBDEV-591)](https://0xdata.atlassian.net/browse/PUBDEV-591)
+- H2O-R: as.h2o parses column name as one of the row entries [(PUBDEV-591)](https://0xdata.atlassian.net/browse/PUBDEV-591)
 - R-H2O Managing Memory in a loop [(PUB-1125)](https://0xdata.atlassian.net/browse/PUB-1125)
 - h2o.confusionMatrices for multinomial does not work [(PUBDEV-577)](https://0xdata.atlassian.net/browse/PUBDEV-577)
 - H2O-R not showing meaningful error msg 
@@ -3013,7 +3013,7 @@ The following changes are to resolve incorrect software behavior:
 - got water.DException$DistributedException and then got java.lang.RuntimeException: Categorical renumber task [(HEXDEV-195)](https://0xdata.atlassian.net/browse/HEXDEV-195)
 - h2o.confusionMatrices for multinomial does not work [(PUBDEV-577)](https://0xdata.atlassian.net/browse/PUBDEV-577)
 - R: h2o.confusionMatrix should handle both models and model metric objects [(PUBDEV-590)](https://0xdata.atlassian.net/browse/PUBDEV-590)
-- H2O-R:  as.h2o parses column name as one of the row entries [(PUBDEV-591)](https://0xdata.atlassian.net/browse/PUBDEV-591)
+- H2O-R: as.h2o parses column name as one of the row entries [(PUBDEV-591)](https://0xdata.atlassian.net/browse/PUBDEV-591)
 
 
 #####System
