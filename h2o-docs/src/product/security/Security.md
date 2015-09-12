@@ -120,7 +120,6 @@ The following code snippet demonstrates connecting to an H2O cluster with HTTPS:
 
 ```
 h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
-
 ```
 
 The underlying HTTPS implementation is provided by RCurl and by extension libcurl and OpenSSL.
@@ -151,14 +150,12 @@ The following new options are available in H2O Enterprise Edition:
 
 -jks_pass <password>
      (Default is 'h2oh2o')
-     
 ```
 
 Example:
 
 ```
 java -jar h2o.jar -jks h2o.jks
-
 ```
 
 ##### H2O EE on Hadoop
@@ -171,14 +168,12 @@ The following new options are available in H2O Enterprise Edition:
 
 -jks_pass <password>
      (Default is 'h2oh2o')
-     
 ```
 
 Example:
 
 ```
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -jks h2o.jks -output hdfsOutputDirectory
-
 ```
 
 ##### Sparkling Water EE
@@ -194,7 +189,6 @@ Example:
 
 ```
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.jks=/path/to/h2o.jks sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
 ```
 
 ### LDAP authentication
@@ -213,7 +207,6 @@ The following code snippet demonstrates connecting to an H2O cluster with authen
 
 ```
 h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
-
 ```
 
 ##### Python client
@@ -248,7 +241,6 @@ ldaploginmodule {
     roleMemberAttribute="uniqueMember"
     roleObjectClass="groupOfUniqueNames";
 };
-
 ```
 
 See the [Jetty 8 LdapLoginModule documentation](http://wiki.eclipse.org/Jetty/Feature/JAAS#LdapLoginModule) for more information.
@@ -266,7 +258,6 @@ The following new options are available in H2O Enterprise Edition:
      
 -user_name <username>
       Override name of user for which access is allowed
-      
 ```
 
 Example:
@@ -275,7 +266,6 @@ Example:
 java -jar h2o.jar -ldap_login -login_conf ldap.conf
 
 java -jar h2o.jar -ldap_login -login_conf ldap.conf -user_name myLDAPusername
-
 ```
 
 ##### H2O EE on Hadoop
@@ -299,7 +289,6 @@ Example:
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -output hdfsOutputDirectory
 
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -user_name myLDAPusername -output hdfsOutputDirectory
-
 ```
 
 ##### Sparkling Water EE
@@ -318,7 +307,6 @@ Example:
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
 ```
 
 ### Hash file authentication
@@ -337,7 +325,6 @@ The following code snippet demonstrates connecting to an H2O cluster with authen
 
 ```
 h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
-
 ```
 
 ##### Python client
@@ -353,7 +340,6 @@ Example **realm.properties**:
 ```
 username1: password1
 username2: password2
-
 ```
 
 See the [Jetty 8 HashLoginService documentation](http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService) for more information.
@@ -368,14 +354,12 @@ The following new options are available in H2O Enterprise Edition:
           
 -login_conf <filename>
       LoginService configuration file
-      
 ```
 
 Example:
 
 ```
 java -jar h2o.jar -hash_login -login_conf realm.properties
-
 ```
 
 ##### H2O EE on Hadoop
@@ -388,14 +372,12 @@ The following new options are available in H2O Enterprise Edition:
           
 -login_conf <filename>
       LoginService configuration file
-      
 ```
 
 Example:
 
 ```
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -hash_login -login_conf realm.propertes -output hdfsOutputDirectory
-
 ```
 
 ##### Sparkling Water EE
@@ -411,5 +393,4 @@ Example:
 
 ```
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.hash.login=true --conf spark.ext.h2o.login.conf=/path/to/realm.properties sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
 ```
