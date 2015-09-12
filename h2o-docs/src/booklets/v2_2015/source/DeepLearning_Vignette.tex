@@ -633,7 +633,7 @@ We use this framework to develop an anomaly detection demonstration using a deep
 
 \item \texttt{model\_id}: (Optional) The unique ID assigned to the resulting model. If not specified, an ID is generated automatically. 
 
-\item \texttt{overwrite\_with\_best\_model}: Logical. If enabled, overwrite the final model with the best model found during training. Default is true.
+\item \texttt{overwrite\_with\_best\_model}: Logical. If enabled, overwrite the final model with the best model that was ever scored during training. Default is true.
 
 \item \texttt{validation\_frame}: (Optional) An \texttt{H2OFrame} object that represents the validation dataset used to construct the confusion matrix. If blank and \texttt{nfolds = 0}, the training data is used by default. 
 
