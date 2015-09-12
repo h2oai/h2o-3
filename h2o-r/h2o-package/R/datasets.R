@@ -30,7 +30,7 @@ NULL
 #' Edgar Anderson's Iris Data
 #' 
 #' Measurements in centimeters of the sepal length and width and petal length and width, 
-#' repsectively, for three species of iris flowers.
+#' respectively, for three species of iris flowers.
 #' 
 #' @docType data
 #' @keywords datasets
