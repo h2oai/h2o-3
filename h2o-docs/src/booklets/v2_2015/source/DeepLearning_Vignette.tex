@@ -210,7 +210,7 @@ Maxout & $f(\alpha_1,\alpha_2) = \max(\alpha_1,\alpha_2) $ & $f(\cdot) \in \math
 \end{tabular} 
 \label{table:nonlin} % is used to refer this table in the text 
 \end{table}
-The $\tanh$ function is a rescaled and shifted logistic function and its symmetry around 0 allows the training algorithm to converge faster. The rectified linear activation function has demonstrated high performance on image recognition tasks, and is a more biologically accurate model of neuron activations (\href{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}{LeCun et al, 1998}).  Maxout activation works particularly well with dropout, a regularization method discussed later in this vignette (\href{http://arxiv.org/pdf/1302.4389.pdf}{Goodfellow et al, 2013}). 
+The $\tanh$ function is a rescaled and shifted logistic function and its symmetry around 0 allows the training algorithm to converge faster. The rectified linear activation function has demonstrated high performance on image recognition tasks, and is a more biologically accurate model of neuron activations (\href{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}{LeCun et al, 1998}). Maxout is a generalization of the Rectifier activation, where each neuron picks the larger output of $k$ separate channels, each with its own weights and bias values. The current implementation supports only $k=2$. Maxout activation works particularly well with dropout, a regularization method discussed later in this vignette (\href{http://arxiv.org/pdf/1302.4389.pdf}{Goodfellow et al, 2013}). The Rectifier is the special case of Maxout where one channel always outputs 0.
 It is difficult to determine a ``best" activation function to use; each may outperform the others in separate scenarios, but grid search models (also described later) can help to compare activation functions and other parameters. The default activation function is the Rectifier. Each of these activation functions can be operated with dropout regularization (see below).
 
 The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (target) output and actual output, respectively, for training example $j$; further, let $y$ denote the output units and $O$ the output layer.
@@ -363,11 +363,11 @@ Typical values are between $10^{-10}$ and $10^{-4}$.
 
 Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert our datasets into \texttt{H2OFrame} objects (distributed data frames), rather than using an R \texttt{data.frame} or \texttt{data.table} or a Python \texttt{pandas.DataFrame} or \texttt{numpy.array}. 
 
-\subsubsection{Standardization} 
+\subsubsection{Data standardization or normalization} 
 
 Along with categorical encoding, H2O's Deep Learning preprocesses the data to be standardized for compatibility with the activation functions (recall Table 1's summary of each activation function's target space). Since the activation function does not generally map into the full spectrum of real numbers, $\mathbb{R}$, we first standardize our data to be drawn from $\mathcal{N}(0,1)$. Standardizing again after network propagation allows us to compute more precise errors in this standardized space, rather than in the raw feature space. 
 
-Note that for autoencoding, the data is normalized (instead of standardized) to the compact interval of $mathcal{U}(-0.5,0.5)$, to allow bounded activation functions like \texttt{Tanh} to better reconstruct the data.
+For autoencoding, the data is normalized (instead of standardized) to the compact interval of $mathcal{U}(-0.5,0.5)$, to allow bounded activation functions like \texttt{Tanh} to better reconstruct the data.
 
 
 \subsection{Additional parameters} 
@@ -417,11 +417,11 @@ The example below illustrates the relative simplicity underlying most H2O Deep L
 
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform k-fold cross-validation by specifying, \texttt{nfolds = 5}, for example.  
+The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to, or instead of using a validation set, another option to estimate generalization error is to perform N-fold cross-validation by specifying, \texttt{nfolds = 5}, for example.  
 
-\subsubsection{Cross-validation} 
+\subsubsection{N-fold cross-validation} 
 
-When the \texttt{nfolds} argument is specified is a positive integer, k-fold cross-validation will be performed on the \texttt{training\_frame} and the cross-validation metrics will be computed and stored as model output.  The default for \texttt{nfolds} is 0, for no cross-validation.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  An example is given below.  
+When the \texttt{nfolds} argument is specified is a positive integer, N-fold cross-validation will be performed on the \texttt{training\_frame} and the cross-validation metrics will be computed and stored as model output.  The default for \texttt{nfolds} is 0, for no cross-validation.  Optionally, the user can save the cross-validation predicted values (generated during cross-validation) by setting \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  Advanced users can also specify a \texttt{fold\_column} that specifies for each row which holdout fold it belongs to. By default, the holdout \texttt{fold\_assignment} is random, but other schemes such as round-robyn assignment via the modulo operator are also supported. An example for generic N-fold cross-validation is given below.  
 
 \waterExampleInR
 \lstinputlisting[style=R]{deeplearning/deeplearning_crossval.R}
