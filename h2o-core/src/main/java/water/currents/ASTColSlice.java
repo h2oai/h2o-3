@@ -1,16 +1,11 @@
 package water.currents;
 
 import jsr166y.CountedCompleter;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.*;
 import water.parser.ValueString;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Column slice */
@@ -23,24 +18,23 @@ class ASTColSlice extends ASTPrim {
     if( asts[2] instanceof ASTNumList ) {
       // Work down the list of columns, picking out the keepers
       ASTNumList nums =(ASTNumList)asts[2];
-      if( nums.min() >= 0 ) {   // Positive (inclusion) list
-        for( int col : nums.expand4Sort() ) {
-          if( col < 0 || col >= fr.numCols() ) 
-            throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
+      int[] cols = nums.expand4Sort();
+      if( cols.length==0 ) {      // Empty inclusion list?
+      } else if( cols[0] >= 0 ) { // Positive (inclusion) list
+        if( cols[cols.length-1] > fr.numCols() )
+          throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
+        for( int col : cols )
           fr2.add(fr.names()[col],fr.vecs()[col]);
-        }
       } else {                  // Negative (exclusion) list
         fr2 = new Frame(fr);    // All of them at first
         // This loop depends on ASTNumList return values in sorted order
-        for( int col : nums.expand4Sort() ) {
-          if( col < -fr.numCols() || col >= 0 ) 
-            throw new IllegalArgumentException("Column must be an integer from "+(-fr.numCols())+" to -1");
-          fr2.remove(-col-1);   // Remove named column
-        }
+        for( int col : cols )
+          if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
+            fr2.remove(-col-1); // Remove named column
       }
     } else if( (asts[2] instanceof ASTNum) ) {
       int col = (int) (((ASTNum) asts[2])._d.getNum());
-      if( col < 0 ) fr2.add(fr).remove(-1*col-1);  // neg index is 1-based; e.g., -1 => -1*-1 - 1 = 0
+      if( col < 0 ) fr2.add(fr).remove(-col-1);  // neg index is 1-based; e.g., -1 => -1*-1 - 1 = 0
       else fr2.add(fr.names()[col], fr.vecs()[col]);
 
     } else if( (asts[2] instanceof ASTStr) ) {
@@ -70,9 +64,28 @@ class ASTRowSlice extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
+    long nrows = fr.numRows();
     if( asts[2] instanceof ASTNumList ) {
       ASTNumList nums = (ASTNumList)asts[2];
-      final long[] ls = nums.expand8Sort();
+      long[] rows = nums.expand8Sort();
+      if( rows.length==0 ) {      // Empty inclusion list?
+      } else if( rows[0] >= 0 ) { // Positive (inclusion) list
+        if( rows[rows.length-1] > nrows )
+          throw new IllegalArgumentException("Row must be an integer from 0 to "+(nrows-1));
+      } else {                  // Negative (exclusion) list
+        // Invert the list to make a positive list, ignoring out-of-bounds values
+        BitSet bs = new BitSet((int)nrows);
+        for( int i=0; i<rows.length; i++ ) {
+          int idx = (int)(-rows[i]-1); // The positive index
+          if( idx >=0 && idx < nrows )
+            bs.set(idx);        // Set column to EXCLUDE
+        }
+        rows = new long[(int)nrows-bs.cardinality()];
+        for( int i=bs.nextClearBit(0),j=0; i<nrows; i=bs.nextClearBit(i+1) )
+          rows[j++] = i;
+      }
+      final long[] ls = rows;
+
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
           if( ls.length == 0 ) return;

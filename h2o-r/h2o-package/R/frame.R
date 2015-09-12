@@ -771,7 +771,7 @@ NULL
 #' @aliases [,Frame-method
 #' @rdname Frame-Extract
 #' @export
-`[.Frame` <- function(data,row,col) {
+`[.Frame` <- function(data,row,col,drop=TRUE) {
   chk.Frame(data)
 
   # This function is called with a huge variety of argument styles
