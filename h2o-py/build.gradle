@@ -76,6 +76,7 @@ task cleaner << {
     new File([getProjectDir().toString(), "dist"].join(File.separator)).deleteDir()
     new File([getProjectDir().toString(), "h2o.egg-info"].join(File.separator)).deleteDir()
     new File([getProjectDir().toString(), " build/"].join(File.separator)).deleteDir()
+    delete fileTree(dir: "$projectDir/h2o" , include: '**/*.pyc')
 }
 
 clean.dependsOn cleaner, cleanUpSmokeTest

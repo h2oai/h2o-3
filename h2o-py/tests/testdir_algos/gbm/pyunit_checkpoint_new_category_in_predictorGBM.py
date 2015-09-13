@@ -20,5 +20,8 @@ def checkpoint_new_category_in_predictor():
     except EnvironmentError:
         pass
 
+    # attempt to predict on new model, but with observations that have expanded categorical predictor domain.
+    predictions = m2.predict(vir)
+
 if __name__ == '__main__':
     tests.run_test(sys.argv, checkpoint_new_category_in_predictor)

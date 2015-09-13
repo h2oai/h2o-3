@@ -93,7 +93,7 @@ public class PrettyPrint {
   };
 
   public static double pow10(int exp){ return ((exp >= -10 && exp <= 10)?powers10[exp+10]:Math.pow(10, exp)); }
-  public static long pow10i(int exp){ return powers10i[exp]; }
+  public static long pow10i(int exp){ return ((exp > -1 && exp < 19)?powers10i[exp]:(long)Math.pow(10, exp)); }
   public static final boolean fitsIntoInt(double d) { return Math.abs((int)d - d) < 1e-8; }
 
 
@@ -130,8 +130,8 @@ public class PrettyPrint {
       d = (int) (Math.abs(i) / Math.pow(10, 0)) % 10;
       switch (d) {
         case 1: ord = "st"; break;
-        case 2: ord = "st"; break;
-        case 3: ord = "st"; break;
+        case 2: ord = "nd"; break;
+        case 3: ord = "rd"; break;
         default: ord = "th";
       }
     }

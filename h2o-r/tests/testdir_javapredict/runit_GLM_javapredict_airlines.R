@@ -12,7 +12,6 @@ TEST_ROOT_DIR <- ".."
 source("../h2o-runit.R")
 source("../Utils/shared_javapredict.R")
 options(echo = TRUE)
-
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------

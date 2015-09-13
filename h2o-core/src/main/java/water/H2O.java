@@ -1007,7 +1007,7 @@ final public class H2O {
       } catch( Throwable ex ) {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
-        if( h2o != null ) h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        if( h2o != null ) h2o.completeExceptionally(ex);
         else ex.printStackTrace();
       } finally {
         t._priority = pp;
@@ -1241,7 +1241,8 @@ final public class H2O {
     // Start the UDPReceiverThread, to listen for requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
-    new UDPReceiverThread().start();
+    if(H2O.ARGS.useUDP)
+      new UDPReceiverThread().start();
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts

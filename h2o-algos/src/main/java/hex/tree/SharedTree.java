@@ -93,6 +93,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         M checkpointModel = cv.get();
         try {
           _parms.validateWithCheckpoint(checkpointModel._parms);
+          if( isClassifier() != checkpointModel._output.isClassifier() )
+            throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
+          if (!Arrays.equals(_train.names(), checkpointModel._output._names)) {
+            throw new IllegalArgumentException("The columns of the training data must be the same as for the checkpointed model");
+          }
+          if (!Arrays.deepEquals(_train.domains(), checkpointModel._output._domains)) {
+            throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model");
+          }
         } catch (H2OIllegalArgumentException e) {
           error(e.values.get("argument").toString(), e.values.get("value").toString());
         }

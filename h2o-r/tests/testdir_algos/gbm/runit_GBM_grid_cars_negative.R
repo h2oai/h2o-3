@@ -46,13 +46,13 @@ check.gbm.grid.cars.negative <- function(conn) {
   Log.info("Constructing the grid of gbm models with some invalid gbm parameters...")
   if ( validation_scheme == 1 ) {
     cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space))
+    expect_error(h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else if ( validation_scheme == 2 ) {
     cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space))
+    expect_error(h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else {
     cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
+    expect_error(h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
@@ -74,13 +74,13 @@ check.gbm.grid.cars.negative <- function(conn) {
   Log.info(paste0("Constructing the grid of gbm models with non-gridable parameter build_tree_one_node"))
   if ( validation_scheme == 1 ) {
     expect_error(cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col,
-                                           training_frame=train, hyper_params=grid_space))
+                                           training_frame=train, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else if ( validation_scheme == 2 ) {
     expect_error(cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col,
-                                           training_frame=train, nfolds=nfolds, hyper_params=grid_space))
+                                           training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else {
     expect_error(cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col,
-                                           training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
+                                           training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
   testEnd()
 }

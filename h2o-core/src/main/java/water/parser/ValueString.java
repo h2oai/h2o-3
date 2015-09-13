@@ -58,18 +58,23 @@ public class ValueString extends Iced implements Comparable<ValueString> {
   }
 
   public String bytesToString() {
-    StringBuilder sb = new StringBuilder(_len*2);
+    StringBuilder sb = new StringBuilder(_len * 2);
     Formatter formatter = new Formatter(sb);
     boolean inHex = false;
-    for(int i=0; i < _len; i++)
-      if ((_buf[_off+i] & 0x80) == 128) {
-        if (!inHex) sb.append("0x");
-        formatter.format("%02X", _buf[_off+i]);
+    for (int i = 0; i < _len; i++) {
+      if ((_buf[_off + i] & 0x80) == 128) {
+        if (!inHex) sb.append("<0x");
+        formatter.format("%02X", _buf[_off + i]);
         inHex = true;
       } else { // ASCII
-        formatter.format("%c", _buf[_off+i]);
-        inHex = false;
+        if (inHex) {
+          sb.append(">");
+          inHex = false;
+        }
+        formatter.format("%c", _buf[_off + i]);
       }
+    }
+    if (inHex) sb.append(">"); // close hex values as trailing char
     return sb.toString();
   }
 

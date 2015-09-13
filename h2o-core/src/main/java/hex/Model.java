@@ -55,7 +55,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
-  /** Model-specific parameter class.  Each model sub-class contains an
+  /** Model-specific parameter class.  Each model sub-class contains
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a
    *  KMeansParameters extending Model.Parameters; sample parameters include K,
@@ -270,9 +270,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _names[];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
-    Key _cross_validation_models[];
+    public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
-    Key _cross_validation_predictions[];
+    public Key _cross_validation_predictions[];
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {

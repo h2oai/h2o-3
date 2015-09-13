@@ -27,10 +27,10 @@ test <- function(h) {
   print(mean(ph[,1]))
   print(min(ph[,1]))
   print(max(ph[,1]))
-	expect_equal(1.996,mean_deviance, 1e-2)
-	expect_equal(1.0435, mean(ph[,1]), 1e-2 )
-	expect_equal(0.8789, min(ph[,1]), 1e-1 )
-	expect_equal(1.216, max(ph[,1]), 1e-1 )
+	expect_equal(1.996, mean_deviance, tolerance=1e-2)
+	expect_equal(1.0435, mean(ph[,1]), tolerance=1e-2 )
+	expect_equal(0.8789, min(ph[,1]), tolerance=1e-1 )
+	expect_equal(1.216, max(ph[,1]), tolerance=1e-1 )
 		
 	testEnd()
 }

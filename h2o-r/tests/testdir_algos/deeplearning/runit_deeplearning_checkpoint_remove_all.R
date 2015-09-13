@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-checkpoint.new.category.in.predictor <- function(conn) {
+checkpoint.remove.all <- function(conn) {
 
   temp_dir = tempdir()
 
@@ -19,4 +19,4 @@ checkpoint.new.category.in.predictor <- function(conn) {
   testEnd()
 }
 
-doTest("Deep Learning checkpoint with new categoricals", checkpoint.new.category.in.predictor )
+doTest("Deep Learning checkpoint with remove all", checkpoint.remove.all)
