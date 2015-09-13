@@ -919,7 +919,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
+    sb.p("import hex.genmodel.annotations.ModelPojo;").nl();
     sb.nl();
+    String algo = this.getClass().getSimpleName().toLowerCase().replace("model", "");
+    sb.p("@ModelPojo(name=\"").p(modelName).p("\", algorithm=\"").p(algo).p("\")").nl();
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
     toJavaInit(sb, fileContext).nl();
