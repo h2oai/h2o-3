@@ -40,7 +40,7 @@ test.movielens.demo <- function(conn) {
   
   Log.info("Plot first archetype on a subset of movies")
   feat_cols <- 1:50
-  movies <- readMultiChar(locate("smalldata/demos/movies.dat"))
+  movies <- readMultiChar(locate("smalldata/demos/movies.dat"), separators = "::")
   plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights", col = "blue", pch = 19, lty = "solid")
   text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,2], cex = 0.7, pos = 3)
   plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights by Genre", col = "blue", pch = 19, lty = "solid")
