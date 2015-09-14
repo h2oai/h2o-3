@@ -129,7 +129,7 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files", null,
              "Typehead hander for filename completion.");
-    
+
     register("/3/Jobs/(?<job_id>.*)"                               ,"GET",JobsHandler     .class, "fetch", null,
              "Get the status of the given H2O Job (long-running action).");
 
@@ -260,8 +260,8 @@ public class RequestServer extends NanoHTTPD {
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", null, "Kill minus 3 on *this* node");
-    register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Something something R exec something.");
-    register("/99/Rapids/isEval"                                   ,"GET"   ,RapidsHandler.class, "isEvaluated", null, "something something r exec something.");
+    register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
+    register("/99/Rapids/isEval"                                   ,"GET"   ,RapidsHandler.class, "isEvaluated", null, "Check to see if the AST has been evaluated.");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
     register("/3/DownloadDataset.bin"                                  ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");
@@ -658,6 +658,7 @@ public class RequestServer extends NanoHTTPD {
     }
 
     switch( type ) {
+    case html: // return JSON for html requests
     case json:
       return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:

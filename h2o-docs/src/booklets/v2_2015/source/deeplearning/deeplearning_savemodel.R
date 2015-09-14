@@ -4,4 +4,4 @@ model_path <- h2o.saveModel(object = model,
                             force = TRUE)
 
 print(model_path)
-# /tmp/mymodel/DeepLearning_model_R_1441838096933_5
+# /tmp/mymodel/DeepLearning_model_R_1441838096933

@@ -159,6 +159,7 @@ setupRandomSeed(seed, suppress = FALSE)
 sandbox()
 h2o.logIt("[SEED] :", SEED, "Command")
 
+h2o.removeAll()  # wipe at the beginning of every test
 
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
 h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")

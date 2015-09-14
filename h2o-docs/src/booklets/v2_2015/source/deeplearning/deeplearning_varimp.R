@@ -1,7 +1,7 @@
 # Train a Deep Learning model and validate on a test set
 # and save the variable importances
-model_vi <- h2o.deeplearning(x = 1:784, 
-                             y = 785, 
+model_vi <- h2o.deeplearning(x = x, 
+                             y = y, 
                              training_frame = train,
                              distribution = "multinomial",
                              activation = "RectifierWithDropout", 
