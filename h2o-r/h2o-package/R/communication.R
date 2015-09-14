@@ -453,8 +453,13 @@
 
 
 .format.helper <- function(x, format) {
-    if( is.list(x) ) lapply(x, .format.helper, format)
-    else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    tryCatch(
+      if( is.list(x) ) lapply(x, .format.helper, format)
+      else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    , error=function(e) {
+      print("\n\n Format Error \n\n")
+      print("x:"); print(x); print("format: "); print(format); print(e)
+    })
 }
 
 #' Print method for H2OTable objects
