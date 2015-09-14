@@ -1,7 +1,7 @@
 # Re-start the training process on a saved DL model
 # using the `checkpoint` argument
-model_chkp <- h2o.deeplearning(x = 1:784, 
-                               y = 785, 
+model_chkp <- h2o.deeplearning(x = x, 
+                               y = y, 
                                training_frame = train, 
                                validation_frame = test,
                                distribution = "multinomial",                               
