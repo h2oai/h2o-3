@@ -797,7 +797,7 @@ NULL
   # df[1:150,1:10] - r  c  3    rectangular slice
   # df[a<b,]       - f  na 3    boolean row slice
   # df[a<b,c]      - f  c  3    boolean row slice
-
+  is1by1 <- !missing(col) && !missing(row) && length(col) == 1 && length(row) == 1
   if( nargs() == 2 &&   # Only row, no column; nargs==2 distinguishes "df[2,]" (row==2) from "df[2]" (col==2)
       # is.char tells cars["cylinders"], or if there are multiple columns.
       # Single column with numeric selector is row: car$cylinders[100]
@@ -824,7 +824,8 @@ NULL
       row <- .row.col.selector(substitute(row), row,envir=parent.frame())
     assign("data",.newExpr("rows",data,row)) # Row selector
   }
-  data
+  if( is1by1 ) .fetch.data(data,1)[1]
+  else         data
 }
 
 #' @rdname Frame-Extract

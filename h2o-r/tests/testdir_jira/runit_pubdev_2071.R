@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 # Tests H2O's ability to read in numbers from the bit64 package
-test.pubdev_2071 <- function(localH2O) {
+test.pubdev_2071 <- function() {
 
 library(bit64)
 
