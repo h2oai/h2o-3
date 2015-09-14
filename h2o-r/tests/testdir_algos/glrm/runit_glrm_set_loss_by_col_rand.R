@@ -48,7 +48,7 @@ test.glrm.loss_by_col <- function() {
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(NUM_LOSS, 1), loss_by_col_idx = sample(CAT_COLS-1, 1)))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(CAT_LOSS, 1), loss_by_col_idx = sample(NUM_COLS-1, 1)))
   
-  Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", ")))
+  Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", "), "and loss_by_col_idx =", paste(loss_idx_all, collapse = ", ")))
   h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all, loss_by_col_idx = loss_idx_all)
   testEnd()
 }

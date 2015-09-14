@@ -13,6 +13,15 @@ locate_source <- function(s) {
     myPath <- locate(s)
 }
 
+readMultiChar <- function(fileName, separators) {
+  data <- readLines(con <- file(fileName))
+  close(con)
+  records <- sapply(data, strsplit, split = separators)
+  dataFrame <- data.frame(t(sapply(records,c)))
+  rownames(dataFrame) <- 1: nrow(dataFrame)
+  return(as.data.frame(dataFrame, stringsAsFactors = FALSE))
+}
+
 test.movielens.demo <- function(conn) {
   k_dim <- 15
   frac_known <- 0.10
@@ -25,19 +34,27 @@ test.movielens.demo <- function(conn) {
   fitH2O <- h2o.glrm(ratings, x = 2:ncol(ratings), k = k_dim, ignore_const_cols = FALSE, transform = "NONE", init = "PlusPlus", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000, seed = SEED)
   print(fitH2O)
   
-  Log.info("Embedding of users into movie archetypes (X):")
-  fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
-  print(head(fitX))
-  
   Log.info("Archetype to full movie mapping (Y):")
   fitY <- fitH2O@model$archetypes
   print(head(fitY))
+  
+  Log.info("Plot first archetype on a subset of movies")
+  feat_cols <- 1:50
+  movies <- readMultiChar(locate("smalldata/demos/movies.dat"), separators = "::")
+  plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights", col = "blue", pch = 19, lty = "solid")
+  text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,2], cex = 0.7, pos = 3)
+  plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights by Genre", col = "blue", pch = 19, lty = "solid")
+  text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,3], cex = 0.7, pos = 3)
+  
+  Log.info("Embedding of users into movie archetypes (X):")
+  fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
+  print(head(fitX))
   
   Log.info("Impute missing ratings from XY decomposition")
   pred <- predict(fitH2O, ratings)
   print(head(pred))
   
-  Log.info(paste("Construct new user with", 100*frac_known, "% movie ratings known:"))
+  Log.info(paste("Construct new user with", 100*frac_known, "% known movie ratings:"))
   num_movies <- ncol(ratings)-1    # First column is user ID
   num_known <- trunc(frac_known * num_movies)
   idx_known <- sample(1:num_movies, num_known)
