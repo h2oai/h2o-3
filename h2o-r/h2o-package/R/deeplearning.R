@@ -344,8 +344,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
 #' @param data An \linkS4class{Frame} object.
+#' @param per_feature Whether to return the per-feature squared reconstruction error
 #' @return Returns an \linkS4class{Frame} object containing the
-#'         reconstruction MSE.
+#'         reconstruction MSE or the per-feature squared error.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
 #' \donttest{
@@ -357,13 +358,14 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
 #' head(prostate.anon)
+#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
+#' head(prostate.anon.per.feature)
 #' }
 #' @export
-h2o.anomaly <- function(object, data) {
+h2o.anomaly <- function(object, data, per_feature=FALSE) {
   url <- paste0('Predictions/models/', object@model_id, '/frames/',.eval.frame(data):id)
-  res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE)
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
   key <- res$model_metrics[[1L]]$predictions$frame_id$name
-
   h2o.getFrame(key)
 }
 

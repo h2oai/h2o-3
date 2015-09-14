@@ -24,7 +24,7 @@ import static hex.ModelMetricsMultinomial.getHitRatioTable;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
   public interface DeepFeatures {
-    Frame scoreAutoEncoder(Frame frame, Key destination_key);
+    Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 

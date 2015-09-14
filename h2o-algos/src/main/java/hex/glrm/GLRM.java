@@ -660,7 +660,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       List<String> colHeaders = new ArrayList<>();
       List<String> colTypes = new ArrayList<>();
       List<String> colFormat = new ArrayList<>();
-      colHeaders.add("Number of Observed Entries"); colTypes.add("long"); colFormat.add("%d");
+      // colHeaders.add("Number of Observed Entries"); colTypes.add("long"); colFormat.add("%d");   // TODO: This causes overflow in R if too large
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Final Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Final Objective Value"); colTypes.add("double"); colFormat.add("%.5f");
@@ -675,7 +675,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
               "");
       int row = 0;
       int col = 0;
-      table.set(row, col++, output._nobs);
+      // table.set(row, col++, output._nobs);
       table.set(row, col++, output._iterations);
       table.set(row, col++, output._step_size);
       table.set(row, col++, output._objective);
