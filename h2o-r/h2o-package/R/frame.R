@@ -1590,18 +1590,12 @@ as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
-<<<<<<< HEAD
   if(!is.data.frame(x))
     if( length(x)==1L ) x <- data.frame(C1=x)
     else                x <- as.data.frame(x)
   types <- sapply(x, class)
-=======
-  if(!is.data.frame(object)) {
-    object <- as.data.frame(object)
-  }
   types <- sapply(object, class)
   types <- gsub("integer64", "numeric", types)
->>>>>>> master
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
   types <- gsub("complex", "numeric", types)
