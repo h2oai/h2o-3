@@ -824,7 +824,7 @@ NULL
       row <- .row.col.selector(substitute(row), row,envir=parent.frame())
     assign("data",.newExpr("rows",data,row)) # Row selector
   }
-  if( is1by1 ) .fetch.data(data,1)[1]
+  if( is1by1 ) .fetch.data(data,1)[[1]]
   else         data
 }
 
