@@ -138,9 +138,10 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
-def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
+def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   """
-  Used in conjunction with lazy_import and parse_setup in order to make alterations before parsing.
+  Used in conjunction with lazy_import and parse_setup in order to make alterations before
+  parsing.
 
   Parameters
   ----------
@@ -161,8 +162,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr._id = id
   fr._keep = True
   fr._nrows = int(H2OFrame(expr=ExprNode("nrow", fr))._scalar())  #parsed['rows']
-  fr._col_names = parsed['column_names']
-  fr._ncols = len(fr._col_names)
+  fr._ncols = parsed["number_columns"]
+  fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
 def _quoted(key):
