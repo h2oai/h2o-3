@@ -156,12 +156,13 @@ setupRandomSeed(seed, suppress = FALSE)
 sandbox()
 h2o.logIt("[SEED] :", SEED, "Command")
 
+h2o.removeAll()  # wipe at the beginning of every test
+
 h2o.logAndEcho("------------------------------------------------------------")
 h2o.logAndEcho("")
 h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
 h2o.logAndEcho("")
 h2o.logAndEcho("------------------------------------------------------------")
-h2o.removeAll()
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {
