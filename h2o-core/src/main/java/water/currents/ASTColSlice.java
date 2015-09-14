@@ -66,32 +66,34 @@ class ASTRowSlice extends ASTPrim {
     Frame returningFrame;
     long nrows = fr.numRows();
     if( asts[2] instanceof ASTNumList ) {
-      ASTNumList nums = (ASTNumList)asts[2];
-      long[] rows = nums.expand8Sort();
-      if( rows.length==0 ) {      // Empty inclusion list?
-      } else if( rows[0] >= 0 ) { // Positive (inclusion) list
-        if( rows[rows.length-1] > nrows )
-          throw new IllegalArgumentException("Row must be an integer from 0 to "+(nrows-1));
-      } else {                  // Negative (exclusion) list
-        // Invert the list to make a positive list, ignoring out-of-bounds values
-        BitSet bs = new BitSet((int)nrows);
-        for( int i=0; i<rows.length; i++ ) {
-          int idx = (int)(-rows[i]-1); // The positive index
-          if( idx >=0 && idx < nrows )
-            bs.set(idx);        // Set column to EXCLUDE
+      final ASTNumList nums = (ASTNumList)asts[2];
+      long[] rows = nums._isList?nums.expand8Sort():null;
+      if( rows!=null ) {
+        if (rows.length == 0) {      // Empty inclusion list?
+        } else if (rows[0] >= 0) { // Positive (inclusion) list
+          if (rows[rows.length - 1] > nrows)
+            throw new IllegalArgumentException("Row must be an integer from 0 to " + (nrows - 1));
+        } else {                  // Negative (exclusion) list
+          // Invert the list to make a positive list, ignoring out-of-bounds values
+          BitSet bs = new BitSet((int) nrows);
+          for (int i = 0; i < rows.length; i++) {
+            int idx = (int) (-rows[i] - 1); // The positive index
+            if (idx >= 0 && idx < nrows)
+              bs.set(idx);        // Set column to EXCLUDE
+          }
+          rows = new long[(int) nrows - bs.cardinality()];
+          for (int i = bs.nextClearBit(0), j = 0; i < nrows; i = bs.nextClearBit(i + 1))
+            rows[j++] = i;
         }
-        rows = new long[(int)nrows-bs.cardinality()];
-        for( int i=bs.nextClearBit(0),j=0; i<nrows; i=bs.nextClearBit(i+1) )
-          rows[j++] = i;
       }
       final long[] ls = rows;
 
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-          if( ls.length == 0 ) return;
+          if( nums.cnt()==0 ) return;
           long start = cs[0].start();
           long end   = start + cs[0]._len;
-          long min = ls[0], max = ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
+          long min = ls==null?(long)nums.min():ls[0], max = ls==null?(long)nums.max()-1:ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
           //     [ start, ...,  end ]     the chunk
           //1 []                          nums out left:  nums.max() < start
           //2                         []  nums out rite:  nums.min() > end
@@ -99,9 +101,9 @@ class ASTRowSlice extends ASTPrim {
           //4          [ nums ]           nums run in  :  start <= nums.min() && nums.max() <= end
           //5                   [ nums ]  nums run rite:  start <= nums.min() && end < nums.max()
           if( !(max<start || min>end) ) {   // not situation 1 or 2 above
-            long startOffset = (min > start ? (long)min : start);  // situation 4 and 5 => min > start;
+            long startOffset = (min > start ? min : start);  // situation 4 and 5 => min > start;
             for( int i=(int)(startOffset-start); i<cs[0]._len; ++i) {
-              if( Arrays.binarySearch(ls,start+i) >= 0 ) {
+              if( (ls==null && nums.has(start+i)) || (ls!=null && Arrays.binarySearch(ls,start+i) >= 0 )) {
                 for(int c=0;c<cs.length;++c) {
                   if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
                   else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);

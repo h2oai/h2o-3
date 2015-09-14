@@ -12,6 +12,7 @@ import java.util.Arrays;
 class ASTNumList extends AST {
   final double _bases[], _strides[];
   final long _cnts[];
+  final boolean _isList;
   ASTNumList( Exec e ) {
     ArrayList<Double> bases  = new ArrayList<>();
     ArrayList<Double> strides= new ArrayList<>();
@@ -57,6 +58,7 @@ class ASTNumList extends AST {
       _strides[i] = strides.get(i);
       if( _cnts[i] != 1 ) isList = false;
     }
+    _isList = isList;
 
     // Complain about unordered bases, unless it's a simple number list
     if( !isList )
@@ -70,12 +72,14 @@ class ASTNumList extends AST {
     _bases  = new double[]{d};
     _strides= new double[]{1};
     _cnts   = new long  []{1};
+    _isList = true;
   }
   // A simple dense range ASTNumList
   ASTNumList( long lo, long hi_exclusive ) {
     _bases  = new double[]{lo};
     _strides= new double[]{1};
     _cnts   = new long  []{hi_exclusive-lo};
+    _isList = false;
   }
 
   // An empty number list
@@ -83,12 +87,14 @@ class ASTNumList extends AST {
     _bases  = new double[0];
     _strides= new double[0];
     _cnts   = new long  [0];
+    _isList = true;
   }
 
   ASTNumList(double[] list) {
     _bases  = list;
     _strides= new double[list.length];
     _cnts   = new long[list.length];
+    _isList = true;
     Arrays.fill(_strides,0);
     Arrays.fill(_cnts,1);
   }
@@ -167,27 +173,39 @@ class ASTNumList extends AST {
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
   boolean has(long v) {
-    if( min() <= v && v < max() ) { // guarantees that ub is not out-of-bounds
+    boolean isEx = false;
+    double[] bases=Arrays.copyOf(_bases,_bases.length); // if bases!=null then we do exclusion has -> !has
+    double min = min();
+    double max = max();
+    // do something special for negative indexing
+    if( min < 0 ) {
+      for(int i=0; i<bases.length;++i) bases[i] = -1*bases[i] - 1; // make bases positive for bsearch; also do 1-based => 0-based conversion
+      min = bases[0];
+      max = bases[bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1];
+      isEx = true;
+    }
+
+    if( min <= v && v < max ) { // guarantees that ub is not out-of-bounds
       // binary search _bases for range to check, return true for exact match
       // if no exact base matches, check the ranges of the two "bounding" bases
       int[][] res = new int[2][]; // entry 0 is exact; entry 1 is [lb,ub]
-      bsearch(v, res);
-      if( res[0] != null /* exact base match */ ) return true;
+      bsearch(bases, v, res);
+      if( res[0] != null /* exact base match */ ) return !isEx;
       else {
         int lb = res[1][0], ub = res[1][1];
-        if( _bases[lb] <= v && v < _bases[lb] + _cnts[lb] ) return true;
-        if( _bases[ub] <= v && v < _bases[ub] + _cnts[ub] ) return true;
+        if( bases[lb] <= v && v < bases[lb] + _cnts[lb] ) return !isEx;
+        if( bases[ub] <= v && v < bases[ub] + _cnts[ub] ) return !isEx;
       }
     }
-    return false;
+    return isEx;
   }
 
-  private void bsearch(long v, int[][] res) {
-    int lb=0,ub=_bases.length;
+  private static void bsearch(double[] bases, long v, int[][] res) {
+    int lb=0,ub=bases.length;
     int m=(ub+lb)>>1; // [lb,m) U [m,ub)
     do {
-      if( v==_bases[m] ) { res[0]=new int[]{m}; return; } // exact base match
-      else if( v<_bases[m] ) ub=m;
+      if( v==bases[m] ) { res[0]=new int[]{m}; return; } // exact base match
+      else if( v<bases[m] ) ub=m;
       else lb = m;
       m = (ub+lb)>>1;
     } while( m!=lb );

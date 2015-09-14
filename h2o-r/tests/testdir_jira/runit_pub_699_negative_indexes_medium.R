@@ -3,33 +3,33 @@ source('../h2o-runit.R')
 
 test.pub_699_negative_indexes <- function() {
 
-prostatePath = locate("smalldata/prostate/prostate.csv")
-prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
-
-prostate.local = as.data.frame(prostate.hex)
-
-# Are we in the right universe?
-expect_equal(380, dim(prostate.local)[1])
-expect_equal(9, dim(prostate.local)[2])
-
-print("Simple row exclusion")
-expect_equal(100, dim(prostate.local[-101:-380,])[1])
-expect_equal(100, dim(prostate.hex[-101:-380,])[1])
-
-print("Simple column exclusion")
-expect_equal(7, dim(prostate.local[,-8:-9,])[2])
-expect_equal(7, dim(prostate.hex[,-8:-9,])[2])
-
-print("List row exclusion")
-expect_equal(378, dim(prostate.local[c(-101, -110),])[1])
-expect_equal(378, dim(prostate.hex[c(-101, -110),])[1])
-
-print("List column exclusion")
-expect_equal(6, dim(prostate.local[,c(-1, -3, -5),])[2])
-expect_equal(6, dim(prostate.hex[,c(-1, -3, -5),])[2])
-
-Log.info("Check that OOB indexes are ignored...")
-expect_equal(380, dim(prostate.hex[-c(1000:9230),])[1])
+  prostatePath = locate("smalldata/prostate/prostate.csv")
+  prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
+  
+  prostate.local = as.data.frame(prostate.hex)
+  
+  # Are we in the right universe?
+  expect_equal(380, dim(prostate.local)[1])
+  expect_equal(9, dim(prostate.local)[2])
+  
+  print("Simple row exclusion")
+  expect_equal(100, dim(prostate.local[-101:-380,])[1])
+  expect_equal(100, dim(prostate.hex[-101:-380,])[1])
+  
+  print("Simple column exclusion")
+  expect_equal(7, dim(prostate.local[,-8:-9,])[2])
+  expect_equal(7, dim(prostate.hex[,-8:-9,])[2])
+  
+  print("List row exclusion")
+  expect_equal(378, dim(prostate.local[c(-101, -110),])[1])
+  expect_equal(378, dim(prostate.hex[c(-101, -110),])[1])
+  
+  print("List column exclusion")
+  expect_equal(6, dim(prostate.local[,c(-1, -3, -5),])[2])
+  expect_equal(6, dim(prostate.hex[,c(-1, -3, -5),])[2])
+  
+  Log.info("Check that OOB indexes are ignored...")
+  expect_equal(380, dim(prostate.hex[-1000:9230,])[1])
 
   Log.info("Now trying with a multi-chunk data set")
 
