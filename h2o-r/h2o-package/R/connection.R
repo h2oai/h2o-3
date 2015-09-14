@@ -308,7 +308,7 @@ h2o.clusterStatus <- function() {
     "\n",
     "----------------------------------------------------------------------\n",
     "\n",
-    "Your next step is to start H2O:",
+    "Your next step is to start H2O:\n",
     "    > h2o.init()\n",
     "\n",
     "For H2O package documentation, ask for help:\n",
