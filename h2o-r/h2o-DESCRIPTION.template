@@ -30,6 +30,7 @@ Collate:
          'classes.R'
          'connection.R'
          'constants.R'
+         'datasets.R'
          'logging.R'
          'communication.R'
          'kvstore.R'

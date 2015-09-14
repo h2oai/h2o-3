@@ -1,5 +1,5 @@
 ## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd("~/Downloads/")
 
 ## Function for ploting the scoring history
 plot_scoring <- function(model) {
