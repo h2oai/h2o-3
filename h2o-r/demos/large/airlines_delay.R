@@ -1,5 +1,5 @@
 ## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd("~/Downloads/")
 
 ## Load library and initialize h2o
 library(h2o)

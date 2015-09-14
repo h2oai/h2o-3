@@ -55,7 +55,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
-  /** Model-specific parameter class.  Each model sub-class contains an
+  /** Model-specific parameter class.  Each model sub-class contains
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a
    *  KMeansParameters extending Model.Parameters; sample parameters include K,
@@ -919,7 +919,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
+    sb.p("import hex.genmodel.annotations.ModelPojo;").nl();
     sb.nl();
+    String algo = this.getClass().getSimpleName().toLowerCase().replace("model", "");
+    sb.p("@ModelPojo(name=\"").p(modelName).p("\", algorithm=\"").p(algo).p("\")").nl();
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
     toJavaInit(sb, fileContext).nl();

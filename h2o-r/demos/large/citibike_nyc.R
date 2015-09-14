@@ -1,5 +1,5 @@
 ## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd("~/Downloads/")
 
 # Explore a typical Data Science workflow with H2O and R
 #

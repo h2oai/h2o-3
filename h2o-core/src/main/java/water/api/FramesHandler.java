@@ -1,18 +1,38 @@
 package water.api;
 
-import hex.Model;
 import jsr166y.CountedCompleter;
-import water.*;
-import water.api.ModelsHandler.Models;
-import water.exceptions.*;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.persist.PersistManager;
-import water.util.Log;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import hex.Model;
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.KeySnapshot;
+import water.Value;
+import water.api.ModelsHandler.Models;
+import water.exceptions.H2OColumnNotFoundArgumentException;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.exceptions.H2OKeysNotFoundArgumentException;
+import water.exceptions.H2OParseException;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.persist.PersistManager;
+import water.util.KeyedVoid;
+import water.util.Log;
 
 /*
  * FramesHandler deals with all REST API endpoints that start with /Frames.
@@ -258,82 +278,106 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    s.job =  (JobV3)Schema.schema(version, Job.class).fillFromImpl(ExportDataset.export(fr, s.path, s.frame_id.key().toString(),s.force));
+    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(ExportDatasetJob.export(fr, s.path, s.frame_id.key().toString(),s.force));
     return s;
   }
 
-  private static class ExportDataset extends Job<Frame> {
+  private static class ExportDatasetJob extends Job<KeyedVoid> {
 
-    private ExportDataset(Key dest) { super(dest,"Export"); }
+    private ExportDatasetJob(String path) {
+      super(Key.<KeyedVoid>make(path), "Export frame");
+    }
 
-    private static ExportDataset export(Frame fr, String path, String frameName, boolean force) {
-      InputStream is = (fr).toCSV(true,false);
-      ExportDataset job = new ExportDataset(null);
-      ExportTask t = new ExportTask(is,path,frameName,force,job);
+    private static ExportDatasetJob export(Frame fr, String path, String frameName, boolean overwrite) {
+      // Validate input
+      boolean fileExists = H2O.getPM().exists(path);
+      if (overwrite && fileExists) {
+        Log.warn("File " + path + " exists, but will be overwritten!");
+      } else if (!overwrite && fileExists) {
+        throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+      }
+      InputStream is = (fr).toCSV(true, false);
+      ExportDatasetJob job = new ExportDatasetJob(path);
+      ExportTask t = new ExportTask(is, path, frameName, overwrite, job);
       job.start(t, fr.anyVec().nChunks(), true);
       return job;
     }
 
     private static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
+
       final InputStream _csv;
       final String _path;
       final String _frameName;
-      final boolean _force;
+      final boolean _overwrite;
       final Job _j;
-      ExportTask(InputStream csv, String path, String frameName, boolean force, Job j) {
-        _csv=csv; _path=path; _frameName=frameName; _force=force; _j=j;
+
+      ExportTask(InputStream csv, String path, String frameName, boolean overwrite, Job j) {
+        _csv = csv;
+        _path = path;
+        _frameName = frameName;
+        _overwrite = overwrite;
+        _j = j;
       }
 
       private void copyStream(OutputStream os, final int buffer_size) {
-        int curIdx=0;
+        int curIdx = 0;
         try {
-          byte[] bytes=new byte[buffer_size];
-          for(;;) {
-            int count=_csv.read(bytes, 0, buffer_size);
-            if( count<=0 ) break;
+          byte[] bytes = new byte[buffer_size];
+          for (; ; ) {
+            int count = _csv.read(bytes, 0, buffer_size);
+            if (count <= 0) {
+              break;
+            }
             os.write(bytes, 0, count);
-            int workDone=((Frame.CSVStream)_csv)._curChkIdx;
-            if( curIdx!=workDone) {
-              _j.update(workDone-curIdx);
+            int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
+            if (curIdx != workDone) {
+              _j.update(workDone - curIdx);
               curIdx = workDone;
             }
           }
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
           throw new RuntimeException(ex);
         }
       }
 
-      @Override public void compute2() {
+      @Override
+      public void compute2() {
         PersistManager pm = H2O.getPM();
         OutputStream os = null;
         try {
-          os = pm.create(_path, _force);
+          os = pm.create(_path, _overwrite);
           copyStream(os, 4 * 1024 * 1024);
         } finally {
           if (os != null) {
             try {
               os.close();
-              Log.info("Key '" + _frameName +  "' was written to " + _path + ".");
-            }
-            catch (Exception e) {
+              Log.info("Key '" + _frameName + "' was written to " + _path + ".");
+            } catch (Exception e) {
               Log.err(e);
             }
           }
         }
         tryComplete();
       }
+
       // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
-      @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-        if( _j != null ) {
+      @Override
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+        if (_j != null) {
           _j.cancel();
-          if (ex instanceof H2OParseException) throw (H2OParseException) ex;
-          else _j.failed(ex);
+          if (ex instanceof H2OParseException) {
+            throw (H2OParseException) ex;
+          } else {
+            _j.failed(ex);
+          }
         }
         return true;
       }
 
-      @Override public void onCompletion(CountedCompleter caller) { _j.done(); }
+      @Override
+      public void onCompletion(CountedCompleter caller) {
+        _j.done();
+      }
     }
   }
 

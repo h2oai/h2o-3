@@ -157,12 +157,12 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   id = setup["destination_frame"]
   fr = H2OFrame()
   parsed = parse(setup, id, first_line_is_header)
-  fr._nrows = parsed['rows']
-  fr._col_names = parsed['column_names']
-  fr._ncols = len(fr._col_names)
   fr._computed = True
   fr._id = id
   fr._keep = True
+  fr._nrows = int(H2OFrame(expr=ExprNode("nrow", fr))._scalar())  #parsed['rows']
+  fr._col_names = parsed['column_names']
+  fr._ncols = len(fr._col_names)
   return fr
 
 def _quoted(key):

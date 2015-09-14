@@ -820,14 +820,18 @@ setMethod("summary", "H2OGrid",
             cat("Used hyper parameters: \n")
             lapply(object@hyper_names, function(name) { cat("  - ", name, "\n") })
             cat("Number of models:", length(object@model_ids), "\n")
-            for (idx in 1:length(object@model_ids)) {
-              cat("  - ", object@model_ids[[idx]], "\n")
+            if (length(object@model_ids) > 0) {
+              for (idx in 1:length(object@model_ids)) {
+                cat("  - ", object@model_ids[[idx]], "\n")
+              }
             }
             cat("\nNumber of failed models:", length(object@failed_params), "\n")
-            for (idx in 1:length(object@failed_params)) {
-              cat("  - ", object@failure_details[[idx]])
-              if (show_stack_traces) {
-                cat(object@failure_stack_traces[[idx]], "\n")
+            if (length(object@failed_params) > 0) {
+              for (idx in 1:length(object@failed_params)) {
+                cat("  - ", object@failure_details[[idx]])
+                if (show_stack_traces) {
+                  cat(object@failure_stack_traces[[idx]], "\n")
+                }
               }
             }
 
