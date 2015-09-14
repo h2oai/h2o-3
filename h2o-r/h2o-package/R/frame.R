@@ -1594,7 +1594,6 @@ as.h2o <- function(x, destination_frame= "") {
     if( length(x)==1L ) x <- data.frame(C1=x)
     else                x <- as.data.frame(x)
   types <- sapply(x, class)
-  types <- sapply(object, class)
   types <- gsub("integer64", "numeric", types)
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
