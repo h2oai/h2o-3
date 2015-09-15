@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM <- function(conn) {
+test.GBM <- function() {
   library(gbm)
-  df <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv"), destination_frame="prostate.hex")
+  df <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"), destination_frame="prostate.hex")
 
   ## AGE Regression
   glm <- h2o.glm(x=4:8,y="AGE",training_frame=df)

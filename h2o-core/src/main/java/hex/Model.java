@@ -1,27 +1,16 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
+import water.*;
+import water.fvec.*;
+import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import hex.genmodel.GenModel;
-import water.*;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.EnumWrappedVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.SB;
-import water.util.TwoDimTable;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -79,7 +68,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int _nfolds;
     public boolean _keep_cross_validation_predictions;
     public enum FoldAssignmentScheme {
-      AUTO, Random, Modulo
+      AUTO, Random, Modulo, Stratified
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;

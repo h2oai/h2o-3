@@ -3,8 +3,8 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 
-colPlus.numeric <- function(conn) {
-  hex <- as.h2o(conn, iris)
+colPlus.numeric <- function() {
+  hex <- as.h2o( iris)
   col <- 1
   Log.info(paste("Using column: ", col))
  

@@ -3,9 +3,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 	ca = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
-	cc = as.h2o(object = ca,conn = h,destination_frame = "cc")
+	cc = as.h2o(ca,destination_frame = "cc")
 	cc$Merit = as.factor(cc$Merit)
 	cc$Class = as.factor(cc$Class)
 	myX =c("Merit","Class")

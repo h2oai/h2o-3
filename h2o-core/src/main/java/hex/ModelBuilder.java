@@ -3,12 +3,12 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.currents.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.ASTOp;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
@@ -314,9 +314,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       switch(foldAssignmentScheme) {
         case AUTO:
         case Random:
-          foldAssignment = ASTOp.kfoldColumn(foldAssignment,N,seed); break;
+          foldAssignment = ASTKFold.kfoldColumn(foldAssignment,N,seed); break;
         case Modulo:
-          foldAssignment = ASTOp.moduloKfoldColumn(foldAssignment,N); break;
+          foldAssignment = ASTKFold.moduloKfoldColumn(foldAssignment, N); break;
+        case Stratified:
+          foldAssignment = ASTKFold.stratifiedKFoldColumn(response(),N,seed); break;
         default:
           throw H2O.unimpl();
       }

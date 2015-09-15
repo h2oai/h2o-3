@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_174_cut <- function(conn) {
+test.pub_174_cut <- function() {
   Log.info('Uploading allyears2k_header.csv to H2O...')
-  air.hex <- h2o.importFile(conn, normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
+  air.hex <- h2o.importFile(normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   
   Log.info("Cut ArrDelay column with user-specified breaks")
   air.cut <- cut(air.hex$ArrDelay, breaks = c(-1000, -20, 0, 5, 15, 60, 120, 160, 1500))

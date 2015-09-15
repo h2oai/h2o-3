@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.gbm.grid <- function(conn) {
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
+check.gbm.grid <- function() {
+  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
   print(summary(iris.hex))
 
   pretty.list <- function(ll) {

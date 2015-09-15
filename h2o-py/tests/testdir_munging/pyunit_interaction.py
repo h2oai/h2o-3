@@ -11,11 +11,11 @@ def interaction_check():
     # add a couple of factor columns to iris
     iris = iris.cbind(iris[4] == "Iris-setosa")
     iris[5] = iris[5].asfactor()
-    iris.setName(5,"C6")
+    iris.set_name(5,"C6")
 
     iris = iris.cbind(iris[4] == "Iris-virginica")
     iris[6] = iris[6].asfactor()
-    iris.setName(6, name="C7")
+    iris.set_name(6, name="C7")
 
     # create a frame of the two-way interactions
     two_way_interactions = h2o.interaction(iris, factors=[4,5,6], pairwise=True, max_factors=10000, min_occurrence=1)

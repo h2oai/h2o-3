@@ -1,15 +1,15 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
 #' Build a Deep Learning Neural Network
 #'
-#' Performs Deep Learning neural networks on an \linkS4class{H2OFrame}
+#' Performs Deep Learning neural networks on an \linkS4class{Frame}
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
-#' @param model_id (Optional) The unique id assigned to the resulting model. If
+#' @param training_frame An \linkS4class{Frame} object containing the variables in the model.
+#' @param id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
-#' @param validation_frame (Optional) An \code{\link{H2OFrame}} object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
+#' @param validation_frame (Optional) An \code{\link{Frame}} object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -186,17 +186,17 @@ h2o.deeplearning <- function(x, y, training_frame,
   # Pass over ellipse parameters and deprecated parameters
   dots <- .model.ellipses(list(...))
 
-  # Training_frame and validation_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame and validation_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   if (!missing(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                   stop("argument \"validation_frame\" must be a valid Frame or key")
                  })
   }
   # Parameter list to send to model builder
@@ -333,7 +333,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
-  .h2o.createModel(training_frame@conn, 'deeplearning', parms)
+  .h2o.modelJob('deeplearning', parms, do_future=FALSE)
 }
 
 #' Anomaly Detection via H2O Deep Learning Model
@@ -343,9 +343,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
-#' @param data An \linkS4class{H2OFrame} object.
+#' @param data An \linkS4class{Frame} object.
 #' @param per_feature Whether to return the per-feature squared reconstruction error
-#' @return Returns an \linkS4class{H2OFrame} object containing the
+#' @return Returns an \linkS4class{Frame} object containing the
 #'         reconstruction MSE or the per-feature squared error.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
@@ -353,20 +353,19 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' prostate.hex = h2o.importFile(path = prosPath)
 #' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
 #' head(prostate.anon)
-#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=T)
+#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
 #' head(prostate.anon.per.feature)
 #' }
 #' @export
 h2o.anomaly <- function(object, data, per_feature=FALSE) {
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',.eval.frame(data):id)
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
   key <- res$model_metrics[[1L]]$predictions$frame_id$name
-
   h2o.getFrame(key)
 }
 
@@ -376,9 +375,9 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.
-#' @param data An \linkS4class{H2OFrame} object.
+#' @param data An \linkS4class{Frame} object.
 #' @param layer Index of the hidden layer to extract.
-#' @return Returns an \linkS4class{H2OFrame} object with as many features as the
+#' @return Returns an \linkS4class{Frame} object with as many features as the
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
 #' @examples
@@ -386,7 +385,7 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' library(h2o)
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' prostate.hex = h2o.importFile(path = prosPath)
 #' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex,
 #'                                hidden = c(100, 200), epochs = 5)
 #' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 1)
@@ -397,13 +396,8 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' @export
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
-  tmp <- !.is.eval(data)
-  if( tmp ) {
-    temp_key <- data@frame_id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
-  }
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', .eval.frame(data):id)
+  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 
   h2o.getFrame(key)

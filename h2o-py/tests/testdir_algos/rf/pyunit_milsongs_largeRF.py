@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(1, "../../../")
-import h2o, tests
+import h2o,tests
 import random
 
 def milsong_checkpoint():

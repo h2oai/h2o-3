@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub.696 <- function(conn) {
+test.pub.696 <- function() {
 
   a <- h2o.rep_len(0,1000000)
   b <- h2o.runif(a, -1)

@@ -6,9 +6,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 
-test.GLM.getLambdaModel <- function(conn) {
+test.GLM.getLambdaModel <- function() {
 print("Read data")
-pros.hex = h2o.importFile(conn,normalizePath(locate("smalldata/logreg/prostate.csv")), destination_key="pros.hex")
+pros.hex = h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")), destination_key="pros.hex")
 
 myX = c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
 myY = "CAPSULE"

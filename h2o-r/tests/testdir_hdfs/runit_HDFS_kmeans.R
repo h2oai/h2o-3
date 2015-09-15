@@ -24,7 +24,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.kmeans <- function(conn) {
+check.kmeans <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.
@@ -32,7 +32,7 @@ check.kmeans <- function(conn) {
 
   heading("Import iris_wheader.csv from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-  iris.hex <- h2o.importFile(conn, url)
+  iris.hex <- h2o.importFile(url)
   n <- nrow(iris.hex)
   print(n)
   if (n != 150) {
@@ -47,7 +47,7 @@ check.kmeans <- function(conn) {
 
   heading("Importing covtype.data from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_covtype_file)
-  covtype.hex <- h2o.importFile(conn, url)
+  covtype.hex <- h2o.importFile(url)
   n <- nrow(covtype.hex)
   print(n)
   if (n != 581012) {

@@ -3,9 +3,9 @@ source('../h2o-runit.R')
 library(gains)
 
 
-test.h2o.gains <- function(conn) {
+test.h2o.gains <- function() {
   tolerance <- 3e-2
-  hex <- h2o.importFile(conn, normalizePath(locate("smalldata/logreg/prostate.csv")))
+  hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")))
   hex.df <- as.data.frame(hex)
   m <- h2o.gbm(x = 3:9, y = 2, training_frame = hex)
   preds <- h2o.predict(m, hex)
