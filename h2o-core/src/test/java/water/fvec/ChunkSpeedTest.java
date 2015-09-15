@@ -18,6 +18,7 @@ public class ChunkSpeedTest extends TestUtil {
     double[][] raw = new double[cols][rows];
     for (int j=0; j<cols; ++j) {
       for (int i = 0; i < rows; ++i) {
+//        switch (j%1) { //just do 1 byte chunks
 //        switch (j%2) { //just do 1/2 byte chunks
         switch (j%3) { // do all 3 chunk types
           case 0:
