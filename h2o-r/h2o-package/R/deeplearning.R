@@ -358,7 +358,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'                                hidden = c(10, 10), epochs = 5)
 #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
 #' head(prostate.anon)
-#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=T)
+#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
 #' head(prostate.anon.per.feature)
 #' }
 #' @export
