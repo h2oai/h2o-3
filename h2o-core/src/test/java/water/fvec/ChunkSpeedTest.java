@@ -42,18 +42,18 @@ public class ChunkSpeedTest extends TestUtil {
     // raw data
     {
       long start = 0;
-      double sum[] = new double[cols];
+      double sum = 0;
       for (int r = 0; r < rep; ++r) {
         if (r==rep/10)
           start = System.currentTimeMillis();
         for (int j=0; j<cols; ++j) {
           for (int i = 0; i < rows; ++i) {
-            sum[j] += raw[j][i];
+            sum += raw[j][i];
           }
         }
       }
       long done = System.currentTimeMillis();
-      Log.info("Sum: " + ArrayUtils.sum(sum));
+      Log.info("Sum: " + sum);
       Log.info("Data size: " + PrettyPrint.bytes(rows * cols * 8));
       Log.info("Time to access raw double[]: " + PrettyPrint.msecs(done - start, true));
       Log.info("");
@@ -62,18 +62,18 @@ public class ChunkSpeedTest extends TestUtil {
     // chunks
     {
       long start = 0;
-      double sum[] = new double[cols];
+      double sum = 0;
       for (int r = 0; r < rep; ++r) {
         if (r==rep/10)
           start = System.currentTimeMillis();
         for (int j=0; j<cols; ++j) {
           for (int i = 0; i < rows; ++i) {
-            sum[j] += chunks[j].atd(i);
+            sum += chunks[j].atd(i);
           }
         }
       }
       long done = System.currentTimeMillis();
-      Log.info("Sum: " + ArrayUtils.sum(sum));
+      Log.info("Sum: " + sum);
       long siz = 0;
       for (int j=0; j<cols; ++j) {
         siz += chunks[j].byteSize();
