@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.deeplearning_stacked_autoencoder <- function(conn) {  
+check.deeplearning_stacked_autoencoder <- function() {  
   # this function builds a vector of autoencoder models, one per layer
   get_stacked_ae_array <- function(training_data,layers,args){  
     vector <- c()
@@ -40,19 +40,19 @@ check.deeplearning_stacked_autoencoder <- function(conn) {
   # set to T for RUnit
   # set to F for stand-alone demo
   if (T) {
-    train_hex <- h2o.importFile(conn, locate(TRAIN))
-    test_hex <- h2o.importFile(conn, locate(TEST))
+    train_hex <- h2o.importFile(locate(TRAIN))
+    test_hex  <- h2o.importFile(locate(TEST ))
   } else {
     library(h2o)
-    conn <- h2o.init(nthreads=-1)
+    h2o.init(nthreads=-1)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
-    train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',')
-    test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',')
+    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',')
+    test_hex  <- h2o.importFile(path = paste0(homedir,TEST), header = F, sep = ',')
   }
   train <- train_hex[,-response]
-  test <- test_hex[,-response]
+  test  <- test_hex [,-response]
   train_hex[,response] <- as.factor(train_hex[,response])
-  test_hex[,response] <- as.factor(test_hex[,response])
+  test_hex [,response] <- as.factor(test_hex [,response])
   
   ## Build reference model on full dataset and evaluate it on the test set
   model_ref <- h2o.deeplearning(training_frame=train_hex, x=1:(ncol(train_hex)-1), y=response, hidden=c(10), epochs=1)

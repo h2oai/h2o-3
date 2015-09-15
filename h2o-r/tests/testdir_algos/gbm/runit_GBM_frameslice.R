@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM.frameslice <- function(conn) {
+test.GBM.frameslice <- function() {
   Log.info("Importing prostate data...\n")
-  pros.hex <- h2o.importFile(conn, path = locate("smalldata/logreg/prostate.csv"))
+  pros.hex <- h2o.importFile(path = locate("smalldata/logreg/prostate.csv"))
 
   Log.info("Running GBM on a sliced data frame...\n")
   pros.hex[,2] = as.factor(pros.hex[,2])

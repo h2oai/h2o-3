@@ -9,7 +9,7 @@ source('../../h2o-runit.R')
 #    conn = h2o.init()
 
 
-test.quoted_comma <- function(conn) {
+test.quoted_comma <- function() {
 
     a_initial <- data.frame(cbind(
     v1 = c("a,b","c,d", "e,f", "e,f"),
@@ -28,7 +28,7 @@ test.quoted_comma <- function(conn) {
     print("b = a")
 
 
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o(a_initial, destination_frame="r.hex")
     b.h2o <- a.h2o
 
     b.h2o.R <- as.data.frame(b.h2o)

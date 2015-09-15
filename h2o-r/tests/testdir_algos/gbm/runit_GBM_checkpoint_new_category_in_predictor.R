@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-checkpoint.new.category.in.predictor <- function(conn) {
+checkpoint.new.category.in.predictor <- function() {
 
   sv1 = h2o.uploadFile(locate("smalldata/iris/setosa_versicolor.csv"))
   sv2 = h2o.uploadFile(locate("smalldata/iris/setosa_versicolor.csv"))

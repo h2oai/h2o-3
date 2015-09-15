@@ -5,10 +5,11 @@
 ##
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-complexFilterTest_prostate_7_35 <- function(conn) {
+
+complexFilterTest_prostate_7_35 <- function() {
     Log.info("A munge-task R unit test on data <prostate_7> testing the functional unit <['', '<=']> ")
     Log.info("Uploading prostate_7")
-    hex <- h2o.importFile(conn, locate("smalldata/junit/parse_folder/prostate_7.csv"), "rprostate_7.hex")
+    hex <- h2o.importFile(locate("smalldata/junit/parse_folder/prostate_7.csv"), "rprostate_7.hex")
 Log.info("Performing compound task ( ( hex[,c(7)] <= 41.5892321342 ))  on dataset <prostate_7>")
          filterHex <- hex[( ( hex[,c(7)] <= 41.5892321342 )) ,]
 Log.info("Performing compound task ( ( hex[,c(1)] <= 278.961631061 ))  on dataset prostate_7, and also subsetting columns.")

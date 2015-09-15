@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.pca.quasar <- function(conn) {
+test.pca.quasar <- function() {
   Log.info("Importing SDSS_quasar.txt.zip data...") 
-  quasar.hex <- h2o.importFile(conn, locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
+  quasar.hex <- h2o.importFile(locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
   quasar.hex <- quasar.hex[,-1]
   print(summary(quasar.hex))
   

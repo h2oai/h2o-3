@@ -23,7 +23,7 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-check.kmeans_airlines <- function(conn) {
+check.kmeans_airlines <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.
@@ -31,7 +31,7 @@ check.kmeans_airlines <- function(conn) {
 
   heading("Import airlines_all.csv from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_file)
-  airlines.hex <- h2o.importFile(conn, url)
+  airlines.hex <- h2o.importFile(url)
   n <- nrow(airlines.hex)
   print(paste("Imported n =", n, "rows"))
 

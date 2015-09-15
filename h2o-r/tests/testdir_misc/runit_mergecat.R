@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.mergecat <- function(conn) {
+test.mergecat <- function() {
   census_path <- locate("smalldata/chicago/chicagoCensus.csv")
   crimes_path <- locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
   

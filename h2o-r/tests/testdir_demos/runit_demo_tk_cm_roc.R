@@ -33,10 +33,10 @@ if (TRUE) {
 }
 
 h2o.startLogging()
-check.demo_cm_roc <- function(conn) {
+check.demo_cm_roc <- function() {
 
   #uploading data file to h2o
-  air <- h2o.importFile(conn, filePath, "air")
+  air <- h2o.importFile(filePath, "air")
 
 
   #Constructing validation and train sets by sampling (20/80)
@@ -65,7 +65,7 @@ check.demo_cm_roc <- function(conn) {
   # print(air.rf)
 
   #uploading test file to h2o
-  air.test <- h2o.importFile(conn,testFilePath,destination_frame="air.test")
+  air.test <- h2o.importFile(testFilePath,destination_frame="air.test")
 
   model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
 

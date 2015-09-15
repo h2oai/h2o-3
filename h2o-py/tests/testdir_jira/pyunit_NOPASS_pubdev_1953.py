@@ -16,8 +16,8 @@ def pubdev_1953():
     # bpd["DayOfWeek"] = secs.dayOfWeek()
     # wthr1 = h2o.import_file(path=[h2o.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv"), h2o.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv")])
     # wthr2 = wthr1[["Year Local","Month Local","Day Local","Hour Local","Dew Point (C)","Humidity Fraction","Precipitation One Hour (mm)","Temperature (C)","Weather Code 1/ Description"]]
-    # wthr2.setName(wthr2.index("Precipitation One Hour (mm)"), "Rain (mm)")
-    # wthr2.setName(wthr2.index("Weather Code 1/ Description"), "WC1")
+    # wthr2.set_name(wthr2.index("Precipitation One Hour (mm)"), "Rain (mm)")
+    # wthr2.set_name(wthr2.index("Weather Code 1/ Description"), "WC1")
     # wthr3 = wthr2[ wthr2["Hour Local"]==12 ]
     # wthr3["msec"] = h2o.H2OFrame.mktime(year=wthr3["Year Local"], month=wthr3["Month Local"]-1, day=wthr3["Day Local"]-1, hour=wthr3["Hour Local"])
     # secsPerDay=1000*60*60*24

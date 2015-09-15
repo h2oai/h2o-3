@@ -8,7 +8,7 @@ source('../../h2o-runit.R')
 # conn = h2o.init()
 
 
-test.pub.668 <- function(conn) {
+test.pub.668 <- function() {
 
     a_initial <- data.frame(cbind(
     c(0,0,1,0,0,1,0,0,0,0),
@@ -25,7 +25,7 @@ test.pub.668 <- function(conn) {
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o(a_initial, destination_frame="r.hex")
     d0 <- apply(a.h2o, 2, sum)
     d <- ifelse(F, a.h2o[1,] , d0)
     dd <- ifelse(F, a[1,] , apply(a, 2, sum))
@@ -33,11 +33,11 @@ test.pub.668 <- function(conn) {
     a
     a.h2o.R
     expect_that(all(a == a.h2o.R), equals(T))
-    expect_that(all(d == dd), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o(a_initial, destination_frame="r.hex")
     d0 <- apply(a.h2o, 2, sum)
     d <- ifelse(F, a.h2o[1,] , apply(a.h2o, 2, sum))
     dd <- ifelse(F, a[1,] , apply(a, 2, sum))
@@ -45,29 +45,29 @@ test.pub.668 <- function(conn) {
     a
     a.h2o.R
     expect_that(all(a == a.h2o.R), equals(T))
-    expect_that(all(d == dd), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o(a_initial, destination_frame="r.hex")
     d <- ifelse(F, a.h2o[1,] , 0)
     dd <- ifelse(F, a[1,] , 0)
     a.h2o.R <- as.data.frame(a.h2o)
     a
     a.h2o.R
     expect_that(all(a == a.h2o.R), equals(T))
-    expect_that(all(d == dd), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     a <- a_initial
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o(a_initial, destination_frame="r.hex")
     d <- ifelse(FALSE, a.h2o[1,] , apply(a.h2o,2,sum)); g = ifelse(FALSE, 1.23<2.34 , min(1,2))
     dd <- ifelse(FALSE, a[1,] , apply(a,2,sum)); gg = ifelse(FALSE, 1.23<2.34, min(1,2))
     a.h2o.R <- as.data.frame(a.h2o)
     a
     a.h2o.R
     expect_that(all(a == a.h2o.R), equals(T))
-    expect_that(all(d == dd), equals(T))
+    expect_that(all(d == dd     ), equals(T))
 
 
     testEnd()

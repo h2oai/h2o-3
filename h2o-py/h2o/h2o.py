@@ -138,9 +138,10 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
-def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
+def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   """
-  Used in conjunction with lazy_import and parse_setup in order to make alterations before parsing.
+  Used in conjunction with lazy_import and parse_setup in order to make alterations before
+  parsing.
 
   Parameters
   ----------
@@ -161,8 +162,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr._id = id
   fr._keep = True
   fr._nrows = int(H2OFrame(expr=ExprNode("nrow", fr))._scalar())  #parsed['rows']
-  fr._col_names = parsed['column_names']
-  fr._ncols = len(fr._col_names)
+  fr._ncols = parsed["number_columns"]
+  fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
 def _quoted(key):
@@ -172,8 +173,10 @@ def _quoted(key):
   return key
 
 def assign(data,id):
-  rapids(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager())
+  if data._computed:
+    rapids(data._id,id)
   data._id = id
+  data._keep=True  # named things are always safe
   return data
 
 def which(condition):
@@ -187,7 +190,7 @@ def which(condition):
 
   :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
   """
-  return H2OFrame(expr=ExprNode("h2o.which",condition,False))._frame()
+  return H2OFrame(expr=ExprNode("h2o.which",condition))._frame()
 
 def ifelse(test,yes,no):
   """
@@ -238,7 +241,7 @@ def get_model(model_id):
   """
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
   model_type = model_json["output"]["model_category"]
-  if model_type=="Binomial":      return H2OBinomialModel(model_id, model_json)
+  if   model_type=="Binomial":    return H2OBinomialModel(model_id, model_json)
   elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
   elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
   elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
@@ -354,12 +357,7 @@ def rapids(expr, id=None):
 
   :return: The JSON response of the Rapids execution
   """
-  if isinstance(expr, list): expr = ExprNode._collapse_sb(expr)
-  expr = "(= !{} {})".format(id,expr) if id is not None else expr
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
-  if result['error'] is not None:
-    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
-  return result
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99) if id is None else H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id, _rest_version=99)
 
 def ls():
   """
@@ -592,7 +590,6 @@ def export_file(frame,path,force=False):
   """
   frame._eager()
   H2OJob(H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
-
 
 def cluster_info():
   """
@@ -1606,7 +1603,7 @@ def set_timezone(tz):
 
   :return: None
   """
-  rapids(ExprNode("setTimeZone", tz)._eager())
+  rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
 
 def get_timezone():
   """

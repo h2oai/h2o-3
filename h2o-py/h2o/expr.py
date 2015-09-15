@@ -26,12 +26,12 @@ class ExprNode:
   @staticmethod
   def _arg_to_expr(arg):
     if isinstance(arg, (ExprNode, h2o.H2OFrame)): return arg
-    elif isinstance(arg, bool):                   return "%{}".format("TRUE" if arg else "FALSE")
-    elif isinstance(arg, (int, float)):           return "#{}".format("NaN" if math.isnan(arg) else arg)
-    elif isinstance(arg, basestring):             return '"'+arg+'"'
-    elif isinstance(arg, slice):                  return "(: #{} #{})".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else arg.stop-1)
-    elif isinstance(arg, list):                   return ("(slist \"" + "\" \"".join(arg) + "\")") if isinstance(arg[0], basestring) else ("(dlist #" + " #".join(["NaN" if math.isnan(i) else str(i) for i in arg])+")")
-    elif arg is None:                             return "()"
+    elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
+    elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
+    elif isinstance(arg, (unicode,str)):          return '"'+arg+'"'
+    elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start) )
+    elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], basestring) else ("[" + " ".join(["NaN" if math.isnan(i) else str(i) for i in arg])+"]")
+    elif arg is None:                             return "[]"  # empty list
     raise ValueError("Unexpected arg type: " + str(type(arg)))
 
   @staticmethod

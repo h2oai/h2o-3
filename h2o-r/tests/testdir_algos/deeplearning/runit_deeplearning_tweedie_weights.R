@@ -3,7 +3,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 
 	data = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
 	data$Merit <- factor(data$Merit)

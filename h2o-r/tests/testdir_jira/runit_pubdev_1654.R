@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1654 <- function(conn) {
+test.pubdev.1654 <- function() {
   k <- 5
   use_all_factor_levels <- FALSE
   

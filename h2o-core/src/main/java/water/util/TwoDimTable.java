@@ -296,19 +296,19 @@ public class TwoDimTable extends Iced {
         if (!full && skip(r)) continue;
         switch (colTypes[c]) {
           case "double":
-            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Double)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = get(r,c) == null || isEmpty((Double)get(r,c)) ? "" : String.format(formatString, (Double)cellValues[r][c].get());
             break;
           case "float":
-            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
             break;
           case "int":
-            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
             break;
           case "long":
-            cellStrings[row + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
             break;
           default:
-            if (cellValues[r][c] != null && cellValues[r][c].get() != null)
+            if( get(r,c) != null )
               cellStrings[row+1][c+1] = String.format(formatString, cellValues[r][c]);
             break;
         }

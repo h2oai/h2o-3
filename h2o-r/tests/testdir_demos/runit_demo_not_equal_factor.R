@@ -25,10 +25,10 @@ if (TRUE) {
   testFilePath <-"https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
 }
 
-check.demo_notequal_factor <- function(conn) {
+check.demo_notequal_factor <- function() {
 
   # Uploading data file to h2o.
-  air <- h2o.importFile(conn, filePath, "air")
+  air <- h2o.importFile(filePath, "air")
 
   # Print dataset size.
   dim(air)

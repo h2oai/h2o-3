@@ -6,9 +6,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(conn) {
+test <- function() {
   Log.info("Importing prostate dataset...")
-  h2o_data <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
+  h2o_data <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
 
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
   myY <- "CAPSULE"
@@ -16,7 +16,7 @@ test <- function(conn) {
   lowerbound <- rep(-1, times = length(myX))
   upperbound <- rep(1, times = length(myX))
   r_bc <- data.frame(names = myX, lower_bounds = lowerbound, upper_bounds = upperbound)
-  h2o_bc <- as.h2o(conn, r_bc)
+  h2o_bc <- as.h2o(r_bc)
 
   Log.info("Pull data frame into R to run GLMnet...")
   r_data <- as.data.frame(h2o_data)
@@ -30,7 +30,7 @@ test <- function(conn) {
                         upper_bound
                         ) {
     Log.info(paste("Set Beta Constraints :", "lower bound =", lower_bound,"and upper bound =", upper_bound, "..."))
-    h2o_bc <- as.h2o(conn, r_bc)
+    h2o_bc <- as.h2o(r_bc)
     h2o_bc$upper_bounds <- upper_bound
     h2o_bc$lower_bounds <- lower_bound
 

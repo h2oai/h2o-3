@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.km.iter_max <- function(conn) {
+test.km.iter_max <- function() {
   Log.info("Importing ozone.csv data...\n")
-  ozone.hex <- h2o.uploadFile(conn, locate("smalldata/glm_test/ozone.csv"))
+  ozone.hex <- h2o.uploadFile( locate("smalldata/glm_test/ozone.csv"))
   print(summary(ozone.hex))
   miters <- 5
   ncent <- 10

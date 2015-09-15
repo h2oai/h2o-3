@@ -15,19 +15,19 @@ print_diff <- function(r, h2o) {
 # The two local copies are then checked for the correct time
 # offset.
 #
-test.rdoc_settimezone.golden <- function(H2Oserver) {
-  origTZ = h2o.getTimezone(H2Oserver)
+test.rdoc_settimezone.golden <- function() {
+  origTZ = h2o.getTimezone()
   #test 1
-  h2o.setTimezone("Etc/UTC", H2Oserver)
+  h2o.setTimezone("Etc/UTC")
   rdf = data.frame(c("Fri Jan 10 00:00:00 1969", "Tue Jan 10 04:00:00 2068", "Mon Dec 30 01:00:00 2002", "Wed Jan 1 12:00:00 2003"))
   colnames(rdf) <- c("c1")
-  hdf = as.h2o(H2Oserver, rdf, "hdf")
+  hdf = as.h2o(rdf, "hdf")
   hdf$c1 <- as.Date(hdf$c1, "%c")
   ldfUTC <- as.data.frame(hdf)
 
   h2o.rm(hdf)
-  h2o.setTimezone("America/Los_Angeles", H2Oserver)
-  hdf = as.h2o(H2Oserver, rdf, "hdf")
+  h2o.setTimezone("America/Los_Angeles")
+  hdf = as.h2o(rdf, "hdf")
   hdf$c1 <- as.Date(hdf$c1, "%c")
   ldfPST <- as.data.frame(hdf)
 
@@ -38,9 +38,9 @@ test.rdoc_settimezone.golden <- function(H2Oserver) {
   expect_that(act, equals(diff[,1]))
 
   #test 2 - make sure returned years/months have the same timezone as interpretation
-  h2o.setTimezone("Etc/UTC", H2Oserver)
+  h2o.setTimezone("Etc/UTC")
   rdf <- data.frame(dates = c("2014-01-07", "2014-01-30", "2014-01-31", "2014-02-01", "2014-02-02", "2014-10-31", "2014-11-01"), stringsAsFactors = FALSE)
-  hdf <- as.h2o(H2Oserver, rdf, "hdf")
+  hdf <- as.h2o(rdf, "hdf")
   hdf$dates <- as.Date(hdf$dates,"%Y-%m-%d")
   hdf$year <- year(hdf$dates)
   hdf$month <- month(hdf$dates)
@@ -62,7 +62,7 @@ test.rdoc_settimezone.golden <- function(H2Oserver) {
   expect_that(edf$hour, equals(ldf$hour))
 
   # erase side effect of test
-  h2o.setTimezone(as.character(origTZ[1,1]), H2Oserver)
+  h2o.setTimezone(origTZ)
   h2o.rm(hdf)
   testEnd()
 }
