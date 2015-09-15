@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import numpy as np
 
-def glrm_nnmf():
+def glrm_orthonnmf():
     m = 1000
     n = 100
     k = 10
@@ -90,4 +90,4 @@ def glrm_nnmf():
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
 
 if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_nnmf)
+    tests.run_test(sys.argv, glrm_orthonnmf)
