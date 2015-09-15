@@ -165,13 +165,13 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];                     // Get Node to decide from
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
+        double w = weight.atd(row);
+        if (w == 0) continue;
         assert !Double.isNaN(wrks.atd(row)); // Already marked as sampled-away
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
         for( int col : sCols ) { // For tracked cols
-          double w = weight.atd(row);
-          if (w == 0) continue;
           nhs[col].incr((float) chks[col].atd(row), wrks.atd(row), w); // Histogram row/col
         }
       }
