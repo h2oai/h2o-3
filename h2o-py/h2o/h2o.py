@@ -34,7 +34,7 @@ def _import(path):
   if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
   return j['destination_frames']
 
-def upload_file(path, destination_frame=""):
+def upload_file(path, destination_frame="", na_strings=None):
   """
 Upload a dataset at the path given from the local machine to the H2O cluster.
 
@@ -49,7 +49,7 @@ Parameters
   """
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
-  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame)
+  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame, na_strings=na_strings)
   return H2OFrame(raw_id=destination_frame)
 
 
