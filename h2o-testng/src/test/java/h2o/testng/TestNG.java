@@ -1,5 +1,8 @@
 package h2o.testng;
 
+import h2o.testng.db.MySQL;
+import h2o.testng.db.MySQLConfig;
+import h2o.testng.utils.CommonHeaders;
 import h2o.testng.utils.Dataset;
 import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.Param;
@@ -26,6 +29,8 @@ public class TestNG extends TestNGUtil {
 	@BeforeClass
 	public void beforeClass() {
 
+		String dbConfigFilePath = System.getProperty("dbConfigFilePath");
+
 		algorithm = System.getProperty("algorithm");
 		size = System.getProperty("size");
 		testcaseId = System.getProperty("testcaseId");
@@ -36,6 +41,13 @@ public class TestNG extends TestNGUtil {
 		}
 
 		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
+
+		if (StringUtils.isNotEmpty(dbConfigFilePath)) {
+
+			MySQLConfig.initConfig().setConfigFilePath(dbConfigFilePath);
+
+			MySQL.createTable();
+		}
 
 		System.out.println(String.format("run TestNG with algorithm: %s, size: %s, testcaseId: %s", algorithm, size,
 				testcaseId));
@@ -94,8 +106,6 @@ public class TestNG extends TestNGUtil {
 		String invalidMessage = null;
 		String notImplMessage = null;
 
-		// Reporter.log("\n", true);
-
 		redirectStandardStreams();
 
 		switch (algorithm) {
@@ -134,7 +144,7 @@ public class TestNG extends TestNGUtil {
 				modelParameter = FunctionUtils.toModelParameter(params, algorithm, train_dataset_id,
 						validate_dataset_id, train_dataset, validate_dataset, rawInput);
 
-				FunctionUtils.basicTesting(algorithm, modelParameter, isNegativeTestcase);
+				FunctionUtils.basicTesting(algorithm, modelParameter, isNegativeTestcase, rawInput);
 			}
 
 		}
@@ -149,7 +159,8 @@ public class TestNG extends TestNGUtil {
 
 			resetStandardStreams();
 
-			Reporter.log("Testcase " + testcaseStatus, true);
+			testcaseStatus = String.format("Testcase %s %s", rawInput.get(CommonHeaders.testcase_id), testcaseStatus);
+			Reporter.log(testcaseStatus, true);
 		}
 	}
 

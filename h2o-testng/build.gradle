@@ -1,6 +1,7 @@
 description = "H2O Test Integration - TestNG"
 
 dependencies {
+	compile 'mysql:mysql-connector-java:5.1.16'
     testCompile 'org.testng:testng:6.8'
     compile project(":h2o-core")
     compile project(":h2o-algos")
@@ -29,6 +30,9 @@ test {
 	        if(rootProject.hasProperty("size")){
 	        	systemProperty 'size', "$size"
 	        }
+	    }
+	    if(rootProject.hasProperty("dbConfigFilePath")){
+	    	systemProperty 'dbConfigFilePath', "$dbConfigFilePath"
 	    }
         
         if (singleNode) { suites("src/test/resources/singleNode.xml") }

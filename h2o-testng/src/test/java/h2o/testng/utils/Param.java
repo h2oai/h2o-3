@@ -68,13 +68,16 @@ public class Param {
 	public static boolean setAutoSetParams(Model.Parameters modelParameter, Param[] params,
 			HashMap<String, String> rawInput) {
 
+		boolean isSetValue = false;
+
 		// set AutoSet params
 		for (Param p : params) {
 			if (p.isAutoSet) {
-				p.parseAndSet(modelParameter, rawInput.get(p.name));
+				isSetValue = isSetValue || p.parseAndSet(modelParameter, rawInput.get(p.name));
 			}
 		}
-		return true;
+
+		return isSetValue;
 	}
 
 	/**
@@ -148,8 +151,7 @@ public class Param {
 		return result;
 	}
 
-	// TODO: change to private
-	public boolean parseAndSet(Object params, String value) {
+	private boolean parseAndSet(Object params, String value) {
 
 		value = value.trim();
 		Object v = null;
@@ -207,6 +209,7 @@ public class Param {
 				Field field = clazz.getDeclaredField(name);
 				// field.setAccessible(true); // is this needed?!?
 				System.out.println("Set " + name + ": " + value);
+				// TODO: check old value is different with new value
 				field.set(params, v);
 				return true;
 

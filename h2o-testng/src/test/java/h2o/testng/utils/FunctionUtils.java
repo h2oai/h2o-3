@@ -1,5 +1,6 @@
 package h2o.testng.utils;
 
+import h2o.testng.db.MySQL;
 import hex.Distribution.Family;
 import hex.Model;
 import hex.ModelMetrics;
@@ -158,6 +159,7 @@ public class FunctionUtils {
 
 		System.out.println("Create modelParameter object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 
+		boolean isTunedValue = false;
 		Model.Parameters modelParameter = null;
 
 		switch (algorithm) {
@@ -210,7 +212,15 @@ public class FunctionUtils {
 		}
 
 		// set AutoSet params
-		Param.setAutoSetParams(modelParameter, params, rawInput);
+		isTunedValue = Param.setAutoSetParams(modelParameter, params, rawInput);
+
+		// It is got and saved to DB in MySQL class.
+		if (isTunedValue) {
+			rawInput.put(MySQL.tuned_or_defaults, MySQL.tuned);
+		}
+		else {
+			rawInput.put(MySQL.tuned_or_defaults, MySQL.defaults);
+		}
 
 		// set response_column param
 		modelParameter._response_column = train_dataset.getResponseColumn();
@@ -262,7 +272,8 @@ public class FunctionUtils {
 		return modelParameter;
 	}
 
-	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase) {
+	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase,
+			HashMap<String, String> rawInput) {
 
 		Frame trainFrame = null;
 		Frame score = null;
@@ -342,6 +353,12 @@ public class FunctionUtils {
 				else {
 					System.out.println("AUC: NA");
 				}
+			}
+
+			// write into db
+			MySQL.save("MSE", String.valueOf(modelMetrics._MSE), rawInput);
+			if (modelMetrics.auc() != null) {
+				MySQL.save("AUC", String.valueOf(modelMetrics.auc()._auc), rawInput);
 			}
 		}
 		catch (Exception ex) {
@@ -734,5 +751,4 @@ public class FunctionUtils {
 			mapDatasetCharacteristic.get(key).closeFrame();
 		}
 	}
-
 }
