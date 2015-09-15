@@ -28,7 +28,7 @@ test.glrm.nnmf <- function(conn) {
   
   Log.info("Impute XY and check error metrics")
   pred <- predict(fitH2O, train.h2o)
-  expect_equivalent(as.matrix(pred), fitXY)   # Imputation for numerics with L2 loss is just XY product
+  expect_equivalent(as.matrix(pred), fitXY)   # Imputation for numerics with quadratic loss is just XY product
   expect_equal(fitH2O@model$training_metrics@metrics$numerr, fitH2O@model$objective)
   expect_equal(fitH2O@model$training_metrics@metrics$caterr, 0)
   testEnd()
