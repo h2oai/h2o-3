@@ -25,7 +25,7 @@ hdfs_tmp_dir = "/tmp/runit"
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
-data.hex <- h2o.importFile(url, header = T)
+data.hex <- h2o.importFile(url)
 
 data.hex[,55] <- ifelse(data.hex[,55] == 1, 1, 0)
 print(summary(data.hex))

@@ -20,7 +20,7 @@ library(testthat)
 heading("BEGIN TEST")
 h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
-data.hex <- h2o.importFile("maprfs:/datasets/WU_100KRows3KCols.csv", header = T)
+data.hex <- h2o.importFile("maprfs:/datasets/WU_100KRows3KCols.csv")
 
 #print(summary(data.hex))
 

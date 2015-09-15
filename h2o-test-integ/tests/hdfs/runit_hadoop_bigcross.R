@@ -23,7 +23,7 @@ h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 hdfs_data_file = "/datasets/runit/BigCross.data"
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
-data.hex <- h2o.importFile(url, header = T)
+data.hex <- h2o.importFile(url)
 print(summary(data.hex))
 
 myY = "C1"
