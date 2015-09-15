@@ -330,8 +330,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
 
-  public double [] toDoubleArray(){
-    double [] res = new double[_len];
+  public double[] toDoubleArray(double[] res){
+    if (res==null) res = new double[_len];
     for(int i = 0; i < _len; ++i)
       res[i] = atd(i);
     return res;
