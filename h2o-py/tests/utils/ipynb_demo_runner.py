@@ -40,7 +40,7 @@ def ipy_valid_lines(block):
 
     # (clunky) matplotlib handling
     for line in lines:
-        if line == "import matplotlib.pyplot as plt":
+        if "import matplotlib.pyplot as plt" in line:
             import matplotlib
             matplotlib.use('Agg', warn=False)
     return [line for line in lines if not "plt.show()" in line]

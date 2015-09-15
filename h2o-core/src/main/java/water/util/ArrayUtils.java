@@ -956,7 +956,7 @@ public class ArrayUtils {
    * @param values values
    */
   public static void sort(final int[] idxs, final double[] values) {
-    sort(idxs, values, 50);
+    sort(idxs, values, 500);
   }
   public static void sort(final int[] idxs, final double[] values, int cutoff) {
     if (idxs.length < cutoff) {

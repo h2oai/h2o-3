@@ -4,9 +4,9 @@ source('../../h2o-runit.R')
 NUM_LOSS <- c("Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic")
 CAT_LOSS <- c("Categorical", "Ordinal")
 
-test.glrm.loss_by_col <- function(conn) {
+test.glrm.loss_by_col <- function() {
   Log.info("Importing prostate_cat.csv data...")
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
+  prostate.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
   print(summary(prostate.hex))
   ncols <- ncol(prostate.hex)
   CAT_COLS <- c(1, 3, 4, 5)
@@ -48,7 +48,7 @@ test.glrm.loss_by_col <- function(conn) {
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(NUM_LOSS, 1), loss_by_col_idx = sample(CAT_COLS-1, 1)))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(CAT_LOSS, 1), loss_by_col_idx = sample(NUM_COLS-1, 1)))
   
-  Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", ")))
+  Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", "), "and loss_by_col_idx =", paste(loss_idx_all, collapse = ", ")))
   h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all, loss_by_col_idx = loss_idx_all)
   testEnd()
 }

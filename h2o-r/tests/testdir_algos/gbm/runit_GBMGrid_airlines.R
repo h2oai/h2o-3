@@ -1,9 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-gbm.grid.test<-
-function(conn) {
-    air.hex <- h2o.uploadFile(conn, locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
+gbm.grid.test <- function() {
+    air.hex <- h2o.uploadFile(locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
     print(summary(air.hex))
     myX <- c("DayofMonth", "DayOfWeek")
     # Specify grid hyper parameters

@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.km.init_err <- function(conn) {
+test.km.init_err <- function() {
   Log.info("Importing benign.csv data...\n")
-  benign.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/benign.csv"))
+  benign.hex <- h2o.uploadFile( locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)
   print(benign.sum)
   numcol <- ncol(benign.hex)

@@ -3,18 +3,18 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 	s=c(1e-2,1e2,1e-4,1e4,1e-8,1e8)
 	
 	print("GBM")
 	
 	for( i in 1:length(s)){
-	x = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	x = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.gbm(x = myX,y = myY,training_frame = x,ntrees = 50,max_depth = 3,learn_rate = 1,min_rows = 1)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -31,12 +31,12 @@ test <- function(h) {
 	print("DRF")
 	
 	for( i in 1:length(s)){
-	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.randomForest(x=myX,y = myY,training_frame = x,max_depth = 10,seed = 12345)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -54,12 +54,12 @@ test <- function(h) {
 	print("GLM")
 
 	for( i in 1:length(s)){
-	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.glm(x = myX,y = myY,training_frame = x,lambda=0)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	y = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -76,12 +76,12 @@ test <- function(h) {
 	print("DL")
 
 	for( i in 1:length(s)){
-	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.deeplearning(x = myX,y = myY,training_frame = x,hidden = c(10,10),epochs = 100,activation = "Tanh",seed = 12345,reproducible = T)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"),conn = h)
+	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale

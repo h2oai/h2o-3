@@ -30,10 +30,10 @@ if (TRUE) {
   testFilePath <-"https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
 }
 
-check.demo_imputation <- function(conn) {
+check.demo_imputation <- function() {
 
   # Uploading data file to h2o.
-  air <- h2o.importFile(conn, path = filePath, destination_frame = "air")
+  air <- h2o.importFile(path = filePath, destination_frame = "air")
 
   # Print dataset size.
   dim(air)

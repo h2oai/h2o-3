@@ -9,15 +9,15 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.uuid <- function(conn) {
+test.uuid <- function() {
   Log.info('Importing test_uuid.csv to H2O...')
-  df <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/test_uuid.csv')))
+  df <- h2o.importFile(normalizePath(locate('smalldata/jira/test_uuid.csv')))
   colnames(df) <- c("AA", "UUID", "CC")
   
   Log.info("Slice a subset of columns 1")
   df.train <- df[df$CC == 1,]
   
-  df2 <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/test_uuid_na.csv')))
+  df2 <- h2o.importFile(normalizePath(locate('smalldata/jira/test_uuid_na.csv')))
   colnames(df2) <- c("AA", "UUID", "CC")
 
   Log.info("Slice a subset of columns 2")

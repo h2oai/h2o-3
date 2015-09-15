@@ -27,15 +27,15 @@ def binop_plus():
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
-    res = 1.2 + iris[2]
-    res2 = res[21,:] + iris
-    res2.show()
+    # res = 1.2 + iris[2]
+    # res2 = res[21,:] + iris
+    # res2.show()
 
 
     # LHS: scaler, RHS: H2OVec
-    res = 1.2 + iris[2]
-    res2 = res[21,:] + iris[1]
-    res2.show()
+    # res = 1.2 + iris[2]
+    # res2 = res[21,:] + iris[1]
+    # res2.show()
 
     # LHS: scaler, RHS: scaler
     res = 1.1 + iris[2]
@@ -58,9 +58,9 @@ def binop_plus():
     #    pass
 
     # LHS: H2OVec, RHS: scaler
-    res = 1.2 + iris[2]
-    res2 = iris[1] + res[21,:]
-    res2.show()
+    # res = 1.2 + iris[2]
+    # res2 = iris[1] + res[21,:]
+    # res2.show()
 
     ###################################################################
 
@@ -89,9 +89,9 @@ def binop_plus():
     #    pass
 
     # LHS: H2OFrame, RHS: scaler
-    res = 1.2 + iris[2]
-    res2 = iris + res[21,:]
-    res2.show()
+    # res = 1.2 + iris[2]
+    # res2 = iris + res[21,:]
+    # res2.show()
 
     # LHS: H2OFrame, RHS: scaler
     res = iris + 2

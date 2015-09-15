@@ -39,6 +39,7 @@ print("Projection into archetype space (X):")
 gait.x <- h2o.getFrame(gait.glrm@model$loading_key$name)
 head(gait.x)
 
+print("Plot archetypes over time")
 time.df <- as.data.frame(gait.hex$Time[1:150])[,1]
 gait.x.df <- as.data.frame(gait.x[1:150,])
 print(paste0("Plot archetypes over time range [", time.df[1], ",", time.df[2], "]"))

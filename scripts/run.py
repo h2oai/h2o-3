@@ -10,7 +10,10 @@ import getpass
 import re
 import subprocess
 import ConfigParser
+import requests
+from requests import exceptions
 
+__H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
 def is_python_test_file(file_name):
     """
@@ -845,6 +848,7 @@ class TestRunner:
         self.start_seconds = time.time()
         self.terminated = False
         self.clouds = []
+        self.bad_clouds = []
         self.tests = []
         self.tests_not_started = []
         self.tests_running = []
@@ -1203,7 +1207,8 @@ class TestRunner:
             self._report_test_result(completed_test, nopass)
             ip_of_completed_test = completed_test.get_ip()
             port_of_completed_test = completed_test.get_port()
-            self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
+            if self._h2o_exists_and_healthy(ip_of_completed_test, port_of_completed_test):
+                self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
 
         # Wait for remaining running tests to complete.
         while (len(self.tests_running) > 0):
@@ -1213,6 +1218,13 @@ class TestRunner:
             if (self.terminated):
                 return
             self._report_test_result(completed_test, nopass)
+
+    def check_clouds(self):
+        """
+        for all clouds, check if connection to h2o exists, and that h2o is healthy.
+        """
+        time.sleep(5)
+        for c in self.clouds: self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
 
     def stop_clouds(self):
         """
@@ -1304,7 +1316,8 @@ class TestRunner:
             self._log("True fail list:          " + ", ".join(true_fail_list))
         if (len(terminated_list) > 0):
             self._log("Terminated list:         " + ", ".join(terminated_list))
-        self._log("")
+        if (len(self.bad_clouds) > 0):
+            self._log("Bad cloud list:          " + ", ".join(["{0}:{1}".format(bc[0], bc[1]) for bc in self.bad_clouds]))
 
     def terminate(self):
         """
@@ -1424,15 +1437,15 @@ class TestRunner:
 
     def _wait_for_one_test_to_complete(self):
         while (True):
-            for test in self.tests_running:
-                if (self.terminated):
-                    return None
-                if (test.is_completed()):
-                    self.tests_running.remove(test)
-                    return test
-            if (self.terminated):
-                return
-            time.sleep(1)
+            if len(self.tests_running) > 0:
+                for test in self.tests_running:
+                    if (test.is_completed()):
+                        self.tests_running.remove(test)
+                        return test
+                time.sleep(1)
+            else:
+                self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
+                sys.exit(1)
 
     def _report_test_result(self, test, nopass):
         port = test.get_port()
@@ -1526,6 +1539,36 @@ class TestRunner:
         #     s += str(t)
         return s
 
+    def _h2o_exists_and_healthy(self, ip, port):
+        """
+        check if connection to h2o exists, and that h2o is healthy.
+        """
+        global __H2O_REST_API_VERSION__
+        h2o_okay = False
+        try:
+            http = requests.get("http://{}:{}/{}/{}".format(ip,port,__H2O_REST_API_VERSION__,"Cloud?skip_ticks=true"))
+            h2o_okay = http.json()['cloud_healthy']
+        except exceptions.ConnectionError: pass
+        if not h2o_okay: self._remove_cloud(ip, port)
+        return h2o_okay
+
+    def _remove_cloud(self, ip, port):
+        """
+        add the ip, port to TestRunner's bad cloud list. remove the bad cloud from the TestRunner's cloud list.
+        terminate TestRunner if no good clouds remain.
+        """
+        if not [ip, str(port)] in self.bad_clouds: self.bad_clouds.append([ip, str(port)])
+        cidx = 0
+        found_cloud = False
+        for cloud in self.clouds:
+            if cloud.get_ip() == ip and cloud.get_port() == str(port):
+                found_cloud = True
+                break
+            cidx = cidx + 1
+        if found_cloud: self.clouds.pop(cidx)
+        if len(self.clouds) == 0:
+            self._log('NO GOOD CLOUDS REMAINING...')
+            self.terminate()
 
 # --------------------------------------------------------------------
 # Main program
@@ -1999,6 +2042,7 @@ def main(argv):
         g_runner.start_clouds()
         g_runner.run_tests(g_nopass)
     finally:
+        g_runner.check_clouds()
         g_runner.stop_clouds()
         g_runner.report_summary(g_nopass)
 

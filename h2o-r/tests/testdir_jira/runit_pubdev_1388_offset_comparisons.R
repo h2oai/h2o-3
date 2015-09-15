@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.offset.comparison <- function(conn) {
+test.offset.comparison <- function() {
   Log.info("Loading datasets...")
   pros.dat <- read.csv(locate("smalldata/prostate/prostate.csv"))
   pros.dat[,2] <- as.factor(pros.dat[,2])

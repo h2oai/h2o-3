@@ -13,10 +13,10 @@ source('../h2o-runit.R')
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-check.demo_prep_airlines <- function(conn) {
+check.demo_prep_airlines <- function() {
 
   filePath <- "smalldata/airlines/allyears2k_headers.zip"
-  air.hex <- h2o.uploadFile(conn, locate(filePath), "air.hex")
+  air.hex <- h2o.uploadFile(locate(filePath), "air.hex")
 
   dim(air.hex)
   colnames(air.hex)

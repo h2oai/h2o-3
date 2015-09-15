@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues= TRUE)$"f")))
 source("../../h2o-runit.R")
 
-check.merge_no_shared_cols <- function(conn) {
+check.merge_no_shared_cols <- function() {
 
   left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))

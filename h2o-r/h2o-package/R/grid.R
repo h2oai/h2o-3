@@ -40,8 +40,7 @@ h2o.grid <- function(algorithm,
                      ...,
                      hyper_params = list(),
                      is_supervised = NULL,
-                     do_hyper_params_check = FALSE,
-                     conn = h2o.getConnection())
+                     do_hyper_params_check = FALSE)
 {
   # Extract parameters
   dots <- list(...)
@@ -76,7 +75,7 @@ h2o.grid <- function(algorithm,
       params_for_validation <- lapply(append(lparams, hparams), function(x) { if(is.integer(x)) x <- as.numeric(x); x })
       # We have to repeat part of work used by model builders
       params_for_validation <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = all_params, params = params_for_validation)
-      .h2o.validateModelParameters(conn, algorithm, params_for_validation)
+      .h2o.validateModelParameters(algorithm, params_for_validation)
     })
   }
 
@@ -94,19 +93,18 @@ h2o.grid <- function(algorithm,
   if (!missing(grid_id)) params$grid_id <- grid_id
 
   # Trigger grid search job
-  res <- .h2o.__remoteSend(conn, .h2o.__GRID(algorithm), h2oRestApiVersion = 99, .params = params, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__GRID(algorithm), h2oRestApiVersion = 99, .params = params, method = "POST")
   grid_id <- res$job$dest$name
   job_key <- res$job$key$name
   # Wait for grid job to finish
-  .h2o.__waitOnJob(conn, job_key)
+  .h2o.__waitOnJob(job_key)
 
-  h2o.getGrid(grid_id = grid_id, conn = conn)
+  h2o.getGrid(grid_id = grid_id)
 }
 
 #' Get a grid object from H2O distributed K/V store.
 #'
 #' @param grid_id  ID of existing grid object to fetch
-#' @param conn  H2O connection
 #' @examples
 #' library(h2o)
 #' library(jsonlite)
@@ -121,8 +119,8 @@ h2o.grid <- function(algorithm,
 #' model_ids <- grid@@model_ids
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
 #' @export
-h2o.getGrid <- function(grid_id, conn = h2o.getConnection()) {
-  json <- .h2o.__remoteSend(conn, method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id))
+h2o.getGrid <- function(grid_id) {
+  json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id))
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })

@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.RF.checkpoint_on_iris <- function(conn) {
-  train.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_train.csv"), "train.hex")
-  test.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_test.csv"), "test.hex")
+test.RF.checkpoint_on_iris <- function() {
+  train.hex <- h2o.uploadFile(locate("smalldata/iris/iris_train.csv"), "train.hex")
+  test.hex <- h2o.uploadFile(locate("smalldata/iris/iris_test.csv"), "test.hex")
 
   # Number of trees for model building
   ntrees.initial <- 2

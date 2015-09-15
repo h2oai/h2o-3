@@ -3981,7 +3981,7 @@ class ASTSdev extends ASTUniPrefixOp {
         Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
         AppendableVec v = new AppendableVec(key);
         NewChunk chunk = new NewChunk(v, 0);
-        for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?Double.NaN:fr.vec(i).sigma());
+        for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).sigma());
         chunk.close(0,fs);
         Vec vec = v.close(fs);
         fs.blockForPending();
@@ -4196,6 +4196,8 @@ class ASTMean extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     if (env.isNum()) return;
     Frame fr = env.popAry(); // get the frame w/o sub-reffing
+    for (Vec v : fr.vecs()) if (v.isEnum())
+      throw new IllegalArgumentException("mean only applies to numeric columns.");
     if (fr.numCols() > 1 && fr.numRows()==1) {
       double mean=0;
       double rows=0;
@@ -4209,7 +4211,7 @@ class ASTMean extends ASTUniPrefixOp {
       Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
       AppendableVec v = new AppendableVec(key);
       NewChunk chunk = new NewChunk(v, 0);
-      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isEnum()?Double.NaN:fr.vec(i).mean());
+      for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).mean());
       chunk.close(0,fs);
       Vec vec = v.close(fs);
       fs.blockForPending();
