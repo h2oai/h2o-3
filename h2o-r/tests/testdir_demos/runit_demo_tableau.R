@@ -7,9 +7,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.tableau <- function(conn) {
+test.tableau <- function() {
   Log.info ('Importing data into H2O')
-  data.hex <- h2o.importFile(conn, path = normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
+  data.hex <- h2o.importFile(path = normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   
   Log.info ('Grouping flights by months...')
   f1 <- h2o.group_by(data.hex, "Month", nrow("Month"), sum("Cancelled"))

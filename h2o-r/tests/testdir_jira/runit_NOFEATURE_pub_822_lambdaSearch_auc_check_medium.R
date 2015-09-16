@@ -6,12 +6,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub.822 <- function(conn) {
+test.pub.822 <- function() {
 print("Parse header file")
-spect_header <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header")
+spect_header <- h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header")
 print("Parse train and test files")
-spect_train <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_train.txt")),destination_frame = "spect_train",col.names=spect_header)
-spect_test <- h2o.importFile(conn,normalizePath(locate("smalldata/jira/SPECT_test.txt")),destination_frame = "spect_test", col.names=spect_header)
+spect_train <- h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_train.txt")),destination_frame = "spect_train",col.names=spect_header)
+spect_test <- h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_test.txt")),destination_frame = "spect_test", col.names=spect_header)
 
 print("Summary of the train set")
 print(summary(spect_train))

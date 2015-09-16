@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.kmsplit.golden <- function(conn) {
+test.kmsplit.golden <- function() {
   library(flexclust)
   Log.info("Importing ozone.csv data...\n")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(conn, locate("smalldata/glm_test/ozone.csv"))
+  ozoneH2O <- h2o.uploadFile(locate("smalldata/glm_test/ozone.csv"))
   
   # to get deterministic results, don't randomly split. use full dataset for test/train
   # Log.info("Split into test and training sets\n")
@@ -38,7 +38,7 @@ test.kmsplit.golden <- function(conn) {
   classR <- predict(fitR, testR)
   # FIXME: predict directly on sliced H2O frame breaks
   # classH2O <- predict(fitH2O, testH2O)
-  classH2O <- predict(fitH2O, as.h2o(conn, testR))
+  classH2O <- predict(fitH2O, as.h2o(testR))
   # expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)
   # H2O indexes from 0, but R indexes from 1
   forCompareH2O <- as.matrix(classH2O)+1

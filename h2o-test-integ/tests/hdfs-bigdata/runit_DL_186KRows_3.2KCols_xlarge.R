@@ -18,13 +18,13 @@ library(h2o)
 running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-parse_time <- system.time(data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
+parse_time <- system.time(data.hex <- h2o.importFile("/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
 #print("Time it took to parse", parse_time[[1]])
 print("Time it took to parse")
 print(parse_time)

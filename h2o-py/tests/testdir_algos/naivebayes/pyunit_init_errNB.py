@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def nb_init_err(ip, port):
+def nb_init_err():
     
 
     print "Importing iris_wheader.csv data...\n"

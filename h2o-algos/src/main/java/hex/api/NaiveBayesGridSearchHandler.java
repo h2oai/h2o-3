@@ -32,7 +32,7 @@ public class NaiveBayesGridSearchHandler
   public static class NaiveBayesGrid extends Grid<NaiveBayesModel.NaiveBayesParameters> {
 
     public NaiveBayesGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

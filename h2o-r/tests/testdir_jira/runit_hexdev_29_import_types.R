@@ -6,7 +6,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.continuous.or.categorical <- function(conn) {
+test.continuous.or.categorical <- function() {
   df.hex <- h2o.uploadFile(locate("smalldata/jira/hexdev_29.csv"),
     col.types = c("enum", "enum", "enum"))
 

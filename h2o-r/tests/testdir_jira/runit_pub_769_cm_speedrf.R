@@ -7,9 +7,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.pub.767 <- function(conn) {
+test.pub.767 <- function() {
   Log.info('Importing the altered prostatetype data from smalldata.')
-  prostate <- h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')), 'prostate')
+  prostate <- h2o.importFile(normalizePath(locate('smalldata/logreg/prostate.csv')), 'prostate')
 
   Log.info('Print head of dataset')
   Log.info(head(prostate))

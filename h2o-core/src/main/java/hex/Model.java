@@ -1,36 +1,16 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
+import water.*;
+import water.fvec.*;
+import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import hex.genmodel.GenModel;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Lockable;
-import water.MRTask;
-import water.MemoryManager;
-import water.Weaver;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.EnumWrappedVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.SB;
-import water.util.TwoDimTable;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -44,7 +24,7 @@ import static hex.ModelMetricsMultinomial.getHitRatioTable;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
   public interface DeepFeatures {
-    Frame scoreAutoEncoder(Frame frame, Key destination_key);
+    Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
@@ -64,7 +44,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
-  /** Model-specific parameter class.  Each model sub-class contains an
+  /** Model-specific parameter class.  Each model sub-class contains
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a
    *  KMeansParameters extending Model.Parameters; sample parameters include K,
@@ -88,7 +68,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int _nfolds;
     public boolean _keep_cross_validation_predictions;
     public enum FoldAssignmentScheme {
-      AUTO, Random, Modulo
+      AUTO, Random, Modulo, Stratified
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
@@ -279,9 +259,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _names[];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
-    Key _cross_validation_models[];
+    public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
-    Key _cross_validation_predictions[];
+    public Key _cross_validation_predictions[];
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -561,21 +541,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isFold = fold != null && names[i].equals(fold);
 
       if(vec == null && isResponse && computeMetrics)
-        throw new IllegalArgumentException("Test dataset is missing response vector '" + response + "'");
+        throw new IllegalArgumentException("Test/Validation dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
-        throw new IllegalArgumentException("Test dataset is missing offset vector '" + offset + "'");
-      if(vec == null && isWeights && computeMetrics)
-        throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
+        throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
+      if(vec == null && isWeights && computeMetrics) {
+        vec = test.anyVec().makeCon(1);
+        msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
+        //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
+      }
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null) {
         String str = null;
         if( expensive ) {
           if (isFold) {
-            str = "Validation set is missing fold column " + names[i] + ": substituting in a column of 0s";
+            str = "Test/Validation dataset is missing fold column '" + names[i] + "': substituting in a column of 0s";
             vec = test.anyVec().makeCon(0);
           } else {
-            str = "Validation set is missing training column " + names[i] + ": substituting in a column of NAs";
+            str = "Test/Validation dataset is missing training column '" + names[i] + "': substituting in a column of NAs";
             vec = test.anyVec().makeCon(missing);
             convNaN++;
           }
@@ -590,21 +573,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             try {
               evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
             } catch( NumberFormatException nfe ) {
-              throw new IllegalArgumentException("Validation set has a non-categorical column "+names[i]+" which is categorical in the training data");
+              throw new IllegalArgumentException("Test/Validation dataset has a non-categorical column '"+names[i]+"' which is categorical in the training data");
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
-              throw new IllegalArgumentException("Validation set has a categorical response column "+names[i]+" with no levels in common with the model");
+              throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
-              msgs.add("Validation column " + names[i] + " has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
+              msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             if (expensive) { vec = evec;  good++; } // Keep it
             else { evec.remove(); vec = null; } // No leaking if not-expensive
           } else {
             good++;
           }
         } else if( vec.isEnum() ) {
-          throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
+          throw new IllegalArgumentException("Test/Validation dataset has categorical column '"+names[i]+"' which is real-valued in the training data");
         } else {
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
@@ -612,7 +595,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       vvecs[i] = vec;
     }
     if( good == convNaN )
-      throw new IllegalArgumentException("Validation set has no columns in common with the training set");
+      throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
     return msgs.toArray(new String[msgs.size()]);
@@ -925,7 +908,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
+    sb.p("import hex.genmodel.annotations.ModelPojo;").nl();
     sb.nl();
+    String algo = this.getClass().getSimpleName().toLowerCase().replace("model", "");
+    sb.p("@ModelPojo(name=\"").p(modelName).p("\", algorithm=\"").p(algo).p("\")").nl();
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
     toJavaInit(sb, fileContext).nl();

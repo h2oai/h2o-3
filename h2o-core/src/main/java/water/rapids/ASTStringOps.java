@@ -1,5 +1,7 @@
 package water.rapids;
 
+import org.apache.commons.lang.StringUtils;
+
 import water.DKV;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -90,6 +92,46 @@ class ASTStrSplit extends ASTUniPrefixOp {
   }
 }
 
+class ASTCountMatches extends ASTUniPrefixOp {
+  String[] _subStr;
+  ASTCountMatches() { super(new String[]{"countmatches", "x", "substr"}); }
+  @Override String opStr() { return "countmatches"; }
+  @Override ASTOp make() { return  new ASTCountMatches(); }
+  ASTCountMatches parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST a = E.parse();
+    if ( a instanceof ASTStringList ) _subStr = ((ASTStringList)a)._s;
+    else if( a instanceof ASTString ) _subStr = new String[] {((ASTString)a)._s};
+    else throw new IllegalArgumentException("countmatches expected a substring or an array of substrings. Got :" + a.getClass());
+    E.eatEnd();
+    ASTCountMatches res = (ASTCountMatches) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.popAry();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("countmatches requires a single column.");
+    if( !fr.anyVec().isEnum() ) throw new IllegalArgumentException("countmatches column must be categorical. Got: " + fr.anyVec().get_type_str());
+    final int[] matchCounts = countMatches(fr.anyVec().domain());
+
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i = 0; i < c._len; ++i)
+          if( c.isNA(i) ) nc.addNA();
+          else            nc.addNum(matchCounts[ (int) c.at8(i)],0);
+      }
+    }.doAll(1, fr).outputFrame();
+    env.pushAry(fr2);
+  }
+
+  int[] countMatches(String[] domain) {
+    int[] res = new int[domain.length];
+    for (int i=0; i < domain.length; i++)
+      for (int j=0; j < _subStr.length; j++)
+        res[i] += StringUtils.countMatches(domain[i],_subStr[j]);
+    return res;
+  }
+}
 
 // mutating call
 class ASTToLower extends ASTUniPrefixOp {

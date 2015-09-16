@@ -30,6 +30,8 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static water.util.RandomUtils.getRNG;
+
 /**
  * Parse a generic R string and build an AST, in the context of an H2O Cloud
  */
@@ -179,6 +181,9 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMad());
 
     // Misc
+    putPrefix(new ASTKFold());
+    putPrefix(new ASTModuloKFold());
+    putPrefix(new ASTStratifiedKFold());
     putPrefix(new ASTPop());
     putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
@@ -250,6 +255,7 @@ public abstract class ASTOp extends AST {
     // string mungers
     putPrefix(new ASTGSub());
     putPrefix(new ASTStrSplit());
+    putPrefix(new ASTCountMatches());
     putPrefix(new ASTStrSub());
     putPrefix(new ASTToLower());
     putPrefix(new ASTToUpper());
@@ -333,6 +339,82 @@ public abstract class ASTOp extends AST {
     if (isUDF(op)) return UDF_OPS.get(op);
     if (PREFIX_OPS.containsKey(op)) return PREFIX_OPS.get(op);
     throw H2O.unimpl("Unimplemented: Could not find the operation or function " + op);
+  }
+
+  public static Vec kfoldColumn(Vec v, final int nfolds, final long seed) {
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        long start = c.start();
+        for( int i=0; i<c._len; ++i ) {
+          int fold = Math.abs(getRNG(start + seed + i).nextInt()) % nfolds;
+          c.set(i,fold);
+        }
+      }
+    }.doAll(v);
+    return v;
+  }
+
+  public static Vec moduloKfoldColumn(Vec v, final int nfolds) {
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        long start = c.start();
+        for( int i=0; i<c._len; ++i)
+          c.set(i, (int) ((start + i) % nfolds));
+      }
+    }.doAll(v);
+    return v;
+  }
+
+  public static Vec stratifiedKFoldColumn(Vec y, final int nfolds, final long seed) {
+    // for each class, generate a fold column (never materialized)
+    // therefore, have a seed per class to be used by the map call
+    if( !(y.isEnum() || (y.isNumeric() && y.isInt())) )
+      throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " + y.get_type_str());
+    final long[] classes = new Vec.CollectDomain().doAll(y).domain();
+    final int nClass = y.isNumeric() ? classes.length : y.domain().length;
+    final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
+    for( int i=0;i<nClass;++i)
+      seeds[i] = getRNG(seed + i).nextLong();
+
+    return new MRTask() {
+
+      private int getFoldId(long absoluteRow, long seed) {
+        return Math.abs(getRNG(absoluteRow + seed).nextInt()) % nfolds;
+      }
+
+      // dress up the foldColumn (y[1]) as follows:
+      //   1. For each testFold and each classLabel loop over the response column (y[0])
+      //   2. If the classLabel is the current response and the testFold is the foldId
+      //      for the current row and classLabel, then set the foldColumn to testFold
+      //
+      //   How this balances labels per fold:
+      //      Imagine that a KFold column was generated for each class. Observe that this
+      //      makes the outer loop a way of selecting only the test rows from each fold
+      //      (i.e., the holdout rows). Each fold is balanced sequentially in this way
+      //      since y[1] is only updated if the current row happens to be a holdout row
+      //      for the given classLabel.
+      //
+      //      Next observe that looping over each classLabel filters down each KFold
+      //      so that it contains labels for just THAT class. This is how the balancing
+      //      can be made so that it is independent of the chunk distribution and the
+      //      per chunk class distribution.
+      //
+      //      Downside is this performs nfolds*nClass passes over each Chunk. For
+      //      "reasonable" classification problems, this could be 100 passes per Chunk.
+      @Override public void map(Chunk[] y) {
+        long start = y[0].start();
+        for(int testFold=0; testFold < nfolds; ++testFold) {
+          for(int classLabel = 0; classLabel < nClass; ++classLabel) {
+            for(int row=0;row<y[0]._len;++row ) {
+              if( y[0].at8(row) == (classes==null?classLabel:classes[classLabel]) ) {
+                if( testFold == getFoldId(start+row,seeds[classLabel]) )
+                  y[1].set(row,testFold);
+              }
+            }
+          }
+        }
+      }
+    }.doAll(new Frame(y,y.makeZero()))._fr.vec(1);
   }
 }
 
@@ -1029,7 +1111,6 @@ class ASTScale extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     Frame fr = env.popAry();
-    for (int i = 0; i < fr.numCols(); ++i) if (fr.vecs()[i].isEnum()) throw new IllegalArgumentException(("All columns must be numeric."));
     if (!(_centers == null) && _centers.length != fr.numCols()) throw new IllegalArgumentException("`centers` must be logical or have length equal to the number of columns in the dataset.");
     if (!(_scales  == null) && _scales.length  != fr.numCols()) throw new IllegalArgumentException("`scales` must be logical or have length equal to the number of columns in the dataset.");
     final boolean use_mean = _centers == null && _center;
@@ -1055,10 +1136,17 @@ class ASTScale extends ASTUniPrefixOp {
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
-              double numer = cs[c].atd(r) - (use_mean
-                      ? cs[c].vec().mean()
-                      : centers == null ? 0 : centers[c]);
-              ncs[c].addNum(numer);
+              if( cs[c].isNA(r) ) {
+                ncs[c].addNA();
+                continue;
+              }
+              if (cs[c].vec().isEnum()) ncs[c].addNum(cs[c].at8(r), 0);
+              else {
+                double numer = cs[c].atd(r) - (use_mean
+                        ? cs[c].vec().mean()
+                        : centers == null ? 0 : centers[c]);
+                ncs[c].addNum(numer);
+              }
             }
         }
       }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
@@ -1085,10 +1173,17 @@ class ASTScale extends ASTUniPrefixOp {
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
-              double denom = cs[c].atd(r) / (use_rms
-                      ? rms[c] : use_sig ? cs[c].vec().sigma()
-                      : scales == null ? 1 : scales[c]);
-              ncs[c].addNum(denom);
+              if( cs[c].isNA(r) ) {
+                ncs[c].addNA();
+                continue;
+              }
+              if (cs[c].vec().isEnum()) ncs[c].addNum(cs[c].at8(r), 0);
+              else {
+                double denom = cs[c].atd(r) / (use_rms
+                        ? rms[c] : use_sig ? cs[c].vec().sigma()
+                        : scales == null ? 1 : scales[c]);
+                ncs[c].addNum(denom);
+              }
             }
         }
       }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
@@ -1112,10 +1207,11 @@ abstract class ASTTimeOp extends ASTUniPrefixOp {
   abstract long op( MutableDateTime dt );
 
   @Override void apply(Env env) {
+    final DateTimeZone dtz = ParseTime.getTimezone();
     // Single instance of MDT for the single call
     if( !env.isAry() ) {        // Single point
       double d = env.peekDbl();
-      if( !Double.isNaN(d) ) d = op(new MutableDateTime((long)d));
+      if( !Double.isNaN(d) ) d = op(new MutableDateTime((long)d, dtz));
       env.poppush(1, new ValNum(d));
       return;
     }
@@ -1124,7 +1220,7 @@ abstract class ASTTimeOp extends ASTUniPrefixOp {
     final ASTTimeOp uni = this;
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-        MutableDateTime dt = new MutableDateTime(0);
+        MutableDateTime dt = new MutableDateTime(0, dtz);
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
           Chunk c = chks[i];
@@ -2217,9 +2313,68 @@ class ASTUnique extends ASTUniPrefixOp {
   }
 }
 
+class ASTKFold extends ASTUniPrefixOp {
+  int _nfolds;
+  long _seed;
+  @Override String opStr() { return "kfold_column"; }
+  @Override ASTOp make() { return new ASTKFold(); }
+  public ASTKFold() { super(new String[]{"x","nfolds", "seed"});}
+  ASTKFold parse_impl(Exec E) {
+    AST ary = E.parse();
+    _nfolds = (int)E.nextDbl();
+    _seed = (long)E.nextDbl();
+    E.eatEnd();
+    ASTKFold res = (ASTKFold)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Vec foldVec = e.popAry().anyVec().makeZero();
+    e.pushAry(new Frame(kfoldColumn(foldVec, _nfolds, _seed == -1 ? new Random().nextLong() : _seed)));
+  }
+}
+
+class ASTModuloKFold extends ASTUniPrefixOp {
+  int _nfolds;
+  @Override String opStr() { return "modulo_kfold_column"; }
+  @Override ASTOp make() { return new ASTModuloKFold(); }
+  public ASTModuloKFold() { super(new String[]{"x","nfolds"});}
+  ASTModuloKFold parse_impl(Exec E) {
+    AST ary = E.parse();
+    _nfolds = (int)E.nextDbl();
+    E.eatEnd();
+    ASTModuloKFold res = (ASTModuloKFold)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Vec foldVec = e.popAry().anyVec().makeZero();
+    e.pushAry(new Frame(moduloKfoldColumn(foldVec, _nfolds)));
+  }
+}
+
+class ASTStratifiedKFold extends ASTUniPrefixOp {
+  int _nfolds;
+  long _seed;
+  @Override String opStr() { return "stratified_kfold_column"; }
+  @Override ASTOp make() { return new ASTStratifiedKFold(); }
+  public ASTStratifiedKFold() { super(new String[]{"y","nfolds","seed"}); }
+  ASTStratifiedKFold parse_impl(Exec E) {
+    AST ary = E.parse();
+    _nfolds = (int)E.nextDbl();
+    _seed = (long)E.nextDbl();
+    E.eatEnd();
+    ASTStratifiedKFold res = (ASTStratifiedKFold)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override public void apply(Env e) {
+    Vec y = e.popAry().anyVec();
+    e.pushAry(new Frame(stratifiedKFoldColumn(y,_nfolds,_seed == -1 ? new Random().nextLong() : _seed)));
+  }
+}
 
 class ASTKappa extends ASTUniPrefixOp {
-
   int _nclass;
   @Override String opStr() { return "kappa"; }
   @Override ASTOp make() { return new ASTKappa(); }
@@ -3834,7 +3989,9 @@ class ASTSdev extends ASTUniPrefixOp {
         DKV.put(fr2);  // push this soggy frame into dkv, let R handle the rest...
         env.pushAry(fr2);
       } else {
-        double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
+        double sig;
+        if( fr.anyVec().isEnum() ) sig = Double.NaN;
+        else                       sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
         env.poppush(1, new ValNum(sig));
       }
     }
@@ -4039,8 +4196,6 @@ class ASTMean extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     if (env.isNum()) return;
     Frame fr = env.popAry(); // get the frame w/o sub-reffing
-//    if (fr.numCols() > 1 && fr.numRows() > 1)
-//      throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
       throw new IllegalArgumentException("mean only applies to numeric columns.");
     if (fr.numCols() > 1 && fr.numRows()==1) {
@@ -4065,6 +4220,7 @@ class ASTMean extends ASTUniPrefixOp {
       env.pushAry(fr2);
     } else {
       Vec v = fr.anyVec();
+      if( v.isEnum() ) { env.push(new ValNum(Double.NaN)); return; }
       if( _narm || v.naCnt()==0 ) env.push(new ValNum(v.mean()));
       else {
         MeanNARMTask t = new MeanNARMTask(false).doAll(v);

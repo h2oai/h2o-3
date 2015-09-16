@@ -1,7 +1,6 @@
 package hex;
 
 import water.*;
-import water.Job.JobCancelledException;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
@@ -92,8 +91,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Extracts the values, applies regularization to numerics, adds appropriate offsets to categoricals,
    * and adapts response according to the CaseMode/CaseValue if set.
    */
-  @Override public final void map(Chunk [] chunks, NewChunk [] outputs){
-    if(_jobKey != null && !Job.isRunning(_jobKey))throw new JobCancelledException();
+  @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
+    if (_jobKey != null && !Job.isRunning(_jobKey)) return;
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     boolean doWork = chunkInit();
@@ -108,17 +107,16 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     if (obs_weights) {
       weight_map = new double[nrows];
       double weight_sum = 0;
-      for (int i=0;i<nrows;++i) {
+      for (int i = 0; i < nrows; ++i) {
         row = _dinfo.extractDenseRow(chunks, i, row);
-        weight_sum+=row.weight;
-        weight_map[i]=weight_sum;
-        assert(i == 0 || row.weight == 0 || weight_map[i] > weight_map[i-1]);
+        weight_sum += row.weight;
+        weight_map[i] = weight_sum;
+        assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
       }
       if (weight_sum > 0) {
         ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
         relative_chunk_weight = global_weight_sum * nrows / _fr.numRows() / weight_sum;
-      }
-      else return; //nothing to do here - all rows have 0 weight
+      } else return; //nothing to do here - all rows have 0 weight
     }
 
     //Example:
@@ -127,12 +125,18 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     // _useFraction = 1.1 -> 2 repeats with fraction = 0.55
     // _useFraction = 2.1 -> 3 repeats with fraction = 0.7
     // _useFraction = 3.0 -> 3 repeats with fraction = 1.0
-    final int repeats = (int)Math.ceil(_useFraction * relative_chunk_weight);
-    final float fraction = (float)(_useFraction * relative_chunk_weight) / repeats;
-    assert(fraction <= 1.0);
+    final int repeats = (int) Math.ceil(_useFraction * relative_chunk_weight);
+    final float fraction = (float) (_useFraction * relative_chunk_weight) / repeats;
+    assert (fraction <= 1.0);
 
     final boolean sample = (fraction < 0.999 || obs_weights || _shuffle);
-    final Random skip_rng = sample ? RandomUtils.getRNG((0x8734093502429734L+_seed+offset)*(_iteration+0x9823423497823423L)) : null;
+    final long chunkSeed = (0x8734093502429734L + _seed + offset) * (_iteration + 0x9823423497823423L);
+    final Random skip_rng = sample ? RandomUtils.getRNG(chunkSeed) : null;
+    int[] shufIdx = skip_rng == null ? null : new int[nrows];
+    if (skip_rng != null) {
+      for (int i = 0; i < nrows; ++i) shufIdx[i] = i;
+      ArrayUtils.shuffleArray(shufIdx, skip_rng);
+    }
 
     final int miniBatchSize = getMiniBatchSize();
     long num_processed_rows = 0;
@@ -151,11 +155,11 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
           if (r<0) r=-r-1;
           assert(r == 0 || weight_map[r] > weight_map[r-1]);
         } else if (r == -1){
-          do {
-            r = skip_rng.nextInt(nrows); //random sampling (with replacement)
-          }
+          r = shufIdx[row_idx];
           // if we have weights, and we did the %2 skipping above, then we need to find an alternate row with non-zero weight
-          while (obs_weights && ((r == 0 && weight_map[0] == 0) || (r > 0 && weight_map[r] == weight_map[r-1])));
+          while (obs_weights && ((r == 0 && weight_map[r] == 0) || (r > 0 && weight_map[r] == weight_map[r-1]))) {
+            r = skip_rng.nextInt(nrows); //random sampling with replacement
+          }
         } else {
           assert(!obs_weights);
           r = row_idx; //linear scan - slightly faster

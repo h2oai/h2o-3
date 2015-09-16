@@ -23,7 +23,7 @@ public class PredictCsv {
 
   private static void usage() {
     System.out.println("");
-    System.out.println("usage:  java [...java args...] PredictCsv --header --model modelClassName --input inputCSVFileName --output outputCSVFileName");
+    System.out.println("usage:  java [...java args...] hex.genmodel.tools.PredictCsv --header --model modelClassName --input inputCSVFileName --output outputCSVFileName");
     System.out.println("");
     System.out.println("        model class name is something like GBMModel_blahblahblahblah.");
     System.out.println("");

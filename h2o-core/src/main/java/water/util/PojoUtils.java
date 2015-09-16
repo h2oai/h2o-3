@@ -1,30 +1,48 @@
 package water.util;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.util.regex.Pattern;
-
-import water.DKV;
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.Keyed;
-import water.Value;
-import water.Weaver;
+import water.*;
 import water.api.FrameV3;
 import water.api.KeyV3;
 import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 /**
  * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
  */
 public class PojoUtils {
   public enum FieldNaming {
-    CONSISTENT,
-    DEST_HAS_UNDERSCORES,
-    ORIGIN_HAS_UNDERSCORES
+    CONSISTENT {
+      @Override String toDest(String origin) { return origin; }
+      @Override String toOrigin(String dest) { return dest; }
+    },
+    DEST_HAS_UNDERSCORES {
+      @Override String toDest(String origin) { return "_" + origin; }
+      @Override String toOrigin(String dest) { return dest.substring(1); }
+    },
+    ORIGIN_HAS_UNDERSCORES {
+      @Override String toDest(String origin) { return origin.substring(1); }
+      @Override String toOrigin(String dest) { return "_" + dest; }
+    };
+
+    /**
+     * Return destination name based on origin name.
+     * @param origin name of origin argument
+     * @return  return a name of destination argument.
+     */
+    abstract String toDest(String origin);
+
+    /**
+     * Return name of origin parameter derived from name of origin parameter.
+     * @param dest  name of destination argument.
+     * @return  return a name of origin argument.
+     */
+    abstract String toOrigin(String dest);
   }
 
 
@@ -84,14 +102,7 @@ public class PojoUtils {
     for (Field orig_field : orig_fields) {
       String origin_name = orig_field.getName();
 
-      String dest_name = null;
-      if (field_naming == FieldNaming.CONSISTENT) {
-        dest_name = origin_name;
-      } else if (field_naming == FieldNaming.DEST_HAS_UNDERSCORES) {
-        dest_name = "_" + origin_name;
-      } else if (field_naming == FieldNaming.ORIGIN_HAS_UNDERSCORES) {
-        dest_name = origin_name.substring(1);
-      }
+      String dest_name = field_naming.toDest(origin_name);
 
       if (skip_fields != null && (ArrayUtils.contains(skip_fields, origin_name) || ArrayUtils.contains(skip_fields, dest_name)))
         continue;
@@ -152,14 +163,20 @@ public class PojoUtils {
               // Assigning an array of impl fields to an array of schema fields, e.g. a DeepLearningParameters[] into a DeepLearningParametersV2[]
               //
               Class dest_component_class = dest_field.getType().getComponentType();
-              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
-              int i = 0;
+
+              // NOTE: there can be a race on the source array, so shallow copy it.
+              // If it has shrunk the elements might have dangling references.
+              Iced[] orig_array = (Iced[]) orig_field.get(origin);
+              int length = orig_array.length;
+              Iced[] orig_array_copy = Arrays.copyOf(orig_array, length); // Will null pad if it has shrunk since calling length
+              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, length);
               int version = ((Schema)dest).getSchemaVersion();
 
               // Look up the schema for each element of the array; if not found fall back to the schema for the base class.
-              for (Iced impl : ((Iced[])orig_field.get(origin))) {
+              for (int i = 0; i < length; i++) {
+                Iced impl = orig_array_copy[i];
                 if (null == impl) {
-                  translation[i++] = null;
+                  translation[i++] = null; // also can happen if the array shrank between .length and the copy
                 } else {
                   Schema s = null;
                   try {
@@ -167,7 +184,7 @@ public class PojoUtils {
                   } catch (H2ONotFoundArgumentException e) {
                     s = ((Schema) dest_field.getType().getComponentType().newInstance());
                   }
-                  translation[i++] = s.fillFromImpl(impl);
+                  translation[i] = s.fillFromImpl(impl);
                 }
               }
               dest_field.set(dest, translation);
@@ -178,10 +195,13 @@ public class PojoUtils {
               // We can't check against the actual impl class I, because we can't instantiate the schema base classes to get the impl class from an instance:
               // dest_field.getType().getComponentType().isAssignableFrom(((Schema)f.getType().getComponentType().newInstance()).getImplClass())) {
               Class dest_component_class = dest_field.getType().getComponentType();
-              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
-              int i = 0;
-              for (Schema s : ((Schema[])orig_field.get(origin))) {
-                translation[i++] = s.createImpl();
+              Schema[] orig_array = (Schema[]) orig_field.get(origin);
+              int length = orig_array.length;
+              Schema[] orig_array_copy = Arrays.copyOf(orig_array, length);
+              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, length);
+              for (int i = 0; i < length; i++) {
+                Schema s = orig_array_copy[i];
+                translation[i] = s.createImpl();
               }
               dest_field.set(dest, translation);
             } else {
@@ -302,6 +322,10 @@ public class PojoUtils {
       }
       catch (InstantiationException e) {
         Log.err("Instantiation exception trying to copy field: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
+      }
+      catch (Exception e) {
+        Log.err(e.getClass().getCanonicalName() + " Exception: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
+        throw e;
       }
     }
   }
@@ -427,16 +451,16 @@ public class PojoUtils {
    * @throws java.lang.IllegalArgumentException  when o is <code>null</code>, or field is not found,
    * or field cannot be read.
    */
-  public static Object getFieldValue(Object o, String name) {
+  public static Object getFieldValue(Object o, String name, FieldNaming fieldNaming) {
     if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
-    Field f = null;
+    String destName = fieldNaming.toDest(name);
     try {
-      f = o.getClass().getField(name);
+      Field f = o.getClass().getField(destName);
       return f.get(o);
     } catch (NoSuchFieldException e) {
-      throw new IllegalArgumentException("Field not found: '" + name + "' on object " + o);
+      throw new IllegalArgumentException("Field not found: '" + name + "/" + destName + "' on object " + o);
     } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "' on object " + o);
+      throw new IllegalArgumentException("Cannot get value of the field: '" + name + "/" + destName + "' on object " + o);
     }
   }
 }

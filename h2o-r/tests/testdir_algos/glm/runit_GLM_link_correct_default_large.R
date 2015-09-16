@@ -5,9 +5,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(conn) {
+test <- function() {
     print("Reading in original prostate data.")
-        prostate.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
+        prostate.data = h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
 
     print("Compare models with link unspecified and canonical link specified.")
     	print("GAUSSIAN: ") 

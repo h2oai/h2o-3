@@ -4,9 +4,9 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
 #' @param y A character string or index that represent the response variable in the model.
-#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param validation_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
 #' @param max_iterations A non-negative integer specifying the maximum number of iterations.
 #' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
 #'        Defines the convergence criterion for \code{h2o.glm}.
@@ -70,7 +70,7 @@
 #'
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
 #' prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prostatePath, destination_frame = "prostate.hex")
+#' prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
 #' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
 #'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #'
@@ -84,7 +84,6 @@
 #'  # Also see:
 #'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
 #'  data.hex = h2o.importFile(
-#'    localH2O,
 #'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
 #'    destination_frame = "data.hex")
 #'  myX = 1:20
@@ -121,29 +120,29 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     )
 {
   if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
+      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "Frame"))
         stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
-        beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
+        beta_constraints <- as.h2o(beta_constraints)
       }
   }
   #Handle ellipses
   if (length(list(...)) > 0)
     dots <- .model.ellipses( list(...))
 
-  if (!inherits(training_frame, "H2OFrame"))
+  if (!is.Frame(training_frame))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
             error = function(err) {
-              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
+              stop("argument \"training_frame\" must be a valid Frame or ID")
             })
 
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
@@ -176,14 +175,10 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if (!missing(nfolds) && nfolds > 1)
     parms$nfolds <- nfolds
   if(!missing(beta_constraints)){
-    delete <- !.is.eval(beta_constraints)
-    if (delete) {
-        temp_key <- beta_constraints@frame_id
-        .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, frame_id = temp_key)
-    }
+    .eval.frame(beta_constraints)
     parms$beta_constraints <- beta_constraints
   }
-  m <- .h2o.createModel(training_frame@conn, 'glm', parms)
+  m <- .h2o.modelJob('glm', parms, do_future=FALSE)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
@@ -192,12 +187,12 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
 #' Set betas of an existing H2O GLM Model
 #'
 #' This function allows setting betas of an existing glm model.
-#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @param model an \linkS4class{Model} corresponding from a \code{h2o.glm} call.
 #' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -232,17 +227,17 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
                     )
 {
   if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
+      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "Frame"))
         stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
-        beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
+        beta_constraints <- as.h2o(beta_constraints)
       }
   }
 
-  if (!inherits(training_frame, "H2OFrame"))
+  if (!is.Frame(training_frame))
       tryCatch(training_frame <- h2o.getFrame(training_frame),
                error = function(err) {
-                 stop("argument \"training_frame\" must be a valid H2OFrame or model ID")
+                 stop("argument \"training_frame\" must be a valid Frame or model ID")
               })
 
     parms <- list()
@@ -286,5 +281,5 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
     if(!missing(nfolds))
       parms$nfolds <- nfolds
 
-    .h2o.startModelJob(training_frame@conn, 'glm', parms)
+    .h2o.startModelJob('glm', parms, h2oRestApiVersion=.h2o.__REST_API_VERSION)
 }

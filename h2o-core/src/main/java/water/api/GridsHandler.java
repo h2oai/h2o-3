@@ -34,6 +34,7 @@ public class GridsHandler extends Handler {
     s.hyper_names = grid.getHyperNames();
     s.failed_params = toModelParametersSchema(grid.getFailedParameters());
     s.failure_details = grid.getFailureDetails();
+    s.failure_stack_traces = grid.getFailureStackTraces();
     s.failed_raw_params = grid.getFailedRawParameters();
     return s;
   }

@@ -2,11 +2,12 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Scala, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
-* [Using H2O Dev Artifacts](#Artifacts)
+    * [Issue tracking](#IssueTracking) 
+* [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
 * [Building H2O on Hadoop](#BuildingHadoop)
@@ -27,9 +28,29 @@ While most of this README is written for developers who do their own builds, mos
 <a name="Resources"></a>
 ## 2. Open Source Resources
 
+Most people interact with three primary open source resources:  **GitHub** (which you've already found), **JIRA** (for issue tracking), and **h2ostream** (a community discussion forum).
+
+<a name="IssueTracking"></a>
+### 2.1 Issue tracking
+
+You can browse and create new issues in our open source **JIRA**:  <http://jira.h2o.ai>
+
+*  You can **browse** and search for **issues** without logging in to JIRA:
+    1.  Click the `Issues` menu
+    1.  Click `Search for issues`
+*  To **create** an **issue** (either a bug or a feature request), please create yourself an account first:
+    1.  Click the `Log In` button on the top right of the screen
+    1.  Click `Create an acccount` near the bottom of the login box
+    1.  Once you have created an account and logged in, use the `Create` button on the menu to create an issue
+    1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project
+
+> (Note: There is only one issue tracking system for the project.  GitHub issues are not enabled, you must use JIRA.)
+
+### 2.2 List of open source resources
+
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA (PUBDEV contains issues for the current H2O-3 project; PUB contains issues for H2O-Classic)
+*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) contains issues for the current H2O-3 project)
     * <http://jira.h2o.ai>
 *  h2ostream community forum - ask your questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
@@ -142,10 +163,11 @@ Syncing smalldata is not required after each pull, but if tests fail due to miss
     pip install grip
     pip install tabulate
     pip install wheel
+    pip install scikit-learn
 
 Python tests require:
 
-    pip install sklearn
+    pip install scikit-learn
     pip install numpy
     pip install scipy
     pip install pandas
@@ -404,7 +426,7 @@ You need to:
 1.  Add a new driver directory and assembly directory (each with a `build.gradle` file) in `h2o-hadoop`
 2.  Add these new projects to `h2o-3/settings.gradle`
 3.  Add the new Hadoop version to `HADOOP_VERSIONS` in `make-dist.sh`
-4.  Add the new Hadoop version to the `wget` list in `h2o-dist/index.html`
+4.  Add the new Hadoop version to the list in `h2o-dist/buildinfo.json`
 
 ### Debugging HDFS
 
@@ -492,7 +514,7 @@ Documentation for each bleeding edge nightly build is available on the [nightly 
 ## 9. Community
 
 We will breathe & sustain a vibrant community with the focus of taking a software engineering approach to data science and empowering everyone interested in data to be able to hack data using math and algorithms.
-Join us on google groups [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
+Join us on google groups at [h2ostream](https://groups.google.com/forum/#!forum/h2ostream) and feel free to file issues directly on our [JIRA](http://jira.h2o.ai). 
 
 Team & Committers
 
@@ -539,8 +561,6 @@ Stacie Spreitzer
 Vinod Iyengar
 Charlene Windom
 Parag Sanghavi
-
-
 ```
 
 <a name="Advisors"></a>

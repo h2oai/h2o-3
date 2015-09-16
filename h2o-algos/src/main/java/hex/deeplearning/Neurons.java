@@ -284,8 +284,15 @@ public abstract class Neurons {
 
   private void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2) {
     final int cols = _previous._a.size();
-    final int start = linearIndexMatrix(row, 0, cols);
-    final int end = linearIndexMatrix(row, w.cols(), cols);
+    int start;
+    int end;
+    if (_k != 0) {
+      start = _k * (row*cols           ) + _maxIncoming[row];
+      end =   _k * (row*cols + (cols-1)) + _maxIncoming[row];
+    } else {
+      start = row * cols;
+      end =   row * cols + cols;
+    }
     float r2 = MathUtils.sumSquares(w.raw(), start, end);
 //    float r2 = MathUtils.approxSumSquares(w.raw(), idx, idx + cols);
     if( r2 > max_w2) {
@@ -374,7 +381,7 @@ public abstract class Neurons {
     final boolean have_ada = _minfo.adaDelta();
     final float l1 = (float)params._l1;
     final float l2 = (float)params._l2;
-    final int b = linearIndexVector(row);
+    final int b = _k != 0 ? _k*row+_maxIncoming[row] : row;
     final double bias = _b.get(b);
 
     partial_grad -= Math.signum(bias) * l1 + bias * l2;
@@ -405,7 +412,7 @@ public abstract class Neurons {
     if (params._autoencoder && params._sparsity_beta > 0 && !(this instanceof Output) && !(this instanceof Input) && (_index != params._hidden.length)) {
       _b.add(b, -(rate * params._sparsity_beta * (_avg_a.raw()[b] - params._average_activation)));
     }
-    if (Double.isInfinite(_b.get(b))) _minfo.set_unstable();
+    if (Double.isInfinite(_b.get(b))) _minfo.setUnstable();
   }
 
 
@@ -573,17 +580,6 @@ public abstract class Neurons {
 
   }
 
-  private int linearIndexMatrix(int row, int col, int cols) {
-    final int idx = row * cols + col;
-
-    // for Maxout, return the "winning" linear index into the matrix
-    return _k != 0 ? _k*idx + _maxIncoming[row] : idx;
-  }
-
-  private int linearIndexVector(int row) {
-    return _k != 0 ? _k*row+_maxIncoming[row] : row;
-  }
-
   /**
    * Tanh neurons - most common, most stable
    */
@@ -643,25 +639,25 @@ public abstract class Neurons {
       assert(_b.size() == _a.size() * _k);
       assert(_w.size() == _a.size() * _previous._a.size() * _k);
       final int rows = _a.size();
+      double[] channel = new double[_k];
       for( int row = 0; row < rows; row++ ) {
         _a.set(row, 0);
         if( !training || _dropout == null || _dropout.unit_active(row) ) {
           final int cols = _previous._a.size();
-          double[] activations = new double[_k];
           // For each neuron in the previous layer, there's k channels
           // Each channel has its own weight and bias values
           // The channel leading to the highest incoming value (W*x + b) is the "winner" and will activate this neuron
           short maxK = 0;
           for( short k = 0; k < _k; k++ ) {
-            activations[k] = 0;
+            channel[k] = 0;
             for( int col = 0; col < cols; col++ ) {
-              activations[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a.get(col);
+              channel[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a.get(col);
             }
-            activations[k] += _b.raw()[_k*row+k];
-            if (activations[k] > activations[maxK]) maxK=k;
+            channel[k] += _b.raw()[_k*row+k];
+            if (channel[k] > channel[maxK]) maxK=k;
           }
           _maxIncoming[row] = maxK;
-          _a.set(row, activations[maxK]);
+          _a.set(row, channel[maxK]);
         }
       }
       compute_sparsity();
@@ -767,10 +763,6 @@ public abstract class Neurons {
       }
       for( int row = 0; row < rows; row++ ) {
         _a.raw()[row] /= scaling;
-        if (Double.isNaN(_a.get(row))) {
-          _minfo.set_unstable();
-          throw new RuntimeException("Numerical instability, predicted NaN.");
-        }
       }
     }
 

@@ -62,7 +62,11 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
 
     // Training data
     // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
-    final Frame l2 = mymodel.scoreAutoEncoder(train, Key.make());
+    final Frame rec = mymodel.scoreAutoEncoder(train, Key.make(), true);
+    sb.append("Reconstruction error per feature: " + rec.toString() + "\n");
+    rec.remove();
+
+    final Frame l2 = mymodel.scoreAutoEncoder(train, Key.make(), false);
     final Vec l2vec = l2.anyVec();
     sb.append("Actual   mean reconstruction error: " + l2vec.mean() + "\n");
 

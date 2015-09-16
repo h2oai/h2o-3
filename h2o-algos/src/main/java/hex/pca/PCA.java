@@ -6,6 +6,7 @@ import hex.DataInfo;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.glrm.EmbeddedGLRM;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
@@ -14,6 +15,7 @@ import hex.schemas.ModelBuilderSchema;
 import hex.schemas.PCAV3;
 
 import hex.pca.PCAModel.PCAParameters;
+import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
@@ -95,7 +97,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     if (!_parms._use_all_factor_levels && _parms._pca_method == PCAParameters.Method.GLRM)
       error("_use_all_factor_levels", "GLRM only implemented for _use_all_factor_levels = true");
 
-    if (expensive && error_count() == 0) checkMemoryFootPrint();
+    if (_parms._pca_method != PCAParameters.Method.GLRM && expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
@@ -162,7 +164,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       // Fill model with eigenvectors and standard deviations
       double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
       pca._output._std_deviation = new double[_parms._k];
-      pca._output._eigenvectors_raw = glrm._output._eigenvectors;
+      pca._output._eigenvectors_raw = glrm._output._eigenvectors_raw;
       pca._output._total_variance = 0;
       for(int i = 0; i < glrm._output._singular_vals.length; i++) {
         pca._output._std_deviation[i] = dfcorr * glrm._output._singular_vals[i];
@@ -215,10 +217,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.delete_and_lock(_key);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          dinfo = new DataInfo(Key.make(), _train, null, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+          dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
-          System.out.println(dinfo._adaptedFrame.toString());
-
+          
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
           update(1, "Begin distributed calculation of Gram matrix");
@@ -280,7 +281,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._seed = _parms._seed;
           parms._recover_svd = true;
 
-          parms._loss = GLRMModel.GLRMParameters.Loss.L2;
+          parms._loss = GLRMModel.GLRMParameters.Loss.Quadratic;
           parms._gamma_x = parms._gamma_y = 0;
           parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.None;
           parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.None;
@@ -296,7 +297,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           } finally {
             if (job != null) job.remove();
             if (glrm != null) {
-              glrm._parms._loading_key.get().delete();
+              // glrm._parms._loading_key.get().delete();
+              glrm._output._loading_key.get().delete();
               glrm.remove();
             }
           }
@@ -340,58 +342,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     Key self() {
       return _key;
-    }
-  }
-
-  public class EmbeddedSVD extends SVD {
-    final private Key sharedProgressKey;
-    final private Key pcaJobKey;
-
-    public EmbeddedSVD(Key pcaJobKey, Key sharedProgressKey, SVDModel.SVDParameters parms) {
-      super(parms);
-      this.sharedProgressKey = sharedProgressKey;
-      this.pcaJobKey = pcaJobKey;
-    }
-
-    @Override
-    protected Key createProgressKey() {
-      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-    }
-
-    @Override
-    protected boolean deleteProgressKey() {
-      return false;
-    }
-
-    @Override
-    public boolean isRunning() {
-      return super.isRunning() && ((Job) pcaJobKey.get()).isRunning();
-    }
-  }
-
-  public class EmbeddedGLRM extends GLRM {
-    final private Key sharedProgressKey;
-    final private Key glrmJobKey;
-
-    public EmbeddedGLRM(Key glrmJobKey, Key sharedProgressKey, GLRMModel.GLRMParameters parms) {
-      super(parms);
-      this.sharedProgressKey = sharedProgressKey;
-      this.glrmJobKey = glrmJobKey;
-    }
-
-    @Override
-    protected Key createProgressKey() {
-      return sharedProgressKey != null ? sharedProgressKey : super.createProgressKey();
-    }
-
-    @Override
-    protected boolean deleteProgressKey() {
-      return false;
-    }
-
-    @Override
-    public boolean isRunning() {
-      return super.isRunning() && ((Job) glrmJobKey.get()).isRunning();
     }
   }
 }

@@ -283,7 +283,7 @@ The data must be formatted as a sorted list of unique integers, the column indic
 
 **What date and time formats does H2O support?**
 
-H2O is set to auto-detect two major data/time formats. Because many data time formats are ambiguous (e.g. 01/02/03), general data time detection is not used.  
+H2O is set to auto-detect two major date/time formats. Because many date time formats are ambiguous (e.g. 01/02/03), general date time detection is not used.  
 
 The first format is for dates formatted as yyyy-MM-dd. Year is a four-digit number, the month is a two-digit number ranging from 1 to 12, and the day is a two-digit value ranging from 1 to 31. This format can also be followed by a space and then a time (specified below). 
 
@@ -297,7 +297,18 @@ Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value betw
 
 If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
 
+---
 
+**What types of data columns does H2O support?**
+
+Currently, H2O supports: 
+
+- float (any IEEE double)
+- integer (up to 64bit, but compressed according to actual range)
+- factor (same as integer, but with a String mapping, often handled differently in the algorithms)
+- time (same as 64bit integer, but with a time-since-Unix-epoch interpretation)
+- UUID (128bit integer, no math allowed)
+- String
 
 ---
 
@@ -492,6 +503,29 @@ This error message means that there is a space (or other unsupported character) 
 
 Currently, we do not support this capability. If you are interested in contributing your efforts to support this feature to our open-source code database, please contact us at [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
 
+
+---
+
+**How can I continue working on a model in H2O after restarting?**
+
+There are a number of ways you can save your model in H2O: 
+
+- In the web UI, click the **Flow** menu then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right. 
+- In the web UI, click the **Flow** menu then click **Download this Flow...**. Your flow is saved to the location you specify in the pop-up **Save As** window that appears. 
+- (For DRF, GBM, and DL models only): Use model checkpointing to resume training a model. Copy the `model_id` number from a built model and paste it into the *checkpoint* field in the `buildModel` cell. 
+
+
+---
+
+**How can I find out more about H2O's real-time, nano-fast scoring engine?** 
+
+H2O's scoring engine uses a Plain Old Java Object (POJO). The POJO code runs quickly but is single-threaded.  It is intended for embedding into lightweight real-time environments.
+
+All the work is done by the call to the appropriate predict method.  There is no involvement from H2O in this case.
+
+To compare multiple models simultaneously, use the POJO to call the models using multiple threads. For more information on using POJOs, refer to the [POJO Quick Start Guide](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-docs/index.html#POJO%20Quick%20Start) and [POJO Java Documentation](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-genmodel/javadoc/index.html)
+
+In-H2O scoring is triggered on an existing H2O cluster, typically using a REST API call. H2O evaluates the predictions in a parallel and distributed fashion for this case.  The predictions are stored into a new Frame and can be written out using `h2o.exportFile()`, for example.
 
 ---
 
@@ -947,7 +981,63 @@ EOF
 
 ---
 
+<!---
 
+in progress - commenting out until complete
+
+**How do I extract the variable importance from the output in R?**
+
+Launch R, then enter the following: 
+
+```
+library(h2o)
+h <- h2o.init()
+as.h2o(iris)
+as.h2o(testing)
+m <- h2o.gbm(x=1:4, y=5, data=hex, importance=T)
+
+m@model$varimp
+             Relative importance Scaled.Values Percent.Influence
+Petal.Width          7.216290000  1.0000000000       51.22833426
+Petal.Length         6.851120500  0.9493965043       48.63600147
+Sepal.Length         0.013625654  0.0018881799        0.09672831
+Sepal.Width          0.005484723  0.0007600474        0.03893596
+```
+
+The variable importances are returned as an R data frame and you can extract the names and values of the data frame as follows:
+
+```
+is.data.frame(m@model$varimp)
+# [1] TRUE
+
+names(m@model$varimp)
+# [1] "Relative importance" "Scaled.Values"       "Percent.Influence"  
+
+rownames(m@model$varimp)
+# [1] "Petal.Width"  "Petal.Length" "Sepal.Length" "Sepal.Width"
+
+m@model$varimp$"Relative importance"
+# [1] 7.216290000 6.851120500 0.013625654 0.005484723
+```
+
+-->
+
+
+---
+
+**How does the `col.names` argument work in `group_by`?**
+
+You need to add the `col.names` inside the `gb.control` list. Refer to the following example:
+
+```
+newframe <- h2o.group_by(dd, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
+    sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+newframe$avg_email_event_click_ct2 = newframe$total_email_event_click_ct / newframe$count
+```
+
+
+
+---
 
 ##Sparkling Water
 

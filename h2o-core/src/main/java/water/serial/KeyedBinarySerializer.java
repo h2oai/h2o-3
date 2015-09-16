@@ -1,10 +1,18 @@
 package water.serial;
 
-import java.io.*;
+import com.google.common.io.ByteStreams;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 
-import com.google.common.io.ByteStreams;
-import water.*;
+import water.AutoBuffer;
+import water.DKV;
+import water.H2O;
+import water.Keyed;
+import water.MemoryManager;
 import water.persist.Persist;
 import water.util.FileUtils;
 
@@ -83,7 +91,7 @@ public class KeyedBinarySerializer extends BinarySerializer<Keyed, URI> {
   }
 
   /** Returns AutoBuffer configured for reading from given source. */
-  private AutoBuffer ab4read  (byte[] buf) { return new AutoBufferWithoutTypeIds(buf); }
+  private AutoBuffer ab4read  (byte[] buf) { return new AutoBufferWithClassNames(buf); }
   /** Returns AutoBuffer configured for writing. */
-  private AutoBuffer ab4write (/* no destination */) { return new AutoBufferWithoutTypeIds(); }
+  private AutoBuffer ab4write (/* no destination */) { return new AutoBufferWithClassNames(); }
 }

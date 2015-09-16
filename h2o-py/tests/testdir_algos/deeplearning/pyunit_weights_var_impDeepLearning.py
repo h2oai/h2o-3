@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import copy
 
-def weights_vi(ip,port):
+def weights_vi():
     
     
     random.seed(1234)
@@ -19,7 +19,7 @@ def weights_vi(ip,port):
 
     dataset1_python = [[r, one, two, three] for r, one, two, three in zip(response, p1, p2, p3)]
     dataset1_h2o = h2o.H2OFrame(python_obj=dataset1_python)
-    dataset1_h2o.setNames(["response", "p1", "p2", "p3"])
+    dataset1_h2o.set_names(["response", "p1", "p2", "p3"])
 
     ##### create synthetic dataset2 with 3 predictors: p3 predicts response ~90% of the time, p1 ~70%, p2 ~50%
     response = ['a' for y in range(10000)]
@@ -31,7 +31,7 @@ def weights_vi(ip,port):
 
     dataset2_python = [[r, one, two, three] for r, one, two, three in zip(response, p1, p2, p3)]
     dataset2_h2o = h2o.H2OFrame(python_obj=dataset2_python)
-    dataset2_h2o.setNames(["response", "p1", "p2", "p3"])
+    dataset2_h2o.set_names(["response", "p1", "p2", "p3"])
 
     ##### compute variable importances on dataset1 and dataset2
     model_dataset1 = h2o.deeplearning(x=dataset1_h2o[["p1", "p2", "p3"]],
@@ -66,7 +66,7 @@ def weights_vi(ip,port):
     [combined_dataset_python.append(r) for r in dataset1_python_weighted]
     [combined_dataset_python.append(r) for r in dataset2_python_weighted]
     combined_dataset_h2o = h2o.H2OFrame(python_obj=combined_dataset_python)
-    combined_dataset_h2o.setNames(["response", "p1", "p2", "p3", "weights"])
+    combined_dataset_h2o.set_names(["response", "p1", "p2", "p3", "weights"])
 
     ##### recompute the variable importances. the relative order should be the same as above.
     model_combined_dataset = h2o.deeplearning(x=combined_dataset_h2o[["p1", "p2", "p3"]],
@@ -95,7 +95,7 @@ def weights_vi(ip,port):
     [combined_dataset_python.append(r) for r in dataset1_python_weighted]
     [combined_dataset_python.append(r) for r in dataset2_python_weighted]
     combined_dataset_h2o = h2o.H2OFrame(python_obj=combined_dataset_python)
-    combined_dataset_h2o.setNames(["response", "p1", "p2", "p3", "weights"])
+    combined_dataset_h2o.set_names(["response", "p1", "p2", "p3", "weights"])
 
     ##### recompute the variable importances. the relative order should be the same as above.
     model_combined_dataset = h2o.deeplearning(x=combined_dataset_h2o[["p1", "p2", "p3"]],
@@ -104,7 +104,7 @@ def weights_vi(ip,port):
                                               variable_importances=True,
                                               weights_column="weights",
                                               hidden=[1],
-                                              reproducible=True, seed=1234,
+                                              reproducible=True, seed=123,
                                               activation="Tanh")
 
     varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])

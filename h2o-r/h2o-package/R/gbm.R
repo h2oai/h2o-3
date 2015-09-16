@@ -10,7 +10,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
@@ -23,7 +23,7 @@
 #' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
 #' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
-#' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
+#' @param validation_frame An \code{\link{Frame}} object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)
@@ -87,22 +87,21 @@ h2o.gbm <- function(x, y, training_frame,
   # Pass over ellipse parameters
   do_future <- FALSE
   if (length(list(...)) > 0) {
-#    browser()
     dots <- list(...) #.model.ellipses( list(...))
     if( !is.null(dots$future) ) do_future <- TRUE
   }
 
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   if (!is.null(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                   stop("argument \"validation_frame\" must be a valid Frame or key")
                  })
   }
 
@@ -110,9 +109,9 @@ h2o.gbm <- function(x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if (!missing(model_id))
@@ -154,7 +153,7 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
-  if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
-  else            .h2o.createModel(training_frame@conn, 'gbm', parms)
+
+  .h2o.modelJob('gbm', parms, do_future)
 }
 

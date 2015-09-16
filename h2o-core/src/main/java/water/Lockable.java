@@ -185,7 +185,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   }
 
   // -----------
-  // Accessers for locking state.  Minimal self-checking; primitive results.
+  // Accessors for locking state.  Minimal self-checking; primitive results
   private boolean is_locked(Key job_key) { 
     if( _lockers==null ) return false;
     for( int i=(_lockers.length==1?0:1); i<_lockers.length; i++ ) {

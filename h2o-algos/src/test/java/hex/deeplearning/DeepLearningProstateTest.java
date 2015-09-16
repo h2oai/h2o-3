@@ -8,8 +8,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Env;
 import water.rapids.Exec;
@@ -25,7 +27,7 @@ import static hex.ConfusionMatrix.buildCM;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() throws Exception { runFraction(0.000015f); }
+  @Test public void run() throws Exception { runFraction(0.00001f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -45,13 +47,22 @@ public class DeepLearningProstateTest extends TestUtil {
       NFSFileVec vnfs = NFSFileVec.make(find_test_file(dataset));
       Frame vframe = ParseDataset.parse(Key.make(), vnfs._key);
 
-      Scope.enter();
       try {
         for (int resp : responses[i]) {
           boolean classification = !(i == 0 && resp == 2);
           if (classification && !frame.vec(resp).isEnum()) {
-            Scope.track(frame.replace(resp, frame.vec(resp).toEnum())._key);
-            DKV.put(frame._key, frame);
+            DKV.remove(frame._key);
+            String respname = frame.name(resp);
+            Vec r = frame.vec(respname).toEnum();
+            frame.remove(respname).remove();
+            frame.add(respname, r);
+            DKV.put(frame);
+
+            DKV.remove(vframe._key);
+            Vec vr = vframe.vec(respname).toEnum();
+            vframe.remove(respname).remove();
+            vframe.add(respname, vr);
+            DKV.put(vframe);
           }
           for (DeepLearningParameters.Loss loss : new DeepLearningParameters.Loss[]{
                   DeepLearningParameters.Loss.Automatic,
@@ -101,8 +112,8 @@ public class DeepLearningProstateTest extends TestUtil {
                           DeepLearningParameters.Activation.TanhWithDropout,
                           DeepLearningParameters.Activation.Rectifier,
                           DeepLearningParameters.Activation.RectifierWithDropout,
-//                          DeepLearningParameters.Activation.Maxout,
-//                          DeepLearningParameters.Activation.MaxoutWithDropout,
+                          DeepLearningParameters.Activation.Maxout,
+                          DeepLearningParameters.Activation.MaxoutWithDropout,
                   }) {
                     boolean reproducible=false;
                     switch (dist) {
@@ -162,16 +173,17 @@ public class DeepLearningProstateTest extends TestUtil {
                                         if (fraction < rng.nextFloat()) continue;
 
                                         try {
-                                          Scope.enter();
                                           Log.info("**************************)");
                                           Log.info("Starting test #" + count);
                                           Log.info("**************************)");
                                           final double epochs = 7 + rng.nextDouble() + rng.nextInt(4);
-                                          final int[] hidden = new int[]{1 + rng.nextInt(4), 1 + rng.nextInt(6)};
+                                          final int[] hidden = new int[]{3 + rng.nextInt(4), 3 + rng.nextInt(6)};
                                           Frame valid = null; //no validation
                                           if (vf == 1) valid = frame; //use the same frame for validation
                                           else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
                                           long myseed = rng.nextLong();
+                                          boolean replicate2 = rng.nextBoolean();
+                                          boolean elastic_averaging2 = rng.nextBoolean();
 
                                           // build the model, with all kinds of shuffling/rebalancing/sampling
                                           DeepLearningParameters p = new DeepLearningParameters();
@@ -211,7 +223,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                             try {
                                               model1 = dl.trainModel().get();
                                               checkSums.add(model1.checksum());
-                                            } catch (Throwable t) {
+                                              testcount++;
+                                            } catch(Throwable t) {
+                                              model1 = DKV.getGet(p._model_id);
+                                              if (model1 != null)
+                                                Assert.assertTrue(model1._output._status == Job.JobState.FAILED);
                                               throw t;
                                             } finally {
                                               dl.remove();
@@ -268,23 +284,28 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._response_column = frame._names[resp];
                                             p2._overwrite_with_best_model = overwrite_with_best_model;
                                             p2._quiet_mode = true;
-                                            p2._epochs = epochs;
-                                            p2._replicate_training_data = rng.nextBoolean();
+                                            p2._epochs = 2*epochs; //final amount of training epochs
+                                            p2._replicate_training_data = replicate2;
                                             p2._seed = myseed;
 //                                              p2._loss = loss; //fall back to default
 //                                              p2._distribution = dist; //fall back to default
                                             p2._train_samples_per_iteration = train_samples_per_iteration;
                                             p2._balance_classes = classification && balance_classes;
-                                            p2._elastic_averaging = rng.nextBoolean();
+                                            p2._elastic_averaging = elastic_averaging2;
                                             DeepLearning dl = new DeepLearning(p2);
                                             try {
                                               model2 = dl.trainModel().get();
-                                            } catch (Throwable t) {
+                                            } catch(Throwable t) {
+                                              model2 = DKV.getGet(p2._model_id);
+                                              if (model2 != null)
+                                                Assert.assertTrue(model2._output._status == Job.JobState.FAILED);
                                               throw t;
                                             } finally {
                                               dl.remove();
                                             }
                                           }
+                                          Assert.assertTrue(model1._output._status == Job.JobState.DONE);
+                                          Assert.assertTrue(model2._output._status == Job.JobState.DONE);
 
                                           assert(model1._parms != p2);
                                           assert(model1.model_info().get_params() != model2.model_info().get_params());
@@ -322,9 +343,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert(model2.model_info().get_params()._l2 == 1e-3);
 
                                           if (valid == null) valid = frame;
-                                          double threshold = 0;
+                                          double threshold;
                                           if (model2._output.isClassifier()) {
                                             Frame pred = null, pred2 = null;
+                                            Vec labels, predlabels, pred2labels;
                                             try {
                                               pred = model2.score(valid);
                                               // Build a POJO, validate same results
@@ -343,7 +365,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 Assert.assertEquals(mm.cm().err(), error, 1e-15);
 
                                                 // check that the labels made with the default threshold are consistent with the CM that's reported by the AUC object
-                                                ConfusionMatrix cm = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum());
+                                                labels = valid.vec(resp);
+                                                predlabels = pred.vecs()[0];
+                                                ConfusionMatrix cm = buildCM(labels, predlabels);
                                                 Log.info("CM from pre-made labels:");
                                                 Log.info(cm.toASCII());
 //                                              Assert.assertEquals(cm.err(), error, 1e-4); //FIXME
@@ -361,7 +385,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 } finally {
                                                   if (ev != null) ev.remove_and_unlock();
                                                 }
-                                                cm = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum());
+                                                pred2labels = pred2.vecs()[0];
+                                                cm = buildCM(labels, pred2labels);
                                                 Log.info("CM from self-made labels:");
                                                 Log.info(cm.toASCII());
                                                 Assert.assertEquals(cm.err(), error, 1e-4); //AUC-given F1-optimal threshold might not reproduce AUC-given CM-error identically, but should match up to 1%
@@ -372,26 +397,28 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
                                           } //classifier
                                           else {
-                                            Frame pred = model2.score(valid);
-                                            // Build a POJO, validate same results
-                                            Assert.assertTrue(model2.testJavaScoring(frame,pred,1e-6));
-                                            pred.delete();
+                                            Frame pred = null;
+                                            try {
+                                              pred = model2.score(valid);
+                                              // Build a POJO, validate same results
+                                              Assert.assertTrue(model2.testJavaScoring(frame,pred,1e-6));
+                                            } finally {
+                                              if (pred!=null) pred.delete();
+                                            }
                                           }
                                           Log.info("Parameters combination " + count + ": PASS");
-                                          testcount++;
+                                        } catch (H2OModelBuilderIllegalArgumentException t) {
+                                          H2O.fail("should not get here");
                                         } catch (IllegalArgumentException t) {
-                                          continue; //next model
+                                          H2O.fail("should not get here");
+                                        } catch (RuntimeException t) {
+                                          Assert.assertTrue(t.getMessage().contains("unstable"));
                                         } catch (Throwable t) {
                                           t.printStackTrace();
                                           throw new RuntimeException(t);
                                         } finally {
-                                          if (model1 != null) {
-                                            model1.delete();
-                                          }
-                                          if (model2 != null) {
-                                            model2.delete();
-                                          }
-                                          Scope.exit();
+                                          if (model1 != null) model1.delete();
+                                          if (model2 != null) model2.delete();
                                         }
                                       }
                                     }
@@ -412,13 +439,15 @@ public class DeepLearningProstateTest extends TestUtil {
       } finally {
         frame.delete();
         vframe.delete();
-        Scope.exit();
       }
     }
-    Assert.assertTrue(checkSums.size() == testcount);
     Log.info("\n\n=============================================");
     Log.info("Tested " + testcount + " out of " + count + " parameter combinations.");
     Log.info("=============================================");
+    if (checkSums.size() != testcount) {
+      Log.info("Only found " + checkSums.size() + " unique checksums.");
+    }
+    Assert.assertTrue(checkSums.size() == testcount);
     }
 
     public static class Mid extends DeepLearningProstateTest {

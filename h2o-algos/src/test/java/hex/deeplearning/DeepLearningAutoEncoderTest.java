@@ -79,7 +79,12 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
           double quantile = 0.95;
-          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make());
+
+          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make(), true);
+          sb.append("Reconstruction error per feature (test): ").append(l2_frame_test.toString()).append("\n");
+          l2_frame_test.remove();
+
+          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make(), false);
           Vec l2_test = l2_frame_test.anyVec();
           sb.append("Mean reconstruction error (test): ").append(l2_test.mean()).append("\n");
           Assert.assertEquals(l2_test.mean(), mymodel.mse(), 1e-7);
@@ -90,7 +95,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           Frame reconstr = mymodel.score(train); //this creates real values in original space
           Assert.assertTrue(mymodel.testJavaScoring(train,reconstr,1e-6));
 
-          l2_frame_train = mymodel.scoreAutoEncoder(train, Key.make());
+          l2_frame_train = mymodel.scoreAutoEncoder(train, Key.make(), false);
           final Vec l2_train = l2_frame_train.anyVec();
           double mean_l2 = 0;
           for (int r = 0; r < reconstr.numRows(); ++r) {
@@ -119,7 +124,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
           l2_frame_test.remove();
-          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make());
+          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make(), false);
           l2_test = l2_frame_test.anyVec();
           double mult = 10;
           double thresh_test = mult * thresh_train;

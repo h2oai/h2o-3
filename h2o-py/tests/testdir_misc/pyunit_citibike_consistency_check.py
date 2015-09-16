@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def consistency_check(ip,port):
+def consistency_check():
 
     try:
         small = h2o.locate("h2o-py/demos/citi_bike_small.ipynb")

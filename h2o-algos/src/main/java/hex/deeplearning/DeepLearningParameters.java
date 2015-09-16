@@ -219,7 +219,7 @@ public class DeepLearningParameters extends Model.Parameters {
   public double _l1 = 0.0;
 
   /**
-   * A regularization method that constrdains the sum of the squared
+   * A regularization method that constrains the sum of the squared
    * weights. This method introduces bias into parameter estimates, but
    * frequently produces substantial gains in modeling as estimate variance is
    * reduced.
@@ -580,9 +580,6 @@ public class DeepLearningParameters extends Model.Parameters {
     if (classification && dl.hasOffsetCol())
       dl.error("_offset_column", "Offset is only supported for regression.");
 
-    if (_activation == Activation.Maxout || _activation == Activation.MaxoutWithDropout)
-      dl.error("_activation", "Maxout activation is not currently supported (implementation is in progress: PUBDEV-1928).");
-
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
       dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
@@ -827,6 +824,12 @@ public class DeepLearningParameters extends Model.Parameters {
                 + "rho, epsilon.");
         toParms._rho = 0;
         toParms._epsilon = 0;
+      }
+      if (fromParms._activation == Activation.Rectifier || fromParms._activation == Activation.RectifierWithDropout) {
+        if (fromParms._max_w2 == Float.POSITIVE_INFINITY) {
+          Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
+          toParms._max_w2 = 1e3f;
+        }
       }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {

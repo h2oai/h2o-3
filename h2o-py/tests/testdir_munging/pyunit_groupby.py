@@ -4,7 +4,7 @@ import h2o, tests
 import pandas as pd
 import numpy as np
 
-def group_by(ip,port):
+def group_by():
     # Connect to a pre-existing cluster
     
 
@@ -21,8 +21,6 @@ def group_by(ip,port):
       grouped = h2o_iris.group_by("class")
       grouped \
         .count(na=na) \
-        .first(na=na) \
-        .last( na=na) \
         .min(  na=na) \
         .max(  na=na) \
         .mean( na=na) \

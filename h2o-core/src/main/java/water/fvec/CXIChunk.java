@@ -160,7 +160,6 @@ public class CXIChunk extends Chunk {
     return _len;
   }
 
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }
   @Override public CXIChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
     _start = -1;  _cidx = -1;

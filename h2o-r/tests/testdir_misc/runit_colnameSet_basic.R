@@ -6,10 +6,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.basic.colname.assignment <- function(conn) {
+test.basic.colname.assignment <- function() {
   Log.info("Uploading iris data...")
-  hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"), "iris.hex")
-  hex_name <- h2o.uploadFile(conn, locate("smalldata/iris/iris_header.csv"), "iris_header.hex")
+  hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), "iris.hex")
+  hex_name <- h2o.uploadFile(locate("smalldata/iris/iris_header.csv"), "iris_header.hex")
 
   print(colnames(hex))
   print(colnames(hex_name))

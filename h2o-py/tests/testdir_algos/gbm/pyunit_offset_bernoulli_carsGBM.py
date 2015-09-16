@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def offset_bernoulli_cars(ip,port):
+def offset_bernoulli_cars():
     # Connect to a pre-existing cluster
     
 
@@ -10,7 +10,7 @@ def offset_bernoulli_cars(ip,port):
     cars = cars[cars["economy_20mpg"].isna() == 0]
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     offset = h2o.H2OFrame(python_obj=[[.5] for x in range(398)])
-    offset.setNames(["x1"])
+    offset.set_names(["x1"])
     cars = cars.cbind(offset)
 
     gbm = h2o.gbm(x=cars[2:8], y=cars["economy_20mpg"], distribution="bernoulli", ntrees=1, max_depth=1, min_rows=1,

@@ -5,10 +5,10 @@
 ##
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-simpleFilterTest_prostate_cat_replaced_18 <- function(conn) {
+simpleFilterTest_prostate_cat_replaced_18 <- function() {
     Log.info("A munge-task R unit test on data <prostate_cat_replaced> testing the functional unit <>> ")
     Log.info("Uploading prostate_cat_replaced")
-    hex <- h2o.importFile(conn, locate("smalldata/glm_test/prostate_cat_replaced.csv"), "rprostate_cat_replaced.hex")
+    hex <- h2o.importFile(locate("smalldata/glm_test/prostate_cat_replaced.csv"), "rprostate_cat_replaced.hex")
     Log.info("Filtering out rows by > from dataset prostate_cat_replaced and column \"GLEASON\" using value 2.72019140324")
          filterHex <- hex[hex[,c("GLEASON")] > 2.72019140324,]
         Log.info("Perform filtering with the '$' sign also")

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test <- function(conn) {
+test <- function() {
   foo <- as.h2o(iris)
   print(foo)
   frame <- scale(foo[,1:4],center=c(4,3,2,1), scale=c(1,1,1,1))

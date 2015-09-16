@@ -2,11 +2,13 @@ package water.fvec;
 
 import org.junit.*;
 
+import water.AutoBuffer;
 import water.TestUtil;
 import water.parser.ValueString;
 import java.util.Arrays;
 
 public class CStrChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
@@ -32,6 +34,17 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
+      Chunk cc2 = new CStrChunk();
+      cc2.read(cc.write(new AutoBuffer()).flipForReading());
+      Assert.assertEquals(vals.length + 1 + l, cc2._len);
+      Assert.assertTrue(cc2 instanceof CStrChunk);
+      if (l==1) Assert.assertTrue(cc2.isNA(0));
+      if (l==1) Assert.assertTrue(cc2.isNA_abs(0));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(vs, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(vs, l + i));
+      Assert.assertTrue(cc2.isNA(vals.length + l));
+      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
+
       nc = cc.inflate_impl(new NewChunk(null, 0));
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 
@@ -42,7 +55,7 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(nc.isNA(vals.length + l));
       Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
-      Chunk cc2 = nc.compress();
+      cc2 = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));

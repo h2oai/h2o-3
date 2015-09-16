@@ -1,5 +1,7 @@
 package hex;
 
+import water.util.PojoUtils;
+
 /**
  * Factory for creating model parameters builders.
  *
@@ -17,7 +19,14 @@ public interface ModelParametersBuilderFactory<MP extends Model.Parameters> {
    * @param initialParams  initial model parameters which will be modified
    * @return  this parameters builder
    */
-  public ModelParametersBuilder<MP> get(MP initialParams);
+  ModelParametersBuilder<MP> get(MP initialParams);
+
+  /**
+   * Returns mapping from input parameter specification to
+   * attribute names of <code>MP</code>.
+   * @return  naming strategy
+   */
+  PojoUtils.FieldNaming getFieldNamingStrategy();
 
   /** A generic interface to configure a given initial parameters object
    * via sequence of {@link #set} method calls.
@@ -29,10 +38,10 @@ public interface ModelParametersBuilderFactory<MP extends Model.Parameters> {
    *
    * @param <MP>  type of produced model parameters object
    */
-  public static interface ModelParametersBuilder<MP extends Model.Parameters> {
+   interface ModelParametersBuilder<MP extends Model.Parameters> {
 
-    public ModelParametersBuilder<MP> set(String name, Object value);
+    ModelParametersBuilder<MP> set(String name, Object value);
 
-    public MP build();
+    MP build();
   }
 }

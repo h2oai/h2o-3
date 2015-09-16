@@ -385,10 +385,8 @@ class H2OBinomialModelMetrics(MetricsBase):
     # TODO: add more types (i.e. cutoffs)
     if type not in ["roc"]: raise ValueError("type {0} is not supported".format(type))
     if type == "roc":
-      fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
-      tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
-      x_axis = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
-      y_axis = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
+      x_axis = self.fprs
+      y_axis = self.tprs
       plt.xlabel('False Positive Rate (FPR)')
       plt.ylabel('True Positive Rate (TPR)')
       plt.title('ROC Curve')
@@ -396,6 +394,30 @@ class H2OBinomialModelMetrics(MetricsBase):
       plt.plot(x_axis, y_axis, 'b--')
       plt.axis([0, 1, 0, 1])
       if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
+
+  @property
+  def fprs(self):
+    """
+    Return all false positive rates for all threshold values.
+
+    :return: a list of false positive rates.
+    """
+
+    fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
+    fprs = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
+    return fprs
+
+  @property
+  def tprs(self):
+    """
+    Return all true positive rates for all threshold values.
+
+    :return: a list of true positive rates.
+    """
+    tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
+    tprs = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
+    return tprs
+
 
   def confusion_matrix(self, metrics=None, thresholds=None):
     """

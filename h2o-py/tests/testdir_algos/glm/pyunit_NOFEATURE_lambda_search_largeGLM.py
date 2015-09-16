@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
-def lambda_search(ip,port):
+def lambda_search():
     
     
 

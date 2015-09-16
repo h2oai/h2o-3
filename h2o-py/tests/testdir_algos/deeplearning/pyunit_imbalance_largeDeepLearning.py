@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o, tests
 
-def imbalance(ip, port):
+def imbalance():
     
 
     print "Test checks if Deep Learning works fine with an imbalanced dataset"
@@ -19,9 +19,9 @@ def imbalance(ip, port):
                                    reproducible=True, seed=1234)
     print hh_balanced
 
-    #compare error for class 6 (difficult minority)
-    class_6_err_imbalanced = hh_imbalanced.confusion_matrix(covtype).cell_values[5][7]
-    class_6_err_balanced = hh_balanced.confusion_matrix(covtype).cell_values[5][7]
+    #compare overall logloss
+    class_6_err_imbalanced = hh_imbalanced.logloss()
+    class_6_err_balanced = hh_balanced.logloss()
 
     if class_6_err_imbalanced < class_6_err_balanced:
         print "--------------------"

@@ -221,12 +221,18 @@ apply from: "gradle/s3sync.gradle"
 task buildH2oDevDist(type: Exec) {
     group='Dist'
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    def buildTimeMillis = System.currentTimeMillis();
+    def buildTimeIso8601 = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
+    def buildTimeLocal = new Date()
     def projectVersion = bv.getProjectVersion()
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
     def java6home = System.getenv("JAVA_6_HOME")
 
+    environment['BUILD_TIME_MILLIS'] = buildTimeMillis
+    environment['BUILD_TIME_ISO8601'] = buildTimeIso8601
+    environment['BUILD_TIME_LOCAL'] = buildTimeLocal
     environment['PROJECT_VERSION'] = projectVersion
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber

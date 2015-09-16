@@ -36,13 +36,13 @@ def run_test(sys_args, test_to_run):
     h2o.log_and_echo("STARTING TEST: "+str(h2o.ou()))
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
-    num_keys = h2o.store_size()
+    # num_keys = h2o.store_size()
     try:
         if len(sys_args) > 3 and sys_args[3] == "--ipynb": utils.ipy_notebook_exec(sys_args[4],save_and_norun=False)
-        else: test_to_run(ip, port)
+        else: test_to_run()
     finally:
         h2o.remove_all()
-        if h2o.keys_leaked(num_keys): print "Leaked Keys!"
+        # if h2o.keys_leaked(num_keys): print "Leaked Keys!"
 
 # HDFS helpers
 def get_h2o_internal_hdfs_name_node():

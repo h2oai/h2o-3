@@ -19,10 +19,7 @@ import water.util.Log;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -474,6 +471,18 @@ final public class H2O {
     embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
   }
 
+
+  public static void closeAll() {
+    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
+    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
+    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
+    if(!H2O.ARGS.useUDP)
+      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
+    PersistManager PM = H2O.getPM();
+    if( PM != null ) PM.getIce().cleanUp();
+  }
+
+
   /** Notify embedding software instance H2O wants to exit.  Shuts down a single Node.
    *  @param status H2O's requested process exit value.
    */
@@ -488,7 +497,7 @@ final public class H2O {
 
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
-    UDPRebooted.T.shutdown.send(H2O.SELF);
+    (status==0 ? UDPRebooted.T.shutdown : UDPRebooted.T.error).send(H2O.SELF);
     H2O.exit(status);
   }
 
@@ -936,7 +945,7 @@ final public class H2O {
   static int getWrkThrPoolSize(int i) { return FJPS[i]==null ? -1 : FJPS[i].getPoolSize();             }
 
   // Submit to the correct priority queue
-  public static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+  public static <T extends H2OCountedCompleter> T submitTask( T task ) {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
@@ -995,7 +1004,7 @@ final public class H2O {
       } catch( Throwable ex ) {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
-        if( h2o != null ) h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        if( h2o != null ) h2o.completeExceptionally(ex);
         else ex.printStackTrace();
       } finally {
         t._priority = pp;
@@ -1007,6 +1016,7 @@ final public class H2O {
 
     /** Override to specify actual work to do */
     protected abstract void compute2();
+
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
@@ -1229,7 +1239,8 @@ final public class H2O {
     // Start the UDPReceiverThread, to listen for requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
-    new UDPReceiverThread().start();
+    if(H2O.ARGS.useUDP)
+      new UDPReceiverThread().start();
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
@@ -1612,7 +1623,6 @@ final public class H2O {
     // Initialize NPS
     {
       String flow_dir;
-      URI flow_uri = null;
 
       if (ARGS.flow_dir != null) {
         flow_dir = ARGS.flow_dir;
@@ -1624,18 +1634,12 @@ final public class H2O {
       if (flow_dir != null) {
         flow_dir = flow_dir.replace("\\", "/");
         Log.info("Flow dir: '" + flow_dir + "'");
-
-        try {
-          flow_uri = new URI(flow_dir);
-        } catch (Exception e) {
-          throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
-        }
       }
       else {
         Log.info("Flow dir is undefined; saving flows not available");
       }
 
-      NPS = new NodePersistentStorage(flow_uri);
+      NPS = new NodePersistentStorage(flow_dir);
     }
 
     // Start network services, including heartbeats

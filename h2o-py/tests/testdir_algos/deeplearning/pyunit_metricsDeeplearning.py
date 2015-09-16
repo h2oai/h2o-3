@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o, tests
 
 
-def deep_learning_metrics_test(ip, port):
+def deep_learning_metrics_test():
                    # connect to existing cluster
 
     df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))

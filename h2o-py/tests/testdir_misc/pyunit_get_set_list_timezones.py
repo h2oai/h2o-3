@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 import random
 
-def get_set_list_timezones(ip,port):
+def get_set_list_timezones():
     
     
 

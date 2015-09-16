@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def binop_gt(ip,port):
+def binop_gt():
     
     
 

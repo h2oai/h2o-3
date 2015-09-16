@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def screeplot_test(ip,port):
+def screeplot_test():
     
     
     kwargs = {}

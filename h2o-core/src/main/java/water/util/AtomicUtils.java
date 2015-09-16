@@ -47,11 +47,13 @@ public abstract class AtomicUtils {
       assert idx >= 0 && idx < ary.length;
       return _Dbase + idx * _Dscale;
     }
+    static public boolean CAS( double[] ds, int i, double old, double newd ) {
+      return _unsafe.compareAndSwapLong(ds,rawIndex(ds,i), Double.doubleToRawLongBits(old), Double.doubleToRawLongBits(newd) );
+    }
+      
     static public void add( double ds[], int i, double y ) {
-      long adr = rawIndex(ds,i);
-      double old = ds[i];
-      while( !_unsafe.compareAndSwapLong(ds,adr, Double.doubleToRawLongBits(old), Double.doubleToRawLongBits(old+y) ) )
-        old = ds[i];
+      double old;
+      while( !CAS(ds,i,old=ds[i],old+y) ) ;
     }
   }
 
@@ -65,10 +67,11 @@ public abstract class AtomicUtils {
       assert idx >= 0 && idx < ary.length;
       return _Lbase + idx * _Lscale;
     }
-    static public void incr( long ls[], int i ) {
+    static public void incr( long ls[], int i ) { add(ls,i,1); }
+    static public void add( long ls[], int i, long x ) {
       long adr = rawIndex(ls,i);
       long old = ls[i];
-      while( !_unsafe.compareAndSwapLong(ls,adr, old, old+1) )
+      while( !_unsafe.compareAndSwapLong(ls,adr, old, old+x) )
         old = ls[i];
     }
   }

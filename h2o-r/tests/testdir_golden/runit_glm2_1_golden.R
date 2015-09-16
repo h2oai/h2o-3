@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.glm2binregression.golden <- function(H2Oserver) {
+test.glm2binregression.golden <- function() {
 	
 #Import data: 
 Log.info("Importing CUSE data...") 
-cuseH2O <- h2o.uploadFile(H2Oserver, path = locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
+cuseH2O <- h2o.uploadFile(path = locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
 cuseR <- read.csv(locate("smalldata/logreg/cuseexpanded.csv"), header=T)
 
 Log.info("Test H2O treatment of FACTORS AS PREDICTORS")

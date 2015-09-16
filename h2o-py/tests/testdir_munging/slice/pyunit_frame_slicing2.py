@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def expr_slicing(ip,port):
+def expr_slicing():
     
     
 

@@ -96,7 +96,7 @@ checkSummary <- function(object, expected, tolerance = 1e-6) {
   })
 }
 
-genDummyCols <- function(df, use_all_factor_levels = TRUE) {  
+genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
   FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}

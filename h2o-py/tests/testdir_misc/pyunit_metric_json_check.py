@@ -4,7 +4,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def metric_json_check(ip, port):
+def metric_json_check():
     
 
     df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))

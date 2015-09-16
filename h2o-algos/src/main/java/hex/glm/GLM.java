@@ -952,6 +952,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    *
    */
   public final class GLMSingleLambdaTsk extends DTask<GLMSingleLambdaTsk> {
+    private static final int CD_MAX_ITERATIONS = 100;
     DataInfo _activeData;
     GLMTaskInfo _taskInfo;
     long _start_time;
@@ -1147,7 +1148,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             int iter1 = 0;
 
             // coordinate descent loop
-            while (iter1++ < 300) {
+            while (iter1++ < CD_MAX_ITERATIONS) {
               Frame fr2 = new Frame();
               fr2.add("w", w);
               fr2.add("z", z);
@@ -1324,7 +1325,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             long startTimeCd = System.currentTimeMillis();
             double [][] XX = gt._gram.getXX();
             // CD loop
-            while (iter1++ < 300) {
+            while (iter1++ < CD_MAX_ITERATIONS) {
               for(int i=0; i < _activeData._cats; ++i) {
                 int level_num = _activeData._catOffsets[i+1]-_activeData._catOffsets[i];
                 int off = _activeData._catOffsets[i];

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def offset_1897(ip, port):
+def offset_1897():
     
 
     print 'Checking binomial models for GLM with and without offset'

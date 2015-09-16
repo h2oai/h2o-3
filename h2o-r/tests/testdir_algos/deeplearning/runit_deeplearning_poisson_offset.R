@@ -3,9 +3,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 	ca = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
-	cc = as.h2o(object = ca,conn = h,destination_frame = "cc")
+	cc = as.h2o(ca,destination_frame = "cc")
 	cc$Merit = as.factor(cc$Merit)
 	cc$Class = as.factor(cc$Class)
 	myX =c("Merit","Class")
@@ -29,11 +29,11 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-407814.9, mean_deviance, 1e-6)
-	expect_equal(19965.44, mean(ph[,1]), 1e-4 )
-	expect_equal(495.4575, min(ph[,1]), 1e-4 )
-	expect_equal(207137, max(ph[,1]), 1e-4 )
-	
+	expect_equal(-408150, mean_deviance, tolerance=1e-2)
+	expect_equal(20126, mean(ph[,1]), tolerance=1e-2 )
+	expect_equal(351,    min(ph[,1]), tolerance=1e-1 )
+	expect_equal(216430, max(ph[,1]), tolerance=1e-1 )
+
 	#with offset
 	#gg = gbm(formula = Claims~factor(Class)+factor(Merit)+offset(log(Insured))  , distribution = "poisson",data = ca,
      #    n.trees = 9,interaction.depth = 2,n.minobsinnode = 1,shrinkage = 1,bag.fraction = 1,
@@ -55,10 +55,10 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-408154.8, mean_deviance, 1e-6)
-	expect_equal(20218.5, mean(ph[,1]), 1e-4 )
-	expect_equal(563.8004, min(ph[,1]), 1e-4 )
-	expect_equal(217891.6, max(ph[,1]), 1e-4 )
+	expect_equal(-408156.8, mean_deviance, tolerance=1e-2)
+	expect_equal(20208.5, mean(ph[,1]), tolerance=1e-2 )
+	expect_equal(572.55, min(ph[,1]), tolerance=1e-2 )
+	expect_equal(217891.6, max(ph[,1]), tolerance=1e-2 )
 
 	testEnd()
 }

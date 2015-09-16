@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM.bernoulli <- function(conn) {
+test.GBM.bernoulli <- function() {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
+  prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
   Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
   prostate.hex$RACE <- as.factor(prostate.hex$RACE)

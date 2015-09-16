@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.gbm.regr.accessors <- function(conn) {
-  cars.hex <- h2o.uploadFile(conn, locate("smalldata/junit/cars.csv"))
+test.gbm.regr.accessors <- function() {
+  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")

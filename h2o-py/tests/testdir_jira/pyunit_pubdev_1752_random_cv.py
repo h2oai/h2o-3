@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def pubdev_random_cv(ip,port):
+def pubdev_random_cv():
 
     cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     response_col = "economy"

@@ -306,7 +306,8 @@ public class GBMTest extends TestUtil {
       Frame res = gbm.score(v);
 
       int[] ps = new int[(int)v.numRows()];
-      for( int i=0; i<ps.length; i++ ) ps[i] = (int)res.vecs()[0].at8(i);
+      Vec.Reader vr = res.vecs()[0].new Reader();
+      for( int i=0; i<ps.length; i++ ) ps[i] = (int)vr.at8(i);
       // Expected predictions are X,X,Y,Y,X,Y,Z,X,Y
       // Never predicts W, the extra class in the test set.
       // Badly predicts Z because 1 tree does not pick up that feature#2 can also
@@ -353,7 +354,7 @@ public class GBMTest extends TestUtil {
       parms._distribution = Distribution.Family.multinomial;
       gbm = new GBM(parms);
       gbm.trainModel();
-      try { Thread.sleep(50); } catch( Exception ignore ) { }
+      try { Thread.sleep(100); } catch( Exception ignore ) { }
 
       try {
         Log.info("Trying illegal frame delete.");
@@ -631,7 +632,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21926955145068244, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -690,7 +691,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21926955145068244, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1327,9 +1328,9 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
-      assertEquals(0.7262076707473135, mm.auc()._auc, 1e-4); // 1 node
+      assertEquals(0.7264331810371721, mm.auc()._auc, 1e-4); // 1 node
       assertEquals(0.22686348162897116, mm.mse(), 1e-4);
-      assertEquals(0.09026116418495023, mm.r2(), 1e-4);
+      assertEquals(0.09039195554728074, mm.r2(), 1e-4);
       assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
 
       job.remove();

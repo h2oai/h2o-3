@@ -1,12 +1,12 @@
 package water.util;
 
+import water.MemoryManager;
+
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
-
-import water.MemoryManager;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -74,6 +74,23 @@ public class ArrayUtils {
       sum += x[i]*x[i];
     return sum;
   }
+  public static double l2norm2(double[] x, double[] y) {  // Computes \sum_{i=1}^n (x_i - y_i)^2
+    assert x.length == y.length;
+    double sse = 0;
+    for(int i = 0; i < x.length; i++) {
+      double diff = x[i] - y[i];
+      sse += diff * diff;
+    }
+    return sse;
+  }
+  public static double l2norm2(double[][] x, double[][] y) {
+    assert x.length == y.length && x[0].length == y[0].length;
+    double sse = 0;
+    for(int i = 0; i < x.length; i++)
+      sse += l2norm2(x[i], y[i]);
+    return sse;
+  }
+
   public static double l1norm(double [] x){ return l1norm(x, false); }
   public static double l1norm(double [] x, boolean skipLast){
     double sum = 0;
@@ -95,6 +112,8 @@ public class ArrayUtils {
   public static double l2norm(double [] x, boolean skipLast){
     return Math.sqrt(l2norm2(x, skipLast));
   }
+  public static double l2norm(double[] x, double[] y) { return Math.sqrt(l2norm2(x,y)); }
+  public static double l2norm(double[][] x, double[][] y) { return Math.sqrt(l2norm2(x,y)); }
 
   // Add arrays, element-by-element
   public static byte[] add(byte[] a, byte[] b) {
@@ -217,6 +236,11 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+  public static double[][] mult(double[][] ary, double n) {
+    if(ary == null) return null;
+    for (int i=0; i<ary.length; i++) mult(ary[i], n);
+    return ary;
   }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
@@ -363,7 +387,22 @@ public class ArrayUtils {
   }
   public static String[] toString(Object[] ary) {
     String[] result = new String[ary.length];
-    for (int i=0; i<ary.length; i++) result[i] = String.valueOf(ary[i]);
+    for (int i=0; i<ary.length; i++) {
+      Object o = ary[i];
+      if (o != null && o.getClass().isArray()) {
+        Class klazz = ary[i].getClass();
+        result[i] = byte[].class.equals(klazz) ? Arrays.toString((byte[]) o) :
+                    short[].class.equals(klazz) ? Arrays.toString((short[]) o) :
+                    int[].class.equals(klazz) ? Arrays.toString((int[]) o) :
+                    long[].class.equals(klazz) ? Arrays.toString((long[]) o) :
+                    boolean[].class.equals(klazz) ? Arrays.toString((boolean[]) o) :
+                    float[].class.equals(klazz) ? Arrays.toString((float[]) o) :
+                    double[].class.equals(klazz) ? Arrays.toString((double[]) o) : Arrays.toString((Object[]) o);
+
+      } else {
+        result[i] = String.valueOf(o);
+      }
+    }
     return result;
   }
 
@@ -578,6 +617,11 @@ public class ArrayUtils {
     a[i] = a[change];
     a[change] = helper;
   }
+  private static void swap(int[] a, int i, int change) {
+    int helper = a[i];
+    a[i] = a[change];
+    a[change] = helper;
+  }
 
   /**
    * Extract a shuffled array of integers
@@ -604,12 +648,10 @@ public class ArrayUtils {
     return result;
   }
 
-  public static void shuffleArray(long[] a, long seed) {
+  public static void shuffleArray(int[] a, Random rng) {
     int n = a.length;
-    Random random = getRNG(seed);
-    random.nextInt();
     for (int i = 0; i < n; i++) {
-      int change = i + random.nextInt(n - i);
+      int change = i + rng.nextInt(n - i);
       swap(a, i, change);
     }
   }
@@ -921,7 +963,7 @@ public class ArrayUtils {
    * @param values values
    */
   public static void sort(final int[] idxs, final double[] values) {
-    sort(idxs, values, 50);
+    sort(idxs, values, 500);
   }
   public static void sort(final int[] idxs, final double[] values, int cutoff) {
     if (idxs.length < cutoff) {

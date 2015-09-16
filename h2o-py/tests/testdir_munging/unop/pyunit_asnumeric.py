@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 
-def asnumeric(ip,port):
+def asnumeric():
     
 
     h2oframe =  h2o.import_file(path=h2o.locate("smalldata/junit/cars.csv"))

@@ -149,9 +149,9 @@ randomParams <- function(family, train, test, x, y) {
   print("")
 }
 
-test.glm.rand_attk_forloop <- function(conn) {
+test.glm.rand_attk_forloop <- function() {
   Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv"))
+  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -161,7 +161,7 @@ test.glm.rand_attk_forloop <- function(conn) {
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  cars.hex <- h2o.uploadFile(conn, locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")

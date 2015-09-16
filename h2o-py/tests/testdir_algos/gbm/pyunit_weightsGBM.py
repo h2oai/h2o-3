@@ -4,7 +4,7 @@ import h2o, tests
 import random
 import copy
 
-def weights_check(ip,port):
+def weights_check():
     
     
 
@@ -74,7 +74,7 @@ def weights_check(ip,port):
     weight = random.randint(1,10)
     uniform_weights = [[weight] for r in range(406)]
     h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)
-    h2o_uniform_weights.setNames(["weights"])
+    h2o_uniform_weights.set_names(["weights"])
     h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
 
     print "Checking that using uniform weights is equivalent to no weights:"
@@ -84,7 +84,7 @@ def weights_check(ip,port):
     # zero weights same as removed observations
     zero_weights = [[0] if random.randint(0,1) else [1] for r in range(406)]
     h2o_zero_weights = h2o.H2OFrame(python_obj=zero_weights)
-    h2o_zero_weights.setNames(["weights"])
+    h2o_zero_weights.set_names(["weights"])
     h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
     h2o_data_zeros_removed = h2o_cars_data[h2o_zero_weights["weights"] == 1]
 
@@ -95,7 +95,7 @@ def weights_check(ip,port):
     # doubled weights same as doubled observations
     doubled_weights = [[1] if random.randint(0,1) else [2] for r in range(406)]
     h2o_doubled_weights = h2o.H2OFrame(python_obj=doubled_weights)
-    h2o_doubled_weights.setNames(["weights"])
+    h2o_doubled_weights.set_names(["weights"])
     h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)
 
     doubled_data = h2o.as_list(h2o_cars_data, use_pandas=False)
@@ -103,7 +103,7 @@ def weights_check(ip,port):
     for idx, w in enumerate(doubled_weights):
         if w[0] == 2: doubled_data.append(doubled_data[idx])
     h2o_data_doubled = h2o.H2OFrame(python_obj=doubled_data)
-    h2o_data_doubled.setNames(colnames)
+    h2o_data_doubled.set_names(colnames)
 
     h2o_data_doubled["economy_20mpg"] = h2o_data_doubled["economy_20mpg"].asfactor()
     h2o_data_doubled["cylinders"] = h2o_data_doubled["cylinders"].asfactor()

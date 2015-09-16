@@ -34,7 +34,7 @@ public class GLMGridSearchHandler extends GridSearchHandler<GLMGridSearchHandler
   public static class GLMGrid extends Grid<GLMModel.GLMParameters> {
 
     public GLMGrid() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
   }
 }

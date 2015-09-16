@@ -23,21 +23,22 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   @Override public void reduce( FileIntegrityChecker o ) { ArrayUtils.add(_ok,o._ok); }
   @Override public byte priority() { return H2O.GUI_PRIORITY; }
 
-  private void addFolder(File folder, ArrayList<File> filesInProgress ) {
-    if( !folder.canRead() ) return;
-    File[] files = folder.listFiles();
-    if( files != null ) {
+  private void addFolder(File path, ArrayList<File> filesInProgress ) {
+    if( !path.canRead() ) return;
+    File[] files = path.listFiles();
+    if( files != null ) { //path is a dir, and these are the files
       for( File f : files ) {
         if( !f.canRead() ) continue; // Ignore unreadable files
-        if( f.isHidden() && !folder.isHidden() )
+        if( f.length() == 0 ) continue; // Ignore 0-byte files
+        if( f.isHidden() && !path.isHidden() )
           continue;             // Do not dive into hidden dirs unless asked
         if (f.isDirectory())
           addFolder(f,filesInProgress);
         else
           filesInProgress.add(f);
       }
-    } else {
-      filesInProgress.add(folder);
+    } else if (path.length() > 0) { //path is a non-zero byte file
+      filesInProgress.add(path);
     }
   }
 

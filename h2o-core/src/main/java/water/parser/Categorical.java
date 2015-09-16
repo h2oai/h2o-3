@@ -3,9 +3,10 @@ package water.parser;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.util.Log;
 import water.nbhm.NonBlockingHashMap;
+import water.util.PrettyPrint;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Class for tracking categorical (enum) columns.
@@ -59,6 +60,31 @@ public final class Categorical extends Iced {
 
   ValueString [] getColumnDomain() {
     return  _map.keySet().toArray(new ValueString[_map.size()]);
+  }
+
+  public static final int MAX_EXAMPLES = 10;
+  public void convertToUTF8(int col){
+    int hexConvCnt = 0;
+    ValueString[] vs = _map.keySet().toArray(new ValueString[_map.size()]);
+    StringBuilder hexSB = new StringBuilder();
+    for (int i =0; i < vs.length; i++) {
+      String s = vs[i].toString();
+      if (!vs[i].equals(s)) {
+        if (s.contains("\uFFFD")) { // make weird chars into hex
+          s = vs[i].bytesToString();
+          if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");
+          if (hexConvCnt == MAX_EXAMPLES) hexSB.append("...");
+        }
+        int val = _map.get(vs[i]);
+        _map.remove(vs[i]);
+        vs[i] = new ValueString(s);
+        _map.put(vs[i], val);
+      }
+    }
+    if (hexConvCnt > 0) Log.info("Found categoricals with non-UTF-8 characters in the "
+        + PrettyPrint.withOrdinalIndicator(col)
+        + " column. Converting unrecognized characters into hex:  "
+        + hexSB.toString());
   }
 
   // Since this is a *concurrent* hashtable, writing it whilst its being

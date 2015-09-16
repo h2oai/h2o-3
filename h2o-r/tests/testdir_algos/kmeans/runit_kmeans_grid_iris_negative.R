@@ -16,7 +16,9 @@ check.kmeans.grid.iris.negative <- function(conn) {
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   Log.info("Constructing the grid of kmeans models with some invalid kmeans parameters...")
-  iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space)
+  # Skip client check which means that grid will contain failed models.
+  iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check=FALSE)
+  expect_error(h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check=TRUE))
   print(iris_kmeans_grid)
 
   Log.info("Performing various checks of the constructed grid...")
@@ -38,7 +40,7 @@ check.kmeans.grid.iris.negative <- function(conn) {
   grid_space$init <- iris[c(2,70,148),1:4]
 
   Log.info(paste0("Constructing the grid of kmeans models with non-gridable parameter user_points"))
-  expect_error(iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space))
+  expect_error(iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check=TRUE))
 
   testEnd()
 }

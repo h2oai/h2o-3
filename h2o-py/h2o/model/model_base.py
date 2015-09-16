@@ -69,7 +69,7 @@ class ModelBase(object):
     :param test_data: Data to be predicted on.
     :return: A new H2OFrame filled with predictions.
     """
-    if not test_data: raise ValueError("Must specify test data")
+    if not isinstance(test_data, H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
     test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id)
     prediction_frame_id = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
@@ -463,3 +463,15 @@ class ModelBase(object):
   @staticmethod
   def _has(dictionary, key):
     return key in dictionary and dictionary[key] is not None
+
+  @staticmethod
+  def _check_targets(y_actual, y_predicted):
+    """
+    Check that y_actual and y_predicted have the same length.
+
+    :param y_actual: An H2OFrame
+    :param y_predicted: An H2OFrame
+    :return: None
+    """
+    if len(y_actual) != len(y_predicted):
+      raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))

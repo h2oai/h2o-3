@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.pca.grid.quasar.negative <- function(conn) {
-  quasar <- h2o.importFile(conn, locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
+check.pca.grid.quasar.negative <- function() {
+  quasar <- h2o.importFile(locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
   quasar <- quasar[,-1]
 
   ## Invalid pca parameters
@@ -17,7 +17,8 @@ check.pca.grid.quasar.negative <- function(conn) {
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
   Log.info("Constructing the grid of pca models with some invalid pca parameters...")
-  quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space)
+  quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=FALSE)
+  expect_error(h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=TRUE))
   print(quasar_pca_grid)
 
   Log.info("Performing various checks of the constructed grid...")
@@ -42,7 +43,7 @@ check.pca.grid.quasar.negative <- function(conn) {
 
   Log.info(paste0("Constructing the grid of pca models with non-gridable parameter: ", non_gridable_parameter ,
                   " (1:pca_method, 2:seed, 3:use_all_factor_levels). Expecting failure..."))
-  expect_error(quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space))
+  expect_error(quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=TRUE))
 
   testEnd()
 }

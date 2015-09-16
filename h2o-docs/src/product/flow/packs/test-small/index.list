@@ -112,7 +112,6 @@ dl_mllib_bench_bigcross_centers_5.flow
 dl_mllib_bench_bigcross_centers_10.flow
 dl_mllib_bench_bigcross_centers_15.flow
 dl_mllib_bench_bigcross_centers_20.flow
-dl_mllib_bench_bigcross_wcsse.flow
 dl_pca_test_AustraliaCoast.flow
 dl_pca_test_decathlon.flow
 dl_pca_test_fgl_tr.flow
@@ -126,9 +125,7 @@ dl_synthetic_perfect_separation_balanced.flow
 dl_synthetic_perfect_separation_unbalanced.flow
 dl_synthetic_syn_binary_100x3000-svm.flow
 dl_testng_airquality_train1.flow
-gbm_mllib_bench_bigcross_centers_5.flow
 gbm_mllib_bench_bigcross_centers_10.flow
-gbm_mllib_bench_bigcross_centers_20.flow
 gbm_pca_test_USArrests_PCAscore.flow
 gbm_pca_test_USArrests.flow
 gbm_poisson_Goalies.flow
@@ -190,7 +187,6 @@ dl_junit_ven-11.flow
 dl_junit_weather.flow
 dl_junit_weights_all_ones_twos.flow
 dl_junit_weights_all_ones.flow
-dl_junit_weights_all_tiny.flow
 dl_junit_weights.flow
 drf_junit_40k_categoricals.flow
 drf_junit_arff_folder1_iris1.flow
@@ -207,7 +203,6 @@ drf_junit_cars.flow
 drf_junit_two_spiral.flow
 drf_junit_weather.flow
 drf_junit_weights_all_ones_twos.flow
-drf_junit_weights_all_tiny.flow
 gbm_junit_40k_categoricals.flow
 gbm_junit_arff_iris_spacesep.flow
 gbm_junit_arff_iris_weirdsep.flow
@@ -221,7 +216,6 @@ gbm_junit_two_spiral.flow
 gbm_junit_ven-11.flow
 gbm_junit_weather.flow
 gbm_junit_weights_all_ones_twos.flow
-gbm_junit_weights_all_tiny.flow
 gbm_junit_weights.flow
 glm_junit_arff_iris_spacesep.flow
 glm_junit_arff_iris_weirdsep.flow
@@ -231,9 +225,7 @@ glm_junit_benign.flow
 glm_junit_cars_20mpg.flow
 glm_junit_cars.flow
 glm_junit_two_spiral.flow
-glm_junit_ven-11.flow
 glm_junit_weather.flow
 glm_junit_weights_all_ones_twos.flow
 glm_junit_weights_all_ones.flow
-glm_junit_weights_all_tiny.flow
 glm_junit_weights.flow

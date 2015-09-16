@@ -5,7 +5,7 @@ source('../../h2o-runit.R')
 
 test <- function(h) {
     Log.info("Importing lung.csv data...\n")
-    lung.hex <- h2o.uploadFile(conn, locate("smalldata/glm_test/lung.csv"))
+    lung.hex <- h2o.uploadFile(locate("smalldata/glm_test/lung.csv"))
     lung.hex$log_pop <- log(lung.hex$pop)
 
     lung.r <- read.csv(locate("smalldata/glm_test/lung.csv"), header = TRUE)

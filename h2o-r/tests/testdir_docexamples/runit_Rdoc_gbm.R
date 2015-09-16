@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.RdocGBM.golden <- function(H2Oserver) {
+test.RdocGBM.golden <- function() {
 
 
 ausPath <- system.file("extdata", "australia.csv", package="h2o")
-australia.hex <- h2o.uploadFile(H2Oserver, path = ausPath)
+australia.hex <- h2o.uploadFile(path = ausPath)
 independent<- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst", "maxsoilmoist", "Max_czcs")
 dependent<- "runoffnew"
 
