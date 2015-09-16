@@ -17,12 +17,12 @@ library(h2o)
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
 hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-iris.hex <- h2o.importFile(conn, url)
+iris.hex <- h2o.importFile(url, header = T)
 print(summary(iris.hex))
 
 myX = 1:4
