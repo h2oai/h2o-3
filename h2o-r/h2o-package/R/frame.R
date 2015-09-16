@@ -1157,36 +1157,15 @@ str.Frame <- function(object, ..., cols=FALSE) {
     invisible(NextMethod("str", ...))
   else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
 
-  nc <- ncol(object)
-  nr <- nrow(object)
-  cc <- colnames(object)
-  width <- max(nchar(cc))
-  df <- head(.fetch.data(object,10L),10L)
-
-  # header statement
-  cat("\nFrame '", object:id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-  l <- list()
-  for( i in 1:nc ) {
-    cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
-    first.10.rows <- df[,i]
-    if( is.factor(first.10.rows) ) {
-      lvls <- levels(first.10.rows)
-      nl <- length(lvls)
-      lvls.print <- lvls[1L:min(nl,2L)]
-      cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
-      cat(paste(match(first.10.rows, lvls), collapse=" "), " ...\n", sep="")
-    } else
-      cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
-
   if( cols ) {
-    nc <- ncol(x)
-    nr <- nrow(x)
-    cc <- colnames(x)
-    width <- max(nchar(cc))
-    df <- head(.fetch.data(x,10L),10L)
+    nc <- ncol(object)
+    nr <- nrow(object)
+    cc <- colnames(object)
+    width <- maobject(nchar(cc))
+    df <- head(.fetch.data(object,10L),10L)
 
     # header statement
-    cat("\nFrame '", x:id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+    cat("\nFrame '", object:id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
     l <- list()
     for( i in 1:nc ) {
       cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
