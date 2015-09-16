@@ -275,12 +275,13 @@ public class FunctionUtils {
 	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase,
 			HashMap<String, String> rawInput) {
 
+		boolean isTestSuccessfully = false;
 		Frame trainFrame = null;
 		Frame score = null;
+		ModelMetrics modelMetrics = null;
 
 		DRF drfJob = null;
 		DRFModel drfModel = null;
-		ModelMetrics modelMetrics = null;
 
 		Key modelKey = Key.make("model");
 		GLM glmJob = null;
@@ -341,24 +342,22 @@ public class FunctionUtils {
 					break;
 			}
 
-			if (isNegativeTestcase) {
-				Assert.fail("It is negative testcase");
-			}
-			else {
+			isTestSuccessfully = true;
+
+			if (!isNegativeTestcase) {
 				System.out.println("Testcase passed.");
+
+				//write the result to log and database
 				System.out.println("MSE: " + modelMetrics._MSE);
+				MySQL.save("MSE", String.valueOf(modelMetrics._MSE), rawInput);
+
 				if (modelMetrics.auc() != null) {
 					System.out.println("AUC: " + modelMetrics.auc()._auc);
+					MySQL.save("AUC", String.valueOf(modelMetrics.auc()._auc), rawInput);
 				}
 				else {
 					System.out.println("AUC: NA");
 				}
-			}
-
-			// write into db
-			MySQL.save("MSE", String.valueOf(modelMetrics._MSE), rawInput);
-			if (modelMetrics.auc() != null) {
-				MySQL.save("AUC", String.valueOf(modelMetrics.auc()._auc), rawInput);
 			}
 		}
 		catch (Exception ex) {
@@ -407,6 +406,11 @@ public class FunctionUtils {
 				score.delete();
 			}
 			Scope.exit();
+		}
+
+		if (isNegativeTestcase && isTestSuccessfully) {
+			System.out.println("It is negative testcase");
+			Assert.fail("It is negative testcase");
 		}
 	}
 
