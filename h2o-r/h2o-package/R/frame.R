@@ -326,8 +326,8 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex = h2o.importFile(path = irisPath)
-#' #iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
-#' #head(iris.split[[1]])
+#' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
+#' head(iris.split[[1]])
 #' summary(iris.split[[1]])
 #' }
 #' @export
@@ -1356,7 +1356,6 @@ quantile.Frame <- h2o.quantile
 #' summary(prostate.hex)
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
-#' @usage \\method{summary}{Frame}(object, factors, ...)
 #' @export
 h2o.summary <- function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
@@ -1477,6 +1476,7 @@ h2o.summary <- function(object, factors=6L, ...) {
 }
 
 #' @rdname h2o.summary
+#' @usage \\method{summary}{Frame}(object, factors, ...)
 #' @export
 summary.Frame <- h2o.summary
 
@@ -1840,7 +1840,7 @@ h2o.removeVecs <- function(data, cols) {
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
 #' #australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
-#' summary(australia.hex)
+#' #summary(australia.hex)
 #' @export
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 

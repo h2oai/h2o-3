@@ -29,7 +29,7 @@
 #' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex,
 #'                  hyper_params = list(ntrees = c(1,2,3)))
 #' # Get grid summary
-#' summary(grid)
+#' #summary(grid)
 #' # Fetch grid models
 #' model_ids <- grid@@model_ids
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
@@ -113,7 +113,7 @@ h2o.grid <- function(algorithm,
 #' #         training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
 #' #grid <- h2o.getGrid("gbm_grid")
 #' ## Get grid summary
-#' summary(grid)
+#' #summary(grid)
 #' ## Fetch grid models
 #' #model_ids <- grid@@model_ids
 #' #models <- lapply(model_ids, function(id) { h2o.getModel(id)})
