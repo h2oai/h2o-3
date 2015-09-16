@@ -1007,10 +1007,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
 
     private void doUpdateCD(double [] grads, double [][] xx, double [] betaold, double [] betanew , int variable) {
-
       double diff = betaold[variable] - betanew[variable];
       double [] ary = xx[variable];
-
       for(int i = 0; i < grads.length; i++) {
         if (i != variable) {// variable is index of most recently updated
           grads[i] += diff * ary[i];
@@ -1313,6 +1311,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                objVal =  objVal(gt._likelihood, gt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
             wsum = gt.wsum;
             wsumu = gt.wsumu;
+            double wsumInv = 1.0/wsum;
+            double wsumuInv = 1.0/wsumu;
+
             int iter1 = 0;
             double [] grads = Arrays.copyOfRange(gt._xy,0,gt._xy.length );//-1 // initialize to inner ps with observations
             for(int i = 0; i < grads.length; ++i) {
@@ -1331,8 +1332,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 int off = _activeData._catOffsets[i];
                 for(int j=off; j < off + level_num; ++j) { // ST multiple ones at the same time.
                   if (gt._gram.get(j, j) != 0)
-                    beta[j] = ADMM.shrinkage(grads[j] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
-                            / (gt._gram.get(j, j) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                    beta[j] = ADMM.shrinkage(grads[j] * wsumuInv, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                            / (gt._gram.get(j, j) * wsumuInv + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                   else
                     beta[j] = 0;
                   if( beta[j] != 0 )
@@ -1342,8 +1343,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               int off = _activeData.numStart();
               for (int i = off; i < _activeData._nums + off; ++i) {
                 if(gt._gram.get(i,i)!= 0)
-                   beta[i] = ADMM.shrinkage(grads[i] / wsumu, _parms._lambda[_lambdaId] * _parms._alpha[0])
-                          / (gt._gram.get(i,i) / wsumu + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
+                   beta[i] = ADMM.shrinkage(grads[i] * wsumuInv, _parms._lambda[_lambdaId] * _parms._alpha[0])
+                          / (gt._gram.get(i,i) * wsumuInv + _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]));
                 else
                   beta[i]=0;
 
@@ -1352,7 +1353,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               }
 
               if(_parms._intercept) {
-                beta[beta.length - 1] = grads[grads.length - 1] / wsum;
+                beta[beta.length - 1] = grads[grads.length - 1] * wsumInv;
                 if (beta[beta.length - 1] != 0) // update all the grad entries
                   doUpdateCD(grads, XX, betaold, beta, beta.length - 1);
               }
