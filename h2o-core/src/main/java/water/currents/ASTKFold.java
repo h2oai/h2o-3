@@ -10,6 +10,8 @@ import java.util.Random;
 import static water.util.RandomUtils.getRNG;
 
 public class ASTKFold extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "nfolds", "seed"}; }
   @Override public int nargs() { return 1+3; } // (kfold_column x nfolds seed)
   @Override String str() { return "kfold_column"; }
 
@@ -98,7 +100,9 @@ public class ASTKFold extends ASTPrim {
 }
 
 class ASTModuloKFold extends ASTPrim {
-  @Override public int nargs() { return 1+3; } // (modulo_kfold_column x nfolds)
+  @Override
+  public String[] args() { return new String[]{"ary", "nfolds"}; }
+  @Override public int nargs() { return 1+2; } // (modulo_kfold_column x nfolds)
   @Override String str() { return "modulo_kfold_column"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
@@ -108,6 +112,8 @@ class ASTModuloKFold extends ASTPrim {
 }
 
 class ASTStratifiedKFold extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "nfolds", "seed"}; }
   @Override public int nargs() { return 1+3; } // (stratified_kfold_column x nfolds seed)
   @Override String str() { return "stratified_kfold_column"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {

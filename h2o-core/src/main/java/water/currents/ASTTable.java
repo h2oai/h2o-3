@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /** Variance between columns of a frame */
 class ASTTable extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"X", "Y"}; }
   @Override int nargs() { return -1; } // (table X)  or (table X Y)
   @Override public String str() { return "table"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -258,6 +260,8 @@ class ASTTable extends ASTPrim {
 
 
 class ASTUnique extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1 + 1; }  // (unique col)
 
   @Override String str() { return "unique"; }

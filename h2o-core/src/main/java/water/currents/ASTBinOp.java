@@ -15,6 +15,8 @@ import java.util.Arrays;
  * Subclasses auto-widen between scalars and Frames, and have exactly two arguments
  */
 abstract class ASTBinOp extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"leftArg", "rightArg"}; }
   @Override int nargs() { return 1+2; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
@@ -353,7 +355,9 @@ class ASTLOr extends ASTBinOp {
 // error if one side is typed as a scalar and the other as a Frame.
 //
 class ASTIfElse extends ASTPrim {
-  @Override int nargs() { return 1+3; } // test true false
+  @Override
+  public String[] args() { return new String[]{"test","true","false"}; }
+  @Override int nargs() { return 1+3; } // (ifelse test true false)
   String str() { return "ifelse"; } 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
@@ -424,6 +428,8 @@ class ASTIfElse extends ASTPrim {
 // Center and scale a frame.  Can be passed in the centers and scales (one per
 // column in an number list), or a TRUE/FALSE.
 class ASTScale extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "center", "scale"}; }
   @Override int nargs() { return 1+3; } // (scale x center scale)
   @Override String str() { return "scale"; } 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

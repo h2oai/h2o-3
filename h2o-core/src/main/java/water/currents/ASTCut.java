@@ -6,6 +6,8 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 
 public class ASTCut extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "breaks", "labels", "include_lowest", "right", "digits"}; }
   @Override String str() { return "cut"; }
   @Override int nargs() { return 1+6; } // (cut x breaks labels include_lowest right digits)
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

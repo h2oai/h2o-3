@@ -1,8 +1,14 @@
 package water.currents;
 
+import water.Futures;
+import water.Key;
+import water.KeySnapshot;
+import water.fvec.AppendableVec;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+
 import java.util.ArrayList;
-import water.fvec.*;
-import water.*;
 
 /**
 * R 'ls' command.
@@ -11,6 +17,8 @@ import water.*;
 * JSON response is not configured at all.
 */
 class ASTLs extends ASTPrim {
+  @Override
+  public String[] args() { return null; }
   @Override int nargs() { return 1; }
   @Override String str() { return "ls" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

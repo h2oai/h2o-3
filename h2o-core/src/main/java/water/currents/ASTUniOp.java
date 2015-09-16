@@ -16,6 +16,7 @@ import static water.util.RandomUtils.getRNG;
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument
  */
 abstract class ASTUniOp extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
@@ -80,6 +81,7 @@ class ASTTriGamma  extends ASTUniOp { String str(){ return "trigamma";  } double
 // needs a "is.NA" check instead of just using the Double.isNaN hack... because
 // it works on UUID and String columns.
 class ASTIsNA  extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override String str() { return "is.na"; } 
   @Override int nargs() { return 1+1; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -106,6 +108,8 @@ class ASTIsNA  extends ASTPrim {
 }
 
 class ASTRunif extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "seed"}; }
   @Override int nargs() { return 1+2; } // (h2o.runif frame seed)
   @Override String str() { return "h2o.runif"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -117,6 +121,8 @@ class ASTRunif extends ASTPrim {
 }
 
 class ASTStratifiedSplit extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "test_frac", "seed"}; }
   @Override int nargs() { return 1+3; } // (h2o.random_stratified_split y test_frac seed)
   @Override String str() { return "h2o.random_stratified_split"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -152,6 +158,8 @@ class ASTStratifiedSplit extends ASTPrim {
 }
 
 class ASTNcol extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override String str() { return "ncol"; }
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
@@ -161,6 +169,8 @@ class ASTNcol extends ASTPrim {
 }
 
 class ASTNrow extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override String str() { return "nrow"; }
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
@@ -170,6 +180,8 @@ class ASTNrow extends ASTPrim {
 }
 
 class ASTNLevels extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (nlevels x)
   @Override String str() { return "nlevels"; }
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[] ) {
@@ -184,6 +196,8 @@ class ASTNLevels extends ASTPrim {
 }
 
 class ASTLevels extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (levels x)
   @Override String str() { return "levels"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
@@ -217,6 +231,8 @@ class ASTLevels extends ASTPrim {
 }
 
 class ASTSetLevel extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "level"}; }
   @Override int nargs() { return 1+2; } // (setLevel x level)
   @Override String str() { return "setLevel"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
@@ -245,6 +261,8 @@ class ASTSetLevel extends ASTPrim {
 
 
 class ASTSetDomain extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "newDomains"}; }
   @Override int nargs() { return 1+2;} // (setDomain x [list of strings])
   @Override String str() { return "setDomain"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
@@ -279,6 +297,8 @@ class ASTSetDomain extends ASTPrim {
 }
 
 class ASTTranspose extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (t X)
   @Override String str() { return "t"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
@@ -288,6 +308,8 @@ class ASTTranspose extends ASTPrim {
 }
 
 class ASTMMult extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "ary2"}; }
   @Override int nargs() { return 1+2; } // (x X1 X2)
   @Override String str() { return "x"; }
 
@@ -300,6 +322,8 @@ class ASTMMult extends ASTPrim {
 
 
 class ASTMatch extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
   @Override int nargs() { return 1+4; } // (match fr table nomatch incomps)
   @Override String str() { return "match"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
@@ -353,6 +377,8 @@ class ASTMatch extends ASTPrim {
 }
 
 class ASTWhich extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (h2o.which col)
   @Override String str() { return "h2o.which"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
@@ -385,6 +411,7 @@ class ASTWhich extends ASTPrim {
 }
 
 class ASTPop extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "colidx"}; }
   @Override int nargs() { return 1+2; } // (pop fr colidx)
   @Override String str() { return "pop"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {

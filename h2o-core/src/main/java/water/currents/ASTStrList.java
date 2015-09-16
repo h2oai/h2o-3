@@ -11,7 +11,7 @@ import java.util.Arrays;
 /** A collection of Strings only.  This is a syntatic form only, and never
  *  executes and never gets on the execution stack.
  */
-class ASTStrList extends AST {
+public class ASTStrList extends AST {
   String[] _strs;
   ASTStrList( Exec e ) {
     ArrayList<String> strs  = new ArrayList<>();
@@ -28,12 +28,14 @@ class ASTStrList extends AST {
   @Override int nargs() { return -1; }
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack
-  @Override Val exec( Env env ) { throw H2O.fail(); }
+  @Override public Val exec(Env env) { throw H2O.fail(); }
   @Override public String str() { return Arrays.toString(_strs); }
 }
 
 /** Assign column names */
 class ASTColNames extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "cols", "names"}; }
   @Override int nargs() { return 1+3; } // (colnames frame [#cols] ["names"])
   @Override String str() { return "colnames="; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -62,6 +64,8 @@ class ASTColNames extends ASTPrim {
 
 /** Convert to a factor/categorical */
 class ASTAsFactor extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.factor col)
   @Override String str() { return "as.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -75,6 +79,8 @@ class ASTAsFactor extends ASTPrim {
 
 /** Convert to StringVec */
 class ASTCharacter extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.character col)
   @Override String str() { return "as.character"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -89,6 +95,8 @@ class ASTCharacter extends ASTPrim {
 
 /** Is a factor/categorical? */
 class ASTIsFactor extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.factor col)
   @Override String str() { return "is.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -105,6 +113,8 @@ class ASTIsFactor extends ASTPrim {
 
 /** Is a numeric? */
 class ASTIsNumeric extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.numeric col)
   @Override String str() { return "is.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -121,6 +131,8 @@ class ASTIsNumeric extends ASTPrim {
 
 /** Is String Vec? */
 class ASTIsCharacter extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.character col)
   @Override String str() { return "is.character"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -137,6 +149,8 @@ class ASTIsCharacter extends ASTPrim {
 
 /** Any columns factor/categorical? */
 class ASTAnyFactor extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any.factor frame)
   @Override String str() { return "any.factor"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -150,6 +164,8 @@ class ASTAnyFactor extends ASTPrim {
 
 /** Convert to a numeric */
 class ASTAsNumeric extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.numeric col)
   @Override String str() { return "as.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

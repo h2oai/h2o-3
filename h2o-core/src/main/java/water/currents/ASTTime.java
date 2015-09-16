@@ -16,6 +16,8 @@ import java.util.Set;
 
 
 class ASTGetTimeZone extends ASTPrim {
+  @Override
+  public String[] args() { return null; }
   @Override int nargs() { return 1; } // (getTimeZone)
   @Override String str() { return "getTimeZone"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -24,6 +26,8 @@ class ASTGetTimeZone extends ASTPrim {
 }
 
 class ASTListTimeZones extends ASTPrim {
+  @Override
+  public String[] args() { return null; }
   @Override int nargs() { return 1; } // (listTimeZones)
   @Override public String str() { return "listTimeZones"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -37,6 +41,8 @@ class ASTListTimeZones extends ASTPrim {
 }
 
 class ASTSetTimeZone extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"tz"}; }
   @Override int nargs() { return 1+1; } // (setTimeZone "TZ")
   @Override public String str() { return "setTimeZone"; }
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -52,6 +58,8 @@ class ASTSetTimeZone extends ASTPrim {
 /** Basic time accessors; extract hours/days/years/etc from H2O's internal
  *  msec-since-Unix-epoch time */
 abstract class ASTTime extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"time"}; }
   @Override int nargs() { return 1+1; } // (op time)
   // Override for e.g. month and day-of-week
   protected String[][] factors() { return null; }
@@ -98,6 +106,8 @@ class ASTDayOfWeek extends ASTTime {
 
 /** Convert a String to a Time (msec since Unix Epoch) via a given parse format */
 class ASTasDate extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"time", "format"}; }
   @Override int nargs() { return 1+2; } // (as.Date time format)
   @Override String str() { return "as.Date"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -137,6 +147,8 @@ class ASTasDate extends ASTPrim {
 
 // Convert year, month, day, hour, minute, sec, msec to Unix epoch time
 class ASTMktime extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"yr", "mo", "dy", "hr", "mi", "se", "ms"}; }
   @Override int nargs() { return 1+7; } // (mktime yr mo dy hr mi se ms)
   @Override String str() { return "mktime"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

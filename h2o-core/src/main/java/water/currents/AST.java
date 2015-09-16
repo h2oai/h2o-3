@@ -19,7 +19,7 @@ abstract public class AST extends Iced<AST> {
   // "exec all args" then apply a primitive function op to the args, but for
   // logical AND/OR and IF statements, one or more arguments may never be
   // evaluated (short-circuit evaluation).
-  abstract Val exec( Env env );
+  public abstract Val exec(Env env);
 
   // Default action after the initial execution of a function.  Typically the
   // action is "execute all arguments, then apply a primitive action to the
@@ -222,6 +222,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTModuloKFold());
     init(new ASTStratifiedKFold());
   }
+
+  public static ASTFrame newASTFrame(Frame f){ return new ASTFrame(f); }
 }
 
 /** A number.  Execution is just to return the constant. */
@@ -230,7 +232,7 @@ class ASTNum extends AST {
   ASTNum( Exec e ) { _d = new ValNum(Double.valueOf(e.token())); }
   ASTNum( double d ) { _d = new ValNum(d); }
   @Override public String str() { return _d.toString(); }
-  @Override Val exec( Env env ) { return _d; }
+  @Override public Val exec(Env env) { return _d; }
   @Override int nargs() { return 1; }
 }
 
@@ -240,7 +242,7 @@ class ASTStr extends AST {
   ASTStr(String str) { _str = new ValStr(str); }
   ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
   @Override public String str() { return _str.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
-  @Override Val exec(Env env) { return _str; }
+  @Override public Val exec(Env env) { return _str; }
   @Override int nargs() { return 1; }
 }
 
@@ -249,7 +251,7 @@ class ASTFrame extends AST {
   final ValFrame _fr;
   ASTFrame(Frame fr) { _fr = new ValFrame(fr); }
   @Override public String str() { return _fr.toString(); }
-  @Override Val exec(Env env) { return _fr; }
+  @Override public Val exec(Env env) { return _fr; }
   @Override int nargs() { return 1; }
 }
 
@@ -258,7 +260,7 @@ class ASTRow extends AST {
   final ValRow _row;
   ASTRow(double[] ds) { _row = new ValRow(ds); }
   @Override public String str() { return _row.toString(); }
-  @Override ValRow exec(Env env) { return _row; }
+  @Override public ValRow exec(Env env) { return _row; }
   @Override int nargs() { return 1; }
 }
 
@@ -267,12 +269,13 @@ class ASTId extends AST {
   final String _id;
   ASTId(Exec e) { _id = e.token(); }
   @Override public String str() { return _id; }
-  @Override Val exec(Env env) { return env.lookup(_id); }
+  @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*
  *  (not execution) applies the function to the arguments. */
 abstract class ASTPrim extends AST {
-  @Override Val exec( Env env ) { return new ValFun(this); }
+  @Override public Val exec(Env env) { return new ValFun(this); }
+  public abstract String[] args();
 }
