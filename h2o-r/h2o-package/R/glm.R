@@ -120,8 +120,8 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     )
 {
   if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "Frame"))
-        stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
+      if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
+        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
         beta_constraints <- as.h2o(beta_constraints)
       }
@@ -227,8 +227,8 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
                     )
 {
   if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "Frame"))
-        stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
+      if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
+        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
         beta_constraints <- as.h2o(beta_constraints)
       }
