@@ -1,7 +1,7 @@
-% -*- mode: tex; fill-column: 115; -*-    
+% -*- mode: tex; fill-column: 115; -*-
 
 \input{common/conf_top.tex}
- 
+
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 \defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
 \defcitealias{admm}{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers by Boyd et. al}
@@ -14,7 +14,6 @@
 \input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
-\newgeometry{bmargin=0cm, hmargin=0cm}
 
 \begin{center}
 \textsc{\Large\bf{Generalized Linear Modeling with H2O}}
@@ -33,24 +32,10 @@ August 2015: Third Edition
 \bigskip
 \end{center}
 
-\null\vfill
-\begin{figure}[!b]
-\noindent\makebox[\textwidth]{%
-\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
-\end{figure}
-
-\newpage
-\restoregeometry
-
-\null\vfill %move next text block to lower left of new page
-
-\thispagestyle{empty}%remove pg#
-
 {\raggedright\vfill\ 
 
 Generalized Linear Modeling with H2O\\
-  by Tomas Nykodym, Ariel Rao, Amy Wang, \\
-Tom Kraljevic, Jessica Lanford \& Nadine Hussami\ \\
+  by Tomas Nykodym, Ariel Rao, Amy Wang, Tom Kraljevic, Jessica Lanford \& Nadine Hussami\ \\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -75,10 +60,8 @@ Printed in the United States of America.
 }
 
 \newpage
-\thispagestyle{empty}%remove pg#
 
 \tableofcontents
-\thispagestyle{empty}%remove pg#
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -244,9 +227,7 @@ H2O supports elastic net regularization, which is a combination of the $\ell_1$ 
 in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM with \textbf{ridge regression}, while if $\alpha = 1$ it does so with the \textbf{lasso} penalty.
 \item $\lambda$ controls the penalty strength; its range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
-all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
-\end{itemize}
-
+all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. \end{itemize}
 
 The combination of the $\ell_1$ and $\ell_2$ penalties is beneficial, since the $\ell_1$ induces sparsity while the $\ell_2$ gives
 stability and encourages the grouping effect (where a group of correlated variables tends to be dropped or added
