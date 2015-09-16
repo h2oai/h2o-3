@@ -17,7 +17,7 @@ library(RCurl)
 library(h2o)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 hdfs_data_file = "/datasets/15Mx2.2k.csv"
@@ -32,7 +32,7 @@ k_dim <- 15
 print(paste("Matrix decomposition rank k =", k_dim))
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
-parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
+parse_time <- system.time(data.hex <- h2o.importFile(url))
 print(paste("Time it took to parse:", parse_time))
 
 response <- 1     # 1:1000 imbalance

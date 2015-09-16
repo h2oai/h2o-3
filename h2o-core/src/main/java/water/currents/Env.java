@@ -1,10 +1,16 @@
 package water.currents;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import water.*;
+import water.AutoBuffer;
+import water.DKV;
+import water.Futures;
+import water.Iced;
+import water.Key;
+import water.Value;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -40,7 +46,7 @@ public class Env extends Iced {
   // Deletes dead Frames & forces good stack cleanliness at opcode end.  
   // One per Opcode implementation.
   StackHelp stk() { return new StackHelp(); }
-  class StackHelp implements AutoCloseable {
+  class StackHelp implements Closeable {
     final int _sp = sp();
     // Alive on this function exit (but perhaps not some outer scope)
     private Frame _ret_fr;      // Optionally return a Frame on stack scope exit
