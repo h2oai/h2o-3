@@ -7,11 +7,11 @@
 #' @import methods
 #' @import RCurl
 #' @importFrom graphics barplot lines
-#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
+#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot na.omit
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
-#'           setTxtProgressBar txtProgressBar URLencode write.csv
+#'           setTxtProgressBar txtProgressBar URLencode write.csv head tail
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   GET & POST
@@ -538,6 +538,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
 #' Determine if an H2O cluster is up or not
 #'
+#' @param conn H2OConnection object
 #' @return TRUE if the cluster is up; FALSE otherwise
 #' @export
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {

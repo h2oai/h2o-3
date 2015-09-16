@@ -37,12 +37,13 @@ class Check:
             r"^\* using R Under development",
             r"^\* using platform",
             r"^\* using session charset",
-            r"^\* using option .*",
+            r"^\* using option.*",
             r"^\* checking .* \.\.\. OK",
             r"^\* checking extension type \.\.\. Package",
             r"^\* this is package",
             r"^\* checking CRAN incoming feasibility \.\.\.",
             r"^\*\* found \\donttest examples: .*",
+            r"^\* checking package namespace information .*",
             r"^Maintainer:",
             r"^New maintainer:",
             r"^\s*Tom Kraljevic",
@@ -61,6 +62,7 @@ class Check:
             r"^    policies on use of multiple threads.",
 
             r"^\* checking installed package size ... NOTE",
+            r"^\* checking R code for possible problems ... NOTE",
             r"^  installed size is .*Mb",
             r"^  sub-directories of 1Mb or more:",
             r"^    java  .*Mb",
@@ -79,11 +81,21 @@ class Check:
             r"^\* DONE",
             
             r"^The Date field is over a month old.*",
-            r"^Checking URLs requires 'libcurl' support in the R build",
+            r"^Checking URLs requires 'libcurl' support in the R build"
         ]
 
         s = f.readline()
+        special_note = False
         while (len(s) > 0):
+            # the '* checking R code for possible problems ... NOTE' has a bunch of output after it.
+            # Ignore all of it until next check encountered.
+            checking = r"^\* checking.*"
+            if special_note and (re.search(checking, s) is not None): special_note = False
+            if special_note:
+                s = f.readline()
+                self.lineno = self.lineno + 1
+                continue
+
             self.lineno = self.lineno + 1
 
             allowed = False
@@ -92,6 +104,7 @@ class Check:
                 if (match_groups is not None):
                     # This line is allowed.
                     allowed = True
+                    if regex == r"^\* checking R code for possible problems ... NOTE": special_note = True
                     break
 
             if (not allowed):

@@ -41,7 +41,7 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
 #'          \link{h2o.openLog}}
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #' h2o.startLogging()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
@@ -68,7 +68,7 @@ h2o.startLogging <- function(file) {
 #'          \link{h2o.openLog}}
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #' h2o.startLogging()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
@@ -88,7 +88,7 @@ h2o.stopLogging <- function() {
 #'          \link{h2o.openLog}}
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #' h2o.startLogging()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
@@ -110,7 +110,7 @@ h2o.clearLog <- function() {
 #'          \link{h2o.clearLog}}
 #' @examples
 #' \dontrun{
-#' localH2O = h2o.init()
+#' h2o.init()
 #'
 #' h2o.startLogging()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
