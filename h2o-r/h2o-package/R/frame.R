@@ -1781,7 +1781,6 @@ as.character.Frame <- function(x, ...) {
   paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
 }
 
-
 #' Convert H2O Data to Numeric
 #'
 #' Converts an H2O column into a numeric value column.
@@ -1796,9 +1795,11 @@ as.character.Frame <- function(x, ...) {
 #' #prostate.hex[,2] <- as.numeric(prostate.hex[,2])
 #' @export
 #' @usage \\method{as.numeric}{Frame}(x,...)
-as.numeric.Frame <- function(x, ...) {
-  if( !is.Frame(x) ) { .Primitive("as.double")(x)
-  } else { .newExpr("as.numeric",x) }
+as.numeric.Frame <- function(x, ...) { .newExpr("as.numeric",x) }
+
+as.numeric <- function(x) {
+  if( !is.Frame(x) ) .Primitive("as.double")(x)
+  else as.numeric.Frame(x)
 }
 
 #'
