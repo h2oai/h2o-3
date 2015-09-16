@@ -117,11 +117,11 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 #'                        factors = 5, integer_fraction = 0.5, integer_range = 1,
 #'                        has_response = TRUE)
 #' head(hex)
-#' #summary(hex)
+#' summary(hex)
 #'
 #' hex2 <- h2o.createFrame(rows = 100, cols = 10, randomize = FALSE, value = 5,
 #'                         categorical_fraction = 0, integer_fraction = 0)
-#' #summary(hex2)
+#' summary(hex2)
 #' }
 #' @export
 h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
@@ -211,7 +211,7 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
 #' myframe <- h2o.cbind(myframe, pairwise, higherorder, trim_integer_levels)
 #' myframe
 #' head(myframe,20)
-#' #summary(myframe)
+#' summary(myframe)
 #' }
 #' @export
 h2o.interaction <- function(data, destination_frame, factors, pairwise, max_factors, min_occurrence) {
@@ -294,10 +294,10 @@ h2o.rep_len <- function(x, length.out) {
 #' h2o.init()
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.importFile(path = irisPath)
-#' #summary(iris.hex)
+#' summary(iris.hex)
 #' irismiss.hex <- h2o.insertMissingValues(iris.hex, fraction = 0.25)
 #' head(irismiss.hex)
-#' #summary(irismiss.hex)
+#' summary(irismiss.hex)
 #' }
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
@@ -328,7 +328,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' iris.hex = h2o.importFile(path = irisPath)
 #' #iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
 #' #head(iris.split[[1]])
-#' #summary(iris.split[[1]])
+#' summary(iris.split[[1]])
 #' }
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
@@ -367,7 +367,7 @@ h2o.filterNACols <- function(data, frac=0.2) {
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
-#' #summary(prostate.hex)
+#' summary(prostate.hex)
 #'
 #' # Counts of the ages of all patients
 #' head(h2o.table(prostate.hex[,3]))
@@ -436,12 +436,12 @@ range <- function(x,na.rm = TRUE) {
 #' h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
 #' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
-#' #summary(iris.hex)
+#' summary(iris.hex)
 #'
 #' # Cut sepal length column into intervals determined by min/max/quantiles
 #' sepal_len.cut = cut(iris.hex$sepal_len, c(4.2, 4.8, 5.8, 6, 8))
 #' head(sepal_len.cut)
-#' #summary(sepal_len.cut)
+#' summary(sepal_len.cut)
 #' }
 #' @export
 h2o.cut <- function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3, ...) {
@@ -701,7 +701,7 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000)
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' s = h2o.runif(prostate.hex)
-#' #summary(s)
+#' summary(s)
 #'
 #' #prostate.train = prostate.hex[s <= 0.8,]
 #' #prostate.train = h2o.assign(prostate.train, "prostate.train")
@@ -1353,9 +1353,10 @@ quantile.Frame <- h2o.quantile
 #' h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex = h2o.importFile(path = prosPath)
-#' #summary(prostate.hex)
-#' #summary(prostate.hex$GLEASON)
-#' #summary(prostate.hex[,4:6])
+#' summary(prostate.hex)
+#' summary(prostate.hex$GLEASON)
+#' summary(prostate.hex[,4:6])
+#' @usage \\method{summary}{Frame}(object, factors, ...)
 #' @export
 h2o.summary <- function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
@@ -1595,7 +1596,7 @@ sd <- function(x, na.rm=FALSE) {
 #' h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
 #' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
-#' #summary(iris.hex)
+#' summary(iris.hex)
 #'
 #' # Scale and center all the numeric columns in iris data set
 #' scale(iris.hex[, 1:4])
@@ -1754,7 +1755,7 @@ as.integer.Frame <- function(x) {
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex[,2] <- as.factor(prostate.hex[,2])
-#' #summary(prostate.hex)
+#' summary(prostate.hex)
 #' @export
 as.factor <- function(x) {
   if( is.Frame(x) ) .newExpr("as.factor",x)
@@ -1839,7 +1840,7 @@ h2o.removeVecs <- function(data, cols) {
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
 #' #australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
-#' #summary(australia.hex)
+#' summary(australia.hex)
 #' @export
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
@@ -2261,7 +2262,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 #' h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
-#' #summary(apply(iris.hex, 2, sum))
+#' summary(apply(iris.hex, 2, sum))
 #' @export
 apply <- function(X, MARGIN, FUN, ...) {
   if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))
