@@ -1443,7 +1443,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //          // done, compute the gradient and check KKTs
 //          break;
         case IRLSM:// fork off ADMM iteration
-          new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter, new Iteration(this, doLineSearch)).asyncExec(_activeData._adaptedFrame);
+          H2OCountedCompleter cc = this;
+          if(_parms._family == Family.multinomial) {
+
+          }
+          new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter, new Iteration(cc, doLineSearch)).asyncExec(_activeData._adaptedFrame);
           return;
         default:
           throw H2O.unimpl();
@@ -1915,6 +1919,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return l1;
     }
   }
+
+
+
+
 
   /**
    * Created by tomasnykodym on 3/30/15.

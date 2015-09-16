@@ -23,10 +23,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
-    if(_parms._family == Family.multinomial)
-      _output = job == null?new GLMOutputMultinomial():new GLMOutputMultinomial(job);
-    else
-      _output = job == null?new GLMOutput():new GLMOutput(job);
+    _output = job == null?new GLMOutput():new GLMOutput(job);
   }
 
   @Override
@@ -459,6 +456,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final double _ySigma;
   public final long   _nobs;
 
+
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels;
     DataInfo _dinfo;
@@ -468,6 +466,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double _threshold;
     double[] _global_beta;
     double[][] _global_beta_multinomial;
+    final int _nclasses;
     public boolean _binomial;
     public boolean _multinomial;
 
@@ -488,6 +487,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _domains = domains;
       _coefficient_names = coefficient_names;
       _binomial = binomial;
+      _nclasses = binomial?2:1;
+
       if(_binomial && domains[domains.length-1] != null) {
         assert domains.length == 2;
         binomialClassNames = domains[domains.length - 1];
@@ -499,7 +500,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _global_beta=beta;
     }
 
-    public GLMOutput() {_isSupervised = true;}
+    public GLMOutput() {_isSupervised = true; _nclasses = -1;}
 
     public GLMOutput(GLM glm) {
       super(glm);
@@ -510,6 +511,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
       _binomial = glm._parms._family == Family.binomial;
+      _nclasses = glm.nclasses();
+      _multinomial = _nclasses > 2;
     }
 
     @Override
@@ -640,50 +643,50 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {throw H2O.unimpl();}
     @Override protected SB toJavaInit(SB sb, SB fileContext) {throw H2O.unimpl();}
   }
-  public static class GLMOutputMultinomial extends GLMOutput {
-    double[][] _global_beta_multinomial;
-
-    final int _nclasses;
-    public GLMOutputMultinomial(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names) {
-      super(dinfo, column_names, domains, coefficient_names, false);
-      _nclasses = domains.length;
-    }
-    public GLMOutputMultinomial() {_isSupervised = true; _nclasses = 0;}
-
-    public GLMOutputMultinomial(GLM glm) {
-      super(glm);
-      _nclasses = glm.nclasses();
-    }
-    @Override
-    public int nclasses() {
-      return _nclasses;
-    }
-
-
-    public double[] getNormBeta() {
-      throw new IllegalArgumentException("Beta for multinomial is 2d array");
-    }
-    public void getBeta(int l, double [] beta) {
-      super.getBeta(l,beta);
-      throw new IllegalArgumentException("Beta for multinomial is 2d array");
-    }
-    public void setSubmodelIdx(int l){
-      _best_lambda_idx = l;
-      if(_global_beta_multinomial == null) {
-        _global_beta_multinomial = new double[_nclasses][];
-        for(int i = 0 ; i < _nclasses; ++i)
-          _global_beta_multinomial[i] = MemoryManager.malloc8d(_coefficient_names.length);
-      } else for(double [] ds:_global_beta_multinomial)
-        Arrays.fill(ds,0);
-      double [][] beta = _submodels[l].betaMultinomial.clone();
-      for(int i = 0; i < beta.length; ++i)
-        beta[i] = _dinfo.denormalizeBeta(beta[i]);
-      _global_beta_multinomial = beta;
-    }
-    public double [] beta() { throw new IllegalArgumentException("multinomial has 2D beta.");}
-    public double [][] betaMultinomial(){return _global_beta_multinomial;}
-    public Submodel bestSubmodel(){ return _submodels[_best_lambda_idx];}
-  }
+//  public static class GLMOutputMultinomial extends GLMOutput {
+//    double[][] _global_beta_multinomial;
+//
+//    final int _nclasses;
+//    public GLMOutputMultinomial(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names) {
+//      super(dinfo, column_names, domains, coefficient_names, false);
+//      _nclasses = domains.length;
+//    }
+//    public GLMOutputMultinomial() {_isSupervised = true; _nclasses = 0;}
+//
+//    public GLMOutputMultinomial(GLM glm) {
+//      super(glm);
+//      _nclasses = glm.nclasses();
+//    }
+//    @Override
+//    public int nclasses() {
+//      return _nclasses;
+//    }
+//
+//
+//    public double[] getNormBeta() {
+//      throw new IllegalArgumentException("Beta for multinomial is 2d array");
+//    }
+//    public void getBeta(int l, double [] beta) {
+//      super.getBeta(l,beta);
+//      throw new IllegalArgumentException("Beta for multinomial is 2d array");
+//    }
+//    public void setSubmodelIdx(int l){
+//      _best_lambda_idx = l;
+//      if(_global_beta_multinomial == null) {
+//        _global_beta_multinomial = new double[_nclasses][];
+//        for(int i = 0 ; i < _nclasses; ++i)
+//          _global_beta_multinomial[i] = MemoryManager.malloc8d(_coefficient_names.length);
+//      } else for(double [] ds:_global_beta_multinomial)
+//        Arrays.fill(ds,0);
+//      double [][] beta = _submodels[l].betaMultinomial.clone();
+//      for(int i = 0; i < beta.length; ++i)
+//        beta[i] = _dinfo.denormalizeBeta(beta[i]);
+//      _global_beta_multinomial = beta;
+//    }
+//    public double [] beta() { throw new IllegalArgumentException("multinomial has 2D beta.");}
+//    public double [][] betaMultinomial(){return _global_beta_multinomial;}
+//    public Submodel bestSubmodel(){ return _submodels[_best_lambda_idx];}
+//  }
   /**
    * get beta coefficients in a map indexed by name
    * @return the estimated coefficients
