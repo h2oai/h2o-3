@@ -383,6 +383,10 @@ h2o.table <- function(x, y = NULL) {
   if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
 }
 
+#' @rdname h2o.table
+#' @export
+table.Frame <- h2o.table
+
 #' H2O Median
 #'
 #' Compute the median of a Frame.
@@ -1153,14 +1157,14 @@ str.Frame <- function(object, ..., cols=FALSE) {
     invisible(NextMethod("str", ...))
   else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
 
-  nc <- ncol(x)
-  nr <- nrow(x)
-  cc <- colnames(x)
+  nc <- ncol(object)
+  nr <- nrow(object)
+  cc <- colnames(object)
   width <- max(nchar(cc))
-  df <- head(.fetch.data(x,10L),10L)
+  df <- head(.fetch.data(object,10L),10L)
 
   # header statement
-  cat("\nFrame '", x:id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+  cat("\nFrame '", object:id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
   l <- list()
   for( i in 1:nc ) {
     cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
@@ -1357,10 +1361,6 @@ h2o.summary <- function(object, factors=6L, ...) {
   cnames <- colnames(object)
   missing <- list()
 
-#' @rdname h2o.summary
-#' @export
-summary.Frame <- h2o.summary
-
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
@@ -1472,6 +1472,10 @@ summary.Frame <- h2o.summary
   rownames(result) <- rep("", nrow(result))
   result
 }
+
+#' @rdname h2o.summary
+#' @export
+summary.Frame <- h2o.summary
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Summary Statistics Operations
