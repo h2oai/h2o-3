@@ -114,7 +114,7 @@ class ASTModuloKFold extends ASTPrim {
 class ASTStratifiedKFold extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "nfolds", "seed"}; }
-  @Override public int nargs() { return 1+2; } // (stratified_kfold_column x nfolds seed)
+  @Override public int nargs() { return 1+3; } // (stratified_kfold_column x nfolds seed)
   @Override String str() { return "stratified_kfold_column"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
