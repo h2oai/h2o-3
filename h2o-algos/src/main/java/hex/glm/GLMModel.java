@@ -399,6 +399,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
 
     public int rank(){
+      if(betaMultinomial != null) {
+        int res = 0;
+        for(double [] ds:betaMultinomial)
+          for(double d:ds)
+            if(d != 0)++res;
+        return res;
+      }
       return idxs != null?idxs.length+1:beta.length;
     }
 
