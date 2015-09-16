@@ -89,6 +89,8 @@ class ASTGroup extends ASTPrim {
   }
 
   @Override int nargs() { return -1; } // (GB data [group-by-cols] [order-by-cols] {fcn col "na"}...)
+  @Override
+  public String[] args() { return new String[]{"..."}; }
   @Override public String str() { return "GB"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

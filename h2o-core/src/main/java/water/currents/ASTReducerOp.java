@@ -65,6 +65,8 @@ abstract class ASTReducerOp extends ASTPrim {
 
 /** Optimization for the RollupStats: use them directly */
 abstract class ASTRollupOp extends ASTReducerOp {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   abstract double rup( Vec vec );
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val arg1 = asts[1].exec(env);
@@ -94,6 +96,8 @@ class ASTMin  extends ASTRollupOp { String str() { return "min" ; } double op( d
 class ASTMax  extends ASTRollupOp { String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 class ASTMedian extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "method"}; }
   @Override String str() { return "median"; }
   @Override int nargs() { return 1+2; }  // (median fr method)
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
@@ -128,6 +132,8 @@ class ASTMedian extends ASTPrim {
 }
 
 class ASTMad extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "combineMethod", "const"}; }
   @Override int nargs() { return 1+3; } //(mad fr combine_method const)
   @Override String str() { return "h2o.mad"; }
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -160,7 +166,9 @@ class ASTMad extends ASTPrim {
 }
 
 // Debugging primitive; takes either a scalar or a vector.  TRUE if all values are 1.
-class ASTAll extends ASTPrim { 
+class ASTAll extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override String str() { return "all" ; }
   @Override int nargs() { return 1+1; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -174,6 +182,8 @@ class ASTAll extends ASTPrim {
 }
 
 class ASTAny extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any x)
   @Override String str() { return "any"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -218,6 +228,8 @@ class ASTAny extends ASTPrim {
 }
 
 class ASTAnyNA extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any.na x)
   @Override String str() { return "any.na"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -258,6 +270,8 @@ class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double 
 
 // ----------------------------------------------------------------------------
 class ASTMean extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "na_rm"}; }
   @Override String str() { return "mean"; }
   @Override int nargs() { return 1+2; } // (mean X na.rm)
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
@@ -283,6 +297,8 @@ class ASTMean extends ASTPrim {
 }
 
 class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package result into Frame
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override String str() { return "sd"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -307,6 +323,8 @@ class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package res
 
 
 class ASTProd extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (prod x)
   @Override String str(){ return "prod";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -333,6 +351,8 @@ class ASTProd extends ASTPrim {
 }
 
 class ASTProdNA extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (prod x)
   @Override String str(){ return "prod.na";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -361,6 +381,8 @@ class ASTProdNA extends ASTPrim {
 }
 
 abstract class ASTCumu extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (cumu x)
   @Override String str() { throw H2O.unimpl(); }
   abstract double op(double l, double r);

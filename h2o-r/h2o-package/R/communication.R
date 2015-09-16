@@ -447,8 +447,13 @@
 
 
 .format.helper <- function(x, format) {
-  if( is.list(x) ) lapply(x, .format.helper, format)
-  else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    tryCatch(
+      if( is.list(x) ) lapply(x, .format.helper, format)
+      else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    , error=function(e) {
+      print("\n\n Format Error \n\n")
+      print("x:"); print(x); print("format: "); print(format); print(e)
+    })
 }
 
 #' Print method for H2OTable objects
@@ -466,7 +471,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   xx <- x
   if( !is.null(formats) ) {  # might be NULL if resulted from slicing H2OTable (no need for full blown slice method on H2OTable... allow to be data frame at that point)
     for (j in seq_along(x)) {
-#      if( formats[j] == "%d" ) formats[j] <- "%f"
+      if( formats[j] == "%d" ) formats[j] <- "%.f"
       xx[[j]] <- .format.helper(x[[j]], formats[j])
     }
   }

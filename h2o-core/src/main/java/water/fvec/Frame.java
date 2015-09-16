@@ -143,7 +143,7 @@ public class Frame extends Lockable<Frame> {
     catch( NumberFormatException fe ) { }
     return 0;
   }
-  private String uniquify( String name ) {
+  public String uniquify( String name ) {
     String n = name;
     int lastName = 0;
     if( name.length() > 0 && name.charAt(0)=='C' )

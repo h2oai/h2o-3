@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols src [col_list])
   @Override String str() { return "cols" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -59,6 +61,8 @@ class ASTColSlice extends ASTPrim {
 
 /** Row Slice */
 class ASTRowSlice extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "rows"}; }
   @Override int nargs() { return 1+2; } // (rows src [row_list])
   @Override String str() { return "rows" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -129,6 +133,8 @@ class ASTRowSlice extends ASTPrim {
 }
 
 class ASTFlatten extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (flatten fr)
   @Override String str() { return "flatten"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -143,6 +149,8 @@ class ASTFlatten extends ASTPrim {
 }
 
 class ASTFilterNACols extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "fraction"}; }
   @Override int nargs() { return 1+2; } // (filterNACols frame frac)
   @Override String str() { return "filterNACols"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -162,6 +170,8 @@ class ASTFilterNACols extends ASTPrim {
 
 /** cbind: bind columns together into a new frame */
 class ASTCBind extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"..."}; }
   @Override int nargs() { return -1; } // variable number of args
   @Override String str() { return "cbind" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -207,6 +217,8 @@ class ASTCBind extends ASTPrim {
 
 /** rbind: bind rows together into a new frame */
 class ASTRBind extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"..."}; }
   @Override int nargs() { return -1; } // variable number of args
   @Override String str() { return "rbind" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

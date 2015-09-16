@@ -1,11 +1,12 @@
 package water.currents;
 
-import java.util.ArrayList;
 import water.util.SB;
 
+import java.util.ArrayList;
+
 /** Apply A Function.  Basic function execution. */
-class ASTExec extends AST {
-  final AST[] _asts;
+public class ASTExec extends AST {
+  public final AST[] _asts;
   ASTExec( AST[] asts ) { _asts = asts; }
   protected ASTExec( Exec e ) { 
     e.xpeek('(');
@@ -31,7 +32,7 @@ class ASTExec extends AST {
 
   // Function application.  Execute the first AST and verify that it is a
   // function.  Then call that function's apply method.
-  @Override Val exec( Env env ) {
+  @Override public Val exec(Env env) {
     Val fun = _asts[0].exec(env);
     if( !fun.isFun() )
       throw new IllegalArgumentException("Expected a function but found "+fun.getClass());
@@ -46,4 +47,5 @@ class ASTExec extends AST {
 
   // No expected argument count
   @Override int nargs() { return -1; }
+  public String[] getArgs() { return ((ASTPrim)_asts[0]).args(); }
 }

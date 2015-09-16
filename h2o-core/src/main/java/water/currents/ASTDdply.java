@@ -16,7 +16,9 @@ import java.util.Arrays;
  *  
  */
 class ASTDdply extends ASTPrim {
-  @Override int nargs() { return 4; } // (ddply data [group-by-cols] fcn )
+  @Override
+  public String[] args() { return new String[]{"ary", "groupByCols", "fun"}; }
+  @Override int nargs() { return 1+3; } // (ddply data [group-by-cols] fcn )
   @Override public String str() { return "ddply"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

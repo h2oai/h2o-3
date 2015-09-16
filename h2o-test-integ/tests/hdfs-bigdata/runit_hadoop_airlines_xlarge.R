@@ -35,7 +35,7 @@ if (n != 116695259) {
     stop("nrows is wrong")
 }
 
-if (class(data.hex) != "H2OFrame") {
+if (class(data.hex) != "Frame") {
     stop("data.hex is the wrong type")
 }
 print ("Import worked")

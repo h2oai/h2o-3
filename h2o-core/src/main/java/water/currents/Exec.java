@@ -40,6 +40,11 @@ public class Exec {
     // Parse
     AST ast = new Exec(str).parse();
     // Execute
+    return execute(ast);
+  }
+
+  public static Val execute(AST ast) {
+    // Execute
     Env env = new Env();
     Val val = ast.exec(env);
     // Results.  Deep copy returned Vecs.  Always return a key-less Frame
@@ -51,7 +56,6 @@ public class Exec {
         if( env.isPreExistingGlobal(vecs[i]) )
           fr.replace(i,vecs[i].makeCopy());
     }
-
     return val;
   }
 
