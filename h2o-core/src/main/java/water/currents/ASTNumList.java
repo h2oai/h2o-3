@@ -9,7 +9,7 @@ import java.util.Arrays;
  *  base+stride*cnt is always less than the next base.  This is a syntatic form
  *  only, and never executes and never gets on the execution stack.
  */
-class ASTNumList extends AST {
+public class ASTNumList extends AST {
   final double _bases[], _strides[];
   final long _cnts[];
   final boolean _isList;
@@ -101,7 +101,8 @@ class ASTNumList extends AST {
 
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack
-  @Override Val exec( Env env ) { throw new IllegalArgumentException("Number list not allowed here"); }
+  @Override
+  public Val exec(Env env) { throw new IllegalArgumentException("Number list not allowed here"); }
 
   @Override public String str() { 
     SB sb = new SB().p('[');

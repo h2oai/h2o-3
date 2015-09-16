@@ -14,6 +14,8 @@ import java.util.Arrays;
 // (h2o.impute data col method combine_method gb in.place)
 
 public class ASTImpute extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "inPlace"}; }
   @Override String str(){ return "h2o.impute";}
   @Override int nargs() { return 1+6; } // (h2o.impute data col method combine_method groupby in.place)
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

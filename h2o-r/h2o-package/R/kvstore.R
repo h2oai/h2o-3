@@ -158,7 +158,7 @@ h2o.assign <- function(data, key) {
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) .newFrame("getFrame",id)
+h2o.getFrame <- function(id) .eval.frame(.newFrame("getFrame",id))
 
 #' Get an R reference to an H2O model
 #'

@@ -11,6 +11,8 @@ import water.fvec.Vec;
  *  (quantile %frame [numnber_list_probs] "string_interpolation_type")
  */
 class ASTQtile extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "probs", "interpolationMethod"}; }
   @Override int nargs() { return 1+3; }
   @Override String str() { return "quantile"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

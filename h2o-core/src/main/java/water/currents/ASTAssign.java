@@ -5,6 +5,8 @@ import water.fvec.*;
 
 /** Assign into a row slice */
 class ASTAssign extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr", "colNames"}; }
   @Override int nargs() { return -1; } // (= dst src col_expr row_expr {"colname"})
   @Override String str() { return "=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -219,6 +221,8 @@ class ASTAssign extends ASTPrim {
  *  temp can be deleted.  Temp is returned for immediate use, and also set in
  *  the DKV.  Must be globally unique in the DKV.  */
 class ASTTmpAssign extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (tmp= id frame)
   @Override String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
