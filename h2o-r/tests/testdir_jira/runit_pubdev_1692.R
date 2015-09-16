@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source('../h2o-runit.R')
 
 test.pubdev.1692 <- function(conn) {
   Log.info("Importing glrm_test/msq.csv data...")
