@@ -748,7 +748,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", best_lambda = " + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4));
     }
     int intercept = _parms._intercept ? 1 : 0;
-    _output._model_summary.set(0, 3 + lambdaSearch, Integer.toString(beta().length - intercept));
+    if(_output.nclasses() > 2) {
+      _output._model_summary.set(0, 3 + lambdaSearch,_output.bestSubmodel().betaMultinomial[0].length*_output.nclasses());
+    } else {
+      _output._model_summary.set(0, 3 + lambdaSearch, beta().length);
+    }
     _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
     _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
     _output._model_summary.set(0, 6 + lambdaSearch, train.toString());

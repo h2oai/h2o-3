@@ -864,12 +864,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }
       @Override
       public void callback(H2OCountedCompleter h2OCountedCompleter) {
-        assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + 1;
+//        assert _tInfos[0]._ginfo._gradient.length == _dinfo.fullN() + 1;
         int rank = 0;
         for (int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept ? 1 : 0); ++i)
           if (_tInfos[0]._beta[i] != 0) ++rank;
-        Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + " has " + rank + " nonzeros, gradient err = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
-        Log.info(_model.toString());
+        if(_parms._family != Family.multinomial) {
+          Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + " has " + rank + " nonzeros, gradient err = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
+          Log.info(_model.toString());
+        }
         update(_tInfos[0]._workPerLambda, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter + ", got " + rank + "nonzeros");
         // launch next lambda
         ++_lambdaId;
@@ -1572,7 +1574,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           l2pen *= .5;
           _taskInfo._ginfo = new GLMGradientInfo(gt1._likelihood, gt1._likelihood/gt1._nobs + l2pen, gt1._gradient);
-          assert _taskInfo._ginfo._gradient.length == _dinfo.fullN() + 1:_taskInfo._ginfo._gradient.length + " != " + _dinfo.fullN() + ", intercept = " + _parms._intercept;
+          assert _parms._family == Family.multinomial || (_taskInfo._ginfo._gradient.length == _dinfo.fullN() + 1):_taskInfo._ginfo._gradient.length + " != " + _dinfo.fullN() + ", intercept = " + _parms._intercept;
           _taskInfo._objVal = objVal(gt1._likelihood,gt1._beta, _parms._lambda[_lambdaId],gt1._nobs,_dinfo._intercept);
           _sc.addIterationScore(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal); // it's in here for the gaussian family score :(
           _taskInfo._beta_multinomial = fullBeta;
