@@ -328,7 +328,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' iris.hex = h2o.importFile(path = irisPath)
 #' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
 #' head(iris.split[[1]])
-#' summary(iris.split[[1]])
+#' #summary(iris.split[[1]])
 #' }
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
