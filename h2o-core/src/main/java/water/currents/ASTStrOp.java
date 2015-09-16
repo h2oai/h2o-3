@@ -15,6 +15,8 @@ import java.util.Locale;
 public class ASTStrOp { /*empty*/}
 
 class ASTStrSplit extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "split"}; }
   @Override int nargs() { return 1+2; } // (strsplit x split)
   @Override String str() { return "strsplit"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -85,7 +87,8 @@ class ASTStrSplit extends ASTPrim {
 }
 
 class ASTCountMatches extends ASTPrim {
-
+  @Override
+  public String[] args() { return new String[]{"ary", "pattern"}; }
   @Override int nargs() { return 1+2; } // (countmatches x pattern)
   @Override String str() { return "countmatches"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -122,6 +125,8 @@ class ASTCountMatches extends ASTPrim {
 
 // mutating call
 class ASTToLower extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(tolower x)
   @Override String str() { return "tolower"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -141,6 +146,8 @@ class ASTToLower extends ASTPrim {
 }
 
 class ASTToUpper extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(toupper x)
   @Override String str() { return "toupper"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -160,6 +167,8 @@ class ASTToUpper extends ASTPrim {
 }
 
 class ASTStrSub extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignoreCase"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
   @Override String str() { return "sub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -183,6 +192,8 @@ class ASTStrSub extends ASTPrim {
 }
 
 class ASTGSub extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
   @Override String str() { return "gsub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -206,6 +217,8 @@ class ASTGSub extends ASTPrim {
 }
 
 class ASTTrim extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (trim x)
   @Override String str() { return "trim"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

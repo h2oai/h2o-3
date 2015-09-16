@@ -11,6 +11,8 @@ import water.util.ArrayUtils;
 import water.util.MRUtils;
 
 class ASTHist extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "breaks"}; }
   @Override int nargs() { return 1+2; } // (hist x breaks)
   @Override String str() { return "hist"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -205,8 +207,10 @@ class ASTHist extends ASTPrim {
 
 // Find the mode: the most popular element.  Here because you need to histogram the data.
 class ASTMode extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
   @Override String str() { return "mode"; }
-  @Override int nargs() { return 1+2; }
+  @Override int nargs() { return 1+1; } // (mode ary)
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 || !fr.anyVec().isEnum() )

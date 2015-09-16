@@ -6,6 +6,7 @@ import water.fvec.*;
 
 
 class ASTRepLen extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "length"}; }
   @Override int nargs() { return 1+2; } // (rep_len x length)
   @Override String str() { return "rep_len"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
@@ -38,6 +39,7 @@ class ASTRepLen extends ASTPrim {
 
 // Same logic as R's generic seq method
 class ASTSeq extends ASTPrim {
+  @Override public String[] args() { return new String[]{"from", "to", "by"}; }
   @Override int nargs() { return 1+3; } // (seq from to by)
   @Override String str() { return "seq"; }
 
@@ -66,6 +68,7 @@ class ASTSeq extends ASTPrim {
 }
 
 class ASTSeqLen extends ASTPrim {
+  @Override public String[] args() { return new String[]{"length"}; }
   @Override int nargs() { return 1+1; } // (seq_len n)
   @Override String str() { return "seq_len"; }
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {

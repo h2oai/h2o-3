@@ -69,4 +69,5 @@ class ValFun extends Val {
   @Override public int type () { return FUN; }
   @Override boolean isFun() { return true; }
   @Override public AST getFun() { return _ast; }
+  public String[] getArgs() { return ((ASTPrim)_ast).args(); }
 }

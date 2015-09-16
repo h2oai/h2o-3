@@ -7,6 +7,8 @@ import water.MRTask;
  *  Typically, column-by-column, produces a 1-row frame as a result
  */
 class ASTApply extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "margin", "fun"}; }
   @Override int nargs() { return 1+3; } // (apply frame 1/2 fun) 
   @Override public String str() { return "apply"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -92,6 +94,8 @@ class ASTApply extends ASTPrim {
 
 /** Evaluate any number of expressions, returning the last one */
 class ASTComma extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"..."}; }
   @Override int nargs() { return -1; } // variable args
   @Override public String str() { return ","; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

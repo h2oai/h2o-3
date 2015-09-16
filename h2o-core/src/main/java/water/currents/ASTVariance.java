@@ -9,6 +9,8 @@ import water.util.ArrayUtils;
 
 /** Variance between columns of a frame */
 class ASTVariance extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "x","y","use"}; }
   private enum Mode { Everything, AllObs, CompleteObs }
   @Override int nargs() { return 1+3; /* (var X Y use) */}
   @Override public String str() { return "var"; }
