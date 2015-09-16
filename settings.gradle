@@ -15,7 +15,7 @@ include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
 include 'h2o-java-rest-bindings'
 
-if (System.getenv("BUILD_HADOOP") != null) {
+if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HADOOP") != null) {
     include 'h2o-hadoop:h2o-cdh5.2'
     include 'h2o-hadoop:h2o-cdh5.2-assembly'
     include 'h2o-hadoop:h2o-cdh5.3'
