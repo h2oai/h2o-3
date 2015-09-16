@@ -1369,7 +1369,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double percdiff = Math.abs((objold-objVal)/objold);
             objold=objVal;
             if(_parms._family == Family.multinomial){
-              _taskInfo._beta_multinomial[_c] = beta.clone();
+              System.arraycopy(beta,0,_taskInfo._beta_multinomial[_c],0,beta.length);
             } else
               _taskInfo._beta = beta.clone();
             if (percdiff < _parms._objective_epsilon & iter2 >1 )

@@ -830,7 +830,7 @@ public abstract class GLMTask  {
                              double [][] beta, int c, double ymu, Vec rowFilter, H2OCountedCompleter cmp) {
       super(cmp,dinfo,jobKey,rowFilter);
       _params = glm;
-      _beta = beta[c];
+      _beta = null;
       _beta_multinomial = beta;
       _c = c;
       _ymu = ymu;
@@ -898,15 +898,17 @@ public abstract class GLMTask  {
         mu = 0;
         eta = mu;
       } else {
-        eta = r.innerProduct(_beta);
+
         if(_params._family == Family.multinomial) {
-          double sumExp = 0;
+          eta = r.innerProduct(_beta_multinomial[_c]);
+          double etaExp = Math.exp(eta);
+          double sumExp = etaExp;
           for(int c = 0; c < _beta_multinomial.length; ++c)
-            sumExp += Math.exp(r.innerProduct(_beta_multinomial[c]));
-          mu = Math.exp(eta) / sumExp;
-          sumExp = Math.max(Double.MIN_NORMAL,sumExp);
+            if(c != _c) sumExp += Math.exp(r.innerProduct(_beta_multinomial[c]));
+          mu = etaExp / sumExp;
           _likelihood += r.innerProduct(_beta_multinomial[(int)y]) - Math.log(sumExp);
         } else {
+          eta = r.innerProduct(_beta);
           mu = _params.linkInv(eta + r.offset);
           _likelihood += r.weight*_params.likelihood(y,mu);
         }
