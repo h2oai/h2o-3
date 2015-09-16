@@ -4,6 +4,7 @@ import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SB;
+import water.util.SBPrintStream;
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
@@ -50,7 +51,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     return preds;
   }
 
-  @Override protected void toJavaUnifyPreds(SB body, SB file) {
+  @Override protected void toJavaUnifyPreds(SBPrintStream body, SB file) {
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
