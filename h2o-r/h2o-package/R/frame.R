@@ -1802,7 +1802,6 @@ h2o.removeVecs <- function(data, cols) {
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
 ifelse <- function(test, yes, no) {
-  if( is.Frame(test) || is.Frame(yes) || is.Frame(no) ) return(h2o.ifelse(test,yes,no))
   if( is.atomic(test) ) {
     if (typeof(test) != "logical")
       storage.mode(test) <- "logical"
@@ -1820,6 +1819,7 @@ ifelse <- function(test, yes, no) {
       }
     }
   }
+  if( is.Frame(test) || is.Frame(yes) || is.Frame(no) ) return(h2o.ifelse(test,yes,no))
   else base::ifelse(test,yes,no)
 }
 
