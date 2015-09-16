@@ -73,7 +73,7 @@ public abstract class GLMTask  {
 //   }
 
    @Override public void map(Chunk [] chunks) {
-     _yMu = new double[_nClasses];
+     _yMu = new double[_nClasses > 2?_nClasses:1];
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
      for(int i = 0; i < chunks.length; ++i)
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
@@ -101,7 +101,7 @@ public abstract class GLMTask  {
        _wsum += w;
        double d = w*response.atd(r);
        assert !Double.isNaN(d);
-       if(_nClasses > 1)
+       if(_nClasses > 2)
          _yMu[(int)d] += 1;
        else
         _yMu[0] += d;
