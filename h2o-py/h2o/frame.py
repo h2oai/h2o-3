@@ -33,7 +33,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   COUNTING = True
   dropped_instances = []  # keep track of dropped instances while not counting
 
-  def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None):
+  def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
@@ -67,7 +67,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     if expr is not None:         self._ast = expr
     elif python_obj is not None: self._upload_python_object(python_obj)
-    elif file_path is not None:  self._import_parse(file_path)
+    elif file_path is not None:  self._import_parse(file_path, destination_frame, header, separator, column_names, column_types, na_strings)
     elif raw_id is not None:     self._handle_text_key(raw_id)
     else: pass
 
@@ -85,9 +85,9 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def __str__(self): return self.__repr__()
 
-  def _import_parse(self,file_path):
+  def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(file_path)
-    setup = h2o.parse_setup(rawkey)
+    setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
