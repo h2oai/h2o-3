@@ -53,7 +53,7 @@ Parameters
   return H2OFrame(raw_id=destination_frame)
 
 
-def import_file(path=None):
+def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
   """
   Import a frame from a file (remote or local machine). If you run H2O on Hadoop, you can access to HDFS
 
@@ -61,12 +61,28 @@ def import_file(path=None):
   ----------
   path : str
     A path specifying the location of the data to import.
-
+  destination_frame :
+    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse :
+    (Optional) A logical value indicating whether the file should be parsed after import.
+  header :
+   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
   :return: A new H2OFrame
   """
-  return H2OFrame(file_path=path)
+  if not parse:
+      return lazy_import(path)
 
-def parse_setup(raw_frames):
+  return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
+
+def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
 
   Parameters
@@ -74,13 +90,40 @@ def parse_setup(raw_frames):
 
   raw_frames : H2OFrame
     A collection of imported file frames
-
+  destination_frame :
+    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse :
+    (Optional) A logical value indicating whether the file should be parsed after import.
+  header :
+    (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
   :return: A ParseSetup "object"
   """
 
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+
+  if destination_frame: j["destination_frame"] = destination_frame
+  if not isinstance(header, tuple):
+      if header not in (-1, 0, 1):
+          raise ValueError("header should be -1, 0, or 1")
+      j["check_header"] = header
+  if separator:
+      if not isinstance(separator, basestring) or len(separator) != 1:
+          raise ValueError("separator should be a single character string")
+      j["separator"] = separator
+  if column_names: j["column_names"] = column_names
+  if column_types: j["column_types"] = column_types
+  if na_strings: j["na_strings"] = na_strings
+
   return j
 
 
@@ -110,8 +153,15 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'delete_on_done' : True,
         'blocking' : False,
         }
+
+  if setup["destination_frame"]:
+    setup["destination_frame"] = _quoted(setup["destination_frame"])
+
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]
+
+  if isinstance(setup["separator"], basestring):
+    setup["separator"] = ord(setup["separator"])
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -122,7 +172,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
+    setup["na_strings"] = [[_quoted(col)] for col in setup["na_strings"]]
     p["na_strings"] = None
 
 
@@ -166,8 +216,11 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
-def _quoted(key):
+def _quoted(key, replace=True):
   if key == None: return "\"\""
+  #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
+  key = key.replace("%", ".")
+  key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else "\"" + key + "\""
   return key
