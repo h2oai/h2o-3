@@ -358,7 +358,7 @@ public abstract class GLMTask  {
 
     @Override
     public void reduce(GLMMultinomialGradientTask gmgt){
-      ArrayUtils.add(_beta,gmgt._beta);
+      ArrayUtils.add(_gradient,gmgt._gradient);
       _nobs += gmgt._nobs;
       _wsum += gmgt._wsum;
       _likelihood += gmgt._likelihood;
