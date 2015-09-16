@@ -264,7 +264,8 @@ class ASTUnique extends ASTPrim {
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1 + 1; }  // (unique col)
 
-  @Override String str() { return "unique"; }
+  @Override
+  public String str() { return "unique"; }
 
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

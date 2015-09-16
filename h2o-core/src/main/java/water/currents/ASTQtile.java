@@ -14,7 +14,8 @@ class ASTQtile extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "probs", "interpolationMethod"}; }
   @Override int nargs() { return 1+3; }
-  @Override String str() { return "quantile"; }
+  @Override
+  public String str() { return "quantile"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

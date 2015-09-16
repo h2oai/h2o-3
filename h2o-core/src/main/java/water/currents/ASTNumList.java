@@ -9,7 +9,7 @@ import java.util.Arrays;
  *  base+stride*cnt is always less than the next base.  This is a syntatic form
  *  only, and never executes and never gets on the execution stack.
  */
-public class ASTNumList extends AST {
+public class ASTNumList extends ASTParameter {
   final double _bases[], _strides[];
   final long _cnts[];
   final boolean _isList;

@@ -8,7 +8,8 @@ import water.fvec.*;
 class ASTRepLen extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "length"}; }
   @Override int nargs() { return 1+2; } // (rep_len x length)
-  @Override String str() { return "rep_len"; }
+  @Override
+  public String str() { return "rep_len"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val v = asts[1].exec(env);
     long length = (long) asts[2].exec(env).getNum();
@@ -41,7 +42,8 @@ class ASTRepLen extends ASTPrim {
 class ASTSeq extends ASTPrim {
   @Override public String[] args() { return new String[]{"from", "to", "by"}; }
   @Override int nargs() { return 1+3; } // (seq from to by)
-  @Override String str() { return "seq"; }
+  @Override
+  public String str() { return "seq"; }
 
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     double from = asts[1].exec(env).getNum();
@@ -70,7 +72,8 @@ class ASTSeq extends ASTPrim {
 class ASTSeqLen extends ASTPrim {
   @Override public String[] args() { return new String[]{"length"}; }
   @Override int nargs() { return 1+1; } // (seq_len n)
-  @Override String str() { return "seq_len"; }
+  @Override
+  public String str() { return "seq_len"; }
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     int len = (int) Math.ceil(asts[1].exec(env).getNum());
     if (len <= 0) throw new IllegalArgumentException("Error in seq_len("+len+"): argument must be coercible to positive integer");

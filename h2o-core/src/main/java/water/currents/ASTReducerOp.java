@@ -91,14 +91,15 @@ abstract class ASTRollupOp extends ASTReducerOp {
   }
 }
 
-class ASTSum  extends ASTRollupOp { String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMin  extends ASTRollupOp { String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
-class ASTMax  extends ASTRollupOp { String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+class ASTSum  extends ASTRollupOp { public String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
+class ASTMin  extends ASTRollupOp { public String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMax  extends ASTRollupOp { public String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 class ASTMedian extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "method"}; }
-  @Override String str() { return "median"; }
+  @Override
+  public String str() { return "median"; }
   @Override int nargs() { return 1+2; }  // (median fr method)
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -135,7 +136,8 @@ class ASTMad extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "combineMethod", "const"}; }
   @Override int nargs() { return 1+3; } //(mad fr combine_method const)
-  @Override String str() { return "h2o.mad"; }
+  @Override
+  public String str() { return "h2o.mad"; }
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec[] vecs = fr.vecs();
@@ -169,7 +171,8 @@ class ASTMad extends ASTPrim {
 class ASTAll extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
-  @Override String str() { return "all" ; }
+  @Override
+  public String str() { return "all" ; }
   @Override int nargs() { return 1+1; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
@@ -185,7 +188,8 @@ class ASTAny extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any x)
-  @Override String str() { return "any"; }
+  @Override
+  public String str() { return "any"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
     boolean any;
     Val val = stk.track(asts[1].exec(env));
@@ -231,7 +235,8 @@ class ASTAnyNA extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any.na x)
-  @Override String str() { return "any.na"; }
+  @Override
+  public String str() { return "any.na"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String res = "FALSE";
@@ -264,15 +269,16 @@ abstract class ASTNARollupOp extends ASTRollupOp {
   }
 }
 
-class ASTSumNA extends ASTNARollupOp { String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMinNA extends ASTNARollupOp { String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
-class ASTMaxNA extends ASTNARollupOp { String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
+class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMaxNA extends ASTNARollupOp { public String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 // ----------------------------------------------------------------------------
 class ASTMean extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "na_rm"}; }
-  @Override String str() { return "mean"; }
+  @Override
+  public String str() { return "mean"; }
   @Override int nargs() { return 1+2; } // (mean X na.rm)
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -300,7 +306,8 @@ class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package res
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override String str() { return "sd"; }
+  @Override
+  public String str() { return "sd"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {
@@ -326,7 +333,8 @@ class ASTProd extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (prod x)
-  @Override String str(){ return "prod";}
+  @Override
+  public String str(){ return "prod";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
@@ -354,7 +362,8 @@ class ASTProdNA extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (prod x)
-  @Override String str(){ return "prod.na";}
+  @Override
+  public String str(){ return "prod.na";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
@@ -384,7 +393,8 @@ abstract class ASTCumu extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (cumu x)
-  @Override String str() { throw H2O.unimpl(); }
+  @Override
+  public String str() { throw H2O.unimpl(); }
   abstract double op(double l, double r);
   abstract double init();
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -431,28 +441,32 @@ abstract class ASTCumu extends ASTPrim {
 
 class ASTCumSum extends ASTCumu {
   @Override int nargs() { return 1+1; } // (cumsum x)
-  @Override String str() { return "cumsum"; }
+  @Override
+  public String str() { return "cumsum"; }
   @Override double op(double l, double r) { return l+r; }
   @Override double init() { return 0; }
 }
 
 class ASTCumProd extends ASTCumu {
   @Override int nargs() { return 1+1; } // (cumprod x)
-  @Override String str() { return "cumprod"; }
+  @Override
+  public String str() { return "cumprod"; }
   @Override double op(double l, double r) { return l*r; }
   @Override double init() { return 1; }
 }
 
 class ASTCumMin extends ASTCumu {
   @Override int nargs() { return 1+1; }
-  @Override String str() { return "cummin"; }
+  @Override
+  public String str() { return "cummin"; }
   @Override double op(double l, double r) { return Math.min(l, r); }
   @Override double init() { return Double.MAX_VALUE; }
 }
 
 class ASTCumMax extends ASTCumu {
   @Override int nargs() { return 1+1; }
-  @Override String str() { return "cummax"; }
+  @Override
+  public String str() { return "cummax"; }
   @Override double op(double l, double r) { return Math.max(l,r); }
   @Override double init() { return -Double.MAX_VALUE; }
 }

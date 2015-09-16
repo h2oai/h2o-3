@@ -47,5 +47,5 @@ public class ASTExec extends AST {
 
   // No expected argument count
   @Override int nargs() { return -1; }
-  public String[] getArgs() { return ((ASTPrim)_asts[0]).args(); }
+  public String[] getArgs() { return ((ValFun)_asts[0].exec(new Env())).getArgs(); }
 }

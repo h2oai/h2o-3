@@ -19,7 +19,8 @@ class ASTGetTimeZone extends ASTPrim {
   @Override
   public String[] args() { return null; }
   @Override int nargs() { return 1; } // (getTimeZone)
-  @Override String str() { return "getTimeZone"; }
+  @Override
+  public String str() { return "getTimeZone"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
     return new ValStr(ParseTime.getTimezone().toString());
   }
@@ -88,19 +89,20 @@ abstract class ASTTime extends ASTPrim {
     }
   }
 }
-class ASTYear   extends ASTTime { String str(){ return "year" ; } long op(MutableDateTime dt) { return dt.getYear();}}
-class ASTDay    extends ASTTime { String str(){ return "day"  ; } long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
-class ASTHour   extends ASTTime { String str(){ return "hour" ; } long op(MutableDateTime dt) { return dt.getHourOfDay();}}
-class ASTMinute extends ASTTime { String str(){ return "minute";} long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
-class ASTSecond extends ASTTime { String str(){ return "second";} long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
-class ASTMillis extends ASTTime { String str(){ return "millis";} long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
-class ASTMonth  extends ASTTime { String str(){ return "month"; } long op(MutableDateTime dt) { return dt.getMonthOfYear();}}
-class ASTWeek   extends ASTTime { String str(){ return "week";  } long op(MutableDateTime dt) { return dt.getWeekOfWeekyear();}}
+class ASTYear   extends ASTTime { public String str(){ return "year" ; } long op(MutableDateTime dt) { return dt.getYear();}}
+class ASTDay    extends ASTTime { public String str(){ return "day"  ; } long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
+class ASTHour   extends ASTTime { public String str(){ return "hour" ; } long op(MutableDateTime dt) { return dt.getHourOfDay();}}
+class ASTMinute extends ASTTime { public String str(){ return "minute";} long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
+class ASTSecond extends ASTTime { public String str(){ return "second";} long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
+class ASTMillis extends ASTTime { public String str(){ return "millis";} long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
+class ASTMonth  extends ASTTime { public String str(){ return "month"; } long op(MutableDateTime dt) { return dt.getMonthOfYear();}}
+class ASTWeek   extends ASTTime { public String str(){ return "week";  } long op(MutableDateTime dt) { return dt.getWeekOfWeekyear();}}
 
 class ASTDayOfWeek extends ASTTime {
   static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
   @Override protected String[][] factors() { return FACTORS; }
-  @Override String str(){ return "dayOfWeek"; }
+  @Override
+  public String str(){ return "dayOfWeek"; }
   @Override long op(MutableDateTime dt) { return dt.getDayOfWeek()-1;}
 }
 
@@ -109,7 +111,8 @@ class ASTasDate extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"time", "format"}; }
   @Override int nargs() { return 1+2; } // (as.Date time format)
-  @Override String str() { return "as.Date"; }
+  @Override
+  public String str() { return "as.Date"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec vec = fr.vecs()[0];
@@ -150,7 +153,8 @@ class ASTMktime extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"yr", "mo", "dy", "hr", "mi", "se", "ms"}; }
   @Override int nargs() { return 1+7; } // (mktime yr mo dy hr mi se ms)
-  @Override String str() { return "mktime"; }
+  @Override
+  public String str() { return "mktime"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // Seven args, all required.  See if any are arrays.
     Frame fs[] = new Frame[nargs()-1];

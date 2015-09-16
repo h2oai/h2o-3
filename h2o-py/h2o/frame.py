@@ -83,7 +83,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     fr._col_names = [c["label"] for c in res["columns"]]
     return fr
 
-  def __str__(self): return self.__repr__()
+  def __str__(self): return self._id
 
   def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(file_path)

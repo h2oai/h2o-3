@@ -8,7 +8,8 @@ class ASTAssign extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr", "colNames"}; }
   @Override int nargs() { return -1; } // (= dst src col_expr row_expr {"colname"})
-  @Override String str() { return "=" ; }
+  @Override
+  public String str() { return "=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
@@ -52,7 +53,7 @@ class ASTAssign extends ASTPrim {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
     ASTNumList dim;
     if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
-    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._d.getNum());
+    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     // Special for ASTAssign: "empty" really means "all"
     if( dim.isEmpty() ) return new ASTNumList(0,dstX);
@@ -224,7 +225,8 @@ class ASTTmpAssign extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (tmp= id frame)
-  @Override String str() { return "tmp=" ; }
+  @Override
+  public String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     String id = ((ASTId)asts[1])._id;
     Frame src = stk.track(asts[2].exec(env)).getFrame();

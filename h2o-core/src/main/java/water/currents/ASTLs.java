@@ -20,7 +20,8 @@ class ASTLs extends ASTPrim {
   @Override
   public String[] args() { return null; }
   @Override int nargs() { return 1; }
-  @Override String str() { return "ls" ; }
+  @Override
+  public String str() { return "ls" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();

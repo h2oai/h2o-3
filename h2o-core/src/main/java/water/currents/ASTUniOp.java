@@ -41,48 +41,50 @@ abstract class ASTUniOp extends ASTPrim {
   abstract double op( double d );
 }
 
-class ASTCeiling extends ASTUniOp{String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
-class ASTFloor extends ASTUniOp { String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
-class ASTNot   extends ASTUniOp { String str() { return "!!"   ; } double op(double d) { return d==0?1:0; } }
-class ASTTrunc extends ASTUniOp { String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
-class ASTCos  extends ASTUniOp { String str(){ return "cos";  } double op(double d) { return Math.cos(d);}}
-class ASTSin  extends ASTUniOp { String str(){ return "sin";  } double op(double d) { return Math.sin(d);}}
-class ASTTan  extends ASTUniOp { String str(){ return "tan";  } double op(double d) { return Math.tan(d);}}
-class ASTACos extends ASTUniOp { String str(){ return "acos"; } double op(double d) { return Math.acos(d);}}
-class ASTASin extends ASTUniOp { String str(){ return "asin"; } double op(double d) { return Math.asin(d);}}
-class ASTATan extends ASTUniOp { String str(){ return "atan"; } double op(double d) { return Math.atan(d);}}
-class ASTCosh extends ASTUniOp { String str(){ return "cosh"; } double op(double d) { return Math.cosh(d);}}
-class ASTSinh extends ASTUniOp { String str(){ return "sinh"; } double op(double d) { return Math.sinh(d);}}
-class ASTTanh extends ASTUniOp { String str(){ return "tanh"; } double op(double d) { return Math.tanh(d);}}
-class ASTACosh extends ASTUniOp { String str(){ return "acosh"; } double op(double d) { return FastMath.acosh(d);}}
-class ASTASinh extends ASTUniOp { String str(){ return "asinh"; } double op(double d) { return FastMath.asinh(d);}}
-class ASTATanh extends ASTUniOp { String str(){ return "atanh"; } double op(double d) { return FastMath.atanh(d);}}
-class ASTCosPi extends ASTUniOp { String str(){ return "cospi"; } double op(double d) { return Math.cos(Math.PI*d);}}
-class ASTSinPi extends ASTUniOp { String str(){ return "sinpi"; } double op(double d) { return Math.sin(Math.PI*d);}}
-class ASTTanPi extends ASTUniOp { String str(){ return "tanpi"; } double op(double d) { return Math.tan(Math.PI*d);}}
-class ASTAbs  extends ASTUniOp { String str(){ return "abs";  } double op(double d) { return Math.abs(d);}}
-class ASTSgn  extends ASTUniOp { String str(){ return "sign" ; } double op(double d) { return Math.signum(d);}}
-class ASTSqrt extends ASTUniOp { String str(){ return "sqrt"; } double op(double d) { return Math.sqrt(d);}}
-class ASTTrun extends ASTUniOp { String str(){ return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
-class ASTCeil extends ASTUniOp { String str(){ return "ceiling"; } double op(double d) { return Math.ceil(d);}}
-class ASTFlr  extends ASTUniOp { String str(){ return "floor";} double op(double d) { return Math.floor(d);}}
-class ASTLog  extends ASTUniOp { String str(){ return "log";  } double op(double d) { return Math.log(d);}}
-class ASTLog10  extends ASTUniOp { String str(){ return "log10";  } double op(double d) { return Math.log10(d);}}
-class ASTLog2  extends ASTUniOp { String str(){ return "log2";  } double op(double d) { return Math.log(d)/Math.log(2);}}
-class ASTLog1p  extends ASTUniOp { String str(){ return "log1p";  } double op(double d) { return Math.log1p(d);}}
-class ASTExp  extends ASTUniOp { String str(){ return "exp";  } double op(double d) { return Math.exp(d);}}
-class ASTExpm1  extends ASTUniOp { String str(){ return "expm1";  } double op(double d) { return Math.expm1(d);}}
-class ASTGamma  extends ASTUniOp { String str(){ return "gamma";  } double op(double d) {  return Gamma.gamma(d);}}
-class ASTLGamma extends ASTUniOp { String str(){ return "lgamma"; } double op(double d) { return Gamma.logGamma(d);}}
-class ASTDiGamma  extends ASTUniOp { String str(){ return "digamma";  } double op(double d) {  return Gamma.digamma(d);}}
-class ASTTriGamma  extends ASTUniOp { String str(){ return "trigamma";  } double op(double d) {  return Gamma.trigamma(d);}}
+class ASTCeiling extends ASTUniOp{
+  public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
+class ASTFloor extends ASTUniOp { public String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
+class ASTNot   extends ASTUniOp { public String str() { return "!!"   ; } double op(double d) { return d==0?1:0; } }
+class ASTTrunc extends ASTUniOp { public String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
+class ASTCos  extends ASTUniOp { public String str(){ return "cos";  } double op(double d) { return Math.cos(d);}}
+class ASTSin  extends ASTUniOp { public String str(){ return "sin";  } double op(double d) { return Math.sin(d);}}
+class ASTTan  extends ASTUniOp { public String str(){ return "tan";  } double op(double d) { return Math.tan(d);}}
+class ASTACos extends ASTUniOp { public String str(){ return "acos"; } double op(double d) { return Math.acos(d);}}
+class ASTASin extends ASTUniOp { public String str(){ return "asin"; } double op(double d) { return Math.asin(d);}}
+class ASTATan extends ASTUniOp { public String str(){ return "atan"; } double op(double d) { return Math.atan(d);}}
+class ASTCosh extends ASTUniOp { public String str(){ return "cosh"; } double op(double d) { return Math.cosh(d);}}
+class ASTSinh extends ASTUniOp { public String str(){ return "sinh"; } double op(double d) { return Math.sinh(d);}}
+class ASTTanh extends ASTUniOp { public String str(){ return "tanh"; } double op(double d) { return Math.tanh(d);}}
+class ASTACosh extends ASTUniOp { public String str(){ return "acosh"; } double op(double d) { return FastMath.acosh(d);}}
+class ASTASinh extends ASTUniOp { public String str(){ return "asinh"; } double op(double d) { return FastMath.asinh(d);}}
+class ASTATanh extends ASTUniOp { public String str(){ return "atanh"; } double op(double d) { return FastMath.atanh(d);}}
+class ASTCosPi extends ASTUniOp { public String str(){ return "cospi"; } double op(double d) { return Math.cos(Math.PI*d);}}
+class ASTSinPi extends ASTUniOp { public String str(){ return "sinpi"; } double op(double d) { return Math.sin(Math.PI*d);}}
+class ASTTanPi extends ASTUniOp { public String str(){ return "tanpi"; } double op(double d) { return Math.tan(Math.PI*d);}}
+class ASTAbs  extends ASTUniOp { public String str(){ return "abs";  } double op(double d) { return Math.abs(d);}}
+class ASTSgn  extends ASTUniOp { public String str(){ return "sign" ; } double op(double d) { return Math.signum(d);}}
+class ASTSqrt extends ASTUniOp { public String str(){ return "sqrt"; } double op(double d) { return Math.sqrt(d);}}
+class ASTTrun extends ASTUniOp { public String str(){ return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
+class ASTCeil extends ASTUniOp { public String str(){ return "ceiling"; } double op(double d) { return Math.ceil(d);}}
+class ASTFlr  extends ASTUniOp { public String str(){ return "floor";} double op(double d) { return Math.floor(d);}}
+class ASTLog  extends ASTUniOp { public String str(){ return "log";  } double op(double d) { return Math.log(d);}}
+class ASTLog10  extends ASTUniOp { public String str(){ return "log10";  } double op(double d) { return Math.log10(d);}}
+class ASTLog2  extends ASTUniOp { public String str(){ return "log2";  } double op(double d) { return Math.log(d)/Math.log(2);}}
+class ASTLog1p  extends ASTUniOp { public String str(){ return "log1p";  } double op(double d) { return Math.log1p(d);}}
+class ASTExp  extends ASTUniOp { public String str(){ return "exp";  } double op(double d) { return Math.exp(d);}}
+class ASTExpm1  extends ASTUniOp { public String str(){ return "expm1";  } double op(double d) { return Math.expm1(d);}}
+class ASTGamma  extends ASTUniOp { public String str(){ return "gamma";  } double op(double d) {  return Gamma.gamma(d);}}
+class ASTLGamma extends ASTUniOp { public String str(){ return "lgamma"; } double op(double d) { return Gamma.logGamma(d);}}
+class ASTDiGamma  extends ASTUniOp { public String str(){ return "digamma";  } double op(double d) {  return Gamma.digamma(d);}}
+class ASTTriGamma  extends ASTUniOp { public String str(){ return "trigamma";  } double op(double d) {  return Gamma.trigamma(d);}}
 
 // Split out in it's own function, instead of Yet Another UniOp, because it
 // needs a "is.NA" check instead of just using the Double.isNaN hack... because
 // it works on UUID and String columns.
 class ASTIsNA  extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
-  @Override String str() { return "is.na"; } 
+  @Override
+  public String str() { return "is.na"; }
   @Override int nargs() { return 1+1; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
@@ -111,7 +113,8 @@ class ASTRunif extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "seed"}; }
   @Override int nargs() { return 1+2; } // (h2o.runif frame seed)
-  @Override String str() { return "h2o.runif"; }
+  @Override
+  public String str() { return "h2o.runif"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr  = stk.track(asts[1].exec(env)).getFrame();
     long seed = (long)asts[2].exec(env).getNum();
@@ -124,7 +127,8 @@ class ASTStratifiedSplit extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "test_frac", "seed"}; }
   @Override int nargs() { return 1+3; } // (h2o.random_stratified_split y test_frac seed)
-  @Override String str() { return "h2o.random_stratified_split"; }
+  @Override
+  public String str() { return "h2o.random_stratified_split"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
@@ -161,7 +165,8 @@ class ASTNcol extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override String str() { return "ncol"; }
+  @Override
+  public String str() { return "ncol"; }
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     return new ValNum(fr.numCols());
@@ -172,7 +177,8 @@ class ASTNrow extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override String str() { return "nrow"; }
+  @Override
+  public String str() { return "nrow"; }
   @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     return new ValNum(fr.numRows());
@@ -183,7 +189,8 @@ class ASTNLevels extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (nlevels x)
-  @Override String str() { return "nlevels"; }
+  @Override
+  public String str() { return "nlevels"; }
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[] ) {
     int nlevels;
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -199,7 +206,8 @@ class ASTLevels extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (levels x)
-  @Override String str() { return "levels"; }
+  @Override
+  public String str() { return "levels"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     Futures fs = new Futures();
@@ -234,7 +242,8 @@ class ASTSetLevel extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "level"}; }
   @Override int nargs() { return 1+2; } // (setLevel x level)
-  @Override String str() { return "setLevel"; }
+  @Override
+  public String str() { return "setLevel"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
@@ -264,7 +273,8 @@ class ASTSetDomain extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "newDomains"}; }
   @Override int nargs() { return 1+2;} // (setDomain x [list of strings])
-  @Override String str() { return "setDomain"; }
+  @Override
+  public String str() { return "setDomain"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     String[] _domains = ((ASTStrList)asts[2])._strs;
@@ -300,7 +310,8 @@ class ASTTranspose extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (t X)
-  @Override String str() { return "t"; }
+  @Override
+  public String str() { return "t"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     return new ValFrame(DMatrix.transpose(f));
@@ -311,7 +322,8 @@ class ASTMMult extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "ary2"}; }
   @Override int nargs() { return 1+2; } // (x X1 X2)
-  @Override String str() { return "x"; }
+  @Override
+  public String str() { return "x"; }
 
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame X1 = stk.track(asts[1].exec(env)).getFrame();
@@ -325,7 +337,8 @@ class ASTMatch extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
   @Override int nargs() { return 1+4; } // (match fr table nomatch incomps)
-  @Override String str() { return "match"; }
+  @Override
+  public String str() { return "match"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1 && !fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
@@ -380,7 +393,8 @@ class ASTWhich extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (h2o.which col)
-  @Override String str() { return "h2o.which"; }
+  @Override
+  public String str() { return "h2o.which"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     if( f.numRows()==1 && f.numCols() > 1) {
@@ -413,7 +427,8 @@ class ASTWhich extends ASTPrim {
 class ASTPop extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "colidx"}; }
   @Override int nargs() { return 1+2; } // (pop fr colidx)
-  @Override String str() { return "pop"; }
+  @Override
+  public String str() { return "pop"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int idx = (int)asts[2].exec(env).getNum();
