@@ -476,6 +476,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return _dinfo._predictor_transform == TransformType.STANDARDIZE;
     }
 
+    public double[][] get_global_beta_multinomial(){return _global_beta_multinomial;}
+
     public String[] coefficientNames() {
       return _coefficient_names;
     }
@@ -517,7 +519,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     @Override
     public int nclasses() {
-      return _binomial ? 2 : 1;
+      return _nclasses;
     }
 
     private String[] binomialClassNames = new String[]{"0", "1"};
@@ -547,7 +549,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void setSubmodelIdx(int l){
       _best_lambda_idx = l;
       if(_multinomial) {
-
+        if(_global_beta_multinomial == null) {
+          _global_beta_multinomial = new double[nclasses()][];
+          for(int i = 0; i < _global_beta_multinomial.length; ++i)
+            _global_beta_multinomial[i] = _submodels[l].betaMultinomial[i].clone();
+        } else
+          for(int i = 0; i < _global_beta_multinomial.length; ++i)
+            System.arraycopy(_submodels[l].betaMultinomial[i],0,_global_beta_multinomial[i],0,_global_beta_multinomial[i].length);
       } else {
         if (_global_beta == null)
           _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
@@ -561,8 +569,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Submodel bestSubmodel(){ return _submodels[_best_lambda_idx];}
   }
 
-  public static class GLMModelMultinomial extends GLMModel {
-    public GLMModelMultinomial(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs, boolean hasWeights, boolean hasOffset) {
+  public static class GLMModelMultinomial2 extends GLMModel {
+    public GLMModelMultinomial2(Key selfKey, GLMParameters parms, GLM job, double ymu, double ySigma, double lambda_max, long nobs, boolean hasWeights, boolean hasOffset) {
       super(selfKey, parms, job, ymu, ySigma, lambda_max, nobs, hasWeights, hasOffset);
     }
 
@@ -782,7 +790,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     parms._prior = -1;
     parms._train = null;
     GLMModel m = fam == Family.multinomial
-      ?new GLMModelMultinomial(Key.make(),parms,null, 0,Double.NaN,Double.NaN,-1, false, false)
+      ?new GLMModel(Key.make(),parms,null, 0,Double.NaN,Double.NaN,-1, false, false)
       :new GLMModel(Key.make(),parms,null, fam == Family.binomial?.5:0,Double.NaN,Double.NaN,-1, false, false);
     predictors = ArrayUtils.append(predictors, new String[]{response});
     m._output._names = predictors;
@@ -800,10 +808,48 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return super.checksum_impl();
   }
 
+  private double [] scoreMultinomial(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+    double[] eta = MemoryManager.malloc8d(_output.nclasses());
+    final double[][] b = _output._global_beta_multinomial;
+    final int P = b[0].length;
+    int[] catOffs = dinfo()._catOffsets;
+    for (int i = 0; i < catOffs.length - 1; ++i) {
+      if (chks[i].isNA(row_in_chunk)) {
+        Arrays.fill(eta, Double.NaN);
+        break;
+      }
+      long lval = chks[i].at8(row_in_chunk);
+      int ival = (int) lval;
+      if (ival != lval) throw new IllegalArgumentException("categorical value out of range");
+      if (!_parms._use_all_factor_levels) --ival;
+      int from = catOffs[i];
+      int to = catOffs[i + 1];
+      // can get values out of bounds for cat levels not seen in training
+      if (ival >= 0 && (ival + from) < catOffs[i + 1])
+        for (int j = 0; j < _output.nclasses(); ++j)
+          eta[j] += b[j][ival + from];
+    }
+    final int noff = dinfo().numStart() - dinfo()._cats;
+    for (int i = dinfo()._cats; i < b.length - 1 - noff; ++i) {
+      double d = chks[i].atd(row_in_chunk);
+      for (int j = 0; j < _output.nclasses(); ++j)
+        eta[j] += b[j][noff + i] * d;
+    }
+    double sumExp = 0;
+    for (int j = 0; j < _output.nclasses(); ++j)
+      sumExp += eta[j] = Math.exp(eta[j] + b[j][P - 1]); // intercept
+    sumExp = 1.0 / sumExp;
+    preds[0] = ArrayUtils.maxIndex(eta);
+    for (int i = 0; i < eta.length; ++i)
+      preds[i + 1] = eta[i] * sumExp;
+    return preds;
+  }
+
   @Override
   public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
-
-    /*
+    if(_parms._family == Family.multinomial)
+      return scoreMultinomial(chks,row_in_chunk,tmp,preds);
+     /*
 
      public final double[] score0( double[] data, double[] preds ) {
     double eta = 0.0;
@@ -862,7 +908,46 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
+
+  private double [] scoreMultinomial(double[] data, double[] preds, double w, double o) {
+    double [] eta = MemoryManager.malloc8d(_output.nclasses());
+    final double [][] b = _output._global_beta_multinomial;
+    final int P = b[0].length;
+    final DataInfo dinfo = _output._dinfo;
+    for(int i = 0; i < dinfo._cats; ++i) {
+      if(Double.isNaN(data[i])) {
+        Arrays.fill(eta,Double.NaN);
+        break;
+      }
+      int ival = (int) data[i];
+      if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
+      ival += dinfo._catOffsets[i];
+      if (!_parms._use_all_factor_levels)
+        --ival;
+      // can get values out of bounds for cat levels not seen in training
+      if (ival >= dinfo._catOffsets[i] && ival < dinfo._catOffsets[i + 1])
+        for(int j = 0; j < eta.length; ++j)
+          eta[j] += b[j][ival];
+    }
+    int noff = dinfo.numStart();
+    for(int i = 0; i < dinfo._nums; ++i) {
+      double d = data[dinfo._cats + i];
+      for (int j = 0; j < eta.length; ++j)
+        eta[j] += b[j][noff + i] * d;
+    }
+    double sumExp = 0;
+    for (int j = 0; j < eta.length; ++j)
+      sumExp += eta[j] = Math.exp(eta[j] + b[j][P-1]);
+    sumExp = 1.0/sumExp;
+    preds[0] = ArrayUtils.maxIndex(eta);
+    for(int i = 0; i < eta.length; ++i)
+      preds[1+i] = eta[i]*sumExp;
+    return preds;
+  }
+
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
+    if(_parms._family == Family.multinomial)
+      return scoreMultinomial(data, preds, w, o);
     double eta = 0.0;
     final double [] b = beta();
     final DataInfo dinfo = _output._dinfo;

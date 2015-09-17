@@ -415,7 +415,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
       _model = _parms._family == Family.multinomial
-        ?new GLMModelMultinomial(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol())
+        ?new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol())
         :new GLMModel(_dest, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol());
       String [] warns = _model.adaptTestForTrain(_valid, true, true);
       for(String s:warns) warn("_validation_frame",s);
