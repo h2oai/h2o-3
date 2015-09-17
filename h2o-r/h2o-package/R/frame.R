@@ -1043,6 +1043,7 @@ dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 #' @export
 names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
 
+#' @export
 colnames <- function(x, do.NULL=TRUE, prefix = "col") {
   if( !is.Frame(x) ) return(base::colnames(x,do.NULL,prefix))
   return(names.Frame(x))
@@ -1128,6 +1129,7 @@ h2o.tail <- function(x, ..., n=6L) {
 #' @export
 tail.Frame <- h2o.tail
 
+#' @export
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
   if( is.Frame(x) ) {
@@ -1137,6 +1139,7 @@ is.factor <- function(x) {
   base::is.factor(x)
 }
 
+#' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
   else .eval.frame(.newExpr("is.numeric",x)):data
@@ -1721,6 +1724,11 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @export
 as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 
+<<<<<<< Updated upstream
+=======
+#`
+#' @export
+>>>>>>> Stashed changes
 as.double.Frame <- function(x) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
@@ -1730,6 +1738,7 @@ as.double.Frame <- function(x) {
   .Primitive("as.double")(res)
 }
 
+#' @export
 as.logical.Frame <- function(x) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
@@ -1739,6 +1748,7 @@ as.logical.Frame <- function(x) {
   .Primitive("as.logical")(res)
 }
 
+#' @export
 as.integer.Frame <- function(x) {
   x <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(x) ) {
@@ -1800,6 +1810,7 @@ as.character.Frame <- function(x, ...) {
 #' @usage \\method{as.numeric}{Frame}(x,...)
 as.numeric.Frame <- function(x, ...) { .newExpr("as.numeric",x) }
 
+#' @export
 as.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("as.double")(x)
   else as.numeric.Frame(x)
@@ -1848,6 +1859,7 @@ h2o.removeVecs <- function(data, cols) {
 #' @export
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
+#' @export
 ifelse <- function(test, yes, no) {
   if( is.atomic(test) ) {
     if (typeof(test) != "logical")

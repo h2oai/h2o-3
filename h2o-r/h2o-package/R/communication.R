@@ -747,6 +747,7 @@ h2o.getBaseURL <- function(conn) {
   .h2o.calcBaseURL( conn, urlSuffix = "")
 }
 
+#' @export
 h2o.getVersion <- function() {
   res = .h2o.__remoteSend(.h2o.__CLOUD)
   res$version

@@ -148,6 +148,7 @@
   h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
+#' @export
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@job_key)
   h2o.getModel(object@model_id)
@@ -362,8 +363,8 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict <- predict.H2OModel
 
-h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
-{
+#' @export
+h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...) {
   output <- data.frame()
 
   if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
@@ -1197,6 +1198,7 @@ h2o.specificity <- function(object, thresholds){
 
 #
 #
+#' @export
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
@@ -1205,6 +1207,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 
 #
 # No duplicate thresholds allowed
+#' @export
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
