@@ -861,11 +861,13 @@ public abstract class GLMTask  {
       }
       return etaOffset;
     }
+  transient private double [] _etas;
 
     @Override
     public void chunkInit() {
       // initialize
       _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
+      _etas = new double[_beta_multinomial.length];
       // public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
       if(_validate) {
         int rank = 0;
@@ -886,7 +888,7 @@ public abstract class GLMTask  {
     protected void processRow(Row r) { // called for every row in the chunk
       if(r.bad || r.weight == 0) return;
       ++_nobs;
-      final double y = r.response(0);
+      double y = r.response(0);
       assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
       assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
       final double w, eta, mu, var, z;
@@ -900,13 +902,22 @@ public abstract class GLMTask  {
       } else {
 
         if(_params._family == Family.multinomial) {
-          eta = r.innerProduct(_beta_multinomial[_c]);
-          double etaExp = Math.exp(eta);
+          y = (y == _c)?1:0;
+          double maxrow = 0;
+          for(int i = 0; i < _beta_multinomial.length; ++i) {
+            _etas[i] = r.innerProduct(_beta_multinomial[_c]);
+            if(_etas[i] > maxrow)maxrow = _etas[i];
+            else if(-_etas[i] > maxrow) maxrow = _etas[i];
+          }
+          eta = _etas[_c];
+          for(int i = 0; i < _beta_multinomial.length;++i)
+            _etas[i] -= maxrow;
+          double etaExp = Math.exp(_etas[_c]);
           double sumExp = etaExp;
           for(int c = 0; c < _beta_multinomial.length; ++c)
-            if(c != _c) sumExp += Math.exp(r.innerProduct(_beta_multinomial[c]));
+            if(c != _c) sumExp += Math.exp(_etas[c]);
           mu = etaExp / sumExp;
-          _likelihood += r.innerProduct(_beta_multinomial[(int)y]) - Math.log(sumExp);
+          _likelihood += r.innerProduct(_beta_multinomial[(int)r.response(0) /* don't use y here, y has been turned into indicator variable*/]) - Math.log(sumExp);
         } else {
           eta = r.innerProduct(_beta);
           mu = _params.linkInv(eta + r.offset);

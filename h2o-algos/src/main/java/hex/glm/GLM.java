@@ -959,6 +959,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     GLMTaskInfo _taskInfo;
     long _start_time;
     private int _c;
+    private double _oldObj = Double.MAX_VALUE;
 
     public GLMSingleLambdaTsk(H2OCountedCompleter cmp, GLMTaskInfo state) {
       super(cmp);
@@ -1445,11 +1446,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //          // done, compute the gradient and check KKTs
 //          break;
         case IRLSM:// fork off ADMM iteration
-          H2OCountedCompleter cc = this;
-          if(_parms._family == Family.multinomial) {
-
-          }
-          new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter, new Iteration(cc, doLineSearch)).asyncExec(_activeData._adaptedFrame);
+          new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _parms._intercept?_taskInfo._ymu:0.5, _rowFilter, new Iteration(_parms._family == Family.multinomial?new MultinomialIteration():this, doLineSearch)).asyncExec(_activeData._adaptedFrame);
           return;
         default:
           throw H2O.unimpl();
@@ -1712,7 +1709,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // for all classes
       // set solver for class a
       // call solve()
-      if(_parms._family == Family.multinomial) {
+      if(_parms._family == Family.multinomial && _parms._solver == Solver.COORDINATE_DESCENT) {
         assert _parms._solver == Solver.COORDINATE_DESCENT:"multinomial only implemented for COD";
         _activeData = _dinfo;
         double oldObj = Double.MAX_VALUE;
@@ -1720,6 +1717,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           oldObj = _taskInfo._objVal;
           for (int c = 0; c < _taskInfo._numClasses; ++c) {
             _taskInfo._beta = _taskInfo._beta_multinomial[c];
+            _c = c;
             addToPendingCount(1);
             solve(false);
           }
@@ -1854,6 +1852,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 }
               }).asyncExec(_activeData._adaptedFrame);
             } else {
+              if(_parms._family == Family.multinomial) {
+//                System.arraycopy(g);
+              }
               final boolean validate = false; // too much overhead! (_taskInfo._iter % 5) == 0;
               getCompleter().addToPendingCount(1);
               new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._params, validate, newBeta, _parms._intercept ? _taskInfo._ymu : 0.5, _rowFilter, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
@@ -1862,6 +1863,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
     }
+
+    private class MultinomialIteration extends H2O.H2OCallback<Iteration> {
+      public MultinomialIteration(){super(GLMSingleLambdaTsk.this);}
+
+      @Override
+      public void callback(final Iteration it) {
+        if(_c == nclasses()) {
+          if (_taskInfo._objVal > (_oldObj - _oldObj * 1e-2)) return;
+          _oldObj = _taskInfo._objVal;
+        }
+        _taskInfo._beta = _taskInfo._beta_multinomial[++_c];
+        GLMSingleLambdaTsk.this.addToPendingCount(1);
+        solve(false);
+      }
+    }
+
+
 
     private class LineSearchIteration extends H2O.H2OCallback<GLMLineSearchTask> {
       final double _expectedLikelihood;
