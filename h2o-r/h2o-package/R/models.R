@@ -1940,5 +1940,7 @@ h2o.tabulate <- function(data, x, y,
   print(res)
   count_table <- res$count_table
   response_table <- res$response_table
-  list(count_table = count_table, response_table = response_table)
+  out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
+  oldClass(out) <- c("H2OTabulate", "list")
+  out
 }
