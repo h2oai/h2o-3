@@ -43,6 +43,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
+    // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
+    // L1 -> Laplace distribution ~ exp(-|a-u|)
     public enum Loss {
       Quadratic(true), L1(true), Huber(true), Poisson(true), Hinge(true), Logistic(true), Periodic(true),  // One-dimensional loss (numeric)
       Categorical(false), Ordinal(false);    // Multi-dimensional loss (categorical)

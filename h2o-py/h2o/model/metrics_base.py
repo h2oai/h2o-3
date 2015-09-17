@@ -39,6 +39,7 @@ class MetricsBase(object):
     types_w_r2 =         ['ModelMetricsBinomial', 'ModelMetricsRegression'] + types_w_glm + types_w_mult
     types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
     types_w_logloss =    types_w_bin + types_w_mult
+    types_w_dim =        ["ModelMetricsGLRM"]
 
     print
     print metric_type + ": " + self._algo
@@ -78,6 +79,10 @@ class MetricsBase(object):
       print "Total Sum of Square Error to Grand Mean: "       + str(self.totss())
       print "Between Cluster Sum of Square Error: "           + str(self.betweenss())
       self._metric_json['centroid_stats'].show()
+    
+    if metric_type in types_w_dim:
+        print "Sum of Squared Error (Numeric): "              + str(self.num_err())
+        print "Misclassification Error (Categorical): "       + str(self.cat_err())
 
   def r2(self):
     """
@@ -518,3 +523,19 @@ class H2OAutoEncoderModelMetrics(MetricsBase):
 class H2ODimReductionModelMetrics(MetricsBase):
   def __init__(self, metric_json, on=None, algo=""):
     super(H2ODimReductionModelMetrics, self).__init__(metric_json, on, algo)
+    
+  def num_err(self):
+    """
+    :return: the Sum of Squared Error over non-missing numeric entries, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "numerr"):
+      return self._metric_json["numerr"]
+    return None
+  
+  def cat_err(self):
+    """
+    :return: the Number of Misclassified categories over non-missing categorical entries, or None if not present.
+    """
+    if ModelBase._has(self._metric_json, "caterr"):
+      return self._metric_json["caterr"]
+    return None
