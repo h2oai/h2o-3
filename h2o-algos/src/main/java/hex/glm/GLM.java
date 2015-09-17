@@ -1713,8 +1713,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert _parms._solver == Solver.COORDINATE_DESCENT:"multinomial only implemented for COD";
         _activeData = _dinfo;
         double oldObj = Double.MAX_VALUE;
-        while(_taskInfo._objVal < (oldObj - oldObj*1e-4)) {
+        int iter = 0;
+        while(iter++ < 100 && _taskInfo._objVal < (oldObj - oldObj*1e-4)) {
           oldObj = _taskInfo._objVal;
+          System.out.println(iter + ": obj = " + oldObj);
           for (int c = 0; c < _taskInfo._numClasses; ++c) {
             _taskInfo._beta = _taskInfo._beta_multinomial[c];
             _c = c;

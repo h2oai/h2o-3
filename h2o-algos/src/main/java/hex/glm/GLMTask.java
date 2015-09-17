@@ -328,8 +328,6 @@ public abstract class GLMTask  {
         }
         sumExp = Math.max(Double.MIN_NORMAL,sumExp);
         double l = -row.innerProduct(_beta[y]) - Math.log(sumExp);
-        if(Double.isInfinite(l))
-          System.out.println("haha");
         _val.add(Double.NaN,row.weight*.5*l,Double.NaN,Double.NaN);
         _likelihood += l;
         double reg = 1.0/sumExp;
@@ -913,11 +911,11 @@ public abstract class GLMTask  {
           for(int i = 0; i < _beta_multinomial.length;++i)
             _etas[i] -= maxrow;
           double etaExp = Math.exp(_etas[_c]);
-          double sumExp = etaExp;
-          for(int c = 0; c < _beta_multinomial.length; ++c)
-            if(c != _c) sumExp += Math.exp(_etas[c]);
+          double sumExp = 0;
+          for(int i = 0; i < _beta_multinomial.length; ++i)
+            sumExp += Math.exp(_etas[i]);
           mu = etaExp / sumExp;
-          _likelihood += r.innerProduct(_beta_multinomial[(int)r.response(0) /* don't use y here, y has been turned into indicator variable*/]) - Math.log(mu) + eta;
+          _likelihood += r.innerProduct(_beta_multinomial[(int)r.response(0) /* don't use y here, y has been turned into indicator variable*/]) + Math.log(sumExp) - _etas[_c];
         } else {
           eta = r.innerProduct(_beta);
           mu = _params.linkInv(eta + r.offset);
