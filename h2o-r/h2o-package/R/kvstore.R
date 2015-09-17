@@ -26,7 +26,7 @@
 .fetch.data <- function(x,N) {
   stopifnot(!missing(N))
   .eval.frame(chk.Frame(x))
-  if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
+  if( is.null(x:"data") || (is.data.frame(x:"data") && nrow(x:"data") < N) ) {
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:"id", "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
     # Numeric data is OK, but can be short if e.g., there are trailing NAs
@@ -53,7 +53,7 @@
     .set(x,"data",data)
     .set(x,"nrow",res$rows)
   }
-  x:data
+  x:"data"
 }
 
 #` Flush any cached data

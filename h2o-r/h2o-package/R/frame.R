@@ -399,7 +399,7 @@ table.Frame <- h2o.table
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 #' @export
-h2o.median <- function(x, na.rm = TRUE) .eval.frame(.newExpr("median",x,na.rm)):data
+h2o.median <- function(x, na.rm = TRUE) .eval.frame(.newExpr("median",x,na.rm)):"data"
 
 #' @rdname h2o.median
 median.Frame <- h2o.median
@@ -878,7 +878,7 @@ NULL
 pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
 .eval.impl <- function(x) {
-  dat <- x:data
+  dat <- x:"data"
   id  <- x:"id"
   if( !is.null(dat) ) return( if( is.data.frame(dat) ) id else dat ) # Data already computed and cached
   if( !is.null( id) && !is.na(id) ) return( id ) # Data already computed under ID
@@ -977,7 +977,7 @@ Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl")
   # Eagerly evaluation, to produce a scalar
-  res <- .eval.frame(.newExprList(.Generic,list(x,...))):data
+  res <- .eval.frame(.newExprList(.Generic,list(x,...))):"data"
   if( .Generic=="all" ) as.logical(res) else res
 }
 
@@ -1143,7 +1143,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
-  else .eval.frame(.newExpr("is.numeric",x)):data
+  else .eval.frame(.newExpr("is.numeric",x)):"data"
 }
 
 #' Print An H2O Frame
@@ -1507,7 +1507,7 @@ summary.Frame <- h2o.summary
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-h2o.mean <- function(x, ..., na.rm=TRUE) .eval.frame(.newExpr("mean",x,na.rm)):data
+h2o.mean <- function(x, ..., na.rm=TRUE) .eval.frame(.newExpr("mean",x,na.rm)):"data"
 
 #' @rdname h2o.mean
 #' @export
@@ -1578,7 +1578,7 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
   if( na.rm ) stop("na.rm versions not impl")
-  .eval.frame(.newExpr("sd",x)):data
+  .eval.frame(.newExpr("sd",x)):"data"
 }
 
 #' @rdname h2o.sd
