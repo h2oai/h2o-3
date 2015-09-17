@@ -172,7 +172,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [[_quoted(col)] for col in setup["na_strings"]]
+    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
     p["na_strings"] = None
 
 
