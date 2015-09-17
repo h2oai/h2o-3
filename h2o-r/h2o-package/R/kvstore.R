@@ -27,7 +27,7 @@
   stopifnot(!missing(N))
   .eval.frame(chk.Frame(x))
   if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:id, "?row_count=",N))$frames[[1]]
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:"id", "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
     # Numeric data is OK, but can be short if e.g., there are trailing NAs
     # String data is a list form; convert to a vector (and convert NULL to NA)
@@ -122,8 +122,8 @@ h2o.removeAll <- function(timeout_secs=0) {
 #' @export
 h2o.rm <- function(ids) {
   if( is.Frame(ids) ) {
-    if( is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
-    ids <- ids:id
+    if( is.null(ids:"id") ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
+    ids <- ids:"id"
   }
   if(!is.character(ids)) stop("`ids` must be of class character")
 
@@ -142,7 +142,7 @@ h2o.rm <- function(ids) {
 #' @export
 h2o.assign <- function(data, key) {
   .key.validate(key)
-  if( !is.null(data:id) && key == data:id ) stop("Destination key must differ from input frame ", key)
+  if( !is.null(data:"id") && key == data:"id" ) stop("Destination key must differ from input frame ", key)
   # Eager evaluate, copied from .eval.frame
   exec_str <- .eval.impl(data);
   print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
