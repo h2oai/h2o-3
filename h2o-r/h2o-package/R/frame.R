@@ -43,7 +43,7 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 # doesn't look for our internal fields.
 `:` <- function(x,y) {
   if( !is.Frame(x) ) return(.Primitive(":")(x,y))
-  if( !is.character(y) && !( y %in% c("op", "id", "eval") ) ) stop("y must be one of [\"op\", \"id\", \"eval\"]")
+  if( !is.character(y) ) stop("y must be character.")
   fld <- y
   if( exists(fld,x,inherits=FALSE) ) get(fld,envir=x, inherits=FALSE)
   else NULL
