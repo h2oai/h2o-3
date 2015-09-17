@@ -1026,11 +1026,11 @@ trunc <- function(x, ...) {
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
 #' @export
-dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(data))) }
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:"nrow",ncol(data))) }
 
 #' @rdname Frame
 #' @export
-nrow.Frame <- function(x) { .fetch.data(x,1); x:nrow }
+nrow.Frame <- function(x) { .fetch.data(x,1); x:"nrow" }
 
 #' @rdname Frame
 #' @export
