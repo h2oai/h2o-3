@@ -20,8 +20,8 @@ def lazy_import(path):
   """
   Import a single file or collection of files.
 
-Parameters
-----------
+  Parameters
+  ----------
   path : str
     A path to a data file (remote or local).
 

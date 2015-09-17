@@ -7,7 +7,6 @@ import water.currents.ASTExec;
 import water.currents.ASTParameter;
 import water.currents.Exec;
 import water.fvec.Frame;
-import water.util.IcedHashMap;
 
 public class H2OColOp extends Transform<H2OColOp> {
   final String _fun;
@@ -50,8 +49,8 @@ public class H2OColOp extends Transform<H2OColOp> {
     sb.append(
             "  private final HashMap<String, Object> _params = new HashMap<>();\n");
 
-    for( String k: ((IcedHashMap<String,ASTParameter>)_params).keySet() ) {
-      ASTParameter o = (ASTParameter) _params.get(k);
+    for( String k: _params.keySet() ) {
+      ASTParameter o = _params.get(k);
       sb.append(
               "  _params.put(" + k + ", " + o +");\n" // TODO: o needs to be turned into proper String here.
       );
