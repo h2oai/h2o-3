@@ -905,9 +905,9 @@ public abstract class GLMTask  {
           y = (y == _c)?1:0;
           double maxrow = 0;
           for(int i = 0; i < _beta_multinomial.length; ++i) {
-            _etas[i] = r.innerProduct(_beta_multinomial[_c]);
-            if(_etas[i] > maxrow)maxrow = _etas[i];
-            else if(-_etas[i] > maxrow) maxrow = _etas[i];
+            _etas[i] = r.innerProduct(_beta_multinomial[i]);
+            if(_etas[i] > maxrow || -_etas[i] > maxrow)
+              maxrow = _etas[i];
           }
           eta = _etas[_c];
           for(int i = 0; i < _beta_multinomial.length;++i)
@@ -917,7 +917,7 @@ public abstract class GLMTask  {
           for(int c = 0; c < _beta_multinomial.length; ++c)
             if(c != _c) sumExp += Math.exp(_etas[c]);
           mu = etaExp / sumExp;
-          _likelihood += r.innerProduct(_beta_multinomial[(int)r.response(0) /* don't use y here, y has been turned into indicator variable*/]) - Math.log(sumExp);
+          _likelihood += r.innerProduct(_beta_multinomial[(int)r.response(0) /* don't use y here, y has been turned into indicator variable*/]) - Math.log(mu) + eta;
         } else {
           eta = r.innerProduct(_beta);
           mu = _params.linkInv(eta + r.offset);
