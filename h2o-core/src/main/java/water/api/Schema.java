@@ -836,18 +836,25 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     StringBuffer arg = new StringBuffer ();
     List<String> splitArgList = new ArrayList<String> ();
     boolean inDoubleQuotes = false;
+    boolean inSquareBrackets = false; // for arrays of arrays
 
     for (int i=0; i < sb.length(); i++) {
-      if (sb.charAt (i) == '"' && !inDoubleQuotes) {
+      if (sb.charAt(i) == '"' && !inDoubleQuotes && !inSquareBrackets) {
         inDoubleQuotes = true;
         arg.append(sb.charAt(i));
-      } else if (sb.charAt(i) == '"' && inDoubleQuotes) {
+      } else if (sb.charAt(i) == '"' && inDoubleQuotes && !inSquareBrackets) {
         inDoubleQuotes = false;
         arg.append(sb.charAt(i));
-      } else if (sb.charAt(i) == ',' && !inDoubleQuotes) {
+      } else if (sb.charAt(i) == ',' && !inDoubleQuotes && !inSquareBrackets) {
         splitArgList.add(arg.toString());
         // clear the field for next word
         arg.setLength(0);
+      } else if (sb.charAt(i) == '[') {
+        inSquareBrackets = true;
+        arg.append(sb.charAt(i));
+      } else if (sb.charAt(i) == ']') {
+        inSquareBrackets = false;
+        arg.append(sb.charAt(i));
       } else {
         arg.append(sb.charAt(i));
       }

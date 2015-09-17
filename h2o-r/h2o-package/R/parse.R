@@ -127,8 +127,12 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
+.collapse.char.empty.nulls <- function(v) {
+  if (!is.null(v)) paste0('[', paste0('"', v, '"', collapse=','), ']')
+  else "[]"
+}
 .collapse.array <- function(v) {
-  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char), collapse=','), ']')
+  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char.empty.nulls), collapse=','), ']')
   else "[]"
 }
 
