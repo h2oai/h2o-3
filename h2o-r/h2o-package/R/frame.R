@@ -1035,10 +1035,12 @@ nrow.Frame <- function(x) { .fetch.data(x,1); x:nrow }
 #' @export
 ncol.Frame <- function(x) { ncol(.fetch.data(x,1)) }
 
-#` Column names of an H2O Frame
+#' Column names of an H2O Frame
+#' @export
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
-#` Column names of an H2O Frame
+#' Column names of an H2O Frame
+#' @export
 names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
 
 colnames <- function(x, do.NULL=TRUE, prefix = "col") {
