@@ -1724,11 +1724,8 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @export
 as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 
-<<<<<<< Updated upstream
-=======
 #`
 #' @export
->>>>>>> Stashed changes
 as.double.Frame <- function(x) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
