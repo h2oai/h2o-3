@@ -4,7 +4,7 @@
 #' Generalized low rank decomposition of a H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OFrame} object containing the
+#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -12,7 +12,7 @@
 #'        between 1 and the number of columns in the training frame, inclusive.
 #' @param model_id (Optional) The unique id assigned to the resulting model. 
 #'        If none is given, an id will automatically be generated.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the 
+#' @param validation_frame An Frame object containing the
 #'        variables in the model.
 #' @param loading_name (Optional) The unique name assigned to the loading matrix X
 #'        in the XY decomposition. Automatically generated if none is provided.
@@ -56,7 +56,7 @@
 #'        standard normal distribution, "PlusPlus": for initialization using the clusters
 #'        from k-means++ initialization, or "SVD": for initialization using the 
 #'        first k right singular vectors. Additionally, the user may specify the 
-#'        initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
+#'        initial Y as a matrix, data.frame, Frame, or list of vectors.
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
@@ -64,9 +64,9 @@
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1", 
 #'          gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' @export
@@ -94,19 +94,15 @@ h2o.glrm <- function(training_frame, x, k, model_id,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
   
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(training_frame)
-  if( delete ) {
-    temp_key <- training_frame@frame_id
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
-  }
+  .eval.frame(training_frame)
   
   # Gather user input
   parms <- list()
@@ -155,12 +151,12 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms$seed <- seed
   
   # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || inherits(init, "H2OFrame") ) {
+  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {
     parms[["init"]] <- "User"
-    # Convert user-specified starting points to H2OFrame
+    # Convert user-specified starting points to Frame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-      init <- as.h2o(init, training_frame@conn)
+      init <- as.h2o(init)
     }
     parms[["user_points"]] <- init
     # Set k
@@ -177,5 +173,5 @@ h2o.glrm <- function(training_frame, x, k, model_id,
   }
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'glrm', parms, 99)
+  .h2o.modelJob('glrm', parms, do_future=FALSE, h2oRestApiVersion=99)
 }

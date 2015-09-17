@@ -10,16 +10,13 @@ options(echo=TRUE)
 source('../h2o-runit.R')
 
 heading("BEGIN TEST")
-check.hex_1484 <- function(conn) {
+conn <- new("H2OConnection", ip=myIP, port=myPort)
 
-  path = locate("smalldata/logreg/prostate.csv")
-  prostate.hex = h2o.importFile(conn, path, destination_frame="prostate.hex")
-  h2o.ls()
+path = locate("smalldata/logreg/prostate.csv")
+prostate.hex = h2o.importFile(path, destination_frame="prostate.hex")
+h2o.ls()
 
-  rf = h2o.randomForest(x=c(1,4), y="CAPSULE", training_frame=prostate.hex, ntrees=5)
-  h2o.ls()
+rf = h2o.randomForest(x=c(1,4), y="CAPSULE", training_frame=prostate.hex, ntrees=5)
+h2o.ls()
 
-  testEnd()
-}
-
-doTest("HEX-1484 test", check.hex_1484)
+PASS_BANNER()

@@ -1,66 +1,97 @@
-##`
-##` A Mix of H2O-specific and Overloaded R methods.
-##`
-##` Below we have a mix of h2o and overloaded R methods according to the following ToC:
-##`
-##`  H2O Methods:
-##`  ------------
-##`
-##`      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.interaction, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
-##`
-##`  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
-##`  ------------
-##`
-##`      year.H2O*, month.H2O*, diff.H2O*
-##`
-##`
-##`
-##` Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
-##` and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
-##`
-##` Important Developer Notes on the Lazy Evaluators:
-##` -------------------------------------------------
-##`
-##` The H2OFrame "lazy" evaluators: Evaulate an AST.
-##`
-##` The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
-##` and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
-##` calling scope). If you *absolutely* need to nest calls like this, you _MUST_ correctly track the names all the way down,
-##` and then all the way back up the scopes.
-##` Here's the example pattern: Number of columns
-##`
-##` Num Columns of an AST.
-##`
-##` Evaluate the AST and produce the ncol of the eval'ed AST.
-##`
-##`       ncol.H2OFrame <- function(x) {
-##`         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
-##`         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
-##`         .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')           # call the force eval
-##`         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
-##`         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
-##`         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
-##`       }
-##`
-##` Take this line-by-line:
-##`    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
-##`    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
-##`    Line 3:
-##`          1. Get a handle to h2o (h2o.getConnection())
-##`          2. x is the ast we want to eval
-##`          3. ID is the identifier we want the eventual object to have at the end of the day
-##`          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
-##`    Line 4: The identifier in the parent scope will either be Last.value, or the key of the H2OFrame
-##`             *NB: x is _guaranteed_ to be an H2OFrame object at this point (this is post .force.eval)
-##`    Line 5: assign from *this* scope, into the parent scope
-##`    Line 6: Do
+#`
+#` Frame and AST Nodes
+#`
+#` To conveniently and safely pass messages between R and H2O, this package
+#` relies on S3 objects to capture and pass state.  The end user will typically
+#` never have to reason with these objects directly, as there are S3 accessor
+#` methods provided for creating new objects.
+#`
+#` S3 Frame class objects are pointers to either data in an H2O cluster, or
+#` potential data (future calculations) in the cluster.  They are also classic
+#` compiler AST Nodes (to hold future calculations).  They are implemented with
+#` simple R environment objects.
+#`
+#` Like AST Nodes in compilers all over, Frames build a simple DAG where the
+#` nodes contain an operator and some outgoing edges.  There is a GC finalizer
+#` to delete the server-side copy of a Frame
+#`
+#`
+#` === Frame/AST Node/environment Fields ===
+#
+#` E$op     <- Operation or opcode that produces this Frame, a string
+#
+#` The combination of EVAL and ID fields determines the evaluation state:
+#` EVAL is one of:
+#` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
+#` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
+#` - list of Nodes: Then further ID is one of:
+#` - - missing: this Node is lazy and has never been evaluated 
+#` - - NA: this Node has been executed once, but no temp ID was made
+#` - - String: this Node is-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to FALSE
+#` 
+#` # A number of fields represent cached queries of an evaluated frame.
+#` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
+#`             the first N (typically 10) rows and all cols of the frame
+#` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 
+
+is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
+chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
+
+# Horrible internal shortcut to get at our fields in Frame environments via
+# "frame:id".  Using "$" calls the overloaded dataframe column resolution - and
+# doesn't look for our internal fields.
+`:` <- function(x,y) {
+  if( !is.Frame(x) ) return(.Primitive(":")(x,y))
+  fld <- as.character(substitute(y))
+  if( exists(fld,x,inherits=FALSE) ) get(fld,envir=x, inherits=FALSE)
+  else NULL
+}
+
+.h2o.gc <- function() {
+  print("H2O triggered a GC in R")
+  gc()
+}
+
+# Horrible internal shortcut to set our fields, using a more "normal"
+# parameter order
+.set <- function(x,name,value) assign(name,value,pos=x)
+
+# GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
+.nodeFinalizer <- function(x) {
+  eval <- x:eval
+  if( is.logical(eval) && eval ) {
+    cat("=== Finalizer on ",x:id,"\n")
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x:id), method = "DELETE")
+  }
+}
+
+# Make a raw named data frame.  The key will exist on the server, and will be
+# the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
+.newFrame <- function(op,id) {
+  stopifnot( is.character(id) )
+  node <- structure(new.env(parent = emptyenv()), class="Frame")
+  .set(node,"op",op)
+  .set(node,"id",id)
+  .set(node,"eval",FALSE) # User-managed lifetime
+  node
+}
+
+# A new lazy expression
+.newExpr <- function(op,...) .newExprList(op,list(...))
+
+.newExprList <- function(op,li) {
+  node <- structure(new.env(parent = emptyenv()), class="Frame")
+  .set(node,"op",op)
+  .set(node,"eval",li)
+  reg.finalizer(node, .nodeFinalizer, onexit=TRUE)
+  node
+}
 
 #' Data Frame Creation in H2O
 #'
 #' Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
 #'
-#' @param conn A \linkS4class{H2OConnection} object.
 #' @param key A string indicating the destination key. If empty, this will be auto-generated by H2O.
 #' @param rows The number of rows of data to generate.
 #' @param cols The number of columns of data to generate. Excludes the response column if \code{has_response = TRUE}.
@@ -77,28 +108,27 @@
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
-#' @return Returns a \linkS4class{H2OFrame} object.
+#' @return Returns a Frame object.
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
-#' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1,
+#' h2o.init()
+#' hex <- h2o.createFrame(rows = 1000, cols = 100, categorical_fraction = 0.1,
 #'                        factors = 5, integer_fraction = 0.5, integer_range = 1,
 #'                        has_response = TRUE)
 #' head(hex)
 #' summary(hex)
 #'
-#' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5,
+#' hex2 <- h2o.createFrame(rows = 100, cols = 10, randomize = FALSE, value = 5,
 #'                         categorical_fraction = 0, integer_fraction = 0)
 #' summary(hex2)
 #' }
 #' @export
-h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE,
+h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
                             binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
-  if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
@@ -117,40 +147,37 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
 
   .cframe.map <- c("key" = "dest")
   parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent, 2)  # depth must be 2 in order to pop out of the lapply scope...
-  parms$conn <- NULL
   if(missing(key) || !is.character(key) || !nzchar(key))
-    parms$key = .key.make(conn, prefix = "frame")
+    parms$key = .key.make(prefix = "frame")
   .key.validate(parms$key)
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 
-  res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "POST", .params = parms)
+  res <- .h2o.__remoteSend(.h2o.__CREATE_FRAME, method = "POST", .params = parms)
 
   job_key  <- res$key$name
   dest_key <- res$dest$name
-  .h2o.__waitOnJob(conn, job_key)
-  h2o.getFrame(dest_key, conn)
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
-
-h2o.kappa <- function(act,pred,nclass) { .h2o.nary_frame_op("kappa", act, pred, nclass) }
 
 #' Categorical Interaction Feature Creation in H2O
 #'
 #' Creates a data frame in H2O with n-th order interaction features between categorical columns, as specified by the user.
 #'
-#' @param data An \linkS4class{H2OFrame} object containing the categorical columns.
+#' @param data An Frame object containing the categorical columns.
 #' @param destination_frame A string indicating the destination key. If empty, this will be auto-generated by H2O.
 #' @param factors Factor columns (either indices or column names).
 #' @param pairwise Whether to create pairwise interactions between factors (otherwise create one higher-order interaction). Only applicable if there are 3 or more factors.
 #' @param max_factors Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all factor will be made)
 #' @param min_occurrence Min. occurrence threshold for factor levels in pair-wise interaction terms
-#' @return Returns a \linkS4class{H2OFrame} object.
+#' @return Returns a Frame object.
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #'
 #' # Create some random data
-#' myframe = h2o.createFrame(localH2O, 'framekey', rows = 20, cols = 5,
+#' myframe = h2o.createFrame('framekey', rows = 20, cols = 5,
 #'                          seed = -12301283, randomize = TRUE, value = 0,
 #'                          categorical_fraction = 0.8, factors = 10, real_range = 1,
 #'                          integer_fraction = 0.2, integer_range = 10,
@@ -188,7 +215,7 @@ h2o.kappa <- function(act,pred,nclass) { .h2o.nary_frame_op("kappa", act, pred, 
 #' }
 #' @export
 h2o.interaction <- function(data, destination_frame, factors, pairwise, max_factors, min_occurrence) {
-  if (!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  chk.Frame(data)
   if(missing(factors)) stop("factors must be specified")
   if(!is.logical(pairwise)) stop("pairwise must be a boolean value")
   if(missing(max_factors)) stop("max_factors must be specified")
@@ -216,20 +243,20 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 
   parms <- list()
   if(missing(destination_frame) || !is.character(destination_frame) || !nzchar(destination_frame))
-    parms$dest = .key.make(data@conn, prefix = "interaction")
+    parms$dest = .key.make(prefix = "interaction")
   .key.validate(parms$dest)
-  parms$source_frame <- data@frame_id
+  parms$source_frame <- .eval.frame(data):id
   parms$factor_columns <- .collapse.char(factors)
   parms$pairwise <- pairwise
   parms$max_factors <- max_factors
   parms$min_occurrence <- min_occurrence
 
-  res <- .h2o.__remoteSend(data@conn, page = 'Interaction', method = "POST", .params = parms)
+  res <- .h2o.__remoteSend(page = 'Interaction', method = "POST", .params = parms)
 
   job_key  <- res$key$name
   dest_key <- res$dest$name
-  .h2o.__waitOnJob(data@conn, job_key)
-  h2o.getFrame(dest_key, data@conn)
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 
 #' Replicate Elements of Vectors or Lists into H2O
@@ -240,17 +267,12 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' @param x a vector (of any mode including a list) or a factor
 #' @param length.out non negative integer. The desired length of the output
 #'        vector.
-#' @return Creates a \linkS4class{H2OFrame} vector of the same type as x
+#' @return Creates a Frame vector of the same type as x
 #' @export
 h2o.rep_len <- function(x, length.out) {
-  if (length.out <= 0)
-    return(NULL)
-  .h2o.nary_frame_op("rep_len", x, length.out)
-}
-
-h2o.qpfpc <- function(data, class.col, probs=NULL) {
-  if( is.null(probs) ) probs <- seq(0,1,0.01)
-  .h2o.nary_frame_op("qpfpc", data, class.col-1, probs)
+  if (length.out <= 0)    NULL
+  else if( is.Frame(x) ) .newExpr("rep_len", chk.Frame(x), length.out)
+  else                   .newExpr("rep_len", x, length.out)
 }
 
 #' Inserting Missing Values to an H2O DataFrame
@@ -258,7 +280,7 @@ h2o.qpfpc <- function(data, class.col, probs=NULL) {
 #' *This is primarily used for testing*. Randomly replaces a user-specified fraction of
 #' entries in a H2O dataset with missing values.
 #'
-#' @param data An \linkS4class{H2OFrame} object representing the dataset.
+#' @param data An Frame object representing the dataset.
 #' @param fraction A number between 0 and 1 indicating the fraction of entries
 #'        to replace with missing.
 #' @param seed A random number used to select which entries to replace with
@@ -269,9 +291,9 @@ h2o.qpfpc <- function(data, class.col, probs=NULL) {
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex <- h2o.importFile(localH2O, path = irisPath)
+#' iris.hex <- h2o.importFile(path = irisPath)
 #' summary(iris.hex)
 #' irismiss.hex <- h2o.insertMissingValues(iris.hex, fraction = 0.25)
 #' head(irismiss.hex)
@@ -279,35 +301,21 @@ h2o.qpfpc <- function(data, class.col, probs=NULL) {
 #' }
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
-  ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if (delete) {
-    temp_key <- data@frame_id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
-  }
-
   parms = list()
-
-  parms$dataset <- data@frame_id
+  parms$dataset <- .eval.frame(data):id # Eager force evaluation
   parms$fraction <- fraction
-  if(!missing(seed))
+  if( !missing(seed) )
     parms$seed <- seed
-
-  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter', .params = parms)
-  .h2o.__waitOnJob(data@conn, json$key$name)
-  # TODO: uncomment once job key progress is functional
-  res <- json$dataset$name
-
-  ## No gc because insertMissingValues modifies the frame in spot
-
-  h2o.getFrame(res)
+  json <- .h2o.__remoteSend(method = "POST", page = 'MissingInserter', .params = parms)
+  .h2o.__waitOnJob(json$key$name)
+  .flush.data(data)  # Flush cache and return data
 }
 
 #' Split an H2O Data Set
 #'
 #' Split an existing H2O data set according to user-specified ratios.
 #'
-#' @param data An \linkS4class{H2OFrame} object representing the dataste to split.
+#' @param data An Frame object representing the dataste to split.
 #' @param ratios A numeric value or array indicating the ratio of total rows
 #'        contained in each split. Must total up to less than 1.
 #' @param destination_frames An array of frame IDs equal to the number of ratios
@@ -315,32 +323,24 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' iris.hex = h2o.importFile(path = irisPath)
 #' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
 #' head(iris.split[[1]])
-#' summary(iris.split[[1]])
+#' #summary(iris.split[[1]])
 #' }
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-  ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if( delete ) {
-    temp_key <- data@frame_id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
-  }
-
   params <- list()
-  params$dataset <- data@frame_id
+  params$dataset <- .eval.frame(chk.Frame(data)):id
   params$ratios <- .collapse(ratios)
   if (!missing(destination_frames))
     params$destination_frames <- .collapse.char(destination_frames)
 
-  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame", .params = params)
+  res <- .h2o.__remoteSend(method="POST", "SplitFrame", .params = params)
   job_key <- res$key$name
-  .h2o.__waitOnJob(data@conn, job_key)
+  .h2o.__waitOnJob(job_key)
 
   splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
 }
@@ -352,53 +352,21 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
 #' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
 #' @export
 h2o.filterNACols <- function(data, frac=0.2) {
-  (as.data.frame(.h2o.nary_frame_op("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
+  (as.data.frame(.newExpr("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
 }
-
-#h2o.ignoreColumns <- function(data, max_na = 0.2) {
-#  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
-#    warning(data@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#  if(missing(data)) stop('Must specify object')
-#  if(class(data) != 'H2OFrame') stop('object not a h2o data type')
-#  numRows = nrow(data)
-#  naThreshold = numRows * max_na
-#  cardinalityThreshold = numRows
-#
-#  res = .h2o.__remoteSend(data@conn, .h2o.__PAGE_SUMMARY2, source=data@frame_id, max_ncols=.Machine$integer.max)
-#  columns = res$summaries
-#  ignore = sapply(columns, function(col) {
-#    if(col$stats$type != 'Enum'){# Numeric Column
-#      if(col$stats$min==col$stats$max || col$nacnt >= naThreshold){
-#        # If min=max then only one value in entire column
-#        # If naCnt is higher than 20% of all entries
-#        col$colname
-#      }
-#    }
-#    else { # Categorical Column
-#      if(col$stats$cardinality==cardinalityThreshold || col$nacnt >= naThreshold ){
-#        # If only entry is a unique entry
-#        # If naCnt is higher than 20% of all entries
-#        col$colname
-#      }
-#    }
-#  }
-#  )
-#  unlist(ignore)
-#}
 
 #' Cross Tabulation and Table Creation in H2O
 #'
 #' Uses the cross-classifying factors to build a table of counts at each combination of factor levels.
 #'
-#' @param x An \linkS4class{H2OFrame} object with at most two columns.
-#' @param y An \linkS4class{H2OFrame} similar to x, or \code{NULL}.
-#' @return Returns a tabulated \linkS4class{H2OFrame} object.
+#' @param x An Frame object with at most two columns.
+#' @param y An Frame similar to x, or \code{NULL}.
+#' @return Returns a tabulated Frame object.
 #' @examples
-#' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 #' summary(prostate.hex)
 #'
 #' # Counts of the ages of all patients
@@ -408,48 +376,49 @@ h2o.filterNACols <- function(data, frac=0.2) {
 #' # Two-way table of ages (rows) and race (cols) of all patients
 #' head(h2o.table(prostate.hex[,c(3,4)]))
 #' h2o.table(prostate.hex[,c(3,4)])
-#' }
 #' @export
 h2o.table <- function(x, y = NULL) {
-  if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
-  if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2OFrame object")
-  .h2o.nary_frame_op("table", x, y)
+  chk.Frame(x)
+  if( !is.null(y) ) chk.Frame(y)
+  if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
 }
+
+#' @rdname h2o.table
+#' @export
+table.Frame <- h2o.table
 
 #' H2O Median
 #'
-#' Compute the arithmetic mean of a \linkS4class{H2OFrame}.
+#' Compute the median of a Frame.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An Frame object.
 #' @param na.rm a logical, indicating whether na's are omitted.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
-#' }
+#' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 #' @export
-h2o.median <- function(x, na.rm = TRUE) {
-  .h2o.nary_frame_op("median", x, na.rm)
-}
+h2o.median <- function(x, na.rm = TRUE) .eval.frame(.newExpr("median",x,na.rm)):data
 
 #' @rdname h2o.median
-#' @export
-setMethod("median", "H2OFrame", h2o.median)
+median.Frame <- h2o.median
 
 #' Range of an H2O Column
 #'
-#' @param x An H2OFrame object.
+#' @param x An Frame object.
 #' @param na.rm ignore missing values
 #' @export
-setMethod("range", "H2OFrame", function(x,na.rm=TRUE) .h2o.nary_frame_op("range", x, na.rm))
+range <- function(x,na.rm = TRUE) {
+  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
+  else .newExpr("range",x,na.rm)
+}
 
 #' Cut H2O Numeric Data to Factor
 #'
 #' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
 #' leftmost interval corresponds to the level one, the next is level two, etc.
 #'
-#' @param x An \linkS4class{H2OFrame} object with numeric columns.
+#' @param x An Frame object with numeric columns.
 #' @param breaks A numeric vector of two or more unique cut points.
 #' @param labels Labels for the levels of the resulting category. By default, labels are constructed sing "(a,b]"
 #'        interval notation.
@@ -458,15 +427,15 @@ setMethod("range", "H2OFrame", function(x,na.rm=TRUE) .h2o.nary_frame_op("range"
 #' @param right /code{Logical}, indicating if the intervals should be closed on the right (opened on the left) or vice
 #'        versa.
 #' @param dig.lab Integer which is used when labels are not given, determines the number of digits used in formatting
-#'        the beak numbers.
+#'        the break numbers.
 #' @param ... Further arguments passed to or from other methods.
-#' @return Returns an \linkS4class{H2OFrame} object containing the factored data with intervals as levels.
+#' @return Returns an Frame object containing the factored data with intervals as levels.
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath, destination_frame = "iris.hex")
+#' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 #' summary(iris.hex)
 #'
 #' # Cut sepal length column into intervals determined by min/max/quantiles
@@ -476,22 +445,22 @@ setMethod("range", "H2OFrame", function(x,na.rm=TRUE) .h2o.nary_frame_op("range"
 #' }
 #' @export
 h2o.cut <- function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3, ...) {
-  if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
   if (!is.numeric(breaks) || length(breaks) == 0L || !all(is.finite(breaks)))
     stop("`breaks` must be a numeric vector")
-  .h2o.nary_row_op("cut", x, breaks, labels, include.lowest, right, dig.lab)
+  .newExpr("cut", chk.Frame(x), breaks, labels, include.lowest, right, dig.lab)
 }
 
+#' @rdname h2o.cut
 #' @export
-cut.H2OFrame <- h2o.cut
+cut.Frame <- h2o.cut
 
-# `match` or %in% for H2OFrame
+# `match` or %in% for Frame
 #' Value Matching in H2O
 #'
 #' \code{match} and \code{\%in\%} return values similar to the base R generic
 #' functions.
 #'
-#' @param x a categorical vector from an \linkS4class{H2OFrame} object with
+#' @param x a categorical vector from an Frame object with
 #'        values to be matched.
 #' @param table an R object to match \code{x} against.
 #' @param nomatch the value to be returned in the case when no match is found.
@@ -503,39 +472,38 @@ cut.H2OFrame <- h2o.cut
 #' \donttest{
 #' h2o.init()
 #' hex <- as.h2o(iris)
-#' match(hex[,5], c("setosa", "versicola"))   # versipepsi
+#' #match(hex[,5], c("setosa", "versicola"))   # versipepsi
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
-  .h2o.nary_row_op("match", x, table, nomatch, incomparables)
+  .newExpr("match", chk.Frame(x), table, nomatch, incomparables)
 }
 
 #' @rdname h2o.match
 #' @export
-setMethod("match", "H2OFrame", h2o.match)
+match.Frame <- h2o.match
 
 # %in% method
 #' @rdname h2o.match
 #' @export
-setMethod("%in%", signature("H2OFrame", "character"), function(x, table) h2o.match(x, table, nomatch = 0))
-
-# %in% method
-#' @rdname h2o.match
-#' @export
-setMethod("%in%", signature("H2OFrame", "numeric"), function(x, table) h2o.match(x, table, nomatch=0))
+`%in%` <- function(x,table) {
+  if( is.Frame(x) ) h2o.match(x,table,nomatch=0)
+  else base::`%in%`(x,table)
+}
 
 #' Remove Rows With NAs
 #'
-#' @param object H2OFrame object
+#' @rdname na.omit
+#' @param object Frame object
 #' @param ... Ignored
 #' @export
-setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.omit", object) )
+na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 
-#' Compute DCT of an H2OFrame
+#' Compute DCT of an Frame
 #'
-#' Compute the Discrete Cosine Transform of every row in the H2OFrame
+#' Compute the Discrete Cosine Transform of every row in the Frame
 #'
-#' @param data An \linkS4class{H2OFrame} object representing the dataset to transform
+#' @param data An Frame object representing the dataset to transform
 #' @param destination_frame A frame ID for the result
 #' @param dimensions An array containing the 3 integer values for height, width, depth of each sample.
 #'        The product of HxWxD must total up to less than the number of columns.
@@ -543,43 +511,35 @@ setMethod("na.omit", "H2OFrame", function(object, ...) .h2o.nary_frame_op("na.om
 #' @param inverse Whether to perform the inverse transform
 #' @examples
 #' \donttest{
-#'   library(h2o)
-#'   localH2O = h2o.init()
-#'   df <- h2o.createFrame(localH2O, rows = 1000, cols = 8*16*24,
-#'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
-#'   df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
-#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
-#'   max(abs(df1-df2))
+#'   #library(h2o)
+#'   #h2o.init()
+#'   #df <- h2o.createFrame(rows = 1000, cols = 8*16*24,
+#'   #                      categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
+#'   #df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
+#'   #df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
+#'   #max(abs(df1-df2))
 #'
-#'   df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
-#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
-#'   max(abs(df1-df2))
+#'   #df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
+#'   #df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
+#'   #max(abs(df1-df2))
 #'
-#'   df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
-#'   df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
-#'   max(abs(df1-df2))
+#'   #df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
+#'   #df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
+#'   #max(abs(df1-df2))
 #' }
 #' @export
 h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
-  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-  ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(data)
-  if( delete ) {
-    temp_key <- data@frame_id
-    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, frame_id = temp_key)
-  }
   if(!is.logical(inverse)) stop("inverse must be a boolean value")
   params <- list()
-  params$dataset <- data@frame_id
+  params$dataset <- .eval.frame(chk.Frame(data)):id
   params$dimensions <- .collapse(dimensions)
   if (!missing(destination_frame))
     params$destination_frame <- destination_frame
   params$inverse <- inverse
 
-  res <- .h2o.__remoteSend(data@conn, method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
+  res <- .h2o.__remoteSend(method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(data@conn, job_key)
-
   h2o.getFrame(res$destination_frame$name)
 }
 
@@ -587,252 +547,192 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
 
-# TODO: s4 year, month impls as well?
 #' Convert Milliseconds to Years in H2O Datasets
 #'
-#' Convert the entries of a \linkS4class{H2OFrame} object from milliseconds to years, indexed
+#' Convert the entries of a Frame object from milliseconds to years, indexed
 #' starting from 1900.
 #'
 # is this still true?
 #' This method calls the function of the MutableDateTime class in Java.
-#' @param x An \linkS4class{H2OFrame} object.
-#' @return A \linkS4class{H2OFrame} object containig the entries of \code{x} converted to years
+#' @param x An Frame object.
+#' @return A Frame object containig the entries of \code{x} converted to years
 #'         starting from 1900, e.g. 69 corresponds to the year 1969.
 #' @seealso \code{\link{h2o.month}}
 #' @export
-h2o.year <- function(x){
-  if( missing(x) ) stop('must specify x')
-  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-  res1 <- .h2o.unary_frame_op('year', x)
-  .h2o.binary_frame_op("-", res1, 1900)
-}
+h2o.year <- function(x) .newExpr("-",.newExpr("year", chk.Frame(x)),1900)
 
 #' Convert Milliseconds to Months in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 1 to
+#' Converts the entries of a Frame object from milliseconds to months (on a 1 to
 #' 12 scale).
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to months of
+#' @param x An Frame object.
+#' @return A Frame object containing the entries of \code{x} converted to months of
 #'         the year.
 #' @seealso \code{\link{h2o.year}}
 #' @export
-h2o.month <- function(x){
-  if( missing(x) ) stop('must specify x')
-  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-  .h2o.unary_frame_op('month', x)
-}
+h2o.month <- function(x) .newExpr("month", chk.Frame(x))
 
 #' Convert Milliseconds to Week of Week Year in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to weeks of the week
+#' Converts the entries of a Frame object from milliseconds to weeks of the week
 #' year (starting from 1).
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to weeks of
+#' @param x An Frame object.
+#' @return A Frame object containing the entries of \code{x} converted to weeks of
 #'         the week year.
 #' @seealso \code{\link{h2o.month}}
 #' @export
-h2o.week <- function(x){
-  if( missing(x) ) stop('must specify x')
-  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-  .h2o.unary_frame_op('week', x)
-}
+h2o.week <- function(x) .newExpr("week", chk.Frame(x))
 
 #' Convert Milliseconds to Day of Month in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to days of the month
+#' Converts the entries of a Frame object from milliseconds to days of the month
 #' (on a 1 to 31 scale).
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to days of
+#' @param x An Frame object.
+#' @return A Frame object containing the entries of \code{x} converted to days of
 #'         the month.
 #' @seealso \code{\link{h2o.month}}
 #' @export
-h2o.day <- function(x){
-  if( missing(x) ) stop('must specify x')
-  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-  .h2o.unary_frame_op('day', x)
-}
+h2o.day <- function(x) .newExpr("day", chk.Frame(x))
 
 #' Convert Milliseconds to Day of Week in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to days of the week
+#' Converts the entries of a Frame object from milliseconds to days of the week
 #' (on a 0 to 6 scale).
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to days of
+#' @param x An Frame object.
+#' @return A Frame object containing the entries of \code{x} converted to days of
 #'         the week.
 #' @seealso \code{\link{h2o.day}, \link{h2o.month}}
 #' @export
-h2o.dayOfWeek <- function(x){
-  if( missing(x) ) stop('must specify x')
-  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-  .h2o.unary_frame_op('dayOfWeek', x)
-}
+h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.Frame(x))
 
 #' Convert Milliseconds to Hour of Day in H2O Datasets
 #'
-#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to hours of the day
+#' Converts the entries of a Frame object from milliseconds to hours of the day
 #' (on a 0 to 23 scale).
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to hours of
+#' @param x An Frame object.
+#' @return A Frame object containing the entries of \code{x} converted to hours of
 #'         the day.
 #' @seealso \code{\link{h2o.day}}
 #' @export
-h2o.hour <- function(x){
-  if( missing(x) ) stop('must specify x')
-  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-  .h2o.unary_frame_op('hour', x)
-}
+h2o.hour <- function(x) .newExpr("hour", chk.Frame(x))
 
 #' @rdname h2o.year
 #' @export
 year <- function(x) UseMethod('year', x)
 #' @rdname h2o.year
 #' @export
-year.H2OFrame <- h2o.year
+year.Frame <- h2o.year
 
 #' @rdname h2o.month
 #' @export
 month <- function(x) UseMethod('month', x)
 #' @rdname h2o.month
 #' @export
-month.H2OFrame <- h2o.month
+month.Frame <- h2o.month
 
 #' @rdname h2o.week
 #' @export
 week <- function(x) UseMethod('week', x)
 #' @rdname h2o.week
 #' @export
-week.H2OFrame <- h2o.week
+week.Frame <- h2o.week
 
 #' @rdname h2o.day
 #' @export
 day <- function(x) UseMethod('day', x)
 #' @rdname h2o.day
 #' @export
-day.H2OFrame <- h2o.day
+day.Frame <- h2o.day
 
 #' @rdname h2o.dayOfWeek
 #' @export
 dayOfWeek <- function(x) UseMethod('dayOfWeek', x)
 #' @rdname h2o.dayOfWeek
 #' @export
-dayOfWeek.H2OFrame <- h2o.dayOfWeek
+dayOfWeek.Frame <- h2o.dayOfWeek
 
 #' @rdname h2o.hour
 #' @export
 hour <- function(x) UseMethod('hour', x)
 #' @rdname h2o.hour
 #' @export
-hour.H2OFrame <- h2o.hour
+hour.Frame <- h2o.hour
 
 #' @export
-as.Date.H2OFrame <- function(x, format, ...) {
+as.Date.Frame <- function(x, format, ...) {
   if(!is.character(format)) stop("format must be a string")
-
-  expr = paste("as.Date(", paste(x@frame_id, deparse(eval(format, envir = parent.frame())), sep = ","), ")", sep = "")
-  .h2o.nary_frame_op("as.Date", x, format, ...)
+  .newExpr("as.Date", chk.Frame(x), .quote(format), ...)
 }
 
 #' Set the Time Zone on the H2O Cloud
 #'
 #' @param tz The desired timezone.
-#' @param conn An H2OConnection object.
 #' @export
-h2o.setTimezone <- function(tz, conn=h2o.getConnection()) {
-  expr <- paste0("(setTimeZone \"", tz, "\"")
-  res <- .h2o.__remoteSend(conn, h2oRestApiVersion = 99, .h2o.__RAPIDS, ast=expr, method = "POST")
-}
+h2o.setTimezone <- function(tz) .fetch.data(.newExpr("setTimeZone",.quote(tz)),1000)
 
 #' Get the Time Zone on the H2O Cloud
+#' Returns a string
 #'
-#' @param conn An H2OConnection object.
 #' @export
-h2o.getTimezone <- function(conn=h2o.getConnection()) {
-  ast <- new("ASTNode", root = new("ASTApply", op = "getTimeZone"))
-  mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "getTimeZone"), linkToGC = TRUE, mutable = mutable)
-  ret <- as.data.frame(fr)
-  h2o.rm(fr@frame_id, fr@conn)
-  ret
-}
+h2o.getTimezone <- function() .fetch.data(.newExpr("getTimeZone"),1000)
 
 #' List all of the Time Zones Acceptable by the H2O Cloud.
 #'
-#' @param conn An H2OConnection object.
 #' @export
-h2o.listTimezones <- function(conn=h2o.getConnection()) {
-  ast <- new("ASTNode", root = new("ASTApply", op = "listTimeZones"))
-  mutable <- new("H2OFrameMutableState", ast = ast)
-  fr <- .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "listTimeZones"), linkToGC = TRUE, mutable = mutable)
-  ret <- as.data.frame(fr)
-  h2o.rm(fr@frame_id, fr@conn)
-  ret
-}
-#
-#diff.H2OFrame <- function(x, lag = 1, differences = 1, ...) {
-#  if(!is.numeric(lag)) stop("lag must be numeric")
-#  if(!is.numeric(differences)) stop("differences must be numeric")
-#
-#  expr <- paste("diff(", paste(x@frame_id, lag, differences, sep = ","), ")", sep = "")
-#  res <- .h2o.__exec2(x@conn, expr)
-#  .newH2OFrame("H2OFrame", conn=x@conn, frame_id=res$dest_key, logic=FALSE, finalizers=x@finalizers)
-#}
+h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000)
 
 #' Produce a Vector of Random Uniform Numbers
 #'
 #' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
 #' dataset.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An Frame object.
 #' @param seed A random seed used to generate draws from the uniform distribution.
 #' @return A vector of random, uniformly distributed numbers. The elements are between 0 and 1.
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' s = h2o.runif(prostate.hex)
 #' summary(s)
 #'
-#' prostate.train = prostate.hex[s <= 0.8,]
-#' prostate.train = h2o.assign(prostate.train, "prostate.train")
-#' prostate.test = prostate.hex[s > 0.8,]
-#' prostate.test = h2o.assign(prostate.test, "prostate.test")
-#' nrow(prostate.train) + nrow(prostate.test)
+#' #prostate.train = prostate.hex[s <= 0.8,]
+#' #prostate.train = h2o.assign(prostate.train, "prostate.train")
+#' #prostate.test = prostate.hex[s > 0.8,]
+#' #prostate.test = h2o.assign(prostate.test, "prostate.test")
+#' #nrow(prostate.train) + nrow(prostate.test)
 #' }
 #' @export
 h2o.runif <- function(x, seed = -1) {
-  if (!is(x, "H2OFrame")) stop("`data` must be an H2OFrame object")
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
-  if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
-  .h2o.nary_row_op("h2o.runif", x, seed)
+  if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
+  .newExpr("h2o.runif", chk.Frame(x), seed)
 }
 
-#' Check H2OFrame columns for factors
+#' Check Frame columns for factors
 #'
-#' Determines if any column of an H2OFrame object contains categorical data.
+#' Determines if any column of an Frame object contains categorical data.
 #'
 #' @name h2o.anyFactor
-#' @param x An \code{\linkS4class{H2OFrame}} object.
+#' @param x An \code{Frame} object.
 #' @return Returns a logical value indicating whether any of the columns in \code{x} are factors.
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.importFile(localH2O, path = irisPath)
+#' iris.hex <- h2o.importFile(path = irisPath)
 #' h2o.anyFactor(iris.hex)
 #' }
 #' @export
-h2o.anyFactor <- function(x) {
-  if(!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
-  .h2o.unary_scalar_op("any.factor", x)
-}
+h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -842,519 +742,332 @@ h2o.anyFactor <- function(x) {
 # Slicing
 #-----------------------------------------------------------------------------------------------------------------------
 
-#' Extract or Replace Parts of an H2OFrame Object
+# Convert to Currents number-list syntax
+.num.list <- function(nl) paste0('[',paste0(nl,collapse=" "),']')
+
+# Convert to Currents string-list syntax
+.quote <- function(x) paste0('"',x,'"')
+.str.list <- function(sl) paste0('[',paste0('"',sl,'"',collapse=" "),']')
+
+# Convert a row or column selector to zero-based numbering and return a string
+.row.col.selector <- function( sel, raw_sel=NULL, envir=NULL ) {
+  if( !is.symbol(sel) && is.language(sel) && sel[[1]] == ":" ) {
+    sub <- if( eval(sel[[2]], envir=envir) < 0 ) 0 else 1L
+    s <- paste0( "[", eval(sel[[2]], envir=envir) - sub, ":", abs(eval(sel[[3]], envir=envir) - eval(sel[[2]], envir=envir))+1L, "]")
+    return( s )
+  }
+  sel <- if( !is.null(raw_sel) ) raw_sel else eval(sel)
+  if( is.numeric(sel) ) { # number list for column selection; zero based
+    sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
+    .num.list(sel2)
+  } else if( is.null(sel) ) "[]"  # Empty selector
+  else as.character(sel)
+}
+
+#' Extract or Replace Parts of an Frame Object
 #'
-#' Operators to extract or replace parts of H2OFrame objects.
+#' Operators to extract or replace parts of Frame objects.
 #'
-#' @name H2OFrame-Extract
-#' @param x object from which to extract element(s) or in which to replace element(s).
-#' @param i,j,... indices specifying elements to extract or replace. Indices are numeric or
-#'        character vectors or empty (missing) or will be matched to the names.
-#' @param name a literal character string or a name (possibly backtick quoted).
-#' @param drop a logical, whether or not to attempt to reduce dimensions to the
-#'        lowest possible.
-#' @param exact controls possible partial matching of \code{[[} when extracting
-#'              a character
-#' @param value an array-like H2O object similar to \code{x}.
+#' @name Frame-Extract
 NULL
 
-#' @aliases [,H2OFrame-method
-#' @rdname H2OFrame-Extract
+#' @aliases [,Frame-method
+#' @rdname Frame-Extract
+#' @param data object from which to extract element(s) or in which to replace element(s).
+#' @param row index specifying row element(s) to extract or replace. Indices are numeric or
+#'        character vectors or empty (missing) or will be matched to the names.
+#' @param col index specifying column element(s) to extract or replace.
+#' @param drop Unused
 #' @export
-setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
-  missingI <- missing(i)
-  missingJ <- missing(j)
+`[.Frame` <- function(data,row,col,drop=TRUE) {
+  chk.Frame(data)
 
-  if( missingJ ) {
-    if( missingI ) return(x)
-
-    if( ((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L) ) {
-      j <- i
-      missingI <- TRUE
-      missingJ <- FALSE
+  # This function is called with a huge variety of argument styles
+  # Here's the breakdown:
+  #   Style          Type #args  Description
+  # df[]           - na na 2    both missing, identity with df
+  # df["colname"]  - c  na 2    single column by name, df$colname
+  # df[3]          - X  na 2    if ncol > 1 then column else row
+  # df[,]          - na na 3    both missing, identity with df
+  # df[2,]         - r  na 3    constant row, all cols
+  # df[1:150,]     - r  na 3    selection of rows, all cols
+  # df[,3]         - na c  3    constant column
+  # df[,1:10]      - na c  3    selection of columns
+  # df[,"colname"] - na c  3    single column by name
+  # df[2,"colname"]- r  c  3    row slice and column-by-name
+  # df[2,3]        - r  c  3    single element
+  # df[1:150,1:10] - r  c  3    rectangular slice
+  # df[a<b,]       - f  na 3    boolean row slice
+  # df[a<b,c]      - f  c  3    boolean row slice
+  is1by1 <- !missing(col) && !missing(row) && !is.Frame(row) && length(col) == 1 && length(row) == 1
+  if( nargs() == 2 &&   # Only row, no column; nargs==2 distinguishes "df[2,]" (row==2) from "df[2]" (col==2)
+      # is.char tells cars["cylinders"], or if there are multiple columns.
+      # Single column with numeric selector is row: car$cylinders[100]
+      (is.character(row) || ncol(data) > 1) ) {
+    # Row is really column: cars[3] or cars["cylinders"] or cars$cylinders
+    col <- row
+    row <- NA
+  }
+  if( !missing(col) ) {     # Have a column selector?
+    if( is.logical(col) ) { # Columns by boolean choice
+      print(col)
+      stop("unimplemented1")
+    } else if( is.character(col) ) { # Columns by name
+      assign("idx", match(col,colnames(data))) # Match on name
+      if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
+      col <- idx
     }
+    idx <- .row.col.selector(col,envir=parent.frame()) # Generic R expression
+    assign("data",.newExpr("cols",data,idx)) # Column selector
   }
-
-  finalizers <- x@finalizers
-
-  if (missingI) {
-    nrows <- x@mutable$nrows
-    rows <- "()"
-  } else {
-    nrows <- NA_integer_
-    if (is(i, "H2OFrame")) {
-      finalizers <- c(finalizers, i@finalizers)
-      rows <- .get(i)
-    } else if (is(i, "ASTNode"))
-      rows <- i
-    else
-      rows <- .eval(substitute(i), parent.frame())
+  # Have a row selector?
+  if( !missing(row) && (is.Frame(row) || !is.na(row)) ) {
+    if( !is.Frame(row) )    # Generic R expression
+      row <- .row.col.selector(substitute(row), row,envir=parent.frame())
+    assign("data",.newExpr("rows",data,row)) # Row selector
   }
-
-  if (missingJ) {
-    ncols <- x@mutable$ncols
-    col_names <- x@mutable$col_names
-    cols <- "\"null\""  # TODO: investigate why changing this to "()" borks the object
-  } else {
-    ncols <- NA_integer_
-    col_names <- NA_character_
-    if (is.logical(j))
-      j <- which(rep(j, length.out = ncol(x)))
-    else if (is.character(j)) {
-      j <- match(j, colnames(x))
-      if (any(is.na(j)))
-        stop("undefined column names specified")
-    }
-    cols <- .eval(substitute(j), parent.frame())
-  }
-  op  <- new("ASTApply", op = "[")
-  ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
-  if( !missingI && !missingJ && length(i) == 1L && length(j) == 1L && i > 0L && j > 0) {
-    .h2o.eval.scalar(h2o.getConnection(), ast)
-  } else {
-    mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-    .newH2OFrame("H2OFrame", conn = x@conn,  frame_id = .key.make(x@conn, "subset"),
-                  finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
-  }
-})
-
-#' @rdname H2OFrame-Extract
-#' @export
-setMethod("$", "H2OFrame", function(x, name) {
-  x[[name, exact = FALSE]]
-})
-
-#' @rdname H2OFrame-Extract
-#' @export
-setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
-  if(missing(i))
-    return(x)
-  if(length(i) > 1L)
-    stop("`[[` can only select one column")
-  if (is.character(i)) {
-    if (exact)
-      i <- match(i, colnames(x))
-    else
-      i <- pmatch(i, colnames(x))
-  }
-  if (is.na(i))
-    NULL
-  else
-    x[,i]
-})
-
-#' Subsetting an H2O Frame
-#'
-#' Returns a subset of an \linkS4class{H2OFrame} which meets conditions.
-#'
-#' @param x a \linkS4class{H2OFrame} to be subsetted
-#' @param subset logical expression indicating elements or rows to keep
-#' @param select expression, indicating columns to select from a data frame
-#' @param drop passed on the the \code{[} indexing operator
-#' @param \dots further arguments to be passed to or from other methods
-#' @seealso For the base \code{R} implementation see \code{\link[base]{subset}}
-#' @export
-h2o.subset <- function(x, subset, select, drop = FALSE, ...) {
-  missingSubset <- missing(subset)
-  missingSelect <- missing(select)
-
-  if (!missingSubset) {
-    env  <- as.environment(x)
-    rows <- eval(substitute(subset), env, parent.frame())
-  }
-
-  if (!missingSelect) {
-    env  <- new.env()
-    cnms <- colnames(x)
-    for (j in seq_along(x))
-      assign(cnms[j], j, env)
-    cols <- eval(substitute(select), env, parent.frame())
-  }
-
-  if (missingSubset && missingSelect) x
-  else if (missingSelect)             x[rows,]
-  else if (missingSubset)             x[,cols]
-  else                                x[rows, cols]
+  if( is1by1 ) .fetch.data(data,1)[[1]]
+  else         data
 }
 
+#' @rdname Frame-Extract
+#' @param x An H2O Frame
+#' @param name a literal character string or a name (possibly backtick quoted).
 #' @export
-subset.H2OFrame <- h2o.subset
+`$.Frame` <- function(x, name) { x[[name, exact = FALSE]] }
 
-#-----------------------------------------------------------------------------------------------------------------------
-# Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
-#-----------------------------------------------------------------------------------------------------------------------
-#' @rdname H2OFrame-Extract
+#' @rdname Frame-Extract
+#' @param i index
+#' @param exact controls possible partial matching of \code{[[} when extracting
+#'              a character
 #' @export
-setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
-  missingI <- missing(i)
-  missingJ <- missing(j)
-  if( !missingJ && is.na(j) ) j <- as.list(match.call())$j
-
-  updateColName <- FALSE
-  idx <- 0
-  name <- ""
-  if( !missingI && is.character(i) && missingJ ) {  ## case where fr["baz"] <- qux
-    missingI <- TRUE
-    missingJ <- FALSE
-    j <- i
+`[[.Frame` <- function(x, i, exact = TRUE) {
+  if( missing(i) )  return(x)
+  if( length(i) > 1L )  stop("`[[` can only select one column")
+  if( is.character(i)) {
+    if( exact )  i <-  match(i, colnames(x))
+    else         i <- pmatch(i, colnames(x))
   }
+  if( is.na(i) ) NULL
+  else           x[,i]
+}
 
-  if(!missingI && !is.numeric(i))
-    stop("`i` must be missing or a numeric vector")
-  if(!missingJ && !is.numeric(j) && !is.character(j))
-    stop("`j` must be missing or a numeric or character vector")
-  if( !is(value, "H2OFrame") && is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
-  if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
-    stop("`value` can only be an H2OFrame object or a numeric or character vector")
+#
+# Overload Assignment!
+#
+# Trying to remove excessive temp generation, by having the R interpreter tell
+# H2O that some computation may be used, or not.  If the expression is only
+# ever used once, then no temp is needed and the cluster can optimize the
+# lifetime.  If the temp *may* be used again, the cluster needs a temp for
+# the reuse, or else the computation needs to be "pure" and re-executed.
+#
+# After many many attempts, I think it's not reasonably possible to track
+# lifetimes in R via assignment overload.  There are too many other paths
+# that extend lifetimes that all must be caught (including, but not limited
+# to: c, list, <-, =, and the *apply series)
 
-  if (missingI && missingJ) {
-    sub <- x
-  } else if (missingI) {
-    name <- j
-    colnames(x)
-    j <- match(j, colnames(x))
+# Internal recursive printer
+.pfr <- function(x) {
+  if( is.list(res<-x:eval) )
+    res <- paste0("(",x:op," ",paste(sapply(x:eval, function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "),")")
+  paste0(x:id, ":=", res)
+}
 
-    if( any(is.na(j)) ) {
-      if( is.numeric(name) ) {
-       idx <- name
-      } else {
-        updateColName <- TRUE
-        idx <- ncol(x)+1
-      }
-      j <- .eval(idx,parent.frame())
-      op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), "()", j))
-      mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-      finalizers <- x@finalizers
-      sub <-  .newH2OFrame("H2OFrame", conn = x@conn, frame_id = .key.make(x@conn, "subset"),
-                      finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
-    } else {
-      sub <- x[,j]
-    }
-  } else if (missingJ) {
-    sub <- x[i,]
-  } else {
-    name <- j
-    j <- match(j, colnames(x))
-    if( any(is.na(j)) ) {
-      if( is.numeric(name) ) {
-        idx <- name
-      } else {
-        updateColName <- TRUE
-        idx <- ncol(x)+1
-      }
-      j <- .eval(idx,parent.frame())
-      op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i,parent.frame()), j))
-      mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-      finalizers <- x@finalizers
-      sub <-  .newH2OFrame("H2OFrame", conn = x@conn, frame_id = .key.make(x@conn, "subset"),
-                      finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
-    } else {
-      sub <- x[i, j]
-    }
-  }
+# Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
+pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
-  lhs <- .get(sub)
-  finalizers <- sub@finalizers
-  if (is(value, "H2OFrame")) {
-    finalizers <- c(finalizers, value@finalizers)
-    rhs <- .get(value)
-  } else if( is.na(value) ) {
-    rhs <- "%NA"
-  } else
-    rhs <- .eval(substitute(value), parent.frame(), FALSE)
-
-  op  <- new("ASTApply", op = "=")
-  ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  res <- .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@frame_id, finalizers = finalizers)
-
-  if( updateColName ) { colnames(res)[idx] <- name }
-  res
-})
-
-#' @rdname H2OFrame-Extract
-#' @export
-setMethod("$<-", "H2OFrame", function(x, name, value) {
-  if(!is.character(name) || length(name) != 1L || !nzchar(name))
-    stop("`name` must be a non-empty string")
-
-  idx <- match(name, colnames(x))
-  if (is.null(value)) {
-    if (is.na(idx))
-      res <- x
-    else
-      res <- x[,-idx]
-  } else {
-    if (is.na(idx))
-      idx <- ncol(x) + 1L
-    lhs <- x[,idx]
-
-    finalizers <- lhs@finalizers
-    if (is(value, "H2OFrame")) {
-      finalizers <- c(finalizers, value@finalizers)
-      rhs <- .get(value)
-    } else if (is.numeric(value) || is.integer(value) || typeof(value)=="integer" )
-      rhs <- .eval(substitute(value), parent.frame(), FALSE)
-    else
-      stop(paste0("`value` can only be an H2OFrame object, numeric or NULL. Got: ", typeof(value), ": ", value))
-
-    ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
-    res <- .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@frame_id, finalizers = finalizers)
-    colnames(res)[idx] <- name
+.eval.impl <- function(x) {
+  dat <- x:data
+  id  <- x:id
+  if( !is.null(dat) ) return( if( is.data.frame(dat) ) id else dat ) # Data already computed and cached
+  if( !is.null( id) && !is.na(id) ) return( id ) # Data already computed under ID
+  # Build the eval expression
+  stopifnot(is.list(x:eval))
+  res <- paste(sapply(x:eval, function(child) {
+    if( is.Frame(child) )                             .eval.impl(child)    # recurse
+    else if( is.numeric(  child) && length(child) > 1L ) .num.list(child)  # [ numberz ]  TODO: sup with those NaNs tho
+    else if( is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
+    else                                              child                # base
+  }),collapse=" ")
+  res <- paste0("(",x:op," ",res,")")
+  # First exec: ID is missing, convert to NA
+  # 2nd exec: ID is NA, convert to unique string
+  # 3rd exec: there is no 3rd exec, just use the ID string
+  if( is.null(id) ) .set(x,"id",NA) # 1st exec: missing->NA
+  else {                            # 2nd exec: NA-> tmp name
+    .set(x,"id", id <- .key.make("RTMP")) # Flag as code-emitted by assigning the cluster name
+    res <- paste0("(tmp= ",id," ",res,")")
   }
   res
-})
+}
 
-#' @rdname H2OFrame-Extract
-#' @export
-setMethod("[[<-", "H2OFrame", function(x, i, value) {
-  if(!is(value, "H2OFrame")) stop("Can only append an H2OFrame to an H2OFrame")
-  do.call(`$<-`, list(x = x, name = i, value = value))
-})
+.clear.impl <- function(x) {
+  if( !is.Frame(x) ) return()
+  eval <- x:eval
+  if( !is.list(eval) ) { stopifnot(is.character(x:id)); return() }
+  lapply(eval, function(child) .clear.impl(child))
+  if( is.character(x:id) )
+    .set(x,"eval",TRUE) # GC-able temp
+}
 
-#' @rdname h2o.colnames
-#' @export
-setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
-  function(x, value) {
-    if( length(value@mutable$col_names) != ncol(x) ) stop("Mismatched number of columns")
-    colnames(x) <- value@mutable$col_names
-    x@mutable$col_names <- NA_character_
-    x
-})
-
-#' @rdname h2o.colnames
-#' @export
-setMethod("colnames<-", signature(x="H2OFrame", value="character"),
-  function(x, value) {
-    if(!all(nzchar(value))) stop("Column names must be of non-zero length")
-    else if(any(duplicated(value))) stop("Column names must be unique")
-    else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
-    idxs <- 0L:(ncol(x) - 1L)
-    ast <- .h2o.nary_op_ast("colnames=", x, idxs, value)
-    .h2o.replace.frame(conn = x@conn, ast = ast, frame_id = x@frame_id, finalizers = x@finalizers)
-})
-
-#' @rdname h2o.colnames
-#' @export
-setMethod("names", "H2OFrame", function(x) { colnames(x) })
-#' @rdname h2o.colnames
-#' @export
-setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Transformation Functions: transform, within
-#-----------------------------------------------------------------------------------------------------------------------
-
-#'
-#' Transform Columns in an H2OFrame Object.
-#'
-#' Functions that facilitate column transformations of an \linkS4class{H2OFrame} object.
-#'
-#' @param _data,data An \linkS4class{H2OFrame} object.
-#' @param expr For \code{within} method, column transformations specified as an expression.
-#' @param ... For \code{transform} method, column transformations in the form \code{tag=value}.
-#' @seealso \code{\link[base]{transform}}, \code{\link[base]{within}} for the base R methods.
-#' @examples
-#' \donttest{
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' iris.hex <- as.h2o(iris, localH2O)
-#' transformed1 <- transform(iris.hex,
-#'                           Sepal.Ratio = Sepal.Length / Sepal.Width,
-#'                           Petal.Ratio = Petal.Length / Petal.Width )
-#' transformed1
-#' transformed2 <- within(iris.hex,
-#'                        {Sepal.Product <- Sepal.Length * Sepal.Width
-#'                         Petal.Product <- Petal.Length * Petal.Width
-#'                         Sepal.Petal.Ratio <- Sepal.Product / Petal.Product
-#'                         Sepal.Length <- Sepal.Width <- NULL
-#'                         Petal.Length <- Petal.Width <- NULL
-#'                         })
-#' transformed2
-#' }
-#' @export
-h2o.transform <- function(`_data`, ...) {
-  newcols <- eval(substitute(list(...)), as.environment(`_data`), parent.frame())
-  null <- unlist(lapply(newcols, is.null))
-  newcols <- newcols[!null]
-  null <- names(null)[null]
-  keep <- !(colnames(`_data`) %in% null)
-  if (!all(keep))
-    `_data` <- `_data`[,keep]
-  if (length(newcols) > 0L) {
-    newnames <- names(newcols)
-    for (j in newnames)
-      colnames(newcols[[j]]) <- j
-    newcols <- do.call(h2o.cbind, unname(newcols))
-    overwrite <- newnames %in% colnames(`_data`)
-    if (any(overwrite))
-      `_data`[,newnames[overwrite]] <- newcols[,overwrite]
-    if (!all(overwrite))
-      `_data` <- h2o.cbind(`_data`, newcols[,!overwrite])
+# Evaluate this Frame on demand.
+#
+# Because of GC, this algo requires 2 passes over the DAG.  The first pass
+# builds the expression string - but it cannot let any of the sub-parts go
+# dead, lest GC delete frames on last use... before the expression string is
+# shipped over the wire.  During the 2nd pass the internal DAG pointers are
+# wiped out, and allowed to go dead (hence can be nuked by GC).
+.eval.frame <- function(x) {
+  chk.Frame(x)
+  if( !is.character(x:id) ) {
+    exec_str <- .eval.impl(x)
+    if( !is.character(x:id) ) # Top-level gets a name always
+      .set(x,"id", id <- .key.make("RTMP"))
+    # Execute the AST on H2O
+    print(paste0("EXPR: ",exec_str))
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:id, method = "POST")
+    if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
+    if( !is.null(res$scalar) ) {
+      y <- res$scalar
+      if( y=="TRUE" ) y <- TRUE
+      else if( y=="FALSE" ) y <- FALSE
+      .set(x,"data", y)
+    }
+    # Now clear all internal DAG nodes, allowing GC to reclaim them
+    .clear.impl(x)
+    # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
+    # temps... to help debug GC issues.
+    #.h2o.gc()
   }
-  `_data`
+  x
 }
 
-#' @export
-transform.H2OFrame <- h2o.transform
-
+#' S3 Group Generic Functions for H2O
 #'
-#' @rdname h2o.transform
+#' Methods for group generic functions and H2O objects.
+#'
+#' @rdname Frame
+#' @param e1 object
+#' @param e2 object
 #' @export
-h2o.within <- function(data, expr, ...) {
-  env <- as.environment(data)
-  eval(substitute(expr), env, parent.frame())
-  null <- unlist(eapply(env, is.null))
-  null <- names(null)[null]
-  remove(list = null, envir = env)
-  newcols <- as.list(env)
-  if (length(newcols) == 0L)
-    NULL
-  else {
-    ord <- order(factor(names(newcols), levels = colnames(data)))
-    newcols <- newcols[ord]
-    for (j in names(newcols))
-      colnames(newcols[[j]]) <- j
-    do.call(h2o.cbind, unname(newcols))
-  }
+Ops.Frame <- function(e1,e2)
+  .newExpr(.Generic,
+           if( is.character(e1) ) .quote(e1) else e1,
+           if( is.character(e2) ) .quote(e2) else e2)
+
+#' @rdname Frame
+#' @param x object
+#' @export
+Math.Frame <- function(x) .newExpr(.Generic,x)
+
+#' @rdname Frame
+#' @param y object
+#' @export
+Math.Frame <- function(x,y) .newExpr(.Generic,x,y)
+
+#' @rdname Frame
+#' @param ... Further arguments passed to or from other methods.
+#' @export
+Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
+
+#' @rdname Frame
+#' @param na.rm logical. whether or not missing values should be removed
+#' @export
+Summary.Frame <- function(x,...,na.rm) {
+  if( na.rm ) stop("na.rm versions not impl")
+  # Eagerly evaluation, to produce a scalar
+  res <- .eval.frame(.newExprList(.Generic,list(x,...))):data
+  if( .Generic=="all" ) as.logical(res) else res
 }
 
+
+#' @rdname Frame
 #' @export
-within.H2OFrame <- h2o.within
+`!.Frame` <- function(x) .newExpr("!!",x)
 
-#-----------------------------------------------------------------------------------------------------------------------
-# Inspection/Summary Operations
-#-----------------------------------------------------------------------------------------------------------------------
+#' @rdname Frame
+#' @export
+is.na.Frame <- function(x) .newExpr("is.na", x)
 
-#' The Number of Rows/Columns of an H2O Dataset
+#' @rdname Frame
+#' @export
+t.Frame <- function(x) .newExpr("t",x)
+
+#' @rdname Frame
+#' @export
+log <- function(x, ...) {
+  if( !is.Frame(x) ) .Primitive("log")(x)
+  else .newExpr("log",x)
+}
+
+#' @rdname Frame
+#' @export
+trunc <- function(x, ...) {
+  if( !is.Frame(x) ) .Primitive("trunc")(x)
+  else .newExpr("trunc",x)
+}
+
+#' @rdname Frame
+#' @export
+`%*%` <- function(x, y) {
+  if( !is.Frame(x) ) .Primitive("%*%")(x,y)
+  else .newExpr("x",x,y)
+}
+
+#' Returns the Dimensions of an H2O Frame
 #'
-#' Returns a count of the number of rows or columns in an \code{\linkS4class{H2OFrame}} object.
+#' Returns the number of rows and columns for a Frame object.
 #'
-#' @name h2o.nrow
-#' @param x An \linkS4class{H2OFrame} object.
-#' @seealso \code{\link{dim}} for all the dimensions. \code{\link[base]{nrow}} for the default R method.
+#' @param x An Frame object.
+#' @seealso \code{\link[base]{dim}} for the base R method.
 #' @examples
-#' \donttest{
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' irisPath <- system.file("extdata", "iris.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' nrow(iris.hex)
-#' ncol(iris.hex)
-#' }
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' dim(iris.hex)
 #' @export
-h2o.nrow <- function(x) {
-  .byref.update.frame(x)
-  x@mutable$nrows
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:nrow,ncol(data))) }
+
+#' @rdname Frame
+#' @export
+nrow.Frame <- function(x) { .fetch.data(x,1); x:nrow }
+
+#' @rdname Frame
+#' @export
+ncol.Frame <- function(x) { ncol(.fetch.data(x,1)) }
+
+#' Column names of an H2O Frame
+#' @export
+dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
+
+#' Column names of an H2O Frame
+#' @export
+names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
+
+#' @export
+colnames <- function(x, do.NULL=TRUE, prefix = "col") {
+  if( !is.Frame(x) ) return(base::colnames(x,do.NULL,prefix))
+  return(names.Frame(x))
 }
 
-#'
-#' @rdname h2o.nrow
+#' @rdname Frame
 #' @export
-h2o.ncol <- function(x) {
-  .byref.update.frame(x)
-  if( x@mutable$nrows==0L ) 0L
-  else x@mutable$ncols
-}
+length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
 
-#'
-#' @rdname h2o.nrow
+#' @rdname Frame
 #' @export
-setMethod("nrow", "H2OFrame", h2o.nrow)
-
-#' @rdname h2o.nrow
-#' @export
-setMethod("ncol", "H2OFrame", h2o.ncol)
-
-#'
-#' Returns Column Names for a Parsed H2O Data Object.
-#'
-#' Returns column names for an \linkS4class{H2OFrame} object.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @param value a character string to rename columns.
-#' @seealso \code{\link[base]{colnames}} for the base R method.
-#' @examples
-#' \donttest{
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' irisPath <- system.file("extdata", "iris.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' summary(iris.hex)
-#' colnames(iris.hex)
-#' }
-#' @export
-h2o.colnames <- function(x) {
-  .byref.update.frame(x)
-  x@mutable$col_names
-}
-
-#' @rdname h2o.colnames
-#' @export
-h2o.names <- function(x) {
-  .byref.update.frame(x)
-  x@mutable$col_names
-}
-
-#' @rdname h2o.colnames
-#' @export
-setMethod("colnames", "H2OFrame", h2o.colnames)
-
-
-#' @export
-setMethod("names", "H2OFrame", h2o.names)
-
-#'
-#' Returns the Length of a Parsed H2O Data Object.
-#'
-#' Returns the length of an \code{\linkS4class{H2OFrame}}
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @seealso \code{\link[base]{length}} for the base R method.
-#' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
-#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' length(iris.hex)
-#' }
-#' @export
-h2o.length <- function(x) {
-  .byref.update.frame(x)
-  nc <- ncol(x)
-  if (!is.na(nc) && nc == 1L)
-    nrow(x)
-  else
-    nc
-}
-
-#' @rdname h2o.length
-#' @export
-setMethod("length", "H2OFrame", h2o.length)
+h2o.length <- length.Frame
 
 #'
 #' Return the levels from the column requested column.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An Frame object.
 #' @param i The index of the column whose domain is to be returned.
 #' @seealso \code{\link[base]{levels}} for the base R method.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
-#' iris.hex <- as.h2o(localH2O, iris)
+#' iris.hex <- as.h2o(iris)
 #' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
-#' }
 #' @export
-h2o.levels <- function(x, i) {
-  if( missing(i) ) {
-    if( ncol(x) > 1 ) return( .h2o.nary_frame_op("levels", x) )
-    i <- 1
-  } else if( is.character(i) ) i <- match(i, colnames(x))
-  if( is.na(i) ) stop("no such column found")
-  levels <- as.data.frame(.h2o.nary_frame_op("levels", x[,i]))[,1]
-  if( length(levels) == 0 ) {return(NULL)} else {return(levels)}
-}
+h2o.levels <- function(x, i) levels(.fetch.data(x,1)[,i])
 
 #'
 #' Set Levels of H2O Factor Column
@@ -1365,151 +1078,238 @@ h2o.levels <- function(x, i) {
 #' @param x A single categorical column.
 #' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
 #' @export
-h2o.setLevels <- function(x, levels) .h2o.nary_frame_op("setDomain", x, levels)
+h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.Frame(x), levels)
 
-#'
-#' Returns the Dimensions of a Parsed H2O Data Object.
-#'
-#' Returns the number of rows and columns for an \linkS4class{H2OFrame} object.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @seealso \code{\link[base]{dim}} for the base R method.
-#' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
-#' irisPath <- system.file("extdata", "iris.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' dim(iris.hex)
-#' }
-h2o.dim <- function(x) c(nrow(x), ncol(x))
-
-#' @rdname h2o.dim
-#' @export
-setMethod("dim", "H2OFrame", h2o.dim)
 
 #'
 #' Return the Head or Tail of an H2O Dataset.
 #'
-#' Returns the first or last rows of an H2O parsed data object.
+#' Returns the first or last rows of an Frame object.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @name h2o.head
+#' @param x An Frame object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #' @param ... Further arguments passed to or from other methods.
-#' @return A data frame containing the first or last n rows of an \linkS4class{H2OFrame} object.
+#' @return A Frame containing the first or last n rows of an Frame object.
 #' @examples
-#' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' head(australia.hex, 10)
 #' tail(australia.hex, 10)
-#' }
 #' @export
-h2o.head <- function(x, n = 6L, ...) {
+h2o.head <- function(x, ..., n=6L) {
   stopifnot(length(n) == 1L)
-  .byref.update.frame(x)
-
-  numRows <- nrow(x)
-  n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
-  nc <- ncol(x)
-  if( n==0L && nc==0L ) { return(data.frame()) }
-  if(n == 0L) {
-    data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
-  } else {
-    tmp_head <- x[1:n,]  # seq_len unimpl
-    x.slice <- as.data.frame(tmp_head)
-   # x.slice <- tmp_head
-    h2o.rm(tmp_head@frame_id, tmp_head@conn)
-    x.slice
-  }
+  n <- if (n < 0L) max(nrow(x) + n, 0L)
+       else        min(n, nrow(x))
+  if( n >= 0L && n <= 1000L ) # Short version, just report the cached internal DF
+    head(.fetch.data(x,n),n)
+  else # Long version, fetch all asked for "the hard way"
+    .newExpr("rows",x,paste0("[0:",n,"]"))
 }
 
 #' @rdname h2o.head
 #' @export
-h2o.tail <- function(x, n = 6L, ...) {
-  stopifnot(length(n) == 1L)
-  .byref.update.frame(x)
+head.Frame <- h2o.head
+
+#' @rdname h2o.head
+#' @export
+h2o.tail <- function(x, ..., n=6L) {
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
-  if(n == 0L)
-    data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
+  if( n==0L ) head(x,n=0L)
   else {
     startidx <- max(1L, endidx - n + 1)
-    idx <- startidx:endidx
-    tmp_tail <- x[startidx:endidx,]
-    x.slice <- as.data.frame(tmp_tail)
-    h2o.rm(tmp_tail@frame_id, tmp_tail@conn)
-    rownames(x.slice) <- idx
-    x.slice
+    .newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]"))
   }
 }
 
 #' @rdname h2o.head
 #' @export
-setMethod("head", "H2OFrame", h2o.head)
+tail.Frame <- h2o.tail
 
-#' @rdname h2o.head
 #' @export
-setMethod("tail", "H2OFrame", h2o.tail)
+is.factor <- function(x) {
+  # Eager evaluate and use the cached result to return a scalar
+  if( is.Frame(x) ) {
+    x <- .fetch.data(x,1)
+    if( ncol(x)==1L ) x <- x[,1]
+  }
+  base::is.factor(x)
+}
 
-##`
-##` The H2OFrame "lazy" evaluators: Evaulate an AST.
-##`
-##` The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
-##` and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
-##` calling scope).
-##`
-
-#'
-#' Is H2O Data Frame column a enum
-#'
-#' @param x an \linkS4class{H2OFrame} object column.
-#' @return Returns logical value.
 #' @export
-setMethod("is.factor", "H2OFrame", function(x) {
-  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.factor", x)
-  else             .h2o.unary_frame_op("is.factor", x )
-})
+is.numeric <- function(x) {
+  if( !is.Frame(x) ) .Primitive("is.numeric")(x)
+  else .eval.frame(.newExpr("is.numeric",x)):data
+}
 
+#' Print An H2O Frame
 #'
-#' Is H2O Data Frame column numeric
-#'
-#' @param x an \linkS4class{H2OFrame} object column.
-#' @return Returns logical value.
+#' @param x An H2O Frame object
+#' @param ... Further arguments to be passed from or to other methods.
 #' @export
-setMethod("is.numeric", "H2OFrame", function(x) {
-  if( ncol(x)==1 ) .h2o.unary_scalar_op("is.numeric", x)
-  else             .h2o.unary_frame_op("is.numeric", x )
-})
+print.Frame <- function(x, ...) { cat(as.character(x)); invisible(x) }
 
+#' Display the structure of an H2O Frame object
+#'
+#' @param object An H2O Frame.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @param cols Print the per-column str for the Frame
+#' @export
+str.Frame <- function(object, ..., cols=FALSE) {
+  if (length(l <- list(...)) && any("give.length" == names(l)))
+    invisible(NextMethod("str", ...))
+  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
+
+  if( cols ) {
+    nc <- ncol(object)
+    nr <- nrow(object)
+    cc <- colnames(object)
+    width <- maobject(nchar(cc))
+    df <- head(.fetch.data(object,10L),10L)
+
+    # header statement
+    cat("\nFrame '", object:id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
+    l <- list()
+    for( i in 1:nc ) {
+      cat("$ ", cc[i], rep(' ', width - max(na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
+      first.10.rows <- df[,i]
+      if( is.factor(first.10.rows) ) {
+        lvls <- levels(first.10.rows)
+        nl <- length(lvls)
+        lvls.print <- lvls[1L:min(nl,2L)]
+        cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
+        cat(paste(match(first.10.rows, lvls), collapse=" "), " ...\n", sep="")
+      } else
+        cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
+    }
+  }
+}
+
+#' @rdname Frame-Extract
+#' @export
+`$.Frame` <- function(x, name) { x[[name, exact = FALSE]] }
+
+#' @rdname Frame-Extract
+#' @export
+`[[.Frame` <- function(x, i, exact = TRUE) {
+  if( missing(i) )  return(x)
+  if( length(i) > 1L )  stop("`[[` can only select one column")
+  if( is.character(i)) {
+    if( exact )  i <-  match(i, colnames(x))
+    else         i <- pmatch(i, colnames(x))
+  }
+  if( is.na(i) ) NULL
+  else           x[,i]
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
+#-----------------------------------------------------------------------------------------------------------------------
+#' @rdname Frame-Extract
+#' @param ... Further arguments passed to or from other methods.
+#' @param value To be assigned
+#' @export
+`[<-.Frame` <- function(data,row,col,...,value) {
+  chk.Frame(data)
+  allRow <- missing(row)
+  allCol <- missing(col)
+  if( !allCol && is.na(col) ) col <- as.list(match.call())$col
+
+  if( !allRow && is.character(row) && allCol ) {  ## case where fr["baz"] <- qux
+    allRow <- TRUE
+    allCol <- FALSE
+    col <- row
+  }
+
+  if(!allRow && !is.numeric(row))
+    stop("`row` must be missing or a numeric vector")
+  if(!allCol && !is.numeric(col) && !is.character(col))
+    stop("`col` must be missing or a numeric or character vector")
+  if( !is.null(value) && !is.Frame(value) ) {
+    if( is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
+    else if( !is.numeric(value) && !is.character(value) )
+      stop("`value` can only be an Frame object or a numeric or character vector")
+  }
+
+  # Row arg is missing, means "all the rows"
+  if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
+  else       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+
+  name <- NA
+  if( allCol ) {   # Col arg is missing, means "all the cols"
+    cols <- paste0("[]") # Shortcut for "all cols"
+  } else {
+    if( is.character(col) ) {
+      assign("idx", match(col, colnames(data)))
+      if( any(is.na(idx)) ) { # Any unknown names?
+        if( length(col) > 1 ) stop("unknown column names")
+        else { idx <- ncol(data)+1; name <- col } # Append 1 unknown column
+      }
+    } else idx <- col
+    if( is.null(value) ) return(`[.Frame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
+    if( idx==ncol(data)+1 && is.na(name) ) name <- paste0("C",idx)
+    cols <- .row.col.selector(idx, envir=parent.frame())
+  }
+
+  if( is.character(value) ) value <- .quote(value)
+  # Set col name and return updated frame
+  if( is.na(name) ) .newExpr("=", data, value, cols, rows)
+  else              .newExpr("=", data, value, cols, rows, .quote(name))
+}
+
+#' @rdname Frame-Extract
+#' @export
+`$<-.Frame` <- function(data, name, value) {
+  `[<-.Frame`(data,row=name,value=value) # col is missing on purpose
+}
+
+#' @rdname Frame-Extract
+#' @export
+`[[<-.Frame` <- function(data,name,value) `[<-`(data, row=name,value=chk.Frame(value))
+
+#' @rdname Frame
+#' @param value To be assigned
+#' @export
+`names<-.Frame` <- function(x, value) {
+  .newExpr("colnames=", x, paste0("[0:",ncol(x),"]"), .str.list(value))
+}
+
+#' @rdname Frame
+#' @export
+`colnames<-` <- function(x, value) {
+  if( !is.Frame(x) ) return(base::`colnames<-`(x,value))
+  return(`names<-.Frame`(x,if( is.Frame(value) ) colnames(value) else value))
+}
 
 #'
-#' Quantiles of H2O Data Frame.
+#' Quantiles of H2O Frames.
 #'
 #' Obtain and display quantiles for H2O parsed data.
 #'
-#' \code{quantile.H2OFrame}, a method for the \code{\link{quantile}} generic. Obtain and return quantiles for
-#' an \code{\linkS4class{H2OFrame}} object.
+#' \code{quantile.Frame}, a method for the \code{\link{quantile}} generic. Obtain and return quantiles for
+#' an \code{Frame} object.
 #'
-#' @param x An \code{\linkS4class{H2OFrame}} object with a single numeric column.
+#' @name h2o.quantile
+#' @param x An \code{Frame} object with a single numeric column.
 #' @param probs Numeric vector of probabilities with values in [0,1].
 #' @param combine_method How to combine quantiles for even sample sizes. Default is to do linear interpolation.
 #'                       E.g., If method is "lo", then it will take the lo value of the quantile. Abbreviations for average, low, and high are acceptable (avg, lo, hi).
 #' @param ... Further arguments passed to or from other methods.
-#' @return A vector describing the percentiles at the given cutoffs for the \code{\linkS4class{H2OFrame}} object.
+#' @return A vector describing the percentiles at the given cutoffs for the \code{Frame} object.
 #' @examples
-#' \donttest{
 #' # Request quantiles for an H2O parsed data set:
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' # Request quantiles for a subset of columns in an H2O parsed data set
 #' quantile(prostate.hex[,3])
 #' for(i in 1:ncol(prostate.hex))
 #'    quantile(prostate.hex[,i])
-#' }
 #' @export
 h2o.quantile <- function(x,
                      # AUTOGENERATED params
@@ -1518,7 +1318,7 @@ h2o.quantile <- function(x,
                      ...)
 {
   # verify input parameters
-  if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
+  if (!is(x, "Frame")) stop("`x` must be an Frame object")
   #if(!na.rm && .h2o.__unary_op("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
   if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
     stop("`probs` must be between 0 and 1 exclusive")
@@ -1531,15 +1331,16 @@ h2o.quantile <- function(x,
 
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
-  res <- .h2o.nary_frame_op("quantile", x, probs, combine_method)
+  assign("res",.newExpr("quantile", x, .num.list(probs), .quote(combine_method)))
   res <- as.matrix(res)
   col <- as.numeric(res[,-1])
   names(col) <- paste0(100*res[,1], "%")
   col
 }
 
+#' @rdname h2o.quantile
 #' @export
-quantile.H2OFrame <- h2o.quantile
+quantile.Frame <- h2o.quantile
 
 #'
 #' Summarizes the columns of a H2O data frame.
@@ -1548,25 +1349,21 @@ quantile.H2OFrame <- h2o.quantile
 #' columns and rows using vector notation (e.g. dataset[row, col])
 #'
 #' @name h2o.summary
-#' @param object An \linkS4class{H2OFrame} object.
+#' @param object An Frame object.
 #' @param factors The number of factors to return in the summary. Default is the top 6.
 #' @param ... Further arguments passed to or from other methods.
 #' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each
 #' numeric column, and the levels and category counts of the levels in each categorical column.
 #' @examples
-#' \donttest{
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' prostate.hex = h2o.importFile(path = prosPath)
 #' summary(prostate.hex)
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
-#' }
-NULL
-#' @rdname h2o.summary
 #' @export
-setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
+h2o.summary <- function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
   FORMAT.DIGITS <- 4L
   cnames <- colnames(object)
@@ -1575,7 +1372,7 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
-  fr.sum <- .h2o.__remoteSend(object@conn, paste0("Frames/", object@frame_id, "/summary"), method = "GET")$frames[[1]]
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", object:id, "/summary"), method = "GET")$frames[[1]]
   col.sums <- fr.sum$columns
   cols <- sapply(col.sums, function(col) {
     col.sum <- col
@@ -1599,8 +1396,8 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
 
       params <- format(signif( as.numeric( c(cmin, c1Q, cmedian, cmean, c3Q, cmax) ), SIG.DIGITS), digits=FORMAT.DIGITS)   # do some formatting for pretty printing
       result <- c(paste0("Min.   :", params[1L], "  "), paste0("1st Qu.:", params[2L], "  "),
-                  paste0("Median :", params[3L], "  "), paste0("Mean   :", params[4L], "  "),
-                  paste0("3rd Qu.:", params[5L], "  "), paste0("Max.   :", params[6L], "  "))
+                        paste0("Median :", params[3L], "  "), paste0("Mean   :", params[4L], "  "),
+                        paste0("3rd Qu.:", params[5L], "  "), paste0("Max.   :", params[6L], "  "))
 
       # return summary string for this column
       if( is.null(missing.count) ) result <- result
@@ -1682,7 +1479,12 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
   if( is.null(result) ) return(NULL)
   rownames(result) <- rep("", nrow(result))
   result
-})
+}
+
+#' @rdname h2o.summary
+#' @usage \\method{summary}{Frame}(object, factors, ...)
+#' @export
+summary.Frame <- h2o.summary
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Summary Statistics Operations
@@ -1693,30 +1495,22 @@ setMethod("summary", "H2OFrame", function(object, factors=6L, ...) {
 #'
 #' Obtain the mean of a column of a parsed H2O data object.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @param trim The fraction (0 to 0.5) of observations to trim from each end of \code{x} before the mean is computed.
-#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @name h2o.mean
+#' @param x An Frame object.
 #' @param ... Further arguments to be passed from or to other methods.
+#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' mean(prostate.hex$AGE)
-#' }
 #' @export
-h2o.mean <- function(x, trim = 0, na.rm = FALSE, ...) {
-  if(ncol(x) != 1L) stop("can only compute the mean of a single column")
-  if (trim != 0) stop("unimplemented: trim must be 0", call.=FALSE)
-  if (trim < 0) trim <- 0
-  if (trim > .5) trim <- .5
-  .h2o.nary_scalar_op("mean", x, trim, na.rm, ...)
-}
+h2o.mean <- function(x, ..., na.rm=TRUE) .eval.frame(.newExpr("mean",x,na.rm)):data
 
 #' @rdname h2o.mean
 #' @export
-setMethod("mean", "H2OFrame", h2o.mean)
+mean.Frame <- h2o.mean
 
 #
 #" Mode of a enum or int column.
@@ -1724,7 +1518,7 @@ setMethod("mean", "H2OFrame", h2o.mean)
 # TODO: figure out funcionality/use for documentation
 # h2o.mode <-
 # function(x) {
-#  if(!is(x, "H2OFrame")) || nrow(x) > 1L) stop('`x` must be a H2OFrame object')
+#  if(!is(x, "Frame")) || nrow(x) > 1L) stop('`x` must be a Frame object')
 # tabularx = invisible(table(x))
 #  maxCount = max(tabularx$Count)
 #  modes = tabularx$row.names[tabularx$Count == maxCount]
@@ -1736,115 +1530,110 @@ setMethod("mean", "H2OFrame", h2o.mean)
 #'
 #' Obtain the variance of a column of a parsed H2O data object.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @param y \code{NULL} (default) or a column of an \linkS4class{H2OFrame} object. The default is equivalent to y = x (but more efficient).
+#' @param x An Frame object.
+#' @param y \code{NULL} (default) or a column of an Frame object. The default is equivalent to y = x (but more efficient).
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @param use An optional character string to be used in the presence of missing values. This must be one of the following strings. "everything", "all.obs", or "complete.obs".
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' var(prostate.hex$AGE)
-#' }
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
+  if( na.rm ) stop("na.rm versions not impl")
+  if( is.null(y) ) y <- x
   if(!missing(use)) {
     if (use %in% c("pairwise.complete.obs", "na.or.complete"))
       stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   } else
     use <- "everything"
-  if ((ncol(x) == 1L) && (is.null(y) || ncol(y) == 1L))
-    .h2o.nary_scalar_op("var", x, y, na.rm, use)
-  else
-    .h2o.nary_frame_op("var", x, y, na.rm, use)
+  # Eager, mostly to match prior semantics but no real reason it need to be
+  .fetch.data(.newExpr("var",x,y,.quote(use)),ncol(x))
 }
 
 #' @rdname h2o.var
 #' @export
-setMethod("var", "H2OFrame", h2o.var)
+var <- function(x, y = NULL, na.rm = FALSE, use)  {
+  if( is.Frame(x) ) h2o.var(x,y,na.rm,use)
+  else stats::var(x,y,na.rm,use)
+}
 
 #'
 #' Standard Deviation of a column of data.
 #'
 #' Obtain the standard deviation of a column of data.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @name h2o.sd
+#' @param x An Frame object.
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @seealso \code{\link{h2o.var}} for variance, and \code{\link[stats]{sd}} for the base R implementation.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' sd(prostate.hex$AGE)
-#' }
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
-  if(ncol(x) != 1L) stop("can only compute sd of a single column.")
-  .h2o.nary_scalar_op("sd", x, na.rm)
+  if( na.rm ) stop("na.rm versions not impl")
+  .eval.frame(.newExpr("sd",x)):data
 }
 
 #' @rdname h2o.sd
 #' @export
-setMethod("sd", "H2OFrame", h2o.sd)
+sd <- function(x, na.rm=FALSE) {
+  if( is.Frame(x) ) h2o.sd(x)
+  else stats::sd(x,na.rm)
+}
 
 #'
 #' Scaling and Centering of an H2O Frame
 #'
 #' Centers and/or scales the columns of an H2O dataset.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @name h2o.scale
+#' @param x An Frame object.
 #' @param center either a \code{logical} value or numeric vector of length equal to the number of columns of x.
 #' @param scale either a \code{logical} value or numeric vector of length equal to the number of columns of x.
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath, destination_frame = "iris.hex")
+#' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 #' summary(iris.hex)
 #'
 #' # Scale and center all the numeric columns in iris data set
 #' scale(iris.hex[, 1:4])
 #' }
 #' @export
-h2o.scale <- function(x, center = TRUE, scale = TRUE) {
-  .h2o.nary_row_op("scale", x, center, scale)
-}
+h2o.scale <- function(x, center = TRUE, scale = TRUE) .newExpr("scale", chk.Frame(x), center, scale)
 
+#' @rdname h2o.scale
 #' @export
-scale.H2OFrame <- h2o.scale
+scale.Frame <- h2o.scale
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
-#' R data.frame -> H2OFrame
+#' R data.frame -> Frame
 #'
 #' Import a local R data frame to the H2O cloud.
 #'
-#' @param object An \code{R} data frame.
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
-#' of the H2O server.
+#' @param x An \code{R} data frame.
 #' @param destination_frame A string with the desired name for the H2O Frame.
 #' @export
-as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
-  if (is(object, "H2OConnection")) {
-    temp <- object
-    object <- conn
-    conn <- temp
-  }
-  if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
+as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(!is.data.frame(object)) {
-    object <- as.data.frame(object)
-  }
-  types <- sapply(object, class)
+  if(!is.data.frame(x))
+    if( length(x)==1L ) x <- data.frame(C1=x)
+    else                x <- as.data.frame(x)
+  types <- sapply(x, class)
   types <- gsub("integer64", "numeric", types)
   types <- gsub("integer", "numeric", types)
   types <- gsub("double", "numeric", types)
@@ -1854,9 +1643,9 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
   types <- gsub("character", "string", types)
   types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(object, file = tmpf, row.names = FALSE, na="NA_h2o")
-  h2f <- h2o.uploadFile(conn, tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                        col.names=colnames(object, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(object)))
+  write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+  assign("h2f",h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+                              col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x))))
   file.remove(tmpf)
   h2f
 }
@@ -1866,25 +1655,28 @@ as.h2o <- function(object, conn = h2o.getConnection(), destination_frame= "") {
 #'
 #' Downloads the H2O data and then scans it in to an R data frame.
 #'
-#' @param x An \linkS4class{H2OFrame} object.
+#' @param x An Frame object.
 #' @param ... Further arguments to be passed down from other methods.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' as.data.frame(prostate.hex)
-#' }
 #' @export
-as.data.frame.H2OFrame <- function(x, ...) {
-  .byref.update.frame(x, scalarAsFrame = FALSE)
+as.data.frame.Frame <- function(x, ...) {
+  .eval.frame(x)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
+  conn = h2o.getConnection()
 
-  urlSuffix = sprintf("DownloadDataset?frame_id=%s&hex_string=%d", URLencode(x@frame_id), as.numeric(use_hex_string))
-  ttt <- .h2o.doSafeGET(x@conn, urlSuffix = urlSuffix)
+  url <- paste0('http://', conn@ip, ':', conn@port,
+                '/3/DownloadDataset',
+                '?frame_id=', URLencode(x:id),
+                '&hex_string=', as.numeric(use_hex_string))
+
+  ttt <- getURL(url)
   n <- nchar(ttt)
 
   # Delete last 1 or 2 characters if it's a newline.
@@ -1916,101 +1708,130 @@ as.data.frame.H2OFrame <- function(x, ...) {
   df
 }
 
+#' Convert an H2O Frame to a matrix
+#'
+#' @param x An H2O Frame object
+#' @param ... Further arguments to be passed down from other methods.
 #' @export
-as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
+as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
-#' Convert H2O Data to an R Enviornment
+#' Convert an H2O Frame to a vector
 #'
-#' Converts an \linkS4class{H2OFrame} to an environment.
-#'
-#' @param x an \linkS4class{H2OFrame} class object.
-#' @return Returns an \code{R} environment object based on the
-#'         \linkS4class{H2OFrame}.
-#' localH2O <- h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
-#' names(as.environment)
-#' aa <- as.environment(prostate.hex)
-#' ls(aa)
+#' @name as.vector
+#' @param x An H2O Frame object
+#' @param mode Unused
+#' @usage \\method{as.vector}{Frame}(x,mode)
 #' @export
-setMethod("as.environment", "H2OFrame", function(x) {
-  env <- new.env()
-  for (j in colnames(x))
-    assign(j, x[[j]], env)
-  env
-})
+as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 
-#'
-#' Delete Columns from a H2OFrame
-#'
-#' Delete the specified columns from the H2OFrame. Returns a H2OFrame without the specified
-#' columns. This will trigger any lazy computation of the frame, and has side-effects.
-#'
-#' @param data The H2OFrame.
-#' @param cols The columns to remove.
+<<<<<<< Updated upstream
+=======
+#`
 #' @export
-h2o.removeVecs <- function(data, cols) {
-  if( !is(data, "H2OFrame") ) stop("`data` must be an H2OFrame.")
-  if( missing(cols) ) stop("`cols` must be specified")
-  mktmp <- !.is.eval(data)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
-  del.cols <- cols
-  if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
-  del.cols <- del.cols - 1L # 1 idx -> 0 idx
-  fr <- .h2o.nary_frame_op("removeVecs", data, del.cols)
-  res <- .h2o.eval.frame(conn=h2o.getConnection(),ast=fr@mutable$ast,frame_id=data@frame_id)
-  res
+>>>>>>> Stashed changes
+as.double.Frame <- function(x) {
+  res <- .fetch.data(x,1) # Force evaluation
+  if( is.data.frame(res) ) {
+    if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
+    res <- res[1,1]
+  }
+  .Primitive("as.double")(res)
 }
 
-#'
-#' Return the number of levels in the column.
-#'
-#' If a frame or non-categorical column is passed, returns 0.
-#'
-#' @param object An H2OFrame object.
 #' @export
-h2o.nlevels <- function(object) {
-  .h2o.nary_frame_op("nlevels", object)
+as.logical.Frame <- function(x) {
+  res <- .fetch.data(x,1) # Force evaluation
+  if( is.data.frame(res) ) {
+    if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
+    res <- res[1,1]
+  }
+  .Primitive("as.logical")(res)
+}
+
+#' @export
+as.integer.Frame <- function(x) {
+  x <- .fetch.data(x,1) # Force evaluation
+  if( is.data.frame(x) ) {
+    if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
+    x <- x[1,1]
+  }
+  .Primitive("as.integer")(x)
 }
 
 #' Convert H2O Data to Factors
 #'
 #' Convert a column into a factor column.
-#' @param x a column from an \linkS4class{H2OFrame} data set.
+#' @param x a column from an Frame data set.
 #' @seealso \code{\link{is.factor}}.
 #' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex[,2] <- as.factor(prostate.hex[,2])
 #' summary(prostate.hex)
-#' }
 #' @export
-setMethod("as.factor",    "H2OFrame", function(x)
-  .h2o.unary_frame_op("as.factor", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
-#' Convert H2O Data to Characters
+as.factor <- function(x) {
+  if( is.Frame(x) ) .newExpr("as.factor",x)
+  else base::as.factor(x)
+}
+
+
+#' Convert an H2O Frame to a String
 #'
-#' Converts an H2O column into character columns.
-#' @param x a column from an \linkS4class{H2OFrame} data set.
-#' localH2O <- h2o.init()
-#' iris.hex <- as.h2o(iris)
-#' iris.hex[,5] <- as.character(iris.hex[,5])
+#' @param x An H2O Frame object
+#' @param ... Further arguments to be passed from or to other methods.
 #' @export
-setMethod("as.character", "H2OFrame", function(x)
-  .h2o.unary_frame_op("as.character", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
+as.character.Frame <- function(x, ...) {
+  data <- .fetch.data(x,10L)
+  if( !is.data.frame(data) ) return(as.character(data))
+  nr <- nrow(x)
+  nc <- ncol(x)
+  if( nr==1L && nc==1L ) return(as.character(data[1,1]))
+  res <- paste0("Frame with ",
+      nr, ifelse(nr == 1L, " row and ", " rows and "),
+      nc, ifelse(nc == 1L, " column\n", " columns\n"), collapse="")
+  if( nr > 10L ) res <- paste0(res,"\nFirst 10 rows:\n")
+  paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
+}
+
 #' Convert H2O Data to Numeric
 #'
 #' Converts an H2O column into a numeric value column.
-#' @param x a column from an \linkS4class{H2OFrame} data set.
-#' localH2O <- h2o.init()
+#' @name as.numeric
+#' @param x a column from an Frame data set.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @examples
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
-#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
-#' prostate.hex[,2] <- as.numeric(prostat.hex[,2])
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' #prostate.hex[,2] <- as.factor (prostate.hex[,2])
+#' #prostate.hex[,2] <- as.numeric(prostate.hex[,2])
 #' @export
-setMethod("as.numeric", "H2OFrame", function(x)
-  .h2o.unary_frame_op("as.numeric", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
+#' @usage \\method{as.numeric}{Frame}(x,...)
+as.numeric.Frame <- function(x, ...) { .newExpr("as.numeric",x) }
+
+#' @export
+as.numeric <- function(x) {
+  if( !is.Frame(x) ) .Primitive("as.double")(x)
+  else as.numeric.Frame(x)
+}
+
+#'
+#' Delete Columns from a Frame
+#'
+#' Delete the specified columns from the Frame.  Returns a Frame without the specified
+#' columns.
+#'
+#' @param data The Frame.
+#' @param cols The columns to remove.
+#' @export
+h2o.removeVecs <- function(data, cols) {
+  chk.Frame(data)
+  if( missing(cols) ) stop("`cols` must be specified")
+  del.cols <- cols
+  if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
+  .newExpr("cols",data,.row.col.selector(-del.cols,envir=parent.frame()))
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
@@ -2030,51 +1851,53 @@ setMethod("as.numeric", "H2OFrame", function(x)
 #' @param no The value to return if the condition is FALSE.
 #' @return Returns a vector of new values matching the conditions stated in the ifelse call.
 #' @examples
-#' \donttest{
-#' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' h2o.init()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(localH2O, path = ausPath)
-#' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
-#' summary(australia.hex)
-#' }
+#' australia.hex = h2o.importFile(path = ausPath)
+#' #australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
+#' #summary(australia.hex)
 #' @export
-h2o.ifelse <- function(test, yes, no) {
-  if (inherits(test, "H2OFrame"))
-    .h2o.nary_row_op("ifelse", test, yes, no)
-  else if (inherits(yes, "H2OFrame") || inherits(no, "H2OFrame"))
-    .h2o.nary_frame_op("ifelse", test, yes, no)
-  else
-    stop("This funciton doesn't contain an H2O object")
+h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
+
+#' @export
+ifelse <- function(test, yes, no) {
+  if( is.atomic(test) ) {
+    if (typeof(test) != "logical")
+      storage.mode(test) <- "logical"
+    if (length(test) == 1 && is.null(attributes(test))) {
+      if (is.na(test)) {
+        return(NA)
+      } else if (test) {
+        if( length(yes) == 1 && is.null(attributes(yes)) )
+          return(yes)
+        if( is.Frame(yes) ) return(yes[,1])
+      } else {
+        if( length(no) == 1 && is.null(attributes(no)) )
+          return(no)
+        if( is.Frame(no) ) return(no[,1])
+      }
+    }
+  }
+  if( is.Frame(test) || is.Frame(yes) || is.Frame(no) ) return(h2o.ifelse(test,yes,no))
+  else base::ifelse(test,yes,no)
 }
-
-#' @rdname h2o.ifelse
-#' @export
-setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no)
-  .h2o.nary_row_op("ifelse", test, yes, no))
-
-#' @rdname h2o.ifelse
-#' @export
-setMethod("ifelse", signature(test="ANY",yes="H2OFrame", no="H2OFrame"), function(test,yes,no)
-  .h2o.nary_frame_op("ifelse", test, yes, no))
 
 #' Combine H2O Datasets by Columns
 #'
 #' Takes a sequence of H2O data sets and combines them by column
 #'
 #' @name h2o.cbind
-#' @param \dots A sequence of \linkS4class{H2OFrame} arguments. All datasets must exist on the same H2O instance
+#' @param \dots A sequence of Frame arguments. All datasets must exist on the same H2O instance
 #'        (IP and port) and contain the same number of rows.
-#' @return An \linkS4class{H2OFrame} object containing the combined \dots arguments column-wise.
+#' @return An Frame object containing the combined \dots arguments column-wise.
 #' @seealso \code{\link[base]{cbind}} for the base \code{R} method.
 #' @examples
-#' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.cbind <- h2o.cbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
-#' }
 #' @export
 h2o.cbind <- function(...) {
   li <- list(unlist(list(...)))
@@ -2082,40 +1905,9 @@ h2o.cbind <- function(...) {
   if( length(li)==1 && is.list(li[[1]]) ) {
     li <- li[[1]]
     use.args <- TRUE
-  }
-  klasses <- unlist(lapply(li, function(l) is(l, "H2OFrame")))
-  if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
-  if( use.args ) {
-    .h2o.nary_frame_op("cbind %FALSE", .args=li)
-  } else {
-    .h2o.nary_frame_op("cbind %FALSE", ...)
-  }
-}
-
-#' Set a Factor Column to a Level
-#'
-#' A method to set a factor column to one of the levels.
-#'
-#' Replace all other occurences with `level` in a factor column.
-#'
-#' @param x a column from an \linkS4class{H2OFrame} object.
-#' @param level The level at which the column will be set.
-#' @return An object of class \linkS4class{H2OFrame}.
-#' @examples
-#' \donttest{
-#' localH2O <- h2o.init()
-#' hex <- as.h2o(localH2O  , iris)
-#' hex$Species <- h2o.setLevel(hex$Species, "versicolor")
-#' }
-#' @export
-h2o.setLevel <- function(x, level) {
-  if( missing(level) ) stop("`level` is missing")
-  if( !is.character(level) ) stop("`level` must be a character")
-  mktmp <- !.is.eval(x)
-  if( mktmp ) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@frame_id)
-  }
-  .h2o.nary_frame_op("setLevel", x, level)
+  } else li <- list(...)
+  lapply(li, function(l) chk.Frame(l) )
+  .newExprList("cbind",li)
 }
 
 #' Combine H2O Datasets by Rows
@@ -2123,36 +1915,30 @@ h2o.setLevel <- function(x, level) {
 #' Takes a sequence of H2O data sets and combines them by rows
 #'
 #' @name h2o.rbind
-#' @param \dots A sequence of \linkS4class{H2OFrame} arguments. All datasets must exist on the same H2O instance
+#' @param \dots A sequence of Frame arguments. All datasets must exist on the same H2O instance
 #'        (IP and port) and contain the same number of rows.
-#' @return An \linkS4class{H2OFrame} object containing the combined \dots arguments column-wise.
+#' @return An Frame object containing the combined \dots arguments column-wise.
 #' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
 #' @examples
-#' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.cbind <- h2o.rbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
-#' }
 #' @export
 h2o.rbind <- function(...) {
-  l <- unlist(list(...))
-  if (is.list(l)) {
-    klazzez <- unlist(lapply(l, function(i) is(i, "H2OFrame")))
-    if (any(!klazzez)) stop("`h2o.rbind` accepts only of H2OFrame objects")
-    .h2o.nary_frame_op("rbind", .args=l)
-  } else {
-    klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
-    if (any(!klasses)) stop("`h2o.rbind` must consist of H2O objects only.")
-    .h2o.nary_frame_op("rbind", ...)
-  }
+  ls <- list(...)
+  l <- unlist(ls)
+  if( !is.list(l) ) l <- ls
+  klazzez <- unlist(lapply(l, function(i) is.Frame(i)))
+  if (any(!klazzez)) stop("`h2o.rbind` accepts only Frame objects")
+  .newExprList("rbind", l)
 }
 
 #' Merge Two H2O Data Frames
 #'
-#' Merges two \linkS4class{H2OFrame} objects by shared column names. Unlike the
+#' Merges two Frame objects by shared column names. Unlike the
 #' base R implementation, \code{h2o.merge} only supports merging through shared
 #' column names.
 #'
@@ -2160,13 +1946,12 @@ h2o.rbind <- function(...) {
 #' datasets must be small enough to exist in every node. Currently, this
 #' function only supports \code{all.x = TRUE}. All other permutations will fail.
 #'
-#' @param x,y \linkS4class{H2OFrame} objects
+#' @param x,y Frame objects
 #' @param all.x a logical value indicating whether or not shared values are
 #'        preserved or ignored in \code{x}.
 #' @param all.y a logical value indicating whether or not shared values are
 #'        preserved or ignored in \code{y}.
 #' @examples
-#' \donttest{
 #' h2o.init()
 #' left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
 #' color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
@@ -2175,14 +1960,8 @@ h2o.rbind <- function(...) {
 #' l.hex <- as.h2o(left)
 #' r.hex <- as.h2o(right)
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
-#' }
 #' @export
-h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
-  x_temp <- x[1:nrow(x),]
-  y_temp <- y[1:nrow(y),]
-  out <- .h2o.nary_frame_op("merge", x_temp, y_temp, all.x, all.y)
-  out
-}
+h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
 
 #' Group and Apply by Column
 #'
@@ -2196,45 +1975,55 @@ h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
 #'
 #' Similar to \code{na.methods}, \code{col.names} will pad the list with the default column names if
 #' the length is less than the number of colums groups supplied.
-#' @param data an \linkS4class{H2OFrame} object.
+#' @param data an Frame object.
 #' @param by a list of column names
 #' @param \dots any supported aggregate function.
 #' @param order.by Takes a vector column names or indices specifiying how to order the group by result.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
-#' @return Returns a new \linkS4class{H2OFrame} object with columns equivalent to the number of
+#' @return Returns a new Frame object with columns equivalent to the number of
 #'         groups created
 #' @export
 h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
-  if( !is(data, "H2OFrame") )
-      stop("`data` must be of type H2OFrame")
+  # Build the argument list: (GB data, [group.by] [order.by] {agg col "na"}...)
+  args <- list(chk.Frame(data))
 
-  # handle the data
-  mktmp <- !.is.eval(data)
-  if( mktmp ) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
-  }
-
-  # handle the columns
+  ### handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
   if(is.character(by)) {
-    vars <- match(by, colnames(data))
-    if (any(is.na(vars)))
+    group.cols <- match(by, colnames(data))
+    if (any(is.na(group.cols)))
       stop('No column named ', by, ' in ', substitute(data), '.')
   } else if(is.integer(by)) {
-    vars <- by
+    group.cols <- by
   } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)
-    vars <- as.integer(by)
+    group.cols <- as.integer(by)
   }
-  # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-  vars <- vars - 1L
-  if(vars < 0L || vars > (ncol(data)-1L))
-    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+  if(group.cols <= 0L || group.cols > ncol(data))
+    stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
+  args <- c(args,.row.col.selector(group.cols,envir=parent.frame()))
+
+  ### ORDER BY ###
+  order.by.cols <- NULL
+  if( !is.null(order.by) ) {
+    if(is.character(order.by)) {
+        order.by.cols <- match(order.by, by)
+        if (any(is.na(order.by.cols)))
+          stop('No column named ', order.by, ' in ', by, '.')
+    } else if(is.integer(order.by)) {
+      order.by.cols <- order.by
+    } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
+      order.by.cols <- as.integer(order.by)
+    }
+    if(order.by.cols < 1L || order.by.cols > ncol(data)) stop('Column ', order.by.cols, ' out of range for frame columns ', ncol(data), '.')
+  }
+  args <- c(args,.row.col.selector(order.by.cols,envir=parent.frame()))
+
 
   a <- substitute(list(...))
   a[[1]] <- NULL  # drop the wrapping list()
   nAggs <- length(a)  # the number of aggregates
-  # for each aggregate, build this list: (agg,col.idx,na.method,col.name)
+  # for each aggregate, build this list: (agg,col.idx,na.method)
   agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
   col.idxs    <- unlist(lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
@@ -2254,9 +2043,6 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   # default to "all" na.method
   na.methods.defaults <- rep("all", nAggs)
-
-  # default to agg_col.name for the column names
-  col.names.defaults  <- paste0(agg.methods, "_", colnames(data)[col.idxs])
 
   # 1 -> 0 based indexing of columns
   col.idxs <- col.idxs - 1
@@ -2287,143 +2073,14 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 
   ### End NA handling ###
 
-  ### Column Name Handling ###
-
-  # go with defaults
-  if( is.null(gb.control$col.names) ) {
-    gb.control$col.names <- col.names.defaults
-
-  # have fewer col.names passed in than aggregates -- pad with defaults
-  } else if( length(gb.control$col.names) < nAggs ) {
-
-    # no special case for only 1 column!
-    n.missing <- nAggs - length(gb.control$col.names)
-    gb.control$col.names <- c(gb.control$col.names, col.names.defaults[(nAggs-n.missing+1):nAggs])
-
-  # have more col.names than aggregates -- rm extras
-  } else if( length(gb.control$col.names) > nAggs ) {
-    gb.control$col.names <- gb.control$col.names[1:nAggs]
+  # Append the aggregates!  Append triples: aggregate, column, na-handling
+  for( idx in 1:nAggs ) {
+    args <- c(args, agg.methods[idx], eval(col.idxs[idx]), .quote(gb.control$na.methods[idx]))
   }
 
-  ### End Column Name handling ###
-
-
-  # Build the aggregates! reminder => build this list: (agg,col.idx,na.method,col.name)
-  aggs <- unlist(recursive=F, lapply(1:nAggs, function(idx) {
-    list(agg.methods[idx], eval(col.idxs[idx]), gb.control$na.methods[idx], gb.control$col.names[idx])
-  }))
-
-
-  ### ORDER BY ###
-  vars2 <- NULL
-  if( !is.null(order.by) ) {
-    if(is.character(order.by)) {
-        vars2 <- match(order.by, by)
-        if (any(is.na(vars2)))
-          stop('No column named ', order.by, ' in ', by, '.')
-      } else if(is.integer(order.by)) {
-        vars2 <- order.by
-      } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
-        vars2 <- as.integer(order.by)
-      }
-      # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-      vars2 <- vars2 - 1L
-      if(vars2 < 0L || vars2 > (ncol(data)-1L)) stop('Column ', vars2, ' out of range for frame columns ', ncol(data), '.')
-#      if( any(!(vars2 %in% vars)) )             stop("ORDER BY columns must be used in the group by.")
-  }
-
-  ### END ORDER BY ###
-
-  # create the AGG AST
-  op <- new("ASTApply", op="agg")
-  children <- list( unlist( .args.to.ast(.args=aggs) ) )
-  AGG <- new("ASTNode", root=op, children=children)
-
-  # create the group by AST
-  op <- new("ASTApply", op="GB")
-  vars <- .args.to.ast(vars)
-  if( !is.null(vars2) ) vars2 <- .args.to.ast(vars2)
-  else                  vars2 <- "()"
-  GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG,vars2))
-
-  mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-  finalizers <- data@finalizers
-  conn <- h2o.getConnection()
-  .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "group_by"),
-                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+  # Create the group by AST
+  .newExprList("GB",args)
 }
-
-# old version of h2o.groupBy -- not user friendly.
-#h2o.groupBy <- function(data, columns, aggregates=list()) {
-#  if( !is(data, "H2OFrame") )
-#    stop("`data` must be of type H2OFrame")
-#
-#  # handle the data
-#  mktmp <- !.is.eval(data)
-#  if( mktmp ) {
-#    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
-#  }
-#
-#  # handle the columns
-#  # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
-#  if(is.character(columns)) {
-#    vars <- match(columns, colnames(data))
-#    if (any(is.na(vars)))
-#      stop('No column named ', columns, ' in ', substitute(data), '.')
-#  } else if(is.integer(columns)) {
-#    vars <- columns
-#  } else if(is.numeric(columns)) {   # this will happen eg c(1,2,3)
-#    vars <- as.integer(columns)
-#  }
-#  # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-#  vars <- vars - 1L
-#  if(vars < 0L || vars > (ncol(data)-1L))
-#    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
-#
-#  # handle the aggregates list
-#  # aggregates is a list of lists:
-#  #  example: aggregates = list(min_col1 = list("min", "col1", "ignore"), maxCol2 = list("max", "col2", "all"))
-#
-#  # two things to do: 1. each sublist must be exactly length 3; and 2. if the second arg in a sublist is a character, then swap it out for the column index in the data frame.
-#  # aggs now looks like this: list( list(agg,col,na,name), ...)
-#  nAggs <- length(aggregates)
-#  aggs <- lapply(seq_along(aggregates), function(idx) {
-#    l <- aggregates[[idx]]
-#    if( length(l) != 3 )
-#      stop("Poorly specified aggregation: must be of shape list(`agg`, `column`, `na.method`)")
-#    if( is.character(l[[2]]) ) {
-#      colname <- l[[2]]
-#      l[[2]] <- match(colname, colnames(data)) - 1  # 1 -> 0 based index
-#      if( is.na(l[[2]]) )
-#        stop("No such column found: ", colname)
-#    } else {
-#      cid <- l[[2]]
-#      l[[2]] <- as.numeric(l[[2]]) - 1
-#      if( l[[2]] < 0 || l[[2]] > ncol(data) )
-#        stop("No such column found at index: ", cid)
-#    }
-#    name <- names(aggregates)[idx]
-#    if( is.null(name) ) name <- ""
-#    if( is.na(name) ) name <- ""
-#    c(l,name)
-#  })
-#
-#  # create the AGG AST
-#  op <- new("ASTApply", op="agg")
-#  children <- list(c(paste0('#',nAggs), unlist(lapply(aggs, function(l) { .args.to.ast(.args=l)}))))
-#  AGG <- new("ASTNode", root=op, children=children)
-#
-#  # create the group by AST
-#  op <- new("ASTApply", op="GB")
-#  vars <- .args.to.ast(vars)
-#  GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG))
-#
-#  mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-#  finalizers <- data@finalizers
-#  conn <- h2o.getConnection()
-#  .newH2OFrame("H2OFrame", conn = conn, frame_id = .key.make(conn, "group_by"),
-#                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
-#}
 
 #'
 #' Basic Imputation of H2O Vectors
@@ -2446,7 +2103,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #'  @param by group by columns
 #'  @param inplace Perform the imputation inplace or make a copy. Default is to perform the imputation in place.
 #'
-#'  @return a H2OFrame with imputed values
+#'  @return a Frame with imputed values
 #'  @examples
 #' \donttest{
 #'  h2o.init()
@@ -2463,8 +2120,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
 
   # this AST: (h2o.impute %fr #colidx method combine_method inplace max_gap by)
-  if( !is(data, "H2OFrame") )
-      stop("`data` must be of type H2OFrame")
+  chk.Frame(data)
 
   # sanity check `column` then convert to 0-based index.
   if( length(column) > 1L ) stop("`column` must be a single column.")
@@ -2495,11 +2151,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
     stop("Column is categorical, method must not be mean or median.")
 
   # handle the data
-  mktmp <- !.is.eval(data)
-  if( mktmp ) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, frame_id=data@frame_id)
-  }
-  gb.cols <- NULL
+  gb.cols <- "[]"
   if( !is.null(by) ) {
     if(is.character(by)) {
       vars <- match(by, colnames(data))
@@ -2507,145 +2159,63 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
         stop('No column named ', by, ' in ', substitute(data), '.')
       } else if(is.integer(by)) { vars <- by }
       else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
-      # 1-index -> 0-index and sanity check
-      vars <- vars - 1L
-      if(vars < 0L || vars > (ncol(data)-1L))
+      if( vars <= 0L || vars > (ncol(data)) )
         stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
-      gb.cols <- vars
+      gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
-  args <- list(data, col.id, method, combine_method, gb.cols, inplace)
-  op <- new("ASTApply", op="h2o.impute")
-  children <- list(unlist(.args.to.ast(.args=args)))
-
-  IMPUTE <- new("ASTNode", root=op, children=children)
-
-  if( inplace ) {
-    .h2o.raw_expr_op(expr=.visitor(IMPUTE), key=data@frame_id)
-  } else {
-    mutable <- new("H2OFrameMutableState", ast=IMPUTE, nrows=NA_integer_, ncols=NA_integer_, col_names=NA_character_)
-    finalizers <- data@finalizers
-    conn <- h2o.getConnection()
-    .newH2OFrame("H2OFrame", conn=conn, frame_id=.key.make(conn, "impute"), finalizers=finalizers, linkToGC=TRUE, mutable=mutable)
-  }
+  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
+  # In-place updates we force right now, because the user expects future uses
+  # of 'data' to show the imputed changed.
+  if( inplace ) .fetch.data(res,1)
+  res
 }
 
-#'
-#' Cumulative Sum
-#'
-#' Obtain the cumulative sum of a column.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @examples
-#' localH2O <- h2o.init()
-#' fr <- as.h2o(iris)
-#' h2o.cumsum(fr[,1])
-#' @export
-h2o.cumsum <- function(x) .h2o.nary_frame_op("cumsum", x)
 
-#'
-#' Cumulative Product
-#'
-#' Obtain the cumulative product of a column.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @examples
-#' localH2O <- h2o.init()
-#' fr <- as.h2o(iris)
-#' h2o.cumprod(fr[,1])
-#' @export
-h2o.cumprod <- function(x) .h2o.nary_frame_op("cumprod", x)
-
-#'
-#' Cumulative Min
-#'
-#' Obtain the cumulative min of a column.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @examples
-#' localH2O <- h2o.init()
-#' fr <- as.h2o(iris)
-#' h2o.cummin(fr[,1])
-#' @export
-h2o.cummin <- function(x) .h2o.nary_frame_op("cummin", x)
-
-#'
-#' Cumulative Max
-#'
-#' Obtain the cumulative max of a column.
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @examples
-#' localH2O <- h2o.init()
-#' fr <- as.h2o(iris)
-#' h2o.cummax(fr[,1])
-#' @export
-h2o.cummax <- function(x) .h2o.nary_frame_op("cummax", x)
-
-#'
-#' H2O Which
-#'
-#' 1-based indices similar to R's which
-#'
-#' @param x An \linkS4class{H2OFrame} object.
-#' @examples
-#' localH2O <- h2o.init()
-#' fr <- as.h2o(iris)
-#' h2o.which(fr[,5] == "setosa")
-#' @export
-h2o.which <- function(x) { .h2o.nary_frame_op("h2o.which", x, TRUE) }
-
-
-h2o.which.max <- function(x)  { .h2o.nary_frame_op("h2o.which.max", x) }
-h2o.vote  <- function(x, nclasses, weights=rep(0,ncol(x))) { .h2o.nary_frame_op("h2o.vote", x, nclasses, weights) }
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
-
 # TODO: Cleanup the cruft!
 #' Split H2O Dataset, Apply Function, and Return Results
 #'
 #' For each subset of an H2O data set, apply a user-specified function, then combine the results.  This is an experimental feature.
 #'
-#' @param .data An \linkS4class{H2OFrame} object to be processed.
-#' @param .variables Variables to split \code{.data} by, either the indices or names of a set of columns.
-#' @param .fun Function to apply to each subset grouping.
-#' @param \dots Additional arguments passed on to \code{.fun}. #TODO: (Currently unimplemented)
+#' @param X An Frame object to be processed.
+#' @param .variables Variables to split \code{X} by, either the indices or names of a set of columns.
+#' @param FUN Function to apply to each subset grouping.
+#' @param ... Additional arguments passed on to \code{FUN}.
 #' @param .progress Name of the progress bar to use. #TODO: (Currently unimplemented)
-#' @return Returns a \linkS4class{H2OFrame} object containing the results from the split/apply operation, arranged
+#' @return Returns a Frame object containing the results from the split/apply operation, arranged
 #          row-by-row
 #' @seealso \code{\link[plyr]{ddply}} for the plyr library implementation.
 #' @examples
-#' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #'
 #' # Import iris dataset to H2O
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
-#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath, destination_frame = "iris.hex")
+#' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 #' # Add function taking mean of sepal_len column
 #' fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
 #' # Apply function to groups by class of flower
-#' # uses h2o's ddply, since iris.hex is an H2OFrame object
+#' # uses h2o's ddply, since iris.hex is a Frame object
 #' res = h2o.ddply(iris.hex, "class", fun)
 #' head(res)
-#' }
 #' @export
-h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
-  mm <- match.call()
-  envir <- parent.frame()
-  if(!is(.data, "H2OFrame")) stop('.data must be an H2OFrame object')
+h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
+  .h2o.gc()
+  chk.Frame(X)
 
   # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
   # as column names.  This is a bit complicated
   if(is.character(.variables)) {
-    vars <- match(.variables, colnames(.data))
+    vars <- match(.variables, colnames(X))
     if (any(is.na(vars)))
-      stop('No column named ', .variables, ' in ', substitute(.data), '.')
+      stop('No column named ', .variables, ' in ', substitute(X), '.')
   } else if(is(.variables, 'H2Oquoted')) {
-    vars <- match(.variables, colnames(.data))
+    vars <- match(.variables, colnames(X))
   } else if(inherits(.variables, 'quoted')) { # plyr overwrote our . fn
-    vars <- match(.variables, colnames(.data))
+    vars <- match(.variables, colnames(X))
   } else if(is.integer(.variables)) {
     vars <- .variables
   } else if(is.numeric(.variables)) {   # this will happen eg c(1,2,3)
@@ -2653,126 +2223,70 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   }
 
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-  vars <- vars - 1L
+  if(vars <= 0L || vars > ncol(X))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(X), '.')
+  vars <- .row.col.selector(vars,envir=parent.frame())
 
-  if(vars < 0L || vars > (ncol(.data)-1L))
-    stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
-
+  # Deal with extra arguments
   l <- list(...)
-  if(length(l) > 0L) {
-    tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "numeric", "character", "logical") } )
-    if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
-
-    idx <- which(sapply(l, function(x) is(x, "H2OFrame")))
-    extra_arg_names <- as.list(match.call())
-    for (i in vars) {
-      key <- as.character(extra_arg_names[[i]])
-      if (is(x, "H2OFrame")) next
-      x <- l[vars]
-      h2o.assign(x, key)
-      l[vars] <- x
-    }
-  }
+  extra_args = list()
+  if(length(l) > 0L)
+    extra_args <- sapply(l, .process.stmnt, list(), sys.parent(1))
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
-  FUN <- .fun
-  if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
-  myfun <- deparse(substitute(FUN), width.cutoff = 500L)
-  fun.ast <- NULL
-  # anon function?
-  if (substr(myfun[1L], 1L, nchar("function")) == "function") {
-    # handle anon fcn
-    fun.ast <- .fun.to.ast(.fun, "anon")
-    a <- invisible(.h2o.post.function(fun.ast))
-    if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
-  # else named function get the ast
-  } else {
-    if (.is.op(substitute(FUN))) {
-      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
-    } else {
-      if( is(FUN, "standardGeneric")) {
-        fun_name <- FUN@generic[[1]]
-        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
-      } else if( is.primitive(FUN) ) {
-        fun_name <- gsub("\\\"\\)","",gsub(".Primitive\\(\\\"","",deparse(FUN)))
-        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
-      } else {
-        fun_name <- as.character(substitute(FUN))
-        fun <- match.fun(FUN)
-        fun.ast <- .fun.to.ast(fun, fun_name)
-        a <- invisible(.h2o.post.function(fun.ast))
-        if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
-      }
-    }
+  fname <- as.character(substitute(FUN))
+  if( typeof(FUN) == "builtin" || typeof(FUN) == "symbol") {
+    if( fname %in% .h2o.primitives ) return(.newExpr("ddply",X,vars,fname))
+    stop(paste0("Function '",fname,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
   }
 
-  if (is.null(fun.ast)) stop("argument FUN was invalid")
-  .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
+  # Look for an H2O function that works on a Frame; it will be handed a Frame of 1 col
+  fr.name <- paste0(fname,".Frame")
+  if( exists(fr.name) ) {
+    FUN <- get(fr.name)         # Resolve function to the H2O flavor
+    # Add in any default args
+    args <- formals(FUN)[-1L]
+    nargs <- length(args) - length(extra_args)
+    if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
+    fcn <- if( length(extra_args)==0 ) fname
+           else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
+    return(.newExpr("ddply",X,vars,fcn))
+  }
+
+  # Explode anonymous function into a Currents AST.  Pass along the dynamic
+  # environment (not the static environment the H2O wrapper itself is compiled
+  # in).  Unknown variables in the function body will be looked up in the
+  # dynamic scope.
+  funstr <- .fun.to.ast(FUN, list(), sys.parent(1))
+  .newExpr("ddply",X,vars,funstr)
 }
-
-
-# TODO: how to avoid masking plyr?
-#`h2o..` <- function(...) {
-#  mm <- match.call()
-#  mm <- mm[-1]
-#  structure( as.list(mm), class='H2Oquoted')
-#}
-#
-#`.` <- `h2o..`
-#
-h2o.unique <- function(x) {
-  if( !is(x, "H2OFrame") ) stop('h2o.unique: x is of the wrong type. Got: ', class(x))
-  .h2o.nary_frame_op("unique", x)
-}
-#unique.H2OFrame <- h2o.unique
-
-
-##`
-##` Overloaded `apply` method from base::
-##`
-##` `apply` operates on H2OFrames (ASTs or H2OFrame objects) and returns an object of type H2OFrame.
-##`
-##`
-##` Overall Plan:
-##`
-##`  passes an AST of the format
-##`
-##`   (apply $X #MARGIN $FUN a1 a2 ...)
-##`
-##`   ASTApply will parse additional arguments to an AST[] _args. This array must be 1 less the number of args passed to
-##`   FUN. Otherwise, throw an exception.
-##`
-##`   Pass the additional by calling _fun.exec(env, _args)
-
-
 
 #' Apply on H2O Datasets
 #'
-#' Method for apply on \linkS4class{H2OFrame} objects.
-#' Closures are not supported: an error message stating this fact will stop execution.
+#' Method for apply on Frame objects.
 #'
-#' @param X an \linkS4class{H2OFrame} object on which \code{apply} will operate.
+#' @param X an Frame object on which \code{apply} will operate.
 #' @param MARGIN the vector on which the function will be applied over, either
 #'        \code{1} for rows or \code{2} for columns.
 #' @param FUN the function to be applied.
 #' @param \dots optional arguments to \code{FUN}.
-#' @return Produces a new \linkS4class{H2OFrame} of the output of the applied
+#' @return Produces a new Frame of the output of the applied
 #'         function. The output is stored in H2O so that it can be used in
 #'         subsequent H2O processes.
 #' @seealso \link[base]{apply} for the base generic
 #' @examples
-#' \donttest{
-#' localH2O = h2o.init()
+#' h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath, destination_frame = "iris.hex")
-#' summary(apply(iris.hex, 1, sum))
-#' }
+#' iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
+#' summary(apply(iris.hex, 2, sum))
 #' @export
-setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
-  mktmp <- !.is.eval(X)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=X@mutable$ast, frame_id=X@frame_id)
-  if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
+apply <- function(X, MARGIN, FUN, ...) {
+  if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))
+
+  # Margin must be 1 or 2 and specified
+  if( missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))) )
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
+  # Basic sanity checking on function
   if( missing(FUN) ) stop("FUN must be an R function")
   .FUN <- NULL
   if( is.character(FUN) ) .FUN <- get(FUN)
@@ -2780,111 +2294,39 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   else if( is.null(.FUN) && !is.function(FUN) ) stop("FUN must be an R function")
   if( !is.null(.FUN) ) FUN <- as.name(FUN)
 
+  # Deal with extra arguments
   l <- list(...)
-  if(length(l) > 0L) {
-    tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "numeric", "character", "logical") } )
-    if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
-
-    idx <- which(sapply(l, function(x) is(x, "H2OFrame")))
-    extra_arg_names <- as.list(match.call())
-    for (i in idx) {
-      key <- as.character(extra_arg_names[[i]])
-      if (is(x, "H2OFrame")) next
-      x <- l[idx]
-      h2o.assign(x, key)
-      l[idx] <- x
-    }
-  }
-  # Process the function. Decide if it's an anonymous fcn, or a named one.
-  myfun <- deparse(substitute(FUN), width.cutoff = 500L)
-  fun.ast <- NULL
-  # anon function?
-  if (substr(myfun[1L], 1L, nchar("function")) == "function") {
-    # handle anon fcn
-    fun.ast <- .fun.to.ast(FUN, "anon")
-    a <- invisible(.h2o.post.function(fun.ast))
-    if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
-  # else named function get the ast
-  } else {
-    if (.is.op(substitute(FUN))) {
-      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
-    } else {
-      fun_name <- as.character(myfun)
-      fun <- match.fun(myfun)
-      fun.ast <- .fun.to.ast(fun, fun_name)
-      a <- invisible(.h2o.post.function(fun.ast))
-      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
-    }
-  }
-
-  if (is.null(fun.ast)) stop("argument FUN was invalid")
-
-  if(length(l) == 0L)  res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast)
-  else                 res <- .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
-
-  mktmp <- !.is.eval(res)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=res@mutable$ast, frame_id=res@frame_id)
-  res
-})
-
-#' Apply Over a List in H2O
-#'
-#' Functions equivalent to the default \code{R} sapply
-#' @param X an \linkS4class{H2OFrame} object on which \code{apply} will operate.
-#' @param FUN the function to be applied.
-#' @param \dots optional arguments to \code{FUN}.
-#' @param simplify,USE.NAMES ignored parameters from base funciton
-#' @seealso \code{link[base]{sapply}} for the base implementation.
-#' export
-setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
-  if(missing(FUN) || !is.function(FUN))
-    stop("FUN must be an R function")
-
-  l <- list(...)
-  if(length(l) > 0L) {
-      tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "numeric", "character") } )
-      if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
-
-    idx <- which(sapply(l, function(x)  is(x, "H2OFrame")))
-    extra_arg_names <- as.list(match.call())
-    for (i in idx) {
-      key <- as.character(extra_arg_names[[i]])
-      if (is(x, "H2OFrame")) next
-      x <- l[idx]
-      h2o.assign(x, key)
-      l[idx] <- x
-    }
-  }
+  extra_args = list()
+  if(length(l) > 0L)
+    extra_args <- sapply(l, .process.stmnt, list(), sys.parent(1))
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
-  myfun <- deparse(substitute(FUN), width.cutoff = 500L)
-  fun.ast <- NULL
-  # anon function?
-  if (substr(myfun[1L], 1L, nchar("function")) == "function") {
-    # handle anon fcn
-    fun.ast <- .fun.to.ast(FUN, "anon")
-    invisible(.h2o.post.function(fun.ast))
-  # else named function get the ast
-  } else {
-    if (.is.op(substitute(FUN))) {
-      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
-    } else {
-      fun_name <- as.character(FUN)
-      fun <- match.fun(FUN)
-      fun.ast <- .fun.to.ast(FUN, fun_name)
-      invisible(.h2o.post.function(fun.ast))
-    }
+  fname <- as.character(substitute(FUN))
+  if( typeof(FUN) == "builtin" || typeof(FUN) == "symbol") {
+    if( fname %in% .h2o.primitives ) return(.newExpr("apply",X,MARGIN,fname))
+    stop(paste0("Function '",fname,"' not in .h2o.primitives list and not an anonymous function, unable to convert it to Currents"))
   }
 
-  if (is.null(fun.ast)) stop("argument FUN was invalid")
+  # Look for an H2O function that works on a Frame; it will be handed a Frame of 1 col
+  fr.name <- paste0(fname,".Frame")
+  if( exists(fr.name) ) {
+    FUN <- get(fr.name)         # Resolve function to the H2O flavor
+    # Add in any default args
+    args <- formals(FUN)[-1L]
+    nargs <- length(args) - length(extra_args)
+    if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
+    fcn <- if( length(extra_args)==0 ) fname
+           else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
+    return(.newExpr("apply",X,MARGIN,fcn))
+  }
 
-  invisible(.h2o.post.function(fun.ast))
-
-  if(length(l) == 0L)
-    .h2o.nary_frame_op("sapply", X, fun.ast)
-  else
-    .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
-})
+  # Explode anonymous function into a Currents AST.  Pass along the dynamic
+  # environment (not the static environment the H2O wrapper itself is compiled
+  # in).  Unknown variables in the function body will be looked up in the
+  # dynamic scope.
+  funstr <- .fun.to.ast(FUN, list(), sys.parent(1))
+  .newExpr("apply",X,MARGIN,funstr)
+}
 
 #'
 #' Compute A Histogram
@@ -2894,7 +2336,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #'
 #'
 #'
-#' @param x A single numeric column from an H2OFrame.
+#' @param x A single numeric column from an Frame.
 #' @param breaks Can be one of the following:
 #'               A string: "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott"
 #'               A single number for the number of breaks splitting the range of the vec into number of breaks bins of equal width
@@ -2902,10 +2344,6 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #' @param plot A logical value indicating whether or not a plot should be generated (default is TRUE).
 #' @export
 h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
-  if( !is(x, "H2OFrame") ) stop("`x` must be an H2OFrame")
-  mktmp <- !.is.eval(x)
-  if( mktmp ) .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, frame_id=x@frame_id)
-
   if( is.character(breaks) ) {
     if( breaks=="Sturges" ) breaks <- "sturges"
     if( breaks=="Rice"    ) breaks <- "rice"
@@ -2913,7 +2351,7 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
     if( breaks=="FD"      ) breaks <- "fd"
     if( breaks=="Scott"   ) breaks <- "scott"
   }
-  h <- as.data.frame(.h2o.nary_frame_op("hist", x, breaks))
+  h <- as.data.frame(.newExpr("hist", chk.Frame(x), .quote(breaks)))
   counts <- stats::na.omit(h[,2])
   mids <- stats::na.omit(h[,4])
   histo <- list()
@@ -2935,25 +2373,25 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
 #' @param x The column whose strings must be split.
 #' @param split The pattern to split on.
 #' @export
-h2o.strsplit <- function(x, split) { .h2o.nary_frame_op("strsplit", x, split) }
+h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 
 #'
 #' To Lower
 #'
 #' Mutates the input!
 #'
-#' @param x An H2OFrame object whose strings should be lower'd
+#' @param x A Frame object whose strings should be lower'd
 #' @export
-h2o.tolower <- function(x) { .h2o.nary_frame_op("tolower", x) }
+h2o.tolower <- function(x) .newExpr("tolower", x)
 
 #'
 #' To Upper
 #'
 #' Mutates the input!
 #'
-#' @param x An H2OFrame object whose strings should be upper'd
+#' @param x A Frame object whose strings should be upper'd
 #' @export
-h2o.toupper <- function(x) { .h2o.nary_frame_op("toupper", x) }
+h2o.toupper <- function(x) .newExpr("toupper", x)
 
 #'
 #' String Substitute
@@ -2965,9 +2403,7 @@ h2o.toupper <- function(x) { .h2o.nary_frame_op("toupper", x) }
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) {
-  .h2o.nary_frame_op("sub", pattern, replacement,x,ignore.case)
-}
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("sub", .quote(pattern), .quote(replacement),x,ignore.case)
 
 #'
 #' String Global Substitute
@@ -2979,74 +2415,11 @@ h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) {
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) {
-  .h2o.nary_frame_op("gsub", pattern, replacement,x,ignore.case)
-}
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("gsub", .quote(pattern), .quote(replacement),x,ignore.case)
 
 #'
 #' Trim Space
 #'
 #' @param x The column whose strings should be trimmed.
 #' @export
-h2o.trim <- function(x) { .h2o.nary_frame_op("trim", x) }
-
-#setMethod("findInterval", "H2OFrame", function(x, vec, rightmost.closed = FALSE, all.inside = FALSE) {
-#  if(any(is.na(vec)))
-#    stop("'vec' contains NAs")
-#  if(is.unsorted(vec))
-#    stop("'vec' must be sorted non-decreasingly")
-#  if(all.inside) stop("Unimplemented")
-#
-#  myVec <- paste0("c(", .seq_to_string(vec), ")")
-#  expr <- paste0("findInterval(", x@frame_id, ",", myVec, ",", as.numeric(rightmost.closed), ")")
-#  res <- .h2o.__exec2(x@conn, expr)
-#  .newH2OFrame('H2OFrame', conn=x@conn, frame_id=res$dest_key, finalizers=x@finalizers)
-#})
-#
-## setGeneric("histograms", function(object) { standardGeneric("histograms") })
-## setMethod("histograms", "H2OFrame", function(object) {
-##   if(ncol(object) > .MAX_INSPECT_COL_VIEW)
-##     warning(object@frame_id, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-##   res <- .h2o.__remoteSend(object@conn, .h2o.__PAGE_SUMMARY2, source=object@frame_id, max_ncols=.Machine$integer.max)
-##   list.of.bins <- lapply(res$summaries, function(x) {
-##     if (x$stats$type == 'Enum') {
-##       bins <- NULL
-##     } else {
-##       counts <- x$hcnt
-##       breaks <- seq(x$hstart, by=x$hstep, length.out=length(x$hcnt) + 1L)
-##       bins <- list(counts,breaks)
-##       names(bins) <- cbind('counts', 'breaks')
-##     }
-##     bins
-##   })
-##   list.of.bins
-## })
-
-#
-# Force evaluation of given frame
-# if it is necessary.
-#
-.h2o.evalFrame <- function(frame) {
-  mktmp <- !.is.eval(frame)
-  if (mktmp) {
-    .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, frame_id=frame@frame_id)
-  }
-}
-
-#
-# Check and evaluate given frame if it is necassary.
-# Returns frame.
-#
-.h2o.checkFrameParam <- function(frame, param_name) {
-  if (!inherits(frame, "H2OFrame")) {
-   tryCatch(frame <- h2o.getFrame(frame),
-            error = function(err) {
-              stop(cat("argument \"", param_name, "\" must be a valid H2OFrame or frame ID"))
-            })
-  } else {
-    # Force AST evaluation
-    .h2o.evalFrame(frame)
-  }
-  frame
-}
-
+h2o.trim <- function(x) .newExpr("trim", x)

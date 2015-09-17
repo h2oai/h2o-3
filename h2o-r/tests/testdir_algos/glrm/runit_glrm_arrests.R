@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.svd <- function(conn) {
-  Log.info("Importing USArrests.csv data...") 
+test.glrm.arrests <- function() {
+  Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
-  initCent <- scale(arrestsR, center = TRUE, scale = FALSE)[1:4,]
+  arrestsH2O <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  initCent <- scale(arrestsR)[1:4,]
   
   # Note: Results vary wildly with initial Y when transform = 'DEMEAN'. This is a flaw of the algorithm, not a bug.
   Log.info("Compare with SVD when center = TRUE, scale = FALSE")
@@ -20,4 +20,4 @@ test.glrm.svd <- function(conn) {
   testEnd()
 }
 
-doTest("GLRM Test: USArrests with SVD Computations", test.glrm.svd)
+doTest("GLRM Golden Test: USArrests with Centering", test.glrm.arrests)

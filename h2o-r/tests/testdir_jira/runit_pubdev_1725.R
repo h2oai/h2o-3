@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1725 <- function(conn) {
+test.pubdev.1725 <- function() {
   Log.info("Importing cancar.csv data...")
   cancar.hex <- h2o.importFile(locate("smalldata/glrm_test/cancar.csv"))
   print(summary(cancar.hex))

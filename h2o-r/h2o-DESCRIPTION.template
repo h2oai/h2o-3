@@ -27,6 +27,7 @@ Suggests: devtools,
           roxygen2,
           testthat
 Collate:
+         'astfun.R'
          'classes.R'
          'connection.R'
          'constants.R'
@@ -34,11 +35,7 @@ Collate:
          'logging.R'
          'communication.R'
          'kvstore.R'
-         'exec.R'
-         'ops.R'
          'frame.R'
-         'ast.R'
-         'astfun.R'
          'import.R'
          'parse.R'
          'export.R'

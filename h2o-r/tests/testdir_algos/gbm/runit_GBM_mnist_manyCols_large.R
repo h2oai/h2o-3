@@ -5,7 +5,7 @@ Log.info("Loading R.utils package\n")
 if(!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
 require(R.utils)
 
-test.mnist.manyCols <- function(conn) {
+test.mnist.manyCols <- function() {
    fPath = tryCatch({
       locate("bigdata/laptop/mnist/train.csv.gz")
     }, warning= function(w) {
@@ -17,7 +17,7 @@ test.mnist.manyCols <- function(conn) {
     })
 
   Log.info("Importing mnist train data...\n")
-  train.hex <- h2o.uploadFile(conn, fPath, "train.hex")
+  train.hex <- h2o.uploadFile(fPath, "train.hex")
   train.hex[,785] <- as.factor(train.hex[,785])
   Log.info("Check that tail works...")
   tail(train.hex)

@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.cm.valid <- function(conn) {
+test.cm.valid <- function() {
   Log.info("Creating a binomial GBM model...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -14,7 +14,7 @@ test.cm.valid <- function(conn) {
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
   pros.gbm <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test)
   Log.info("Creating a multinomial GBM model...")
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")

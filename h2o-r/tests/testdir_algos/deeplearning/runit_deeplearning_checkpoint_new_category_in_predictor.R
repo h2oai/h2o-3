@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-checkpoint.new.category.in.predictor <- function(conn) {
+checkpoint.new.category.in.predictor <- function() {
 
-  sv1 <- h2o.uploadFile(conn, locate("smalldata/iris/setosa_versicolor.csv"))
-  sv2 <- h2o.uploadFile(conn, locate("smalldata/iris/setosa_versicolor.csv"))
-  vir <- h2o.uploadFile(conn, locate("smalldata/iris/virginica.csv"))
+  sv1 <- h2o.uploadFile(locate("smalldata/iris/setosa_versicolor.csv"))
+  sv2 <- h2o.uploadFile(locate("smalldata/iris/setosa_versicolor.csv"))
+  vir <- h2o.uploadFile(locate("smalldata/iris/virginica.csv"))
 
   m1 <- h2o.deeplearning(x=c(1,2,3,5),y=4,training_frame=sv1,epochs=100)
 

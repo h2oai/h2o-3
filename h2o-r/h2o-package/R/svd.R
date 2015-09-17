@@ -4,7 +4,7 @@
 #' Singular value decomposition of a H2O dataset using the power method.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OFrame} object containing the
+#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param nv The number of right singular vectors to be computed. This must be
@@ -34,9 +34,9 @@
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' h2o.svd(training_frame = australia.hex, nv = 8)
 #' @export
 h2o.svd <- function(training_frame, x, nv,
@@ -51,19 +51,12 @@ h2o.svd <- function(training_frame, x, nv,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
   
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  
-  ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(training_frame)
-  if( delete ) {
-    temp_key <- training_frame@frame_id
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
-  }
   
   # Gather user input
   parms <- list()
@@ -84,5 +77,5 @@ h2o.svd <- function(training_frame, x, nv,
     parms$use_all_factor_levels <- use_all_factor_levels
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'svd', parms, 99)
+  .h2o.modelJob('svd', parms, do_future=FALSE, h2oRestApiVersion=99)
 }

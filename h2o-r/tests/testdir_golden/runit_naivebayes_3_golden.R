@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.nbayes.golden <- function(H2Oserver) {
+test.nbayes.golden <- function() {
   Log.info("Importing titanic_sub.csv data...") 
   titanicR <- read.csv(locate("smalldata/gbm_test/titanic_sub.csv"), header = TRUE)
-  titanicH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/gbm_test/titanic_sub.csv"), destination_frame = "titanicH2O")
+  titanicH2O <- h2o.uploadFile(locate("smalldata/gbm_test/titanic_sub.csv"), destination_frame = "titanicH2O")
   titanicR$survived <- as.factor(titanicR$survived)
   titanicH2O$survived <- as.factor(titanicH2O$survived)
   

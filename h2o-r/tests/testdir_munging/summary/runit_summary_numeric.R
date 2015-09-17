@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.summary.numeric <- function(conn) {
+test.summary.numeric <- function() {
   Log.info("Importing USArrests.csv data...\n")
-  # arrests.hex <- h2o.importFile(conn, locate("smalldata/pca_test/USArrests.csv", schema = "local"), "arrests.hex")
-  arrests.hex <- as.h2o(conn, USArrests, destination_frame = "arrests.hex")
+  # arrests.hex <- h2o.importFile(locate("smalldata/pca_test/USArrests.csv", schema = "local"), "arrests.hex")
+  arrests.hex <- as.h2o(USArrests, destination_frame = "arrests.hex")
 
   Log.info("Check that summary works...")
   summary(arrests.hex)
@@ -23,7 +23,9 @@ test.summary.numeric <- function(conn) {
   Log.info("summary(tail(arrests.hex))\n")
 
   print(summary(tail(arrests.hex)))
-  checkSummary(summary(tail(arrests.hex)), summary_2)
+  # large tolerance because median uses the rollup summary stats, which give
+  # quantiles accurate to 1 part in 1000 only.
+  checkSummary(summary(tail(arrests.hex)), summary_2, tolerance = 2e-3)
 
   testEnd()
 }

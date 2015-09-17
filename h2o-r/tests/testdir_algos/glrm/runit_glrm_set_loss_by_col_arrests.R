@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.check_loss <- function(conn) {
+test.glrm.check_loss <- function() {
   Log.info("Importing USArrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   print(summary(arrestsH2O))
   
   Log.info("Run GLRM with loss by column = L1, Quadratic, Quadratic, Huber")

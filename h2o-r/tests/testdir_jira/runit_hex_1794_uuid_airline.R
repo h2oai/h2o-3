@@ -7,9 +7,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
 	print("Reading in data (tiny airline with UUIDs).")
-		airline.hex = h2o.importFile(conn, locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
+		airline.hex = h2o.importFile(locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
 		#print("Summary of airline data: ") ; summary(airline.hex)
 		print("Head of airline data: ") ; print(head(airline.hex))
 

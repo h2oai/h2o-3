@@ -7,8 +7,8 @@ cp <- function(this) this[1:nrow(this), 1:ncol(this)]
 # a useful function to count number of NAs in a column
 numNAs <- function(col) sum(is.na(col))
 
-check.demo_impute <- function(conn) {
-  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_missing.csv"), "prostate.hex")
+check.demo_impute <- function() {
+  prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate_missing.csv"), "prostate.hex")
   dim(prostate.hex)
 
   print("Summary of the data in iris_missing.csv")

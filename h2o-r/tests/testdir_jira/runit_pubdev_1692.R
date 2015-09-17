@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1692 <- function(conn) {
+test.pubdev.1692 <- function() {
   Log.info("Importing glrm_test/msq.csv data...")
   msq.dat <- read.csv(locate("smalldata/glrm_test/msq.csv"), header = FALSE)
   msq.hex <- h2o.importFile(locate("smalldata/glrm_test/msq.csv"), header = FALSE)

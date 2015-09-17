@@ -8,12 +8,12 @@ source('../../h2o-runit.R')
 #       h2o.startLogging()
 #       conn <- h2o.init()
 
-test.cbind <- function(conn) {
+test.cbind <- function() {
 
     a <- c(0,0,0)
     b <- a
     h <- cbind(a,b)
-    a.h2o <- as.h2o(conn, data.frame(c(0,0,0)))
+    a.h2o <- as.h2o(data.frame(c(0,0,0)))
     b.h2o <- a.h2o
     h.h2o <- h2o.cbind(a.h2o,b.h2o)
     h.h2o.R <- as.data.frame(h.h2o)
@@ -32,12 +32,12 @@ test.cbind <- function(conn) {
     h <- cbind(a, b, d, e, f)
     h <- cbind(a, b, d, e, f, g)
     h.h2o <- cbind(c(0,0,0), c(1,1,1))
-    a.h2o<- as.h2o(conn, data.frame(c(0,0,0)))
-    b.h2o<- as.h2o(conn, data.frame(c(0,0,0))) 
-    d.h2o<- as.h2o(conn, data.frame(c(0,0,0))) 
-    e.h2o<- as.h2o(conn, data.frame(c(0,0,0))) 
-    f.h2o<- as.h2o(conn, data.frame(c(0,0,0))) 
-    g.h2o<- as.h2o(conn, data.frame(c(0,0,0)))
+    a.h2o<- as.h2o(data.frame(c(0,0,0)))
+    b.h2o<- as.h2o(data.frame(c(0,0,0))) 
+    d.h2o<- as.h2o(data.frame(c(0,0,0))) 
+    e.h2o<- as.h2o(data.frame(c(0,0,0))) 
+    f.h2o<- as.h2o(data.frame(c(0,0,0))) 
+    g.h2o<- as.h2o(data.frame(c(0,0,0)))
     # b.h2o<-a.h2o; d.h2o<-a.h2o; f.h2o<-a.h2o; g.h2o<-a.h2o;
     h.h2o <- h2o.cbind(a.h2o, b.h2o)
     h.h2o <- h2o.cbind(a.h2o, b.h2o, d.h2o)
