@@ -10,6 +10,6 @@ public class AssemblyV99 extends RequestSchema<Iced, AssemblyV99>  {
   @API(help="Input Frame for the assembly.") KeyV3.FrameKeyV3 frame;
 
   //output
-  @API(help="Output of the assembly line.") String result;
+  @API(help="Output of the assembly line.") KeyV3.FrameKeyV3 result;
   @API(help="A Key to the fit Assembly data structure") KeyV3.AssemblyKeyV3 assembly;
 }

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class AssemblyHandler extends Handler {
   public AssemblyV99 fit(int version, AssemblyV99 ass) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
     if( ass==null ) return null;
-    if( ass.assembly == null ) return ass;
+    if( ass.steps == null ) return ass;
     // process assembly:
     //   of the form [name__class__ast__inplace, name__class__ast__inplace, ...]
     // s[0] : stepName
@@ -28,7 +28,7 @@ public class AssemblyHandler extends Handler {
       steps.add((Transform) transformClass.getConstructor(constructorTypes).newInstance(constructorArgs));
     }
     Assembly assembly = new Assembly(Key.make("assembly_"+Key.make().toString()), steps.toArray(new Transform[steps.size()]));
-    ass.result = assembly.fit((Frame)DKV.getGet(ass.frame.key()))._key.toString();
+    ass.result = new KeyV3.FrameKeyV3(assembly.fit((Frame)DKV.getGet(ass.frame.key()))._key);
     ass.assembly = new KeyV3.AssemblyKeyV3(assembly._key);
     DKV.put(assembly);
     return ass;

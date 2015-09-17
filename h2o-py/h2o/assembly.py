@@ -16,6 +16,7 @@ class H2OAssembly:
     :param steps: A list of steps that sequentially transforms the input data.
     :return: An H2OFrame.
     """
+    self.id = None
     self.steps = steps
     self.fuzed = []
     self.in_colnames = None
@@ -25,8 +26,15 @@ class H2OAssembly:
   def names(self):
     return zip(*self.steps)[0][:-1]
 
-  def to_pojo(self,pojo_name=None):
+  def to_pojo(self, path=""):
     pass
+    # if pojo_name is None: pojo_name = unicode("AssemblyPOJO_" + str(uuid.uuid4()))
+    # java = H2OConnection.get("Assembly.java/"+self.id)
+    # file_path = path + "/" + self.id + ".java"
+    # if path == "": print java.text
+    # else:
+    #   with open(file_path, 'wb') as f:
+    #     f.write(java.text)
 
   def union(self, assemblies):
     # fuse the assemblies onto this one, each is added to the end going left -> right
@@ -45,5 +53,6 @@ class H2OAssembly:
       res.append(step[1].to_rest(step[0]))
     res = ",".join([_quoted(r.replace('"',"'")) for r in res])
     res = "[" + res + "]"
-    j = H2OConnection.post_json(url_suffix="Assembly", assembly=res, frame=fr._id, _rest_version=99)
-    return get_frame(j["result"])
+    j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr._id, _rest_version=99)
+    self.id = j["assembly"]["name"]
+    return get_frame(j["result"]["name"])
