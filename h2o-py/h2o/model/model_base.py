@@ -73,7 +73,7 @@ class ModelBase(object):
     test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id)
     # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    return h2o.get_frame(j["predictions_frame"])
+    return h2o.get_frame(j["predictions_frame"]["name"])
 
   def is_cross_validated(self):
     """
