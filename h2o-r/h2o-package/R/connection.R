@@ -323,7 +323,7 @@ h2o.clusterStatus <- function() {
     ip_    <- "127.0.0.1"
     port_  <- 54321
     myURL <- paste0("http://", ip_, ":", port_)
-    if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(conn=new("H2OConnection", ip=ip_, port=port_), prompt = FALSE)
+    if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(prompt = FALSE)
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
 
@@ -336,7 +336,7 @@ h2o.clusterStatus <- function() {
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
   if( url.exists(myURL) ) {
-    tryCatch(h2o.shutdown(conn=new("H2OConnection", ip = ip_, port = port_), prompt = FALSE), error = function(e) {
+    tryCatch(h2o.shutdown(prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
         "----------------------------------------------------------------------\n",
@@ -476,8 +476,10 @@ h2o.clusterStatus <- function() {
 # totally broken.  Try it last.
 #  if(nzchar(Sys.which("java")))
 #    Sys.which("java")
-  if(nzchar(Sys.getenv("JAVA_HOME")))
-    file.path(Sys.getenv("JAVA_HOME"), "bin", "java")
+  if(nzchar(Sys.getenv("JAVA_HOME"))) {
+    if(.Platform$OS.type == "windows") { file.path(Sys.getenv("JAVA_HOME"), "bin", "java.exe") }
+    else                               { file.path(Sys.getenv("JAVA_HOME"), "bin", "java") }
+  }
   else if(.Platform$OS.type == "windows") {
     # Note: Should we require the version (32/64-bit) of Java to be the same as the version of R?
     prog_folder <- c("Program Files", "Program Files (x86)")
