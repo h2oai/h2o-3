@@ -209,7 +209,7 @@ h2o.getFutureModel <- function(object) {
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  attr("id", .eval.frame(i))
+    if(is.Frame(i))  attr(.eval.frame(i), "id")
     else             i
   })
 
