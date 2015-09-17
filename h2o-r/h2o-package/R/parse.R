@@ -5,7 +5,7 @@
 #'
 #' Parse the Raw Data produced by the import phase.
 #'
-#' @param data An \linkS4class{Frame} object to be parsed.
+#' @param data An Frame object to be parsed.
 #' @param destination_frame (Optional) The hex key assigned to the parsed file.
 #' @param header (Optional) A logical value indicating whether the first row is
 #'        the column header. If missing, H2O will automatically try to detect
@@ -13,7 +13,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A \linkS4class{Frame} object containing a
+#' @param col.names (Optional) A Frame object containing a
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.
@@ -127,8 +127,12 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
+.collapse.char.empty.nulls <- function(v) {
+  if (!is.null(v)) paste0('[', paste0('"', v, '"', collapse=','), ']')
+  else "[]"
+}
 .collapse.array <- function(v) {
-  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char), collapse=','), ']')
+  if (!is.null(v)) paste0('[', paste0(lapply(v, .collapse.char.empty.nulls), collapse=','), ']')
   else "[]"
 }
 

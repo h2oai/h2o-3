@@ -41,7 +41,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
   if (!is.Frame(trainingFrame)) invisible(nrow(trainingFrame))  # try to force the eval of the frame
-  if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an H2OFrame object")
+  if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an Frame object")
 
   params <- list(training_frame = .eval.frame(trainingFrame):"id",
                  wordModel = wordModel,
