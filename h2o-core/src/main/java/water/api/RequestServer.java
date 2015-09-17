@@ -262,6 +262,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", null, "Kill minus 3 on *this* node");
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
     register("/99/Assembly"                                        ,"POST"  ,AssemblyHandler.class, "fit", null, "Fit an assembly to an input frame");
+    register("/99/Assembly"                                        ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
     register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");

@@ -1,6 +1,8 @@
 package water.currents;
 
-import water.Iced;
+import water.H2O;
+import water.Key;
+import water.Keyed;
 import water.currents.transforms.Transform;
 import water.fvec.Frame;
 
@@ -11,9 +13,9 @@ import java.util.HashMap;
  */
 
 // TODO: add in/out col names, in/out col types
-public class Assembly extends Iced {
+public class Assembly extends Keyed<Assembly> {
   private Transform[] _steps;
-  public Assembly(Transform[] steps) { _steps = steps; }
+  public Assembly(Key key, Transform[] steps) { super(key); _steps = steps; }
 
   String[] names() {
     String[] names = new String[_steps.length];
@@ -36,9 +38,7 @@ public class Assembly extends Iced {
     return f;
   }
 
-  public Frame fit(Frame f) {
-    return applyTransforms(f);
-  }
+  public Frame fit(Frame f) { return applyTransforms(f); }
 
   public StringBuilder toJava(String pojoName) {
     if( pojoName==null ) pojoName = "GeneratedMungingPojo";
@@ -55,5 +55,9 @@ public class Assembly extends Iced {
       sb.append(step.genClass());
     sb.append("}\n");
     return sb;
+  }
+
+  @Override protected long checksum_impl() {
+    throw H2O.unimpl();
   }
 }
