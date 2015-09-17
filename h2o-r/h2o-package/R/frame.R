@@ -38,17 +38,6 @@
 is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
-# Horrible internal shortcut to get at our fields in Frame environments via
-# "frame:"id"".  Using "$" calls the overloaded dataframe column resolution - and
-# doesn't look for our internal fields.
-`:` <- function(x,y) {
-  if( !is.Frame(x) ) return(.Primitive(":")(x,y))
-  if( !is.character(y) ) stop("y must be character.")
-  fld <- y
-  if( exists(fld,x,inherits=FALSE) ) get(fld,envir=x, inherits=FALSE)
-  else NULL
-}
-
 .h2o.gc <- function() {
   print("H2O triggered a GC in R")
   gc()
@@ -56,14 +45,14 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
 # Horrible internal shortcut to set our fields, using a more "normal"
 # parameter order
-.set <- function(x,name,value) assign(name,value,pos=x)
+.set <- function(x,name,value) attr(name,x) <- value
 
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
-  eval <- x:"eval"
+  eval <- attr("eval",x)
   if( is.logical(eval) && eval ) {
-    cat("=== Finalizer on ",x:"id","\n")
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", x:"id"), method = "DELETE")
+    cat("=== Finalizer on ",attr("id", x),"\n")
+    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr("id",x)), method = "DELETE")
   }
 }
 
@@ -246,7 +235,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   if(missing(destination_frame) || !is.character(destination_frame) || !nzchar(destination_frame))
     parms$dest = .key.make(prefix = "interaction")
   .key.validate(parms$dest)
-  parms$source_frame <- .eval.frame(data):"id"
+  parms$source_frame <- attr("id", .eval.frame(data))
   parms$factor_columns <- .collapse.char(factors)
   parms$pairwise <- pairwise
   parms$max_factors <- max_factors
@@ -303,7 +292,7 @@ h2o.rep_len <- function(x, length.out) {
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   parms = list()
-  parms$dataset <- .eval.frame(data):"id" # Eager force evaluation
+  parms$dataset <- attr("id", .eval.frame(data)) # Eager force evaluation
   parms$fraction <- fraction
   if( !missing(seed) )
     parms$seed <- seed
@@ -334,7 +323,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
   params <- list()
-  params$dataset <- .eval.frame(chk.Frame(data)):"id"
+  params$dataset <- attr("id", .eval.frame(chk.Frame(data)))
   params$ratios <- .collapse(ratios)
   if (!missing(destination_frames))
     params$destination_frames <- .collapse.char(destination_frames)
@@ -532,7 +521,7 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
   if(!is.logical(inverse)) stop("inverse must be a boolean value")
   params <- list()
-  params$dataset <- .eval.frame(chk.Frame(data)):"id"
+  params$dataset <- attr("id", .eval.frame(chk.Frame(data)))
   params$dimensions <- .collapse(dimensions)
   if (!missing(destination_frame))
     params$destination_frame <- destination_frame
@@ -869,28 +858,28 @@ NULL
 
 # Internal recursive printer
 .pfr <- function(x) {
-  if( is.list(res<-x:"eval") )
-    res <- paste0("(",x:"op"," ",paste(sapply(x:"eval", function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "),")")
-  paste0(x:"id", ":=", res)
+  if( is.list(res<- attr("eval", x)) )
+    res <- paste0("(",x:"op"," ",paste(sapply( attr("eval", x), function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "),")")
+  paste0( attr("id", x), ":=", res)
 }
 
 # Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
 pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
 .eval.impl <- function(x) {
-  dat <- x:"data"
-  id  <- x:"id"
+  dat <- attr("data", x)
+  id  <- attr("id", x)
   if( !is.null(dat) ) return( if( is.data.frame(dat) ) id else dat ) # Data already computed and cached
   if( !is.null( id) && !is.na(id) ) return( id ) # Data already computed under ID
   # Build the eval expression
-  stopifnot(is.list(x:"eval"))
-  res <- paste(sapply(x:"eval", function(child) {
+  stopifnot(is.list(attr("eval", x)))
+  res <- paste(sapply( attr("eval", x), function(child) {
     if( is.Frame(child) )                             .eval.impl(child)    # recurse
     else if( is.numeric(  child) && length(child) > 1L ) .num.list(child)  # [ numberz ]  TODO: sup with those NaNs tho
     else if( is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
     else                                              child                # base
   }),collapse=" ")
-  res <- paste0("(",x:"op"," ",res,")")
+  res <- paste0("(",attr("op", x)," ",res,")")
   # First exec: ID is missing, convert to NA
   # 2nd exec: ID is NA, convert to unique string
   # 3rd exec: there is no 3rd exec, just use the ID string
@@ -905,9 +894,9 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 .clear.impl <- function(x) {
   if( !is.Frame(x) ) return()
   eval <- x:"eval"
-  if( !is.list(eval) ) { stopifnot(is.character(x:"id")); return() }
+  if( !is.list(eval) ) { stopifnot(is.character( attr("id", x) )); return() }
   lapply(eval, function(child) .clear.impl(child))
-  if( is.character(x:"id") )
+  if( is.character( attr("id",x)) )
     .set(x,"eval",TRUE) # GC-able temp
 }
 
@@ -922,11 +911,11 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   chk.Frame(x)
   if( !is.character(x:"id") ) {
     exec_str <- .eval.impl(x)
-    if( !is.character(x:"id") ) # Top-level gets a name always
+    if( !is.character( attr("id", x)) ) # Top-level gets a name always
       .set(x,"id", id <- .key.make("RTMP"))
     # Execute the AST on H2O
     print(paste0("EXPR: ",exec_str))
-    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=x:"id", method = "POST")
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id= attr("id", x), method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
     if( !is.null(res$scalar) ) {
       y <- res$scalar
@@ -977,7 +966,7 @@ Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl")
   # Eagerly evaluation, to produce a scalar
-  res <- .eval.frame(.newExprList(.Generic,list(x,...))):"data"
+  res <- attr("data", .eval.frame(.newExprList(.Generic,list(x,...))))
   if( .Generic=="all" ) as.logical(res) else res
 }
 
@@ -1026,11 +1015,11 @@ trunc <- function(x, ...) {
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
 #' @export
-dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(x:"nrow",ncol(data))) }
+dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(attr("nrow", x),ncol(data))) }
 
 #' @rdname Frame
 #' @export
-nrow.Frame <- function(x) { .fetch.data(x,1); x:"nrow" }
+nrow.Frame <- function(x) { .fetch.data(x,1); attr("nrow", x) }
 
 #' @rdname Frame
 #' @export
@@ -1143,7 +1132,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
-  else .eval.frame(.newExpr("is.numeric",x)):"data"
+  else attr("data", .eval.frame(.newExpr("is.numeric",x)))
 }
 
 #' Print An H2O Frame
@@ -1373,7 +1362,7 @@ h2o.summary <- function(object, factors=6L, ...) {
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
-  fr.sum <- .h2o.__remoteSend(paste0("Frames/", object:"id", "/summary"), method = "GET")$frames[[1]]
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", attr("id", object), "/summary"), method = "GET")$frames[[1]]
   col.sums <- fr.sum$columns
   cols <- sapply(col.sums, function(col) {
     col.sum <- col
@@ -1507,7 +1496,7 @@ summary.Frame <- h2o.summary
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' mean(prostate.hex$AGE)
 #' @export
-h2o.mean <- function(x, ..., na.rm=TRUE) .eval.frame(.newExpr("mean",x,na.rm)):"data"
+h2o.mean <- function(x, ..., na.rm=TRUE) attr("data", .eval.frame(.newExpr("mean",x,na.rm)))
 
 #' @rdname h2o.mean
 #' @export
@@ -1674,7 +1663,7 @@ as.data.frame.Frame <- function(x, ...) {
 
   url <- paste0('http://', conn@ip, ':', conn@port,
                 '/3/DownloadDataset',
-                '?frame_id=', URLencode(x:"id"),
+                '?frame_id=', URLencode( attr("id", x)),
                 '&hex_string=', as.numeric(use_hex_string))
 
   ttt <- getURL(url)
