@@ -477,7 +477,7 @@ h2o.clusterStatus <- function() {
 #  if(nzchar(Sys.which("java")))
 #    Sys.which("java")
   if(nzchar(Sys.getenv("JAVA_HOME")))
-    file.path(Sys.getenv("JAVA_HOME"), "bin", "java.exe")
+    file.path(Sys.getenv("JAVA_HOME"), "bin", "java")
   else if(.Platform$OS.type == "windows") {
     # Note: Should we require the version (32/64-bit) of Java to be the same as the version of R?
     prog_folder <- c("Program Files", "Program Files (x86)")
