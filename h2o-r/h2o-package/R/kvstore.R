@@ -53,7 +53,7 @@
     .set(x,"data",data)
     .set(x,"nrow",res$rows)
   }
-  x:"data"
+  attr(x,"data")
 }
 
 #` Flush any cached data

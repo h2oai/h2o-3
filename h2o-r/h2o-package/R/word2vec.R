@@ -76,7 +76,7 @@ function(word2vec, target, count) {
   if (missing(count)) stop("`count` must be specified")
   if (!is.numeric(count)) stop("`count` must be numeric")
 
-  params <- list(key = .eval.frame(word2vec):"id", target=target, cnt=count)
+  params <- list(key = attr(.eval.frame(word2vec),"id"), target=target, cnt=count)
   if (length(target) == 1L) {
     res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
