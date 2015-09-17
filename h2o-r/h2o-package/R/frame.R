@@ -777,8 +777,9 @@ NULL
 #' @param row index specifying row element(s) to extract or replace. Indices are numeric or
 #'        character vectors or empty (missing) or will be matched to the names.
 #' @param col index specifying column element(s) to extract or replace.
+#' @param drop Unused
 #' @export
-`[.Frame` <- function(data,row,col) {
+`[.Frame` <- function(data,row,col,drop=TRUE) {
   chk.Frame(data)
 
   # This function is called with a huge variety of argument styles
