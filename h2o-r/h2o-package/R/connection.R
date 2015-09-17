@@ -30,19 +30,19 @@
 #' \dontrun{
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with the default settings.
-#' localH2O = h2o.init()
+#' h2o.init()
 #'
 #' # Try to connect to a local H2O instance.
 #' # If not found, raise an error.
-#' localH2O = h2o.init(startH2O = FALSE)
+#' h2o.init(startH2O = FALSE)
 #'
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R with 5 gigabytes of memory.
-#' localH2O = h2o.init(max_mem_size = "5g")
+#' h2o.init(max_mem_size = "5g")
 #'
 #' # Try to connect to a local H2O instance that is already running.
 #' # If not found, start a local H2O instance from R that uses 5 gigabytes of memory.
-#' localH2O = h2o.init(max_mem_size = "5g")
+#' h2o.init(max_mem_size = "5g")
 #' }
 #' @export
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
@@ -162,8 +162,8 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   if (warnNthreads) {
     cat("Note:  As started, H2O is limited to the CRAN default of 2 CPUs.\n")
     cat("       Shut down and restart H2O as shown below to use all your CPUs.\n")
-    cat("           > h2o.shutdown(localH2O)\n")
-    cat("           > localH2O = h2o.init(nthreads = -1)\n")
+    cat("           > h2o.shutdown()\n")
+    cat("           > h2o.init(nthreads = -1)\n")
     cat("\n")
   }
   conn@mutable$session_id <- .init.session_id()
@@ -201,7 +201,6 @@ h2o.getConnection <- function() {
 #' This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O instance.
 #'
 #' @section WARNING: All data, models, and other values stored on the server will be lost! Only call this function if you and all other clients connected to the H2O server are finished and have saved your work.
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port of the server running H2O.
 #' @param prompt A \code{logical} value indicating whether to prompt the user before shutting down the H2O server.
 #' @note Users must call h2o.shutdown explicitly in order to shut down the local H2O instance started by R. If R is closed before H2O, then an attempt will be made to automatically shut down H2O. This only applies to local instances started with h2o.init, not remote H2O servers.
 #' @seealso \code{\link{h2o.init}}
@@ -209,11 +208,12 @@ h2o.getConnection <- function() {
 #' # Don't run automatically to prevent accidentally shutting down a cloud
 #' \dontrun{
 #' library(h2o)
-#' localH2O = h2o.init()
-#' h2o.shutdown(localH2O)
+#' h2o.init()
+#' h2o.shutdown()
 #' }
 #' @export
-h2o.shutdown <- function(conn, prompt = TRUE) {
+h2o.shutdown <- function(prompt = TRUE) {
+  conn <- get("SERVER", .pkg.env)
   if( !h2o.clusterIsUp(conn) )     stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
   if(!is.logical(prompt) || length(prompt) != 1L || is.na(prompt)) stop("`prompt` must be TRUE or FALSE")
@@ -241,12 +241,10 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
 #'
 #' Retrieve information on the status of the cluster running H2O.
 #'
-#' @param conn the \linkS4class{H2OConnection} object containing the IP address
-#'        and port of the server running H2O.
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' localH2O <- h2o.init()
-#' h2o.clusterStatus(localH2O)
+#' h2o.init()
+#' h2o.clusterStatus()
 #' @export
 h2o.clusterStatus <- function() {
   conn = h2o.getConnection()
@@ -600,7 +598,6 @@ h2o.clusterStatus <- function() {
 #' View Network Traffic Speed
 #'
 #' View speed with various file sizes.
-#' @param conn an \linkS4class{H2OConnection} object.
 #' @return Returns a table listing the network speed for 1B, 10KB, and 10MB.
 #' @export
 h2o.networkTest <- function() {

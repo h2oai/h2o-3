@@ -95,7 +95,7 @@ h2o.ls <- function() {
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' h2o.ls()
 #' h2o.removeAll()
 #' h2o.ls()
@@ -136,7 +136,7 @@ h2o.rm <- function(ids) {
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
 #'
-#' @param data An \linkS4class{Frame} object
+#' @param data An Frame object
 #' @param key The hex key to be associated with the H2O parsed data object
 #'
 #' @export
@@ -169,9 +169,9 @@ h2o.getFrame <- function(id) .eval.frame(.newFrame("getFrame",id))
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #'
-#' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
+#' iris.hex <- as.h2o(iris, "iris.hex")
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
 #' model.retrieved <- h2o.getModel(model_id)
 #' }
