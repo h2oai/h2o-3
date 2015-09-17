@@ -31,13 +31,11 @@ class ASTLs extends ASTPrim {
       keys.addEnum(r++);
       domain.add(key.toString());
     }
+    String[] key_domain = domain.toArray(new String[domain.size()]);
+    av.setDomain(key_domain);
     keys.close(fs);
     Vec c0 = av.close(fs);   // c0 is the row index vec
     fs.blockForPending();
-    String[] key_domain = new String[domain.size()];
-    for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
-    c0.setDomain(key_domain);
-    
     return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
   }
 }
