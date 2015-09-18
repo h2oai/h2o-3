@@ -1026,13 +1026,20 @@ nrow.Frame <- function(x) { .fetch.data(x,1); attr(x, "nrow") }
 ncol.Frame <- function(x) { ncol(.fetch.data(x,1)) }
 
 #' Column names of an H2O Frame
+#' @param x A Frame
 #' @export
 dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
 
 #' Column names of an H2O Frame
+#' @param x A Frame
 #' @export
 names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
 
+#' Returns the column names of a Frame
+#'
+#' @param x An Frame object.
+#' @param do.NULL logical. If FALSE and names are NULL, names are created.
+#' @param prefix for created names.
 #' @export
 colnames <- function(x, do.NULL=TRUE, prefix = "col") {
   if( !is.Frame(x) ) return(base::colnames(x,do.NULL,prefix))
@@ -1119,6 +1126,10 @@ h2o.tail <- function(x, ..., n=6L) {
 #' @export
 tail.Frame <- h2o.tail
 
+#' Check if factor
+#'
+#' @rdname is.factor
+#' @param x An H2O Frame object
 #' @export
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
@@ -1129,6 +1140,10 @@ is.factor <- function(x) {
   base::is.factor(x)
 }
 
+#' Check if numeric
+#'
+#' @rdname is.numeric
+#' @param x An H2O Frame object
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
@@ -1157,7 +1172,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
     nc <- ncol(object)
     nr <- nrow(object)
     cc <- colnames(object)
-    width <- maobject(nchar(cc))
+    width <- max(nchar(cc))
     df <- head(.fetch.data(object,10L),10L)
 
     # header statement
@@ -1472,6 +1487,7 @@ h2o.summary <- function(object, factors=6L, ...) {
 }
 
 #' @rdname h2o.summary
+#' @S3method summary Frame
 #' @usage \\method{summary}{Frame}(object, factors, ...)
 #' @export
 summary.Frame <- h2o.summary
@@ -1710,13 +1726,14 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @name as.vector
 #' @param x An H2O Frame object
 #' @param mode Unused
+#' @S3method as.vector Frame
 #' @usage \\method{as.vector}{Frame}(x,mode)
 #' @export
 as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 
 #`
 #' @export
-as.double.Frame <- function(x) {
+as.double.Frame <- function(x, ...) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
@@ -1726,7 +1743,7 @@ as.double.Frame <- function(x) {
 }
 
 #' @export
-as.logical.Frame <- function(x) {
+as.logical.Frame <- function(x, ...) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
@@ -1736,7 +1753,7 @@ as.logical.Frame <- function(x) {
 }
 
 #' @export
-as.integer.Frame <- function(x) {
+as.integer.Frame <- function(x, ...) {
   x <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(x) ) {
     if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
@@ -1793,15 +1810,10 @@ as.character.Frame <- function(x, ...) {
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' #prostate.hex[,2] <- as.factor (prostate.hex[,2])
 #' #prostate.hex[,2] <- as.numeric(prostate.hex[,2])
+#' @S3method as.numeric Frame
 #' @export
 #' @usage \\method{as.numeric}{Frame}(x,...)
 as.numeric.Frame <- function(x, ...) { .newExpr("as.numeric",x) }
-
-#' @export
-as.numeric <- function(x) {
-  if( !is.Frame(x) ) .Primitive("as.double")(x)
-  else as.numeric.Frame(x)
-}
 
 #'
 #' Delete Columns from a Frame
@@ -1833,6 +1845,7 @@ h2o.removeVecs <- function(data, cols) {
 #' Categorical data is not currently supported for this funciton and returned values cannot be
 #' categorical in nature.
 #'
+#' @name h2o.ifelse
 #' @param test A logical description of the condition to be met (>, <, =, etc...)
 #' @param yes The value to return if the condition is TRUE.
 #' @param no The value to return if the condition is FALSE.
@@ -1846,6 +1859,7 @@ h2o.removeVecs <- function(data, cols) {
 #' @export
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
+#' @rdname h2o.ifelse
 #' @export
 ifelse <- function(test, yes, no) {
   if( is.atomic(test) ) {
