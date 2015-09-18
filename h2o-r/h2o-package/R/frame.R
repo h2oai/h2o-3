@@ -1806,8 +1806,8 @@ as.character.Frame <- function(x, ...) {
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' #prostate.hex[,2] <- as.factor (prostate.hex[,2])
-#' #prostate.hex[,2] <- as.numeric(prostate.hex[,2])
+#' prostate.hex[,2] <- as.factor (prostate.hex[,2])
+#' prostate.hex[,2] <- as.numeric(prostate.hex[,2])
 #' @export
 as.numeric <- function(x) {
   if( is.Frame(x) ) .newExpr("as.numeric",x)
