@@ -317,7 +317,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' iris.hex = h2o.importFile(path = irisPath)
 #' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
 #' head(iris.split[[1]])
-#' #summary(iris.split[[1]])
+#' summary(iris.split[[1]])
 #' }
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
@@ -461,7 +461,7 @@ cut.Frame <- h2o.cut
 #' \donttest{
 #' h2o.init()
 #' hex <- as.h2o(iris)
-#' #match(hex[,5], c("setosa", "versicola"))   # versipepsi
+#' h2o.match(hex[,5], c("setosa", "versicolor"))
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
@@ -692,11 +692,11 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000)
 #' s = h2o.runif(prostate.hex)
 #' summary(s)
 #'
-#' #prostate.train = prostate.hex[s <= 0.8,]
-#' #prostate.train = h2o.assign(prostate.train, "prostate.train")
-#' #prostate.test = prostate.hex[s > 0.8,]
-#' #prostate.test = h2o.assign(prostate.test, "prostate.test")
-#' #nrow(prostate.train) + nrow(prostate.test)
+#' prostate.train = prostate.hex[s <= 0.8,]
+#' prostate.train = h2o.assign(prostate.train, "prostate.train")
+#' prostate.test = prostate.hex[s > 0.8,]
+#' prostate.test = h2o.assign(prostate.test, "prostate.test")
+#' nrow(prostate.train) + nrow(prostate.test)
 #' }
 #' @export
 h2o.runif <- function(x, seed = -1) {
@@ -1415,7 +1415,7 @@ h2o.summary <- function(object, factors=6L, ...) {
         if( length(domain.cnts) == 1 )  {   # Constant categorical column
           cnt <- domain.cnts[1]
           domain.cnts <- rep(NA, length(domains))
-          domain.cnts[col.sum$mean+1] <- cnt
+          domain.cnts[col.sum$data[1]+1] <- cnt
         } else
           domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
       }
