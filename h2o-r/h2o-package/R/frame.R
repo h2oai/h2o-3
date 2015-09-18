@@ -39,7 +39,6 @@ is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
 .h2o.gc <- function() {
-  print("H2O triggered a GC in R")
   gc()
 }
 
