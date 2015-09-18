@@ -1802,13 +1802,17 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       if (timestep == "AUTO") {
         timestep <- "number_of_trees"
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
-        stop("timestep for gbm or randomForest must be one of: duration, number_of_trees")
+        stop("timestep for gbm or drf must be one of: duration, number_of_trees")
       } 
     } else if (x@algorithm == "deeplearning") {
+      # Delete first row of DL scoring history since it contains NAs & NaNs
+      if (df$samples[1] == 0) {
+        df <- df[-1,]
+      }
       if (timestep == "AUTO") {
         timestep <- "epochs"
       } else if (!(timestep %in% c("epochs","samples","duration"))) {
-        stop("timestep for gbm or randomForest must be one of: epochs, samples, duration")
+        stop("timestep for deeplearning must be one of: epochs, samples, duration")
       } 
     } else {
       stop("Plotting not implemented for this type of model")
