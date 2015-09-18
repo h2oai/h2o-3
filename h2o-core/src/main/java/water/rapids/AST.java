@@ -239,6 +239,7 @@ class ASTStr extends ASTParameter {
   ASTStr(Exec e, char c) { super(e,c); }
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
+  @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
 
 /** A Frame.  Execution is just to return the constant. */

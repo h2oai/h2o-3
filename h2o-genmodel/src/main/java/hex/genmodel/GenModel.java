@@ -1,10 +1,11 @@
 package hex.genmodel;
 
-import water.genmodel.IGeneratedModel;
 import hex.ModelCategory;
+import water.genmodel.IGeneratedModel;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /** This is a helper class to support Java generated models. */
 public abstract class GenModel implements IGenModel, IGeneratedModel, Serializable {
@@ -370,9 +371,23 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
 
 
-  // currents utiltiy
+  // currents/transforms utilities
   public static void scaleInPlace(final double[] means, final double[] mults, double[] in) {
     for(int i=0; i<in.length; ++i)
       in[i] = (in[i]-means[i])*mults[i];
+  }
+  public static double cos(double r, HashMap<String,String[]> parameters) { return Math.cos(r); }
+  public static double sin(double r, HashMap<String,String[]> parameters) { return Math.sin(r); }
+  public static double countmatches(String s, HashMap<String,String[]> parameters) {
+    String[] patterns = parameters.get("pattern");
+    return countMatches(s, patterns);
+  }
+
+  private static int countMatches(String s, String[] pattern) {
+    int cnt=0;
+    Pattern m = Pattern.compile(s);
+    for(String p: pattern)
+      cnt += m.matcher(p).groupCount();
+    return cnt;
   }
 }

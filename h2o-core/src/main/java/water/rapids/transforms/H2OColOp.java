@@ -41,27 +41,25 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override public StringBuilder genClass() {
     String stepName = name();
     StringBuilder sb = new StringBuilder();
-    String s = "public static class " + stepName + " extends Step<" + stepName + "> {\n" +
-            "  private final String _col = " + _params.get("cols") + ";\n" +
-            "  private final String _op  = " + _fun + ";\n" +
-            "  private final String _newCol = " + _newCol + ";\n";
+    String s = "  class " + stepName + " extends Step<" + stepName + "> {\n";
     sb.append(s);
-    sb.append(
-            "  private final HashMap<String, Object> _params = new HashMap<>();\n");
+    if( _params.size() > 0 )
+      sb.append(
+               "    private final HashMap<String, String[]> _params = new HashMap<>();\n");
 
     for( String k: _params.keySet() ) {
-      ASTParameter o = _params.get(k);
+      String v = _params.get(k).toJavaString();
       sb.append(
-              "  _params.put(" + k + ", " + o +");\n" // TODO: o needs to be turned into proper String here.
+               "    _params.put(\""+k+"\", new String[]{"+v+"});\n" // TODO: o needs to be turned into proper String here.
       );
     }
     String s3 =
-            "  " + stepName + "() { _inplace = " + _inplace + "; } \n" +
-                    "  @Override public RowData transform(RowData row) {\n" +
-                    "    row.put(_newCol, GenModel.apply(_op, row.get(_col), _params);\n" +
-                    "    return row;\n" +
-                    "  }\n" +
-                    "}\n";
+               "    public " + stepName + "() { } \n" +
+                    "    @Override public RowData transform(RowData row) {\n" +
+                    "      row.put(\""+_newCol+"\", GenModel."+_fun+"(row.get(\""+_oldCol+"\"), _params);\n" +
+                    "      return row;\n" +
+                    "    }\n" +
+                    "  }\n";
     sb.append(s3);
     return sb;
   }

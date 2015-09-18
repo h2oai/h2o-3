@@ -1,4 +1,5 @@
 from collections import namedtuple
+import uuid
 from h2o import H2OConnection, _quoted, get_frame
 
 
@@ -26,15 +27,14 @@ class H2OAssembly:
   def names(self):
     return zip(*self.steps)[0][:-1]
 
-  def to_pojo(self, path=""):
-    pass
-    # if pojo_name is None: pojo_name = unicode("AssemblyPOJO_" + str(uuid.uuid4()))
-    # java = H2OConnection.get("Assembly.java/"+self.id)
-    # file_path = path + "/" + self.id + ".java"
-    # if path == "": print java.text
-    # else:
-    #   with open(file_path, 'wb') as f:
-    #     f.write(java.text)
+  def to_pojo(self, pojo_name="", path=""):
+    if pojo_name=="": pojo_name = unicode("AssemblyPOJO_" + str(uuid.uuid4()))
+    java = H2OConnection.get("Assembly.java/" + self.id + "/" + pojo_name, _rest_version=99)
+    file_path = path + "/" + pojo_name + ".java"
+    if path == "": print java.text
+    else:
+      with open(file_path, 'wb') as f:
+        f.write(java.text)
 
   def union(self, assemblies):
     # fuse the assemblies onto this one, each is added to the end going left -> right

@@ -119,6 +119,17 @@ public class ASTNumList extends ASTParameter {
   }
   // Strange count of args, due to custom parsing
   @Override int nargs() { return -1; }
+  @Override public String toJavaString() {
+    double[] ary = expand();
+    if( ary==null || ary.length==0 ) return "\"null\"";
+    SB sb = new SB().p('{');
+    for(int i=0;i<ary.length;++i) {
+      sb.p(ary[i]);
+      if( i==ary.length-1) return sb.p('}').toString();
+      sb.p(',');
+    }
+    throw new RuntimeException("Should never be here");
+  }
 
   // Expand the compressed form into an array of doubles.
   double[] expand() {
