@@ -8,7 +8,7 @@ class MetricsBase(object):
   """
   A parent class to house common metrics available for the various Metrics types.
 
-  The methods here are available acorss different model categories, and so appear here.
+  The methods here are available across different model categories, and so appear here.
   """
   def __init__(self, metric_json,on=None,algo=""):
     self._metric_json = metric_json
