@@ -148,6 +148,10 @@
   h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
+#' Get future model
+#'
+#' @rdname h2o.getFutureModel
+#' @param object H2OModel
 #' @export
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@job_key)
@@ -363,7 +367,6 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict <- predict.H2OModel
 
-#' @export
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...) {
   output <- data.frame()
 
@@ -1196,8 +1199,11 @@ h2o.specificity <- function(object, thresholds){
   h2o.metric(object, thresholds, "tnr")
 }
 
-#
-#
+#' Find the threshold, give the max metric
+#'
+#' @rdname h2o.find_threshold_by_max_metric
+#' @param object H2OBinomialMetrics
+#' @param metric "F1," for example
 #' @export
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
@@ -1205,8 +1211,11 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
   max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
 }
 
-#
-# No duplicate thresholds allowed
+#' Find the threshold, give the max metric. No duplicate thresholds allowed
+#'
+#' @rdname h2o.find_row_by_threshold
+#' @param object H2OBinomialMetrics
+#' @param threshold number between 0 and 1
 #' @export
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
