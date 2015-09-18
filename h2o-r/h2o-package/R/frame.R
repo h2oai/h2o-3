@@ -1801,7 +1801,6 @@ as.character.Frame <- function(x, ...) {
 #' Convert H2O Data to Numeric
 #'
 #' Converts an H2O column into a numeric value column.
-#' @name as.numeric
 #' @param x a column from an Frame data set.
 #' @param ... Further arguments to be passed from or to other methods.
 #' @examples
@@ -1810,10 +1809,11 @@ as.character.Frame <- function(x, ...) {
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' #prostate.hex[,2] <- as.factor (prostate.hex[,2])
 #' #prostate.hex[,2] <- as.numeric(prostate.hex[,2])
-#' @S3method as.numeric Frame
 #' @export
-#' @usage \\method{as.numeric}{Frame}(x,...)
-as.numeric.Frame <- function(x, ...) { .newExpr("as.numeric",x) }
+as.numeric <- function(x) {
+  if( is.Frame(x) ) .newExpr("as.numeric",x)
+  else base::as.numeric(x)
+}
 
 #'
 #' Delete Columns from a Frame
