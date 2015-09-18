@@ -3,16 +3,17 @@ package water.rapids.transforms;
 import water.DKV;
 import water.H2O;
 import water.Key;
-import water.rapids.AST;
-import water.rapids.Exec;
 import water.fvec.Frame;
+import water.rapids.AST;
+import water.rapids.ASTParameter;
+import water.rapids.Exec;
 
 public class H2OColSelect extends Transform<H2OColSelect> {
   private final String _cols;
 
   public H2OColSelect(String name, String ast, boolean inplace) {  // not a public constructor -- used by the REST api only;
     super(name,ast,inplace);
-    _cols = _ast._asts[2].toString(); //.substring(1,);
+    _cols = ((ASTParameter)_ast._asts[2]).toJavaString();
   }
 
   @Override Transform<H2OColSelect> fit(Frame f) { return this; }
@@ -27,16 +28,16 @@ public class H2OColSelect extends Transform<H2OColSelect> {
   public StringBuilder genClass() {
     String stepName = name();
     StringBuilder sb = new StringBuilder();
-    String s = "public static class " + stepName + " extends Step<" + stepName + "> {\n" +
-            "  private final String[] _cols = new String[]{"+ _cols +"};\n" +
-            "  " + stepName + "() { _inplace=true; }\n" +
-            "  @Override public RowData transform(RowData row) {\n" +
-            "    RowData colSelect = new RowData();\n" +
-            "    for(String s: _cols) \n" +
-            "      colSelect.put(s, row.get(s));\n" +
-            "    return colSelect;\n"+
-            "  }\n"+
-            "}\n";
+    String s = "  class " + stepName + " extends Step<" + stepName + "> {\n" +
+               "    private final String[] _cols = {"+ _cols +"};\n" +
+               "    public " + stepName + "() { }\n" +
+               "    @Override public RowData transform(RowData row) {\n" +
+               "      RowData colSelect = new RowData();\n" +
+               "      for(String s: _cols) \n" +
+               "        colSelect.put(s, row.get(s));\n" +
+               "      return colSelect;\n"+
+               "    }\n"+
+               "  }\n";
     sb.append(s);
     return sb;
   }

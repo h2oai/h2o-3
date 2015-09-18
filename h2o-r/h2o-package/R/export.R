@@ -54,7 +54,7 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 #'        filename.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @export
-h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,force) }
+h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(object,path,force) }
 
 #' Download H2O Data to Disk
 #'

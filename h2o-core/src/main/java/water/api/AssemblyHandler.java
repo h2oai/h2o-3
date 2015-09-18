@@ -34,7 +34,5 @@ public class AssemblyHandler extends Handler {
     return ass;
   }
 
-  public AssemblyV99 toJava(int version, AssemblyV99 ass) {
-    return ass;
-  }
+  public AssemblyV99 toJava(int version, AssemblyV99 ass) { return ass; }
 }
