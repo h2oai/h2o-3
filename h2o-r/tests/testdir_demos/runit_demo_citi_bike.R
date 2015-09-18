@@ -20,7 +20,7 @@ locate_source <- function(s) {
     myPath <- locate(s)
 }
 
-test.citibike.demo <- function(conn) {
+test.citibike.demo <- function() {
 # Pick either the big or the small demo.
 # Big data is 10M rows
 small_test <-  locate_source("smalldata/demos/citibike_20k.csv")
@@ -101,7 +101,6 @@ split_fit_predict <- function(data) {
                  y = myY,
                  training_frame    = train,
                  validation_frame  = test,
-                 lambda            = 1e-5,
                  family            = "poisson")
 
   # 4- Score on holdout set & report

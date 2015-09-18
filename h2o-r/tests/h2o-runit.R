@@ -110,7 +110,7 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/exec.R", "/ops.R", "/frame.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/svd.R", "/locate.R", "/grid.R")
+  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R", "/grid.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
@@ -139,12 +139,9 @@ is.running.internal.to.h2o <- function() {
 
 root.path  <- locate("h2o-package/R/", "h2o-r")
 utils.path <- locate("tests/Utils/", "h2o-r")
-src.utils(utils.path)
 src(root.path)   # uncomment to source R code directly  (overrides package load)
-library(h2o)
-h2o.init(ip            = ipPort[[1]],
-         port          = ipPort[[2]],
-         startH2O      = FALSE)
+src.utils(utils.path)
+
 
 #The master seed is set by the runnerSetup.R script.
 #It serves as a way to reproduce all of the tests
@@ -161,11 +158,11 @@ h2o.logIt("[SEED] :", SEED, "Command")
 
 h2o.removeAll()  # wipe at the beginning of every test
 
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "")
-h2o.logAndEcho(new("H2OConnection", ip=myIP, port=myPort), "------------------------------------------------------------")
+h2o.logAndEcho("------------------------------------------------------------")
+h2o.logAndEcho("")
+h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+h2o.logAndEcho("")
+h2o.logAndEcho("------------------------------------------------------------")
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {

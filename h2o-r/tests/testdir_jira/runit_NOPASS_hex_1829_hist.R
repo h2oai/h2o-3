@@ -7,12 +7,12 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.hex_1829 <- function(conn){
+test.hex_1829 <- function(){
 
   heading("BEGIN TEST")
   Log.info("Import small prostate dataset")
   path <- locate("smalldata/logreg/prostate.csv")
-  hex <- h2o.importFile(conn, path, destination_frame="p.hex")
+  hex <- h2o.importFile(path, destination_frame="p.hex")
 
   Log.info("Create small numeric vectors")
   age <- hex$AGE

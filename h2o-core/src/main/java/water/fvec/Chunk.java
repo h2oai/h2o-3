@@ -330,8 +330,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
 
-  public double [] toDoubleArray(){
-    double [] res = new double[_len];
+  public double[] toDoubleArray(double[] res){
+    if (res==null) res = new double[_len];
     for(int i = 0; i < _len; ++i)
       res[i] = atd(i);
     return res;
@@ -368,6 +368,24 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
   public boolean hasFloat(){return true;}
+
+  /** Replace all rows with this new chunk */
+  public void replaceAll( Chunk replacement ) {
+    assert _len == replacement._len;
+    _vec.preWriting();          // One-shot writing-init
+    _chk2 = replacement;
+    assert _chk2._chk2 == null; // Replacement has NOT been written into
+  }
+
+  public Chunk deepCopy() {
+    Chunk c2 = (Chunk)clone();
+    c2._vec=null;
+    c2._start=-1;
+    c2._cidx=-1;
+    c2._mem = _mem.clone();
+    return c2;
+  }
+
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";

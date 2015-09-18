@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GLM.covtype <- function(conn) {
+test.GLM.covtype <- function() {
   Log.info("Importing covtype.20k.data...\n")
-  covtype.hex=h2o.uploadFile(conn, locate("smalldata/covtype/covtype.altered.gz"))
+  covtype.hex=h2o.uploadFile(locate("smalldata/covtype/covtype.altered.gz"))
   
   myY=55
   myX=setdiff(1:54, c(21,29))   # Cols 21 and 29 are constant, so must be explicitly ignored

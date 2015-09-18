@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.nbayes.prostate <- function(H2Oserver) {
+test.nbayes.prostate <- function() {
   Log.info("Importing prostate.csv data...") 
-  prostate.hex <- h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame= "prostate.hex")
+  prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame= "prostate.hex")
   
   Log.info("Converting CAPSULE, RACE, DCAPS, and DPROS to categorical")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)

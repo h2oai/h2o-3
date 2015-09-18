@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.deeplearning.grid.cars.negative <- function(conn) {
+check.deeplearning.grid.cars.negative <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
   seed <- sample(1:1000000, 1)
   Log.info(paste0("runif seed: ",seed))

@@ -16,7 +16,7 @@ library(testthat)
 library(h2o)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 hdfs_airlines_file = "/datasets/airlines_all.csv"
@@ -27,7 +27,7 @@ hdfs_airlines_file = "/datasets/airlines_all.csv"
 
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
-data.hex <- h2o.importFile(conn, url)
+data.hex <- h2o.importFile(url)
 
 n <- nrow(data.hex)
 print(n)
@@ -35,7 +35,7 @@ if (n != 116695259) {
     stop("nrows is wrong")
 }
 
-if (class(data.hex) != "H2OFrame") {
+if (class(data.hex) != "Frame") {
     stop("data.hex is the wrong type")
 }
 print ("Import worked")

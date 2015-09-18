@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 glm.objectiveFun.test<-
-function(conn) {
+function() {
 	
     filepath = locate("smalldata/glm_test/marketing_naRemoved.csv")
     
@@ -10,7 +10,7 @@ function(conn) {
     str(rr)
     dim(rr)
     
-    mfrmr=h2o.uploadFile(conn,filepath,destination_frame = "mfrmr")
+    mfrmr=h2o.uploadFile(filepath,destination_frame = "mfrmr")
     str(mfrmr)
     myX = 2:13
     myY = 1 

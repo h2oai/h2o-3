@@ -261,9 +261,10 @@ public class RequestServer extends NanoHTTPD {
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", null, "Kill minus 3 on *this* node");
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
-    register("/99/Rapids/isEval"                                   ,"GET"   ,RapidsHandler.class, "isEvaluated", null, "Check to see if the AST has been evaluated.");
+    register("/99/Assembly"                                        ,"POST"  ,AssemblyHandler.class, "fit", null, "Fit an assembly to an input frame");
+    register("/99/Assembly"                                        ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
-    register("/3/DownloadDataset.bin"                                  ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
+    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", null, "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", null, "Save a message to the H2O logfile.");
@@ -677,6 +678,7 @@ public class RequestServer extends NanoHTTPD {
       }
       ModelSchema ms = (ModelSchema)mb.models[0];
       Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
+
       // Needed to make file name match class name
       r.addHeader("Content-Disposition", "attachment; filename=\"" + JCodeGen.toJavaId(ms.model_id.key().toString()) + ".java\"");
       return r;

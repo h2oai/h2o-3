@@ -5,10 +5,11 @@
 ##
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-complexFilterTest_benign_37 <- function(conn) {
+
+complexFilterTest_benign_37 <- function() {
     Log.info("A munge-task R unit test on data <benign> testing the functional unit <['', '<=']> ")
     Log.info("Uploading benign")
-    hex <- h2o.importFile(conn, locate("smalldata/logreg/benign.csv"), "rbenign.hex")
+    hex <- h2o.importFile(locate("smalldata/logreg/benign.csv"), "rbenign.hex")
 Log.info("Performing compound task ( ( hex[,c(\"WT\")] <= 277.042893399 ))  on dataset <benign>")
          filterHex <- hex[( ( hex[,c("WT")] <= 277.042893399 )) ,]
 Log.info("Performing compound task ( ( hex[,c(\"MST\")] <= 2.04621771039 ))  on dataset benign, and also subsetting columns.")

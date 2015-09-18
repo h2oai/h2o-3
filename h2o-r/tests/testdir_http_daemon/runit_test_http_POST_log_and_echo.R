@@ -8,7 +8,7 @@
 
 source('../h2o-runit.R')
 
-check.log_and_echo <- function(conn) {
+check.log_and_echo <- function() {
 
   oneHundredChars <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
   oneThousandChars <- paste(oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, sep="")
@@ -17,21 +17,21 @@ check.log_and_echo <- function(conn) {
   hundredThousandChars <- paste(tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, tenThousandChars, sep="")
   millionChars <- paste(hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, hundredThousandChars, sep="")
 
-  echoed_message <- h2o.logAndEcho(conn, oneHundredChars)
+  echoed_message <- h2o.logAndEcho(oneHundredChars)
   n = nchar(echoed_message)
   print(n)
   if (n != 100) {
       stop("Not 100")
   }
 
-  echoed_message <- h2o.logAndEcho(conn, oneThousandChars)
+  echoed_message <- h2o.logAndEcho(oneThousandChars)
   n = nchar(echoed_message)
   print(n)
   if (n != 1000) {
       stop("Not 1000")
   }
 
-  echoed_message <- h2o.logAndEcho(conn, tenThousandChars)
+  echoed_message <- h2o.logAndEcho(tenThousandChars)
   n = nchar(echoed_message)
   print(n)
   if (n != 10000) {

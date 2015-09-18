@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.predict.withoutresponse <- function(h) {
 
-	ir = h2o.uploadFile(normalizePath(locate("smalldata/iris/iris.csv")),conn=h,destination_frame="ir") 
+	ir = h2o.uploadFile(normalizePath(locate("smalldata/iris/iris.csv")),destination_frame="ir")
 	ss = h2o.splitFrame(data=ir,ratios=.2) 
 
 	train = ss[[2]] 

@@ -118,7 +118,8 @@ public class ValueString extends Iced implements Comparable<ValueString> {
       for (int i = 0; i < _len; ++i)
         if (getBuffer()[getOffset() + i] != str.getBuffer()[str.getOffset() + i]) return false;
       return true;
-    } else if (o instanceof String) {
+    } // FIXME: Called in NA_String detection during CsvParser, UTF-8 sensitive
+     else if (o instanceof String) {
       String str = (String) o;
       if (str.length() != length()) return false;
       for (int i = 0; i < length(); ++i)

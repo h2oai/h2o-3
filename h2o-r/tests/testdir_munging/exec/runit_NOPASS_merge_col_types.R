@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues= TRUE)$"f")))
 source("../../h2o-runit.R")
 
-check.merge_col_types <- function(conn) {
+check.merge_col_types <- function() {
   left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
   rite <- data.frame(fruit = c(1, 5, 2, 4, 6,3),

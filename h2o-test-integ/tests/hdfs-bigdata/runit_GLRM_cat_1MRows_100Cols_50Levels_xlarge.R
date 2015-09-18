@@ -17,7 +17,7 @@ library(RCurl)
 library(h2o)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 #----------------------------------------------------------------------
@@ -32,7 +32,7 @@ k_dim <- 15
 print(paste("Matrix decomposition rank k =", k_dim))
 
 print(paste("Creating categorical data frame with rows =", rows, "and cols =", cols, "with", levels, "unique levels each"))
-sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = rows, cols = cols, 
+sst <- system.time(myframe <- h2o.createFrame('myframe', rows = rows, cols = cols, 
                                               randomize = TRUE, categorical_fraction = 1.0, factors = levels,
                                               integer_fraction = 0.0, binary_fraction = 0.0, 
                                               missing_fraction = 0, has_response = FALSE))
@@ -46,7 +46,7 @@ print(paste("Time it took to build model:", aat[3]))
 
 myframe <- NULL
 gc()
-h2o.rm(conn,"myframe")
+h2o.rm("myframe")
 
 PASS_BANNER()
 

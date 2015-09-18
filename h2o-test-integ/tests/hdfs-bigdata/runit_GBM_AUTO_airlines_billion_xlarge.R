@@ -16,7 +16,7 @@ library(testthat)
 library(h2o)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 hdfs_data_file = "/datasets/airlinesbillion.csv"
@@ -27,7 +27,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
-parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
+parse_time <- system.time(data.hex <- h2o.importFile(url))
 print("Time it took to parse")
 print(parse_time)
 

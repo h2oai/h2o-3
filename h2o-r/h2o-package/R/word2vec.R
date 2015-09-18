@@ -28,7 +28,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
-  if (!is(trainingFrame, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  if (!is.Frame(trainingFrame)) stop("`data` must be an Frame object")
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
   if (!is.null(negExCnt)) {
@@ -40,10 +40,10 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (missing(sentSampleRate) || !is.numeric(sentSampleRate)) stop("`sentSampleRate` must be numeric")
   if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
-  if (!is(trainingFrame, "H2OFrame")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
-  if (!is(trainingFrame, "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2OFrame object")
+  if (!is.Frame(trainingFrame)) invisible(nrow(trainingFrame))  # try to force the eval of the frame
+  if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an Frame object")
 
-  params <- list(training_frame = trainingFrame@frame_id,
+  params <- list(training_frame = attr(.eval.frame(trainingFrame), "id"),
                  wordModel = wordModel,
                  normModel = normModel,
                  minWordFreq = minWordFreq,
@@ -76,7 +76,7 @@ function(word2vec, target, count) {
   if (missing(count)) stop("`count` must be specified")
   if (!is.numeric(count)) stop("`count` must be numeric")
 
-  params <- list(key = word2vec@model_id, target=target, cnt=count)
+  params <- list(key = attr(.eval.frame(word2vec),"id"), target=target, cnt=count)
   if (length(target) == 1L) {
     res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
@@ -102,7 +102,7 @@ function(word2vec, target, count) {
 #  if (!is.character(target)) stop("`target` must be character")
 #  if (length(target) > 1) stop("`target` must be a single word")
 #
-#  params <- params <- c(data = word2vec@word2vec@model_id, target = target, word2vec@params)
+#  params <- params <- c(data = word2vec@word2vec:"id", target = target, word2vec@params)
 #  res <- .h2o.__remoteSend(data@conn, .h2o.__TRANSFORM, params)
 #  res$vec
 #})

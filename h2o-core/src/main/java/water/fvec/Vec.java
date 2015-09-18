@@ -237,9 +237,10 @@ public class Vec extends Keyed<Vec> {
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
+    setMeta(type,domain);
     _type = type;
-    _espc = espc;
     _domain = domain;
+    _espc = espc;
     _rollupStatsKey = chunkKey(-2);
   }
 
@@ -285,7 +286,14 @@ public class Vec extends Keyed<Vec> {
     RollupStats rs = rollupStats();
     return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
   }
-  
+
+  private void setMeta( byte type, String[] domain) {
+    assert (type==T_ENUM && domain!=null) || (type!=T_ENUM && domain==null);
+    _domain = domain;
+    _type = type;
+  }
+  public void copyMeta( Vec src, Futures fs ) { setMeta(src._type,src._domain); DKV.put(this,fs); }
+
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
   public static Vec makeZero( long len, boolean redistribute ) {
@@ -336,7 +344,7 @@ public class Vec extends Keyed<Vec> {
       H2O.submitTask(rb);
       rb.join();
       Keyed.remove(v0._key);
-      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(null); // this is gross.
+      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(); // this is gross.
       Keyed.remove(newKey);
     }
     return v0;
@@ -354,42 +362,33 @@ public class Vec extends Keyed<Vec> {
    *  one, and initialized to zero, with the given enum domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
-  /**
-   * A new vector which is a copy of {@code this} one.
-   * @return a copy of the vector.
-   */
-  public Vec makeCopy(String[] domain){
-    Vec v = doCopy();
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
-    return v;
-  }
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy() { return makeCopy(domain()); }
+
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy(String[] domain){ return makeCopy(domain,_type); }
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
-    v._domain = domain;
-    v._type = type;
-    DKV.put(v._key, v);
+    v.setMeta(type,domain);
+    DKV.put(v);
     return v;
   }
 
-  private Vec doCopy() {
+  public Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
-        Chunk c2 = (Chunk)c.clone();
-        c2._vec=null;
-        c2._start=-1;
-        c2._cidx=-1;
-        c2._mem = c2._mem.clone();
+        Chunk c2 = c.deepCopy();
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
     return v;
   }
 
-  private static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+  public static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
     new MRTask() {              // Body of all zero chunks
@@ -413,29 +412,36 @@ public class Vec extends Keyed<Vec> {
     for(double d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key, v, fs);
+    DKV.put(v._key,v,fs);
     fs.blockForPending();
     return v;
   }
-  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
+  public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
     Vec v = new Vec(vecKey,espc, domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
-    for(double d:vals)
+    for(long d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key,v,fs);
+    DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
+  }
+
+  public static Vec[] makeCons(double x, long len, int n) {
+    Vec[] vecs = new Vec[n];
+    for( int i=0; i<n; i++ )
+      vecs[i] = makeCon(x,len,true);
+    return vecs;
   }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d,group(),_espc); }
+  public Vec makeCon( final double d ) { return makeCon(d, group(), _espc); }
 
   private static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
     if( (long)d==d ) return makeCon((long)d, null, group, espc);
@@ -449,7 +455,7 @@ public class Vec extends Keyed<Vec> {
         }
       }
     }.doAllNodes();
-    DKV.put(v0._key,v0);        // Header last
+    DKV.put(v0._key, v0);        // Header last
     return v0;
   }
 
@@ -737,7 +743,7 @@ public class Vec extends Keyed<Vec> {
   public static Key chunkKey(Key veckey, int cidx ) {
     byte [] bits = veckey._kb.clone();
     bits[0] = Key.CHK;
-    UnsafeUtils.set4(bits,6,cidx); // chunk#
+    UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
   }
   Key rollupStatsKey() { return _rollupStatsKey; }
@@ -776,7 +782,7 @@ public class Vec extends Keyed<Vec> {
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
   static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
-    byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
+    byte [] bits = MemoryManager.malloc1(kb.length + KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
     bits[1] = -1;         // Not homed
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
@@ -1054,8 +1060,7 @@ public class Vec extends Keyed<Vec> {
 //  }
 
   /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
-   *  The original Vec is not mutated.
-   */
+   *  The original Vec is not mutated.  */
   public Vec toEnum() {
     if( isEnum() ) return makeCopy(domain());
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
@@ -1066,6 +1071,10 @@ public class Vec extends Keyed<Vec> {
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
     return copyOver(dom);
   }
+
+  /** Create a new Vec (as opposed to wrapping it) that is the Numeric'd version of the original.
+   *  The original Vec is not mutated.  */
+  public Vec toNumeric() { return makeCopy(null,T_NUM); }
 
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
@@ -1135,9 +1144,18 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new String Vec  */
-  public StrWrappedVec toStringVec() {
+  public Vec toStringVec() {
     if( !isEnum() ) throw new IllegalArgumentException("String conversion only works on enum columns");
-    return new StrWrappedVec(group().addVec(),_espc,this._key);
+    return new Enum2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
+  }
+
+  private class Enum2StrChkTask extends MRTask<Enum2StrChkTask> {
+    final String[] _domain;
+    Enum2StrChkTask(String[] domain) { _domain=domain; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      for(int i=0;i<c._len;++i)
+        nc.addStr(new ValueString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));
+    }
   }
 
   /** Convert entire Vec to an array of doubles, loading all of the data into a

@@ -9,9 +9,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
     print("Reading in arcene dataset")
-        dataset = h2o.importFile(conn, locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
+        dataset = h2o.importFile(locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
 
     print("Time copying of entire datatset")
         startTime = proc.time()

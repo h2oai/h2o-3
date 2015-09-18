@@ -21,14 +21,14 @@ library(h2o)
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 s3_airlines_file <- "h2o-airlines-unpacked/allyears2k.csv"
 hdfs_airlines_file <- "/datasets/allyears2k_headers.zip"
 s3_url <- paste0("s3n://", aws_id, ":", aws_key, "@", s3_airlines_file)
 hdfs_url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 
-airlines.hex <- h2o.importFile(conn, s3_url)
-airlines_hdfs.hex <- h2o.importFile(conn, hdfs_url)
+airlines.hex <- h2o.importFile(s3_url, header = T)
+airlines_hdfs.hex <- h2o.importFile(hdfs_url, header = T)
 print(summary(airlines.hex))
 
 # Set predictor and response variables

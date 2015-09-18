@@ -354,7 +354,7 @@ public class GBMTest extends TestUtil {
       parms._distribution = Distribution.Family.multinomial;
       gbm = new GBM(parms);
       gbm.trainModel();
-      try { Thread.sleep(50); } catch( Exception ignore ) { }
+      try { Thread.sleep(100); } catch( Exception ignore ) { }
 
       try {
         Log.info("Trying illegal frame delete.");

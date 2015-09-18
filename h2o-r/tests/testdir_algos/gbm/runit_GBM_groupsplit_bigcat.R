@@ -2,13 +2,13 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 library(gbm)
 
-test.GBM.bigcat <- function(conn) {
+test.GBM.bigcat <- function() {
   # Training set has 100 categories from cat001 to cat100
   # Categories cat001, cat003, ... are perfect predictors of y = 1
   # Categories cat002, cat004, ... are perfect predictors of y = 0
   
   Log.info("Importing bigcat_5000x2.csv data...\n")
-  bigcat.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/bigcat_5000x2.csv"), destination_frame = "bigcat.hex")
+  bigcat.hex <- h2o.uploadFile(locate("smalldata/gbm_test/bigcat_5000x2.csv"), destination_frame = "bigcat.hex")
   bigcat.hex$y <- as.factor(bigcat.hex$y)
   Log.info("Summary of bigcat_5000x2.csv from H2O:\n")
   print(summary(bigcat.hex))

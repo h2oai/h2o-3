@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-check.demo_random_svd <- function(conn) {
+check.demo_random_svd <- function() {
   
   # Data frame size
   rows <- 1e4
@@ -36,13 +36,13 @@ check.demo_random_svd <- function(conn) {
       print(paste('Vecs:', vecs[k]))
       names <- c(names, ncols * nvecs)    # set the name to be the problem size
       
-      sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = rows, cols = ncols, seed = SEED, 
+      sst <- system.time(myframe <- h2o.createFrame('myframe', rows = rows, cols = ncols, seed = SEED, 
                                                     randomize = TRUE, real_range = 100, categorical_fraction = 0.0, 
                                                     integer_fraction = 0.4, integer_range = 100, 
                                                     missing_fraction = 0, has_response = FALSE) )
       
       create_frm_time[k,j] = as.numeric(sst[3])
-      mem <- h2o.ls(conn)
+      mem <- h2o.ls()
       frm_size[k,j] <- as.numeric(mem[1,1])
       head(myframe)
 
@@ -61,7 +61,7 @@ check.demo_random_svd <- function(conn) {
   }
   myframe <- NULL
   gc()
-  h2o.rm(conn,"myframe")
+  h2o.rm("myframe")
   
   # format timing data from h2o
   data <- algo_run_time

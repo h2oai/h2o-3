@@ -9,7 +9,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.splitFrame.multiple.ratios <- function(conn) {
+test.splitFrame.multiple.ratios <- function() {
   hex <- as.h2o(iris)
 
   Log.info("Splits using c(0.1, 0.2), c(0.2, 0.4), c(0.3, 0.6).")

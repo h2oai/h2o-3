@@ -508,14 +508,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (printme) Log.info("Scoring the auto-encoder.");
         // training
         {
-          final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make());
+          final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make(), false);
           mse_frame.delete();
           ModelMetrics mtrain = ModelMetrics.getFromDKV(this,ftrain); //updated by model.score
           _output._training_metrics = mtrain;
           err.scored_train = new ScoreKeeper(mtrain);
         }
         if (ftest != null) {
-          final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
+          final Frame mse_frame = scoreAutoEncoder(ftest, Key.make(), false);
           mse_frame.delete();
           ModelMetrics mtest = ModelMetrics.getFromDKV(this,ftest); //updated by model.score
           _output._validation_metrics = mtest;
@@ -532,7 +532,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this, ftrain);
         _output._training_metrics = mtrain;
         err.scored_train = new ScoreKeeper(mtrain);
-        hex.ModelMetrics mtest = null;
+        hex.ModelMetrics mtest;
 
         hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
         if (mm1 instanceof ModelMetricsBinomial) {
@@ -550,11 +550,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (ftest != null) {
           Frame validPred = score(ftest);
           validPred.delete();
-          if (ftest != null) {
-            mtest = ModelMetrics.getFromDKV(this, ftest);
-            _output._validation_metrics = mtest;
-            err.scored_valid = new ScoreKeeper(mtest);
-          }
+          mtest = ModelMetrics.getFromDKV(this, ftest);
+          _output._validation_metrics = mtest;
+          err.scored_valid = new ScoreKeeper(mtest);
           if (mtest != null) {
             if (mtest instanceof ModelMetricsBinomial) {
               ModelMetricsBinomial mm = (ModelMetricsBinomial)mtest;
@@ -661,7 +659,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
-            double p[] = score_autoencoder(chks, row, tmp, preds, neurons);
+            double p[] = score_autoencoder(chks, row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
             for( int c=0; c<len; c++ )
               recon[c].addNum(p[c]);
           }
@@ -788,27 +786,45 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   /**
    * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
    * @param frame Original data (can contain response, will be ignored)
+   * @param destination_key Frame Id for output
+   * @param reconstruction_error_per_feature whether to return the squared error per feature
    * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
    */
-  public Frame scoreAutoEncoder(Frame frame, Key destination_key) {
+  public Frame scoreAutoEncoder(Frame frame, Key destination_key, final boolean reconstruction_error_per_feature) {
     if (!get_params()._autoencoder)
       throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
     final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm,true, false);
+    adaptTestForTrain(adaptFrm, true, false);
+    final int outputcols = reconstruction_error_per_feature ? model_info.data_info.fullN() : 1;
     Frame mse = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk[] mse ) {
         double tmp [] = new double[len];
+        double out[] = new double[outputcols];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          mse[0].addNum(score_autoencoder(tmp, null, neurons));
+          score_autoencoder(tmp, out, neurons, false /*reconstruction*/, reconstruction_error_per_feature);
+          for (int i=0; i<outputcols; ++i)
+            mse[i].addNum(out[i]);
         }
       }
-    }.doAll(1,adaptFrm).outputFrame();
+    }.doAll(outputcols, adaptFrm).outputFrame();
 
-    Frame res = new Frame(destination_key, new String[]{"Reconstruction.MSE"}, mse.vecs());
+    String[] names;
+    if (reconstruction_error_per_feature) {
+      String[] coefnames = model_info().data_info().coefNames();
+      assert (outputcols == coefnames.length);
+      names = new String[outputcols];
+      for (int i = 0; i < names.length; ++i) {
+        names[i] = "reconstr_" + coefnames[i] + ".SE";
+      }
+    } else {
+      names = new String[]{"Reconstruction.MSE"};
+    }
+
+    Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
     _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.vecs()[0].mean() /*mean MSE*/));
     return res;
@@ -871,12 +887,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
 
   // Make (potentially expanded) reconstruction
-  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons) {
+  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
     assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.length);
-    for( int i=0; i<tmp.length; i++ )
+    for (int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    score_autoencoder(tmp, preds, neurons); // this fills preds, returns MSE error (ignored here)
+    score_autoencoder(tmp, preds, neurons, reconstruction, reconstruction_error_per_feature); // this fills preds, returns MSE error (ignored here)
     return preds;
   }
 
@@ -884,36 +900,37 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * Helper to reconstruct original data into preds array and compute the reconstruction error (MSE)
    * @param data Original data (unexpanded)
    * @param preds Reconstruction (potentially expanded)
-   * @return reconstruction error
+   * @param neurons Array of neurons to work with (will call fprop on them)
    */
-  private double score_autoencoder(double[] data, double[] preds, Neurons[] neurons) {
+  private void score_autoencoder(double[] data, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
     assert(model_info().get_params()._autoencoder);
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data); // FIXME - no weights yet
+    ((Neurons.Input)neurons[0]).setInput(-1, data);
     DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
     double[] in  = neurons[0]._a.raw(); //input (expanded)
     double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
 
-    // First normalize categorical reconstructions to be probabilities
-    // (such that they can be better compared to the input where one factor was 1 and the rest was 0)
-//    model_info().data_info().softMaxCategoricals(out,out); //only modifies the categoricals
-
-    // Compute MSE of reconstruction in expanded space (with categorical probabilities)
-    double l2 = 0;
-    for (int i = 0; i < in.length; ++i)
-      l2 += Math.pow((out[i] - in[i]), 2);
-    l2 /= in.length;
-
-    if (preds!=null) {
+    if (reconstruction) {
       // Now scale back numerical columns to original data space (scale + shift)
       model_info().data_info().unScaleNumericals(out, out); //only modifies the numericals
       System.arraycopy(out, 0, preds, 0, out.length); //copy reconstruction into preds
+    } else if (reconstruction_error_per_feature){
+      // Compute SE of reconstruction in expanded space for each feature
+      for (int i = 0; i < in.length; ++i)
+        preds[i] = Math.pow((out[i] - in[i]), 2);
+    } else {
+      // Compute MSE of reconstruction in expanded space
+      assert(preds.length == 1);
+      double l2 = 0;
+      for (int i = 0; i < in.length; ++i)
+        l2 += Math.pow((out[i] - in[i]), 2);
+      l2 /= in.length;
+      preds[0] = l2;
     }
-    return l2;
   }
 
   /**

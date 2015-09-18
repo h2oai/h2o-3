@@ -5,8 +5,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test <- function(conn) {
-  arrests.hex = h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"), "arrests.hex")
+test <- function() {
+  arrests.hex = h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), "arrests.hex")
 
   Log.info("Slicing column 1 of arrests 50 times")
   for(i in 1:50) {
@@ -20,7 +20,7 @@ test <- function(conn) {
     if( i %% 50 == 0 ) Log.info(paste("Finished ", paste(i, " PCAs of arrests.hex", sep = ""), sep = ""))
   }
   Log.info("Making a call to remove all")
-  h2o.removeAll(conn)
+  h2o.removeAll()
 
   Log.info("h2o.ls() should return an empty list")
   expect_equal(length(h2o.ls()$key), 0)

@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.columndereference <- function(conn) {
+test.columndereference <- function() {
   Log.info('test column dereference')
 
-  hdf <- h2o.importFile(conn, locate('smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.importFile(conn, locate('smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(locate('smalldata/jira/v-11.csv'))
 
   column <- 'colgroup2'
 

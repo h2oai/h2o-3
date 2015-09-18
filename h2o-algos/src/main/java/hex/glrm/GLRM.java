@@ -114,17 +114,21 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (_parms._init != GLRM.Initialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
 
-      if (_parms._user_points.get().numCols() != _train.numCols())
+      Frame user_points = _parms._user_points.get();
+      assert null != user_points;
+
+      if (user_points.numCols() != _train.numCols())
         error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
-      else if (_parms._user_points.get().numRows() != _parms._k)
+      else if (user_points.numRows() != _parms._k)
         error("_user_points", "The user-specified points must have k = " + _parms._k + " rows");
       else {
         int zero_vec = 0;
-        Vec[] centersVecs = _parms._user_points.get().vecs();
+        Vec[] centersVecs = user_points.vecs();
         for (int c = 0; c < _train.numCols(); c++) {
-          if(centersVecs[c].naCnt() > 0) {
-            error("_user_points", "The user-specified points cannot contain any missing values"); break;
-          } else if(centersVecs[c].isConst() && centersVecs[c].max() == 0)
+          if (centersVecs[c].naCnt() > 0) {
+            error("_user_points", "The user-specified points cannot contain any missing values");
+            break;
+          } else if (centersVecs[c].isConst() && centersVecs[c].max() == 0)
             zero_vec++;
         }
         if (zero_vec == _train.numCols())
@@ -140,11 +144,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (null != _parms._loss_by_col) {
       if (_parms._loss_by_col.length > _train.numCols())
         error("_loss_by_col", "Number of loss functions specified must be <= " + _train.numCols());
-      else if (_parms._loss_by_col.length == _train.numCols())
+      else if (null == _parms._loss_by_col_idx && _parms._loss_by_col.length == _train.numCols())
         _lossFunc = _parms._loss_by_col;
-      else if (null == _parms._loss_by_col_idx || _parms._loss_by_col.length != _parms._loss_by_col_idx.length)
-        error("_loss_by_col_idx", "Must specify same number of column indices as loss functions");
-      else {
+      else if (null != _parms._loss_by_col_idx && _parms._loss_by_col.length == _parms._loss_by_col_idx.length) {
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for(int i = 0; i < _lossFunc.length; i++)
@@ -162,7 +164,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           else
             _lossFunc[_parms._loss_by_col_idx[i]] = _parms._loss_by_col[i];
         }
-      }
+      } else
+        error("_loss_by_col_idx", "Must specify same number of column indices as loss functions");
     } else {
       if (null != _parms._loss_by_col_idx)
         error("_loss_by_col", "Must specify loss function for each column");
@@ -657,7 +660,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       List<String> colHeaders = new ArrayList<>();
       List<String> colTypes = new ArrayList<>();
       List<String> colFormat = new ArrayList<>();
-      colHeaders.add("Number of Observed Entries"); colTypes.add("long"); colFormat.add("%d");
+      // colHeaders.add("Number of Observed Entries"); colTypes.add("long"); colFormat.add("%d");   // TODO: This causes overflow in R if too large
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Final Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Final Objective Value"); colTypes.add("double"); colFormat.add("%.5f");
@@ -672,7 +675,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
               "");
       int row = 0;
       int col = 0;
-      table.set(row, col++, output._nobs);
+      // table.set(row, col++, output._nobs);
       table.set(row, col++, output._iterations);
       table.set(row, col++, output._step_size);
       table.set(row, col++, output._objective);

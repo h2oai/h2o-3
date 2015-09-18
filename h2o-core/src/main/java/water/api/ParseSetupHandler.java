@@ -26,6 +26,11 @@ public class ParseSetupHandler extends Handler {
       if (DKV.get(fkeys[i]) == null) throw new IllegalArgumentException("Key not loaded: "+ p.source_frames[i]);
     }
 
+    // corrects for json putting in empty strings in the place of empty sub-arrays
+    if (p.na_strings != null)
+      for(int i = 0; i < p.na_strings.length; i++)
+        if (p.na_strings[i] != null && p.na_strings[i].length == 0) p.na_strings[i] = null;
+
     ParseSetup ps = ParseSetup.guessSetup(fkeys, new ParseSetup(p));
 
     // TODO: ParseSetup throws away the srcs list. . .

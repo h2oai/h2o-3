@@ -1,21 +1,17 @@
 package water.api;
 
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
-
 import hex.Model;
 import hex.grid.Grid;
-import water.DKV;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Keyed;
-import water.Value;
+import water.*;
+import water.currents.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.KeyedVoid;
 import water.util.ReflectionUtils;
+
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 /**
  * <p>
@@ -147,6 +143,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public KeyedVoidV3(Key<KeyedVoid> key) {
       super(key);
     }
+  }
+
+  public static class AssemblyKeyV3 extends KeyV3<Iced, AssemblyKeyV3, Assembly> {
+    public AssemblyKeyV3() {}
+    public AssemblyKeyV3(Key<Assembly> key) { super(key); }
   }
 
   @Override

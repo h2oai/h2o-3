@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.binop2.ampersand <- function(conn) {
+test.binop2.ampersand <- function() {
 
-  hex <- as.h2o(conn, iris)
+  hex <- as.h2o(iris)
 
   print(hex & 5)
   print(5 & hex)

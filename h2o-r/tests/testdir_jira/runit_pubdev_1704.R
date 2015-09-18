@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev_1704 <- function(conn) {
+test.pubdev_1704 <- function() {
     df <- as.h2o(iris)
     df$fold <- as.h2o(ceiling(runif(nrow(iris))*5))
 
