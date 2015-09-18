@@ -50,7 +50,7 @@ public class H2OColOp extends Transform<H2OColOp> {
     for( String k: _params.keySet() ) {
       String v = _params.get(k).toJavaString();
       sb.append(
-               "    _params.put(\""+k+"\", new String[]{"+v+"});\n" // TODO: o needs to be turned into proper String here.
+               "    _params.put(\""+k+"\", new String[]{"+v+"});\n"
       );
     }
     String s3 =
