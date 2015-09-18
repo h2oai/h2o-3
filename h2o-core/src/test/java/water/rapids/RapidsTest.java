@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -13,7 +13,7 @@ import water.parser.ParseSetup;
 import java.io.File;
 import java.util.Arrays;
 
-public class CurrentsTest extends TestUtil {
+public class RapidsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void bigSlice() {

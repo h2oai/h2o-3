@@ -13,8 +13,6 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.rapids.Env;
-import water.rapids.Exec;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -345,7 +343,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           if (valid == null) valid = frame;
                                           double threshold;
                                           if (model2._output.isClassifier()) {
-                                            Frame pred = null, pred2 = null;
+                                            Frame pred = null;
                                             Vec labels, predlabels, pred2labels;
                                             try {
                                               pred = model2.score(valid);
@@ -372,20 +370,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 Log.info(cm.toASCII());
 //                                              Assert.assertEquals(cm.err(), error, 1e-4); //FIXME
 
-                                                // manually make labels with AUC-given default threshold
-                                                String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
                                                 // confirm that orig CM was made with threshold 0.5
-                                                // put pred2 into DKV, and allow access
-                                                pred2 = new Frame(Key.make("pred2"), pred.names(), pred.vecs());
-                                                pred2.delete_and_lock(null);
-                                                pred2.unlock(null);
-                                                Env ev = Exec.exec(ast);
-                                                try {
-                                                  pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                                } finally {
-                                                  if (ev != null) ev.remove_and_unlock();
-                                                }
-                                                pred2labels = pred2.vecs()[0];
+                                                // manually make labels with AUC-given default threshold
+                                                String ast = "(= pred (> ([] pred 2) #"+threshold+") [0] [])";
+                                                Frame tmp = water.rapids.Exec.exec(ast).getFrame();
+                                                pred2labels = tmp.vecs()[0];
                                                 cm = buildCM(labels, pred2labels);
                                                 Log.info("CM from self-made labels:");
                                                 Log.info(cm.toASCII());
@@ -393,7 +382,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                               }
                                             } finally {
                                               if (pred != null) pred.delete();
-                                              if (pred2 != null) pred2.delete();
                                             }
                                           } //classifier
                                           else {
