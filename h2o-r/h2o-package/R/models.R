@@ -148,6 +148,10 @@
   h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
+#' Get future model
+#'
+#' @rdname h2o.getFutureModel
+#' @param object H2OModel
 #' @export
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@job_key)
@@ -363,7 +367,6 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict <- predict.H2OModel
 
-#' @export
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...) {
   output <- data.frame()
 
@@ -1196,8 +1199,11 @@ h2o.specificity <- function(object, thresholds){
   h2o.metric(object, thresholds, "tnr")
 }
 
-#
-#
+#' Find the threshold, give the max metric
+#'
+#' @rdname h2o.find_threshold_by_max_metric
+#' @param object H2OBinomialMetrics
+#' @param metric "F1," for example
 #' @export
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
@@ -1205,8 +1211,11 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
   max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
 }
 
-#
-# No duplicate thresholds allowed
+#' Find the threshold, give the max metric. No duplicate thresholds allowed
+#'
+#' @rdname h2o.find_row_by_threshold
+#' @param object H2OBinomialMetrics
+#' @param threshold number between 0 and 1
 #' @export
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
@@ -1753,13 +1762,76 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 })
 
 #' @export
-plot.H2OModel <- function(x, train=FALSE, valid=FALSE, xval=FALSE, ...) {
-  if( is(x, "H2OBinomialModel") ) {
-    if ( !train && !valid && !xval ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...)
-    } else if ( valid ) { plot.H2OBinomialMetrics(x@model$validation_metrics, ...)
-    } else if ( xval )  { warning(paste("Plotting cross-valiation metrics is currently not supported."))
-    } else if ( train ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...) }
-  } else NULL
+plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
+  df <- as.data.frame(x@model$scoring_history)
+  # Separate functionality for GLM since output is different from other algos
+  if (x@algorithm == "glm") {
+    # H2OBinomialModel and H2ORegressionModel have the same output
+    # Also GLM has only one timestep option, which is `iteration`
+    timestep <- "iteration"
+    if (metric == "AUTO") {
+      metric <- "log_likelihood"
+    } else if (!(metric %in% c("log_likelihood", "objective"))) {
+      stop("for GLM, metric must be one of: log_likelihood, objective")
+    }
+    plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
+  } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
+    if (is(x, "H2OBinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "logloss"
+      } else if (!(metric %in% c("r2","logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, r2, logloss, AUC, classification_error, MSE")
+      } 
+    } else if (is(x, "H2OMultinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "classification_error"
+      } else if (!(metric %in% c("r2","logloss","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, r2, logloss, classification_error, MSE")
+      } 
+    } else if (is(x, "H2ORegressionModel")) {
+      if (metric == "AUTO") {
+        metric <- "MSE"
+      } else if (!(metric %in% c("MSE","deviance"))) {
+        stop("metric for H2OMultinomialModel must be one of: MSE, deviance")
+      } 
+    } else {
+      stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
+    }
+    # Set timestep
+    if (x@algorithm %in% c("gbm", "drf")) {
+      if (timestep == "AUTO") {
+        timestep <- "number_of_trees"
+      } else if (!(timestep %in% c("duration","number_of_trees"))) {
+        stop("timestep for gbm or drf must be one of: duration, number_of_trees")
+      } 
+    } else if (x@algorithm == "deeplearning") {
+      # Delete first row of DL scoring history since it contains NAs & NaNs
+      if (df$samples[1] == 0) {
+        df <- df[-1,]
+      }
+      if (timestep == "AUTO") {
+        timestep <- "epochs"
+      } else if (!(timestep %in% c("epochs","samples","duration"))) {
+        stop("timestep for deeplearning must be one of: epochs, samples, duration")
+      } 
+    } else {
+      stop("Plotting not implemented for this type of model")
+    }
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+    if (timestep == "duration") {
+      tt <- trimws(df[2, c("duration")])
+      dur_colname <- sprintf("duration_%s", strsplit(tt, " ")[[1]][2]) #parse units of measurement
+      df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trimws(v), " ")[[1]][1]))
+      timestep <- dur_colname
+    }
+    ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+    graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
+         main = "Scoring History", col = "blue", ylim = ylim)
+    graphics::par(new = TRUE)
+    graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
+    graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+  }
 }
 
 #' @export
@@ -1902,5 +1974,7 @@ h2o.tabulate <- function(data, x, y,
   print(res)
   count_table <- res$count_table
   response_table <- res$response_table
-  list(count_table = count_table, response_table = response_table)
+  out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
+  oldClass(out) <- c("H2OTabulate", "list")
+  out
 }
