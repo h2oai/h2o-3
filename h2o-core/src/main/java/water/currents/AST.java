@@ -28,7 +28,7 @@ abstract public class AST extends Iced<AST> {
 
   // Short name (there's lots of the simple math primtives, and we want them to
   // fit on one line)
-  abstract String str();
+  public abstract String str();
   @Override public String toString() { return str(); }
 
   // Number of arguments, if that makes sense.  Always count 1 for self, so a
@@ -223,27 +223,22 @@ abstract public class AST extends Iced<AST> {
     init(new ASTStratifiedKFold());
   }
 
-  public static ASTFrame newASTFrame(Frame f){ return new ASTFrame(f); }
+  public static ASTId newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
 }
 
 /** A number.  Execution is just to return the constant. */
-class ASTNum extends AST {
-  final ValNum _d;
-  ASTNum( Exec e ) { _d = new ValNum(Double.valueOf(e.token())); }
-  ASTNum( double d ) { _d = new ValNum(d); }
-  @Override public String str() { return _d.toString(); }
-  @Override public Val exec(Env env) { return _d; }
-  @Override int nargs() { return 1; }
+class ASTNum extends ASTParameter {
+  ASTNum( Exec e ) { super(e); }
+  ASTNum( double d ) { super(d); }
+  @Override public Val exec(Env env) { return _v; }
 }
 
 /** A String.  Execution is just to return the constant. */
-class ASTStr extends AST {
-  final ValStr _str;
-  ASTStr(String str) { _str = new ValStr(str); }
-  ASTStr(Exec e, char c) { _str = new ValStr(e.match(c)); }
-  @Override public String str() { return _str.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
-  @Override public Val exec(Env env) { return _str; }
-  @Override int nargs() { return 1; }
+class ASTStr extends ASTParameter {
+  ASTStr(String str) { super(str); }
+  ASTStr(Exec e, char c) { super(e,c); }
+  @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
+  @Override public Val exec(Env env) { return _v; }
 }
 
 /** A Frame.  Execution is just to return the constant. */
@@ -268,6 +263,7 @@ class ASTRow extends AST {
 class ASTId extends AST {
   final String _id;
   ASTId(Exec e) { _id = e.token(); }
+  ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }

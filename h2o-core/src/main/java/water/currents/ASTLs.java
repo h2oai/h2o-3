@@ -20,7 +20,8 @@ class ASTLs extends ASTPrim {
   @Override
   public String[] args() { return null; }
   @Override int nargs() { return 1; }
-  @Override String str() { return "ls" ; }
+  @Override
+  public String str() { return "ls" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();
@@ -31,13 +32,11 @@ class ASTLs extends ASTPrim {
       keys.addEnum(r++);
       domain.add(key.toString());
     }
+    String[] key_domain = domain.toArray(new String[domain.size()]);
+    av.setDomain(key_domain);
     keys.close(fs);
     Vec c0 = av.close(fs);   // c0 is the row index vec
     fs.blockForPending();
-    String[] key_domain = new String[domain.size()];
-    for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
-    c0.setDomain(key_domain);
-    
     return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
   }
 }

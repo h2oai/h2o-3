@@ -11,7 +11,7 @@ import java.util.Arrays;
 /** A collection of Strings only.  This is a syntatic form only, and never
  *  executes and never gets on the execution stack.
  */
-public class ASTStrList extends AST {
+public class ASTStrList extends ASTParameter {
   String[] _strs;
   ASTStrList( Exec e ) {
     ArrayList<String> strs  = new ArrayList<>();
@@ -37,7 +37,8 @@ class ASTColNames extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "cols", "names"}; }
   @Override int nargs() { return 1+3; } // (colnames frame [#cols] ["names"])
-  @Override String str() { return "colnames="; }
+  @Override
+  public String str() { return "colnames="; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( asts[2] instanceof ASTNumList ) {
@@ -67,7 +68,8 @@ class ASTAsFactor extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.factor col)
-  @Override String str() { return "as.factor"; }
+  @Override
+  public String str() { return "as.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.factor requires a single column");
@@ -82,7 +84,8 @@ class ASTCharacter extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.character col)
-  @Override String str() { return "as.character"; }
+  @Override
+  public String str() { return "as.character"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
@@ -98,7 +101,8 @@ class ASTIsFactor extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.factor col)
-  @Override String str() { return "is.factor"; }
+  @Override
+  public String str() { return "is.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isEnum() ? "TRUE" : "FALSE");
@@ -116,7 +120,8 @@ class ASTIsNumeric extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.numeric col)
-  @Override String str() { return "is.numeric"; }
+  @Override
+  public String str() { return "is.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isNumeric() ? "TRUE" : "FALSE");
@@ -134,7 +139,8 @@ class ASTIsCharacter extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.character col)
-  @Override String str() { return "is.character"; }
+  @Override
+  public String str() { return "is.character"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isString() ? "TRUE" : "FALSE");
@@ -152,7 +158,8 @@ class ASTAnyFactor extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any.factor frame)
-  @Override String str() { return "any.factor"; }
+  @Override
+  public String str() { return "any.factor"; }
   @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String res = "FALSE";
@@ -167,7 +174,8 @@ class ASTAsNumeric extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.numeric col)
-  @Override String str() { return "as.numeric"; }
+  @Override
+  public String str() { return "as.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec[] nvecs = new Vec[fr.numCols()];

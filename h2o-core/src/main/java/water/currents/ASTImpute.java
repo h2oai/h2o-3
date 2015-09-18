@@ -16,7 +16,8 @@ import java.util.Arrays;
 public class ASTImpute extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "inPlace"}; }
-  @Override String str(){ return "h2o.impute";}
+  @Override
+  public String str(){ return "h2o.impute";}
   @Override int nargs() { return 1+6; } // (h2o.impute data col method combine_method groupby in.place)
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // Argument parsing and sanity checking
@@ -45,7 +46,7 @@ public class ASTImpute extends ASTPrim {
     AST ast = asts[5];
     ASTNumList by2;
     if( ast instanceof ASTNumList  ) by2 = (ASTNumList)ast;
-    else if( ast instanceof ASTNum ) by2 = new ASTNumList(((ASTNum)ast)._d.getNum());
+    else if( ast instanceof ASTNum ) by2 = new ASTNumList(((ASTNum)ast)._v.getNum());
     else if( ast instanceof ASTStrList ) {
       String[] names = ((ASTStrList)ast)._strs;
       double[] list  = new double[names.length];

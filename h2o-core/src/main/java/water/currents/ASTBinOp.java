@@ -232,18 +232,18 @@ abstract class ASTBinOp extends ASTPrim {
 
 // ----------------------------------------------------------------------------
 // Expressions that auto-widen between NUM and FRM
-class ASTAnd  extends ASTBinOp { String str() { return "&" ; } double op( double l, double r ) { return ASTLAnd.and_op(l,r); } }
-class ASTDiv  extends ASTBinOp { String str() { return "/" ; } double op( double l, double r ) { return l/r;}}
-class ASTMod  extends ASTBinOp { String str() { return "mod";} double op( double l, double r ) { return l%r;}}
-class ASTMul  extends ASTBinOp { String str() { return "*" ; } double op( double l, double r ) { return l*r;}}
-class ASTOr   extends ASTBinOp { String str() { return "|" ; } double op( double l, double r ) { return ASTLOr . or_op(l,r); } }
-class ASTPlus extends ASTBinOp { String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
-class ASTPow  extends ASTBinOp { String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
-class ASTSub  extends ASTBinOp { String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
-class ASTIntDiv extends ASTBinOp { String str() { return "intDiv"; } double op(double l, double r) { return (int)l/(int)r;}}
+class ASTAnd  extends ASTBinOp { public String str() { return "&" ; } double op( double l, double r ) { return ASTLAnd.and_op(l,r); } }
+class ASTDiv  extends ASTBinOp { public String str() { return "/" ; } double op( double l, double r ) { return l/r;}}
+class ASTMod  extends ASTBinOp { public String str() { return "mod";} double op( double l, double r ) { return l%r;}}
+class ASTMul  extends ASTBinOp { public String str() { return "*" ; } double op( double l, double r ) { return l*r;}}
+class ASTOr   extends ASTBinOp { public String str() { return "|" ; } double op( double l, double r ) { return ASTLOr . or_op(l,r); } }
+class ASTPlus extends ASTBinOp { public String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
+class ASTPow  extends ASTBinOp { public String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
+class ASTSub  extends ASTBinOp { public String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
+class ASTIntDiv extends ASTBinOp { public String str() { return "intDiv"; } double op(double l, double r) { return (int)l/(int)r;}}
 
 class ASTRound extends ASTBinOp { 
-  String str() { return "round"; }
+  public String str() { return "round"; }
   double op(double x, double digits) { 
     // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
     if(Double.isNaN(x)) return x;
@@ -260,7 +260,7 @@ class ASTRound extends ASTBinOp {
 }
 
 class ASTSignif extends ASTBinOp { 
-  String str() { return "signif"; } 
+  public String str() { return "signif"; }
   double op(double x, double digits) { 
     if(Double.isNaN(x)) return x;
     java.math.BigDecimal bd = new java.math.BigDecimal(x);
@@ -270,12 +270,12 @@ class ASTSignif extends ASTBinOp {
 }
 
 
-class ASTGE   extends ASTBinOp { String str() { return ">="; } double op( double l, double r ) { return l>=r?1:0; } }
-class ASTGT   extends ASTBinOp { String str() { return ">" ; } double op( double l, double r ) { return l> r?1:0; } }
-class ASTLE   extends ASTBinOp { String str() { return "<="; } double op( double l, double r ) { return l<=r?1:0; } }
-class ASTLT   extends ASTBinOp { String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
+class ASTGE   extends ASTBinOp { public String str() { return ">="; } double op( double l, double r ) { return l>=r?1:0; } }
+class ASTGT   extends ASTBinOp { public String str() { return ">" ; } double op( double l, double r ) { return l> r?1:0; } }
+class ASTLE   extends ASTBinOp { public String str() { return "<="; } double op( double l, double r ) { return l<=r?1:0; } }
+class ASTLT   extends ASTBinOp { public String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
 
-class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
+class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
   double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); } 
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
@@ -294,7 +294,7 @@ class ASTEQ   extends ASTBinOp { String str() { return "=="; } double op( double
   @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
-class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
+class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
   double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } 
   @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
 }
@@ -302,7 +302,7 @@ class ASTNE   extends ASTBinOp { String str() { return "!="; } double op( double
 // ----------------------------------------------------------------------------
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.
 class ASTLAnd extends ASTBinOp { 
-  String str() { return "&&"; } 
+  public String str() { return "&&"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is zero or NA, do not evaluate the right, just return the left
@@ -322,7 +322,7 @@ class ASTLAnd extends ASTBinOp {
 
 // Logical-OR.  If the first arg is true, do not execute the 2nd arg.
 class ASTLOr extends ASTBinOp { 
-  String str() { return "||"; } 
+  public String str() { return "||"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is non-zero or NA, do not evaluate the right, just return the left
@@ -358,7 +358,7 @@ class ASTIfElse extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"test","true","false"}; }
   @Override int nargs() { return 1+3; } // (ifelse test true false)
-  String str() { return "ifelse"; } 
+  public String str() { return "ifelse"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
 
@@ -431,7 +431,8 @@ class ASTScale extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "center", "scale"}; }
   @Override int nargs() { return 1+3; } // (scale x center scale)
-  @Override String str() { return "scale"; } 
+  @Override
+  public String str() { return "scale"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();

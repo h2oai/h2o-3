@@ -83,7 +83,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     fr._col_names = [c["label"] for c in res["columns"]]
     return fr
 
-  def __str__(self): return self.__repr__()
+  def __str__(self): return self._id
 
   def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(file_path)
@@ -380,7 +380,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     nrows = min(self.nrow,rows)
     ncols = min(self.ncol, cols)
     colnames = self.names[:ncols]
-    head = self[0:nrows,0:ncols]
+    if nrows == self.nrow and ncols == self.ncol: head = self
+    else:                                        head = self[0:nrows,0:ncols]
     res = head.as_data_frame(as_pandas) if as_pandas else head.as_data_frame(as_pandas)[1:]
     if show: self._do_show(as_pandas,res,colnames)
     return res if as_pandas else head

@@ -144,6 +144,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
     rawData
   }
 }
+
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'

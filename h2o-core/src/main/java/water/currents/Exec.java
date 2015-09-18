@@ -70,8 +70,8 @@ public class Exec {
   //   "'"   a String (single quote): attached_token
   //   digits: a double
   //   letters or other specials: an ID
-  @SuppressWarnings({"fallthrough"}) 
-  AST parse( ) {
+  @SuppressWarnings({"fallthrough"})
+  public AST parse( ) {
     switch( skipWS() ) {
     case '(':  return new ASTExec(this); // function application
     case '{':  return new ASTFun(this);  // function definition

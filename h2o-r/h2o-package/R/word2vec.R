@@ -43,7 +43,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (!is.Frame(trainingFrame)) invisible(nrow(trainingFrame))  # try to force the eval of the frame
   if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an Frame object")
 
-  params <- list(training_frame = .eval.frame(trainingFrame):id,
+  params <- list(training_frame = attr(.eval.frame(trainingFrame), "id"),
                  wordModel = wordModel,
                  normModel = normModel,
                  minWordFreq = minWordFreq,
@@ -76,7 +76,7 @@ function(word2vec, target, count) {
   if (missing(count)) stop("`count` must be specified")
   if (!is.numeric(count)) stop("`count` must be numeric")
 
-  params <- list(key = .eval.frame(word2vec):id, target=target, cnt=count)
+  params <- list(key = attr(.eval.frame(word2vec),"id"), target=target, cnt=count)
   if (length(target) == 1L) {
     res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
@@ -102,7 +102,7 @@ function(word2vec, target, count) {
 #  if (!is.character(target)) stop("`target` must be character")
 #  if (length(target) > 1) stop("`target` must be a single word")
 #
-#  params <- params <- c(data = word2vec@word2vec:id, target = target, word2vec@params)
+#  params <- params <- c(data = word2vec@word2vec:"id", target = target, word2vec@params)
 #  res <- .h2o.__remoteSend(data@conn, .h2o.__TRANSFORM, params)
 #  res$vec
 #})

@@ -342,6 +342,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _build_tree_one_node = build_tree_one_node;
       _improvPerVar = improvPerVar;
       _family = family;
+      // Raise the priority, so that if a thread blocks here, we are guaranteed
+      // the task completes (perhaps using a higher-priority thread from the
+      // upper thread pools).  This prevents thread deadlock.
+      _priority = nextThrPriority();
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -381,6 +385,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
       if (_did_split) _tree._depth++;
     }
+    @Override public byte priority() { return _priority; }
+    private final byte _priority;
   }
 
   // --------------------------------------------------------------------------

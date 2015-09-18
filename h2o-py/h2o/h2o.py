@@ -20,8 +20,8 @@ def lazy_import(path):
   """
   Import a single file or collection of files.
 
-Parameters
-----------
+  Parameters
+  ----------
   path : str
     A path to a data file (remote or local).
 
@@ -464,7 +464,7 @@ def download_pojo(model,path="", get_jar=True):
   file_path = path + "/" + model._id + ".java"
   if path == "": print java.text
   else:
-    with open(file_path, 'w') as f:
+    with open(file_path, 'wb') as f:
       f.write(java.text)
   if get_jar and path!="":
     url = H2OConnection.make_url("h2o-genmodel.jar")
