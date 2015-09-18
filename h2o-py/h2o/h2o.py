@@ -34,7 +34,7 @@ def _import(path):
   if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
   return j['destination_frames']
 
-def upload_file(path, destination_frame="", na_strings=None):
+def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
   """
 Upload a dataset at the path given from the local machine to the H2O cluster.
 
@@ -43,13 +43,23 @@ Parameters
   path : str
     A path specifying the location of the data to upload.
   destination_frame : H2OFrame
-    The name of the H2O Frame in the H2O Cluster. 
+    The name of the H2O Frame in the H2O Cluster.
+  header :
+   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values. 
 
  :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
-  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame, na_strings=na_strings)
+  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
   return H2OFrame(raw_id=destination_frame)
 
 
