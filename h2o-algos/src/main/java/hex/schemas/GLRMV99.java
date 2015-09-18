@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.DataInfo;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
+import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
 import water.api.KeyV3;
 import water.api.ModelParametersSchema;
@@ -32,6 +33,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 				"min_step_size",
 				"seed",
 				"init",
+                "svd_method",
 				"user_points",
 				"recover_svd"
 		};
@@ -83,6 +85,9 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 
     @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }) // TODO: pull out of enum class
     public GLRM.Initialization init;
+
+    @API(help = "Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" })   // TODO: pull out of enum class
+    public SVDParameters.Method svd_method;
 
     @API(help = "User-specified initial Y", required = false)
     public KeyV3.FrameKeyV3 user_points;

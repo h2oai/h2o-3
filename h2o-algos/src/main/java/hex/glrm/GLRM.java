@@ -17,6 +17,7 @@ import hex.schemas.ModelBuilderSchema;
 import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
+import hex.svd.SVDModel.SVDParameters;
 
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -256,7 +257,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         xtsk.doAll(dfrm);
 
       } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y = right singular vectors
-        SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+        SVDParameters parms = new SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
         parms._ignore_const_cols = _parms._ignore_const_cols;
@@ -264,10 +265,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
         parms._nv = _parms._k;
         parms._transform = _parms._transform;
-        // parms._max_iterations = _parms._max_iterations;
-        // parms._svd_method = SVDModel.SVDParameters.Method.GramSVD;
-        _parms._max_iterations = _parms._k;
-        parms._svd_method = SVDModel.SVDParameters.Method.Randomized;
+        parms._svd_method = _parms._svd_method;
+        parms._max_iterations = parms._svd_method == SVDParameters.Method.Randomized ? _parms._k : _parms._max_iterations;
         parms._seed = _parms._seed;
         parms._keep_u = true;
         parms._impute_missing = true;
