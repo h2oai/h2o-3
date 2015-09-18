@@ -1846,11 +1846,11 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       timestep <- dur_colname
     }
     ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
-    plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
+    graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
          main = "Scoring History", col = "blue", ylim = ylim)
-    par(new = TRUE)
-    plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
-    legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+    graphics::par(new = TRUE)
+    graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
+    graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
   }
 }
 
