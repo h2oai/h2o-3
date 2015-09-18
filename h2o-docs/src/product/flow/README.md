@@ -622,8 +622,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **sparse**: ([DL](#DL)) Check this checkbox to use sparse iterators for the input layer. This option is not selected by default as it rarely improves performance. 
 
-  >**Note**: This parameter has been deprecated.
-
 - **col_major**: ([DL](#DL)) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default.  
   
   >**Note**: This parameter has been deprecated. 
@@ -777,7 +775,7 @@ Can be modified | | |
 - Max f0point5
 - Max accuracy
 - Max precision
-- Max absolute MCC
+- Max absolute MCC (the threshold that maximizes the absolute Matthew's Correlation Coefficient)
 - Max min per class accuracy
 
 The lower-left side of the graph represents less tolerance for false positives while the upper-right represents more tolerance for false positives. Ideally, a highly accurate ROC resembles the following example. 
