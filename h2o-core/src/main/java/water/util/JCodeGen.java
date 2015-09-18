@@ -36,6 +36,11 @@ public class JCodeGen {
     return sb.p("};").nl();
   }
 
+  public static SB toStaticVarZeros(SB sb, String varname, double[] values, String comment) {
+    if (comment!=null) sb.ip("// ").p(comment).nl();
+    sb.ip("public static final double[] ").p(varname).p(" = new double[" + values.length + "];");
+    return sb.nl();
+  }
   public static SB toStaticVar(SB sb, String varname, double[] values, String comment) {
     if (comment!=null) sb.ip("// ").p(comment).nl();
     sb.ip("public static final double[] ").p(varname).p(" = ");

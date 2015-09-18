@@ -157,6 +157,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
+    protected DeepLearningDriver() { super(true); } // bump priority of drivers
     @Override protected void compute2() {
       try {
         long cs = _parms.checksum();
