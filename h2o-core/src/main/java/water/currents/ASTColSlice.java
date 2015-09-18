@@ -281,17 +281,44 @@ class ASTRBind extends ASTPrim {
     }
     if( zz != null ) zz.remove();
 
+    // build up the new domains for each vec
+    HashMap<String, Integer>[] dmap = new HashMap[types.length];
+    String[][] domains = new String[types.length][];
+    int[][][] emaps = new int[types.length][][];
+    for(int k=0;k<types.length;++k) {
+      dmap[k] = new HashMap<>();
+      int c = 0;
+      byte t = types[k];
+      if( t == Vec.T_ENUM ) {
+        int[][] maps = new int[frs.length][];
+        for(int i=1; i < frs.length; i++) {
+          maps[i] = new int[frs[i].vec(k).domain().length];
+          for(int j=0; j < maps[i].length; j++ ) {
+            String s = frs[i].vec(k).domain()[j];
+            if( !dmap[k].containsKey(s)) dmap[k].put(s, maps[i][j]=c++);
+            else                         maps[i][j] = dmap[k].get(s);
+          }
+        }
+        emaps[k] = maps;
+      } else {
+        emaps[k] = new int[frs.length][];
+      }
+      domains[k] = c==0?null:new String[c];
+      for( Map.Entry<String, Integer> e : dmap[k].entrySet())
+        domains[k][e.getValue()] = e.getKey();
+    }
+
     // Now make Keys for the new Vecs
     Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
     Vec[] vecs = new Vec[fr.numCols()];
     for( int i=0; i<vecs.length; i++ )
-      vecs[i] = new Vec( keys[i], espc, null, types[i]);
+      vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
 
 
     // Do the row-binds column-by-column.
     // Switch to F/J thread for continuations
     ParallelRbinds t;
-    H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs)).join();
+    H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs,emaps)).join();
     return new ValFrame(new Frame(fr.names(), t._vecs));
   }
 
@@ -303,10 +330,11 @@ class ASTRBind extends ASTPrim {
     private final AtomicInteger _ctr; // Concurrency control
     private static int MAXP = 100;    // Max number of concurrent columns
     private Frame[] _frs;             // All frame args
+    private int[][][] _emaps;         // Individual emaps per each set of vecs to rbind
     private long[] _espc;             // Rolled-up final ESPC
 
     private Vec[] _vecs;        // Output
-    ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs) { _frs = frs; _espc = espc; _vecs = vecs; _ctr = new AtomicInteger(MAXP-1); }
+    ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs, int[][][] emaps) { _frs = frs; _espc = espc; _vecs = vecs; _emaps=emaps;_ctr = new AtomicInteger(MAXP-1); }
 
     @Override protected void compute2() {
       final int ncols = _frs[1].numCols();
@@ -319,7 +347,7 @@ class ASTRBind extends ASTPrim {
       Vec[] vecs = new Vec[_frs.length]; // Source Vecs
       for( int i = 1; i < _frs.length; i++ )
         vecs[i] = _frs[i].vec(colnum);
-      new RbindTask(new Callback(), vecs, _vecs[colnum], _espc).fork();
+      new RbindTask(new Callback(), vecs, _vecs[colnum], _espc, _emaps[colnum]).fork();
     }
 
     private class Callback extends H2O.H2OCallback {
@@ -337,39 +365,18 @@ class ASTRBind extends ASTPrim {
     final Vec[] _vecs;          // Input vecs to be row-bound
     final Vec _v;               // Result vec
     final long[] _espc;         // Result layout
-    String[] _dom;              // Domain; union of enums
+    int[][] _emaps;             // enum mapping array
 
-    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc) { super(cc); _vecs = vecs; _v = v; _espc = espc; }
+    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] emaps) { super(cc); _vecs = vecs; _v = v; _espc = espc; _emaps=emaps; }
     @Override protected void compute2() {
       addToPendingCount(_vecs.length-1-1);
-      int[][] emaps  = new int[_vecs.length][];
-
-      if( _vecs[1].isEnum() ) { // Enum domains in rbind need to be unified
-        // loop to create BIG domain
-        HashMap<String, Integer> dmap = new HashMap<>(); // probably should allocate something that's big enough (i.e. 2*biggest_domain)
-        int c = 0;
-        for( int i = 1; i < _vecs.length; i++ ) {
-          if( _vecs[i].get_type()==Vec.T_BAD ) continue;
-          emaps[i] = new int[_vecs[i].domain().length];
-          for( int j = 0; j < emaps[i].length; j++ ) {
-            String s = _vecs[i].domain()[j];
-            if (!dmap.containsKey(s))
-              dmap.put(s, emaps[i][j]=c++);
-            else emaps[i][j] = dmap.get(s);
-          }
-        }
-        _dom = new String[c];
-        for( Map.Entry<String, Integer> e : dmap.entrySet() )
-          _dom[e.getValue()] = e.getKey();
-      }
       int offset=0;
       for( int i=1; i<_vecs.length; i++ ) {
-        new RbindMRTask(this, emaps[i], _v, offset).asyncExec(_vecs[i]);
+        new RbindMRTask(this, _emaps[i], _v, offset).asyncExec(_vecs[i]);
         offset += _vecs[i].nChunks();
       }
     }
     @Override public void onCompletion(CountedCompleter cc) {
-      _v.setDomain(_dom);
       DKV.put(_v);
     }
   }
