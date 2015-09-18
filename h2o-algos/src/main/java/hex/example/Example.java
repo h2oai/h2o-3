@@ -57,6 +57,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
   // ----------------------
   private class ExampleDriver extends H2OCountedCompleter<ExampleDriver> {
 
+    protected ExampleDriver() { super(true); } // bump priority of drivers
     @Override protected void compute2() {
       ExampleModel model = null;
       try {

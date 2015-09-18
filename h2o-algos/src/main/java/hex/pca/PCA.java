@@ -101,6 +101,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
+    protected PCADriver() { super(true); } // bump driver priority
 
     protected void buildTables(PCAModel pca, String[] rowNames) {
       // Eigenvectors are just the V matrix
