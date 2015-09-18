@@ -1753,13 +1753,72 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 })
 
 #' @export
-plot.H2OModel <- function(x, train=FALSE, valid=FALSE, xval=FALSE, ...) {
-  if( is(x, "H2OBinomialModel") ) {
-    if ( !train && !valid && !xval ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...)
-    } else if ( valid ) { plot.H2OBinomialMetrics(x@model$validation_metrics, ...)
-    } else if ( xval )  { warning(paste("Plotting cross-valiation metrics is currently not supported."))
-    } else if ( train ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...) }
-  } else NULL
+plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
+  df <- as.data.frame(x@model$scoring_history)
+  # Separate functionality for GLM since output is different from other algos
+  if (x@algorithm == "glm") {
+    # H2OBinomialModel and H2ORegressionModel have the same output
+    # Also GLM has only one timestep option, which is `iteration`
+    timestep <- "iteration"
+    if (metric == "AUTO") {
+      metric <- "log_likelihood"
+    } else if (!(metric %in% c("log_likelihood", "objective"))) {
+      stop("for GLM, metric must be one of: log_likelihood, objective")
+    }
+    plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
+  } else if (x@algorithm %in% c("deeplearning", "randomForest", "gbm")) {
+    if (is(x, "H2OBinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "logloss"
+      } else if (!(metric %in% c("r2","logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, r2, logloss, AUC, classification_error, MSE")
+      } 
+    } else if (is(x, "H2OMultinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "classification_error"
+      } else if (!(metric %in% c("r2","logloss","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, r2, logloss, classification_error, MSE")
+      } 
+    } else if (is(x, "H2ORegressionModel")) {
+      if (metric == "AUTO") {
+        metric <- "MSE"
+      } else if (!(metric %in% c("MSE","deviance"))) {
+        stop("metric for H2OMultinomialModel must be one of: MSE, deviance")
+      } 
+    } else {
+      stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
+    }
+    # Set timestep
+    if (x@algorithm %in% c("gbm", "randomForest")) {
+      if (timestep == "AUTO") {
+        timestep <- "number_of_trees"
+      } else if (!(timestep %in% c("duration","number_of_trees"))) {
+        stop("timestep for gbm or randomForest must be one of: duration, number_of_trees")
+      } 
+    } else if (x@algorithm == "deeplearning") {
+      if (timestep == "AUTO") {
+        timestep <- "epochs"
+      } else if (!(timestep %in% c("epochs","samples","duration"))) {
+        stop("timestep for gbm or randomForest must be one of: epochs, samples, duration")
+      } 
+    } else {
+      stop("Plotting not implemented for this type of model")
+    }
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+    if (timestep == "duration") {
+      tt <- trimws(df[2, c("duration")])
+      dur_colname <- sprintf("duration_", strsplit(tt, " ")[[1]][2]) #parse units of measurement
+      df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trimws(v), " ")[[1]][1]))
+      timestep <- dur_colname
+    }
+    ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+    plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
+         main = "Scoring History", col = "blue", ylim = ylim)
+    par(new = TRUE)
+    plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
+    legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+  }
 }
 
 #' @export
@@ -1902,5 +1961,7 @@ h2o.tabulate <- function(data, x, y,
   print(res)
   count_table <- res$count_table
   response_table <- res$response_table
-  list(count_table = count_table, response_table = response_table)
+  out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
+  oldClass(out) <- c("H2OTabulate", "list")
+  out
 }
