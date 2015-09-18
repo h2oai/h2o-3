@@ -145,7 +145,7 @@ h2o.assign <- function(data, key) {
   if( !is.null( attr(data, "id")) && key == attr(data, "id") ) stop("Destination key must differ from input frame ", key)
   # Eager evaluate, copied from .eval.frame
   exec_str <- .eval.impl(data);
-  print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
+  #print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   .newFrame("h2o.assign",key)

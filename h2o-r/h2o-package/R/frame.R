@@ -39,7 +39,6 @@ is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
 .h2o.gc <- function() {
-  print("H2O triggered a GC in R")
   gc()
 }
 
@@ -51,7 +50,7 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
-    cat("=== Finalizer on ",attr(x, "id"),"\n")
+    #cat("=== Finalizer on ",attr(x, "id"),"\n")
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
   }
 }
@@ -318,7 +317,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' iris.hex = h2o.importFile(path = irisPath)
 #' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
 #' head(iris.split[[1]])
-#' #summary(iris.split[[1]])
+#' summary(iris.split[[1]])
 #' }
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
@@ -462,7 +461,7 @@ cut.Frame <- h2o.cut
 #' \donttest{
 #' h2o.init()
 #' hex <- as.h2o(iris)
-#' #match(hex[,5], c("setosa", "versicola"))   # versipepsi
+#' h2o.match(hex[,5], c("setosa", "versicolor"))
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
@@ -501,21 +500,21 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #' @param inverse Whether to perform the inverse transform
 #' @examples
 #' \donttest{
-#'   #library(h2o)
-#'   #h2o.init()
-#'   #df <- h2o.createFrame(rows = 1000, cols = 8*16*24,
-#'   #                      categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
-#'   #df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
-#'   #df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
-#'   #max(abs(df1-df2))
+#'   library(h2o)
+#'   h2o.init()
+#'   df <- h2o.createFrame(rows = 1000, cols = 8*16*24,
+#'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
+#'   df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
+#'   max(abs(df1-df2))
 #'
-#'   #df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
-#'   #df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
-#'   #max(abs(df1-df2))
+#'   df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
+#'   max(abs(df1-df2))
 #'
-#'   #df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
-#'   #df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
-#'   #max(abs(df1-df2))
+#'   df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
+#'   max(abs(df1-df2))
 #' }
 #' @export
 h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
@@ -529,7 +528,7 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
 
   res <- .h2o.__remoteSend(method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
   job_key <- res$key$name
-  .h2o.__waitOnJob(data@conn, job_key)
+  .h2o.__waitOnJob(job_key)
   h2o.getFrame(res$destination_frame$name)
 }
 
@@ -693,11 +692,11 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000)
 #' s = h2o.runif(prostate.hex)
 #' summary(s)
 #'
-#' #prostate.train = prostate.hex[s <= 0.8,]
-#' #prostate.train = h2o.assign(prostate.train, "prostate.train")
-#' #prostate.test = prostate.hex[s > 0.8,]
-#' #prostate.test = h2o.assign(prostate.test, "prostate.test")
-#' #nrow(prostate.train) + nrow(prostate.test)
+#' prostate.train = prostate.hex[s <= 0.8,]
+#' prostate.train = h2o.assign(prostate.train, "prostate.train")
+#' prostate.test = prostate.hex[s > 0.8,]
+#' prostate.test = h2o.assign(prostate.test, "prostate.test")
+#' nrow(prostate.train) + nrow(prostate.test)
 #' }
 #' @export
 h2o.runif <- function(x, seed = -1) {
@@ -914,7 +913,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     if( !is.character( attr(x, "id")) ) # Top-level gets a name always
       .set(x,"id", id <- .key.make("RTMP"))
     # Execute the AST on H2O
-    print(paste0("EXPR: ",exec_str))
+    #print(paste0("EXPR: ",exec_str))
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id= attr(x, "id"), method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
     if( !is.null(res$scalar) ) {
@@ -1416,7 +1415,7 @@ h2o.summary <- function(object, factors=6L, ...) {
         if( length(domain.cnts) == 1 )  {   # Constant categorical column
           cnt <- domain.cnts[1]
           domain.cnts <- rep(NA, length(domains))
-          domain.cnts[col.sum$mean+1] <- cnt
+          domain.cnts[col.sum$data[1]+1] <- cnt
         } else
           domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
       }
@@ -1807,8 +1806,8 @@ as.character.Frame <- function(x, ...) {
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' #prostate.hex[,2] <- as.factor (prostate.hex[,2])
-#' #prostate.hex[,2] <- as.numeric(prostate.hex[,2])
+#' prostate.hex[,2] <- as.factor (prostate.hex[,2])
+#' prostate.hex[,2] <- as.numeric(prostate.hex[,2])
 #' @export
 as.numeric <- function(x) {
   if( is.Frame(x) ) .newExpr("as.numeric",x)
@@ -1854,8 +1853,8 @@ h2o.removeVecs <- function(data, cols) {
 #' h2o.init()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
-#' #australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
-#' #summary(australia.hex)
+#' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
+#' summary(australia.hex)
 #' @export
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
