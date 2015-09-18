@@ -50,7 +50,7 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
-    cat("=== Finalizer on ",attr(x, "id"),"\n")
+    #cat("=== Finalizer on ",attr(x, "id"),"\n")
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
   }
 }
@@ -913,7 +913,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     if( !is.character( attr(x, "id")) ) # Top-level gets a name always
       .set(x,"id", id <- .key.make("RTMP"))
     # Execute the AST on H2O
-    print(paste0("EXPR: ",exec_str))
+    #print(paste0("EXPR: ",exec_str))
     res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id= attr(x, "id"), method = "POST")
     if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
     if( !is.null(res$scalar) ) {
@@ -1853,8 +1853,8 @@ h2o.removeVecs <- function(data, cols) {
 #' h2o.init()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
-#' #australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
-#' #summary(australia.hex)
+#' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
+#' summary(australia.hex)
 #' @export
 h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
 
