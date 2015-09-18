@@ -18,7 +18,8 @@ class ASTStrSplit extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "split"}; }
   @Override int nargs() { return 1+2; } // (strsplit x split)
-  @Override String str() { return "strsplit"; }
+  @Override
+  public String str() { return "strsplit"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String split = asts[2].exec(env).getStr();
@@ -90,7 +91,8 @@ class ASTCountMatches extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "pattern"}; }
   @Override int nargs() { return 1+2; } // (countmatches x pattern)
-  @Override String str() { return "countmatches"; }
+  @Override
+  public String str() { return "countmatches"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String[] pattern;
@@ -128,7 +130,8 @@ class ASTToLower extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(tolower x)
-  @Override String str() { return "tolower"; }
+  @Override
+  public String str() { return "tolower"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("tolower only takes a single column of data. Got "+ fr.numCols()+" columns.");
@@ -149,7 +152,8 @@ class ASTToUpper extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(toupper x)
-  @Override String str() { return "toupper"; }
+  @Override
+  public String str() { return "toupper"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("toupper only takes a single column of data. Got "+ fr.numCols()+" columns.");
@@ -170,7 +174,8 @@ class ASTStrSub extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignoreCase"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
-  @Override String str() { return "sub"; }
+  @Override
+  public String str() { return "sub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     String pattern     = asts[1].exec(env).getStr();
     String replacement = asts[2].exec(env).getStr();
@@ -195,7 +200,8 @@ class ASTGSub extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
-  @Override String str() { return "gsub"; }
+  @Override
+  public String str() { return "gsub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     String pattern     = asts[1].exec(env).getStr();
     String replacement = asts[2].exec(env).getStr();
@@ -220,7 +226,8 @@ class ASTTrim extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (trim x)
-  @Override String str() { return "trim"; }
+  @Override
+  public String str() { return "trim"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("trim works on a single column at a time.");

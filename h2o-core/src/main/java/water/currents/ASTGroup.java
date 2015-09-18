@@ -170,7 +170,7 @@ class ASTGroup extends ASTPrim {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
     ASTNumList dim;
     if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
-    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._d.getNum());
+    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     if( dim.isEmpty() ) return dim; // Allow empty
     if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&

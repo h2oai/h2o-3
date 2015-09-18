@@ -13,7 +13,8 @@ class ASTColSlice extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols src [col_list])
-  @Override String str() { return "cols" ; }
+  @Override
+  public String str() { return "cols" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr2 = new Frame();
@@ -35,7 +36,7 @@ class ASTColSlice extends ASTPrim {
             fr2.remove(-col-1); // Remove named column
       }
     } else if( (asts[2] instanceof ASTNum) ) {
-      int col = (int) (((ASTNum) asts[2])._d.getNum());
+      int col = (int) (((ASTNum) asts[2])._v.getNum());
       if( col < 0 ) fr2.add(fr).remove(-col-1);  // neg index is 1-based; e.g., -1 => -1*-1 - 1 = 0
       else fr2.add(fr.names()[col], fr.vecs()[col]);
 
@@ -64,7 +65,8 @@ class ASTRowSlice extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "rows"}; }
   @Override int nargs() { return 1+2; } // (rows src [row_list])
-  @Override String str() { return "rows" ; }
+  @Override
+  public String str() { return "rows" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
@@ -120,7 +122,7 @@ class ASTRowSlice extends ASTPrim {
         }
       }.doAll(fr.numCols(), fr).outputFrame(fr.names(),fr.domains());
     } else if( (asts[2] instanceof ASTNum) ) {
-      long[] rows = new long[]{(long)(((ASTNum)asts[2])._d.getNum())};
+      long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
     } else if( (asts[2] instanceof ASTExec) || (asts[2] instanceof ASTId) ) {
       Frame predVec = stk.track(asts[2].exec(env)).getFrame();
@@ -136,7 +138,8 @@ class ASTFlatten extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (flatten fr)
-  @Override String str() { return "flatten"; }
+  @Override
+  public String str() { return "flatten"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()==1 && fr.numRows()==1 ) {
@@ -152,7 +155,8 @@ class ASTFilterNACols extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "fraction"}; }
   @Override int nargs() { return 1+2; } // (filterNACols frame frac)
-  @Override String str() { return "filterNACols"; }
+  @Override
+  public String str() { return "filterNACols"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double frac = asts[2].exec(env).getNum();
@@ -173,7 +177,8 @@ class ASTCBind extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"..."}; }
   @Override int nargs() { return -1; } // variable number of args
-  @Override String str() { return "cbind" ; }
+  @Override
+  public String str() { return "cbind" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
 
     // Compute the variable args.  Find the common row count
@@ -220,7 +225,8 @@ class ASTRBind extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"..."}; }
   @Override int nargs() { return -1; } // variable number of args
-  @Override String str() { return "rbind" ; }
+  @Override
+  public String str() { return "rbind" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
 
     // Execute all args.  Find a canonical frame; all Frames must look like this one.

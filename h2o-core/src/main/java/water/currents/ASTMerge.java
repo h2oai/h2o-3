@@ -20,7 +20,8 @@ import java.util.Arrays;
 public class ASTMerge extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
-  @Override String str(){ return "merge";}
+  @Override
+  public String str(){ return "merge";}
   @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {

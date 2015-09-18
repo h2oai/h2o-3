@@ -209,7 +209,7 @@ h2o.getFutureModel <- function(object) {
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  .eval.frame(i):id
+    if(is.Frame(i))  attr(.eval.frame(i), "id")
     else             i
   })
 
@@ -274,7 +274,7 @@ h2o.getFutureModel <- function(object) {
     }
   }
   if( is.Frame(paramValue) )
-    paramValue <- .eval.frame(paramValue):id
+    paramValue <- attr(.eval.frame(paramValue),"id")
   paramValue
 }
 
@@ -315,7 +315,7 @@ h2o.getFutureModel <- function(object) {
                                       # Force evaluation of frames and fetch frame_id as
                                       # a side effect
                                       if (is.Frame(hv) )
-                                        hv <- .eval.frame(hv):id
+                                        hv <- attr(.eval.frame(hv), "id")
                                       .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
                                 })
           hyper_params[[name]] <<- transf_hyper_vals
@@ -354,7 +354,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/',  .eval.frame(newdata):id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  attr(.eval.frame(newdata), "id"))
   res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   h2o.getFrame(res$name)
@@ -436,7 +436,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingFrame else .eval.frame(data):id
+  data.id <- if( missingData ) trainingFrame else attr(.eval.frame(data), "id")
   if( !is.null(trainingFrame) && !missingData && data.id == trainingFrame ) {
     warning("Given data is same as the training data. Returning the training metrics.")
     return(model@model$training_metrics)
@@ -1673,7 +1673,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  url <- paste0("Predictions/models/",object@model_id, "/frames/", .eval.frame(newdata):id)
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", attr(.eval.frame(newdata), "id"))
   res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object
@@ -1891,7 +1891,7 @@ h2o.tabulate <- function(data, x, y,
   if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
 
   parms = list()
-  parms$dataset <- data:id
+  parms$dataset <- attr(data, "id")
   parms$predictor <- args$cols[1]
   parms$response <- args$cols[2]
   if( !missing(weights_column) )            parms$weight <- weights_column

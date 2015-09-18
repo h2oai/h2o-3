@@ -13,7 +13,8 @@ public class ASTKFold extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "nfolds", "seed"}; }
   @Override public int nargs() { return 1+3; } // (kfold_column x nfolds seed)
-  @Override String str() { return "kfold_column"; }
+  @Override
+  public String str() { return "kfold_column"; }
 
   public static Vec kfoldColumn(Vec v, final int nfolds, final long seed) {
     new MRTask() {
@@ -103,7 +104,8 @@ class ASTModuloKFold extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "nfolds"}; }
   @Override public int nargs() { return 1+2; } // (modulo_kfold_column x nfolds)
-  @Override String str() { return "modulo_kfold_column"; }
+  @Override
+  public String str() { return "modulo_kfold_column"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
     int nfolds = (int)asts[2].exec(env).getNum();
@@ -115,7 +117,8 @@ class ASTStratifiedKFold extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "nfolds", "seed"}; }
   @Override public int nargs() { return 1+3; } // (stratified_kfold_column x nfolds seed)
-  @Override String str() { return "stratified_kfold_column"; }
+  @Override
+  public String str() { return "stratified_kfold_column"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
     int nfolds = (int)asts[2].exec(env).getNum();

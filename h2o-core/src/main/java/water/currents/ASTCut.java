@@ -8,7 +8,8 @@ import water.fvec.NewChunk;
 public class ASTCut extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "breaks", "labels", "include_lowest", "right", "digits"}; }
-  @Override String str() { return "cut"; }
+  @Override
+  public String str() { return "cut"; }
   @Override int nargs() { return 1+6; } // (cut x breaks labels include_lowest right digits)
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -82,7 +83,7 @@ public class ASTCut extends ASTPrim {
   private double[] check(AST ast) {
     double[] n;
     if( ast instanceof ASTNumList  ) n = ((ASTNumList)ast).expand();
-    else if( ast instanceof ASTNum ) n = new double[]{((ASTNum)ast)._d.getNum()};  // this is the number of breaks wanted...
+    else if( ast instanceof ASTNum ) n = new double[]{((ASTNum)ast)._v.getNum()};  // this is the number of breaks wanted...
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     return n;
   }
