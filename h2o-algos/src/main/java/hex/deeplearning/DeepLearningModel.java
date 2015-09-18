@@ -695,7 +695,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (e==null) continue;
         assert(ArrayUtils.sum(e.raw()) == 0);
       }
-      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds);
       DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
       // check that all non-last layer errors/gradients are empty
       for (int i = 0; i<neurons.length-1;++i) {

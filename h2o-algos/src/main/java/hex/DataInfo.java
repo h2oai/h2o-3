@@ -488,10 +488,10 @@ public class DataInfo extends Keyed {
       if(i >= off) { // numbers
         if(numIds == null)
           return numVals[i-off];
-        int j = Arrays.binarySearch(numIds,i);
+        int j = Arrays.binarySearch(numIds,0,nNums,i);
         return j >= 0?numVals[j]:0;
       } else { // categoricals
-        int j = Arrays.binarySearch(binIds,i);
+        int j = Arrays.binarySearch(binIds,0,nBins,i);
         return j >= 0?1:0;
       }
     }
@@ -630,6 +630,14 @@ public class DataInfo extends Keyed {
         etaOffset -= coefficients[i+numStart()] * _normSub[i] * _normMul[i];
     return etaOffset;
   }
+  public final Row[]  extractDenseRows(Chunk [] chunks) {
+    Row[] rows = new Row[chunks[0]._len];
+    for (int i = 0; i < rows.length; ++i) {
+      rows[i] = newDenseRow();
+      extractDenseRow(chunks, i, rows[i]);
+    }
+    return rows;
+  }
   /**
    * Extract (sparse) rows from given chunks.
    * Essentially turns the dataset 90 degrees.
@@ -638,7 +646,6 @@ public class DataInfo extends Keyed {
    * @return array of sparse rows
    */
   public final Row[]  extractSparseRows(Chunk [] chunks, double offset) {
-    if(!_skipMissing)  throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
 
     for (int i = 0; i < rows.length; ++i) {
@@ -708,8 +715,7 @@ public class DataInfo extends Keyed {
         if(row.bad) continue;
         row.response[row.response.length - i] = rChunk.atd(r);
         if (_normRespMul != null) {
-          assert false;
-          row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
+          row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
         }
         if (Double.isNaN(row.response[row.response.length - i]))
           row.bad = true;
