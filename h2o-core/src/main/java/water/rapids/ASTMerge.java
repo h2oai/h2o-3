@@ -17,42 +17,18 @@ import java.util.Arrays;
  *  there is no matching row in the rightFrame, and vice-versa for
  *  allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
  */
-public class ASTMerge extends ASTOp {
-  static final String VARS[] = new String[]{ "ary", "leftary", "rightary", "allleft", "allright"};
+public class ASTMerge extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
+  @Override
+  public String str(){ return "merge";}
+  @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
 
-  boolean _allLeft, _allRite;
-  public ASTMerge( ) { super(VARS); }
-  @Override String opStr(){ return "merge";}
-  @Override ASTOp make() {return new ASTMerge();}
-
-  @Override ASTMerge parse_impl(Exec E) {
-    // get the frames to work with
-    AST left = E.parse();
-    AST rite = E.parse();
-
-    AST a = E.parse();
-    if( a instanceof ASTId  ) a = E._env.lookup((ASTId)a);
-    if( a instanceof ASTNum ) _allLeft = ((ASTNum)a)._d==1;
-    else throw new IllegalArgumentException("Argument `allLeft` expected to be a boolean.");
-
-    a = E.parse();
-    if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
-    if( a instanceof ASTNum ) _allRite = ((ASTNum)a)._d==1;
-    else throw new IllegalArgumentException("Argument `allRite` expected to be a boolean.");
-
-    E.eatEnd();
-    // Finish the rest
-    ASTMerge res = (ASTMerge) clone();
-    res._asts = new AST[]{left,rite};
-    return res;
-  }
-  @Override void exec(Env e, AST[] args) {throw H2O.fail();}
-  @Override void apply(Env env) {
-    Frame _l = env.popAry();
-    Frame _r = env.popAry();
-
-    Frame l = new Frame(_l.names().clone(),_l.vecs().clone());
-    Frame r = new Frame(_r.names().clone(),_r.vecs().clone());
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame l = stk.track(asts[1].exec(env)).getFrame();
+    Frame r = stk.track(asts[2].exec(env)).getFrame();
+    boolean allLeft = asts[3].exec(env).getNum() == 1;
+    boolean allRite = asts[4].exec(env).getNum() == 1;
 
     // Look for the set of columns in common; resort left & right to make the
     // leading prefix of column names match.  Bail out if we find any weird
@@ -101,6 +77,11 @@ public class ASTMerge extends ASTOp {
         for( int j=0; j<ids.length; j++ )  id_maps[i][j] = j;
       }
     }
+    
+    // The lifetime of the large dataset is independent of the original
+    // dataset, so it needs to be a deep copy.  
+    // TODO: COW Optimization
+    large = large.deepCopy(null);
 
     // MergeSet is from local (non-replicated) chunks/row to other-chunks/row.
     // Row object in table has e.g. chunks and a row number; passed-in Row
@@ -112,10 +93,8 @@ public class ASTMerge extends ASTOp {
     // matching row; append matching column data
     String[]   names  = Arrays.copyOfRange(small._names,   ncols,small._names   .length);
     String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small.domains().length);
-    Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
-    Frame res2 = large.add(res);
-    env.addRef(res); // hack
-    env.push(new ValFrame(res2));
+    Frame res = new DoJoin(ncols,uniq,enum_maps,allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
+    return new ValFrame(large.add(res));
   }
 
   // One Row object per row of the smaller dataset, so kept as small as
@@ -221,7 +200,7 @@ public class ASTMerge extends ASTOp {
     private final int[][] _enum_maps; // Mapping enum domains
     private final boolean _allLeft;
     DoJoin( int ncols, Key uniq, int[][] enum_maps, boolean allLeft ) {
-      _ncols = ncols; _uniq = uniq; _enum_maps = enum_maps;_allLeft = allLeft;
+      _ncols = ncols; _uniq = uniq; _enum_maps = enum_maps; _allLeft = allLeft;
     }
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       // Shared common hash map

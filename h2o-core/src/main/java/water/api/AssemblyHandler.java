@@ -2,8 +2,8 @@ package water.api;
 
 import water.DKV;
 import water.Key;
-import water.currents.Assembly;
-import water.currents.transforms.Transform;
+import water.rapids.Assembly;
+import water.rapids.transforms.Transform;
 import water.fvec.Frame;
 
 import java.lang.reflect.InvocationTargetException;
@@ -22,7 +22,7 @@ public class AssemblyHandler extends Handler {
     ArrayList<Transform> steps = new ArrayList<>();
     for(String step: ass.steps) {
       String[] s = step.split("__");
-      Class transformClass = Class.forName("water.currents.transforms."+s[1]);
+      Class transformClass = Class.forName("water.rapids.transforms."+s[1]);
       Class[] constructorTypes = new Class[]{String.class /*name*/, String.class /*ast*/, boolean.class /*inplace*/};
       Object[] constructorArgs = new Object[]{s[0], s[2], Boolean.valueOf(s[3])};
       steps.add((Transform) transformClass.getConstructor(constructorTypes).newInstance(constructorArgs));
