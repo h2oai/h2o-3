@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;

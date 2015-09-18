@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;

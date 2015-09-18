@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import java.io.Closeable;
 import java.util.ArrayList;

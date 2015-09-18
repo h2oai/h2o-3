@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

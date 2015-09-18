@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import jsr166y.CountedCompleter;
 import water.*;

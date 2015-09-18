@@ -1,11 +1,11 @@
-package water.currents.transforms;
+package water.rapids.transforms;
 
 import water.DKV;
 import water.H2O;
-import water.currents.AST;
-import water.currents.ASTExec;
-import water.currents.ASTParameter;
-import water.currents.Exec;
+import water.rapids.AST;
+import water.rapids.ASTExec;
+import water.rapids.ASTParameter;
+import water.rapids.Exec;
 import water.fvec.Frame;
 
 public class H2OColOp extends Transform<H2OColOp> {

@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;

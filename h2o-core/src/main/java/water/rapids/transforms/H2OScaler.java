@@ -1,4 +1,4 @@
-package water.currents.transforms;
+package water.rapids.transforms;
 
 import hex.genmodel.GenModel;
 import water.H2O;

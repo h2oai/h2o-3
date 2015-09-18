@@ -1,9 +1,9 @@
-package water.currents;
+package water.rapids;
 
 import water.H2O;
 import water.Key;
 import water.Keyed;
-import water.currents.transforms.Transform;
+import water.rapids.transforms.Transform;
 import water.fvec.Frame;
 
 import java.util.HashMap;

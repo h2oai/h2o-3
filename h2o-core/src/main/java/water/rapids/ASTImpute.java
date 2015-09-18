@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import hex.quantile.QuantileModel;
 import water.MRTask;

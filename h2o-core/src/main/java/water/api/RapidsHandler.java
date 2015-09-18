@@ -1,7 +1,7 @@
 package water.api;
 
 import water.*;
-import water.currents.Val;
+import water.rapids.Val;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -14,7 +14,7 @@ class RapidsHandler extends Handler {
       // No locking, no synchronization - since any local locking is NOT a
       // cluster-wide lock locking, which just provides the illusion of safety
       // but not the actuality.
-      val = water.currents.Exec.exec(rapids.ast);
+      val = water.rapids.Exec.exec(rapids.ast);
     } catch( IllegalArgumentException e ) {
       throw e;
     } catch( Throwable e ) {

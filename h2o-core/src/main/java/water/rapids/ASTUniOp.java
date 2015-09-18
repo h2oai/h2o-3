@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import hex.DMatrix;
 import org.apache.commons.math3.special.Gamma;

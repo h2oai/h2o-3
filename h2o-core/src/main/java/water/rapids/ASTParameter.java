@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 public class ASTParameter extends AST {
   final Val _v;

@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import water.H2O;
 import water.MRTask;

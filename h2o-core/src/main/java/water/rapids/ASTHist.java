@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import sun.misc.Unsafe;
 import water.MRTask;

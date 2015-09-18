@@ -1,4 +1,4 @@
-package water.currents;
+package water.rapids;
 
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
@@ -112,7 +112,7 @@ class ASTMedian extends ASTPrim {
   static double median(Frame fr, QuantileModel.CombineMethod combine_method) {
     if( fr.numCols() !=1 || !fr.anyVec().isNumeric() )
       throw new IllegalArgumentException("median only works on a single numeric column");
-    // Frame needs a Key for Quantile, might not have one from currents
+    // Frame needs a Key for Quantile, might not have one from rapids
     Key tk=null;
     if( fr._key == null ) { DKV.put(tk=Key.make(), fr=new Frame(tk, fr.names(),fr.vecs())); }
     // Quantiles to get the median
