@@ -501,21 +501,21 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #' @param inverse Whether to perform the inverse transform
 #' @examples
 #' \donttest{
-#'   #library(h2o)
-#'   #h2o.init()
-#'   #df <- h2o.createFrame(rows = 1000, cols = 8*16*24,
-#'   #                      categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
-#'   #df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
-#'   #df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
-#'   #max(abs(df1-df2))
+#'   library(h2o)
+#'   h2o.init()
+#'   df <- h2o.createFrame(rows = 1000, cols = 8*16*24,
+#'                         categorical_fraction = 0, integer_fraction = 0, missing_fraction = 0)
+#'   df1 <- h2o.dct(data=df, dimensions=c(8*16*24,1,1))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16*24,1,1),inverse=TRUE)
+#'   max(abs(df1-df2))
 #'
-#'   #df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
-#'   #df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
-#'   #max(abs(df1-df2))
+#'   df1 <- h2o.dct(data=df, dimensions=c(8*16,24,1))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8*16,24,1),inverse=TRUE)
+#'   max(abs(df1-df2))
 #'
-#'   #df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
-#'   #df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
-#'   #max(abs(df1-df2))
+#'   df1 <- h2o.dct(data=df, dimensions=c(8,16,24))
+#'   df2 <- h2o.dct(data=df1,dimensions=c(8,16,24),inverse=TRUE)
+#'   max(abs(df1-df2))
 #' }
 #' @export
 h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
@@ -529,7 +529,7 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
 
   res <- .h2o.__remoteSend(method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
   job_key <- res$key$name
-  .h2o.__waitOnJob(data@conn, job_key)
+  .h2o.__waitOnJob(job_key)
   h2o.getFrame(res$destination_frame$name)
 }
 
