@@ -20,7 +20,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _k = 1;                            // Rank of resulting XY matrix
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
     public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
-    public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
+    public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
+    public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
 
     // Loss functions
     public Loss _loss = Loss.Quadratic;                  // Default loss function for numeric cols
@@ -66,6 +67,20 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
+    // Check if all elements of _loss_by_col are equal to a specific loss function
+    private final boolean allLossEquals(Loss loss) {
+      if (null == _loss_by_col) return false;
+
+      boolean res = true;
+      for(int i = 0; i < _loss_by_col.length; i++) {
+        if(_loss_by_col[i] != loss) {
+          res = false;
+          break;
+        }
+      }
+      return res;
+    }
+
     // Closed form solution only if quadratic loss, no regularization or quadratic regularization (same for X and Y), and no missing values
     public final boolean hasClosedForm() {
       long na_cnt = 0;
@@ -76,7 +91,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     public final boolean hasClosedForm(long na_cnt) {
-      return na_cnt == 0 && ((_loss == Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
+      boolean loss_quad = (null == _loss_by_col && _loss == Quadratic) ||
+              (null != _loss_by_col && allLossEquals(Quadratic) && (_loss_by_col.length == _train.get().numCols() || _loss == Quadratic));
+
+      return na_cnt == 0 && ((loss_quad && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
               && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic)));
     }
 

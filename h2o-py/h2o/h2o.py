@@ -1369,7 +1369,8 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
-         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,user_points=None,recover_svd=None):
+         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
+         user_y=None,user_x=None,recover_svd=None):
   """
   Builds a generalized low rank model of a H2O dataset.
   
@@ -1419,8 +1420,12 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   init : str
     A character string indicating how to select the initial Y matrix. 
     Possible values are "Random": for initialization to a random array from the standard normal distribution, "PlusPlus": for initialization 
-    using the clusters from k-means++ initialization, or "SVD": for initialization using the first k (approximate) right singular vectors. 
-    Additionally, the user may specify the initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
+    using the clusters from k-means++ initialization, "SVD": for initialization using the first k (approximate) right singular vectors, and 
+    "User": user-specified initial X and Y frames (must set user_y and user_x arguments).
+  svd_method : str
+    A character string that indicates how SVD should be calculated during initialization.
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
+    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized 
     low rank decomposition.

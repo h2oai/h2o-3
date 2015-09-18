@@ -10,7 +10,6 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.Exec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -84,9 +83,9 @@ public class GLRMTest extends TestUtil {
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
-    Frame yinit = frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
-            ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
-            ard(0.07163341, 1.4788032, 0.9989801, 1.042878388)));
+    Frame yinit = ArrayUtils.frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
+                                      ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
+                                      ard(0.07163341, 1.4788032, 0.9989801, 1.042878388)));
     GLRM job = null;
     GLRMModel model = null;
     Frame train = null, score = null;
@@ -103,7 +102,7 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.User;
       parms._recover_svd = false;
-      parms._user_points = yinit._key;
+      parms._user_y = yinit._key;
       parms._seed = seed;
 
       try {
@@ -182,10 +181,10 @@ public class GLRMTest extends TestUtil {
 
   @Test public void testArrestsSVD() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
-    Frame yinit = frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
-            ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
-            ard(0.07163341, 1.4788032, 0.9989801, 1.042878388),
-            ard(0.23234938, 0.2308680, -1.0735927, -0.184916602)));
+    Frame yinit = ArrayUtils.frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
+                                      ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
+                                      ard(0.07163341, 1.4788032, 0.9989801, 1.042878388),
+                                      ard(0.23234938, 0.2308680, -1.0735927, -0.184916602)));
     double[] sval = new double[] {11.024148, 6.964086, 4.179904, 2.915146};
     double[][] eigvec = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
             ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
@@ -202,7 +201,7 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       // parms._init = GLRM.Initialization.PlusPlus;
       parms._init = GLRM.Initialization.User;
-      parms._user_points = yinit._key;
+      parms._user_y = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
       parms._recover_svd = true;
@@ -417,10 +416,10 @@ public class GLRMTest extends TestUtil {
 
   @Test public void testRegularizers() throws InterruptedException, ExecutionException {
     // Initialize using first 4 rows of USArrests
-    Frame init = frame(ard(ard(13.2, 236, 58, 21.2),
-            ard(10.0, 263, 48, 44.5),
-            ard(8.1, 294, 80, 31.0),
-            ard(8.8, 190, 50, 19.5)));
+    Frame init = ArrayUtils.frame(ard(ard(13.2, 236, 58, 21.2),
+                                      ard(10.0, 263, 48, 44.5),
+                                      ard(8.1, 294, 80, 31.0),
+                                      ard(8.8, 190, 50, 19.5)));
 
     GLRM job = null;
     GLRMModel model = null;
@@ -433,7 +432,7 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._init = GLRM.Initialization.User;
-      parms._user_points = init._key;
+      parms._user_y = init._key;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = false;
       parms._max_iterations = 1000;

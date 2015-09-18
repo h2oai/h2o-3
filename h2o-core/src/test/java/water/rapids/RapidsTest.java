@@ -9,6 +9,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.ArrayUtils;
 
 import java.io.File;
 import java.util.Arrays;
@@ -268,16 +269,16 @@ public class RapidsTest extends TestUtil {
   @Test public void testQuantile() {
     Frame f = null;
     try {
-      Frame fr = frame(ard(ard(1.223292e-02),
-                           ard(1.635312e-25),
-                           ard(1.601522e-11),
-                           ard(8.452298e-10),
-                           ard(2.643733e-10),
-                           ard(2.671520e-06),
-                           ard(1.165381e-06),
-                           ard(7.193265e-10),
-                           ard(3.383532e-04),
-                           ard(2.561221e-05)));
+      Frame fr = ArrayUtils.frame(ard(ard(1.223292e-02),
+                                      ard(1.635312e-25),
+                                      ard(1.601522e-11),
+                                      ard(8.452298e-10),
+                                      ard(2.643733e-10),
+                                      ard(2.671520e-06),
+                                      ard(1.165381e-06),
+                                      ard(7.193265e-10),
+                                      ard(3.383532e-04),
+                                      ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
       String x = String.format("(quantile %%%s %s \"interpolate\")", fr._key, Arrays.toString(probs));
       Val val = Exec.exec(x);

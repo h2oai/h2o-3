@@ -57,11 +57,18 @@
 #'        from k-means++ initialization, or "SVD": for initialization using the 
 #'        first k right singular vectors. Additionally, the user may specify the 
 #'        initial Y as a matrix, data.frame, Frame, or list of vectors.
+#' @param svd_method (Optional) A character string that indicates how SVD should be 
+#'        calculated during initialization. Possible values are "GramSVD": distributed 
+#'        computation of the Gram matrix followed by a local SVD using the JAMA package, 
+#'        "Power": computation of the SVD using the power iteration method, "Randomized": 
+#'        (default) approximate SVD by projecting onto a random subspace (see references).
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+#' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.prcomp}}
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
+#'             N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
 #' library(h2o)
 #' h2o.init()
@@ -88,6 +95,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
                      init_step_size = 1.0,
                      min_step_size = 0.001,
                      init = c("Random", "PlusPlus", "SVD"),
+                     svd_method = c("GramSVD", "Power", "Randomized"),
                      recover_svd = FALSE,
                      seed)
 {
@@ -158,7 +166,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
       init <- as.h2o(init)
     }
-    parms[["user_points"]] <- init
+    parms[["user_y"]] <- init
     # Set k
     if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
       warning("Argument k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
@@ -166,7 +174,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms[["k"]] <- as.numeric(nrow(init))
   }
   else if ( is.character(init) ) { # Random, PlusPlus or SVD
-    parms[["user_points"]] <- NULL
+    parms[["user_y"]] <- NULL
   }
   else{
     stop("Argument init must be set to Random, PlusPlus, SVD, or a valid set of user-defined starting points.")

@@ -111,29 +111,55 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm may be slow.");
 
     if (_parms._k < 1 || _parms._k > _ncolY) error("_k", "_k must be between 1 and " + _ncolY + " inclusive");
-    if (null != _parms._user_points) { // Check dimensions of user-specified centers
+    if (null != _parms._user_y) { // Check dimensions of user-specified initial Y
       if (_parms._init != GLRM.Initialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
 
-      Frame user_points = _parms._user_points.get();
-      assert null != user_points;
+      Frame user_y = _parms._user_y.get();
+      assert null != user_y;
 
-      if (user_points.numCols() != _train.numCols())
-        error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
-      else if (user_points.numRows() != _parms._k)
-        error("_user_points", "The user-specified points must have k = " + _parms._k + " rows");
+      if (user_y.numCols() != _train.numCols())
+        error("_user_y", "The user-specified Y must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      else if (user_y.numRows() != _parms._k)
+        error("_user_y", "The user-specified Y must have k = " + _parms._k + " rows");
       else {
         int zero_vec = 0;
-        Vec[] centersVecs = user_points.vecs();
+        Vec[] centersVecs = user_y.vecs();
         for (int c = 0; c < _train.numCols(); c++) {
           if (centersVecs[c].naCnt() > 0) {
-            error("_user_points", "The user-specified points cannot contain any missing values");
+            error("_user_y", "The user-specified Y cannot contain any missing values");
             break;
           } else if (centersVecs[c].isConst() && centersVecs[c].max() == 0)
             zero_vec++;
         }
         if (zero_vec == _train.numCols())
-          error("_user_points", "The user-specified points cannot all be zero");
+          error("_user_y", "The user-specified Y cannot all be zero");
+      }
+    }
+
+    if (null != _parms._user_x) { // Check dimensions of user-specified initial X
+      if (_parms._init != GLRM.Initialization.User)
+        error("_init", "init must be 'User' if providing user-specified points");
+
+      Frame user_x = _parms._user_x.get();
+      assert null != user_x;
+
+      if (user_x.numCols() != _parms._k)
+        error("_user_x", "The user-specified X must have k = " + _parms._k + " columns");
+      else if (user_x.numRows() != _train.numRows())
+        error("_user_x", "The user-specified X must have the same number of rows (" + _train.numRows() + ") as the training observations");
+      else {
+        int zero_vec = 0;
+        Vec[] centersVecs = user_x.vecs();
+        for (int c = 0; c < _parms._k; c++) {
+          if (centersVecs[c].naCnt() > 0) {
+            error("_user_x", "The user-specified X cannot contain any missing values");
+            break;
+          } else if (centersVecs[c].isConst() && centersVecs[c].max() == 0)
+            zero_vec++;
+        }
+        if (zero_vec == _parms._k)
+          error("_user_x", "The user-specified X cannot all be zero");
       }
     }
 
@@ -229,26 +255,48 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
     // Initialize Y and X matrices
-    // tinfo = original training data A, dinfo = [A,X,W] where W is working copy of X (initialized here)
+    // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
     private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt) {
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
-      if (null != _parms._user_points) { // Set Y = user-specified starting points, X = standard normal matrix
-        Vec[] centersVecs = _parms._user_points.get().vecs();
-        centers = new double[_parms._k][_ncolA];
+      if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
+        if (null != _parms._user_y) {   // Set Y = user-specified initial points
+          Vec[] yVecs = _parms._user_y.get().vecs();
+          centers = new double[_parms._k][_ncolA];
 
-        // Get the centers and put into array
-        for (int c = 0; c < _ncolA; c++) {
-          for (int r = 0; r < _parms._k; r++)
-            centers[r][c] = centersVecs[c].at(r);
+          // Get the centers and put into array
+          for (int c = 0; c < _ncolA; c++) {
+            for (int r = 0; r < _parms._k; r++)
+              centers[r][c] = yVecs[c].at(r);
+          }
+
+          // Permute cluster columns to align with dinfo and expand out categoricals
+          centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
+          centers_exp = expandCats(centers, tinfo);
+        } else
+          centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+
+        if (null != _parms._user_x) {   // Set X = user-specified initial points
+          Frame tmp = new Frame(dfrm);
+          tmp.add(_parms._user_x.get());   // [A,X,W,U] where U = user-specified X
+
+          // Set X and W to the same values as user-specified initial X
+          new MRTask() {
+            @Override public void map(Chunk[] cs) {
+              for(int row = 0; row < cs[0]._len; row++) {
+                for (int i = _ncolA; i < _ncolA+_ncolX; i++) {
+                  double x = cs[2*_ncolX + i].atd(row);
+                  cs[i].set(row, x);
+                  cs[_ncolX + i].set(row, x);
+                }
+              }
+            }
+          }.doAll(tmp);
+        } else {
+          InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
+          xtsk.doAll(dfrm);
         }
-
-        // Permute cluster columns to align with dinfo and expand out categoricals
-        centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-        centers_exp = expandCats(centers, tinfo);
-        InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
-        xtsk.doAll(dfrm);
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
