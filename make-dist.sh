@@ -92,6 +92,7 @@ mkdir target/Rjar
 cd target/Rcran
 cp -p ../R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz .
 tar zxvf h2o_${PROJECT_VERSION}.tar.gz
+touch h2o/inst/java/.h2o_no_collect
 mv h2o/inst/java/h2o.jar ../Rjar
 rm -f h2o_${PROJECT_VERSION}.tar.gz
 tar cvf h2o_${PROJECT_VERSION}.tar h2o
