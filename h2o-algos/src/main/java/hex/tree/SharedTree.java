@@ -132,6 +132,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
   abstract protected class Driver extends H2OCountedCompleter<Driver> {
+    protected Driver() { super(true); } // bump priority of model drivers
 
     @Override protected void compute2() {
       _model = null;            // Resulting model!

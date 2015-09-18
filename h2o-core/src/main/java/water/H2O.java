@@ -974,8 +974,12 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
-    public H2OCountedCompleter(){}
-    protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+    public final byte _priority;
+    public H2OCountedCompleter( ) { this(false); }
+    public H2OCountedCompleter( boolean bumpPriority ) {
+      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    }
+    protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
      *  drain the high priority queue before doing any low priority work.
@@ -1029,7 +1033,7 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    protected byte priority() { return MIN_PRIORITY; }
+    protected byte priority() { return _priority; }
     @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
