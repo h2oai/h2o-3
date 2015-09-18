@@ -1766,7 +1766,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       stop("for GLM, metric must be one of: log_likelihood, objective")
     }
     plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
-  } else if (x@algorithm %in% c("deeplearning", "randomForest", "gbm")) {
+  } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
         metric <- "logloss"
@@ -1789,7 +1789,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
     }
     # Set timestep
-    if (x@algorithm %in% c("gbm", "randomForest")) {
+    if (x@algorithm %in% c("gbm", "drf")) {
       if (timestep == "AUTO") {
         timestep <- "number_of_trees"
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
@@ -1808,7 +1808,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     validation_metric <- sprintf("validation_%s", metric)
     if (timestep == "duration") {
       tt <- trimws(df[2, c("duration")])
-      dur_colname <- sprintf("duration_", strsplit(tt, " ")[[1]][2]) #parse units of measurement
+      dur_colname <- sprintf("duration_%s", strsplit(tt, " ")[[1]][2]) #parse units of measurement
       df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trimws(v), " ")[[1]][1]))
       timestep <- dur_colname
     }
