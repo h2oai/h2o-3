@@ -1,6 +1,6 @@
 package water.rapids.transforms;
 
-import hex.genmodel.GenModel;
+import hex.genmodel.GenMunger;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -37,7 +37,7 @@ public class H2OScaler extends Transform<H2OScaler> {
         for(int row=0; row<cs[0]._len; row++) {
           for(int col=0; col<cs.length; col++)
             in[col] = cs[col].atd(row);
-          GenModel.scaleInPlace(fmeans, fmults, in);
+          GenMunger.scaleInPlace(fmeans, fmults, in);
           for(int col=0; col<ncs.length; col++)
             ncs[col].addNum(in[col]);
         }

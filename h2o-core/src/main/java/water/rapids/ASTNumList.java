@@ -132,7 +132,7 @@ public class ASTNumList extends ASTParameter {
   }
 
   // Expand the compressed form into an array of doubles.
-  double[] expand() {
+  public double[] expand() {
     // Count total values
     int nrows=(int)cnt(), r=0;
     // Fill in values

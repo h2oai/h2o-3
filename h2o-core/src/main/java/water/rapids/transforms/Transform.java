@@ -37,13 +37,15 @@ public abstract class Transform<T> extends Iced {
     String stepName = name();
     StringBuilder sb = new StringBuilder();
     sb.append("  class " + stepName + " extends Step<" + stepName + "> {\n");
-    sb.append("    public " + stepName + "() { super(new String[]{" + toJavaString(_inNames) +"}, new String[]{" + toJavaString(_inTypes) + "}); }\n");
+    sb.append("    public " + stepName + "() { super(new String[]{" + toJavaString(_inNames) +"},\n");
+    sb.append("                                new String[]{" + toJavaString(_inTypes) + "});\n");
     for (String k : _params.keySet()) {
       String v = _params.get(k).toJavaString();
       sb.append(
               "    _params.put(\""+k+"\", new String[]{"+v+"});\n"
       );
     }
+    sb.append("  }\n");
     return sb.append(genClassImpl()).append("  }\n");
   }
 

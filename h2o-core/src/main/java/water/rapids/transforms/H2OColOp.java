@@ -1,12 +1,13 @@
 package water.rapids.transforms;
 
+import org.apache.commons.lang.ArrayUtils;
 import water.DKV;
 import water.H2O;
+import water.fvec.Frame;
 import water.rapids.AST;
 import water.rapids.ASTExec;
 import water.rapids.ASTParameter;
 import water.rapids.Exec;
-import water.fvec.Frame;
 
 public class H2OColOp extends Transform<H2OColOp> {
   final String _fun;
@@ -38,8 +39,9 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
 
   @Override public String genClassImpl() {
+    String typeCast = _inTypes[ArrayUtils.indexOf(_inNames, _oldCol)].equals("Numeric")?"double":"String";
     return  "    @Override public RowData transform(RowData row) {\n" +
-            "      row.put(\""+_newCol+"\", GenModel."+_fun+"(row.get(\""+_oldCol+"\"), _params));\n" +
+            "      row.put(\""+_newCol+"\", GenMunger."+_fun+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params));\n" +
             "      return row;\n" +
             "    }\n";
   }
