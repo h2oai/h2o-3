@@ -1568,26 +1568,34 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA
+    // Register with GA or not
+    List<String> gaidList = JarHash.getResourcesList("gaid");
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out ) {
+            || ARGS.ga_opt_out
+            || gaidList.contains("CRAN")) {
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
       try {
         GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
         DefaultRequest defReq = GA.getDefaultRequest();
-        try {
-          String bakedGaId;
-          BufferedReader index = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream("gaid")));
-          while ((bakedGaId = index.readLine()) != null) {
-            if (!(bakedGaId.equals("index") || bakedGaId.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))) {
-              defReq.clientId(bakedGaId);
+        String gaid = null;
+        if (gaidList.size() > 0) {
+          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
+          for (String str : gaidList) {
+            if (str.matches("........-....-....-....-............")
+                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
+              gaid = str;
+              break;
             }
           }
-        } catch (Exception ignore) {}
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
+        }
+        if (gaid == null) { // No UUID, create one
+          gaid = defReq.clientId();
+          gaid = gaid.replaceFirst("........-","ANONYMOU-");
+        }
+        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
         Log.POST(11, t.toString());
