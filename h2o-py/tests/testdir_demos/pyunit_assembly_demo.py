@@ -25,7 +25,7 @@ def assembly_demo():
   #
   #   RowData row = new RowData();
   #   row.fill(rawRow);
-  #   row = munger.transform(row);
+  #   row = munger.fit(row);
   #   BinomialModelPrediction pred = model.predictBinomial(row);
   #   // Use prediction!
 

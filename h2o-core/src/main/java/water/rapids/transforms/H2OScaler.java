@@ -17,7 +17,7 @@ public class H2OScaler extends Transform<H2OScaler> {
     super(name,ast,inplace);
   }
 
-  @Override Transform<H2OScaler> fit(Frame f) {
+  @Override public Transform<H2OScaler> fit(Frame f) {
     means = new double[f.numCols()];
     sdevs = new double[f.numCols()];
     for(int i=0;i<f.numCols();++i) {
@@ -28,7 +28,7 @@ public class H2OScaler extends Transform<H2OScaler> {
   }
 
   // TODO: handle Enum, String, NA
-  @Override Frame transform(Frame f) {
+  @Override protected Frame transformImpl(Frame f) {
     final double[] fmeans = means;
     final double[] fmults = ArrayUtils.invert(sdevs);
     return new MRTask() {
@@ -46,7 +46,7 @@ public class H2OScaler extends Transform<H2OScaler> {
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
-  @Override public StringBuilder genClass() {
+  @Override public String genClassImpl() {
     throw H2O.unimpl();
   }
 }

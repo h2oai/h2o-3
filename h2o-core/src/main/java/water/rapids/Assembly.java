@@ -3,10 +3,8 @@ package water.rapids;
 import water.H2O;
 import water.Key;
 import water.Keyed;
-import water.rapids.transforms.Transform;
 import water.fvec.Frame;
-
-import java.util.HashMap;
+import water.rapids.transforms.Transform;
 
 /**
  * Assemblies are essentially Pipelines.
@@ -24,13 +22,6 @@ public class Assembly extends Keyed<Assembly> {
   }
 
   Transform[] steps() { return _steps; }
-
-  HashMap<String, HashMap<String,ASTParameter>> getParams(boolean deep) {
-    HashMap<String, HashMap<String, ASTParameter>> out = new HashMap<>();
-    for (Transform step: _steps)
-      out.put(step.name(), step.getParams(deep));
-    return out;
-  }
 
   public Frame applyTransforms(Frame f) {
     for(Transform step: _steps)

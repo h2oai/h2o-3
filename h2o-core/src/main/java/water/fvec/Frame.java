@@ -373,6 +373,15 @@ public class Frame extends Lockable<Frame> {
     return bs;
   }
 
+  /** String name for each Vec type */
+  public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
+    Vec[] vecs = vecs();
+    String s[] = new String[vecs.length];
+    for(int i=0;i<vecs.length;++i)
+      s[i] = vecs[i].get_type_str();
+    return s;
+  }
+
   /** All the domains for enum columns; null for non-enum columns.  
    *  @return the domains for enum columns */
   public String[][] domains() {
