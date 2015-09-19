@@ -954,10 +954,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
 
       for(int row = 0; row < chks[0]._len; row++) {
-        double preds[] = new double[_ncolX];
-        double p[] = _model.score_indicator(chks, row, tmp, preds);
+        // double preds[] = new double[_ncolX];
+        // double p[] = _model.score_indicator(chks, row, tmp, preds);
+        double p[] = _model.score_ratio(chks, row, tmp);
         p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
-        for(int c = 0; c < preds.length; c++) {
+        for(int c = 0; c < p.length; c++) {
           chks[_ncolA+c].set(row, p[c]);
           chks[_ncolA+_ncolX+c].set(row, p[c]);
         }

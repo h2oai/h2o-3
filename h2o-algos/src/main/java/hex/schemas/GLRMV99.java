@@ -34,7 +34,8 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 				"seed",
 				"init",
                 "svd_method",
-				"user_points",
+				"user_y",
+                "user_x",
 				"recover_svd"
 		};
 
@@ -90,7 +91,10 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     public SVDParameters.Method svd_method;
 
     @API(help = "User-specified initial Y", required = false)
-    public KeyV3.FrameKeyV3 user_points;
+    public KeyV3.FrameKeyV3 user_y;
+
+    @API(help = "User-specified initial X", required = false)
+    public KeyV3.FrameKeyV3 user_x;
 
     @API(help = "Frame key to save resulting X")
     public String loading_name;
