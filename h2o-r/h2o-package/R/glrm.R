@@ -177,7 +177,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     }
     parms[["k"]] <- as.numeric(nrow(user_y))
   } else if( is.null(user_y) ) {
-    if(parms[["init"]] == "User")
+    if(!missing(init) && parms[["init"]] == "User")
       warning("Initializing Y to a standard Gaussian random matrix.")
   } else
     stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
@@ -193,7 +193,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     }
     parms[["user_x"]] <- user_x
   } else if( is.null(user_x) ) {
-    if(parms[["init"]] == "User")
+    if(!missing(init) && parms[["init"]] == "User")
       warning("Initializing X to a standard Gaussian random matrix.")
   } else
     stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
