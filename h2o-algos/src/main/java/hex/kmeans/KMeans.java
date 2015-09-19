@@ -93,6 +93,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   // ----------------------
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
+    private KMeansDriver() { super(true); } // bump priority of drivers
     private String[][] _isCats;  // Categorical columns
 
     // Initialize cluster centers

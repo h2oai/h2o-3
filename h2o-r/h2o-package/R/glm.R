@@ -75,9 +75,9 @@
 #'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #'
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
-#' #myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
-#' #h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
-#' #        nfolds = 0, alpha = 0.1, lambda_search = FALSE)
+#' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
+#' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
 #' \donttest{
 #'  # GLM variable importance

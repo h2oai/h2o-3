@@ -712,6 +712,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   public final class GLMDriver extends DTask<GLMDriver> {
     transient AtomicBoolean _gotException = new AtomicBoolean();
+    final byte _priority = nextThrPriority();
+    @Override protected byte priority() { return _priority; }
 
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 

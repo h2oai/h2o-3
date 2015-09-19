@@ -40,7 +40,7 @@ public class Assembly extends Keyed<Assembly> {
 
   public Frame fit(Frame f) { return applyTransforms(f); }
 
-  public StringBuilder toJava(String pojoName) {
+  public String toJava(String pojoName) {
     if( pojoName==null ) pojoName = "GeneratedMungingPojo";
     StringBuilder sb = new StringBuilder(
             "class " + pojoName + " extends GenMunger {\n"+
@@ -54,7 +54,7 @@ public class Assembly extends Keyed<Assembly> {
     for(Transform step: _steps)
       sb.append(step.genClass());
     sb.append("}\n");
-    return sb;
+    return sb.toString();
   }
 
   @Override protected long checksum_impl() {

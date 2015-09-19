@@ -726,10 +726,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
     final int nclass = _output.nclasses();
     String mname = JCodeGen.toJavaId(_key.toString());
-    JCodeGen.toStaticVar(classCtx,"BETA",beta(),"The Coefficients");
+    JCodeGen.toClassWithArray(classCtx,"static","BETA",beta()); // "The Coefficients"
     JCodeGen.toStaticVar(classCtx,"CATOFFS",dinfo()._catOffsets,"Categorical Offsets");
     body.ip("double eta = 0.0;").nl();
-    body.ip("final double [] b = BETA;").nl();
+    body.ip("final double [] b = BETA.VALUES;").nl();
     if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
       body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
       body.ip("  int ival = (int)data[i] - 1;").nl();
