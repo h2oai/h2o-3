@@ -22,7 +22,7 @@ def glrm_unitonesparse():
     print "Run GLRM with unit one-sparse regularization on X"
     initial_y = np.random.rand(k,n)
     initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
-    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_points=initial_y_h2o, loss="Quadratic", regularization_x="UnitOneSparse", regularization_y="None", gamma_x=1, gamma_y=0)
+    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="UnitOneSparse", regularization_y="None", gamma_x=1, gamma_y=0)
     glrm_h2o.show()
     
     print "Check that X matrix consists of rows of basis vectors"

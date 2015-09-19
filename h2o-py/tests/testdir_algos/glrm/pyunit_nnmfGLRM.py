@@ -17,7 +17,7 @@ def glrm_nnmf():
     print "Run GLRM with non-negative regularization"
     initial_y = np.random.rand(k,n)
     initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
-    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_points=initial_y_h2o, loss="Quadratic", regularization_x="NonNegative", regularization_y="NonNegative", gamma_x=1, gamma_y=1)
+    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="NonNegative", regularization_y="NonNegative", gamma_x=1, gamma_y=1)
     glrm_h2o.show()
     
     print "Check that X and Y matrices are non-negative"

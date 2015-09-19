@@ -10,7 +10,7 @@ test.glrm.arrests <- function() {
   # Note: Results vary wildly with initial Y when transform = 'DEMEAN'. This is a flaw of the algorithm, not a bug.
   Log.info("Compare with SVD when center = TRUE, scale = FALSE")
   fitR <- svd(scale(arrestsR, center = TRUE, scale = FALSE))
-  fitH2O <- h2o.glrm(arrestsH2O, k = 4, loss = "Quadratic", gamma_x = 0, gamma_y = 0, init = initCent, transform = "DEMEAN", recover_svd = TRUE)
+  fitH2O <- h2o.glrm(arrestsH2O, k = 4, loss = "Quadratic", gamma_x = 0, gamma_y = 0, init = "User", user_y = initCent, transform = "DEMEAN", recover_svd = TRUE)
   
   Log.info("R Singular Values:"); print(fitR$d)
   Log.info("H2O Singular Values:"); print(fitH2O@model$singular_vals)

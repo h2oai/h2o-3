@@ -254,7 +254,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return min;
   }
 
-  // only used for GLRM initialization - inverse of distance to cluster center normalized to sum to one
+  // only used for GLRM initialization - inverse of distance to each cluster center normalized to sum to one
   public static double[] KMeans_simplex(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
     double[] dist = new double[centers.length];
     double sum = 0, inv_sum = 0;

@@ -96,6 +96,8 @@ h2o.glrm <- function(training_frame, x, k, model_id,
                      min_step_size = 0.001,
                      init = c("Random", "PlusPlus", "SVD"),
                      svd_method = c("GramSVD", "Power", "Randomized"),
+                     user_y = NULL,
+                     user_x = NULL,
                      recover_svd = FALSE,
                      seed)
 {
@@ -158,27 +160,43 @@ h2o.glrm <- function(training_frame, x, k, model_id,
   if(!missing(seed))
     parms$seed <- seed
   
-  # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {
-    parms[["init"]] <- "User"
+  # Check if user_y is an acceptable set of user-specified starting points
+  if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.Frame(user_y) ) {
     # Convert user-specified starting points to Frame
-    if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
-      if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-      init <- as.h2o(init)
+    if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) ) {
+      if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
+      user_y <- as.h2o(user_y)
+    } else {
+      .eval.frame(user_y)
     }
-    parms[["user_y"]] <- init
+    parms[["user_y"]] <- user_y
+    
     # Set k
-    if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
-      warning("Argument k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+    if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
+      warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
     }
-    parms[["k"]] <- as.numeric(nrow(init))
-  }
-  else if ( is.character(init) ) { # Random, PlusPlus or SVD
-    parms[["user_y"]] <- NULL
-  }
-  else{
-    stop("Argument init must be set to Random, PlusPlus, SVD, or a valid set of user-defined starting points.")
-  }
+    parms[["k"]] <- as.numeric(nrow(user_y))
+  } else if( is.null(user_y) ) {
+    if(parms[["init"]] == "User")
+      warning("Initializing Y to a standard Gaussian random matrix.")
+  } else
+    stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
+  
+  # Check if user_x is an acceptable set of user-specified starting points
+  if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.Frame(user_x) ) {
+    # Convert user-specified starting points to Frame
+    if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) ) {
+      if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
+      user_x <- as.h2o(user_x)
+    } else {
+      .eval.frame(user_x)
+    }
+    parms[["user_x"]] <- user_x
+  } else if( is.null(user_x) ) {
+    if(parms[["init"]] == "User")
+      warning("Initializing X to a standard Gaussian random matrix.")
+  } else
+    stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
   
   # Error check and build model
   .h2o.modelJob('glrm', parms, do_future=FALSE, h2oRestApiVersion=99)
