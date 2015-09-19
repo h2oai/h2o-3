@@ -14,7 +14,7 @@ def assembly_demo():
   result = assembly.fit(fr)  # fit the assembly
   result.show()              # show the result of the fit
 
-  assembly.to_pojo("MungingPojoDemo", path="/Users/spencer/Desktop/munging_pojo")  # export POJO
+  assembly.to_pojo("MungingPojoDemo") #, path="/Users/spencer/Desktop/munging_pojo")  # export POJO
 
 
   # java api usage:
