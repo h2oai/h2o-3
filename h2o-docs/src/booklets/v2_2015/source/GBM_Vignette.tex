@@ -242,13 +242,13 @@ Additionally, the split that results from splitting the first bin from the other
 the other four bins are considered. 
 
 To specify a model that considers all factors individually, set the value for
-$N$ bins equal to the number of factor levels. This can be done for over 1024 levels (the maximum number of levels
-that can be handled in R), though this increases the time required to fully generate a model.
+\texttt{nbins\_cats} equal to the number of factor levels. This can be done for over 1024 levels
+(the maximum number of levels that can be handled in R),
+though this increases the time required to fully generate a model.
+Top-level tree splits use the maximum allotment as their bin size,
+so the top split uses \texttt{nbins\_cats} (which defaults to 1024 bins),
+the next level in the tree uses half as many bins, and so on.
 
-Increasing the number of bins is not as useful for covering factor columns, but is more important for the
-one-versus-many approach. The "split-by-a-numerical-value" is basically a random split of the factors, so the
-number of bins is less important. Top-level tree splits (shallow splits) use the maximum allotment as their bin size,
-so the top split uses 1024 bins, the next level in the tree uses 512 bins, and so on.
 
 Factors for binary classification have a third (and optimal) choice: to split all bins (and factors within those bins)
 with a mean of less than 0.5 one way, and the rest of the bins and factors the other way, creating an arbitrary
