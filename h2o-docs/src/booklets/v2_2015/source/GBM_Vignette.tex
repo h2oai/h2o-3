@@ -233,31 +233,17 @@ difficult to predict. The maximum number of leaves is $2^d$, where $d$ represent
 
 \subsection{Treatment of Factors}
 
-If the specified GBM model includes factors, those factors are analyzed by assigning an integer to each distinct
-factor level, then binning the ordered integers according to the user-specified number of bins ($N$ bins). Split
-points are determined by considering the end points of each bin and the one-versus-many split for each bin.
+If the training data contains columns with categorical levels (factors), then these factors are split by assigning an integer to each distinct
+categorical level, then binning the ordered integers according to the user-specified number of bins \texttt{nbins\_cats} (which defaults to 1024 bins),
+and then picking the optimal split point among the bins.
 
-For example, if the factor is split into five bins, H2O orders the bins by bin number, then considers the split between the first and second bin, then the second and third, then the third and fourth, and the fourth and fifth.
-Additionally, the split that results from splitting the first bin from the other four and all analogous splits for
-the other four bins are considered. 
+To specify a model that considers all factors individually (and perform an optimal group split,
+where every level goes in the right direction based on the training response), specify \texttt{nbins\_cats} to be at least as large as the number of factors.
+Note that values (much) larger than 1024 (the maximum number of levels supported in R) are supported, but might increase model training time.
 
-To specify a model that considers all factors individually, specify the number of factor levels using the \texttt{nbins\_cats} parameter. Values over 1024 (the maximum number of levels supported in R),
-are supported, which increases the model generation time.
-Top-level tree splits use the maximum allotment as their bin size,
-so the top split uses \texttt{nbins\_cats} (which defaults to 1024 bins),
-the next level in the tree uses half as many bins, and so on.
-
-
-Factors for binary classification have a third (and optimal) choice: to split all bins (and factors within those bins)
-with a mean of less than 0.5 one way, and the rest of the bins and factors the other way, creating an arbitrary
-set of factors with a known optimal split. 
-
-This optimal split is represented as a bitset in the embedded Java model. Therefore,
-factor columns with less than the limit ($\mathtt{\sim}$ 1024) always use an optimal split for categorical problems.
-
-For categorical problems with $N$ possible values, the split candidate is determined by the formula $2^{N-1}-1$.
-For binary classification and regression problems, the number of split candidates is reduced to $N-1$ by sorting
-the label averages of the categorical feature values.
+Note that the value of \texttt{nbins\_cats} for categorical factors has a much stronger impact on generalization error than \texttt{nbins} for real- or integer-valued columns (where higher values just lead to more accurate numerical split points).
+This is because a small value of \texttt{nbins\_cats} can add randomness in the split decisions for columns with many factors (since they are grouped together somewhat arbitrarily),
+while large values can lead to perfect splits that can lead to overfitting.
 
 \subsection{Key Parameters}
 \label{ssec:Key parameters}
