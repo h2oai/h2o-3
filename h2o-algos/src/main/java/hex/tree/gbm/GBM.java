@@ -39,7 +39,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   /** Start the GBM training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<GBMModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<GBMModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new GBMDriver(), work, restartTimer);
   }
 

@@ -43,8 +43,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new PCAV3();
   }
 
-  @Override
-  public Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new PCADriver(), work, restartTimer);
   }
 

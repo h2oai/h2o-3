@@ -32,7 +32,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   /** Start the KMeans training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new Word2VecDriver(), work, restartTimer);
   }
 

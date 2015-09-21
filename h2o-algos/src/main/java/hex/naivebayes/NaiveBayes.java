@@ -36,8 +36,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
 
   public boolean isSupervised(){return true;}
 
-  @Override
-  public Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new NaiveBayesDriver(), work, restartTimer);
   }
 

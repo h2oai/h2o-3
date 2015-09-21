@@ -560,8 +560,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
 
   private static final long WORK_TOTAL = 1000000;
-  @Override
-  public Job<GLMModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<GLMModel> trainModelImpl(long work, boolean restartTimer) {
     start(new GLMDriver(null), work, restartTimer);
     return this;
   }

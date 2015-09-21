@@ -61,7 +61,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   /** Start the KMeans training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<KMeansModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<KMeansModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new KMeansDriver(), work, restartTimer);
   }
 
