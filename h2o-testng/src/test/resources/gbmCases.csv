@@ -54,3 +54,4 @@ Balanced_classes_enabled_Class_sampling_factors_not_default,Classification_UnBal
 nfolds = 10,Classification_Balanced_data_Multinomial_Balance_classes_Dense_nfolds_10,gbm_testcase_49,,x,,,,x,,,,10,,,,,,,,,,,,x,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
 ,Classification_Balanced_data_Multinomial_Balance_classes_disabled_Dense_nfolds_10,gbm_testcase_50,,x,,,,x,,,,10,,,,,,,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
 Min_rows=1,Classification_Balanced_data_Multinomial_Balance_classes_Dense_Min_rows_1,gbm_testcase_53,,x,,,,x,,,,,,,,,,,1,,,,,x,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
+DefaultParams,Default Params,gbm_testcase_54,,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,,,,,,,,

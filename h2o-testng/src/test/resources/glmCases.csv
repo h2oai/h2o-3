@@ -1,4 +1,4 @@
-GLM testcases,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,Test Description,Testcase ID,Type,,Family,,,,,Solver,,,,,,,,,,,,,,,Beta Constraints,,,,,,,,,,,,,Validated against R/Scikit,,Validation against R,,,Validation against Scikit,,,
 ,,,regression,classification,gaussian,binomial,poissan,gamma,tweedie,auto,IRLSM,L_BFGS,COORDINATE_DESCENT_NAIVE,COORDINATE_DESCENT,nfolds,fold_column,ignore_const_cols,offset_column,weights_column,alpha,lamda,lamda search,standardize,non negative,beta constraints,lower bound,upper bound,beta_given,intercept,prior,max active predictors ,regression/balanced/unbalanced,sparse,dense,train_dataset_id,validate_dataset_id,ignored_columns,R,Scikit,AUC,MSE,Accuracy,AUC,MSE,Accuracy,comments
 ,test_description,testcase_id,,,gaussian,binomial,poisson,gamma,tweedie,auto,irlsm,lbfgs,coordinate_descent_naive,coordinate_descent,_nfolds,_fold_column,_ignore_const_cols,_offset_column,_weights_column,_alpha,_lambda,_lambda_search,_standardize,_non_negative,betaConstraints,lowerBound,upperBound,,_intercept,_prior,_max_active_predictors,,,,train_dataset_id,validate_dataset_id,_ignored_columns,,,,,,,,,
@@ -516,3 +516,4 @@ Regression Poisson/Gamma/Tweedie Sparse Data : coordinate_descent,Regression_Poi
 Priors enabled with beta constraints,Classification_Balanced data_Binomial_Auto_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_508,,x,,x,,,,x,,,,,,,,,,0,,,x,,x,0,1,,,0,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 ,Classification_Balanced data_Binomial_IRLSM_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_509,,x,,x,,,,,x,,,,,,,,,0,,,x,,x,0,1,,,0.5,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 ,Classification_Balanced data_Binomial_LBFGS_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_510,,x,,x,,,,,,x,,,,,,,,0,,,x,,x,0,1,,,1,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
+DefaultParams,Default Params,glm_testcase_511,x,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,,,,,,,,,

@@ -28,3 +28,4 @@ nfolds = 20,Classification_Balanced_data_Auto_Balance_classes_Dense_nfolds_20,rf
 ,Classification_Balanced_data_Auto_Balance_classes_disabled_Dense_nfolds_20,rf_testcase_23,,x,x,,,,,,,20,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
 nfolds = observations(# of rows),Classification_Balanced_data_Auto_Balance_classes_Dense_nfolds_sameas_observations,rf_testcase_24,,x,x,,,,,,,150,,,,,,,,,,,x,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
 ,Classification_Balanced_data_Auto_Balance_classes_disabled_Dense_nfolds_sameas_observations,rf_testcase_25,,x,x,,,,,,,150,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,x,x,,,,,,
+DefaultParams,Default Params,rf_testcase_26,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,,,,,,,,
