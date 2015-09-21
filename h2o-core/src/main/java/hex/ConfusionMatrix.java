@@ -86,7 +86,7 @@ public class ConfusionMatrix extends Iced {
     double err = n;
     for( int d = 0; d < _cm.length; ++d )
       err -= _cm[d][d];
-    return (double) err / n;
+    return err / n;
   }
   public double errCount() {
     double err = totalRows();
@@ -224,7 +224,7 @@ public class ConfusionMatrix extends Iced {
       for( int p=0; p< _cm[a].length; p++ ) {
         sum += _cm[a][p];
         preds[p] += _cm[a][p];
-        isInt &= (_cm[a][p] == (int)_cm[a][p]);
+        isInt &= (_cm[a][p] == (long)_cm[a][p]);
       }
       acts[a] = sum;
     }
@@ -242,7 +242,7 @@ public class ConfusionMatrix extends Iced {
     String[] colType = new String[colHeader.length];
     String[] colFormat = new String[colHeader.length];
     for (int i=0; i<colFormat.length-1; ++i) {
-      colType[i] = isInt ? "int":"double";
+      colType[i] = isInt ? "long":"double";
       colFormat[i] = isInt ? "%d":"%.2f";
     }
     colType[colFormat.length-2]   = "double";
@@ -263,14 +263,14 @@ public class ConfusionMatrix extends Iced {
       double err = acts[a] - correct;
       terr += err;
       width = isInt ?
-              Math.max(width, String.format("%,d / %,d", (int)err, (int)acts[a]).length()):
-              Math.max(width, String.format("%.4f / %.4f",    err,      acts[a]).length());
+              Math.max(width, String.format("%,d / %,d", (long)err, (long)acts[a]).length()):
+              Math.max(width, String.format("%.4f / %.4f",     err,       acts[a]).length());
     }
     double nrows = 0;
     for (double n : acts) nrows += n;
     width = isInt?
-            Math.max(width, String.format("%,d / %,d", (int)terr, (int)nrows).length()):
-            Math.max(width, String.format("%.4f / %.4f",    terr,      nrows).length());
+            Math.max(width, String.format("%,d / %,d", (long)terr, (long)nrows).length()):
+            Math.max(width, String.format("%.4f / %.4f",     terr,       nrows).length());
 
     // set format width
     colFormat[colFormat.length-1] = "= %" + width + "s";
@@ -286,15 +286,15 @@ public class ConfusionMatrix extends Iced {
         boolean onDiag = adomain[a].equals(pdomain[p]);
         if (onDiag) correct = _cm[a][p];
         if (isInt)
-          table.set(a, p, (int)_cm[a][p]);
+          table.set(a, p, (long)_cm[a][p]);
         else
           table.set(a, p, _cm[a][p]);
       }
       double err = acts[a] - correct;
       table.set(a, pdomain.length, err / acts[a]);
       table.set(a, pdomain.length + 1,
-              isInt ? String.format("%,d / %,d", (int)err, (int)acts[a]):
-                      String.format("%.4f / %.4f",    err,      acts[a])
+              isInt ? String.format("%,d / %,d", (long)err, (long)acts[a]):
+                      String.format("%.4f / %.4f",     err,       acts[a])
       );
     }
 
@@ -302,14 +302,14 @@ public class ConfusionMatrix extends Iced {
     for (int p = 0; p < pdomain.length; p++) {
       if (pdomain[p] == null) continue;
       if (isInt)
-        table.set(adomain.length, p, (int)preds[p]);
+        table.set(adomain.length, p, (long)preds[p]);
       else
         table.set(adomain.length, p, preds[p]);
     }
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
     table.set(adomain.length, pdomain.length + 1,
-            isInt ? String.format("%,d / %,d", (int)terr, (int)nrows):
-                    String.format("%.2f / %.2f",    terr,      nrows));
+            isInt ? String.format("%,d / %,d", (long)terr, (long)nrows):
+                    String.format("%.2f / %.2f",     terr,       nrows));
 
     return table;
   }
