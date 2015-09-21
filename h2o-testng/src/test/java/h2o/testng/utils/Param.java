@@ -73,7 +73,7 @@ public class Param {
 		// set AutoSet params
 		for (Param p : params) {
 			if (p.isAutoSet) {
-				isSetValue = isSetValue || p.parseAndSet(modelParameter, rawInput.get(p.name));
+				isSetValue |= p.parseAndSet(modelParameter, rawInput.get(p.name));
 			}
 		}
 
