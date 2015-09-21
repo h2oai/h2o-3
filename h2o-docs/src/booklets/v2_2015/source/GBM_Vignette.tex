@@ -241,10 +241,8 @@ For example, if the factor is split into five bins, H2O orders the bins by bin n
 Additionally, the split that results from splitting the first bin from the other four and all analogous splits for
 the other four bins are considered. 
 
-To specify a model that considers all factors individually, set the value for
-\texttt{nbins\_cats} equal to the number of factor levels. This can be done for over 1024 levels
-(the maximum number of levels that can be handled in R),
-though this increases the time required to fully generate a model.
+To specify a model that considers all factors individually, specify the number of factor levels using the \texttt{nbins\_cats} parameter. Values over 1024 (the maximum number of levels supported in R),
+are supported, which increases the model generation time.
 Top-level tree splits use the maximum allotment as their bin size,
 so the top split uses \texttt{nbins\_cats} (which defaults to 1024 bins),
 the next level in the tree uses half as many bins, and so on.
@@ -252,7 +250,9 @@ the next level in the tree uses half as many bins, and so on.
 
 Factors for binary classification have a third (and optimal) choice: to split all bins (and factors within those bins)
 with a mean of less than 0.5 one way, and the rest of the bins and factors the other way, creating an arbitrary
-set of factors with a known optimal split. This is represented as a bitset in the embedded Java model. Therefore,
+set of factors with a known optimal split. 
+
+This optimal split is represented as a bitset in the embedded Java model. Therefore,
 factor columns with less than the limit ($\mathtt{\sim}$ 1024) always use an optimal split for categorical problems.
 
 For categorical problems with $N$ possible values, the split candidate is determined by the formula $2^{N-1}-1$.
