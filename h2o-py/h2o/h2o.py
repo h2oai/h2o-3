@@ -1,6 +1,7 @@
 import warnings
 warnings.simplefilter('always', DeprecationWarning)
 import os
+import itertools
 import functools
 import os.path
 import re
@@ -11,7 +12,7 @@ import tabulate
 from connection import H2OConnection
 from job import H2OJob
 from expr import ExprNode
-from frame import H2OFrame, _py_tmp_key
+from frame import H2OFrame, _py_tmp_key, _is_list_of_lists
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
 
@@ -172,7 +173,10 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
+    if _is_list_of_lists(setup["na_strings"]): setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
+    else:
+      setup["na_strings"] = [_quoted(na) for na in setup["na_strings"]] # quote the strings
+      setup["na_strings"] = '\"' + str(list(itertools.repeat(setup["na_strings"], len(setup["column_types"])))) + '\"'
     p["na_strings"] = None
 
 
@@ -222,7 +226,7 @@ def _quoted(key, replace=True):
   key = key.replace("%", ".")
   key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
-  key = key if is_quoted  else "\"" + key + "\""
+  key = key if is_quoted  else '"' + key + '"'
   return key
 
 def assign(data,id):

@@ -1,5 +1,6 @@
 package water.rapids;
 
+import water.util.ArrayUtils;
 import water.util.SB;
 
 import java.util.ArrayList;
@@ -97,6 +98,10 @@ public class ASTNumList extends ASTParameter {
     _isList = true;
     Arrays.fill(_strides,0);
     Arrays.fill(_cnts,1);
+  }
+
+  ASTNumList(int[] list) {
+    this(ArrayUtils.copyFromIntArray(list));
   }
 
   // This is a special syntatic form; the number-list never executes and hits
