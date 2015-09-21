@@ -379,7 +379,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double frob = frobenius2(km._output._centers_raw);
           if(frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm(na_cnt)) {
             // Frame pred = km.score(_parms.train());
-            Log.info("Initializing X to matrix of indicator columns corresponding to cluster assignments");
+            Log.info("Initializing X to matrix of weights inversely correlated with cluster distances");
             InitialXKMeans xtsk = new InitialXKMeans(_parms, km, _ncolA, _ncolX);
             xtsk.doAll(dfrm);
           }
@@ -1222,7 +1222,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
-  // Calculate the sum loss function in the optimization objective
+  // Calculate the sum over the loss function in the optimization objective
   private static class ObjCalc extends MRTask<ObjCalc> {
     // Input
     GLRMParameters _parms;

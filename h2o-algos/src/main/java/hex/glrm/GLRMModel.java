@@ -112,7 +112,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Huber:
           return Math.abs(u-a) <= 1 ? 0.5*(u-a)*(u-a) : Math.abs(u-a)-0.5;
         case Poisson:
-          return Math.exp(u) - a*u + a*Math.log(a) - a;
+          assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
+          return Math.exp(u) + (a == 0 ? 0 : -a*u + a*Math.log(a) - a);   // Since \lim_{a->0} a*log(a) = 0
         case Hinge:
           return Math.max(1-a*u,0);
         case Logistic:
@@ -138,6 +139,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
         case Poisson:
+          assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
           return Math.exp(u)-a;
         case Hinge:
           return a*u <= 1 ? -a : 0;
@@ -383,7 +385,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return 1/u;
         case Logistic:
           if (u == 0) return 0;   // Any finite real number is minimizer if u = 0
-          return (u > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
+          return (u > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);   // TODO: Should be u > 0 ? vec.max() : vec.min()
         default:
           throw new RuntimeException("Unknown loss function " + loss);
       }
