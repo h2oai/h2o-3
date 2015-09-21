@@ -26,8 +26,8 @@
 .fetch.data <- function(x,N) {
   stopifnot(!missing(N))
   .eval.frame(chk.Frame(x))
-  if( is.null(x:data) || (is.data.frame(x:data) && nrow(x:data) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", x:id, "?row_count=",N))$frames[[1]]
+  if( is.null( attr(x, "data")) || (is.data.frame( attr(x, "data")) && nrow( attr(x, "data")) < N) ) {
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id"), "?row_count=",N))$frames[[1]]
     # Convert to data.frame, handling short data (trailing NAs)
     # Numeric data is OK, but can be short if e.g., there are trailing NAs
     # String data is a list form; convert to a vector (and convert NULL to NA)
@@ -53,7 +53,7 @@
     .set(x,"data",data)
     .set(x,"nrow",res$rows)
   }
-  x:data
+  attr(x,"data")
 }
 
 #` Flush any cached data
@@ -95,7 +95,7 @@ h2o.ls <- function() {
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' h2o.ls()
 #' h2o.removeAll()
 #' h2o.ls()
@@ -122,8 +122,8 @@ h2o.removeAll <- function(timeout_secs=0) {
 #' @export
 h2o.rm <- function(ids) {
   if( is.Frame(ids) ) {
-    if( is.null(ids:id) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
-    ids <- ids:id
+    if( is.null( attr(ids, "id")) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
+    ids <- attr(ids, "id")
   }
   if(!is.character(ids)) stop("`ids` must be of class character")
 
@@ -136,16 +136,16 @@ h2o.rm <- function(ids) {
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
 #'
-#' @param data An \linkS4class{Frame} object
+#' @param data An Frame object
 #' @param key The hex key to be associated with the H2O parsed data object
 #'
 #' @export
 h2o.assign <- function(data, key) {
   .key.validate(key)
-  if( !is.null(data:id) && key == data:id ) stop("Destination key must differ from input frame ", key)
+  if( !is.null( attr(data, "id")) && key == attr(data, "id") ) stop("Destination key must differ from input frame ", key)
   # Eager evaluate, copied from .eval.frame
   exec_str <- .eval.impl(data);
-  print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
+  #print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   .newFrame("h2o.assign",key)
@@ -169,9 +169,9 @@ h2o.getFrame <- function(id) .eval.frame(.newFrame("getFrame",id))
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #'
-#' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
+#' iris.hex <- as.h2o(iris, "iris.hex")
 #' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
 #' model.retrieved <- h2o.getModel(model_id)
 #' }

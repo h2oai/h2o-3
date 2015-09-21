@@ -1,4 +1,6 @@
 \section{Installation} 
+\Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
+
 
 The easiest way to directly install H2O is  via an R or Python package.
 
@@ -14,7 +16,7 @@ install.packages("h2o")
 
 {\bf{Note}}: The version of H2O in CRAN is often one release behind the current version.
 
-Alternatively, you can (and should for this tutorial) download the
+For the latest recommended version, download the
 latest stable H2O-3 build from the H2O download page:
 
 \begin{enumerate}
@@ -25,13 +27,13 @@ latest stable H2O-3 build from the H2O download page:
 \end{enumerate}
 
 \bigskip
-After H2O is installed on your system, verify the installation:
+After H2O is installed on your system, verify the installation completed successfully by initializing H2O:
 
 \begin{lstlisting}[style=R]
 library(h2o)
 
-#Start H2O on your local machine using all available cores.
-#By default, CRAN policies limit use to only 2 cores.
+#Start H2O on your local machine using all available cores
+#(By default, CRAN policies limit use to only 2 cores)
 h2o.init(nthreads = -1)
 
 #Get help
@@ -80,7 +82,7 @@ h2o.demo("gbm")
 
 \end{lstlisting}
 
-\subsection{Pointing to a different H2O cluster}
+\subsection{Pointing to a Different H2O Cluster}
 
 The instructions in the previous sections create a one-node H2O cluster on your local machine. 
 

@@ -1,5 +1,5 @@
 ## Set your working directory
-setwd("~/Downloads/")
+setwd("~/Desktop/lending_club/")
 
 ## Function for ploting the scoring history
 plot_scoring <- function(model) {
@@ -23,11 +23,11 @@ plot_scoring <- function(model) {
   }
 }
 
-clean_up <- function(client) {
-  keys <- h2o.ls(client)$key
+clean_up <- function() {
+  keys <- h2o.ls()$key
   id   <- grep("subset|nary|group|rapids|file", keys)
   id_i <- grep("modelmetrics", keys)
-  h2o.rm(ids = as.character(keys[setdiff(id,id_i)]), conn = client)
+  h2o.rm(ids = as.character(keys[setdiff(id,id_i)]))
 }
 
 
@@ -108,8 +108,7 @@ loanStats  <- h2o.assign(data = loanStats, key = "LoanStats")
 loanStats$longest_credit_length <- loanStats$issue_d_Year - loanStats$earliest_cr_line_Year
 loanStats$issue_d_Year_factor   <- as.factor(loanStats$issue_d_Year)
 # Clean up the KV Store
-clean_up(conn)
-h2o.ls(conn)
+clean_up()
 
 print("Set variables to predict bad loans...")
 myY <- "bad_loan"
@@ -126,6 +125,7 @@ myX <- setdiff(names(loanStats),
 # Filter out only loans that have been completed
 loanStats_complete <- loanStats[loanStats$complete == "1", ]
 loanStats_complete <- h2o.assign(data = loanStats_complete, key = "loanStats_complete")
+loanStats_complete$earned <- loanStats_complete$total_pymnt - loanStats_complete$loan_amnt
 
 data  <- loanStats_complete
 rand  <- h2o.runif(data)
@@ -177,7 +177,6 @@ good_loans <- h2o.assign(data = good_loans, key = "good_loans")
 ## Do a post - analysis of how much money we would've saved with this model...
 pred <- h2o.predict(gbm_model, loanStats_complete)
 loanStats_w_pred <- h2o.cbind(loanStats_complete, pred)
-loanStats_w_pred$earned <- loanStats_w_pred$total_pymnt - loanStats_w_pred$loan_amnt
 bad_predicted  <- loanStats_w_pred[loanStats_w_pred$predict == "1", ]
 good_predicted <- loanStats_w_pred[loanStats_w_pred$predict == "0", ]
 bad_predicted  <- h2o.assign(data = bad_predicted, key = "bad_predicted")

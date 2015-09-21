@@ -30,7 +30,7 @@ public class ChunkSpeedTest extends TestUtil {
             raw[j][i] = i % 500; //C2Chunk - 2 byte integer
             break;
           case 2:
-            raw[j][i] = i;
+            raw[j][i] = i*Integer.MAX_VALUE;
             break;
           case 3:
             raw[j][i] = i == 17 ? 1 : 0; //CX0Chunk - sparse

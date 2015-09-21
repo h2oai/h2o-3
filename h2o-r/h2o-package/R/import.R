@@ -38,8 +38,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A \linkS4class{H2ORawData} or
-#'        \linkS4class{Frame} (\code{version = 2}) object containing a single
+#' @param col.names (Optional) A Frame object containing a single
 #'        delimited line with the column names for the file.
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.
@@ -50,9 +49,9 @@
 #'        synchronously instead of polling.  This can be faster for small
 #'        datasets but loses the progress bar.
 #' @examples
-#' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.uploadFile(localH2O, path = prosPath, destination_frame = "prostate.hex")
+#' prostate.hex = h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 #' class(prostate.hex)
 #' summary(prostate.hex)
 #' @name h2o.importFile
@@ -145,6 +144,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
     rawData
   }
 }
+
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
@@ -158,13 +158,13 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' @examples
 #' \dontrun{
 #' # library(h2o)
-#' # localH2O = h2o.init()
+#' # h2o.init()
 #' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
 #' # prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 #' # glmmodel.path = h2o.saveModel(prostate.glm, dir = "/Users/UserName/Desktop")
-#' # glmmodel.load = h2o.loadModel(localH2O, glmmodel.path)
+#' # glmmodel.load = h2o.loadModel(glmmodel.path)
 #' }
 #' @export
 h2o.loadModel <- function(path) {

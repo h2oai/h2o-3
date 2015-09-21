@@ -393,10 +393,18 @@ public class Frame extends Lockable<Frame> {
     return card;
   }
 
+  private Vec[] bulkRollups() {
+    Futures fs = new Futures();
+    Vec[] vecs = vecs();
+    for(Vec v : vecs)  v.startRollupStats(fs);
+    fs.blockForPending();
+    return vecs;
+  }
+
   /** Majority class for enum columns; -1 for non-enum columns.
    * @return the majority class for enum columns */
   public int[] modes() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     int[] modes = new int[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
       modes[i] = vecs[i].isEnum() ? vecs[i].mode() : -1;
@@ -407,7 +415,7 @@ public class Frame extends Lockable<Frame> {
   /** All the column means.
    *  @return the mean of each column */
   public double[] means() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] means = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ )
       means[i] = vecs[i].mean();
@@ -417,7 +425,7 @@ public class Frame extends Lockable<Frame> {
   /** One over the standard deviation of each column.
    *  @return Reciprocal the standard deviation of each column */
   public double[] mults() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] mults = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
       double sigma = vecs[i].sigma();
@@ -434,8 +442,8 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
+    Vec[] vecs = bulkRollups();
     long sum=0;
-    Vec[] vecs = vecs();
     for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
   }

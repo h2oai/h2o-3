@@ -7,6 +7,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
+import water.rapids.Assembly;
 import water.util.*;
 
 import java.io.*;
@@ -261,8 +262,10 @@ public class RequestServer extends NanoHTTPD {
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", null, "Kill minus 3 on *this* node");
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
+    register("/99/Assembly/(?<assembly_id>.*)/(?<pojo_name>.*?)(\\.java)?"   ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
+    register("/99/Assembly"                                        ,"POST"  ,AssemblyHandler.class, "fit", null, "Fit an assembly to an input frame");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
-    register("/3/DownloadDataset.bin"                                  ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
+    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", null, "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", null, "Save a message to the H2O logfile.");
@@ -666,6 +669,12 @@ public class RequestServer extends NanoHTTPD {
     case java:
       if (s instanceof H2OErrorV3) {
         return new Response(http_response_header, MIME_JSON, s.toJsonString());
+      }
+      if( s instanceof AssemblyV99 ) {
+        Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
+        Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
+        r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
+        return r;
       }
       if (! (s instanceof ModelsBase)) {
         throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());

@@ -66,6 +66,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   // ----------------------
   private class GrepDriver extends H2OCountedCompleter<GrepDriver> {
+    protected GrepDriver() { super(true); } // bump driver priority
 
     @Override protected void compute2() {
       GrepModel model = null;

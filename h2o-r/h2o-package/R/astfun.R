@@ -81,16 +81,16 @@
   if( missing(s1) ) return("")
 
   # check for `if`, `for`, `else`, `return`, `while` -- stop if `while`
-  if (identical(quote(`if`),     s1)) return(.process.if.stmnt(stmnt))
-  if (identical(quote(`for`),    s1)) return(.process.for.stmnt(stmnt))
-  if (identical(quote(`else`),   s1)) return(.process.else.stmnt(stmnt))
-  if (identical(quote(`return`), s1)) return(.process.return.stmnt(stmnt))
-  if (identical(quote(`while`),  s1)) stop("*Unimplemented* `while` loops are not supported by h2o")
-
-  # check assignment
-  if(identical(quote(`<-`), s1)) return(.process.assign.stmnt(stmnt))
-  if(identical(quote(`=`),  s1)) return(.process.assign.stmnt(stmnt))
-  if(identical(quote(`->`), s1)) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
+#  if (identical(quote(`if`),     s1)) return(.process.if.stmnt(stmnt))
+#  if (identical(quote(`for`),    s1)) return(.process.for.stmnt(stmnt))
+#  if (identical(quote(`else`),   s1)) return(.process.else.stmnt(stmnt))
+#  if (identical(quote(`return`), s1)) return(.process.return.stmnt(stmnt))
+#  if (identical(quote(`while`),  s1)) stop("*Unimplemented* `while` loops are not supported by h2o")
+#
+#  # check assignment
+#  if(identical(quote(`<-`), s1)) return(.process.assign.stmnt(stmnt))
+#  if(identical(quote(`=`),  s1)) return(.process.assign.stmnt(stmnt))
+#  if(identical(quote(`->`), s1)) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
 
   # everything else is a function call or operation
   .process.stmnt(stmnt, formalz, envs)
