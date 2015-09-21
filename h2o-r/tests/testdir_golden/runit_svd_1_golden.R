@@ -17,16 +17,18 @@ test.svd.golden <- function() {
   expect_equal(fitH2O@model$d, fitR$d, tolerance = 1e-6)
   
   Log.info("Compare right singular vectors (V)")
+  vH2O <- h2o.getFrame(fitH2O@model$v_key$name)
+  vH2O.mat <- as.data.frame(vH2O)
   Log.info("R Right Singular Vectors"); print(fitR$v)
-  Log.info("H2O Right Singular Vectors"); print(fitH2O@model$v)
-  isFlipped1 <- checkSignedCols(fitH2O@model$v, fitR$v, tolerance = 1e-5)
+  Log.info("H2O Right Singular Vectors"); print(vH2O.mat)
+  isFlipped1 <- checkSignedCols(vH2O.mat, fitR$v, tolerance = 1e-5)
   
   Log.info("Compare left singular vectors (U)")
   uH2O <- h2o.getFrame(fitH2O@model$u_key$name)
-  uH2O.df <- as.data.frame(uH2O)
+  uH2O.mat <- as.matrix(uH2O)
   Log.info("R Left Singular Vectors:"); print(head(fitR$u))
-  Log.info("H2O Left Singular Vectors:"); print(head(uH2O.df))
-  isFlipped2 <- checkSignedCols(uH2O.df, fitR$u, tolerance = 5e-5)
+  Log.info("H2O Left Singular Vectors:"); print(head(uH2O.mat))
+  isFlipped2 <- checkSignedCols(uH2O.mat, fitR$u, tolerance = 5e-5)
   expect_equal(isFlipped1, isFlipped2)
   
   testEnd()

@@ -319,6 +319,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._seed = _parms._seed;
         parms._keep_u = true;
         parms._impute_missing = true;
+        parms._save_v_frame = false;
 
         SVDModel svd = null;
         SVD job = null;
