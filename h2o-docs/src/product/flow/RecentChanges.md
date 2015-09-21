@@ -2,8 +2,7 @@
 
 ##H2O
 
-
-###Slater (3.2.0.2) - 09/18/15
+###Slater (3.2.0.3) - 09/21/15
 
 ####New Features
 The following changes represent features that have been added since the previous release:
