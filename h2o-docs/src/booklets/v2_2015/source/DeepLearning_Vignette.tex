@@ -237,7 +237,7 @@ The $\tanh$ function is a rescaled and shifted logistic function; its symmetry a
 Maxout is a generalization of the Rectifier activation, where each neuron picks the largest output of $k$ separate channels, where each channel has its own weights and bias values. The current implementation supports only $k=2$. Maxout activation works particularly well with dropout (\href{http://arxiv.org/pdf/1302.4389.pdf}{Goodfellow et al, 2013}). For more information, refer to \nameref{ssec:Regularization}.
 
 The Rectifier is the special case of Maxout where the output of one channel is always 0.
-It is difficult to determine a ``best" activation function to use; each may outperform the others in separate scenarios, but grid search models can help to compare activation functions and other parameters.  For more information, refer to \nameref{ssec:GridSearch}. The default activation function is the Rectifier. Each of these activation functions can be operated with dropout regularization For more information, refer to \nameref{ssec:Regularization}.
+It is difficult to determine a ``best" activation function to use; each may outperform the others in separate scenarios, but grid search models can help to compare activation functions and other parameters.  For more information, refer to \nameref{ssec:GridSearch}. The default activation function is the Rectifier. Each of these activation functions can be operated with dropout regularization. For more information, refer to \nameref{ssec:Regularization}.
 
 Specify the one of the following distribution functions for the response variable using the \texttt{distribution} argument: 
 
@@ -578,6 +578,7 @@ The following code demonstrates training using the \texttt{variable\_importances
 
 \waterExampleInR
 To generate variable importances in R, use the following: 
+
 \lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
 
 \waterExampleInPython
