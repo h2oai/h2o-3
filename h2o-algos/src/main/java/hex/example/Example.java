@@ -32,7 +32,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
 
   public ModelBuilderSchema schema() { return new ExampleV3(); }
 
-  @Override public Example trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Example trainModelImpl(long work, boolean restartTimer) {
     return (Example)start(new ExampleDriver(), work, restartTimer);
   }
 

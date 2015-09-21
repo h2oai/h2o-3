@@ -48,7 +48,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   /** Start the DRF training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new DRFDriver(), work, restartTimer);
   }
 

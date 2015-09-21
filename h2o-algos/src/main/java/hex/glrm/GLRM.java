@@ -60,7 +60,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return new GLRMV99();
   }
 
-  @Override public Job<GLRMModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<GLRMModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new GLRMDriver(), work, restartTimer);
   }
 
