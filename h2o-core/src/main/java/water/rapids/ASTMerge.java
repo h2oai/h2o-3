@@ -19,26 +19,40 @@ import java.util.Arrays;
  */
 public class ASTMerge extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
+  public String[] args() { return new String[]{"left","rite", "by", "all_left", "all_rite"}; }
   @Override
   public String str(){ return "merge";}
-  @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
+  @Override int nargs() { return 1+5; } // (merge left rite all.left all.rite)
 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
-    boolean allLeft = asts[3].exec(env).getNum() == 1;
-    boolean allRite = asts[4].exec(env).getNum() == 1;
+    String[] bynames = l._names;
+    if( asts[3] instanceof ASTStr ) { bynames = new String[]{asts[3].str()}; }
+    else if( asts[3] instanceof ASTNum ) { bynames = new String[]{l.names()[(int)((ASTNum)asts[3])._v.getNum()]}; }
+    else if( asts[3] instanceof ASTStrList ) { bynames = ((ASTStrList)asts[3])._strs; }
+    else if( asts[3] instanceof ASTNumList ) {
+      ASTNumList colIdxs = ((ASTNumList)asts[3]);
+      if( !colIdxs.isEmpty() ) {
+        int[] idxs = colIdxs.expand4();
+        bynames = new String[idxs.length];
+        for(int i=0; i<idxs.length; ++i)
+          bynames[i] = l.names()[i];
+      }
+    }
+    boolean allLeft = asts[4].exec(env).getNum() == 1;
+    boolean allRite = asts[5].exec(env).getNum() == 1;
 
     // Look for the set of columns in common; resort left & right to make the
     // leading prefix of column names match.  Bail out if we find any weird
     // column types.
     int ncols=0;                // Number of columns in common
-    for( int i=0; i<l._names.length; i++ ) {
-      int idx = r.find(l._names[i]);
-      if( idx != -1 ) {
-        l.swap(i  ,ncols);
-        r.swap(idx,ncols);
+    for( int i=0; i<bynames.length; i++ ) {
+      int lidx = l.find(bynames[i]);
+      int ridx = r.find(bynames[i]);
+      if( ridx != -1 && lidx!=-1 ) {
+        l.swap(lidx,ncols);
+        r.swap(ridx,ncols);
         Vec lv = l.vecs()[ncols];
         Vec rv = r.vecs()[ncols];
         if( lv.get_type() != rv.get_type() )
@@ -141,6 +155,28 @@ public class ASTMerge extends ASTPrim {
       }
       return true;
     }
+    public boolean rowEquals(Row r) {
+      if( _chks == r._chks && _row == r._row ) return true;
+      int len = _chks.length;
+      for(int c=0;c<len;++c) {
+        boolean lb = _chks[c].isNA(_row), rb = r._chks[c].isNA(r._row);
+        if( lb && rb ) continue;     // both NA, equal
+        if( lb || rb ) return false; // one was NA, unequal
+        // attempt left.atd == rite.atd
+        if( _chks[c].atd(_row) != r._chks[c].atd(r._row) ) return false;
+      }
+      return true;
+    }
+    public Row reHash() { // found a dupe row based on key, compute new hash based on entire row contents
+      long hash=0;
+      for (Chunk _chk : _chks) {
+        if (!_chk.isNA(_row)) {
+          hash += Double.doubleToRawLongBits(_chk.atd(_row));
+        }
+      }
+      _hash = (int)(hash^(hash>>32));
+      return this;
+    }
   }
 
   // Build a HashSet of one entire Frame, where the Key is the contents of the
@@ -173,8 +209,14 @@ public class ASTMerge extends ASTPrim {
         for( int i=0; i<len; i++ ) {
           Row row = new Row(chks).fill(i,_ms._ncols,_ms._id_maps);
           boolean added = _ms._rows.add(row);
-          if( !added ) { // dup handling?  Need to gather absolute rows in Row
-            Row other = _ms._rows.get(row);
+          if( !added ) { // dup handling: keys are identical, row content may not be... => need hash based on row content now rather than key content.
+            Row other = _ms._rows.get(row); // fetch existing row
+            if( !row.rowEquals(other) ) {
+              added = _ms._rows.add(row.reHash());
+              if( !added )
+                throw H2O.unimpl("Failed to add duplicate key (unequal rows): (" + row._row + "," + other._row + ")");
+            }
+
             /*
             ... bikes is small, weather is big (4x bigger, 2x more cols?)
             bikes gets replicated locally; based on Days - and has 1
@@ -184,7 +226,7 @@ public class ASTMerge extends ASTPrim {
 
             
             */
-            throw H2O.unimpl();
+            else throw H2O.unimpl("Found entirely duplicate rows in make hash: (" + row._row + "," + other._row + ")");
           }
         }
       }
