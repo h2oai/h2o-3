@@ -377,7 +377,7 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 12;
       parms._loss = GLRMParameters.Loss.Quadratic;
-      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.L1, GLRMParameters.Loss.Huber };
+      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Absolute, GLRMParameters.Loss.Huber };
       parms._loss_by_col_idx = new int[] { 2 /* AGMT */, 5 /* DEG */ };
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;

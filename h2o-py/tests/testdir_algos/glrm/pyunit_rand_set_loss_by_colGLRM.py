@@ -5,7 +5,7 @@ import numpy as np
 import random as rd
 
 def glrm_set_loss_by_col_rand():
-    NUM_LOSS = ["Quadratic", "L1", "Huber", "Poisson", "Periodic"]
+    NUM_LOSS = ["Quadratic", "Absolute", "Huber", "Poisson", "Periodic"]
     CAT_LOSS = ["Categorical", "Ordinal"]
     NUM_COLS = [1, 5, 6, 7]
     CAT_COLS = [0, 2, 3, 4]
@@ -48,19 +48,19 @@ def glrm_set_loss_by_col_rand():
         pass
         
     try:
-        h2o.glrm(x=prostateH2O, k=5, loss_by_col=["L1", "Ordinal", "Huber"], loss_by_col_idx = [1,2])
+        h2o.glrm(x=prostateH2O, k=5, loss_by_col=["Absolute", "Ordinal", "Huber"], loss_by_col_idx = [1,2])
         assert False, "Expected GLRM to throw error since not all column indices specified"
     except:
         pass
         
     try:
-        h2o.glrm(x=prostateH2O, k=5, loss_by_col=["L1", "Ordinal"], loss_by_col_idx=[1,2,5])
+        h2o.glrm(x=prostateH2O, k=5, loss_by_col=["Absolute", "Ordinal"], loss_by_col_idx=[1,2,5])
         assert False, "Expected GLRM to throw error since not all losses for columns specified"
     except:
         pass
     
     try:
-        h2o.glrm(x=prostateH2O, k=5, loss_by_col="L1", loss_by_col_idx=8)
+        h2o.glrm(x=prostateH2O, k=5, loss_by_col="Absolute", loss_by_col_idx=8)
         assert False, "Expected GLRM to throw error since column index 8 is out of bounds (zero indexing)"
     except:
         pass

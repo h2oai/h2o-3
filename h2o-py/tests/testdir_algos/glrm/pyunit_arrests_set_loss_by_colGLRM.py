@@ -9,8 +9,8 @@ def glrm_set_loss_by_col():
     arrestsPy = np.array(h2o.as_list(arrestsH2O))
     arrestsH2O.describe()
     
-    print "H2O GLRM with loss by column = L1, Quadratic, Quadratic, Huber"
-    glrm_h2o = h2o.glrm(x=arrestsH2O, k=3, loss="Quadratic", loss_by_col=["L1","Huber"], loss_by_col_idx=[0,3], regularization_x="None", regularization_y="None")
+    print "H2O GLRM with loss by column = Absolute, Quadratic, Quadratic, Huber"
+    glrm_h2o = h2o.glrm(x=arrestsH2O, k=3, loss="Quadratic", loss_by_col=["Absolute","Huber"], loss_by_col_idx=[0,3], regularization_x="None", regularization_y="None")
     glrm_h2o.show()
     
     fit_y = glrm_h2o._model_json['output']['archetypes'].cell_values

@@ -771,7 +771,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   initial_weight_scale : str
     Uniform: -value ... value, Normal: stddev
   loss : str
-    Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute" (experimental) or "Huber" (experimental)
+    Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute" (experimental) or "Huber" (experimental)
   distribution : str
      A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", 
      "huber" or "gaussian"
@@ -930,7 +930,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     initial_weight_scale : str
       Uniform: -value ... value, Normal: stddev
     loss : str
-      Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute" (experimental) or "Huber" (experimental)
+      Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute" (experimental) or "Huber" (experimental)
     distribution : str
       A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", 
       "tweedie", "laplace", "huber" or "gaussian"
@@ -1397,7 +1397,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
     (Optional) A logical value indicating whether to ignore constant columns in the training frame. A column is constant if all of its
     non-missing values are the same value.
   loss : str
-    A character string indicating the default loss function for numeric columns. Possible values are "Quadratic" (default), "L1", "Huber", 
+    A character string indicating the default loss function for numeric columns. Possible values are "Quadratic" (default), "Absolute", "Huber",
     "Poisson", "Hinge", and "Logistic".
   multi_loss : str
     A character string indicating the default loss function for enum columns. Possible values are "Categorical" and "Ordinal".

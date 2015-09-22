@@ -47,9 +47,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
-    // L1 -> Laplace distribution ~ exp(-|a-u|)
+    // Absolute -> Laplace distribution ~ exp(-|a-u|)
     public enum Loss {
-      Quadratic(true), L1(true), Huber(true), Poisson(true), Periodic(true),  // One-dimensional loss (numeric)
+      Quadratic(true), Absolute(true), Huber(true), Poisson(true), Periodic(true),  // One-dimensional loss (numeric)
       Logistic(true, true), Hinge(true, true),  // Boolean loss (categorical)
       Categorical(false), Ordinal(false);    // Multi-dimensional loss (categorical)
 
@@ -114,7 +114,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(loss) {
         case Quadratic:
           return (u-a)*(u-a);
-        case L1:
+        case Absolute:
           return Math.abs(u-a);
         case Huber:
           return Math.abs(u-a) <= 1 ? 0.5*(u-a)*(u-a) : Math.abs(u-a)-0.5;
@@ -143,7 +143,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(loss) {
         case Quadratic:
           return 2*(u-a);
-        case L1:
+        case Absolute:
           return Math.signum(u - a);
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
@@ -386,7 +386,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
       switch(loss) {
         case Quadratic:
-        case L1:
+        case Absolute:
         case Huber:
         case Periodic:
           return u;

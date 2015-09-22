@@ -45,13 +45,13 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Rank of matrix approximation", required = true, gridable = true)
     public int k;
 
-    @API(help = "Numeric loss function", values = { "Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic" }) // TODO: pull out of enum class
+    @API(help = "Numeric loss function", values = { "Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic" }) // TODO: pull out of enum class
     public GLRMParameters.Loss loss;
 
     @API(help = "Enum loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of enum class
     public GLRMParameters.Loss multi_loss;
 
-    @API(help = "Loss function by column (override)", values = { "Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic", "Categorical", "Ordinal" })
+    @API(help = "Loss function by column (override)", values = { "Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic", "Categorical", "Ordinal" })
     public GLRMParameters.Loss[] loss_by_col;
 
     @API(help = "Loss function by column index (override)")

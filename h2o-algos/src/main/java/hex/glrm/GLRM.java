@@ -591,7 +591,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         update(1, "Initializing X and Y matrices");   // One unit of work
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
-        if (!(_parms._init == Initialization.User && null == _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
+        if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function

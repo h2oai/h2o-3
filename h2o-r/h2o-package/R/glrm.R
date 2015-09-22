@@ -176,10 +176,11 @@ h2o.glrm <- function(training_frame, x, k, model_id,
       warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
     }
     parms[["k"]] <- as.numeric(nrow(user_y))
-  } else if( is.null(user_y) ) {
-    if(!missing(init) && parms[["init"]] == "User")
-      warning("Initializing Y to a standard Gaussian random matrix.")
-  } else
+  # } else if( is.null(user_y) ) {
+  #  if(!missing(init) && parms[["init"]] == "User")
+  #    warning("Initializing Y to a standard Gaussian random matrix.")
+  # } else
+  } else if( !is.null(user_y) )
     stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
   
   # Check if user_x is an acceptable set of user-specified starting points
@@ -192,10 +193,11 @@ h2o.glrm <- function(training_frame, x, k, model_id,
       .eval.frame(user_x)
     }
     parms[["user_x"]] <- user_x
-  } else if( is.null(user_x) ) {
-    if(!missing(init) && parms[["init"]] == "User")
-      warning("Initializing X to a standard Gaussian random matrix.")
-  } else
+  # } else if( is.null(user_x) ) {
+  #  if(!missing(init) && parms[["init"]] == "User")
+  #    warning("Initializing X to a standard Gaussian random matrix.")
+  # } else
+  } else if( !is.null(user_x) )
     stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
   
   # Error check and build model

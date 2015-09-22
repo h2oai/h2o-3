@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-NUM_LOSS <- c("Quadratic", "L1", "Huber", "Poisson", "Periodic")
+NUM_LOSS <- c("Quadratic", "Absolute", "Huber", "Poisson", "Periodic")
 CAT_LOSS <- c("Categorical", "Ordinal")
 BOOL_LOSS <- c("Hinge", "Logistic")
 
@@ -39,11 +39,11 @@ test.glrm.loss_by_col <- function() {
   if(length(loss_all) < ncols)
     expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col_idx = loss_idx_all))
-  expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = c("L1", "Ordinal", "Huber"), loss_by_col_idx = c(1,2)))
-  expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = c("L1", "Ordinal"), loss_by_col_idx = c(1,2,5)))
+  expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = c("Absolute", "Ordinal", "Huber"), loss_by_col_idx = c(1,2)))
+  expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = c("Absolute", "Ordinal"), loss_by_col_idx = c(1,2,5)))
   
   Log.info("Error if column index out of bounds (check zero indexing)")
-  expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = "L1", loss_by_col_idx = ncols))
+  expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = "Absolute", loss_by_col_idx = ncols))
   
   Log.info("Error if incorrect loss function for numeric/categorical column")
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(NUM_LOSS, 1), loss_by_col_idx = sample(CAT_COLS-1, 1)))
