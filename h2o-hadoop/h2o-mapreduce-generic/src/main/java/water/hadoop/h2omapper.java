@@ -287,10 +287,10 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         Log.POST(104, "after mkdirs()");
       }
       String fileName = ice_root + File.separator + basename;
-      PrintWriter out = new PrintWriter(fileName);
+      FileOutputStream out = new FileOutputStream(fileName);
       String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(i));
-      out.print(payload);
-      out.close();
+      byte[] byteArr = h2odriver.convertStringToByteArr(payload);
+      h2odriver.writeBinaryFile(fileName, byteArr);
       argsList.add(fileName);
     }
 
