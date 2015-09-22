@@ -1075,7 +1075,8 @@ public class h2odriver extends Configured implements Tool {
     }
     driverCallbackSocket = new ServerSocket();
     driverCallbackSocket.setReuseAddress(true);
-    InetSocketAddress sa = new InetSocketAddress(driverCallbackIp, driverCallbackPort);
+    // listen on all interfaces to allow for running driver from inside containers like Docker
+    InetSocketAddress sa = new InetSocketAddress("0.0.0.0", driverCallbackPort);
     driverCallbackSocket.bind(sa, driverCallbackPort);
     int actualDriverCallbackPort = driverCallbackSocket.getLocalPort();
     CallbackManager cm = new CallbackManager();
