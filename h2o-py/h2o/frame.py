@@ -530,7 +530,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
       zeros.append(v["zero_count"])
       miss.append(v["missing_count"])
 
-    table = [type,mins,maxs,sigma,zeros,miss]
+    table = [type,mins,maxs,mean,sigma,zeros,miss]
     headers = self._col_names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
