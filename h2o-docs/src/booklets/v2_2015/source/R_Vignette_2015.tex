@@ -642,15 +642,18 @@ To rename a dataframe on the server running H2O for a data set manipulated in R,
 
 \newpage
 \begin{lstlisting}[style=R]
-prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-prostate.hex<-h2o.importFile(path = prosPath)
+> prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+> prostate.hex<-h2o.importFile(path = prosPath)
 |===================================================| 100%
 ## Assign a new name to prostate dataset in the KV store
-prostate.hex@frame_id
-[1] "prostate.hex"
-prostate.hex <- h2o.assign(data = prostate.hex, key = "prostate.hex")
-prostate.hex@frame_id
-[1] "prostate.hex"
+> h2o.ls()
+             key
+1 prostate.hex_2
+> prostate.hex <- h2o.assign(data = prostate.hex, key = "myNewName")
+> h2o.ls()
+             key
+1      myNewName
+2 prostate.hex_2
 
 \end{lstlisting}
 
