@@ -71,8 +71,9 @@ public class ASTMerge extends ASTPrim {
     // Pick the frame to replicate & hash; smallest bytesize of the non-key
     // columns.  Hashed dataframe is completely replicated per-node
     long lsize = 0, rsize = 0;
-    for( int i=ncols; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
-    for( int i=ncols; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
+    assert ncols > 0;
+    for( int i=ncols-1; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
+    for( int i=ncols-1; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
     Frame small = lsize < rsize ? l : r;
     Frame large = lsize < rsize ? r : l;
 
