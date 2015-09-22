@@ -19,7 +19,7 @@
 
 .skip_if_not_developer <- function() {
   # TODO: Verify this function serves a useful purpose
-  if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
+  if (!(Sys.getenv("USER") %in% c("cliffc", "tomk", "amy")))
     return(TRUE)
   FALSE
 }
