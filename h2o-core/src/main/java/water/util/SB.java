@@ -2,14 +2,15 @@ package water.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import water.H2O;
+
+import water.exceptions.JCodeSB;
 
 /** Tight/tiny StringBuilder wrapper.
  *  Short short names on purpose; so they don't obscure the printing.
  *  Can't believe this wasn't done long long ago. */
-public final class SB {
+public final class SB implements JCodeSB<SB> {
   public final StringBuilder _sb;
-  private int _indent = 0;
+  int _indent = 0;
   public SB(        ) { _sb = new StringBuilder( ); }
   public SB(String s) { _sb = new StringBuilder(s); }
   public SB ps( String s ) { _sb.append("\""); pj(s); _sb.append("\""); return this;  }
@@ -68,8 +69,14 @@ public final class SB {
   public SB ii( int i) { _indent += i; return this; }
   // Decrease indentation
   public SB di( int i) { _indent -= i; return this; }
+
+  @Override
+  public SB ci(JCodeSB sb) {
+    _indent = sb.getIndent();
+    return this;
+  }
+
   // Copy indent from given string buffer
-  public SB ci( SB sb) { _indent = sb._indent; return this; }
   public SB nl( ) { return p('\n'); }
   // Convert a String[] into a valid Java String initializer
   public SB toJavaStringInit( String[] ss ) {
@@ -124,8 +131,16 @@ public final class SB {
     return p(']');
   }
 
+  @Override
+  public int getIndent() {
+    return _indent;
+  }
+
   // Mostly a fail, since we should just dump into the same SB.
-  public SB p( SB sb ) { _sb.append(sb._sb); return this;  }
+  public SB p(JCodeSB sb) {
+    _sb.append(sb.getContent());
+    return this;
+  }
   @Override public String toString() { return _sb.toString(); }
 
   /** Java-string illegal characters which need to be escaped */
@@ -142,5 +157,10 @@ public final class SB {
       s = m.replaceAll(REPLACEMENTS[i]);
     }
     return s;
+  }
+
+  @Override
+  public String getContent() {
+    return _sb.toString();
   }
 }

@@ -303,7 +303,7 @@ public class JettyHTTPD {
           throw new Exception("NPS value size exceeds Integer.MAX_VALUE");
         }
         response.setContentType("application/octet-stream");
-        response.setContentLength((int)length.get());
+        response.setContentLength((int) length.get());
         response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
         setResponseStatus(response, HttpServletResponse.SC_OK);
         OutputStream os = response.getOutputStream();
@@ -633,8 +633,13 @@ public class JettyHTTPD {
         }
 
         OutputStream os = response.getOutputStream();
-        InputStream is = resp.data;
-        FileUtils.copyStream(is, os, 1024);
+        if (resp instanceof NanoHTTPD.StreamResponse) {
+          NanoHTTPD.StreamResponse ssr = (NanoHTTPD.StreamResponse) resp;
+          ssr.streamWriter.writeTo(os);
+        } else {
+          InputStream is = resp.data;
+          FileUtils.copyStream(is, os, 1024);
+        }
       } finally {
         logRequest(method, request, response);
         // Handle shutdown if it was requested.
