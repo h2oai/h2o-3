@@ -4,7 +4,7 @@
 ## missing.
 ##
 ################################################################################
-import sys, os, urllib
+import sys, urllib
 sys.path.insert(1, "../../")
 import h2o, tests
 
