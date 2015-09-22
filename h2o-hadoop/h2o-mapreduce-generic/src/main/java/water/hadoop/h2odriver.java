@@ -79,6 +79,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean enableSuspend = false;
   static int debugPort = 5005;    // 5005 is the default from IDEA
   static String flowDir = null;
+  static String username = null;
+  static String password = null;
   static ArrayList<String> extraArguments = new ArrayList<String>();
   static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
@@ -482,6 +484,8 @@ public class h2odriver extends Configured implements Tool {
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-baseport <starting HTTP port for H2O nodes; default is 54321>]\n" +
                     "          [-flow_dir <server side directory or hdfs directory>]\n " +
+                    "          [-username <username for HTTP Basic Authentication>]\n " +
+                    "          [-password <password for HTTP Basic Authentication>]\n " +
                     "          [-ea]\n" +
                     "          [-verbose:gc]\n" +
                     "          [-XX:+PrintGCDetails]\n" +
@@ -518,6 +522,8 @@ public class h2odriver extends Configured implements Tool {
                     "             The file contains one line with the IP and port of the embedded\n" +
                     "             web server for one of the H2O nodes in the cluster.  e.g.\n" +
                     "                 192.168.1.100:54321\n" +
+                    "          o  -username and -password enables HTTP Basic Authentication in h2o.\n" +
+                    "             Running driver without these options will spawn insecure H2O cluster.\n" +
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
@@ -765,6 +771,14 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-flow_dir")) {
         i++; if (i >= args.length) { usage(); }
         flowDir = args[i];
+      }
+      else if (s.equals("-username")) {
+        i++; if (i >= args.length) { usage(); }
+        username = args[i];
+      }
+      else if (s.equals("-password")) {
+        i++; if (i >= args.length) { usage(); }
+        password = args[i];
       }
       else if (s.equals("-J")) {
         i++; if (i >= args.length) { usage(); }
@@ -1192,6 +1206,12 @@ public class h2odriver extends Configured implements Tool {
     }
     if (flowDir != null) {
       addMapperArg(conf, "-flow_dir", flowDir);
+    }
+    if (username != null) {
+      addMapperArg(conf, "-username", username);
+    }
+    if (password != null) {
+      addMapperArg(conf, "-password", password);
     }
     if((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home")+"/.h2o_no_collect")).exists()) {
       addMapperArg(conf, "-ga_opt_out");

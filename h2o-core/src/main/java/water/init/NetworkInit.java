@@ -1,5 +1,6 @@
 package water.init;
 
+import water.AuthConfig;
 import water.H2O;
 import water.H2ONode;
 import water.H2ONode.H2OSmallMessage;
@@ -322,7 +323,11 @@ public class NetworkInit {
 
     // Late instantiation of Jetty object, if needed.
     if (H2O.getJetty() == null) {
-      H2O.setJetty(new JettyHTTPD());
+      JettyHTTPD jettyHTTPD = new JettyHTTPD();
+      if (H2O.ARGS.web_username != null && H2O.ARGS.web_password != null) {
+        jettyHTTPD.setAuthConfig(new AuthConfig(H2O.ARGS.web_username, H2O.ARGS.web_password));
+      }
+      H2O.setJetty(jettyHTTPD);
     }
 
     while (true) {
