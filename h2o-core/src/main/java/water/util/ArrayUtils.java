@@ -930,6 +930,12 @@ public class ArrayUtils {
     return newArray;
   }
 
+  static public double[] copyFromIntArray(int[] a) {
+    double[] da = new double[a.length];
+    for(int i=0;i<a.length;++i) da[i] = a[i];
+    return da;
+  }
+
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;

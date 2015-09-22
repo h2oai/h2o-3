@@ -13,7 +13,7 @@ class ASTAssign extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
-    ASTNumList cols = check(dst.numCols(), asts[3]);
+    ASTNumList cols = check(dst.numCols(), asts[3], dst);
 
     // Check for append; add a col of NAs if appending
     if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
@@ -30,7 +30,7 @@ class ASTAssign extends ASTPrim {
 
     // Assign over the column slice
     if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
-      ASTNumList rows = check( dst.numRows(), asts[4] );
+      ASTNumList rows = check( dst.numRows(), asts[4], dst );
       switch( vsrc.type() ) {
       case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
       case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
@@ -49,11 +49,13 @@ class ASTAssign extends ASTPrim {
     return new ValFrame(dst);
   }
 
-  private ASTNumList check( long dstX, AST ast ) {
+  private ASTNumList check( long dstX, AST ast, Frame dst ) {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
     ASTNumList dim;
-    if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
-    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
+    if( ast instanceof ASTNumList  )    dim = (ASTNumList)ast;
+    else if( ast instanceof ASTNum )    dim = new ASTNumList(((ASTNum)ast)._v.getNum());
+    else if( ast instanceof ASTStr )    dim = new ASTNumList(dst.find(ast.str()));
+    else if( ast instanceof ASTStrList) dim = new ASTNumList(dst.find( ((ASTStrList)ast)._strs));
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     // Special for ASTAssign: "empty" really means "all"
     if( dim.isEmpty() ) return new ASTNumList(0,dstX);

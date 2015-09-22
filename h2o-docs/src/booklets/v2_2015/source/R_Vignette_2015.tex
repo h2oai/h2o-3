@@ -13,7 +13,7 @@
 \textsc{\Large\bf{Fast Scalable R with H2O}}
 \\
 \bigskip
-\textsc{\small{Patrick Aboyoun \hspace{10pt} Spencer Aiello \hspace{10pt} Eric Eckstrand \\ \hspace{10pt} Anqi Fu \hspace{10pt} Mark Landry  \hspace{10pt}  Jessica Lanford}}
+\textsc{\small{Spencer Aiello \hspace{10pt} Eric Eckstrand \hspace{10pt} Anqi Fu \\  \hspace{10pt} Mark Landry  \hspace{10pt}  Jessica Lanford \hspace{10pt}  Patrick Aboyoun }}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -43,7 +43,7 @@ August 2015: Third Edition
 
 Fast Scalable R with H2O\\
 
-  by Patrick Aboyoun,  Spencer Aiello,\\ Eric Eckstrand, Anqi Fu, Mark Landry\\ \&\ Jessica Lanford\\
+  by Spencer Aiello,\\ Eric Eckstrand, Anqi Fu, Mark Landry, \\ Jessica Lanford  \&\ Patrick Aboyoun\\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -58,6 +58,7 @@ August 2015: Third Edition
 Photos by \textcopyright H2O.ai, Inc. 
 \bigskip
 
+All copyrights belong to their respective owners.\\
 While every precaution has been taken in the\\
 preparation of this book, the publisher and\\
 authors assume no responsibility for errors or\\
@@ -116,7 +117,7 @@ This following sections describe:
 \begin{itemize}
 \item installing R 
 \item installing H2O from R
-\item making a build from source code
+%\item making a build from source code
 \end{itemize}
 
 \subsection{Installing R}
@@ -170,31 +171,38 @@ demo(h2o.glm)
 demo(h2o.gbm)
 \end{lstlisting}
 
+\subsection{Citation}
+
+To cite this booklet, use the following: 
+
+Aiello, S., Eckstrand, E., Fu, A., Landry, M., Lanford, J., and Aboyoun, P. (Aug. 2015) {\textit{Fast Scalable R with H2O}. {\url{http://h2o.ai/resources/}}. 
+
 %Tom: Do we still want to include this section? If so, can you please make an R example that will call the latest version? 
 
-\subsection{Making a build from the Source Code}  
-If you are a developer who wants to make changes to the R package before building and installing it, pull the source code from Git ({\url{https://github.com/h2oai/h2o-3}}) and follow the instructions in at {\url{https://github.com/h2oai/h2o-3/blob/master/README.md}}.
+%\subsection{Making a build from the Source Code}  
+%If you are a developer who wants to make changes to the R package before building and installing it, pull the source code from Git ({\url{https://github.com/h2oai/h2o-3}}) and follow the instructions in at {\url{https://github.com/h2oai/h2o-3/blob/master/README.md}}.
 
 %TODO
-After making the build, navigate to the top-level \texttt{h2o-3} directory using {\texttt{cd $\mathtt{\sim}$/h2o-3}}, then run the following (replacing the asterisks [*] with the version number) and install.
-\begin{lstlisting}[style=R]
-./gradlew clean 
-./gradlew build
-$ R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz
-* installing to library �/Users/H2OUser/.Rlibrary�
-* installing *source* package �h2o� ...
-** R
-** demo
-** inst
-** preparing package for lazy loading
-Creating a generic function for ...[output truncated]
-** help
-*** installing help indices
-** building package indices
-** testing if installed package can be loaded
-* DONE (h2o)
-\end{lstlisting}
+%After making the build, navigate to the top-level \texttt{h2o-3} directory using {\texttt{cd $\mathtt{\sim}$/h2o-3}}, then run the following (replacing the asterisks [*] with the version number) and install.
+%\begin{lstlisting}[style=R]
+%./gradlew clean 
+%./gradlew build
+%$ R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz
+%* installing to library �/Users/H2OUser/.Rlibrary�
+%* installing *source* package �h2o� ...%
+%** R
+%** demo
+%** inst
+%** preparing package for lazy loading
+%Creating a generic function for ...[output truncated]
+%** help
+%*** installing help indices
+%** building package indices
+%** testing if installed package can be loaded
+%* DONE (h2o)
+%\end{lstlisting}
 
+\newpage
 \section{H2O Initialization}
 
 This section describes how to launch H2O: 
@@ -216,7 +224,7 @@ If you do not specify a value for {\texttt{max\_mem\_size}} when you run {\textt
 
 For best performance, the allocated memory should be 4x the size of your data, but never more than the total amount of memory on your computer. For larger data sets, we recommend running on a server or service with more memory available for computing.
 
-H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine. -
+H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine. 
 
 To launch H2O locally from R, run the following in R:
 \begin{lstlisting}[style=R]
@@ -224,7 +232,7 @@ library(h2o)
 # Starts H2O using localhost IP, port 54321, all CPUs, and 4g of memory  
 h2o.init(ip = 'localhost', port = 54321, nthreads= -1, max_mem_size = '4g')
 \end{lstlisting}
-
+\newpage
 After successfully launching, R displays output similar to the following example: 
 \begin{lstlisting}[style=R]
 Successfully connected to http://localhost:54321
@@ -390,7 +398,7 @@ To apply a user-specified function to each subset of an H2O dataset and combine 
 \section{Models}
 %TODO: Another candidate for "common"
 
-The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to ``Running Models." 
+The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to \nameref{sec:RunModel}. 
 
 %%mal H2O supports the following models: Deep Learning (DL), Generalized Linear Models (GLM), Gradient Boosted Regression (GBM), Na\"{i}ve Bayes (NB), Random Forest (RF), K-Means, Principal Components Analysis (PCA) and Generalized Low Rank Model (GLRM).
 H2O supports the following models:  
@@ -398,7 +406,7 @@ H2O supports the following models:
 
 \begin{frame}%no line table for list of 6+ items
 
-\begin{tabular}{p{6cm}p{6cm}}
+\begin{tabular}{p{5.5cm}p{5.5cm}}
 
 \begin{itemize}
  \item Deep Learning
@@ -418,7 +426,7 @@ H2O supports the following models:
 
 \end{frame}
 
-The list is growing quickly, so check back often at \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
+The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
 
 \subsection{Supervised Learning}
 
@@ -446,19 +454,20 @@ The list is growing quickly, so check back often at \url{www.h2o.ai} to see the 
 After creating a model, use it to make predictions. For more information about predictions, refer to ``Predictions." 
 
 %%mal: this feels too lengthy for a modeling example here; perhaps it would be better to have entire work flows at the end?
+\newpage
 \section{Demo: GLM}
 
 The following demo demonstrates how to:
 
 \begin{enumerate}
-\item  import a file
-\item define significant data
-\item view data
-\item create testing and training sets using sampling
-\item define the model
-\item display the results
+\item  Import a file
+\item Define significant data
+\item View data
+\item Create testing and training sets using sampling
+\item Define the model
+\item Display the results
 \end{enumerate}
-\newpage
+
 \begin{lstlisting}[style=R]
 # Import dataset and display summary
 > library(h2o)
@@ -510,6 +519,7 @@ The following demo demonstrates how to:
 > summary(pred$p1)
 
 \end{lstlisting}
+\newpage
 \section{Data Manipulation in R}
 
 The following section describes some common R commands. For a complete command list, including parameters, refer to {\url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}}.
@@ -541,7 +551,7 @@ airlines.hex = h2o.importFile(path = pathToData, destination_frame = "airlines.h
 \subsection{Uploading Files}
 
 To upload a file in a directory local to your H2O instance, use {\texttt{h2o.importFile()}}.  {\texttt{h2o.uploadFile()}}  uploads data local to your H2O instance as well as uploading data local to your R session. In the parentheses, specify the H2O reference object in R and the complete URL or normalized file path for the file.
-\newpage
+
 \begin{lstlisting}[style=R]
 irisPath = system.file("extdata", "iris.csv", package="h2o")
 iris.hex = h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
@@ -605,6 +615,7 @@ Min.   :  1.00   Min.   :0.0000   Min.   :43.00   Min.   :0.000
 1st Qu.: 95.75   1st Qu.:0.0000   1st Qu.:62.00   1st Qu.:1.000
        .... 
 \end{lstlisting}
+\newpage
 
 \subsection{Transferring Data Frames}
 To transfer a data frame from the R environment to the H2O instance, use  {\texttt{as.h2o()}}. In the parentheses, specify the object in the R environment to convert to an H2O object. Optionally, include the name of the destination frame in H2O. Precede the destination frame name with {\texttt{destination\_frame = }} and enclose the name in quotes as in the following example.
@@ -624,7 +635,7 @@ To transfer a data frame from the R environment to the H2O instance, use  {\text
 
 # Converts R object "iris" into H2O object�"iris.hex"
 > iris.hex = as.h2o(iris, destination_frame= "iris.hex")
-|=============================================================| 100%
+|=======================================================| 100%
 > head(iris.hex)
   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
 1          5.1         3.5          1.4         0.2  setosa
@@ -693,8 +704,6 @@ To request a quantile for a single numerical column, use {\texttt{quantile(Refer
 When you request for a full parsed data set consisting of a single column, {\texttt{quantile()}} displays a matrix with quantile information for the data set. 
 \smallskip
 
-\scriptsize
-
 \begin{lstlisting}[style=R]
 > prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 > prostate.hex <- h2o.importFile(path = prosPath)
@@ -714,16 +723,13 @@ When you request for a full parsed data set consisting of a single column, {\tex
 [1] 0.2052632
 \end{lstlisting}
 
+\newpage
 \subsection{Summarizing Data}
 
-\normalsize
 
 To generate a summary (similar to the one in R) for each of the columns in the data set, use {\texttt{summary()}} with the name of the R reference object in the parentheses.
 For continuous real functions, this produces a summary that includes information on quartiles, min, max, and mean. 
 For factors, this produces information about counts of elements within each factor level. 
-\newpage
-
-\scriptsize
 
 \begin{lstlisting}[style=R]
 > summary(prostate.hex)
@@ -743,13 +749,15 @@ For factors, this produces information about counts of elements within each fact
  Max.   :2.000   Max.   :139.700   Max.   :97.60   Max.   :9.000
 \end{lstlisting}
 
+\newpage
+
 \subsection{Summarizing Data in a Table}
 
-\normalsize
 To summarize data, use {\texttt{h2o.table()}}. Because H2O can handle larger data sets, it is possible to generate tables that are larger than R`s capacity, so use caution when executing this command. 
 
-Use {\texttt{head(h2o.table (ObjectName[, c(ColumnNumber,ColumnNumber)]))}} to summarize multiple columns, where {\texttt{ObjectName}} is the name of the object in R and {\texttt{ColumnNumber}} is the number of the column. 
-\smallskip
+To summarize multiple columns, use {\texttt{head(h2o.table (ObjectName[, c(ColumnNumber,ColumnNumber)]))}}, where {\texttt{ObjectName}} is the name of the object in R and {\texttt{ColumnNumber}} is the number of the column. 
+
+
 \begin{lstlisting}[style=R]
 # Counts of the ages of all patients
 > head(as.data.frame(h2o.table(prostate.hex[,"AGE"])))
@@ -779,11 +787,11 @@ First 10 rows:
 9   61    2     1
 10  60    1     9
 \end{lstlisting}
-
+\newpage
 \subsection{Generating Random Numbers}
 
 To append a column of random numbers to an H2O data frame for testing/training data splits that are used for analysis and validation in H2O, use {\texttt{h2o.runif()}} with the name of the R reference object in the parentheses. This method is best for customized frame splitting; otherwise, use {\texttt{h2o.splitFrame()}}. However, {\texttt{h2o.runif()}} is not as fast or stable as {\texttt{h2o.splitFrame()}}. 
-\smallskip
+
 \begin{lstlisting}[style=R]
 > prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 > prostate.hex <- h2o.importFile(path = prosPath)
@@ -818,7 +826,6 @@ To append a column of random numbers to an H2O data frame for testing/training d
 
 To generate two subsets (according to specified ratios) from an existing H2O data set for testing/training, use {\texttt{h2o.splitFrame()}}.  h2o.splitFrame() returns contiguous sections of the data without random sampling.
 
-\smallskip
 \begin{lstlisting}[style=R]
 # Splits data in prostate data frame with a ratio of 0.75
 > prostate.split <- h2o.splitFrame(data = prostate.hex , ratios = 0.75)
@@ -828,7 +835,6 @@ To generate two subsets (according to specified ratios) from an existing H2O dat
 > prostate.test <- prostate.split[[2]]
 \end{lstlisting}
 
-\newpage
 \subsection{Getting Frames}
 
 To create a reference object to the data frame in H2O, use {\texttt{h2o.getFrame()}}. This is helpful for  switching between the web UI and the R API or for multiple users accessing the same H2O instance. The following example assumes prostate.hex is in the key-value (KV) store.
@@ -847,10 +853,12 @@ To create a reference object for the model in H2O, use {\texttt{h2o.getModel()}}
 > gbm.model <- h2o.getModel(model_id = "GBM_8e4591a9b413407b983d73fbd9eb44cf")
 \end{lstlisting}
 
+\newpage
 \subsection{Listing H2O Objects}
 
 To generate a list of all H2O objects generated during a session and each object’s size in bytes, use {\texttt{h2o.ls()}}.
 \smallskip
+\small
 \begin{lstlisting}[style=R]
 > h2o.ls()
                                             Key   Bytesize
@@ -858,7 +866,8 @@ To generate a list of all H2O objects generated during a session and each object
       2    GBM_a3ae2edf5dfadbd9ba5dc2e9560c405d     1516
 \end{lstlisting}
 
-\newpage
+\normalsize 
+
 \subsection{Removing H2O Objects}
 
 To remove an H2O object on the server associated with the object in the R environment, use {\texttt{h2o.rm()}}. For optimal performance, we recommend removing the object from the R environment as well using {\texttt{remove()}}, with the name of the object in the parentheses. If you do not specify an R environment, then the current environment is used.
@@ -895,6 +904,7 @@ First 10 rows:
 
 
 \section{Running Models}
+\label{sec:RunModel}
 
 This section describes how to run the following model types:
 
@@ -1085,15 +1095,15 @@ Cumulative Proportion  0.383120 0.668942 0.801859
 
 The following section describes some of the prediction methods available in H2O. 
 
-{\textbf{Predict}}: Generate outcomes of a data set with any model. Predict with GLM, GBM, Decision Trees or Deep Learning models.\bigskip
+{\textbf{Predict}}: Generate outcomes of a data set with any model. Predict with GLM, GBM, Decision Trees or Deep Learning models.
 
-{\textbf{Confusion Matrix}}: Visualize the performance of an algorithm in a table to understand how a model performs.\bigskip
+{\textbf{Confusion Matrix}}: Visualize the performance of an algorithm in a table to understand how a model performs.
 
-{\textbf{Area Under Curve (AUC)}}: A graphical plot to visualize the performance of a model by its sensitivity, true positives and false positives to select the best model.\bigskip
+{\textbf{Area Under Curve (AUC)}}: A graphical plot to visualize the performance of a model by its sensitivity, true positives and false positives to select the best model.
 
-{\textbf{Hit Ratio}}: A classification matrix to visualize the ratio of the number of correctly classified and incorrectly classified cases.\bigskip
+{\textbf{Hit Ratio}}: A classification matrix to visualize the ratio of the number of correctly classified and incorrectly classified cases.
 
-{\textbf{PCA Score}}: Determine how well your feature selection fits a particular model.\bigskip
+{\textbf{PCA Score}}: Determine how well your feature selection fits a particular model.
 
 {\textbf{Multi-Model Scoring}}: Compare and contrast multiple models on a data set to find the best performer to deploy into production. 
 
@@ -1121,20 +1131,6 @@ First 10 rows:
 9        0 0.73057373 0.2694263
 10       1 0.46709293 0.5329071
 \end{lstlisting}
-
-
-\input{common/further_info.tex}
-
-\section{References}\bigskip
-
-{\bfseries{R Package}}:  \url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}
-
-{\bfseries{R Ensemble documentation}}: \url{http://www.stat.berkeley.edu/~ledell/R/h2oEnsemble.pdf} 
-
-{\bfseries{R project website}}: \url{http://www.r-project.org} 
-
-{\bfseries{Slide deck}}:\\ \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
-
 
 \newpage
 \section{Appendix: Commands} \label{Appendix} 
@@ -1218,7 +1214,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{trunc}}: Take a single numeric argument x and return a numeric vector containing the integers formed by truncating the values in x toward 0.  
 {\texttt{log}}: Compute logarithms (by default, natural logarithms).  
 {\texttt{exp}}: Compute the exponential function. 
-\newpage
+\medskip
 {\emph{Math (generic)}}\par
 {\texttt{cummax}}: Display a vector of the cumulative maxima of the elements of the argument. 
 {\texttt{cummin}}: Display a vector of the cumulative minima of the elements of the argument. 
@@ -1251,7 +1247,7 @@ The following section lists some common R commands by function and a brief descr
 \emph{Math2 (H2O)}\par
 {\texttt{round}}: Round the values to the specified number of decimal places (default 0).  
 {\texttt{signif}}: Round the values to the specified number of significant digits. 
-\medskip
+\newpage
 \emph{Summary (H2O)}\par
 {\texttt{max}}: Display the maximum of all the input arguments.  
 {\texttt{min}}: Display the minimum of all the input arguments.  
@@ -1323,7 +1319,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.month}}: Convert the entries of a H2OParsedData object from milliseconds to months (on a 0 to 11 scale).  
 {\texttt{h2o.year}}: Convert the entries of a H2OParsedData object from milliseconds to years, indexed starting from 1900. 
 
-\medskip
+\newpage
 \emph{Matrix Operations}\par
 {\texttt{\%$*$\%}}}: Multiply two matrices, if they are conformable. 
 {\texttt{t}}: Given a matrix or data.frame x, t returns the transpose of x. 
@@ -1332,7 +1328,7 @@ The following section lists some common R commands by function and a brief descr
 
 \medskip
 \emph{Model Training: Supervised Learning}\par
-{\texttt{h2o.deeplearning}}: Perform Deep Learning neural networks on an H2OParsedData object. 
+{\texttt{h2o.deeplearning}}: Perform Deep Learning neural networks on an\\ H2OParsedData object. 
 {\texttt{h2o.gbm}}: Build gradient boosted classification trees and gradient boosted regression trees on a parsed data set.  
 {\texttt{h2o.glm}}: Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error distribution.  
 {\texttt{h2o.naiveBayes}}: Build gradient boosted classification trees and gradient boosted regression trees on a parsed data set. 
@@ -1419,5 +1415,47 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 {\texttt{h2o.trim}}: Trim spaces. 
 
 \egroup %needed for formatting
+
+\newpage
+\input{common/further_info.tex}
+
+\section{References}\bigskip
+
+{\bfseries{R Package}}:  \url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}
+
+{\bfseries{R Ensemble documentation}}: \url{http://www.stat.berkeley.edu/~ledell/R/h2oEnsemble.pdf} 
+
+{\bfseries{R project website}}: \url{http://www.r-project.org} 
+
+{\bfseries{Slide deck}}:\\ \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
+
+
+\newpage
+\section{Authors}
+
+\textbf{Spencer Aiello}
+
+Spencer comes from an unconventional background. After studying Physics and Math as an undergraduate at UCSC, he came to San Francisco to continue his education, earning his MS in Analytics from USF.  Spencer has worked on a number of projects related to analytics in R, Python, Java, and SQL. At H2O, he works primarily on the R front-end and the backend Java R-interpreter.
+
+\textbf{Eric Eckstrand}
+
+Eric is a Quality and Performance Hacker at H2O.ai. Eric has formal education in computer science and systems engineering. Prior to joining H2O, Eric was a submariner in the US Navy. His roles included Reactor Controls Assistant and Communications Officer (USS Pittsburgh SSN-720) and Submarine Operations Officer (Destroyer Squadron One). 
+
+\textbf{Anqi Fu}
+
+Anqi is a data hacker at H2O.ai. After completing her undergraduate at University of Maryland: College Park, she attended Stanford University. While there she earned her master’s degree in Economics, and a second master’s degree in Statistics. Her interests include machine learning and optimization.
+
+\textbf{Mark Landry}
+
+Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Most at home in SQL, he found H2O through hacking in R. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
+
+\textbf{Jessica Lanford}
+
+Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+
+
+\textbf{Patrick Aboyoun}
+
+Patrick is a former math and data hacker at H2O.ai who has made a career out of creating and delivering software and training for data scientists, particularly those who love R.  Patrick received an M.S. in Statistics from the University of Washington and a B.S. in Statistics from Carnegie Mellon University.
 
 \end{document}

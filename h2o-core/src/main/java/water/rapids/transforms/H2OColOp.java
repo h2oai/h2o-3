@@ -1,12 +1,13 @@
 package water.rapids.transforms;
 
+import org.apache.commons.lang.ArrayUtils;
 import water.DKV;
 import water.H2O;
+import water.fvec.Frame;
 import water.rapids.AST;
 import water.rapids.ASTExec;
 import water.rapids.ASTParameter;
 import water.rapids.Exec;
-import water.fvec.Frame;
 
 public class H2OColOp extends Transform<H2OColOp> {
   final String _fun;
@@ -24,9 +25,8 @@ public class H2OColOp extends Transform<H2OColOp> {
     }
   }
 
-  @Override Transform<H2OColOp> fit(Frame f) { return this; }
-
-  @Override Frame transform(Frame f) {
+  @Override public Transform<H2OColOp> fit(Frame f) { return this; }
+  @Override protected Frame transformImpl(Frame f) {
     ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
     Frame fr = Exec.execute(_ast).getFrame();
     _newCol = _inplace?_oldCol:f.uniquify(_oldCol);
@@ -38,29 +38,11 @@ public class H2OColOp extends Transform<H2OColOp> {
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
 
-  @Override public StringBuilder genClass() {
-    String stepName = name();
-    StringBuilder sb = new StringBuilder();
-    String s = "  class " + stepName + " extends Step<" + stepName + "> {\n";
-    sb.append(s);
-    if( _params.size() > 0 )
-      sb.append(
-               "    private final HashMap<String, String[]> _params = new HashMap<>();\n");
-
-    for( String k: _params.keySet() ) {
-      String v = _params.get(k).toJavaString();
-      sb.append(
-               "    _params.put(\""+k+"\", new String[]{"+v+"});\n"
-      );
-    }
-    String s3 =
-               "    public " + stepName + "() { } \n" +
-                    "    @Override public RowData transform(RowData row) {\n" +
-                    "      row.put(\""+_newCol+"\", GenModel."+_fun+"(row.get(\""+_oldCol+"\"), _params);\n" +
-                    "      return row;\n" +
-                    "    }\n" +
-                    "  }\n";
-    sb.append(s3);
-    return sb;
+  @Override public String genClassImpl() {
+    String typeCast = _inTypes[ArrayUtils.indexOf(_inNames, _oldCol)].equals("Numeric")?"double":"String";
+    return  "    @Override public RowData transform(RowData row) {\n" +
+            "      row.put(\""+_newCol+"\", GenMunger."+_fun+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params));\n" +
+            "      return row;\n" +
+            "    }\n";
   }
 }
