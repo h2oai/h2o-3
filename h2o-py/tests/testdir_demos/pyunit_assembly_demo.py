@@ -14,7 +14,7 @@ def assembly_demo():
   result = assembly.fit(fr)  # fit the assembly
   result.show()              # show the result of the fit
 
-  assembly.to_pojo("CoolMungingPojo")  # export POJO
+  assembly.to_pojo("MungingPojoDemo") #, path="/Users/spencer/Desktop/munging_pojo")  # export POJO
 
 
   # java api usage:
@@ -25,7 +25,7 @@ def assembly_demo():
   #
   #   RowData row = new RowData();
   #   row.fill(rawRow);
-  #   row = munger.transform(row);
+  #   row = munger.fit(row);
   #   BinomialModelPrediction pred = model.predictBinomial(row);
   #   // Use prediction!
 

@@ -1124,7 +1124,8 @@ public class Vec extends Keyed<Vec> {
       new MRTask() {
         @Override public void map(Chunk c) {
           for (int i=0;i<c._len;++i)
-            c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
+            if( !c.isNA(i) )
+              c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
         }
       }.doAll(newVec);
     }

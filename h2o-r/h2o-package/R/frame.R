@@ -1962,7 +1962,7 @@ h2o.rbind <- function(...) {
 #' r.hex <- as.h2o(right)
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' @export
-h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
+h2o.merge <- function(x, y, by=NULL, all.x = FALSE, all.y = FALSE) .newExpr("merge", x, y, by, all.x, all.y)
 
 #' Group and Apply by Column
 #'
