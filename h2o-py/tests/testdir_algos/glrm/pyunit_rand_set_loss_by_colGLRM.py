@@ -5,7 +5,7 @@ import numpy as np
 import random as rd
 
 def glrm_set_loss_by_col_rand():
-    NUM_LOSS = ["Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic"]
+    NUM_LOSS = ["Quadratic", "L1", "Huber", "Poisson", "Periodic"]
     CAT_LOSS = ["Categorical", "Ordinal"]
     NUM_COLS = [1, 5, 6, 7]
     CAT_COLS = [0, 2, 3, 4]

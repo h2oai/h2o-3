@@ -1,8 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-NUM_LOSS <- c("Quadratic", "L1", "Huber", "Poisson", "Hinge", "Logistic", "Periodic")
+NUM_LOSS <- c("Quadratic", "L1", "Huber", "Poisson", "Periodic")
 CAT_LOSS <- c("Categorical", "Ordinal")
+BOOL_LOSS <- c("Hinge", "Logistic")
 
 test.glrm.loss_by_col <- function() {
   Log.info("Importing prostate_cat.csv data...")
