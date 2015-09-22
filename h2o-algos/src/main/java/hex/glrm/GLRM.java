@@ -20,12 +20,11 @@ import hex.svd.SVDModel;
 import hex.svd.SVDModel.SVDParameters;
 
 import hex.util.LinearAlgebraUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.*;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.RandomUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -635,7 +634,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
               new ProgressUpdate("Iteration " + model._output._iterations + ": Objective increased to " + obj_new + "; reducing step size to " + step).fork(_progressKey);
             }
           }
-          model._output._step_size = step;
+
+          // Add to scoring history
+          model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
+          model._output._history_step_size = ArrayUtils.copyAndFillOf(model._output._history_step_size, model._output._history_step_size.length+1, step);
+          model._output._history_avg_change_obj = ArrayUtils.copyAndFillOf(model._output._history_avg_change_obj, model._output._history_avg_change_obj.length+1, model._output._avg_change_obj);
+          model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(self()); // Update model in K/V store
         }
 
@@ -660,7 +664,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(x);
         DKV.put(xinfo);
 
-        model._output._step_size = step;
+        // Add to scoring history
+        model._output._history_step_size = ArrayUtils.copyAndFillOf(
+                model._output._history_step_size,
+                model._output._history_step_size.length+1, step);
         model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
@@ -726,8 +733,40 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       int col = 0;
       // table.set(row, col++, output._nobs);
       table.set(row, col++, output._iterations);
-      table.set(row, col++, output._step_size);
+      table.set(row, col++, output._history_step_size[output._history_step_size.length-1]);
       table.set(row, col++, output._objective);
+      return table;
+    }
+
+    private TwoDimTable createScoringHistoryTable(GLRMModel.GLRMOutput output) {
+      List<String> colHeaders = new ArrayList<>();
+      List<String> colTypes = new ArrayList<>();
+      List<String> colFormat = new ArrayList<>();
+      colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+      colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
+      colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Avg. Change in Objective"); colTypes.add("double"); colFormat.add("%.5f");
+
+      final int rows = output._training_time_ms.length;
+      TwoDimTable table = new TwoDimTable(
+              "Scoring History", null,
+              new String[rows],
+              colHeaders.toArray(new String[0]),
+              colTypes.toArray(new String[0]),
+              colFormat.toArray(new String[0]),
+              "");
+      for( int row = 0; row<rows; row++ ) {
+        int col = 0;
+        assert(row < table.getRowDim());
+        assert(col < table.getColDim());
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        table.set(row, col++, fmt.print(output._training_time_ms[row]));
+        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[row] - _start_time, true));
+        table.set(row, col++, row);
+        table.set(row, col++, output._history_step_size[row]);
+        table.set(row, col++, output._history_avg_change_obj[row]);
+      }
       return table;
     }
   }

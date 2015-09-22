@@ -420,13 +420,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
+    public double[/*iterations*/] _history_avg_change_obj = new double[0];
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
     public GLRM.Archetypes _archetypes_raw;   // Needed for indexing into Y for scoring
 
-    // Final step size
-    public double _step_size;
+    // Step size each iteration
+    public double[/*iterations*/] _history_step_size = new double[0];
 
     // SVD of output XY
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
@@ -458,6 +459,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Loss function for every column in adapted training frame
     public GLRMParameters.Loss[] _lossFunc;
+
+    // Training time
+    public long[/*iterations*/] _training_time_ms = new long[0];
 
     public GLRMOutput(GLRM b) { super(b); }
 
