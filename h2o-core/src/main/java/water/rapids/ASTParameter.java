@@ -1,7 +1,7 @@
 package water.rapids;
 
 public abstract class ASTParameter extends AST {
-  final Val _v;
+  public final Val _v;
   ASTParameter(String str) { _v=new ValStr(str); }
   ASTParameter(Exec e) { _v = new ValNum(Double.valueOf(e.token())); }
   ASTParameter(double d) { _v = new ValNum(d); }
