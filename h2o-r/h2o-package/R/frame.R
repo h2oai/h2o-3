@@ -749,8 +749,10 @@ h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
   if( is.numeric(sel) ) { # number list for column selection; zero based
     sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
     .num.list(sel2)
-  } else if( is.null(sel) ) "[]"  # Empty selector
-  else as.character(sel)
+  } else {
+    if( is.null(sel) ) "[]" # Empty selector
+    else as.character(sel)
+  }
 }
 
 #' Extract or Replace Parts of an Frame Object
@@ -799,8 +801,7 @@ NULL
   }
   if( !missing(col) ) {     # Have a column selector?
     if( is.logical(col) ) { # Columns by boolean choice
-      print(col)
-      stop("unimplemented1")
+      col <- which(col)     # Pick out all the TRUE columns by index
     } else if( is.character(col) ) { # Columns by name
       assign("idx", match(col,colnames(data))) # Match on name
       if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))

@@ -1040,7 +1040,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   balance_classes : bool
     logical, indicates whether or not to balance training data class counts via over/under-sampling (for imbalanced data)
   max_after_balance_size : float
-    Maximum relative size of the training data after balancing class counts (can be less than 1.0)
+    Maximum relative size of the training data after balancing class counts (can be less than 1.0). Ignored if balance_classes is False, which is the default behavior.
   seed : int
     Seed for random numbers (affects sampling when balance_classes=T)
   build_tree_one_node : bool
@@ -1271,7 +1271,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
   balance_classes : bool
     logical, indicates whether or not to balance training data class counts via over/under-sampling (for imbalanced data)
   max_after_balance_size : float
-    Maximum relative size of the training data after balancing class counts (can be less than 1.0)
+    Maximum relative size of the training data after balancing class counts (can be less than 1.0). Ignored if balance_classes is False, which is the default behavior.
   seed : int
     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
   offset_column : H2OFrame

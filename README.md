@@ -171,7 +171,7 @@ Python tests require:
     pip install numpy
     pip install scipy
     pip install pandas
-    pip install statsmodles
+    pip install statsmodels
     pip install patsy
 
 ### 4.3. Setup on Windows

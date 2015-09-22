@@ -22,7 +22,7 @@
 \\
 \bigskip
 
-\textsc{\small{Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} Michal Malohlava \hspace{10pt} Viraj Parmar \hspace{10pt} Hank Roark }}
+\textsc{\small{Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} Michal Malohlava \\ \hspace{10pt} Viraj Parmar \hspace{10pt} Hank Roark }}
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -93,8 +93,15 @@ Printed in the United States of America.
 \section{Introduction}
 This document describes how to use Gradient Boosted Machines (GBM) with H2O.  
 Examples are written in R and Python.
-Topics include installation of H2O, basic GBM concepts, building GBM models in H2O, how to
-interpret model output, how to make predictions, and various implementation details.
+Topics include: 
+\begin{itemize}
+\item installation of H2O
+\item basic GBM concepts
+\item building GBM models in H2O
+\item interpreting model output
+\item making predictions
+\end{itemize}
+
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -103,16 +110,16 @@ interpret model output, how to make predictions, and various implementation deta
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-\newcommand{\waterVersion}{3.0.1.4}
+\newcommand{\waterVersion}{3.2.0.1}
 
 \input{common/installation.tex}
 
 \subsection{Example Code}
 
-R and Python code for the examples in this document are available here:
+R and Python code for the examples in this document are available here:\\
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/gbm}
 
-The document source itself can be found here:
+The document source itself can be found here:\\
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GBM_Vignette.tex}
 
 %----------------------------------------------------------------------
@@ -154,6 +161,7 @@ Boosting additively collects an ensemble of weak models to create a robust
 learning system for predictive tasks. The following example considers gradient boosting in the example of $K$-class classification; the model for regression follows a similar logic. The following analysis follows from the discussion in
 Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 
+\newpage
 \bf{\footnotesize{GBM for classification}}
 \normalfont
 \\
@@ -194,11 +202,13 @@ The final procedure in the inner loop is to add the current model to the fitted 
 %%by stagewise fitting using the loss function:
 %%$$L(y, F(x)) = exp(-y  F (x)) $$
 
-
+\newpage
 \subsection{Distributed Trees}
 
 H2O's implementation of GBM uses distributed trees. H2O overlays trees on the data by assigning a tree node to each row.
-The nodes are numbered and the number of each node is stored as {\texttt{Node\_ID}} in a temporary vector for each row. H2O makes a pass over all the rows using the most efficient method, which may not necessarily be  numerical order. A local
+The nodes are numbered and the number of each node is stored as {\texttt{Node\_ID}} in a temporary vector for each row. H2O makes a pass over all the rows using the most efficient method, which may not necessarily be  numerical order. 
+
+A local
 histogram using only local data is created in parallel for each row on each node. The histograms are then assembled and a split column is selected to make the decision. The rows are re-assigned to nodes and the entire process is repeated.
 
 For example, with an initial tree, all rows start on node 0. A MapReduce (MR) task computes the statistics and uses
@@ -233,31 +243,16 @@ difficult to predict. The maximum number of leaves is $2^d$, where $d$ represent
 
 \subsection{Treatment of Factors}
 
-If the specified GBM model includes factors, those factors are analyzed by assigning an integer to each distinct
-factor level, then binning the ordered integers according to the user-specified number of bins ($N$ bins). Split
-points are determined by considering the end points of each bin and the one-versus-many split for each bin.
+If the training data contains columns with categorical levels (factors), then these factors are split by assigning an integer to each distinct
+categorical level, then binning the ordered integers according to the user-specified number of bins \texttt{nbins\_cats} (which defaults to 1024 bins),
+and then picking the optimal split point among the bins.
 
-For example, if the factor is split into five bins, H2O orders the bins by bin number, then considers the split between the first and second bin, then the second and third, then the third and fourth, and the fourth and fifth.
-Additionally, the split that results from splitting the first bin from the other four and all analogous splits for
-the other four bins are considered. 
+To specify a model that considers all factors individually (and perform an optimal group split,
+where every level goes in the right direction based on the training response), specify \texttt{nbins\_cats} to be at least as large as the number of factors.
+Values greater than 1024 (the maximum number of levels supported in R) are supported, but might increase model training time.
 
-To specify a model that considers all factors individually, set the value for
-\texttt{nbins\_cats} equal to the number of factor levels. This can be done for over 1024 levels
-(the maximum number of levels that can be handled in R),
-though this increases the time required to fully generate a model.
-Top-level tree splits use the maximum allotment as their bin size,
-so the top split uses \texttt{nbins\_cats} (which defaults to 1024 bins),
-the next level in the tree uses half as many bins, and so on.
-
-
-Factors for binary classification have a third (and optimal) choice: to split all bins (and factors within those bins)
-with a mean of less than 0.5 one way, and the rest of the bins and factors the other way, creating an arbitrary
-set of factors with a known optimal split. This is represented as a bitset in the embedded Java model. Therefore,
-factor columns with less than the limit ($\mathtt{\sim}$ 1024) always use an optimal split for categorical problems.
-
-For categorical problems with $N$ possible values, the split candidate is determined by the formula $2^{N-1}-1$.
-For binary classification and regression problems, the number of split candidates is reduced to $N-1$ by sorting
-the label averages of the categorical feature values.
+The value of \texttt{nbins\_cats} for categorical factors has a much greater impact on the generalization error rate than \texttt{nbins} for real- or integer-valued columns (where higher values mainly lead to more accurate numerical split points).
+For columns with many factors, a small \texttt{nbins\_cats} value can add randomness to the split decisions (since the columns are grouped together somewhat arbitrarily), while large values can lead to perfect splits, resulting in overfitting.
 
 \subsection{Key Parameters}
 \label{ssec:Key parameters}
@@ -279,7 +274,7 @@ $\nu$ and $M$ are inversely related when the error rate is  constant.
 However, despite the greater rate of training error with small values of $\nu$, very small ($\nu < 0.1$) values 
 typically lead to better generalization and performance on test data.
 
-\section{Use Case: Classification with Airline Data}
+\section{Use Case: Airline Data Classification}
 
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. Before running the Airline demo, review how to load data with H2O.
 
@@ -302,7 +297,7 @@ response. The following example models delayed flights based on the departure's 
 
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_examplerun.R}
-
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_examplerun.py}
 \noindent
@@ -313,22 +308,20 @@ specified, so by default, the model evaluates the entire training set.  To use n
 \subsection{Extracting and Handling the Results}
 
 Now, extract the parameters of the model, examine the scoring process, and make predictions on the new data.
-\newpage
+
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_extractmodelparams.R}
-
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_extractmodelparams.py}
 
 \noindent
 The first command ({\texttt{air.model}}) returns the trained model's training and validation errors.
-\\
 After generating a satisfactory model, use the \texttt{h2o.predict()} command to compute and store predictions on the
 new data, which can then be used for further tasks in the interactive modeling process.
 
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_predict.R}
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_predict.py}
 
@@ -350,7 +343,7 @@ the absolute and relative predictive strength of each feature in the prediction 
 \end{itemize}
 
 To view a visualization of the variable importances using the web interface, click the \textsc{Model} menu, then select \textsc{List All Models}. Click the \textsc{Inspect} button next to the model, then select \textsc{output - Variable Importances}. 
-\newpage
+
 \subsection{Supported Output}
 The following algorithm outputs are supported:
 \begin{itemize}
@@ -382,7 +375,6 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 
 To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure
 certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
-\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
 
@@ -410,7 +402,7 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{training\_frame}}: An \texttt{H2OFrame} object containing the variables in the model. 
 \item {\texttt{validation\_frame}}: An \texttt{H2OFrame} object containing the validation dataset used to construct confusion matrix. If  blank, the training data is used by default.
 \item {\texttt{nfolds}}: Number of folds for cross-validation. 
-\item {\texttt{ignore\_const\_cols}}: A boolean indicating if constant columns should be ignored.  Default is True.
+\item {\texttt{ignore\_const\_cols}}: A boolean indicating if constant columns should be ignored.  The default is  {\texttt{TRUE}}.
 \item {\texttt{ntrees}}: A non-negative integer that defines the number of trees. The default is 50.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
@@ -418,20 +410,20 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024.
 \item {\texttt{seed}}: Seed containing random numbers that affects sampling.
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
-\item {\texttt{distribution}}: Enter {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}} to select the distribution function. The default is {\texttt{AUTO}}.
-\item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  Default is false.
-\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item {\texttt{distribution}}: Enter {\texttt{AUTO, bernoulli, multinomial, \\ gaussian, poisson, gamma}} or {\texttt{tweedie}} to select the distribution function. The default is {\texttt{AUTO}}.
+\item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
+\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
 \item \texttt{fold\_column}:  Column with cross-validation fold index assignment per observation. 
 \item \texttt{offset\_column}: Specify the offset column. {\textbf{Note}}: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 \item \texttt{weights\_column}: Specify the weights column. {\textbf{Note}}: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item {\texttt{balance\_classes}}: Balance training data class counts via over or undersampling for imbalanced data. The default is {\texttt{FALSE}}.
-\item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number of classes) for confusion matrices to print in the H2O logs.  Default it 20.
-\item {\texttt{max\_hit\_ratio\_k}}: (for multi-class only) Maximum number (top K) of predictions to use for hit ratio computation.  Use 0 to disable.  Default is 10.
-\item {\texttt{r2\_stopping}}: Stop making trees when the $R^2$ metric equals or exceeds this value.  Default is 0.999999.
-\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  Default is False.
-\item {\texttt{tweedie\_power}}: A numeric specifying the power for the tweedie function when \texttt{distribution = "tweedie"}.  Default is 1.5.
+\item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number of classes) for confusion matrices to print in the H2O logs.  The default is 20.
+\item {\texttt{max\_hit\_ratio\_k}}: (for multi-class only) Maximum number (top K) of predictions to use for hit ratio computation.  To disable, enter  {\texttt{0}}. The default is 10.
+\item {\texttt{r2\_stopping}}: Stop making trees when the $R^2$ metric equals or exceeds this value.  The default is 0.999999.
+\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.
+\item {\texttt{tweedie\_power}}: A numeric specifying the power for the Tweedie function when \texttt{distribution = "tweedie"}.  The default is 1.5.
 \item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
-\item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   Default is False.
+\item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   The default is {\texttt{FALSE}}.
 \item {\texttt{class\_sampling\_factors}}: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires \texttt{balance\_classes}.
 \item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5.
 \item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
@@ -470,5 +462,29 @@ Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. {\textbf{``Additive Logi
 \\
 Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. {\textbf{``The Elements of Statistical Learning``}}\\
   \url{http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf}. Vol.1. N.p., page 339: Springer New York, 2001.
+
+\newpage
+
+\section{Authors}
+
+\textbf{Cliff Click}
+
+Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff wrote his first compiler when he was 15 (Pascal to TRS Z-80!), although Cliff’s most famous compiler is the HotSpot Server Compiler (the Sea of Nodes IR). Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
+
+\textbf{Jessica Lanford}
+
+Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+
+\textbf{Michal Malohlava}
+
+Michal is a geek, developer, Java, Linux, programming languages enthusiast developing software for over 10 years. He obtained PhD from the Charles University in Prague in 2012 and post-doc at Purdue University. During his studies he was interested in construction of not only distributed but also embedded and real-time component-based systems using model-driven methods and domain-specific languages. He participated in design and development of various systems including SOFA and Fractal component systems or jPapabench control system.
+
+\textbf{Viraj Parmar}
+
+Viraj is currently an undergraduate at Princeton studying applied mathematics. Prior to joining H2O as a data and math hacker intern, Viraj worked in a research group at the MIT Center for Technology and Design. His interests are in software engineering and large-scale machine learning. 
+
+\textbf{Hank Roark}
+
+Hank is a Data Scientist and Hacker at H2O. Hank comes to H2O with a background turning data into products and system solutions and loves helping others find value in their data. He has a deep background in the the application domains of telematics, remote sensing, logistics, manufacturing, agriculture, and the Internet of Things. Hank has an SM from MIT in Engineering and Management and BS Physics from Georgia Tech.
 
 \end{document}
