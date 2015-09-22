@@ -1761,11 +1761,27 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
   m
 })
 
+#' Plot an H2O Model
+#'
+#' Plots training set (and validation set if available) scoring history for an H2O Model
+#'
+#' This method dispatches on the type of H2O model to select the correct
+#' scoring history.  The \code{timestep} and \code{metric} arguments are restricted to what is 
+#' available in the scoring history for a particular type of model.
+#'
+#' @param object A fitted \linkS4class{H2OModel} object for which the scoring history plot is desired.
+#' @param timestep A unit of measurement for the x-axis.
+#' @param metric A unit of measurement for the y-axis.
+#' @param ... additional arguments to pass on.
+#' @return Returns a scoring history plot.
+#' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
+#'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
+#'          generation in h2o.
 #' @export
-plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
-  df <- as.data.frame(x@model$scoring_history)
+plot.H2OModel <- function(object, timestep = "AUTO", metric = "AUTO", ...) {
+  df <- as.data.frame(object@model$scoring_history)
   # Separate functionality for GLM since output is different from other algos
-  if (x@algorithm == "glm") {
+  if (object@algorithm == "glm") {
     # H2OBinomialModel and H2ORegressionModel have the same output
     # Also GLM has only one timestep option, which is `iteration`
     timestep <- "iteration"
@@ -1775,20 +1791,20 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       stop("for GLM, metric must be one of: log_likelihood, objective")
     }
     graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
-  } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
-    if (is(x, "H2OBinomialModel")) {
+  } else if (object@algorithm %in% c("deeplearning", "drf", "gbm")) {
+    if (is(object, "H2OBinomialModel")) {
       if (metric == "AUTO") {
         metric <- "logloss"
       } else if (!(metric %in% c("r2","logloss","AUC","classification_error","MSE"))) {
         stop("metric for H2OBinomialModel must be one of: AUTO, r2, logloss, AUC, classification_error, MSE")
       } 
-    } else if (is(x, "H2OMultinomialModel")) {
+    } else if (is(object, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
       } else if (!(metric %in% c("r2","logloss","classification_error","MSE"))) {
         stop("metric for H2OMultinomialModel must be one of: AUTO, r2, logloss, classification_error, MSE")
       } 
-    } else if (is(x, "H2ORegressionModel")) {
+    } else if (is(object, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "MSE"
       } else if (!(metric %in% c("MSE","deviance"))) {
@@ -1798,13 +1814,13 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
     }
     # Set timestep
-    if (x@algorithm %in% c("gbm", "drf")) {
+    if (object@algorithm %in% c("gbm", "drf")) {
       if (timestep == "AUTO") {
         timestep <- "number_of_trees"
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
         stop("timestep for gbm or drf must be one of: duration, number_of_trees")
       } 
-    } else if (x@algorithm == "deeplearning") {
+    } else if (object@algorithm == "deeplearning") {
       # Delete first row of DL scoring history since it contains NAs & NaNs
       if (df$samples[1] == 0) {
         df <- df[-1,]
@@ -1820,9 +1836,10 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     training_metric <- sprintf("training_%s", metric)
     validation_metric <- sprintf("validation_%s", metric)
     if (timestep == "duration") {
-      tt <- trimws(df[2, c("duration")])
+      trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+      tt <- trim(df[2, c("duration")])  #base::trimws not implemented for earlier versions of R, so we make our own trim function
       dur_colname <- sprintf("duration_%s", strsplit(tt, " ")[[1]][2]) #parse units of measurement
-      df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trimws(v), " ")[[1]][1]))
+      df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trim(v), " ")[[1]][1]))
       timestep <- dur_colname
     }
     if (validation_metric %in% names(df)) {  #Training and Validation scoring history
@@ -1839,7 +1856,6 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       
     }
   }
-  return(df)
 }
 
 #' @export

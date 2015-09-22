@@ -1,14 +1,31 @@
 package hex.tree;
 
-import hex.*;
-import water.*;
-import water.exceptions.H2OIllegalArgumentException;
-import water.util.*;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import hex.Distribution;
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
+import hex.ModelMetricsMultinomial;
+import hex.ModelMetricsRegression;
+import hex.ScoreKeeper;
+import hex.VarImp;
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.JCodeSB;
+import water.util.ArrayUtils;
+import water.util.JCodeGen;
+import water.util.PojoUtils;
+import water.util.RandomUtils;
+import water.util.SB;
+import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
@@ -198,14 +215,14 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
   }
   protected boolean binomialOpt() { return true; }
-  @Override protected SB toJavaInit(SB sb, SB fileContext) {
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContext) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
     return sb;
   }
-  @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
+  @Override protected void toJavaPredictBody(SBPrintStream body, SB classCtx, SB file, boolean verboseCode) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();
     body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
@@ -226,18 +243,22 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       // Generate the pre-tree classes afterwards
       for( int c=0; c<nclass; c++ ) {
         if( !binomialOpt() || !(c==1 && nclass==2) ) { // Binomial optimization
-          toJavaTreeName(file.ip("class "),mname,t,c).p(" {").nl().ii(1);
+          String javaClassName = toJavaTreeName(new SB(), mname, t, c).toString();
           CompressedTree ct = _output.ctree(t,c);
-          new TreeJCodeGen(this,ct, file).generate();
-          file.di(1).ip("}").nl(); // close the class
+          new TreeJCodeGen(this, ct, file, javaClassName, verboseCode).generate();
         }
       }
     }
-    toJavaUnifyPreds(body,file);
+    toJavaUnifyPreds(body, file);
   }
-  abstract protected void toJavaUnifyPreds( SB body, SB file );
-  protected SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
-  protected SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
+  abstract protected void toJavaUnifyPreds( SBPrintStream body, SB file );
+
+  protected <T extends JCodeSB> T toJavaTreeName(final T sb, String mname, int t, int c ) {
+    return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
+  }
+  protected <T extends JCodeSB> T toJavaForestName(final T sb, String mname, int t ) {
+    return (T) sb.p(mname).p("_Forest_").p(t);
+  }
 
   @Override
   public List<Key> getPublishedKeys() {

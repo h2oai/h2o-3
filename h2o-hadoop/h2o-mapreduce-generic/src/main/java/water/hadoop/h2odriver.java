@@ -548,23 +548,87 @@ public class h2odriver extends Configured implements Tool {
   /**
    * Read a file into a string.
    * @param fileName File to read.
-   * @return String contents of file.
+   * @return Byte contents of file.
    */
-  static private String readFile(String fileName) throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(fileName));
+  static private byte[] readBinaryFile(String fileName) throws IOException {
+    ByteArrayOutputStream ous = null;
+    InputStream ios = null;
     try {
-      StringBuilder sb = new StringBuilder();
-      String line = br.readLine();
-
-      while (line != null) {
-        sb.append(line);
-        sb.append("\n");
-        line = br.readLine();
+      byte[] buffer = new byte[4096];
+      ous = new ByteArrayOutputStream();
+      ios = new FileInputStream(new File(fileName));
+      int read;
+      while ((read = ios.read(buffer)) != -1) {
+        ous.write(buffer, 0, read);
       }
-      return sb.toString();
-    } finally {
-      br.close();
     }
+    finally {
+      try {
+        if (ous != null)
+          ous.close();
+      }
+      catch (IOException ignore) {}
+
+      try {
+        if (ios != null)
+          ios.close();
+      }
+      catch (IOException ignore) {}
+    }
+    return ous.toByteArray();
+  }
+
+  static public void writeBinaryFile(String fileName, byte[] byteArr) throws IOException {
+    FileOutputStream out = new FileOutputStream(fileName);
+    for (byte b : byteArr) {
+      out.write(b);
+    }
+    out.close();
+  }
+
+  /**
+   * Array of bytes to brute-force convert into a hexadecimal string.
+   * The length of the returned string is byteArr.length * 2.
+   *
+   * @param byteArr byte array to convert
+   * @return hexadecimal string
+   */
+  static private String convertByteArrToString(byte[] byteArr) {
+    StringBuilder sb = new StringBuilder();
+    for (byte b : byteArr) {
+      int i = b;
+      i = i & 0xff;
+      sb.append(String.format("%02x", i));
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Hexadecimal string to brute-force convert into an array of bytes.
+   * The length of the string must be even.
+   * The length of the string is 2x the length of the byte array.
+   *
+   * @param s Hexadecimal string
+   * @return byte array
+   */
+  static public byte[] convertStringToByteArr(String s) {
+    if ((s.length() % 2) != 0) {
+      throw new RuntimeException("String length must be even (was " + s.length() + ")");
+    }
+
+    ArrayList<Byte> byteArrayList = new ArrayList<Byte>();
+    for (int i = 0; i < s.length(); i = i + 2) {
+      String s2 = s.substring(i, i + 2);
+      Integer i2 = Integer.parseInt(s2, 16);
+      Byte b2 = (byte)(i2 & 0xff);
+      byteArrayList.add(b2);
+    }
+
+    byte[] byteArr = new byte[byteArrayList.size()];
+    for (int i = 0; i < byteArr.length; i++) {
+      byteArr[i] = byteArrayList.get(i);
+    }
+    return byteArr;
   }
 
   /**
@@ -968,7 +1032,8 @@ public class h2odriver extends Configured implements Tool {
   private void addMapperConf(Configuration conf, String name, String value, String payloadFileName) {
     String payload = "";
     try {
-      payload = readFile(payloadFileName);
+      byte[] byteArr = readBinaryFile(payloadFileName);
+      payload = convertByteArrToString(byteArr);
     }
     catch (Exception e) {
       StringBuilder sb = new StringBuilder();
@@ -1295,12 +1360,28 @@ public class h2odriver extends Configured implements Tool {
     return rv;
   }
 
+  private static void quickTest() throws Exception {
+    byte[] byteArr = readBinaryFile("/Users/tomk/h2o.jks");
+    String payload = convertByteArrToString(byteArr);
+    byte[] byteArr2 = convertStringToByteArr(payload);
+
+    assert (byteArr.length == byteArr2.length);
+    for (int i = 0; i < byteArr.length; i++) {
+      assert byteArr[i] == byteArr2[i];
+    }
+
+    writeBinaryFile("/Users/tomk/test.jks", byteArr2);
+    System.exit(0);
+  }
+
   /**
    * Main entry point
    * @param args Full program args, including those that go to ToolRunner.
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
+    // quickTest();
+
     int exitCode = ToolRunner.run(new h2odriver(), args);
     maybePrintYarnLogsMessage();
     System.exit(exitCode);

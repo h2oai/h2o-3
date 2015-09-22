@@ -1,23 +1,52 @@
 package hex.deeplearning;
 
-import hex.*;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import hex.AUC2;
+import hex.DataInfo;
+import hex.Distribution;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
+import hex.ModelMetricsAutoEncoder;
+import hex.ModelMetricsBinomial;
+import hex.ModelMetricsMultinomial;
+import hex.ModelMetricsRegression;
+import hex.ModelMetricsSupervised;
+import hex.ScoreKeeper;
+import hex.VarImp;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import water.*;
+import water.AutoBuffer;
+import water.DKV;
+import water.H2O;
+import water.H2ONode;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.MRTask;
+import water.Scope;
+import water.Value;
 import water.api.ModelSchema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import water.util.ArrayUtils;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.PrettyPrint;
+import water.util.SB;
+import water.util.SBPrintStream;
+import water.util.Timer;
+import water.util.TwoDimTable;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
@@ -1016,7 +1045,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     return sb.toString();
   }
 
-  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContextSB) {
     sb = super.toJavaInit(sb, fileContextSB);
     String mname = JCodeGen.toJavaId(_key.toString());
 
@@ -1118,7 +1147,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   @Override protected boolean toJavaCheckTooBig() { return (model_info.size() > 1e6); }
 
-  private SB pureMatVec(final SB bodySb) {
+  private SBPrintStream pureMatVec(final SBPrintStream bodySb) {
     bodySb.i(1).p("int cols = ACTIVATION[i-1].length;").nl();
     bodySb.i(1).p("int rows = ACTIVATION[i].length;").nl();
     bodySb.i(1).p("int extra=cols-cols%8;").nl();
@@ -1151,7 +1180,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     return bodySb;
   }
 
-  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
+  @Override protected void toJavaPredictBody(final SBPrintStream bodySb, final SB classCtxSb, final SB fileCtxSb, boolean verboseCode) {
     SB model = new SB();
     final DeepLearningParameters p = model_info.get_params();
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
