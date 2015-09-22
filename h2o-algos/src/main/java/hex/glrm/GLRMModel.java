@@ -49,14 +49,21 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
     // L1 -> Laplace distribution ~ exp(-|a-u|)
     public enum Loss {
-      Quadratic(true), L1(true), Huber(true), Poisson(true), Hinge(true), Logistic(true), Periodic(true),  // One-dimensional loss (numeric)
+      Quadratic(true), L1(true), Huber(true), Poisson(true), Periodic(true),  // One-dimensional loss (numeric)
+      Logistic(true, true), Hinge(true, true),  // Boolean loss (categorical)
       Categorical(false), Ordinal(false);    // Multi-dimensional loss (categorical)
 
       private boolean forNumeric;
-      Loss(boolean forNumeric) { this.forNumeric = forNumeric; }
+      private boolean forBinary;
+      Loss(boolean forNumeric) { this(forNumeric, false); }
+      Loss(boolean forNumeric, boolean forBinary) {
+        this.forNumeric = forNumeric;
+        this.forBinary = forBinary;
+      }
 
       public boolean isForNumeric() { return forNumeric; }
       public boolean isForCategorical() { return !forNumeric; }
+      public boolean isForBinary() { return forBinary; }
     }
 
     // Non-negative matrix factorization (NNMF): r_x = r_y = NonNegative
@@ -115,9 +122,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
           return Math.exp(u) + (a == 0 ? 0 : -a*u + a*Math.log(a) - a);   // Since \lim_{a->0} a*log(a) = 0
         case Hinge:
-          return Math.max(1-a*u,0);
+          // return Math.max(1-a*u,0);
+          return Math.max(1 - (a == 0 ? -u : u), 0);   // Booleans are coded {0,1} instead of {-1,1}
         case Logistic:
-          return Math.log(1 + Math.exp(-a * u));
+          // return Math.log(1 + Math.exp(-a * u));
+          return Math.log(1 + Math.exp(a == 0 ? u : -u));    // Booleans are coded {0,1} instead of {-1,1}
         case Periodic:
           return 1-Math.cos((a-u)*(2*Math.PI)/_period);
         default:
@@ -142,9 +151,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
           return Math.exp(u)-a;
         case Hinge:
-          return a*u <= 1 ? -a : 0;
+          // return a*u <= 1 ? -a : 0;
+          return a == 0 ? (-u <= 1 ? 1 : 0) : (u <= 1 ? -1 : 0);  // Booleans are coded as {0,1} instead of {-1,1}
         case Logistic:
-          return -a/(1+Math.exp(a*u));
+          // return -a/(1+Math.exp(a*u));
+          return a == 0 ? 1/(1+Math.exp(-u)) : -1/(1+Math.exp(u));    // Booleans are coded as {0,1} instead of {-1,1}
         case Periodic:
           return ((2*Math.PI)/_period) * Math.sin((a-u) * (2*Math.PI)/_period);
         default:
@@ -382,10 +393,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Poisson:
           return Math.exp(u)-1;
         case Hinge:
-          return 1/u;
         case Logistic:
-          if (u == 0) return 0;   // Any finite real number is minimizer if u = 0
-          return (u > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);   // TODO: Should be u > 0 ? vec.max() : vec.min()
+          return u > 0 ? 1 : 0;   // Booleans are coded as {0,1} instead of {-1,1}
         default:
           throw new RuntimeException("Unknown loss function " + loss);
       }

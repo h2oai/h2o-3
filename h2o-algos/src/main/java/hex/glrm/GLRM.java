@@ -170,9 +170,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (null != _parms._loss_by_col) {
       if (_parms._loss_by_col.length > _train.numCols())
         error("_loss_by_col", "Number of loss functions specified must be <= " + _train.numCols());
-      else if (null == _parms._loss_by_col_idx && _parms._loss_by_col.length == _train.numCols())
+      else if (null == _parms._loss_by_col_idx && _parms._loss_by_col.length == _train.numCols()) {
+        for(int i = 0; i < _parms._loss_by_col.length; i++) {
+          // Check that specified column loss is in allowable set for column type
+          if (_train.vec(i).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
+            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + i);
+          else if (_train.vec(i).isEnum() && !_parms._loss_by_col[i].isForCategorical())
+            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + i);
+          else if (!_train.vec(i).isBinary() && _parms._loss_by_col[i].isForBinary())
+            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to non-binary column " + i);
+        }
         _lossFunc = _parms._loss_by_col;
-      else if (null != _parms._loss_by_col_idx && _parms._loss_by_col.length == _parms._loss_by_col_idx.length) {
+      } else if (null != _parms._loss_by_col_idx && _parms._loss_by_col.length == _parms._loss_by_col_idx.length) {
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for(int i = 0; i < _lossFunc.length; i++)
@@ -187,6 +196,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + cidx);
           else if (_train.vec(cidx).isEnum() && !_parms._loss_by_col[i].isForCategorical())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + cidx);
+          else if (!_train.vec(cidx).isBinary() && _parms._loss_by_col[i].isForBinary())
+            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to non-binary column " + cidx);
           else
             _lossFunc[_parms._loss_by_col_idx[i]] = _parms._loss_by_col[i];
         }
