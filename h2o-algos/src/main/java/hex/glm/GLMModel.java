@@ -481,7 +481,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return _dinfo._predictor_transform == TransformType.STANDARDIZE;
     }
 
-    public double[][] get_global_beta_multinomial(){return _global_beta_multinomial;}
+
 
     public String[] coefficientNames() {
       return _coefficient_names;
@@ -548,6 +548,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       getBeta(_best_lambda_idx,res);
       return res;
     }
+
+    public double[][] getNormBetaMultinomial() {
+      double [][] res = new double[nclasses()][];
+      Submodel sm = _submodels[_best_lambda_idx];
+      for(int i = 0; i < res.length; ++i)
+        if(sm.idxs == null) res[i] = sm.betaMultinomial[i].clone();
+        else throw H2O.unimpl();
+      return res;
+    }
+
+    public double[][] get_global_beta_multinomial(){return _global_beta_multinomial;}
+
     public void getBeta(int l, double [] beta) {
       assert beta.length == _dinfo.fullN()+1;
       int k = 0;
