@@ -1821,6 +1821,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal + ", beta = " + Arrays.toString(glmt._beta_multinomial[_c])); // todo: get gradient here?
           if(_parms._family == Family.multinomial) {
+            System.out.println("beta_multinomial[" + _c + "] = " + Arrays.toString(_taskInfo._beta_multinomial[_c]));
             double [] direction = ArrayUtils.subtract(glmt._beta_multinomial[_c], _taskInfo._beta_multinomial[_c]);
             new GLMTask.GLMLineSerachMultinomialTask(new MultinomialLineSearchIteration(getCompleter(), glmt._likelihood), _activeData, GLM.this.jobKey(), _c, _taskInfo._beta_multinomial, direction, 1,NUM_LINE_SEARCH_STEPS,LINE_SEARCH_STEP).asyncExec(_activeData._adaptedFrame);
           }else
@@ -1957,21 +1958,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       @Override
       public void callback(GLMLineSerachMultinomialTask lst) {
-        assert lst._betaMultinomial != _taskInfo._beta_multinomial;
+
         assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
         assert (Double.isNaN(_expectedLikelihood) || Double.isInfinite(_expectedLikelihood)) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
         double t = lst._initialStep;
-        double [] oldbeta = lst._betaMultinomial[lst._c];
+        double [][] betaM = lst._betaMultinomial.clone();
         for (int i = 0; i < lst._likelihoods.length && t >= MINLINE_SEARCH_STEP; ++i, t *= lst._stepDec) {
-          double[] beta = ArrayUtils.wadd(_taskInfo._beta_multinomial[lst._c].clone(), lst._direction, t);
-          lst._betaMultinomial[lst._c] = beta;
-          double newObj = objVal(lst._likelihoods[i], lst._betaMultinomial, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
+          betaM[_c] = ArrayUtils.wadd(_taskInfo._beta_multinomial[lst._c].clone(), lst._direction, t);
+          double newObj = objVal(lst._likelihoods[i], betaM, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
           if (_taskInfo._objVal > newObj) {
             assert t < 1;
             LogInfo("line search: found admissible step = " + t + ",  objval = " + newObj);
-            System.arraycopy(beta, 0, _taskInfo._beta_multinomial[lst._c],0,beta.length);
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, _taskInfo._beta_multinomial,beta,_c, _taskInfo._ymu, _rowFilter, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, _taskInfo._beta_multinomial,betaM[_c],_c, _taskInfo._ymu, _rowFilter, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
             return;
           }
         }
