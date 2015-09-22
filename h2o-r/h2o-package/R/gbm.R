@@ -28,7 +28,7 @@
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
-#'        than 1.0)
+#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling when balance_classes=T)
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.

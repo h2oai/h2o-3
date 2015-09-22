@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
-def download_pojo():
+def test_as_data():
   hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
   print hdf.head()
 
@@ -69,4 +69,4 @@ def download_pojo():
   hdf10 = hdf10.as_date("%Y_%m_%d")
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, download_pojo)
+  tests.run_test(sys.argv, test_as_data)

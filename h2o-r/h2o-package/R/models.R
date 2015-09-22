@@ -1825,13 +1825,21 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trimws(v), " ")[[1]][1]))
       timestep <- dur_colname
     }
-    ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
-    graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
-         main = "Scoring History", col = "blue", ylim = ylim)
-    graphics::par(new = TRUE)
-    graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
-    graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+    if (validation_metric %in% names(df)) {  #Training and Validation scoring history
+      ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+      graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
+                     main = "Scoring History", col = "blue", ylim = ylim)
+      graphics::par(new = TRUE)
+      graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
+      graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+    } else {  #Training scoring history only
+      ylim <- range(c(df[,c(training_metric)]))
+      graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
+                     main = "Training Scoring History", col = "blue", ylim = ylim)
+      
+    }
   }
+  return(df)
 }
 
 #' @export
