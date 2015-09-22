@@ -50,7 +50,6 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
    */
   public void chunkDone(){}
 
-  public double sparseOffset(){return 0;}
 
   public boolean handlesSparseData(){return false;}
   abstract protected void processRow(Row r);
@@ -63,7 +62,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
     chunkInit();
     // compute
     if(_sparse) {
-      for(Row r:_dinfo.extractSparseRows(chks, sparseOffset()))
+      for(Row r:_dinfo.extractSparseRows(chks, 0))
         if(rowFilter == null || rowFilter.at8((int)(r.rid - chks[0].start())) == 0)
           processRow(r);
     } else {

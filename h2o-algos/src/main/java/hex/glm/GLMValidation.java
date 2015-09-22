@@ -6,9 +6,11 @@ import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
 import hex.ModelMetricsMultinomial.MetricBuilderMultinomial;
 import hex.ModelMetricsRegression.MetricBuilderRegression;
+import hex.ModelMetricsSupervised.MetricBuilderSupervised;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.DKV;
+import water.H2O;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
@@ -19,11 +21,13 @@ import water.util.MathUtils;
  * @author tomasnykodym
  *
  */
-public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
+public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
   double residual_deviance;
   double null_deviance;
   final double _ymu;
   final double _ymuLink;
+  final double [] _ymus;
+
   long _nobs;
   double _aic;// internal AIC used only for poisson family!
   private double _aic2;// internal AIC used only for poisson family!
@@ -34,14 +38,22 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   boolean _intercept = true;
 
   final boolean _computeMetrics;
-  public GLMValidation(String[] domain, double ymu, GLMParameters parms, int rank, double threshold, boolean computeMetrics){
-    super(domain);
+  public GLMValidation(String[] domain, double [] ymu, GLMParameters parms, int rank, double threshold, boolean computeMetrics){
+    super(domain == null?1:domain.length, domain);
     _rank = rank;
     _parms = parms;
     _threshold = threshold;
     _computeMetrics = computeMetrics;
-    _ymu = parms._intercept?ymu:parms._family == Family.binomial?.5:0;
-    _ymuLink = _parms.link(ymu);
+    if(parms._family == Family.multinomial) {
+      _ymus = ymu;
+      assert _ymus.length == domain.length;
+      _ymu = Double.NaN;
+      _ymuLink = Double.NaN;
+    } else {
+      _ymu = parms._intercept ? ymu[0] : parms._family == Family.binomial ? .5 : 0;
+      _ymuLink = _parms.link(_ymu);
+      _ymus = null;
+    }
     if(_computeMetrics) {
       switch(_parms._family){
         case binomial:
@@ -49,14 +61,15 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
           break;
         case multinomial:
           _metricBuilder = new MetricBuilderMultinomial(domain.length,domain);
+          ((MetricBuilderMultinomial)_metricBuilder)._priorDistribution = _ymus;
           break;
         default:
           _metricBuilder = new MetricBuilderRegression();
           break;
       }
     }
-
   }
+
 
   public double explainedDev(){
     return 1.0 - residualDeviance()/nullDeviance();
@@ -70,7 +83,9 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if (_parms._family == Family.binomial)
+      if(_parms._family == Family.multinomial)
+        add2(yact[0], ds, weight, offset);
+      else if (_parms._family == Family.binomial)
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -94,6 +109,13 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   transient double [] _ds = new double[3];
   transient float [] _yact = new float[1];
 
+  public void add(double yreal, double [] ymodel, double weight, double offset) {
+    if(weight == 0)return;
+    _yact[0] = (float) yreal;
+    if(_computeMetrics)
+      _metricBuilder.perRow(ymodel, _yact, weight, offset, null);
+    add2(yreal, ymodel, weight, offset );
+  }
 
   public void add(double yreal, double ymodel, double weight, double offset) {
     if(weight == 0)return;
@@ -105,28 +127,35 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     } else {
       _ds[0] = ymodel;
     }
-    if(_computeMetrics)
+    if(_computeMetrics) {
+      assert !(_metricBuilder instanceof MetricBuilderMultinomial):"using incorrect add call fro multinomial";
       _metricBuilder.perRow(_ds, _yact, weight, offset, null);
-    add2(yreal, ymodel, weight, offset );
+    }
+    add2(yreal, _ds, weight, offset );
   }
 
+  private void add2(double yreal, double ymodel [] , double weight, double offset) {
+    _wcount += weight;
+    ++_nobs;
+    int c = (int)yreal;
+    residual_deviance -= weight * Math.log(ymodel[c+1]);
+    if(offset != 0)
+      null_deviance -= weight * Math.log(offset + (_intercept?Math.exp(_ymus[c]):0));
+    else
+      null_deviance -= weight * Math.log(_intercept?_ymus[c]:0);
+  }
   private void add2(double yreal, double ymodel, double weight, double offset) {
     _wcount += weight;
     ++_nobs;
-    if (_parms._family == Family.multinomial) { // multinomial is handled outside as special case, needed values hacked into parameters
-      residual_deviance += ymodel; // precomputed
-      null_deviance += yreal;
-    } else {
-      residual_deviance += weight * _parms.deviance(yreal, ymodel);
-      double ynull = offset == 0 ? _ymu : _parms.linkInv(offset + _ymuLink /* Note: _ymuLink in this case is expected to be link(c), where c is constant term of a model fitted with the given offset and no predictors */);
-      null_deviance += weight * _parms.deviance(yreal, ynull);
-      if (_parms._family == Family.poisson) { // AIC for poisson
-        long y = Math.round(yreal);
-        double logfactorial = 0;
-        for (long i = 2; i <= y; ++i)
-          logfactorial += Math.log(i);
-        _aic2 += weight * (yreal * Math.log(ymodel) - logfactorial - ymodel);
-      }
+    residual_deviance += weight * _parms.deviance(yreal, ymodel);
+    double ynull = offset == 0 ? _ymu : _parms.linkInv(offset + _ymuLink /* Note: _ymuLink in this case is expected to be link(c), where c is constant term of a model fitted with the given offset and no predictors */);
+    null_deviance += weight * _parms.deviance(yreal, ynull);
+    if (_parms._family == Family.poisson) { // AIC for poisson
+      long y = Math.round(yreal);
+      double logfactorial = 0;
+      for (long i = 2; i <= y; ++i)
+        logfactorial += Math.log(i);
+      _aic2 += weight * (yreal * Math.log(ymodel) - logfactorial - ymodel);
     }
   }
 

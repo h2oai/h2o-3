@@ -1458,7 +1458,7 @@ public class GLMTest  extends TestUtil {
 
       for(int i = 0; i < model2.beta().length-1; ++i)
         assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
-      assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu * (1-prior)/(prior * (1-model._ymu))),model2.beta()[model.beta().length-1],1e-10);
+      assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu[0] * (1-prior)/(prior * (1-model._ymu[0]))),model2.beta()[model.beta().length-1],1e-10);
 
       // run with lambda search, check the final submodel
       params._lambda_search = true;
@@ -1481,7 +1481,7 @@ public class GLMTest  extends TestUtil {
       fr.remove("ID").remove();
       DKV.put(fr._key,fr);
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
+      new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu[0],null,model3).doAll(dinfo._adaptedFrame);
       score = model3.score(fr);
       mm3 = ModelMetrics.getFromDKV(model3,fr);
 

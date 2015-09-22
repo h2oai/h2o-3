@@ -512,7 +512,7 @@ public class DataInfo extends Keyed {
       numVals[i] = val;
     }
 
-    public final double innerProduct(double [] vec) {
+    public final double innerProduct(double [] vec, double sparseOffset) {
       double res = 0;
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
@@ -521,7 +521,7 @@ public class DataInfo extends Keyed {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
-        res += etaOffset;
+        res += sparseOffset;
         for (int i = 0; i < nNums; ++i)
           res += numVals[i] * vec[numIds[i]];
       }
@@ -630,6 +630,32 @@ public class DataInfo extends Keyed {
         etaOffset -= coefficients[i+numStart()] * _normSub[i] * _normMul[i];
     return etaOffset;
   }
+
+  public final class Rows {
+    public final int _nrows;
+    private final Row _denseRow;
+    private final Row [] _sparseRows;
+    private final boolean _sparse;
+    private final Chunk [] _chks;
+
+    private Rows(Chunk [] chks, boolean sparse) {
+      _nrows = chks[0]._len;
+      _sparse = sparse;
+      if(sparse) {
+        _denseRow = null;
+        _chks = null;
+        _sparseRows = extractSparseRows(chks,0);
+      } else {
+        _denseRow = DataInfo.this.newDenseRow();
+        _chks = chks;
+        _sparseRows = null;
+      }
+    }
+    public Row row(int i) {return _sparse?_sparseRows[i]:extractDenseRow(_chks,i,_denseRow);}
+  }
+
+  public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
+
   /**
    * Extract (sparse) rows from given chunks.
    * Essentially turns the dataset 90 degrees.
