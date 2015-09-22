@@ -1786,16 +1786,8 @@ as.factor <- function(x) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
 as.character.Frame <- function(x, ...) {
-  data <- .fetch.data(x,10L)
-  if( !is.data.frame(data) ) return(as.character(data))
-  nr <- nrow(x)
-  nc <- ncol(x)
-  if( nr==1L && nc==1L ) return(as.character(data[1,1]))
-  res <- paste0("Frame with ",
-      nr, ifelse(nr == 1L, " row and ", " rows and "),
-      nc, ifelse(nc == 1L, " column\n", " columns\n"), collapse="")
-  if( nr > 10L ) res <- paste0(res,"\nFirst 10 rows:\n")
-  paste0(res,paste0(head(data, 10L),collapse="\n"),"\n")
+  if( is.Frame(x) ) .newExpr("as.character",x)
+  else base::as.character(x)
 }
 
 #' Convert H2O Data to Numeric
