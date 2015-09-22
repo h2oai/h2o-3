@@ -1155,7 +1155,7 @@ is.numeric <- function(x) {
 #' @param x An H2O Frame object
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
-print.Frame <- function(x, ...) { cat(as.character(x)); invisible(x) }
+print.Frame <- function(x, ...) { print(head(x)) }
 
 #' Display the structure of an H2O Frame object
 #'
@@ -1480,8 +1480,8 @@ h2o.summary <- function(object, factors=6L, ...) {
       result <- as.table(as.matrix(cols))
     }
   }
+  if( is.null(result) || dim(result) == 0 ) return(NULL)
   colnames(result) <- cnames
-  if( is.null(result) ) return(NULL)
   rownames(result) <- rep("", nrow(result))
   result
 }
