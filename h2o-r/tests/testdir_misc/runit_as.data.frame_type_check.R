@@ -16,8 +16,8 @@ source('../h2o-runit.R')
 
 # setupRandomSeed(1994831827)
 
-data.frame.type.test <- function(conn) {
-   iris.FV <- as.h2o(conn, iris)
+data.frame.type.test <- function() {
+   iris.FV <- as.h2o(iris)
    df.iris.FV <- iris
 
    #Check each column:
@@ -32,7 +32,7 @@ data.frame.type.test <- function(conn) {
    expect_that(levels(df.iris.FV[,5]), equals(levels(iris[,5])))
 
    #Check on prostate data now...
-   prostate.FV <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"))
+   prostate.FV <- h2o.importFile(locate("smalldata/logreg/prostate.csv"))
    df.prostate.FV <- as.data.frame(prostate.FV)
 
    #Check each column:

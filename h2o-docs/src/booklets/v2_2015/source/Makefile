@@ -8,8 +8,10 @@
 #
 
 build:
-	pdflatex GLM_Vignette.tex
-	pdflatex GLM_Vignette.tex
+	#pdflatex GLM_Vignette
+	#bibtex GLM_Vignette
+	pdflatex GLM_Vignette
+	pdflatex GLM_Vignette
 
 clean:
 	rm -f *.bbl *.blg *.log *.aux *.toc *.synctex *.out *.pdf

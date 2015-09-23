@@ -8,127 +8,69 @@
 #
 #---------------------------------------------------------------------
 
-setwd("/Users/me/h2oai/documentation/h2o-3/h2o-docs/src/booklets/v2_2015/source")
-
-library(h2o)
-h2o.init()
+#setwd("/Users/me/h2oai/documentation/h2o-3/h2o-docs/src/booklets/v2_2015/source")
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
 rm(list=ls())
 
-source("deeplearning/deeplearning_gaussian_example.R", echo = T)
+source("deeplearning/deeplearning_importfile_example.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_binomial_example.R", echo = T)
+source("deeplearning/deeplearning_examplerun.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_poisson_example.R", echo = T)
+source("deeplearning/deeplearning_crossval.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_gamma_example.R", echo = T)
+source("deeplearning/deeplearning_inspect_model.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_tweedie_example.R", echo = T)
+source("deeplearning/deeplearning_predict.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("glm/coerce_column_to_factor.R", echo = T)
+source("deeplearning/deeplearning_varimp.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_stopping_criteria.R", echo = T)
+source("deeplearning/deeplearning_gridsearch.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_cross_validation.R", echo = T)
+source("deeplearning/deeplearning_gridsearch_result.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_grid_search_over_alpha.R", echo = T)
+source("deeplearning/deeplearning_checkpoint.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_grid_search_over_lambda.R", echo = T)
+source("deeplearning/deeplearning_savemodel.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_model_output_10.R", echo = T)
-source("deeplearning/deeplearning_model_output_20.R", echo = T)
-source("deeplearning/deeplearning_model_output_30.R", echo = T)
-source("deeplearning/deeplearning_model_output_40.R", echo = T)
-source("deeplearning/deeplearning_accessors.R", echo = T)
-source("deeplearning/deeplearning_confusion_matrix.R", echo = T)
-source("deeplearning/deeplearning_scoring_history.R", echo = T)
+source("deeplearning/deeplearning_loadmodel_checkpoint.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_binomial_predictions_with_response.R", echo = T)
-source("deeplearning/deeplearning_binomial_predictions_without_response.R", echo = T)
-source("deeplearning/deeplearning_recalculate_predict.R", echo = T)
+source("deeplearning/deeplearning_anomaly.R", echo = T)
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
-
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_download_pojo.R", echo = T)
-
-#---------------------------------------------------------------------
-#---------------------------------------------------------------------
-
-h2o.removeAll()
-rm(list=ls())
-
-source("deeplearning/deeplearning_compare_cross_validation_folds.R", echo = T)

@@ -16,7 +16,7 @@ library(RCurl)
 library(h2o)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 hdfs_airlines_file = "/datasets/airlinesbillion.csv"
@@ -37,26 +37,26 @@ library(R.utils)
 myFile <- paste(getwd(), "delete_this_file.csv", sep = .Platform$file.sep)
 h2o.downloadCSV(predictions1, myFile)
 
-predictions2 <- h2o.uploadFile(myFile)
-file.remove(myFile)
-
-r1 <- nrow(predictions1)
-print("Number of rows of predictions frame 1:")
-print(r1)
-
-c1 <- ncol(predictions1)
-print("Number of cols of predictions frame 1:")
-print(c1)
-
-r2 <- nrow(predictions2)
-print("Number of rows of predictions frame 2:")
-print(r2)
-
-c2 <- ncol(predictions2)
-print("Number of cols of predictions frame 2:")
-print(c2)
-
-expect_equal(r1, r2, info="Expected the same number of rows")
-expect_equal(c1, c2, info="Expected the same number of cols")
+#predictions2 <- h2o.uploadFile(myFile)
+#file.remove(myFile)
+#
+#r1 <- nrow(predictions1)
+#print("Number of rows of predictions frame 1:")
+#print(r1)
+#
+#c1 <- ncol(predictions1)
+#print("Number of cols of predictions frame 1:")
+#print(c1)
+#
+#r2 <- nrow(predictions2)
+#print("Number of rows of predictions frame 2:")
+#print(r2)
+#
+#c2 <- ncol(predictions2)
+#print("Number of cols of predictions frame 2:")
+#print(c2)
+#
+#expect_equal(r1, r2, info="Expected the same number of rows")
+#expect_equal(c1, c2, info="Expected the same number of cols")
 
 PASS_BANNER()

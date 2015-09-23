@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.deeplearning.grid.cars.negative <- function(conn) {
+check.deeplearning.grid.cars.negative <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
   seed <- sample(1:1000000, 1)
   Log.info(paste0("runif seed: ",seed))
@@ -19,15 +19,15 @@ check.deeplearning.grid.cars.negative <- function(conn) {
 
   ## Invalid deeplearning parameters
   grid_space <- list()
-  grid_space$activation <- lapply(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 2), function (x) x)
+  grid_space$activation <- sapply(sample(c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 2), function (x) x)
   grid_space$activation[[3]] <- "Foo"
-  grid_space$epochs <- list(1, 2)
-  grid_space$distribution <- list(sample(c('bernoulli','multinomial','gaussian'), 1))
+  grid_space$epochs <- c(1, 2)
+  grid_space$distribution <- c(sample(c('bernoulli','multinomial','gaussian'), 1))
   Log.info(lapply(names(grid_space), function(n) paste0("The provided ",n," search space: ", grid_space[n])))
 
   expected_grid_space <- list()
   expected_grid_space$activation <- grid_space$activation[grid_space$activation != "Foo"]
-  expected_grid_space$epochs <- list(1, 2)
+  expected_grid_space$epochs <- c(1, 2)
   expected_grid_space$distribution <- grid_space$distribution
   Log.info(lapply(names(grid_space), function(n) paste0("The expected ",n," search space: ", expected_grid_space[n])))
 
@@ -47,15 +47,15 @@ check.deeplearning.grid.cars.negative <- function(conn) {
   if ( validation_scheme == 1 ) {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                               hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,hyper_params=grid_space))
+    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else if ( validation_scheme == 2 ) {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                               nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space))
+    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else {
     cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                               validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=FALSE)
-    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
+    expect_error(h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col, training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
   Log.info("Performing various checks of the constructed grid...")
   Log.info("Check cardinality of grid, that is, the correct number of models have been created...")
@@ -82,13 +82,13 @@ check.deeplearning.grid.cars.negative <- function(conn) {
                   " (1:balance_classes, 2:r2_stopping, 3:seed). Expecting failure..."))
   if ( validation_scheme == 1 ) {
     expect_error(cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col,
-                                           training_frame=train, hyper_params=grid_space))
+                                           training_frame=train, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else if ( validation_scheme == 2 ) {
     expect_error(cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col,
-                                           training_frame=train, nfolds=nfolds, hyper_params=grid_space))
+                                           training_frame=train, nfolds=nfolds, hyper_params=grid_space, do_hyper_params_check=TRUE))
   } else {
     expect_error(cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col,
-                                           training_frame=train, validation_frame=valid, hyper_params=grid_space)) }
+                                           training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
   testEnd()
 }

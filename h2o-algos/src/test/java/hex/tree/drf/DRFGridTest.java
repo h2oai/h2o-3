@@ -32,7 +32,7 @@ public class DRFGridTest extends TestUtil {
 
   @BeforeClass()
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(5);
   }
 
   @Test
@@ -189,12 +189,14 @@ public class DRFGridTest extends TestUtil {
       long seed = System.nanoTime();
       Random rng = new Random(seed);
 
-      Integer ntreesDim = rng.nextInt(4) + 1;
-      Integer maxDepthDim = rng.nextInt(4) + 1;
-      Integer mtriesDim = rng.nextInt(4) + 1;
-      Integer sampleRateDim = rng.nextInt(4) + 1;
+      // Limit to 1-3 randomly, 4 times.  Average total number of models is
+      // 2^4, or 16.  Max is 81 models.
+      Integer ntreesDim = rng.nextInt(3) + 1;
+      Integer maxDepthDim = rng.nextInt(3) + 1;
+      Integer mtriesDim = rng.nextInt(3) + 1;
+      Integer sampleRateDim = rng.nextInt(3) + 1;
 
-      Integer[] ntreesArr = interval(1, 25);
+      Integer[] ntreesArr = interval(1, 15);
       ArrayList<Integer> ntreesList = new ArrayList<>(Arrays.asList(ntreesArr));
       Collections.shuffle(ntreesList);
       Integer[] ntreesSpace = new Integer[ntreesDim];
@@ -202,7 +204,7 @@ public class DRFGridTest extends TestUtil {
         ntreesSpace[i] = ntreesList.get(i);
       }
 
-      Integer[] maxDepthArr = interval(1, 20);
+      Integer[] maxDepthArr = interval(1, 10);
       ArrayList<Integer> maxDepthList = new ArrayList<>(Arrays.asList(maxDepthArr));
       Collections.shuffle(maxDepthList);
       Integer[] maxDepthSpace = new Integer[maxDepthDim];
@@ -210,7 +212,7 @@ public class DRFGridTest extends TestUtil {
         maxDepthSpace[i] = maxDepthList.get(i);
       }
 
-      Integer[] mtriesArr = interval(1, 6);
+      Integer[] mtriesArr = interval(1, 5);
       ArrayList<Integer> mtriesList = new ArrayList<>(Arrays.asList(mtriesArr));
       Collections.shuffle(mtriesList);
       Integer[] mtriesSpace = new Integer[mtriesDim];

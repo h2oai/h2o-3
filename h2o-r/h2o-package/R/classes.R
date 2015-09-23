@@ -74,9 +74,6 @@ setClass("H2OConnection",
                    password = NA_character_,
                    mutable  = new("H2OConnectionMutableState")))
 
-
-
-
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
@@ -90,240 +87,14 @@ setMethod("show", "H2OConnection", function(object) {
 })
 
 #'
-#' The H2OObject class
-#'
-#' @slot conn An \code{H2OConnection} object specifying the connection to an H2O cloud.
-#' @slot id A \code{character} string specifying the key in the H2O cloud's key-value store.
-#' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove keys from the H2O key-value store.
-#' @aliases H2OObject
-#' @export
-setClass("H2OObject",
-         representation(conn="H2OConnectionOrNULL", id="character", finalizers="list"),
-         prototype(conn=NULL, id=NA_character_, finalizers=list()),
-         contains="VIRTUAL")
-
-#' @rdname H2OObject-class
-#' @param .Object an \code{H2OObject}
-#' @param \dots additional parameters to pass on to functions
-#' @export
-setMethod("initialize", "H2OObject", function(.Object, ...) {
-  .Object <- callNextMethod()
-  .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
-                                                                     function(x) utils::capture.output(print(x)))))]
-  .Object
-})
-
-.keyFinalizer <- function(envir) {
-  if( !is.null(envir$model_id) ) h2o.rm(envir$model_id, envir$conn)
-  if( !is.null(envir$id)       ) h2o.rm(envir$id, envir$conn)
-  if( !is.null(envir$frame_id) ) h2o.rm(envir$frame_id,envir$conn)
-  invisible(NULL)
-}
-
-.newH2OObject <- function(Class, ..., conn = NULL, id = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  if (linkToGC && !is.na(id) && is(conn, "H2OConnection")) {
-    envir <- new.env()
-    assign("id", id, envir)
-    assign("conn", conn, envir)
-    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
-    finalizers <- c(list(envir), finalizers)
-  }
-
-  if( Class == "H2OFrame" || Class == "H2ORawData" ) new(Class, ..., conn=conn, frame_id=id, finalizers=finalizers)  # frame_id
-  else                                               new(Class, ..., conn=conn, model_id=id, finalizers=finalizers)  # model_id
-}
-
-#'
-#' The Node class.
-#'
-#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
-#' has as its ancestor this class.
-#'
-#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
-#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
-#' by looking up the tree to the nearest symbol table defining that symbol.
-#' @aliases Node
-#' @export
-setClass("Node", contains="VIRTUAL")
-
-#'
-#' The ASTNode class.
-#'
-#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
-#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
-#' @slot root Object of type \code{Node}
-#' @slot children Object of type \code{list}
-#' @aliases ASTNode
-#' @export
-setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
-
-#' @export
-setClassUnion("ASTNodeOrNULL", c("ASTNode", "NULL"))
-
-#' @rdname ASTNode-class
-#' @param object An \code{ASTNode} class object.
-#' @export
-setMethod("show", "ASTNode", function(object) cat(.visitor(object), "\n") )
-
-#'
-#' The ASTApply class.
-#'
-#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
-#' are never leaf nodes. Operators are discussed more in depth in ops.R.
-#' @rdname Node-class
-#' @export
-setClass("ASTApply", representation(op="character"), contains="Node")
-#' @rdname Node-class
-#' @export
-setClass("ASTEmpty",  representation(key="character"), contains="Node")
-#' @rdname Node-class
-#' @export
-setClass("ASTBody",   representation(statements="list"), contains="Node")
-#' @rdname Node-class
-#' @export
-setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
-#' @rdname Node-class
-#' @export
-setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
-#' @rdname Node-class
-#' @export
-setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node", prototype(op="{"))
-#' @rdname Node-class
-#' @export
-setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
-#' @rdname Node-class
-#' @export
-setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
-#' @rdname Node-class
-#' @export
-setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
-#' @rdname Node-class
-#' @export
-setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
-
-if (inherits(try(getRefClass("H2OFrameMutableState"), silent = TRUE), "try-error")) {
-# TODO: Address issue below
-# H2O.ai testing infrastructure sources .R files in addition to loading the h2o package
-# avoid redefinition of reference class
-
-#'
-#' The H2OFrameMutableState class
-#'
-#' This class represents the mutable aspects of an H2OFrame object.
-#'
-#' @slot ast Either an abstract syntax tree defining the H2O frame or NULL.
-#' @slot nrows A \code{numeric} value specifying the number of rows in the H2O frame.
-#' @slot ncols A \code{numeric} value specifying the number of columns in the H2O frame.
-#' @slot col_names A \code{character} vector specifying the column names in the H2O frame.
-#' @aliases H2OFrameMutableState
-#' @export
-setRefClass("H2OFrameMutableState",
-            fields = list(ast = "ASTNodeOrNULL", nrows = "numeric", ncols = "numeric", col_names = "character"),
-            methods = list(
-              initialize =
-              function(..., ast = NULL, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-                .self$initFields(ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-                callSuper(...)
-              }))
-}
-
-#'
-#' The H2OFrame class
-#'
-#' @slot conn An \code{H2OConnection} object specifying the connection to an H2O cloud.
-#' @slot frame_id A \code{character} string specifying the identifier for the frame in the H2O cloud.
-#' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove objects from the H2O cloud.
-#' @slot mutable An \code{H2OFrameMutableState} object to hold the mutable state for the H2O frame.
-#' @aliases H2OFrame
-#' @export
-setClass("H2OFrame",
-         representation(conn="H2OConnectionOrNULL", frame_id="character", finalizers="list", mutable = "H2OFrameMutableState"),
-         prototype(conn       = NULL,
-                   frame_id   = NA_character_,
-                   finalizers = list(),
-                   mutable    = new("H2OFrameMutableState"))
-         )
-
-# TODO: make a more frame-specific constructor
-.newH2OFrame <- function(Class, conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE,mutable=new("H2OFrameMutableState")) {
-  .newH2OObject("H2OFrame", conn=conn,id=frame_id,finalizers=finalizers,mutable=mutable)
-}
-
-#' @rdname H2OFrame-class
-#' @param object An \code{H2OConnection} object.
-#' @export
-setMethod("show", "H2OFrame", function(object) {
-  .byref.update.frame(object)
-
-  nr <- nrow(object)
-  nc <- ncol(object)
-  cat(class(object), " with ",
-      nr, ifelse(!is.na(nr) && nr == 1L, " row and ", " rows and "),
-      nc, ifelse(!is.na(nc) && nc == 1L, " column\n", " columns\n"), sep = "")
-  if (!is.na(nr)) {
-    if (nr > 10L)
-      cat("\nFirst 10 rows:\n")
-    print(head(object, 10L))
-  }
-  invisible(object)
-})
-
-#'
-#' The H2ORawData class.
-#'
-#' This class represents data in a post-import format.
-#'
-#' Data ingestion is a two-step process in H2O. First, a given path to a data source is _imported_ for validation by the
-#' user. The user may continue onto _parsing_ all of the data into memory, or the user may choose to back out and make
-#' corrections. Imported data is in a staging area such that H2O is aware of the data, but the data is not yet in
-#' memory.
-#'
-#' The H2ORawData is a representation of the imported, not yet parsed, data.
-#' @slot conn An \code{H2OConnection} object containing the IP address and port number of the H2O server.
-#' @slot frame_id An object of class \code{"character"}, which is the name of the key assigned to the imported data.
-#' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove objects from the H2O cloud.
-#' @aliases H2ORawData
-#' @export
-setClass("H2ORawData", contains="H2OFrame")
-
-.newH2ORawData <- function(Class, ..., conn = NULL, frame_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  .newH2OObject("H2ORawData", ..., conn=conn,id=frame_id,finalizers=finalizers,linkToGC=linkToGC)
-}
-
-#' @rdname H2ORawData-class
-#' @param object a \code{H2ORawData} object.
-#' @export
-setMethod("show", "H2ORawData", function(object) {
-  print(object@conn)
-  cat("Raw Data Destination Frame:", object@frame_id, "\n")
-})
-
-# No show method for this type of object.
-
-#'
-#' The H2OW2V object.
-#'
-#' This class represents a h2o-word2vec object.
-#'
-#' @aliases H2OW2V
-#' @export
-setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OFrame")
-
-#'
 #' The H2OModel object.
 #'
 #' This virtual class represents a model built by H2O.
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
-#' the data used to build the model (an object of class H2OFrame).
+#' the data used to build the model (an object of class Frame).
 #'
-#' @slot conn Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
 #' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
-#' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove keys from the H2O key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
@@ -331,13 +102,13 @@ setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OFrame")
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(conn="H2OConnectionOrNULL", model_id="character", algorithm="character", parameters="list", allparameters="list", model="list", finalizers="list"),
-                        prototype(conn=NULL, model_id=NA_character_, finalizers=list()),
-                        contains=c("VIRTUAL"))
+         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
+         prototype(model_id=NA_character_),
+         contains="VIRTUAL")
 
-# TODO: make a mode model-specific constructor
-.newH2OModel <- function(Class, ..., conn = NULL, model_id = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  .newH2OObject(Class, ..., conn=conn,id=model_id,finalizers=finalizers,linkToGC=linkToGC)
+# TODO: make a more model-specific constructor
+.newH2OModel <- function(Class, model_id, ...) {
+  new(Class, model_id=model_id, ...)
 }
 
 #' @rdname H2OModel-class
@@ -451,12 +222,9 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 #' This virtual class represents a clustering model built by H2O.
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
-#' the data used to build the model (an object of class H2OFrame).
+#' the data used to build the model (an object of class Frame).
 #'
-#' @slot conn Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
 #' @slot model_id A \code{character} string specifying the key for the model fit in the H2O cloud's key-value store.
-#' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove keys from the H2O key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that was used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containing all parameters used to fit the model.
@@ -468,8 +236,6 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 #'          \item{tot_withinss }{Total within-cluster sum of squared error.}
 #'          \item{betweenss }{Between-cluster sum of squared error.}
 #'        }
-#' @slot finalizers A \code{list} object containing environments with finalizers that
-#'                  remove keys from the H2O key-value store.
 #' @export
 setClass("H2OClusteringModel",  contains="H2OModel")
 #' @rdname H2OModel-class
@@ -686,70 +452,33 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
 #' H2O Future Model
 #'
 #' A class to contain the information for background model jobs.
-#' @slot conn an \linkS4class{H2OConnection}
 #' @slot job_key a character key representing the identification of the job process.
 #' @slot model_id the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(conn="H2OConnection", job_key="character", model_id="character"))
+setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
 
-#'
-#' Describe an H2OFrame object
-#'
-#' @param object An H2OFrame object.
-#' @param cols Logical indicating whether or not to do the str for all columns.
-#' @param \dots Extra args
-#' @export
-str.H2OFrame <- function(object, cols=FALSE, ...) {
-  if (length(l <- list(...)) && any("give.length" == names(l)))
-    invisible(NextMethod("str", ...))
-  else if( !cols ) invisible(NextMethod("str", give.length = FALSE, ...))
-
-  if( cols ) {
-    nc <- ncol(object)
-    nr <- nrow(object)
-    cc <- colnames(object)
-    width <- max(nchar(cc))
-    df <- as.data.frame(object[1L:10L,])
-    isfactor <- as.data.frame(is.factor(object))[,1]
-    num.levels <- as.data.frame(h2o.nlevels(object))[,1]
-    lvls <- as.data.frame(h2o.levels(object))
-    # header statement
-    cat("\nH2OFrame '", object@frame_id, "':\t", nr, " obs. of  ", nc, " variable(s)", "\n", sep = "")
-    l <- list()
-    for( i in 1:nc ) {
-      cat("$ ", cc[i], rep(' ', width - max(stats::na.omit(c(0,nchar(cc[i]))))), ": ", sep="")
-      first.10.rows <- df[,i]
-      if( isfactor[i] ) {
-        nl <- num.levels[i]
-        lvls.print <- lvls[1L:min(nl,2L),i]
-        cat("Factor w/ ", nl, " level(s) ", paste(lvls.print, collapse='","'), "\",..: ", sep="")
-        cat(paste(match(first.10.rows, lvls[,i]), collapse=" "), " ...\n", sep="")
-      } else
-        cat("num ", paste(first.10.rows, collapse=' '), if( nr > 10L ) " ...", "\n", sep="")
-    }
-  }
-}
 #' H2O Grid
 #'
 #' A class to contain the information about grid results
-#' @slot conn an \linkS4class{H2OConnection}
 #' @slot grid_id the final identifier of grid
 #' @slot model_ids  list of model IDs which are included in the grid object
 #' @slot hyper_names  list of parameter names used for grid search
 #' @slot failed_params  list of model parameters which caused a failure during model building, 
 #'                      it can contain a null value
 #' @slot failure_details  list of detailed messages which correspond to failed parameters field
+#' @slot failure_stack_traces  list of stack traces corresponding to model failures reported by
+#'                             failed_params and failure_details fields
 #' @slot failed_raw_params list of failed raw parameters
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @aliases H2OGrid
 #' @export
-setClass("H2OGrid", representation(conn = "H2OConnection",
-                                   grid_id = "character",
+setClass("H2OGrid", representation(grid_id = "character",
                                    model_ids = "list",
                                    hyper_names = "list",
                                    failed_params = "list",
                                    failure_details = "list",
+                                   failure_stack_traces = "list",
                                    failed_raw_params = "matrix"))
 
 #' Format grid object in user-friendly way
@@ -762,7 +491,7 @@ setMethod("show", "H2OGrid", function(object) {
   cat("================\n\n")
   cat("Grid ID:", object@grid_id, "\n")
   cat("Used hyper parameters: \n")
-  lapply(object@hyper_names, function(name) { cat("  ", name, "\n") })
+  lapply(object@hyper_names, function(name) { cat("  - ", name, "\n") })
   cat("Number of models:", length(object@model_ids), "\n")
   cat("Number of failed models:", length(object@failed_params), "\n\n")
   hyper_names <- object@hyper_names
@@ -802,5 +531,38 @@ setMethod("show", "H2OGrid", function(object) {
     cat("-------------\n")
     print(df_failed, row.names = FALSE)
   }
+})
+#' Format grid object in user-friendly way
+#'
+#' @param object an \code{H2OGrid} object.
+#' @param show_stack_traces  a flag to show stack traces for model failures
+#' @export
+setMethod("summary", "H2OGrid",
+          function(object, show_stack_traces = F) {
+            show(object)
+            cat("H2O Grid Summary\n")
+            cat("================\n\n")
+            cat("Grid ID:", object@grid_id, "\n")
+            cat("Used hyper parameters: \n")
+            lapply(object@hyper_names, function(name) { cat("  - ", name, "\n") })
+            cat("Number of models:", length(object@model_ids), "\n")
+            if (length(object@model_ids) > 0) {
+              for (idx in 1:length(object@model_ids)) {
+                cat("  - ", object@model_ids[[idx]], "\n")
+              }
+            }
+            cat("\nNumber of failed models:", length(object@failed_params), "\n")
+            if (length(object@failed_params) > 0) {
+              for (idx in 1:length(object@failed_params)) {
+                cat("  - ", object@failure_details[[idx]])
+                if (show_stack_traces) {
+                  cat(object@failure_stack_traces[[idx]], "\n")
+                }
+              }
+            }
+
+            if (!show_stack_traces && length(object@failed_params) > 0) {
+              cat("\nNote: To see exception stack traces please pass parameter `show_stack_traces = T` to this function.\n")
+            }
 })
 

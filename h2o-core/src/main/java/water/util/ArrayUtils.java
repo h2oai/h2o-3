@@ -1,12 +1,12 @@
 package water.util;
 
+import water.MemoryManager;
+
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
-
-import water.MemoryManager;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -235,6 +235,11 @@ public class ArrayUtils {
     for (int i=0; i<ary.length; i++) mult(ary[i], n);
     return ary;
   }
+  public static double[] invert(double[] ary) {
+    if(ary == null) return null;
+    for(int i=0;i<ary.length;i++) ary[i] = 1. / ary[i];
+    return ary;
+  }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
     if(ary == null || nums == null) return null;
@@ -365,6 +370,18 @@ public class ArrayUtils {
       x *= step;
     }
     return res;
+  }
+
+  public static String arrayToString(int[] ary) {
+    if (ary == null || ary.length==0 ) return "";
+    int m = ary.length - 1;
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; ; i++) {
+      sb.append(ary[i]);
+      if (i == m) return sb.toString();
+      sb.append(", ");
+    }
   }
 
   // Convert array of primitives to an array of Strings.
@@ -913,6 +930,12 @@ public class ArrayUtils {
     return newArray;
   }
 
+  static public double[] copyFromIntArray(int[] a) {
+    double[] da = new double[a.length];
+    for(int i=0;i<a.length;++i) da[i] = a[i];
+    return da;
+  }
+
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;
@@ -956,7 +979,7 @@ public class ArrayUtils {
    * @param values values
    */
   public static void sort(final int[] idxs, final double[] values) {
-    sort(idxs, values, 50);
+    sort(idxs, values, 500);
   }
   public static void sort(final int[] idxs, final double[] values, int cutoff) {
     if (idxs.length < cutoff) {

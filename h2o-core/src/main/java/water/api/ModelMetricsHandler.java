@@ -16,6 +16,7 @@ class ModelMetricsHandler extends Handler {
     public ModelMetrics[] _model_metrics;
     public String _predictions_name;
     public boolean _reconstruction_error;
+    public boolean _reconstruction_error_per_feature;
     public int _deep_features_hidden_layer = -1;
 
     // Fetch all metrics that match model and/or frame
@@ -84,6 +85,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
     public boolean reconstruction_error;
 
+    @API(help = "Compute reconstruction error per feature (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
+    public boolean reconstruction_error_per_feature;
+
     @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false, required = false)
     public int deep_features_hidden_layer;
 
@@ -97,6 +101,7 @@ class ModelMetricsHandler extends Handler {
       mml._frame = (null == this.frame || null == this.frame.key() ? null : this.frame.key().get());
       mml._predictions_name = (null == this.predictions_frame || null == this.predictions_frame.key() ? null : this.predictions_frame.key().toString());
       mml._reconstruction_error = this.reconstruction_error;
+      mml._reconstruction_error_per_feature = this.reconstruction_error_per_feature;
       mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
 
       if (null != model_metrics) {
@@ -116,6 +121,7 @@ class ModelMetricsHandler extends Handler {
       this.frame = (mml._frame == null ? null : new KeyV3.FrameKeyV3(mml._frame._key));
       this.predictions_frame = (mml._predictions_name == null ? null : new KeyV3.FrameKeyV3(Key.<Frame>make(mml._predictions_name)));
       this.reconstruction_error = mml._reconstruction_error;
+      this.reconstruction_error_per_feature = mml._reconstruction_error_per_feature;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 
       if (null != mml._model_metrics) {
@@ -208,18 +214,18 @@ class ModelMetricsHandler extends Handler {
     ModelMetricsList parms = s.createAndFillImpl();
 
     Frame predictions;
-    if (!s.reconstruction_error && s.deep_features_hidden_layer < 0 ) {
+    if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 ) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       predictions = parms._model.score(parms._frame, parms._predictions_name);
     } else {
       if (Model.DeepFeatures.class.isAssignableFrom(parms._model.getClass())) {
-        if (s.reconstruction_error) {
+        if (s.reconstruction_error || s.reconstruction_error_per_feature) {
           if (s.deep_features_hidden_layer >= 0)
             throw new H2OIllegalArgumentException("Can only compute either reconstruction error OR deep features.", "");
           if (null == parms._predictions_name)
             parms._predictions_name = "reconstruction_error" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-          predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame, Key.make(parms._predictions_name));
+          predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame, Key.make(parms._predictions_name), parms._reconstruction_error_per_feature);
         } else {
           if (s.deep_features_hidden_layer < 0)
             throw new H2OIllegalArgumentException("Deep features hidden layer index must be >= 0.", "");

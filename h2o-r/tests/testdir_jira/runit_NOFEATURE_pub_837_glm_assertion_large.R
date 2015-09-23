@@ -8,9 +8,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
   print("Reading in original adult data.")
-  adult.train <-  h2o.importFile(conn, locate("smalldata/glm_test/adult.gz"), destination_frame="adult.train")
+  adult.train <-  h2o.importFile(locate("smalldata/glm_test/adult.gz"), destination_frame="adult.train")
 
   print("Make labels 1/0 for binomial glm")
   adult.train$label <- ifelse(adult.train$"C15"==">50K",1,0)

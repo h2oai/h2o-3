@@ -2,11 +2,11 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 # Compare within-cluster sum of squared error
-test.kmvanilla.golden <- function(H2Oserver) {
+test.kmvanilla.golden <- function() {
   # Import data: 
   Log.info("Importing ozone.csv data...") 
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/ozone.csv"), destination_frame = "ozoneH2O")
+  ozoneH2O <- h2o.uploadFile(locate("smalldata/glm_test/ozone.csv"), destination_frame = "ozoneH2O")
   startIdx <- sort(sample(1:nrow(ozoneR), 3))
   
   Log.info("Initial cluster centers:"); print(ozoneR[startIdx,])

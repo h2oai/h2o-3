@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.deeplearning_MNIST <- function(conn) {
+check.deeplearning_MNIST <- function() {
   Log.info("Deep Learning MNIST Classification)")
   
   TRAIN <- "bigdata/laptop/mnist/train.csv.gz"
@@ -9,14 +9,14 @@ check.deeplearning_MNIST <- function(conn) {
   
   # set to FALSE for stand-alone demo
   if (T) {
-    train_hex <- h2o.uploadFile(conn, locate(TRAIN))
-    test_hex <- h2o.uploadFile(conn, locate(TEST))
+    train_hex <- h2o.uploadFile(locate(TRAIN))
+    test_hex <- h2o.uploadFile(locate(TEST))
   } else {
     library(h2o)
     conn <- h2o.init(nthreads=-1)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
-    train_hex <- h2o.importFile(conn, path = paste0(homedir,TRAIN), header = F, sep = ',')
-    test_hex <- h2o.importFile(conn, path = paste0(homedir,TEST), header = F, sep = ',')
+    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',')
+    test_hex <- h2o.importFile(path = paste0(homedir,TEST), header = F, sep = ',')
   }
   
   # Turn response into a factor (we want classification)

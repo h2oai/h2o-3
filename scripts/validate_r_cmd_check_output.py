@@ -77,10 +77,10 @@ class Check:
 
             r"^Package has FOSS license, installs .class/.jar but has no 'java' directory.",
             r"^\* DONE",
-            
+
             r"^The Date field is over a month old.*",
             r"^Checking URLs requires 'libcurl' support in the R build",
-        ]
+            ]
 
         s = f.readline()
         while (len(s) > 0):

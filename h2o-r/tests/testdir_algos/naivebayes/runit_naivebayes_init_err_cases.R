@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.nbayes.init_err <- function(conn) {
+test.nbayes.init_err <- function() {
   Log.info("Importing iris_wheader.csv data...\n")
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
   iris.sum <- summary(iris.hex)
   print(iris.sum)
   

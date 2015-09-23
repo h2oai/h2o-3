@@ -7,6 +7,7 @@ import hex.genmodel.GenModel;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Random;
@@ -67,7 +68,6 @@ public class DeepLearningIrisTest extends TestUtil {
                     for (int hidden : hiddens) {
                       for (int epoch : epochs) {
                         for (double rate : rates) {
-                          Scope.enter();
                           DeepLearningModel mymodel = null;
                           Frame trainPredict = null;
                           Frame testPredict = null;
@@ -115,10 +115,16 @@ public class DeepLearningIrisTest extends TestUtil {
                               // implementation has hardcoded).  But count
                               // of classes is not known unless we visit
                               // all the response data - force that now.
-                              _train.replace(_train.numCols()-1,_train.lastVec().toEnum());
-                              _test .replace(_train.numCols()-1,_test .lastVec().toEnum());
-                              DKV.put(_train._key,_train);
-                              DKV.put(_test ._key,_test );
+                              String respname = _train.lastVecName();
+                              Vec resp = _train.lastVec().toEnum();
+                              _train.remove(respname).remove();
+                              _train.add(respname, resp);
+                              DKV.put(_train);
+
+                              Vec vresp = _test.lastVec().toEnum();
+                              _test.remove(respname).remove();
+                              _test.add(respname, vresp);
+                              DKV.put(_test);
                             }
                             while( _train.lastVec().cardinality() < 3);
 
@@ -330,7 +336,6 @@ public class DeepLearningIrisTest extends TestUtil {
                             if (_test != null) _test.delete();
                             if (trainPredict != null) trainPredict.delete();
                             if (testPredict != null) testPredict.delete();
-                            Scope.exit();
                           }
                         }
                       }

@@ -1,31 +1,41 @@
 package water;
 
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URLDecoder;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.server.Connector;
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URLDecoder;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import water.UDPRebooted.ShutdownTsk;
 import water.api.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
-import water.fvec.UploadFileVec;
 import water.fvec.Frame;
+import water.fvec.UploadFileVec;
 import water.init.NodePersistentStorage;
 import water.util.FileUtils;
 import water.util.HttpResponseStatus;
@@ -213,7 +223,8 @@ public class JettyHTTPD {
     context.addServlet(H2oNpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile.bin");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
-    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset.bin");   
+    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset");
+    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset.bin");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
     Handler[] handlers = {gh, rhh, eh1, context};
@@ -292,7 +303,7 @@ public class JettyHTTPD {
           throw new Exception("NPS value size exceeds Integer.MAX_VALUE");
         }
         response.setContentType("application/octet-stream");
-        response.setContentLength((int)length.get());
+        response.setContentLength((int) length.get());
         response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
         setResponseStatus(response, HttpServletResponse.SC_OK);
         OutputStream os = response.getOutputStream();
@@ -622,22 +633,37 @@ public class JettyHTTPD {
         }
 
         OutputStream os = response.getOutputStream();
-        InputStream is = resp.data;
-        FileUtils.copyStream(is, os, 1024);
+        if (resp instanceof NanoHTTPD.StreamResponse) {
+          NanoHTTPD.StreamResponse ssr = (NanoHTTPD.StreamResponse) resp;
+          ssr.streamWriter.writeTo(os);
+        } else {
+          InputStream is = resp.data;
+          FileUtils.copyStream(is, os, 1024);
+        }
       } finally {
         logRequest(method, request, response);
-
         // Handle shutdown if it was requested.
         if (H2O.getShutdownRequested()) {
           (new Thread() {
             public void run() {
+              boolean [] confirmations = new boolean[H2O.CLOUD.size()];
+              confirmations[H2O.SELF.index()] = true;
+              for(H2ONode n:H2O.CLOUD._memary) {
+                if(n != H2O.SELF)
+                  new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();
+              }
               try { Thread.sleep(2000); }
               catch (Exception ignore) {}
-              H2O.shutdown(0);
+              int failedToShutdown = 0;
+              // shutdown failed
+              for(boolean b:confirmations)
+                if(!b) failedToShutdown++;
+              Log.info("Orderly shutdown: " + (failedToShutdown > 0? failedToShutdown + " nodes failed to shut down! ":"") + " Shutting down now.");
+              H2O.closeAll();
+              H2O.exit(failedToShutdown);
             }
           }).start();
         }
-
         endTransaction();
       }
     }

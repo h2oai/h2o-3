@@ -53,7 +53,7 @@ def cv_carsGBM():
     # 3. folds_column
     num_folds = random.randint(2,5)
     fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
-    fold_assignments.setNames(["fold_assignments"])
+    fold_assignments.set_names(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], training_frame=cars, distribution=distribution, ntrees=5,
                   fold_column="fold_assignments", keep_cross_validation_predictions=True)

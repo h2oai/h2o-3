@@ -355,6 +355,28 @@ class H2OBinomialModel(ModelBase):
     for k,v in zip(tm.keys(),tm.values()):
       if v is not None: v.plot(type=type, **kwargs)
 
+  def roc(self, train=False, valid=False, xval=False):
+    """
+    Return the coordinates of the ROC curve for a given set of data,
+    as a two-tuple containing the false positive rates as a list and true positive
+    rates as a list.
+    If all are False (default), then return is the training data.
+    If more than one ROC curve is requested, the data is returned as a dictionary
+    of two-tuples.
+    :param train: If train is true, then return the ROC coordinates for the training data.
+    :param valid: If valid is true, then return the ROC coordinates for the validation data.
+    :param xval: If xval is true, then return the ROC coordinates for the cross validation data.
+    :return rocs_cooridinates: the true cooridinates of the roc curve.
+    """
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()):
+      if v is not None:
+        m[k] = (v.fprs, v.tprs)
+    return m.values()[0] if len(m) == 1 else m
+
+
+
   def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):
     """
     Get the confusion matrix for the specified metrics/thresholds

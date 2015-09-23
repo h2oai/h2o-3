@@ -43,8 +43,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new PCAV3();
   }
 
-  @Override
-  public Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new PCADriver(), work, restartTimer);
   }
 
@@ -97,10 +96,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     if (!_parms._use_all_factor_levels && _parms._pca_method == PCAParameters.Method.GLRM)
       error("_use_all_factor_levels", "GLRM only implemented for _use_all_factor_levels = true");
 
-    if (_parms._pca_method == PCAParameters.Method.GramSVD && expensive && error_count() == 0) checkMemoryFootPrint();
+    if (_parms._pca_method != PCAParameters.Method.GLRM && expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
+    protected PCADriver() { super(true); } // bump driver priority
 
     protected void buildTables(PCAModel pca, String[] rowNames) {
       // Eigenvectors are just the V matrix
@@ -297,7 +297,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           } finally {
             if (job != null) job.remove();
             if (glrm != null) {
-              glrm._parms._loading_key.get().delete();
+              // glrm._parms._loading_key.get().delete();
+              glrm._output._loading_key.get().delete();
               glrm.remove();
             }
           }

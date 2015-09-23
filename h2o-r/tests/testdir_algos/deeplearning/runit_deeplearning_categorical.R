@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.deeplearning_multi <- function(conn) {
+check.deeplearning_multi <- function() {
   Log.info("Test checks if Deep Learning works fine with a categorical dataset")
   
   print(locate("smalldata/logreg/prostate.csv"))
-  prostate <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), "prostate")
+  prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate")
   prostate[,2] <- as.factor(prostate[,2]) #CAPSULE -> Factor (response)
   prostate[,3] <- as.factor(prostate[,3]) #AGE -> Factor
   prostate[,4] <- as.factor(prostate[,4]) #RACE -> Factor

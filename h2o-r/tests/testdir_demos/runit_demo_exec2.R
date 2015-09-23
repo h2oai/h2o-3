@@ -7,10 +7,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.exec2.demo <- function(conn) {
+test.exec2.demo <- function() {
   prosPath <- system.file("extdata", "prostate.csv", package="h2o")
   Log.info(paste("Importing", prosPath))
-  prostate.hex <- h2o.importFile(conn, path = prosPath, destination_frame = "prostate.hex")
+  prostate.hex <- h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 
   Log.info("Print out summary, head, and tail")
   print(summary(prostate.hex))

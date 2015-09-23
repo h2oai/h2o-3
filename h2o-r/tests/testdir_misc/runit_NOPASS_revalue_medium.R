@@ -4,12 +4,12 @@
 source('../h2o-runit.R')
 options(echo=TRUE)
 library(h2o)
-check.revalue <- function(conn) {
+check.revalue <- function() {
 
   filePath <- "/home/0xdiag/datasets/airlines/airlines_all.csv"
 
   # Uploading data file to h2o.
-  air <- h2o.importFile(conn, filePath, "air")
+  air <- h2o.importFile(filePath, "air")
 
   # Print dataset size.
   print(levels(air$Origin))

@@ -10,13 +10,13 @@ expect_model_param <- function(models, attribute_name, expected_values) {
 
 #' Constructs a named list of gridable parameters and their respective values, which will eventually be passed to
 #' h2o.grid as the hyper_params argument. The  grid parameters, and their associated values, are randomly selected.
-#' @param algo A string {"gbm", "drf", "deeplearning", "kmeans", "glm", "naiveBayes", "pca"}
+#' @param algo A string {"gbm", "randomForest", "deeplearning", "kmeans", "glm", "naiveBayes", "pca"}
 #' @param ncols Used for mtries selection or k (pca)
 #' @param nrows Used for k (pca)
 #' @return A named list of gridable parameters and their respective values
 makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
   grid_space <- list()
-  if ( algo == "gbm" || algo == "drf" ) {
+  if ( algo == "gbm" || algo == "drf" || algo == "randomForest") {
     if ( sample(0:1,1) ) { grid_space$ntrees <- sample(1:5, sample(2:3,1)) }
     if ( sample(0:1,1) ) { grid_space$max_depth <- sample(1:5, sample(2:3,1)) }
     if ( sample(0:1,1) ) { grid_space$min_rows <- sample(1:10, sample(2:3,1)) }
@@ -27,7 +27,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
     if ( sample(0:1,1) ) { grid_space$learn_rate <- round(runif(sample(2:3,1)),6) }
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
-  if ( algo == "drf" ) {
+  if ( algo == "drf" || algo == "randomForest") {
     if ( sample(0:1,1) ) { grid_space$mtries <- sample(2:ncols, sample(2:3,1)) }
     grid_space$sample_rate <- round(runif(sample(2:3,1)),6)
   }

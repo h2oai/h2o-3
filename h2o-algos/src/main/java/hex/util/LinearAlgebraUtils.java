@@ -282,7 +282,7 @@ public class LinearAlgebraUtils {
     double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
     qrtsk.doAll(ywfrm);
-    return qrtsk._err;      // ||Q - W||_2
+    return qrtsk._sse;      // \sum (Q_{i,j} - W_{i,j})^2
   }
 
   /**
@@ -305,14 +305,14 @@ public class LinearAlgebraUtils {
     final DataInfo _ainfo;   // Info for frame A
     final int _ncols;     // Number of cols in A and in Q
     final double[][] _L;
-    public double _err;    // Output: l2 norm of difference between old and new Q
+    public double _sse;    // Output: Sum-of-squared difference between old and new Q
 
     public ForwardSolve(DataInfo ainfo, double[][] L) {
       assert L != null && L.length == L[0].length && L.length == ainfo._adaptedFrame.numCols();
       _ainfo = ainfo;
       _ncols = ainfo._adaptedFrame.numCols();
       _L = L;
-      _err = 0;
+      _sse = 0;
     }
 
     @Override public void map(Chunk cs[]) {
@@ -337,14 +337,12 @@ public class LinearAlgebraUtils {
         for(int d = _ncols; d < 2 * _ncols; d++) {
           double qold = cs[d].atd(row);
           double diff = qrow[i] - qold;
-          _err += diff * diff;    // Calculate SSE between Q_new and Q_old
+          _sse += diff * diff;    // Calculate SSE between Q_new and Q_old
           cs[d].set(row, qrow[i++]);
         }
         assert i == qrow.length;
       }
     }
-
-    @Override protected void postGlobal() { _err = Math.sqrt(_err); }
   }
 
   /**

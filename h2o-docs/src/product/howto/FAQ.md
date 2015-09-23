@@ -283,7 +283,7 @@ The data must be formatted as a sorted list of unique integers, the column indic
 
 **What date and time formats does H2O support?**
 
-H2O is set to auto-detect two major data/time formats. Because many data time formats are ambiguous (e.g. 01/02/03), general data time detection is not used.  
+H2O is set to auto-detect two major date/time formats. Because many date time formats are ambiguous (e.g. 01/02/03), general date time detection is not used.  
 
 The first format is for dates formatted as yyyy-MM-dd. Year is a four-digit number, the month is a two-digit number ranging from 1 to 12, and the day is a two-digit value ranging from 1 to 31. This format can also be followed by a space and then a time (specified below). 
 
@@ -506,6 +506,28 @@ Currently, we do not support this capability. If you are interested in contribut
 
 ---
 
+**How can I continue working on a model in H2O after restarting?**
+
+There are a number of ways you can save your model in H2O: 
+
+- In the web UI, click the **Flow** menu then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right. 
+- In the web UI, click the **Flow** menu then click **Download this Flow...**. Your flow is saved to the location you specify in the pop-up **Save As** window that appears. 
+- (For DRF, GBM, and DL models only): Use model checkpointing to resume training a model. Copy the `model_id` number from a built model and paste it into the *checkpoint* field in the `buildModel` cell. 
+
+
+---
+
+**How can I find out more about H2O's real-time, nano-fast scoring engine?** 
+
+H2O's scoring engine uses a Plain Old Java Object (POJO). The POJO code runs quickly but is single-threaded.  It is intended for embedding into lightweight real-time environments.
+
+All the work is done by the call to the appropriate predict method.  There is no involvement from H2O in this case.
+
+To compare multiple models simultaneously, use the POJO to call the models using multiple threads. For more information on using POJOs, refer to the [POJO Quick Start Guide](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-docs/index.html#POJO%20Quick%20Start) and [POJO Java Documentation](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-genmodel/javadoc/index.html)
+
+In-H2O scoring is triggered on an existing H2O cluster, typically using a REST API call. H2O evaluates the predictions in a parallel and distributed fashion for this case.  The predictions are stored into a new Frame and can be written out using `h2o.exportFile()`, for example.
+
+---
 
 ##Hadoop
 

@@ -1,4 +1,6 @@
 from .transform_base import H2OTransformer
+
+
 class H2OScaler(H2OTransformer):
   """
   Standardize an H2OFrame by demeaning and scaling each column.
@@ -74,3 +76,52 @@ class H2OScaler(H2OTransformer):
     for i in X.ncol:
       X[i] = self.means[i] + self.stds[i]*X[i]
     return X
+
+
+class H2OColSelect(H2OTransformer):
+  def __init__(self,cols):
+    self.cols=cols
+
+  def fit(self,X,y=None,**params):
+    return self
+
+  def transform(self,X,y=None,**params):
+    return X[self.cols]._frame()
+
+  def to_rest(self, step_name):
+    ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
+    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False])
+
+class H2OColOp(H2OTransformer):
+  """
+  Perform a column operation. If append is True, then cbind the result onto original frame,
+  otherwise, perform the operation in place.
+  """
+  def __init__(self, fun, col=None,inplace=True, **params):
+    self.fun=fun
+    self.col=col
+    self.inplace=inplace
+    self.params=params
+    if isinstance(col, (list,tuple)): raise ValueError("col must be None or a single column.")
+
+  def fit(self,X,y=None,**params):
+    return self
+
+  def transform(self,X,y=None,**params):
+    res = H2OColOp._transform_helper(X,params)
+    if self.inplace:  X[self.col] = res
+    else:             return X.cbind(res)._frame()
+    return X
+
+  def _transform_helper(self,X,**params):
+    if self.params == None or self.params == {}:
+      if self.col is not None: res = self.fun(X[self.col])
+      else:                    res = self.fun(X)
+    else:
+      if self.col is not None: res = self.fun(X[self.col],**self.params)
+      else:                    res = self.fun(X,**self.params)
+    return res
+
+  def to_rest(self, step_name):
+    ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
+    return super(H2OColOp, self).to_rest([step_name,"H2OColOp",ast,self.inplace])

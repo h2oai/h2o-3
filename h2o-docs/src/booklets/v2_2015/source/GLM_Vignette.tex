@@ -14,17 +14,19 @@
 \input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
+\newgeometry{bmargin=0cm, hmargin=0cm}
+
 
 \begin{center}
 \textsc{\Large\bf{Generalized Linear Modeling with H2O}}
 \\
 \bigskip
-\textsc{\small{Tomas Nykodym \hspace{20pt} Ariel Rao \hspace{20pt} Amy Wang \hspace{20pt} Tom Kraljevic \hspace{20pt} Jessica Lanford \hspace{20pt} Nadine Hussami}}
+\textsc{\small{Nadine Hussami  \hspace{10pt} Tom Kraljevic \hspace{10pt} \hspace{10pt} Jessica Lanford \\ \hspace{10pt} Tomas Nykodym \hspace{10pt} Ariel Rao \hspace{10pt} Amy Wang }}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
-{\url{http://h2o.gitbooks.io/glm-with-h2o/}}
+{\url{http://h2o.ai/resources/}}
 
 \bigskip
 August 2015: Third Edition 
@@ -32,10 +34,25 @@ August 2015: Third Edition
 \bigskip
 \end{center}
 
+\null\vfill
+\begin{figure}[!b]
+\noindent\makebox[\textwidth]{%
+\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+\end{figure}
+
+\newpage
+\restoregeometry
+
+\null\vfill %move next text block to lower left of new page
+
+\thispagestyle{empty}%remove pg#
+
+
 {\raggedright\vfill\ 
 
 Generalized Linear Modeling with H2O\\
-  by Tomas Nykodym, Ariel Rao, Amy Wang, Tom Kraljevic, Jessica Lanford \& Nadine Hussami\ \\
+
+by Nadine Hussami, Tom Kraljevic, \\ Jessica Lanford, Tomas Nykodym, \\ Ariel Rao,  \& \ Amy Wang \\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -50,6 +67,7 @@ August 2015: Third Edition
 Photos by \textcopyright H2O.ai, Inc.
 \bigskip
 
+All copyrights belong to their respective owners.\\
 While every precaution has been taken in the\\
 preparation of this book, the publisher and\\
 authors assume no responsibility for errors or\\
@@ -60,8 +78,10 @@ Printed in the United States of America.
 }
 
 \newpage
-
+\thispagestyle{empty}%remove pg#
 \tableofcontents
+\thispagestyle{empty}%remove pg#
+
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -69,9 +89,15 @@ Printed in the United States of America.
 \newpage
 
 \section{Introduction}
-This document introduces the reader to Generalized Linear Modeling with H2O.  Examples are written in R and python.
-The reader is walked through the installation of H2O, basic GLM concepts, building GLM models in H2O, how to
-interpret model output, how to make predictions, and various implementation details.
+This document introduces the reader to generalized linear modeling with H2O.  Examples are written in R and Python.
+Topics include: 
+\begin{itemize}
+\item installation of H2O
+\item basic GLM concepts
+\item building GLM models in H2O
+\item interpreting model output
+\item making predictions
+\end{itemize}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -81,12 +107,10 @@ interpret model output, how to make predictions, and various implementation deta
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
-\newpage
-
-\newcommand{\waterVersion}{3.0.1.4}
+\newcommand{\waterVersion}{3.2.0.1}
 \input{common/installation.tex}
 
-\subsection{Example code}
+\subsection{Example Code}
 
 R code for the examples in this document are available here:
 
@@ -100,14 +124,25 @@ The document source itself can be found here:
 
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.tex}
 
+\subsection{Citation}
+
+To cite this booklet, use the following: 
+
+Hussami, N., Kraljevic, T., Lanford, J., Nykodym, T., Rao, A., and Wang, A. (Aug. 2015). {\textit{Generalized Linear Modeling with H2O}}. {\url{http://h2o.ai/resources/}}. 
+
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
 \section{Generalized Linear Models}
 
-Generalized linear models (GLMs) are an extension of traditional linear models. They have gained popularity in statistical data analysis because of (1) the flexibility of the model structure which unifies the typical regression methods (such as linear regression, logistic regression for binary classification etc.), (2) the availability of software to fit the models and (3) the fact that they scale well to large datasets. 
+Generalized linear models (GLMs) are an extension of traditional linear models. They have gained popularity in statistical data analysis due to: 
+\begin{itemize}
+\item the flexibility of the model structure unifying the typical regression methods (such as linear regression and logistic regression for binary classification)
+\item the recent availability of model-fitting software
+\item the ability to scale well with large datasets
+\end{itemize}
 
-\subsection{Model components}
+\subsection{Model Components}
 
 The estimation of the model is obtained by maximizing the log-likelihood over the parameter vector $\beta$ for the observed data
  $$\max_{\beta} \mbox{ ( GLM Log-likelihood)}.$$
@@ -116,7 +151,9 @@ The estimation of the model is obtained by maximizing the log-likelihood over th
 %is a generalization of linear models, allowing for modeling of data with exponential distributions and for
 %categorical data (classification). GLM models are fitted by solving the maximum likelihood optimization problem.
 
-In the familiar linear regression setup, the independent observations vector $y$ is assumed to be related to its corresponding predictor vector $x$ by $$y = x^{\top}\beta + \beta_0 + \epsilon,$$ where $\beta$ is the parameter vector, $\beta_0$ represents the intercept term and $\epsilon \sim \mathcal{N}( 0, \sigma^2 )$ is a gaussian random variable which is the noise in the model. Therefore the response $y$ is also normally distributed $y \sim \mathcal{N}( x^{\top} \beta + \beta_0, \sigma^2 )$. This model is restrictive as it assumes additivity of the covariates, normality of the error term as well as constancy of the variance. Such assumptions do not hold in numerous applications and datasets, thus a more flexible model is desirable. 
+In the familiar linear regression setup, the independent observations vector $y$ is assumed to be related to its corresponding predictor vector $x$ by $$y = x^{\top}\beta + \beta_0 + \epsilon,$$ where $\beta$ is the parameter vector, $\beta_0$ represents the intercept term and $\epsilon \sim \mathcal{N}( 0, \sigma^2 )$ is a gaussian random variable which is the noise in the model. 
+
+The response $y$ is normally distributed $y \sim \mathcal{N}( x^{\top} \beta + \beta_0, \sigma^2 )$ as well. Since it assumes additivity of the covariates, normality of the error term as well as constancy of the variance, this model is restrictive. Because these assumptions are not applicable to many problems and datasets, a more flexible model is beneficial. 
 
 %Generalized linear models are generalizations of linear regression models. Linear regression models the dependency
 %of response $y$ on a vector of predictors $x$ ($y \sim x^T \beta + \beta_0$). The models are built with the assumptions
@@ -124,7 +161,7 @@ In the familiar linear regression setup, the independent observations vector $y$
 %offset of some constant $\beta_0$, i.e. $ y = \mathcal{N}(x^T \beta + \beta_0 , \sigma^2) $. These assumptions can
 %be overly restrictive for real-world data that do not necessarily have a Gaussian distribution.
 
-GLMs relax the above assumptions by allowing the variance to vary as a function of the mean, non-normal errors and a non-linear relation between the response and covariates. More specifically, the response distribution is assumed to belong to the exponential family which includes the gaussian, poisson, binomial, multinomial and gamma distributions as special cases. The components of a GLM are:
+GLMs relax the above assumptions by allowing the variance to vary as a function of the mean, non-normal errors and a non-linear relation between the response and covariates. More specifically, the response distribution is assumed to belong to the exponential family, which includes the Gaussian, Poisson, binomial, multinomial and gamma distributions as special cases. The components of a GLM are:
 \begin{itemize}
 \item The random component $f$ for the dependent variable $y$: the density function $f(y;\theta,\phi)$ has a probability distribution from the exponential family parametrized by $\theta$ and $\phi$. This removes the restriction on the distribution of the error and allows for non-homogeneity of the variance with respect to the mean vector.
 \item The systematic component $\eta$: $\eta = X\beta$, where $X$ is the matrix of all observation vectors $x_i$.
@@ -137,22 +174,26 @@ GLMs relax the above assumptions by allowing the variance to vary as a function 
 %\item allowing variance to depend on the predicted value by specifying the conditional distribution of the response variable or the family argument.
 %\end{itemize}
 
-This generalization of linear models makes GLMs suitable for a wider range of problems which will be discussed below. For example, the familiar logistic regression model which is widely used for binary classification in medical applications is a particular case of the GLM representation. 
+This generalization makes GLM suitable for a wider range of problems. An example of a particular case of the GLM representation is the familiar logistic regression model commonly used for binary classification in medical applications. 
 
 %This generalization allows us to use GLM on problems such as binary classification (also known as logistic regression).
 
 \subsection{GLM in H2O}
-H2O's GLM algorithm fits generalized linear models to the data by maximizing the log-likelihood. The elastic net penalty can be used for parameter regularization. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number of predictors with non-zero coefficients ($\mathtt{\sim}$ low thousands).  H2O's GLM fits the model by solving the following likelihood optimization with parameter regularization:
+H2O's GLM algorithm fits generalized linear models to the data by maximizing the log-likelihood. The elastic net penalty can be used for parameter regularization. The model fitting computation is distributed, extremely fast, and scales extremely well for models with a limited number of predictors with non-zero coefficients ($\mathtt{\sim}$ low thousands).  
+
+H2O's GLM fits the model by solving the following likelihood optimization with parameter regularization:
  $$\max_{\beta,\beta_0} \mbox{  ( GLM Log-likelihood }  - \mbox{Regularization Penalty )} .$$
 
-The elastic net regularization penalty is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients vector. It is defined as $$\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right),$$ with no penalty on the intercept term. It is implemented by subtracting $\lambda P_{\alpha}(\beta)$ from the likelihood that we are optimizing. This shrinks the coefficients by imposing a penalty on their size and induces sparsity in the solution. Such properties are desirable as they reduce the variance in the predictions and make the model more interpretable, since it selects a subset of the given variables. For a specific $\alpha$ value, the algorithm can compute models for (1) a single value of the tuning parameter $\lambda$ or (2) the full regularization path as in the glmnet package for R (refer to \citetalias{glmnet}).
+The elastic net regularization penalty is the weighted sum of the $\ell_1$ and $\ell_2$ norms of the coefficients vector. It is defined as $$\lambda P_{\alpha}(\beta) = \lambda \left(\alpha \| \beta \|_1 + \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right),$$ with no penalty on the intercept term. It is implemented by subtracting $\lambda P_{\alpha}(\beta)$ from the optimized likelihood. This induces sparsity in the solution and shrinks the coefficients by imposing a penalty on their size. 
+
+These properties are beneficial because they reduce the variance in the predictions and make the model more interpretable by selecting a subset of the given variables. For a specific $\alpha$ value, the algorithm can compute models for a single value of the tuning parameter $\lambda$ or the full regularization path as in the glmnet package for R (refer to \citetalias{glmnet}).
 
 The elastic net parameter $\alpha \in [0,1]$ controls the penalty distribution between the $\ell_1$ (least absolute shrinkage and selection operator or lasso) and $\ell_2$ (ridge regression)
-penalties. When $\alpha=0$, the $\ell_1$ penalty is not used and we obtain the
-ridge regression solution with shrunken coefficients. If $\alpha=1$, the lasso operator soft-thresholds the parameters which consists in reducing all of them by a constant factor and truncating at zero. This sets a different number of coefficients to zero depending on the $\lambda$ value.
+penalties. When $\alpha=0$, the $\ell_1$ penalty is not used and a
+ridge regression solution with shrunken coefficients is obtained. If $\alpha=1$, the Lasso operator soft-thresholds the parameters by reducing all of them by a constant factor and truncating at zero. This sets a different number of coefficients to zero depending on the $\lambda$ value.
  
- In summary, H2O's GLM  solves the following optimization over $N$ observations:
-$$ \max_{\beta,\beta_0}  \  \sum_{i=1}^N \log f\left(y_i ; \beta,\beta_0\right)  - \lambda \left(\alpha \| \beta \|_1 +  \frac{1}{2} (1- \alpha)\| \beta \|_2^2 \right). $$
+H2O's GLM  solves the following optimization over $N$ observations:
+$$ \max_{\beta,\beta_0}  \  \sum_{i=1}^N \log f\left(y_i ; \beta,\beta_0\right)  - \lambda \left(\alpha \| \beta \|_1 +  \frac{1}{2} (1- \alpha)\| \beta \|_2^2 \right) $$
 
 %\[ \min\limits_{\beta}\ (\ Classic GLM  + Regularization Penalty \ )\]
 
@@ -160,21 +201,29 @@ $$ \max_{\beta,\beta_0}  \  \sum_{i=1}^N \log f\left(y_i ; \beta,\beta_0\right) 
 
 %\[ \min\limits_{\beta}\ (\ {{1\over{N}} log\_likelihood(family,\beta)  + \lambda (\alpha \| \beta \|_1} + {1- \alpha \over 2} \| \beta \|_2^2) \ )\]
 
-Similarly to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting
-from the null-model (evaluated at the smallest penalty $\lambda_{\max}$ for which all coefficients are set to zero) down to a minimally-penalized model. To improve the efficiency of this search, 
-H2O employs the strong rules as described in \citetalias{strong} to filter out inactive columns (whose coefficients will remain equal to zero given the imposed penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. Moreover, cross-validation can be used after fitting models for the full regularization path. H2O returns the optimal amount of regularization $\lambda$ for the given problem and data by computing the errors on the validation dataset of the fitted models on the training data.
+Similar to the methods discussed in \citetalias{glmnet}, H2O can compute the full regularization path, starting
+from the null-model (evaluated at the smallest penalty $\lambda_{\max}$ for which all coefficients are set to zero) down to a minimally-penalized model. 
 
-\subsection{Model fitting}
-As discussed above, GLM models are fitted by finding the set of parameters that maximizes the likelihood of the data. For the Gaussian family, maximum likelihood simply corresponds to 
-minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. The same holds when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. Thus, we must use an iterative method such as IRLSM, L-BFGS, the newton method, gradient descent or coordinate descent with the naive or covariance updates. The solver can be selected by the user after selecting the model by specifying the exponential density. 
+To improve the efficiency of this search, 
+H2O employs the strong rules as described in \citetalias{strong} to filter out inactive columns (whose coefficients will remain equal to zero given the imposed penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. 
 
-\subsection{Model validation}
+Moreover, cross-validation can be used after fitting models for the full regularization path. H2O returns the optimal amount of regularization $\lambda$ for the given problem and data by computing the errors on the validation dataset of the fitted models created using the training data.
 
-After selecting the model, it is important to evaluate the precision of the estimates. The quality of the fitted model can be obtained 
-by computing the goodness of fit between the predicted values that it generates and the given input data. Multiple measures of discrepancy may be used. H2O returns the logarithm of the ratio of likelihoods, called deviance, and the Akaike information criterion (AIC) after fitting a GLM. A benchmark for a good model is the saturated or full model, which is the largest model that can be fitted. Assuming the dataset consists of $N$ observations, the saturated model fits $N$ parameters $\hat{\mu}_i$. Since it gives a model with one parameter per observation, its predictions trivially fit the data perfectly.
+\subsection{Model Fitting}
+GLM models are fitted by finding the set of parameters that maximizes the likelihood of the data. For the Gaussian family, maximum likelihood consists of minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. 
 
-The deviance is the difference between the maximized log-likelihoods of the fitted and saturated models. Let $\ell(y;\hat{\mu})$ be the likelihood corresponding to the estimated means vector $\hat{\mu}$ from the maximization, and let $\ell(y;y)$ be the likelihood of the saturated model which is the maximum achievable likelihood. The scaled deviance defined as 
-$$ D^*(y,\hat{\mu}) = 2 (\ell(y;y)-\ell(y;\hat{\mu}) )$$
+This is also applicable when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. An iterative method such as IRLSM, L-BFGS, the Newton method, or gradient descent, must be used. To select the solver, select the model and specify the exponential density. 
+
+\subsection{Model Validation}
+
+After selecting the model, evaluate the precision of the estimates to determine its accuracy. The quality of the fitted model can be obtained 
+by computing the goodness of fit between the predicted values that it generates and the given input data. Multiple measures of discrepancy may be used. 
+
+H2O returns the logarithm of the ratio of likelihoods, called deviance, and the Akaike information criterion (AIC) after fitting a GLM. A benchmark for a good model is the saturated or full model, which is the largest model that can be fitted. Assuming the dataset consists of $N$ observations, the saturated model fits $N$ parameters $\hat{\mu}_i$. Since it gives a model with one parameter per observation, its predictions trivially fit the data perfectly.
+
+The deviance is the difference between the maximized log-likelihoods of the fitted and saturated models. Let $\ell(y;\hat{\mu})$ be the likelihood corresponding to the estimated means vector $\hat{\mu}$ from the maximization, and let $\ell(y;y)$ be the likelihood of the saturated model which is the maximum achievable likelihood. 
+
+The scaled deviance, which is defined as $ D^*(y,\hat{\mu}) = 2 (\ell(y;y)-\ell(y;\hat{\mu}) )$,
 is used as a goodness of fit measure for GLMs. When the deviance obtained is too large, the model does not fit the data well. 
 
 %Evaluating the quality of the model is a critical part of the data-modeling and scoring process. There are several
@@ -184,10 +233,11 @@ is used as a goodness of fit measure for GLMs. When the deviance obtained is too
 %
 %\[ deviance = 2({ln(L_{s})} - {ln(L_{m})}) \]
 
-Another metric to measure the quality of the fitted statistical model is the AIC, defined as
-$$AIC = 2k -2\log(\ell(y;\hat{\mu}))$$
-where $k$ is the number of parameters included in the model and $\ell$ is the likelihood of the fitted model defined as above.
- Given a set of models for a dataset, the AIC compares the qualities of the models with respect to one another. This provides a way to select the optimal one, which is the model with the lowest AIC score. Note that the AIC score does not give an absolute measure of the quality of a given model. Moreover, the AIC takes into account the number of parameters that are included in the model by increasing the penalty as the number of parameters increases. This prevents from obtaining a complex model that overfits the data, an aspect which is not considered in the deviance computation.
+Another metric to measure the quality of the fitted statistical model is the AIC, defined as $AIC = 2k -2\log(\ell(y;\hat{\mu}))$, where $k$ is the number of parameters included in the model and $\ell$ is the likelihood of the fitted model defined as above.
+
+ Given a set of models for a dataset, the AIC compares the qualities of the models with respect to one another. This provides a way to select the optimal one, which is the model with the lowest AIC score. 
+
+The AIC score does not give an absolute measure of the quality of a given model. It takes into account the number of parameters that are included in the model by increasing the penalty as the number of parameters increases. This prevents from obtaining a complex model that overfits the data, an aspect which is not considered in the deviance computation.
  
 %Another metric frequently used for model selection is the Akaike information criterion (AIC). The AIC measures the
 %relative quality of a statistical model for a given set of data obtained by calculating the information loss after
@@ -200,64 +250,66 @@ where $k$ is the number of parameters included in the model and $\ell$ is the li
 %where $k$ is the number of model parameters and $ln(L_{m})$ is the log likelihood of the fitted model over the data.
 
 \subsection{Regularization} \label{regularization}
-In this subsection, we discuss the details of the effect of parameter regularization. Penalties are introduced to the model building process to avoid over-fitting, reduce variance of the prediction error and handle correlated predictors. The two most common penalized models are ridge regression and the
-lasso. The elastic net combines both penalties. 
+This subsection discusses the effects of parameter regularization. Penalties are introduced to the model building process to avoid over-fitting, reduce variance of the prediction error, and handle correlated predictors. The two most common penalized models are ridge regression and Lasso (least absolute shrinkage and selection operator). The elastic net combines both penalties. 
 
-\subsubsection{Lasso and ridge regression}
+\subsubsection{Lasso and Ridge Regression}
 
-Ridge regression consists in penalizing the $\ell_2$ norm of the model coefficients $\| \beta \|_2^2=\sum_{k=1}^p \beta_k^2$. It provides greater numerical stability and is easier and faster to compute than the lasso. It keeps all the predictors in the model and does a proportional shrinkage. It reduces coefficient values simultaneously as the penalty is increased without however setting any of them to zero. The lasso stands for the $\ell_1$ penalty and is an alternative regularized least squares method that penalizes the sum of the absolute values of the coefficients 
-$||\beta||_1=\sum_{k=1}^p |\beta_k|$. The lasso leads to a sparse solution when the tuning parameter is sufficiently large. As the tuning parameter value $\lambda$ is increased, all coefficients are set to zero. Since reducing
-parameters to zero removes them from the model, the lasso is a good selection tool. 
+Lasso represents the $\ell_1$ penalty and is an alternative regularized least squares method that penalizes the sum of the absolute values of the coefficients 
+$||\beta||_1=\sum_{k=1}^p |\beta_k|$. Lasso leads to a sparse solution when the tuning parameter is sufficiently large. As the tuning parameter value $\lambda$ is increased, all coefficients are set to zero. Since reducing
+parameters to zero removes them from the model, Lasso is a good selection tool. 
+
+Ridge regression penalizes the $\ell_2$ norm of the model coefficients $\| \beta \|_2^2=\sum_{k=1}^p \beta_k^2$. It provides greater numerical stability and is easier and faster to compute than Lasso. It keeps all the predictors in the model and shrinks them proportionally. Ridge regression reduces coefficient values simultaneously as the penalty is increased without however setting any of them to zero. 
+
 
 %This could be advantageous in many situations, namely in datasets which consist of a very large number of predictors where feature selection is crucial to the interpretability of the model. When the data variables are highly correlated, the $\ell_2$ penalty tends to push all of the coefficients towards each other, while the $\ell_1$ penalty will tend to pick one and set the other coefficients to 0.
 
-Variable selection is important in numerous modern applications with many covariates, for which the $\ell_1$ penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, it is advantageous to use the lasso. It will select a small number of variables for sufficiently high $\lambda$ which could be crucial to the interpretability of the model. The $\ell_2$ norm does not have that effect, it only shrinks the coefficients without setting them exactly to zero.  %The main advantage of an  $\ell_1$ penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the
+Variable selection is important in numerous modern applications with many covariates where the $\ell_1$ penalty has proven to be successful. Therefore, if the number of variables is large or if the solution is known to be sparse, we recommend using Lasso, which will select a small number of variables for sufficiently high $\lambda$ that could be crucial to the interpretability of the model. The $\ell_2$ norm does not have this effect:  it shrinks the coefficients, but does not set them exactly to zero.  %The main advantage of an  $\ell_1$ penalty is that with sufficiently high $\lambda$, it produces a sparse solution; the
 % $\ell_2$-only penalty does not reduce coefficients to exactly 0. 
 
 The two penalties also differ in the presence of correlated
 predictors. The $\ell_2$ penalty shrinks coefficients for correlated columns towards each other, while the $\ell_1$ penalty
-tends to select only one of them and set the other coefficients to zero. Using the elastic net argument $\alpha$, you can combine these two
-behaviors. The elastic net both selects variables and preserves the grouping effect ( shrinking coefficients of correlated columns together). Moreover, while the number of predictors that can enter a lasso model saturates at $\min(n,p)$ where $n$ is the number of observations and $p$ is the number of variables in the model, the elastic net does not and can fit models with a larger number of predictors. %It is also useful to always add a small $\ell_2$ penalty to increase numerical stability.
+tends to select only one of them and set the other coefficients to zero. Using the elastic net argument $\alpha$ combines these two behaviors. 
+
+The elastic net both selects variables and preserves the grouping effect (shrinking coefficients of correlated columns together). Moreover, while the number of predictors that can enter a Lasso model saturates at $\min(n,p)$ (where $n$ is the number of observations and $p$ is the number of variables in the model), the elastic net does not have this limitation and can fit models with a larger number of predictors. %It is also useful to always add a small $\ell_2$ penalty to increase numerical stability.
 
 \subsubsection{Elastic net penalty}
 
 H2O supports elastic net regularization, which is a combination of the $\ell_1$ and $\ell_2$ penalties parametrized by the $\alpha$ and $\lambda$ arguments (similar to \citetalias{glmnet}).
 \begin{itemize}
 \item $\alpha$ controls the elastic net penalty distribution between the $\ell_1$ and $\ell_2$ norms. It can have any value
-in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM with \textbf{ridge regression}, while if $\alpha = 1$ it does so with the \textbf{lasso} penalty.
-\item $\lambda$ controls the penalty strength; its range is any positive value or a vector of values (which triggers grid search). 
+in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM using ridge regression. If $\alpha = 1$, the Lasso penalty is used.
+\item $\lambda$ controls the penalty strength. The range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
-the empty model (all zeros except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
-\end{itemize}
-
+all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. \end{itemize}
 
 The combination of the $\ell_1$ and $\ell_2$ penalties is beneficial, since the $\ell_1$ induces sparsity while the $\ell_2$ gives
 stability and encourages the grouping effect (where a group of correlated variables tends to be dropped or added
-into the model all at once). One possible use of the $\alpha$ argument when focusing on sparsity involves using the $\ell_1$ mainly with very little $\ell_2$ penalty
-($\alpha$ almost 1), to stabilize the computation and improve convergence speed.
+into the model simultaneously). When focusing on sparsity, one possible use of the $\alpha$ argument  involves using the $\ell_1$ mainly with very little $\ell_2$ penalty
+($\alpha$ almost 1) to stabilize the computation and improve convergence speed.
 
 %A model-fitting problem with an elastic net penalty becomes:
 %$$  \max_{\beta,\beta_0} \ \frac{1}{N} \log \ell(f(y;\beta,\beta_0)) -  \lambda \left( \alpha \| \beta\|_1 + \frac{(1-\alpha)}{2} \| \beta \|_2^2 \right) $$
 
-\subsection{GLM model families}
+\subsection{GLM Model Families}
 The following subsection describes the GLM families supported in H2O. 
 
-\subsubsection{Linear regression (Gaussian family)}
-Linear regression corresponds to the gaussian family model: the link function $g$ is just the identity, and the density $f$ corresponds to a normal distribution. It is the simplest example of a GLM, but has many uses and
-several advantages over the other families. For instance it is faster, and requires more stable computations. It models the dependency between a response $y$ and a covariates vector $x$ as a linear function:
+\subsubsection{Linear Regression (Gaussian Family)}
+Linear regression corresponds to the Gaussian family model: the link function $g$ is the identity and the density $f$ corresponds to a normal distribution. It is the simplest example of a GLM, but has many uses and
+several advantages over other families. For instance, it is faster and requires more stable computations. It models the dependency between a response $y$ and a covariates vector $x$ as a linear function:
 $$ \hat{y} = x^T\beta + \beta_0.$$
 
-The model is fitted by solving the least squares problem, which is equivalent to maximizing the likelihood for the gaussian family
+The model is fitted by solving the least squares problem, which is equivalent to maximizing the likelihood for the Gaussian family:
 
-$$ \max_{\beta,\beta_0} \ \frac{1}{2N} \sum_{i=1}^N  (x_i^{\top}\beta + \beta_0 - y_i)^2  - \lambda \left(  \alpha \|\beta \|_1 +  \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right).$$
+$$ \max_{\beta,\beta_0} \ - \frac{1}{2N} \sum_{i=1}^N  (x_i^{\top}\beta + \beta_0 - y_i)^2  - \lambda \left(  \alpha \|\beta \|_1 +  \frac{1}{2} (1- \alpha) \| \beta \|_2^2 \right).$$
 %$$ \max_{\beta,\beta_0} \frac{1}{2N} \sum_{i=1}^n (x_i^{\top}\beta + \beta_0 - y_i)^2 $$ %- \lambda \left( \alpha \|\beta \|_1 + \frac{(1-\alpha )}{ 2}  \| \beta \|_2^2 \right) $$
 
-The deviance is simply the sum of squared prediction errors
+The deviance is the sum of the squared prediction errors: 
 $$ D = \sum_{i=1}^{N} (y_i - \hat{y}_i)^2 . $$
 
+\newpage
 \waterExampleInR
 
-Included in the H2O package is a prostate cancer data set. The data was collected by Dr. Donn Young at the Ohio State
+Included in the H2O package is a prostate cancer dataset. The data was collected by Dr. Donn Young at the Ohio State
 University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The
 following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds
 based on features such as age and race.
@@ -267,61 +319,60 @@ based on features such as age and race.
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_gaussian_example.py}
 
-\subsubsection{Logistic regression (Binomial family)}
-Logistic regression is used for binary classification problems, where the response is a categorical variable with two
-levels. It models the probability of an observation belonging to an output category given the data, for instance $ Pr(y = 1|x)$.
-The canonical link for the binomial family is the logit function (or log odds). Its inverse is the logistic function that takes any real number and projects it onto the $[0,1]$ range as desired to model the probability of belonging to a class. The corresponding s-curve (or sigmoid function) is shown below,
+\subsubsection{Logistic Regression (Binomial Family)}
+Logistic regression is used for binary classification problems where the response is a categorical variable with two
+levels. It models the probability of an observation belonging to an output category given the data (for instance $ Pr(y = 1|x)$).
+The canonical link for the binomial family is the logit function (also known as log odds). Its inverse is the logistic function, which takes any real number and projects it onto the $[0,1]$ range as desired to model the probability of belonging to a class. The corresponding s-curve (or sigmoid function) is shown below,
 
 \begin{figure}[h]
 \centering
 \includegraphics[scale=0.5]{images/scurve.png}
 \end{figure}
 
-and the fitted model has the form
-$$ \hat{y} = Pr(y = 1|x) = {e^{x^{\top}\beta + \beta_0} \over 1 + e^{x^{\top} \beta + \beta_0} }.$$
+and the fitted model has the form:
+$$ \hat{y} = Pr(y = 1|x) = {e^{x^{\top}\beta + \beta_0} \over 1 + e^{x^{\top} \beta + \beta_0} }$$
 
-This can alternatively be written as 
-$$  \log \left( \frac{\hat{y}}{ 1- \hat{y} } \right)  = \log \left(  \frac{Pr(y=1|x)}{Pr(y=0|x)}   \right) = x^{\top} \beta + \beta_0.$$
+This can alternatively be written as: 
+$$  \log \left( \frac{\hat{y}}{ 1- \hat{y} } \right)  = \log \left(  \frac{Pr(y=1|x)}{Pr(y=0|x)}   \right) = x^{\top} \beta + \beta_0$$
 %$$\log \left( \frac{\hat{y}}{ 1- \hat{y} } \right) = \log \left( \frac{Pr(y=1|x)}{Pr(y=0|x)} \right) = x^{\top} \beta + \beta_0.$$
 
-The model is fitted by maximizing the following penalized likelihood 
-$$  \max_{\beta,\beta_0} \   \frac{1}{N} \sum_{i=1}^{N} \left( \ y_i (x_i^{\top}\beta  + \beta_0) - \log (1 + e^{x_i^{\top}\beta  + \beta_0} ) \right)  - \lambda \left( \alpha \|\beta \|_1 +  \frac{1}{2}(1- \alpha)  \| \beta \|_2^2 \right). $$
+The model is fitted by maximizing the following penalized likelihood: 
+$$  \max_{\beta,\beta_0} \  \frac{1}{N} \sum_{i=1}^{N} \left( \ y_i (x_i^{\top}\beta  + \beta_0) - \log (1 + e^{x_i^{\top}\beta  + \beta_0} ) \right)  - \lambda \left( \alpha \|\beta \|_1 +  \frac{1}{2}(1- \alpha)  \| \beta \|_2^2 \right)$$
 
 The corresponding deviance is equal to 
 $$D = -2\sum_{i=1}^{n} \left(y_i \log(\hat{y}_i) + (1 - y_i)\log(1-\hat{y}_i)  \right).$$
 
 \waterExampleInR
 
-Using the prostate data set, this example builds a binomial model that classifies the incidence of penetration of the prostatic
+Using the prostate dataset, this example builds a binomial model that classifies the incidence of penetration of the prostatic
 capsule (CAPSULE). Confirm the entries in the CAPSULE column are binary using the \texttt{h2o.table()}
 function. Change the regression by changing the family to binomial.
-
+\newpage
 \lstinputlisting[style=R]{glm/glm_binomial_example.R}
 
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_binomial_example.py}
 
-\subsubsection{Poisson models}
-Poisson regression is generally used for datasets where the response represents counts and the errors are assumed to have a
-poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the
-response and covariates as
+\subsubsection{Poisson Models}
+Poisson regression is typically used for datasets where the response represents counts and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as: 
 %When building a Poisson model, we usually model dependency of the mean on the log scale, i.e. canonical link is log
 %and prediction is:
 
-$$\hat{y} = e^{x^T\beta + \beta_0} .$$
+$$\hat{y} = e^{x^T\beta + \beta_0}$$
 
-The model is fitted by maximizing the corresponding penalized likelihood
+The model is fitted by maximizing the corresponding penalized likelihood:
 
 $$  \max_{\beta,\beta_0}  \ \frac{1}{N} \sum_{i=1}^{N}  \left(   y_i (x_i^{\top}\beta  + \beta_0) - e^{x_i^{\top}\beta  + \beta_0} \right) 
-- \lambda \left(\alpha \|\beta \|_1 + \frac{1}{2}(1-\alpha) \| \beta \|_2^2 \right). $$
+- \lambda \left(\alpha \|\beta \|_1 + \frac{1}{2}(1-\alpha) \| \beta \|_2^2 \right)$$
 
-The corresponding deviance is equal to 
+\newpage
+The corresponding deviance is equal to: 
 
-$$D = -2\sum_{i=1}^{N} \left( y_i \log(y_i/\hat{y}_i) - ( y_i - \hat{y}_i  ) \right) .$$
+$$D = -2\sum_{i=1}^{N} \left( y_i \log(y_i/\hat{y}_i) - ( y_i - \hat{y}_i  ) \right)$$
 
 \waterExampleInR
 \\
-This example loads the Insurance data from the MASS library, imports it into H2O and runs a poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
+This example loads the Insurance data from the MASS library, imports it into H2O, and runs a Poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
 own (Group).
 \bigskip
 \lstinputlisting[style=R]{glm/glm_poisson_example.R}
@@ -329,17 +380,17 @@ own (Group).
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_poisson_example.py}
 
-\subsubsection{Gamma models}
+\subsubsection{Gamma Models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
 variance of the response grows with its mean but the coefficient of variation of the response $\sigma^2(y_i)/\mu_i$ is
 constant. It is usually used with the log link $g(\mu_i)= \log(\mu_i)$, or the inverse link $g(\mu_i) = \frac{1}{\mu_i} $ which is equivalent to the canonical link.
 
-The model is fitted by solving the following likelihood maximization
+The model is fitted by solving the following likelihood maximization:
 
-$$  \max_{\beta,\beta_0} \  \frac{1}{N}  \sum_{i=1}^N  \ -\frac{y_i}{x_i^{\top}\beta+\beta_0 } - \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
+$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
 %\[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
-The corresponding deviance is equal to
+The corresponding deviance is equal to:
 
 $$D = 2\sum_{i=1}^{N} - \log\left({\frac{ y_i }{\hat{y}_i}}\right) + \frac{(y_i - \hat{y}_i)}{\hat{y}_i}. $$
 
@@ -349,15 +400,13 @@ To change the link function from the default inverse function to the log link fu
 argument.
 \bigskip
 \lstinputlisting[style=R]{glm/glm_gamma_example.R}
-
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_gamma_example.py}
 
-\subsubsection{Tweedie models}
+\subsubsection{Tweedie Models}
 
-Tweedie models are a class of distributions which include Gamma, Normal, Poisson and their combination. It is especially useful for modeling positive continuous variables which have exact zeros (e.g. Gamma distribution).
-
-Tweedie is parametrized by variance power $p$ which can be one of the following:
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. The Tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 
 \begin{itemize}
 \item  $p=0$: Normal
@@ -365,20 +414,31 @@ Tweedie is parametrized by variance power $p$ which can be one of the following:
 \item $p\in(1, 2)$: Compound Poisson, non-negative with mass at zero
 \item $p=2$: Gamma
 \item $p=3$: Inverse-Gaussian
-\item $p>3$:  Stable, with support on the positive reals% (was 2?)
+\item $p>2$:  Stable, with support on the positive reals % (was 2?)
 \end{itemize}
 
+The normal and Poisson examples have already been covered in the previous sections. For $p>1$, the model likelihood to maximize has the form: 
+$$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{y_i\mu_i^{1-p}}{1-p} - \kappa(\mu_i,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
+where $\kappa(\mu,p) = \mu^{2-p}/(2-p)$ for $p \neq 2$ and $\kappa(\mu,p) = \log(\mu)$ for $p=2$ and where the function $a(y_i,\phi)$ is evaluated using series expansion, since it does not have an analytical solution. The link function in the GLM representation of the Tweedie distribution defaults to $g(\mu) = \mu^{q} = \eta = X\beta$ with $q=1-p$. The link power $q$ can be set to other values, including $q=0$ which is interpreted as $\log(\mu)=\eta$. 
+%
+%have the form of the distribution \\
+%link function can be taken as $\mu^{1-p}$ when p is not equal to 1\\
+%giving: link $\mu=g^{-1}(\eta)$ or $\eta=X\beta = g(\mu)$ \\
+%satisfies being the identity when p=0 cause $\eta = \mu^1$\\
+%for p=2 satisfies the inverse link $\eta = \mu^-1$\\
+%for $p=3$ satisfies the link which is the $inverse^2$ for the inverse gaussian.\\
+%so when write the distribution for the tweedie we can replace $\mu$ by Ginverse of eta and we will have Xbeta in the expression. 
+%Apart from the special cases, the density of the distribution does not have an analytic expression. The model likelihood to maximize is
 
-TODO fit in likelihood 
+The corresponding deviance when $p \neq 1$ and $p\neq 2$ is equal to:
+$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y_i^{2 - p} - \hat{y}_i^{2 - p})}{(2 - p)}. $$\\
 
-Deviance for variance $p$ ($p != 1$ and $p != 2$) is :
-$$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} - \hat{y}^{2 - p})}{(2 - p)} $$
+%\waterExampleInR
+%This example loads the Insurance data from the HDtweedie library, imports it into H2O and runs a tweedie model that predicts the aggregate claim loss (in thousand dollars) based on 56 predictors including the car type, job class etc.
+%\lstinputlisting[style=R]{glm/glm_tweedie_example.R}
 
-\waterExampleInR
-\lstinputlisting[style=R]{glm/glm_tweedie_example.R}
-
-\waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
+%\waterExampleInPython
+%\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -388,154 +448,160 @@ $$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y^{2 - p} -
 H2O's GLM implementation presents a high-performance distributed algorithm that scales linearly with the number
 of rows and works extremely well for datasets with a limited number of active predictors.
 
-\subsection{Classification vs. regression}
+\subsection{Classification and Regression}
 
-GLM can produce two categories of models: classification (binary classification only) and regression.  Binary
-classification in GLM is also called logistic regression.
+GLM can produce two categories of models: classification (binary classification only) and regression. Logistic regression is the GLM to perform binary classification.
 
 The data type of the response column determines the model category.  If the response is a categorical variable
 (also called a factor or an enum), then a classification model is created.  If the response column data type is
-numeric (either integer or real), then a regression model is created.
+numeric (either integer or real), then a regression model is created. 
 
 The following examples show how to coerce the data type of a column to a factor.
 
-\bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/coerce_column_to_factor.R}
-
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/coerce_column_to_factor.py}
 
-\subsection{Training and validation frames}
+\subsection{Training and Validation Frames}
 
-In this context, the word Frame refers to an H2OFrame, which is the fundamental method of data storage in H2O's distributed memory.
+Frame refers to an H2OFrame, the fundamental method of data storage in H2O's distributed memory.
 
 \texttt{training\_frame} refers to a frame containing a training dataset.  All predictors and the response (as
-well as offset and weights, if specified) must be part of this frame.
+well as offset and weights, if specified) must be included in this frame.
 
 \texttt{validation\_frame} refers to an optional frame containing a validation dataset.  If specified, this 
-frame must have exactly the same columns as the training dataset.  Metrics are calculated on the validation dataset
-for convenience.
+frame must have exactly the same columns as the training dataset.  Metrics are calculated on the validation dataset for convenience.
 
-If a validation dataset is not specified during training, there are functions that can calculate the same metrics after the model training is complete. %%would be helpful to provide examples or where users can find these functions. 
+%If a validation dataset is not specified during training, there are functions that can calculate the same metrics after the model training is complete. %%would be helpful to provide examples or where users can find these functions. 
 
-\subsection{Predictor and response variables}
+\subsection{Predictor and Response Variables}
 
-Every model must specify its predictors and response.  Predictors and response are specified by the \texttt{x}
-and \texttt{y} parameters.
+Every model must specify its predictors and response.  Predictors and responses are specified by the $x$
+and $y$ parameters.
 
-\texttt{x} contains the list of column names or column indices referring to vectors from the training frame; it can
-not contain periods.
+$x$ contains the list of column names or column indices referring to vectors from the training frame; periods are not supported characters.
 
-\texttt{y} is a column name or index referring to a vector from the training frame.
+$y$ is a column name or index referring to a vector from the training frame.
 
-\subsubsection{Categorical variables}
+\subsubsection{Categorical Variables}
 
-If the response column is categorical, then a classification model is created.  GLM only supports binomial
-classification, so the response column may only have two levels.
+If the response column is categorical, then a classification model is created.  GLM only supports binary
+classification, so the response column may only have two levels. Categorical predictor columns may have more than two levels.
 
-Categorical predictor columns may have more than two levels.
-
-We recommend letting GLM handle categorical columns itself, as it can take advantage of the categorical
+We recommend letting GLM handle categorical columns, as it can take advantage of the categorical
 column for better performance and memory utilization.
 
-We strongly recommend avoidance of one-hot encoding categorical columns with many levels into many binary columns, as this is very inefficient.  This is especially true for Python users who are used to expanding their categorical variables
-manually for other frameworks.
+We strongly recommend avoiding one-hot encoding categorical columns with many levels into many binary columns, as this is very inefficient.  This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
 
-\subsection{Family and link}
+\subsection{Family and Link}
 
-Family and Link are both optional parameters. The default family is \texttt{Gaussian} and the default link is a
-canonical link for the selected family. These are passed in as strings, e.g. \texttt{family=`gamma', link = `log'}.
-While it is possible to select something other than a canonical link, doing so can lead to an unstable
-computation. 
+Family and Link are optional parameters. The default family is \texttt{Gaussian} and the default link is a
+canonical link for the selected family. These are passed as strings, e.g. \texttt{family=`gamma', link =`$\log$'}.
+While it is possible to select  a non-canonical link, this can lead to an unstable computation. 
 
-\subsection{Regularization parameters}
-
-Refer to \nameref{regularization} above for a detailed explanation.
+\subsection{Regularization Parameters}
 
 To get the best possible model, we need to find the optimal values of the regularization parameters $\alpha$ and
 $\lambda$.  To find the optimal values, H2O provides grid search over $\alpha$ and a special form of grid search
-called ``lambda search" over $\lambda$. The recommended way to find optimal regularization settings on H2O is to do
+called ``lambda search" over $\lambda$. For a detailed explanation, refer to \nameref{regularization}.
+
+The recommended way to find optimal regularization settings on H2O is to do
 a grid search over a few $\alpha$ values with an automatic lambda search for each $\alpha$. Both are described
 below in greater detail.
 
-\subsubsection{alpha and lambda}
+\subsubsection{Alpha and Lambda}
 
-\texttt{alpha} controls the distribution between  $\ell_1$ (Lasso) and  $\ell_2$ (Ridge regression) penalties.  An \texttt{alpha} 
-of 1.0 indicates only Lasso, and an \texttt{alpha} of 0.0 indicates only ridge.
+\texttt{alpha} controls the distribution between  the $\ell_1$ (Lasso) and  $\ell_2$ (Ridge regression) penalties.  An \texttt{alpha} 
+of 1.0 indicates Lasso, and an \texttt{alpha} of 0.0 indicates ridge regression.
 
-\texttt{lambda} controls the amount of regularization applied.  For a \texttt{lambda} value of 0.0, no 
-regularization is applied, and the \texttt{alpha} parameter is ignored.  The default value for \texttt{lambda} is
-calculated by H2O using a heuristic based on the training data.  If you let H2O calculate \texttt{lambda}, you can
-see the chosen value in the model output.
+\texttt{lambda} controls the amount of regularization applied.  If \texttt{lambda} is 0.0, no 
+regularization is applied and the \texttt{alpha} parameter is ignored.  The default value for \texttt{lambda} is
+calculated by H2O using a heuristic based on the training data.  If you let H2O calculate \texttt{lambda}, you can see the chosen value in the model output.
 
 \subsubsection{Lambda Search}
-Lambda search enables efficient and automatic search for optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization strength and then keep decreasing it until overfitting. The resulting model will be based on the best \texttt{lambda} value. When looking for sparse solution (\texttt{alpha} $>$ 0), lambda serach can also be used to efficiently handle very wide datasets as it can filter out inactive predictors (noise) and only build models for a small subset of predictors. Common use of lambda search is to run on a dataset with many predictors but limit the number of active predictors to relatively small value.  
+Lambda search enables efficient and automatic search for the optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization and then keep decreasing it until overfitting occurs. The resulting model is based on the best \texttt{lambda} value. 
 
-Lambda search can be turned on by setting \texttt{lambda\_search} and can be further customized by following arguments:
+When looking for sparse solution (\texttt{alpha} $>$ 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (known as noise) and only build models for a small subset of predictors. A common use of lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value.  
+
+Lambda search can be enabled by setting \texttt{lambda\_search} and can be configured using the following arguments:
 
 \begin{itemize}
-\item \texttt{alpha} - regularization distribution between  $\ell_1$ and  $\ell_2$
-\item \texttt{validation\_frame} and\/or \texttt{n\_folds}:
-The best lambda is selected based on performance on the cross-validation or validation or training data. If available, cross-validation performance takes preference. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed as GLM can not overfit on a trainign dataset.
+\item \texttt{alpha}: Regularization distribution between  $\ell_1$ and  $\ell_2$.
+\item \texttt{validation\_frame} and\/or \texttt{n\_folds}: Used to select the best lambda based on the cross-validation performance  or the validation or training data. If available, cross-validation performance takes precedence. If no validation data is available, the best lambda is selected based on training data performance and is therefore guaranteed to always be the minimal lambda computed, since GLM can not overfit on a training dataset.
  
-\textbf{Note:} If running lambda search with validation dataset and no cross-validation, validation data set is used to select the lambda value, validation dataset is thus contaminated and performance should be evaluated on another independent dataset.
+\textbf{Note:} If running lambda search with a validation dataset and cross-validation disabled, the chosen lambda value corresponds to the lambda with the lowest validation error. The validation dataset is used to select the model and the model performance should be evaluated on another independent test dataset. 
 
-
-\item \texttt{lambda\_min\_ratio} and \texttt{nlambdas}: 
-
-The sequence of $\lambda$-s is automatically generated as an exponentially decreasing sequence, going from $\lambda_{max}$,
-the smallest $\lambda$ such that the solution is a model with all 0s, to $\lambda_{min} =
+\item \texttt{lambda\_min\_ratio} and \texttt{nlambdas}: The sequence of $\lambda$s is automatically generated as an exponentially decreasing sequence. It ranges from $\lambda_{max}$,
+the smallest $\lambda$ so that the solution is a model with all 0s, to $\lambda_{min} =
 $ \textit{lambda\_min\_ratio} * $ \lambda_{max}$.
 
-H2O computes $\lambda$-models sequentially and in decreasing order, warm-starting (using the previous solution as
-the initial prediction) the model for $\lambda_k$ with the solution for $\lambda_{k-1}$. By warm-starting the
-models, we get better performance: typically models for subsequent $\lambda$s are close to each other, so we need
-only a few iterations per $\lambda$ (typically two or three). We also achieve greater numerical stability, since models
-with a higher penalty are easier to compute, so we start with an easy problem and then keep making only small
-changes to it.
-
+H2O computes $\lambda$-models sequentially and in decreasing order, warm-starting the model for $\lambda_k$ with the solution for $\lambda_{k-1}$. By warm-starting (using the previous solution as the initial prediction) the models, we get better performance: typically models for subsequent $\lambda$s are close to each other, so only a few iterations per $\lambda$ are needed (typically two or three). This also achieves greater numerical stability, since models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments. 
 
 \textbf{Note:} \texttt{nlambda} and \texttt{lambda\_min\_ratio} also specify the relative distance of any two
- lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the
-neighboring lambdas are ``close" to each other. The default values are \texttt{nlambda} = 100 and $\lambda_{min}
+ lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are ``close" to each other. The default values are \texttt{nlambda} = 100 and $\lambda_{min}
 = \lambda_{max} 1e^{-4}$, which gives us the ratio of 0.912.  For best results when using strong rules, keep the
 ratio close to the default.
-
-\item \texttt{max\_active\_predictors}: Limit the number of active predictors (the actual number of non-zero predictors in the model is going to be slightly lower), usefull when obtaining a sparse solution to avoid costly computation of models with too many predictors.
+\newpage
+\item \texttt{max\_active\_predictors}: This limits the number of active predictors (the actual number of non-zero predictors in the model is going to be slightly lower). It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
 \end{itemize}
 
+\subsection{Solver Selection}
 
-\subsection{Handling wide data and building sparse models}
+This section provides general guidelines to help get the best performance out of the H2O GLM implementation options. The optimal solver depends on the properties of the data and prior information regarding the variables (if available). 
 
-H2O's GLM offers two different approaches to handling wide datasets:   $\ell_1$ regularization and the L\_BFGS solver.
+The data are considered sparse when the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. On the other hand a dense solution is one where all predictors have non-zero coefficients in the final model.
 
-Quick recommendations:
+\subsubsection{Solver Details}
+
+H2O's GLM offers two different solvers: 
 
 \begin{itemize}
-\item For a sparse solution (i.e. some predictors are dropped from the final model), use the IRLSM solver with 
-      \texttt{alpha} greater than 0.0 (so you get at least some  $\ell_1$ penalty) and enable \texttt{lambda\_search}.
+\item the Iteratively Reweighted Least Squares Method (IRLSM)
+\item the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS)
+\end{itemize}
+IRLSM uses
+a Gram Matrix approach, which is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
+datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than $\sim 500$ predictors in the data, use the default, which is IRLSM. 
 
-\item For a dense solution (i.e. all predictors are in the final model), use the L\_BFGS solver with
-      \texttt{alpha} of 0 so there is no  $\ell_1$ penalty, only  $\ell_2$ penalty.
-\item If not sure whether the solution should be sparse or dense, try both cases and pick the better one based on validation (cross-validation) data.      
+For larger numbers of predictors, it is recommended to run IRLSM with lambda search and compare it to L-BFGS with just the $\ell_2$ penalty. The more advanced user may follow these general guidelines:
+%H2O's GLM offers two different approaches for datasets with more than a thousand predictors.%depending on the expected number of coefficients to be included in the model: % to handling wide datasets: the IRLSM and the L-BFGS solvers.
+\begin{itemize}
+\item For a dense solution and a dense dataset, use IRLSM if there are fewer than $\sim 500$ predictors in the data; otherwise, use L-BFGS. Set \texttt{alpha} to 0 to include $\ell_2$ regularization in the elastic net penalty term to avoid inducing sparsity in the model.
+   %   \texttt{alpha} equal to 0. This way only the $\ell_2$ regularization is included in the elastic net penalty term, and no sparsity is induced in the model. 
+\item For a dense solution with a sparse dataset, use IRLSM if there are fewer than $\sim 2000$ predictors in the data; otherwise, use L-BFGS. Set \texttt{alpha} to 0.
+%$< \  \sim5000$ predictors (i.e. one which only keeps some predictors in the final model), use the IRLSM solver with 
+  %    \texttt{alpha} greater than 0. This adds an $\ell_1$ penalty to the elastic net regularization which induces sparsity in the estimated coefficients. Make sure \texttt{lambda\_search} is enabled to get models for the full regularization path. 
+\item For a sparse solution with a dense dataset, use IRLSM with lambda-search if fewer than $\sim 500$ active predictors in the solution are expected; otherwise, use L-BFGS. Set \texttt{alpha} to be greater than zero to add an $\ell_1$ penalty to the elastic net regularization, which induces sparsity in the estimated coefficients. 
+\item For a sparse solution with a sparse dataset, use IRLSM with lambda-search if you expect less than $\sim 5000$ active predictors in the solution; otherwise, use L-BFGS. Set \texttt{alpha} to be greater than zero. 
+\item If unsure whether the solution should be sparse or dense, try both and a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively the performance in cross-validation when not enough data is available to have a separate validation dataset).      
 \end{itemize}
 
-\subsubsection{Solver selection}
+ The above recommendations are general guidelines; if the performance of the method seems slow, experiment with the available options. 
 
-The two solvers provided in H2O are Iterative Reweighted Least Squares Method (IRLSM) and Limited-memory Broyden-Fletcher-Goldfarb-Shanno (L\_BFGS).  IRLSM uses
-a Gram Matrix approach underneath the hood, which is very efficient for tall and narrow datasets and when running lambda search with sparse solution.  For wider and dense
-datasets (thousands of predictors and up), the L\_BFGS solver scales better.
+\vspace{0.2cm}
+%\subsection{Solver Selection} %wide data want lambda search with alpha > 0 
+%The two solvers provided in H2O are the Iteratively Reweighted Least Squares Method (IRLSM) and the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS).  
+%comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
+IRLSM can be run with two algorithms to solve its innermost loop: ADMM and cyclical coordinate descent. The latter is used in glmnet. The method is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$ and $p \sim 500$. 
 
-For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L\_BFGS solver, since
-model building can be slower. It is often better to run lambda search with IRLSM solver instead.
+The solver options for fitting a GLM in H2O are:
+\begin{itemize}
+ \item \textbf{L-BFGS}: when the number of predictors is large
+ \item \textbf{IRLSM}: IRLSM with the ADMM solver in the innermost loop when you have a limited number of predictors
+ %\item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}: IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop 
+ %\item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}\texttt{\char`_}\textbf{NAIVE}: IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
+\end{itemize}
+
+%\textbf{Note}: The coordinate descent implementations are experimental and their performance characteristics are still being evaluated. 
 
 \subsubsection{Stopping criteria}
 
-When using  $\ell_1$ penalty with lambda search, you can specify the \texttt{max\_active\_predictors} parameter to stop
+When using the $\ell_1$ penalty with lambda search, specify the \\ \texttt{max\_active\_predictors} parameter to stop
 the search before it completes.  Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model.  Models built at the end of the lambda search have
-lower lambda values, incorporate more predictors, and take a longer time to calculate the model. You can also set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
+lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
 \bigskip
 \waterExampleInR
@@ -544,13 +610,13 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
 
-
-
-\subsection{Advanced features}
+%For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
+%model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
+\subsection{Advanced Features}
 
 H2O's GLM has several advanced features to help build better models.
-
-\subsubsection{Standardizing data}
+\newpage
+\subsubsection{Standardizing Data}
 
 The \texttt{standardize} parameter, which is enabled by default, standardizes numeric columns to have zero mean and
 unit variance.  This parameter must be enabled (using \texttt{standardize=TRUE}) to produce standardized coefficient magnitudes in the model output.
@@ -558,14 +624,14 @@ unit variance.  This parameter must be enabled (using \texttt{standardize=TRUE})
 We recommend enabling standardization when using regularization (i.e. \texttt{lambda} is chosen by H2O or set by
 the user to be greater than 0). Only advanced users should disable standardization.
 
-\subsubsection{K-fold cross validation}
+\subsubsection{K-fold Cross-Validation}
 
-All validation values can be computed using either the training data set (the default option) or using K-fold
+All validation values can be computed using either the training dataset (the default option) or using K-fold
 cross-validation (\texttt{kfolds $> 1$)}. When $K$-fold cross-validation is enabled, H2O randomly splits data into $K$
 equally-sized parts, trains each of the $K$ models on $K-1$ parts, and computes validation on the part that was not
 used for training.
 
-You can also specify the rows that are assigned to each fold using the \texttt{fold\_assignment}
+You can also specify the rows that are assigned to each fold using the\\ \texttt{fold\_assignment}
 or \texttt{fold\_column} parameters.
 
 \bigskip
@@ -573,8 +639,8 @@ or \texttt{fold\_column} parameters.
 \lstinputlisting[style=R]{glm/glm_cross_validation.R}
 
 
-
-\subsubsection{Grid search over alpha}
+\newpage
+\subsubsection{Grid Search Over Alpha}
 
 Alpha search is not always needed and simply changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
 respectively) works in most cases. If $\alpha$ search is needed, specifying only a few values is typically sufficient. Alpha
@@ -589,7 +655,7 @@ it is therefore less numerically stable and can be very slow as well due to slow
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_grid_search_over_alpha.R}
 
-\subsubsection{Grid search over lambda}
+\subsubsection{Grid Search Over Lambda}
 
 % While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
 % by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
@@ -604,13 +670,15 @@ search capability in GLM.
 
 \subsubsection{Offsets}
 
-\texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.  
+\texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row “bias values” that are used during model training. 
 
-\subsubsection{Row weights}
+For Gaussian distributions, they can be seen as simple corrections to the response (\texttt{y}) column. Instead of learning to predict the response (\texttt{y}-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.  
+
+\subsubsection{Row Weights}
 
 \texttt{weights\_column} is an optional column name or index referring to a column in the training frame. This column specifies on a per-row basis the weight of that row.  If no weight column is specified, a default value of 1 is used for each row. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
-\subsubsection{Coefficient constraints}
+\subsubsection{Coefficient Constraints}
 
 Coefficient constraints allow you to set special conditions over the model coefficients. Currently supported
 constraints are upper and lower bounds and the proximal operator interface, as described in \citetalias{prox}.
@@ -625,11 +693,11 @@ The constraints are specified as a frame with following vecs (matched by name; a
 \item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored) - specifies per-column  $\ell_2$ penalties on the distance from the given solution
 \end{itemize}
  
-\subsubsection{Proximal operators}
+\subsubsection{Proximal Operators}
 
 The proximal operator interface allows you to run the GLM with a proximal penalty on a distance from a specified
 given solution. There are many potential uses: for example, it can be used as part of an ADMM consensus algorithm
-to obtain a unified solution over separate H2O clouds, or in Bayesian regression approximation.
+to obtain a unified solution over separate H2O clouds or in Bayesian regression approximation.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -641,7 +709,7 @@ The following sections explain the output produced by logistic regression (i.e. 
 \bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_model_output_10.R}
-
+\newpage
 \begin{lstlisting}[style=output]
 Model Details:
 ==============
@@ -716,8 +784,8 @@ Maximum Metrics:
 6           max absolute_MCC  0.469237 0.391977  38
 7 max min_per_class_accuracy  0.482906 0.692308  36
 \end{lstlisting}
-
-\subsection{Coefficients and normalized coefficients}
+\newpage
+\subsection{Coefficients and Normalized Coefficients}
 
 Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
 make predictions for new data points:
@@ -762,7 +830,7 @@ AGE         AGE     0.143745  NEG
 RACE       RACE     0.093423  NEG
 \end{lstlisting}
 
-\subsection{Model statistics}
+\subsection{Model Statistics}
 
 Various model statistics are available:
 
@@ -774,7 +842,7 @@ Various model statistics are available:
 
 \texttt{AUC} is available only for binomial models and is defined the area under ROC curve.
 
-\texttt{Gini}  TODO
+%\texttt{Gini}  TODO
 
 \texttt{Null deviance} Deviance (defined by selected family) computed for the null model. 
 
@@ -782,17 +850,17 @@ Various model statistics are available:
 
 \texttt{AIC} is based on log-likelihood, which is summed up similarly to deviance
 
-Fetch these statistics using the following accessor functions:
+Retrieve these statistics using the following accessor functions:
 
 \lstinputlisting[style=R]{glm/glm_accessors.R}
-
-\subsection{Confusion matrix}
+\newpage
+\subsection{Confusion Matrix}
 
 Fetch the confusion matrix directly using the following accessor function:
 
 \lstinputlisting[style=R]{glm/glm_confusion_matrix.R}
 
-\subsection{Scoring history}
+\subsection{Scoring History}
 
 The following output example represents a sample scoring history: 
 
@@ -855,17 +923,19 @@ You can change the threshold manually, for example to 0.3, and recalculate the p
 6       0 0.7272743 0.2727257
 \end{lstlisting}
 
-\subsection{Low-latency predictions with the NanoFast scoring engine}
+\subsection{Low-latency Predictions using POJOs}
 
-For NanoFast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  These are very
-low latency and can easily be embedded in any Java environment (a customer-facing web application, a Storm bolt,
+For nano-fast scoring, H2O GLM models can be directly rendered as a Plain Old Java Object (POJO).  POJOs are very
+low-latency and can easily be embedded in any Java environment (a customer-facing web application, a Storm bolt,
 or a Spark Streaming pipeline, for example).
 
-The POJO does nothing but pure math, and has no dependencies on any other software packages (not even H2O itself),
-so it is easy to work with.
+The POJO does nothing but pure math, and has no dependencies on any other software packages (not even H2O),
+so it is easy to implement.
 
 Directions for using the POJO in detail are beyond the scope of this document, but here is an example of how to get
 one and view it.  You can also access the POJO from the Flow Web UI.
+
+For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick Start Guide} at {\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md}}. 
 
 \bigskip
 \waterExampleInR
@@ -895,15 +965,14 @@ Here are a few rules of thumb to follow:
 To determine the accuracy of your model: 
 
 \begin{itemize}
-\item Look for suspiciously different cross-validation results between folds
-
+\item Look for conspicuously different cross-validation results between folds:
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_compare_cross_validation_folds.R}
 
 \item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$)  
       \begin{itemize}
       \item Too close to 0:  model doesn’t predict well
-      \item Too close to 1:  model predicts “too” well (one of your input columnss is probably a cheating column)
+      \item Too close to 1:  model predicts “too” well (one of your input columns is probably a cheating column)
       \end{itemize}
 \item For logistic regression (i.e. binomial classification) models, look for AUC
       \begin{itemize}
@@ -914,17 +983,16 @@ To determine the accuracy of your model:
       lambda that interests you (performing all the iterations probably means the solution is not good).  This is
       controlled by the \texttt{max\_iterations} parameter.
 \item Too many NAs in your training data is bad (GLM discards rows with NA values)
-     You should always check degrees of freedom of the output model. Degress of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
+     You should always check degrees of freedom of the output model. Degrees of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
 
       \begin{itemize}
       \item If you have few columns with many NAs, you might accidentally be losing all your rows and it's better to exclude them.
-      \item If you have many columns with small fraction of uniformly distributed missing values, every row is lkely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modelling.
+      \item If you have many columns with small fraction of uniformly distributed missing values, every row is likely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modeling.
       \end{itemize}
 \end{itemize}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-
 \section{Implementation Details}
 
 The following sections discuss some of the implementation choices in H2O's GLM.
@@ -940,19 +1008,20 @@ are needed. Each categorical column is treated as a set of sparse binary vectors
 
 Categoricals have special handling during GLM computation as well. When forming the gram matrix, we can take
 advantage of the fact that columns belonging to the same categorical never co-occur and the gram matrix region
-belonging to these columns will not have any non-zero elements outside of the diagonal. We can thus keep it in
-sparse representation, taking only O(N) elements instead of O(N*N). Furthermore, the complexity of Choelsky
+belonging to these columns will not have any non-zero elements outside of the diagonal. 
+
+This keep it in sparse representation, taking only $O(N)$ elements instead of $O(N*N)$. Furthermore, the complexity of Choelsky
 decomposition of a matrix that starts with a diagonal region can be greatly reduced. H2O's GLM exploits these two
 facts to handle the largest categorical ``for free". Therefore, when analyzing the performance of GLM in the
 equation expressed above, we can subtract the size of the largest categoricals from the number of predictors.
 
 $$N = \sum_{c \in C} (\|c.domain\|) - \arg\max_{c \in C} \|c.domain\| + \|Nums\| $$
 
-\subsection{Speed and memory performance characteristics}
+\subsection{Performance Characteristics}
 
-This section discusses the CPU and memory cost of running GLM for each available solver.
+This section discusses the CPU and memory cost of each available non-experimental solver for running GLM.
 
-\subsubsection{IRLSM solver}
+\subsubsection{IRLSM Solver}
 
 The implementation is based on iterative re-weighted least squares with an ADMM inner solver (as described
 in \citetalias{admm}) to deal with the  $\ell_1$ penalty. Every iteration of the algorithm consists of following steps:
@@ -963,13 +1032,14 @@ in \citetalias{admm}) to deal with the  $\ell_1$ penalty. Every iteration of the
 \item Decompose the gram matrix (Cholesky decomposition) and apply ADMM solver to solve the  $\ell_1$ penalized least squares problem
 \end{enumerate}
 
-Steps 1 and 2 are performed distributively and step 3 is computed in parallel on a single node. We can thus
-characterize the computational complexity and scalability of dataset with M observations and N columns (predictors)
-on a cluster with n nodes with p CPUs each as follows:
+Steps 1 and 2 are performed distributively. Step 3 is computed in parallel on a single node. This method
+characterizes the computational complexity and scalability of dataset with $M$ observations and $N$ columns (predictors)
+on a cluster with $n$ nodes with $p$ CPUs each as follows:
 
 \bigskip
 
-\begin{center}
+\begin{adjustbox}{width=\textwidth}%resizes table to text width
+\centering % used for centering table 
     \begin{tabular}{ c || c | c }
         & & \\
         & CPU & Memory \\
@@ -993,54 +1063,50 @@ on a cluster with n nodes with p CPUs each as follows:
         \\
 
         & & \\
+
     \end{tabular}
-\end{center}
+\end{adjustbox}
 
 \bigskip
-
-\begin{center}
     \begin{tabular}{ l l }
-    M & Number of rows in the training data \\
-    N & Number of predictors in the training data \\
-    p & Number of CPUs per node \\
-    n & Number of nodes in the cluster \\
+
+    $M$ & Number of rows in the training data \\
+    $N$ & Number of predictors in the training data \\
+    $p$ & Number of CPUs per node \\
+    $n$ & Number of nodes in the cluster \\
     \end{tabular}
-\end{center}
 
 \bigskip
 
-If $M >> N$, the algorithm scales linearly both in the number of nodes and the number of CPUs per node. However,
+If $M>>N$, the algorithm scales linearly both in the number of nodes and the number of CPUs per node. However,
 the algorithm is limited in the number of predictors it can handle, since the size of the Gram matrix grows
-quadratically due to a memory and network throughput issue with the number of predictors and its decomposition
-cost grows as the cube of the number of predictors (which is a computational cost issue). In many cases, H2O can
-work around these limitations due to its handling of categoricals and by employing strong rules to filter out
-inactive predictors.
+quadratically, due to a memory and network throughput issue with the number of predictors. Its decomposition
+cost grows as the cube of the number of predictors increases, which is a computational cost issue. In many cases, H2O can work around these limitations due to its handling of categoricals and by employing strong rules to filter out inactive predictors.
 
 \subsubsection{L-BFGS solver}
-In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. The cost of the coefficient update is k*N, where N is number of predictors and k is a constant, the cost of gradient computation is $M*N\over pn$ where M is number of observations in the dataset and pnis the number of cpu cores in the cluster. Since k is a (small) constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully paralellized and L-BFGS thus scales almost linearly. 
+In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. The cost of the coefficient update is $k*N$, where $N$ is number of predictors and $k$ is a constant, the cost of gradient computation is $M*N\over pn$ where $M$ is number of observations in the dataset and $pn$ is the number of CPU cores in the cluster. Since $k$ is a small constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully parallelized, scaling L-BFGS almost linearly. 
 
-\subsection{Data corner cases}
+\subsection{FAQ}
 
 \begin{itemize}
-\item What if: the training data has an NA? All rows conatining (any) missing value are omitted form the training set. 
+\item \textbf{What if the training data contains NA values?}
 
-\item What if: the test data has an NA? The prediction for that observation is NA.
+ All rows containing any missing values are omitted form the training set. 
 
-\item What if: a predictor column is categorical, you are making predictions on test data, and the predictor is
-a level that wasn't seen during training? The value is zero for all predictors associated with the particular categorical vairable.
+\item \textbf{What if the testing data contains NA values?}
 
-\item What if: the response column is categorical, you are making predictions on test data, and the response is
-a level that wasn't seen during training? Only binomial model is supported, any extra levels in test-response will trigger an error.
+ The prediction for that observation is NA.
+
+\item \textbf{What if, while making predictions on testing data, a predictor column is categorical and the predictor is a level not observed during training?}
+
+ The value is zero for all predictors associated with that categorical variable.
+
+\item \textbf{What if, while making predictions on testing data, the response column is categorical and the response is a level not observed during training?} 
+
+H2O supports binomial models only; any extra levels in the test response will generate an error.
 \end{itemize}
 
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
-\input{common/further_info.tex}
-
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-
+\newpage
 \section{Appendix: Parameters}
 \begin{itemize}
 \item \texttt{x}: A vector containing the names of the predictors to use while building the GLM model. No default.
@@ -1068,21 +1134,23 @@ a level that wasn't seen during training? Only binomial model is supported, any 
 \item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, no elastic-net penalty is applied and ordinary generalized linear models are fit. Default is 1e-05.
 \item \texttt{lambda\_search}: A logical value indicating whether to conduct a search over the space of lambda values, starting from the max lambda, given lambda will be interpreted as the min. lambda. Default is false.
 \item \texttt{nlambdas}: The number of lambda values when \texttt{lambda\_search = TRUE}. Default is -1.
-\item \texttt{lambda\_min\_ratio}: Smallest value for lambda as a fraction of lambda.max, the entry value, which is the smallest value for which all coefficients in the model are zero. If the number of observations is greater than the number of variables then \texttt{lambda\_min\_ratio = 0.0001}; if the number of observations is less than the number of variables then \texttt{lambda\_min\_ratio = 0.01}. Default is -1.0.
+\item \texttt{lambda\_min\_ratio}: Smallest value for lambda as a fraction of \\ lambda.max, the entry value, which is the smallest value for which all coefficients in the model are zero. If the number of observations is greater than the number of variables then \texttt{lambda\_min\_ratio = 0.0001}; if the number of observations is less than the number of variables then \texttt{lambda\_min\_ratio = 0.01}. Default is -1.0.
 \item \texttt{nfolds}: Number of folds for cross-validation. If \texttt{nfolds >=2}, then \texttt{validation\_frame} must remain blank. Default is 0. %%validation_frame = correct? just says "validation" in R doc...
 \item \texttt{fold\_column}: (Optional) Column with cross-validation fold index assignment per observation. 
-\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
 \item \texttt{keep\_cross\_validation\_predictions}: Specify whether to keep the predictions of the cross-validation models. 
-\item \texttt{beta\_constraints}: A data frame or \texttt{H2OParsedData} object with the columns \texttt{["names", "lower\_bounds", "upper\_bounds", "beta\_given"]}, where each row corresponds to a predictor in the GLM. \texttt{"names"} contains the predictor names, \texttt{"lower\_bounds"/"upper\_bounds"} are the lower and upper bounds (respectively) of the beta, and \texttt{"beta\_given"} is a user-specified starting value. 
+\item \texttt{beta\_constraints}: A data frame or \texttt{H2OParsedData} object with the columns \texttt{["names", "lower\_bounds", "upper\_bounds", \\ "beta\_given"]}, where each row corresponds to a predictor in the GLM. \texttt{"names"} contains the predictor names, \texttt{"lower\_bounds"/ \\ "upper\_bounds"} are the lower and upper bounds (respectively) of the beta, and  \texttt{"beta\_given"} is a user-specified starting value. 
 \item \texttt{offset\_column}: Specify the offset column. Note: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 \item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
 \end{itemize}
 %Additional: 
-%Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true.
+%Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 
 %Ignored_cols: No default.
 %Non-negative: Restricts coefficients to be non-negative. Default is false.
 %parallelism: @Is this just a python thing?
+
+\input{common/further_info.tex}
 
 \newpage
 
@@ -1129,8 +1197,36 @@ Foundations and Trends in Optimization, 1(3):123-231, 2014.
 \bibitem{h2o}
 {\url{http://h2o.ai}}
 
-\bibitem{jira}
-{\url{https://0xdata.atlassian.net/secure/Dashboard.jspa}}
+
 \end{thebibliography}
+
+\newpage
+
+\section{Authors}
+
+\textbf{Nadine Hussami}
+
+Nadine is a math hacker intern at H2O. She is a PhD student at Stanford University. Her main research interests include statistical learning and convex optimization. Before Stanford, she worked as an algorithm development engineer at Bina Technologies. She holds a Master’s degree from Stanford in Electrical Engineering. 
+
+\textbf{Tom Kraljevic}
+
+Tom is VP of Engineering of Customer and Pre-Sales Engineering at H2O and key to the magic of engineering and customer happiness. Tom has an MS degree in Electrical Engineering from the University of Illinois (at Urbana-Champaign), and a BSE degree in Computer Engineering from the University of Michigan (at Ann Arbor).
+
+\textbf{Jessica Lanford}
+
+Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+
+\textbf{Tomas Nykodym}
+
+Tomas is our resident Software Engineer. He received his Masters degree from the Czech Technical University. Tomas has worked at IBM-research and Agent-Technology Group. Tomas also created a sandbox with simulated user activity for safe execution of malware with advanced behavior extraction algorithms to extract behavior of malware injected into other processes. 
+
+\textbf{Ariel Rao}
+
+Ariel is a data and math hacker intern at H2O. She is currently an undergraduate student at Carnegie Mellon University pursing degrees in Logic and Computation and Computer Science. Her interests include optimizing automated computation and formal verification.
+
+\textbf{Amy Wang}
+
+Amy is the Sales Engineering Lead at H2O. She graduated from Hunter College in NYC with a Masters in Applied Mathematics and Statistics with a heavy concentration on numerical analysis and financial mathematics. Her interest in applicable math eventually lead her to big data and finding the appropriate mediums for data analysis.
+
 
 \end{document}

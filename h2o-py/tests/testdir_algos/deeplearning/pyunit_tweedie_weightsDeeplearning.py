@@ -12,7 +12,7 @@ def tweedie_weights():
     data["Merit"] = data["Merit"].asfactor()
     data["Class"] = data["Class"].asfactor()
     loss = data["Cost"] / data["Insured"]
-    loss.setName(0,"Loss")
+    loss.set_name(0,"Loss")
     cancar = loss.cbind(data)
 
     # Without weights

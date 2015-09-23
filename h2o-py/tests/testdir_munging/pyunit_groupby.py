@@ -21,8 +21,6 @@ def group_by():
       grouped = h2o_iris.group_by("class")
       grouped \
         .count(na=na) \
-        .first(na=na) \
-        .last( na=na) \
         .min(  na=na) \
         .max(  na=na) \
         .mean( na=na) \

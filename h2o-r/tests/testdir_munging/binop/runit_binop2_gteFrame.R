@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.gte.frame <- function(conn) {
- hex <- as.h2o(conn, iris)
+test.gte.frame <- function() {
+ hex <- as.h2o(iris)
  
   Log.info("Expectation is a frame of booleans")
   

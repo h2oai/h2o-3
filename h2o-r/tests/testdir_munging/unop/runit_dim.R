@@ -10,9 +10,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 
-test.dim <- function(conn) {
+test.dim <- function() {
   Log.info("Uploading logreg/princeton/cuse.dat")
-  hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"), "pros.hex")
+  hex <- h2o.importFile(locate("smalldata/logreg/prostate.csv"), "pros.hex")
   
   Rdat <- read.csv(locate("smalldata/logreg/prostate.csv"))
   

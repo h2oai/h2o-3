@@ -17,7 +17,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 				"ignored_columns",
 				"ignore_const_cols",
 				"score_each_iteration",
-				"loading_key",
+				"loading_name",
 				"transform",
 				"k",
 				"loss",
@@ -88,7 +88,8 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     public KeyV3.FrameKeyV3 user_points;
 
     @API(help = "Frame key to save resulting X")
-    public KeyV3.FrameKeyV3 loading_key;
+    public String loading_name;
+    // public KeyV3.FrameKeyV3 loading_key;
 
     @API(help = "Recover singular values and eigenvectors of XY")
     public boolean recover_svd;

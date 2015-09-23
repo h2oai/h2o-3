@@ -1,5 +1,6 @@
 package water.junit;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Ignore;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
@@ -9,6 +10,18 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -16,12 +29,6 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.*;
-import java.net.InetAddress;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
 
 /**
  * Simple XML reporter.
@@ -125,11 +132,11 @@ public class XMLTestReporter extends RunListener {
     testSuiteElement = document.createElement("testsuite");
     document.appendChild(testSuiteElement);
 
-    testSuiteElement.setAttribute("name", testSuiteName);
+    testSuiteElement.setAttribute("name", StringEscapeUtils.escapeXml(testSuiteName));
     testSuiteElement.setAttribute("timestamp",
-            dateFormat.format(new Date(testSuiteStartTime)));
+                                  StringEscapeUtils.escapeXml(dateFormat.format(new Date(testSuiteStartTime))));
     testSuiteElement.setAttribute("hostname",
-            InetAddress.getLocalHost().getHostName());
+                                  StringEscapeUtils.escapeXml(InetAddress.getLocalHost().getHostName()));
 
     // system properties
     Element propertiesElement = document.createElement("properties");
@@ -137,8 +144,8 @@ public class XMLTestReporter extends RunListener {
 
     for (String name : System.getProperties().stringPropertyNames()) {
       Element propertyElement = document.createElement("property");
-      propertyElement.setAttribute("name", name);
-      propertyElement.setAttribute("value", System.getProperty(name));
+      propertyElement.setAttribute("name", StringEscapeUtils.escapeXml(name));
+      propertyElement.setAttribute("value", StringEscapeUtils.escapeXml(System.getProperty(name)));
       propertiesElement.appendChild(propertyElement);
     }
 
@@ -242,7 +249,7 @@ public class XMLTestReporter extends RunListener {
 
 /** Output stream which duplicate given input to given target streams.
  *
- *  WARNING: close do not close underlying streams! */
+ *  WARNING: do not close underlying streams! */
 class TeeOutputStream extends OutputStream {
 
   final private OutputStream[] targets;

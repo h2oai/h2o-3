@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -21,8 +22,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
-import static water.util.RandomUtils.getRNG;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -200,12 +199,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * So there is a race condition when returning a model (e.g., via the REST layer) after the ModelBuilder is DONE, but the model object is not yet updated.
    */
   protected void updateModelOutput() {
-    // TODO: Remove this check
-    final ModelBuilder<M,P,O> j = DKV.getGet(_key);
-    assert(j._start_time == _start_time);
-    assert(j._end_time == _end_time);
-    assert(j._state == _state);
-
     new TAtomic<M>() {
       @Override
       public M atomic(M old) {
@@ -296,7 +289,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Step 1: Assign each row to a fold
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-    final Vec foldAssignment;
+    Vec foldAssignment;
 
     final Integer N;
     if (_parms._fold_column != null) {
@@ -315,30 +308,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           }
         }
       }
-      final long actualSeed = seed;
-      Log.info("Creating " + N + " cross-validation splits with random number seed: " + actualSeed);
+      Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
       foldAssignment = origTrainFrame.anyVec().makeZero();
       final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
-      new MRTask() {
-        @Override
-        public void map(Chunk foldAssignment) {
-          for (int i = 0; i < foldAssignment._len; ++i) {
-            int fold;
-            switch (foldAssignmentScheme) {
-              case AUTO:
-              case Random:
-                fold = Math.abs(getRNG(foldAssignment.start() + actualSeed + i).nextInt()) % N;
-                break;
-              case Modulo:
-                fold = ((int) (foldAssignment.start() + i)) % N;
-                break;
-              default:
-                throw H2O.unimpl();
-            }
-            foldAssignment.set(i, fold);
-          }
-        }
-      }.doAll(foldAssignment);
+      switch(foldAssignmentScheme) {
+        case AUTO:
+        case Random:
+          foldAssignment = ASTKFold.kfoldColumn(foldAssignment,N,seed); break;
+        case Modulo:
+          foldAssignment = ASTKFold.moduloKfoldColumn(foldAssignment, N); break;
+        case Stratified:
+          foldAssignment = ASTKFold.stratifiedKFoldColumn(response(),N,seed); break;
+        default:
+          throw H2O.unimpl();
+      }
     }
 
     final Key[] modelKeys = new Key[N];
@@ -452,53 +435,56 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       trainModelImpl(-1, false); //non-blocking
       if (!async)
         block();
+    }
+    else {
+      DKV.remove(dest()); //remove prior main model (must have been built by a prior job)
+    }
 
-      // in async case, the CV models can score while the main model is still building
-      Model[] m = new Model[N];
-      for (int i=0; i<N; ++i) {
-        Frame adaptFr = new Frame(cvValid[i]);
-        try {
-          if (isCancelledOrCrashed()) {
-            Log.warn("Cancelling all N-fold cross-validation jobs.");
-            break;
-          } else {
-            // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
-            cvModelBuilders[i].block();
+    // in async case, the CV models can score while the main model is still building
+    Model[] m = new Model[N];
+    for (int i=0; i<N; ++i) {
+      Frame adaptFr = null;
+      try {
+        adaptFr = new Frame(cvValid[i]);
+        // score CV models
+        if (!isCancelledOrCrashed()) { //don't waste time scoring if the CV run is cancelled
+          // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
+          cvModelBuilders[i].block();
 
-            // mark the job as done
-            cvModelBuilders[i].done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
-            cvModelBuilders[i].updateModelOutput();      // mirror the Job state in the model
-            m[i] = DKV.getGet(cvModelBuilders[i].dest());   // now the model is ready for consumption
-            m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
-            mb[i] = m[i].scoreMetrics(adaptFr);
+          // mark the job as done
+          cvModelBuilders[i].done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
+          cvModelBuilders[i].updateModelOutput();      // mirror the Job state in the model
+          m[i] = DKV.getGet(cvModelBuilders[i].dest());   // now the model is ready for consumption
+          m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
+          mb[i] = m[i].scoreMetrics(adaptFr);
 
-            if (_parms._keep_cross_validation_predictions) {
-              String predName = "prediction_" + modelKeys[i].toString();
-              predictionKeys[i] = Key.make(predName);
-              m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
-            }
-
-            // free resources
-            DKV.remove(cvTrain[i]._key);
-            DKV.remove(cvValid[i]._key);
-            weights[2 * i].remove();
-            weights[2 * i + 1].remove();
-            cvModelBuilders[i].remove();
-          }
-        } finally {
-          if (adaptFr != null) {
-            Model.cleanup_adapt(adaptFr, cvValid[i]);
-            DKV.remove(adaptFr._key);
+          if (_parms._keep_cross_validation_predictions) {
+            String predName = "prediction_" + modelKeys[i].toString();
+            predictionKeys[i] = Key.make(predName);
+            m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
           }
         }
+      } finally {
+        // free resources as early as possible
+        if (adaptFr != null) {
+          Model.cleanup_adapt(adaptFr, cvValid[i]);
+          DKV.remove(adaptFr._key);
+        }
+        if (cvTrain[i] != null) DKV.remove(cvTrain[i]._key);
+        if (cvValid[i] != null) DKV.remove(cvValid[i]._key);
+        if (weights[2 * i] != null) weights[2 * i].remove();
+        if (weights[2 * i + 1] != null) weights[2 * i + 1].remove();
+        if (cvModelBuilders[i] != null) cvModelBuilders[i].remove();
       }
+    }
 
-      // wait for completion of the main model
+    // wait for completion of the main model
+    if (!isCancelledOrCrashed()) {
       block();
       Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done (still needs cv metrics)
 
       // Check that both the job and the model are not yet marked as done (canBeDone() looks at whether N-fold CV is done)
-      assert(_state == JobState.RUNNING);
+      assert (_state == JobState.RUNNING);
 
       // Compute and put the cross-validation metrics into the main model
       Log.info("Computing " + N + "-fold cross-validation metrics.");
@@ -517,7 +503,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Now, the main model is complete (has cv metrics)
       DKV.put(mainModel);
 
-      assert(!isDone());
+      assert (!isDone());
       done(true); //now, we can mark the job as done
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
     }
@@ -682,6 +668,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (isSupervised())
           error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
       } else {
+        if(_response == _offset)
+          error("_response", "Response must be different from offset_column");
+        if(_response == _weights)
+          error("_response", "Response must be different from weights_column");
+        if(_response == _fold)
+          error("_response", "Response must be different from fold_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-check.test_KDD_trees <- function(conn){
+check.test_KDD_trees <- function(){
     Log.info("Test to verify that identical models produce idential MSEs")
 
     cup98LRN_z = h2o.uploadFile(conn = conn, path = locate("bigdata/laptop/usecases/cup98LRN_z.csv"))

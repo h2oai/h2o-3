@@ -6,10 +6,10 @@ def pubdev_1443():
     col = []
     for i in range(10000): col=col+[0, 0, 1, 1, 2, 3, 0]
     fr = h2o.H2OFrame(python_obj=[[c] for c in col])
-    fr.setNames(['rank'])
+    fr.set_names(['rank'])
 
     mapping = h2o.H2OFrame(python_obj=[[0,6], [1,7], [2,8], [3,9]])
-    mapping.setNames(['rank', 'outcome'])
+    mapping.set_names(['rank', 'outcome'])
 
     merged = fr.merge(mapping,allLeft=True)
 

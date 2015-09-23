@@ -2,9 +2,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 #setupRandomSeed(1193410486)
-test.slice.rows <- function(conn) {
+test.slice.rows <- function() {
   Log.info("Importing cars.csv data...\n")
-  H <- h2o.importFile(conn, locate("smalldata/junit/cars.csv"), "cars.hex")
+  H <- h2o.importFile(locate("smalldata/junit/cars.csv"), "cars.hex")
 #  R <- read.csv(locate("smalldata/cars.csv"))
   R <- as.data.frame(H)
   

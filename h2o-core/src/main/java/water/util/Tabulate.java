@@ -1,17 +1,12 @@
 package water.util;
 
 import hex.Interaction;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-
-import java.util.Arrays;
 
 /**
  * Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset
@@ -25,8 +20,7 @@ import java.util.Arrays;
  */
 public class Tabulate extends Job<Tabulate> {
   public Frame _dataset;
-  public Key _predVec;
-  public Key _respVec;
+  public Key[] _vecs = new Key[2];
   public String _predictor;
   public String _response;
   public String _weight;
@@ -39,53 +33,71 @@ public class Tabulate extends Job<Tabulate> {
   public TwoDimTable _count_table;
   public TwoDimTable _response_table;
 
+  // helper to speed up stuff
+  static private class Stats extends Iced {
+    Stats(Vec v) {
+      _min = v.min();
+      _max = v.max();
+      _isEnum = v.isEnum();
+      _isInt = v.isInt();
+      _cardinality = v.cardinality();
+      _missing = v.naCnt() > 0 ? 1 : 0;
+      _domain = v.domain();
+    }
+    final double _min;
+    final double _max;
+    final boolean _isEnum;
+    final boolean _isInt;
+    final int _cardinality;
+    final int _missing; //0 or 1
+    final String[] _domain;
+  }
+  final private Stats[] _stats = new Stats[2];
+
   public Tabulate() {
     super(Key.<Tabulate>make(), "Tabulate job");
   }
 
-  private int bins(boolean response) {
-    return response ? _nbins_response : _nbins_predictor;
+  private int bins(int v) {
+    return v==1 ? _nbins_response : _nbins_predictor;
   }
 
-  private int res(Vec v) {
-    int missing = v.naCnt() > 0 ? 1 : 0;
-    if (v.isEnum())
-      return v.cardinality() + missing;
-    return bins(Arrays.equals(v._key._kb, _respVec._kb)) + missing;
+  private int res(final int v) {
+    final int missing = _stats[v]._missing;
+    if (_stats[v]._isEnum)
+      return _stats[v]._cardinality + missing;
+    return bins(v) + missing;
   }
 
-  private int bin(Vec v, double val) {
-    int missing = v.naCnt() > 0 ? 1 : 0;
+  private int bin(final int v, final double val) {
     if (Double.isNaN(val)) {
-      assert(missing == 1);
       return 0;
     }
-
     int b;
-    int bins = bins(Arrays.equals(v._key._kb, _respVec._kb));
-    if (v.isEnum()) {
+    int bins = bins(v);
+    if (_stats[v]._isEnum) {
       assert((int)val == val);
       b = (int) val;
     } else {
-      double d = (v.max() - v.min()) / bins;
-      b = (int) ((val - v.min()) / d);
+      double d = (_stats[v]._max - _stats[v]._min) / bins;
+      b = (int) ((val - _stats[v]._min) / d);
       assert(b>=0 && b<= bins);
       b = Math.min(b, bins -1);//avoid AIOOBE at upper bound
     }
-    return b+missing;
+    return b+_stats[v]._missing;
   }
 
-  private String labelForBin(Vec v, int b) {
-    int missing = v.naCnt() > 0 ? 1 : 0;
+  private String labelForBin(final int v, int b) {
+    int missing = _stats[v]._missing;
     if (missing == 1 && b==0) return "missing(NA)";
     if (missing == 1) b--;
-    if (v.isEnum())
-      return v.domain()[b];
-    int bins = bins(Arrays.equals(v._key._kb, _respVec._kb));
-    if (v.isInt() && (v.max() - v.min() + 1) <= bins)
-      return Integer.toString((int)(v.min() + b));
-    double d = (v.max() - v.min())/ bins;
-    return String.format("%5f", v.min() + (b + 0.5) * d);
+    if (_stats[v]._isEnum)
+      return _stats[v]._domain[b];
+    int bins = bins(v);
+    if (_stats[v]._isInt && (_stats[v]._max - _stats[v]._min + 1) <= bins)
+      return Integer.toString((int)(_stats[v]._min + b));
+    double d = (_stats[v]._max - _stats[v]._min)/bins;
+    return String.format("%5f", _stats[v]._min + (b + 0.5) * d);
   }
 
   public Tabulate execImpl() {
@@ -135,8 +147,14 @@ public class Tabulate extends Job<Tabulate> {
       Tabulate.this.updateValidationMessages();
       throw new H2OIllegalArgumentException(validationErrors());
     }
-    if (x!=null) _predVec = x._key;
-    if (y!=null) _respVec = y._key;
+    if (x!=null) {
+      _vecs[0] = x._key;
+      _stats[0] = new Stats(x);
+    }
+    if (y!=null) {
+      _vecs[1] = y._key;
+      _stats[1] = new Stats(y);
+    }
     Tabulate sp = w != null ? new CoOccurrence(this).doAll(x, y, w)._sp : new CoOccurrence(this).doAll(x, y)._sp;
     _count_table = sp.tabulationTwoDimTable();
     _response_table = sp.responseCharTwoDimTable();
@@ -151,8 +169,8 @@ public class Tabulate extends Job<Tabulate> {
     CoOccurrence(Tabulate sp) {_sp = sp;}
     @Override
     protected void setupLocal() {
-      _sp._count_data = new double[_sp.res(_fr.vec(0))][_sp.res(_fr.vec(1))];
-      _sp._response_data = new double[_sp.res(_fr.vec(0))][2];
+      _sp._count_data = new double[_sp.res(0)][_sp.res(1)];
+      _sp._response_data = new double[_sp.res(0)][2];
     }
 
     @Override
@@ -162,8 +180,8 @@ public class Tabulate extends Job<Tabulate> {
     @Override
     public void map(Chunk x, Chunk y, Chunk w) {
       for (int r=0; r<x.len(); ++r) {
-        int xbin = _sp.bin(x.vec(), x.atd(r));
-        int ybin = _sp.bin(y.vec(), y.atd(r));
+        int xbin = _sp.bin(0, x.atd(r));
+        int ybin = _sp.bin(1, y.atd(r));
         double weight = w.atd(r);
         if (Double.isNaN(weight)) continue;
         AtomicUtils.DoubleArray.add(_sp._count_data[xbin], ybin, weight); //increment co-occurrence count by w
@@ -201,8 +219,6 @@ public class Tabulate extends Job<Tabulate> {
 
     colHeaders[0] = _predictor;
     colHeaders[1] = _response;
-    Vec pred = DKV.getGet(_predVec);
-    Vec resp = DKV.getGet(_respVec);
     colTypes[0] = "string"; colFormats[0] = "%s";
     colTypes[1] = "string"; colFormats[1] = "%s";
     colHeaders[2] = "counts";   colTypes[2] = "double"; colFormats[2] = "%f";
@@ -211,9 +227,9 @@ public class Tabulate extends Job<Tabulate> {
             colTypes, colFormats, null);
 
     for (int p=0; p<predN; ++p) {
-      String plabel = labelForBin(pred, p);
+      String plabel = labelForBin(0, p);
       for (int r=0; r<respN; ++r) {
-        String rlabel = labelForBin(resp, r);
+        String rlabel = labelForBin(1, r);
         for (int c=0; c<3; ++c) {
           table.set(r*predN + p, 0, plabel);
           table.set(r*predN + p, 1, rlabel);
@@ -233,8 +249,6 @@ public class Tabulate extends Job<Tabulate> {
     String[] colTypes = new String[colHeaders.length];
     String[] colFormats = new String[colHeaders.length];
 
-    Vec pred = DKV.getGet(_predVec);
-
     colHeaders[0] = _predictor;
     colTypes[0] = "string"; colFormats[0] = "%s";
     colHeaders[1] = "mean " + _response; colTypes[2] = "double"; colFormats[2] = "%f";
@@ -245,7 +259,7 @@ public class Tabulate extends Job<Tabulate> {
             colTypes, colFormats, null);
 
     for (int p=0; p<predN; ++p) {
-      String plabel = labelForBin(pred, p);
+      String plabel = labelForBin(0, p);
       table.set(p, 0, plabel);
       table.set(p, 1, _response_data[p][0]);
       table.set(p, 2, _response_data[p][1]);

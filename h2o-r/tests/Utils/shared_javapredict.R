@@ -1,8 +1,8 @@
 
 doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...) {
-  heading("Uploading train data to H2O")
+  print("Uploading train data to H2O")
 
-  heading(paste("Creating", model, "model in H2O"))
+  print(paste("Creating", model, "model in H2O"))
   if (model == "glm") {
     model <- h2o.glm(training_frame = training_frame, ...)
     print(model)
@@ -16,7 +16,7 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
     stop(paste("Unknown model type", model))
   }
   
-  heading("Downloading Java prediction model code from H2O")
+  print("Downloading Java prediction model code from H2O")
   model_key <- model@model_id
   tmpdir_name <- sprintf("%s/results/tmp_model_%s", TEST_ROOT_DIR, as.character(Sys.getpid()))
   cmd <- sprintf("rm -fr %s", tmpdir_name)
@@ -25,9 +25,9 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
   safeSystem(cmd)
   h2o.download_pojo(model, tmpdir_name)
 
-  heading("Uploading test data to H2O")
+  print("Uploading test data to H2O")
 
-  heading("Predicting in H2O")
+  print("Predicting in H2O")
   pred <- h2o.predict(model, test_frame)
   summary(pred)
   head(pred)
@@ -35,7 +35,7 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
   cmd <- sprintf(   "%s/out_h2o.csv", tmpdir_name)
   write.csv(prediction1, cmd, quote=FALSE, row.names=FALSE)
 
-  heading("Setting up for Java POJO")
+  print("Setting up for Java POJO")
   test_with_response <- read.csv(test_file, header=T)
   test_without_response <- test_with_response[,x]
   if(is.null(ncol(test_without_response))) {
@@ -48,11 +48,11 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
   cmd <- sprintf("javac -cp %s/h2o-genmodel.jar -J-Xmx4g -J-XX:MaxPermSize=256m %s/%s.java", tmpdir_name, tmpdir_name, model_key)
   safeSystem(cmd)
 
-  heading("Predicting with Java POJO")
+  print("Predicting with Java POJO")
   cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
   safeSystem(cmd)
 
-  heading("Comparing predictions between H2O and Java POJO")
+  print("Comparing predictions between H2O and Java POJO")
   prediction2 <- read.csv(sprintf("%s/out_pojo.csv", tmpdir_name), header=T)
   if (nrow(prediction1) != nrow(prediction2)) {
     warning("Prediction mismatch")
@@ -108,7 +108,8 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
     stop("Paranoid; should not reach here")
   }
 
-  heading("Cleaning up tmp files")
+  print("Cleaning up tmp files")
   cmd <- sprintf("rm -fr %s", tmpdir_name)
   safeSystem(cmd)
+  h2o.removeAll()
 }

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.glrm.prostate_miss <- function(conn) {
+test.glrm.prostate_miss <- function() {
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
   stats_names <- c("Fraction", "Objective", "AvgChangeObj", "Iterations", "StepSize", 
                    "TrainNumSSE", "ValidNumSSE", "TrainCatErr", "ValidCatErr", 
@@ -10,7 +10,7 @@ test.glrm.prostate_miss <- function(conn) {
   colnames(model_stats) <- stats_names
   
   Log.info("Importing prostate_cat.csv data and saving for validation...")
-  prostate.full <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
+  prostate.full <- h2o.uploadFile(locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
   totobs <- sum(!is.na(prostate.full))
   print(summary(prostate.full))
   
@@ -18,7 +18,7 @@ test.glrm.prostate_miss <- function(conn) {
     f <- missing_frac[i]
     
     Log.info(paste("Copying data and inserting ", 100 * f, "% missing entries:\n", sep = ""))
-    prostate.miss <- h2o.assign(prostate.full, "prostate.miss", deepCopy = TRUE)
+    prostate.miss <- h2o.assign(prostate.full, "prostate.miss")
     h2o.insertMissingValues(data = prostate.miss, fraction = f, seed = SEED)
     print(summary(prostate.miss))
     

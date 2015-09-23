@@ -6,6 +6,7 @@ H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
+    * [Issue tracking](#IssueTracking) 
 * [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
@@ -27,9 +28,29 @@ While most of this README is written for developers who do their own builds, mos
 <a name="Resources"></a>
 ## 2. Open Source Resources
 
+Most people interact with three primary open source resources:  **GitHub** (which you've already found), **JIRA** (for issue tracking), and **h2ostream** (a community discussion forum).
+
+<a name="IssueTracking"></a>
+### 2.1 Issue tracking
+
+You can browse and create new issues in our open source **JIRA**:  <http://jira.h2o.ai>
+
+*  You can **browse** and search for **issues** without logging in to JIRA:
+    1.  Click the `Issues` menu
+    1.  Click `Search for issues`
+*  To **create** an **issue** (either a bug or a feature request), please create yourself an account first:
+    1.  Click the `Log In` button on the top right of the screen
+    1.  Click `Create an acccount` near the bottom of the login box
+    1.  Once you have created an account and logged in, use the `Create` button on the menu to create an issue
+    1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project
+
+> (Note: There is only one issue tracking system for the project.  GitHub issues are not enabled, you must use JIRA.)
+
+### 2.2 List of open source resources
+
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) contains issues for the current H2O-3 project; [PUB](https://0xdata.atlassian.net/projects/PUB/issues) contains issues for H2O-Classic)
+*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) contains issues for the current H2O-3 project)
     * <http://jira.h2o.ai>
 *  h2ostream community forum - ask your questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
@@ -142,14 +163,15 @@ Syncing smalldata is not required after each pull, but if tests fail due to miss
     pip install grip
     pip install tabulate
     pip install wheel
+    pip install scikit-learn
 
 Python tests require:
 
-    pip install sklearn
+    pip install scikit-learn
     pip install numpy
     pip install scipy
     pip install pandas
-    pip install statsmodles
+    pip install statsmodels
     pip install patsy
 
 ### 4.3. Setup on Windows

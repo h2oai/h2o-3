@@ -127,7 +127,8 @@ public class GLRMTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        // model._parms._loading_key.get().delete();
+        model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -172,7 +173,8 @@ public class GLRMTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        // model._parms._loading_key.get().delete();
+        model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -230,7 +232,8 @@ public class GLRMTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        // model._parms._loading_key.get().delete();
+        model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -271,7 +274,8 @@ public class GLRMTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        // model._parms._loading_key.get().delete();
+        model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -312,8 +316,9 @@ public class GLRMTest extends TestUtil {
         parms = new GLRMParameters();
         parms._train = train._key;
         parms._k = train.numCols();
-        parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
-        parms._regularization_y = GLRMParameters.Regularizer.Quadratic;
+        parms._loss = GLRMParameters.Loss.Quadratic;
+        parms._regularization_x = GLRMParameters.Regularizer.None;
+        parms._regularization_y = GLRMParameters.Regularizer.None;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
@@ -333,6 +338,7 @@ public class GLRMTest extends TestUtil {
           score = model.score(train);
           ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
           Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+          Assert.assertEquals(model._output._objective, mm._numerr, TOLERANCE);
         } catch (Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);
@@ -347,7 +353,8 @@ public class GLRMTest extends TestUtil {
       } finally {
         if (train != null) train.delete();
         if (model != null) {
-          model._parms._loading_key.get().delete();
+          // model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
           model.delete();
         }
       }
@@ -401,7 +408,8 @@ public class GLRMTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        // model._parms._loading_key.get().delete();
+        model._output._loading_key.get().delete();
         model.delete();
       }
     }
@@ -450,7 +458,8 @@ public class GLRMTest extends TestUtil {
         job.remove();
         if (score != null) score.delete();
         if (model != null) {
-          model._parms._loading_key.get().delete();
+          // model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
           model.delete();
         }
       }
@@ -474,7 +483,8 @@ public class GLRMTest extends TestUtil {
         job.remove();
         if (score != null) score.delete();
         if (model != null) {
-          model._parms._loading_key.get().delete();
+          // model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
           model.delete();
         }
       }
@@ -498,7 +508,8 @@ public class GLRMTest extends TestUtil {
         job.remove();
         if (score != null) score.delete();
         if (model != null) {
-          model._parms._loading_key.get().delete();
+          // model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
           model.delete();
         }
       }
@@ -522,7 +533,8 @@ public class GLRMTest extends TestUtil {
         job.remove();
         if (score != null) score.delete();
         if (model != null) {
-          model._parms._loading_key.get().delete();
+          // model._parms._loading_key.get().delete();
+          model._output._loading_key.get().delete();
           model.delete();
         }
       }

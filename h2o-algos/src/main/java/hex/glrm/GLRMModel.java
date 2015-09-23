@@ -5,9 +5,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.TwoDimTable;
-import water.util.MathUtils;
+import water.util.*;
 import water.util.TwoDimTable;
 
 import java.util.Random;
@@ -40,7 +38,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    public Key<Frame> _loading_key;               // Key to save X matrix
+    // public Key<Frame> _loading_key;               // Key to save X matrix
+    public String _loading_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
@@ -63,9 +62,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
     }
 
+    // Closed form solution only if quadratic loss, no regularization or quadratic regularization (same for X and Y), and no missing values
     public final boolean hasClosedForm() {
-      return (_loss == Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
-              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic));
+      long na_cnt = 0;
+      Frame train = _train.get();
+      for(int i = 0; i < train.numCols(); i++)
+        na_cnt += train.vec(i).naCnt();
+      return hasClosedForm(na_cnt);
+    }
+
+    public final boolean hasClosedForm(long na_cnt) {
+      return na_cnt == 0 && ((_loss == Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
+              && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic)));
     }
 
     // L(u,a): Loss function
@@ -239,7 +247,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public final double[] rproxgrad_y(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, rand); }
     // public final double[] rproxgrad_x(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, RandomUtils.getRNG(_seed)); }
     // public final double[] rproxgrad_y(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, RandomUtils.getRNG(_seed)); }
-    public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
+    static double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
       if(u == null || alpha == 0 || gamma == 0) return u;
       double[] v = new double[u.length];
 

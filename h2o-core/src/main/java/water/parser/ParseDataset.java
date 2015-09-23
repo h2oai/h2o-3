@@ -154,11 +154,9 @@ public final class ParseDataset extends Job<Frame> {
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       if( _job != null ) {
-        _job.cancel();
+        _job.failed(ex);
         parseCleanup();
         _job._mfpt = null;
-        if (ex instanceof H2OParseException) throw (H2OParseException) ex;
-        else _job.failed(ex);
       }
       return true;
     }
@@ -183,7 +181,6 @@ public final class ParseDataset extends Job<Frame> {
         // parsing.  Nuke it all - no partial Vecs lying around.
         for (Key k : _keys) Keyed.remove(k, fs);
         Keyed.remove(_job._dest,fs);
-        _job._mfpt = null;
         fs.blockForPending();
         DKV.put(_job._key, _job);
       }
@@ -377,7 +374,11 @@ public final class ParseDataset extends Job<Frame> {
             if (old < 0 || old >= _parse2GlobalCatMaps[i].length)
               chk.reportBrokenEnum(i, j, old, _parse2GlobalCatMaps[i], _fr.vec(i).domain().length);
             if(_parse2GlobalCatMaps[i][old] < 0)
-              throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + (chk.start() + j) + ", val = " + old + ", chunk=" + chk.getClass().getSimpleName() + ", map = " + Arrays.toString(_parse2GlobalCatMaps[i]));
+              throw new H2OParseException("Error in unifying categorical values. This is typically "
+                  +"caused by unrecognized characters in the data.\n The problem categorical value "
+                  +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
+                  +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
+              //throw new H2OParseException(H2O.SELF.toString() + ": missing enum at col:" + i + ", row: " + (chk.start() + j) + ", val = " + old + ", chunk=" + chk.getClass().getSimpleName() + ".", map = " + Arrays.toString(_parse2GlobalCatMaps[i]));
             chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
         }
@@ -407,6 +408,7 @@ public final class ParseDataset extends Job<Frame> {
       final Categorical[] _colCats = MultiFileParseTask._enums.get(_k);
       int i = 0;
       for (int col : _catColIdxs) {
+        _colCats[col].convertToUTF8(col + 1);
         _perColDomains[i] = _colCats[col].getColumnDomain();
         Arrays.sort(_perColDomains[i]);
         _packedDomains[i] = packDomain(_perColDomains[i]);
