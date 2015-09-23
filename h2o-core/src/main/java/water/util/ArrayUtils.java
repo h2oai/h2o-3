@@ -471,11 +471,13 @@ public class ArrayUtils {
     return result;
   }
 
-  public static int maxIndex(double[] from, Random rand) {
+  public static int maxIndex(double[] from, Random rand) { return maxIndex(from, rand, false); }
+  public static int maxIndex(double[] from, Random rand, boolean skipLast) {
     assert rand != null;
     int result = 0;
     int maxCount = 0; // count of maximal element for a 1 item reservoir sample
-    for( int i = 1; i < from.length; ++i ) {
+    int last = from.length - (skipLast?1:0);
+    for( int i = 1; i < last; ++i ) {
       if( from[i] > from[result] ) {
         result = i;
         maxCount = 1;

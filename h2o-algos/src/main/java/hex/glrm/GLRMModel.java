@@ -29,6 +29,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _period = 1;                       // Length of the period when _loss = Periodic
     public Loss[] _loss_by_col;                // Override default loss function for specific columns
     public int[] _loss_by_col_idx;
+    public boolean _offset;     // Include offset term in loss function? (Appends indicator column to end of X and constant row to bottom of Y)
 
     // Regularization functions
     public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
@@ -210,42 +211,47 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // r_i(x_i), r_j(y_j): Regularization function for single row x_i or column y_j
-    public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
+    public final double regularize_x(double[] u) {
+      if(_offset && (u == null || !MathUtils.equalsWithinOneSmallUlp(u[u.length-1], 1)))
+        return Double.POSITIVE_INFINITY;
+      return regularize(u, _regularization_x);
+    }
     public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
     public final double regularize(double[] u, Regularizer regularization) {
       if(u == null) return 0;
+      int end = u.length - (_offset ? 1 : 0);
       double ureg = 0;
 
       switch(regularization) {
         case None:
           return 0;
         case Quadratic:
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < end; i++)
             ureg += u[i] * u[i];
           return ureg;
         case L2:
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < end; i++)
             ureg += u[i] * u[i];
           return Math.sqrt(ureg);
         case L1:
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < end; i++)
             ureg += Math.abs(u[i]);
           return ureg;
         case NonNegative:
-          for(int i = 0; i < u.length; i++) {
+          for(int i = 0; i < end; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
           }
           return 0;
         case OneSparse:
           int card = 0;
-          for(int i = 0; i < u.length; i++) {
+          for(int i = 0; i < end; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else if(u[i] > 0) card++;
           }
           return card == 1 ? 0 : Double.POSITIVE_INFINITY;
         case UnitOneSparse:
           int ones = 0, zeros = 0;
-          for(int i = 0; i < u.length; i++) {
+          for(int i = 0; i < end; i++) {
             if(u[i] == 1) ones++;
             else if(u[i] == 0) zeros++;
             else return Double.POSITIVE_INFINITY;
@@ -253,7 +259,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
         case Simplex:
           double sum = 0;
-          for(int i = 0; i < u.length; i++) {
+          for(int i = 0; i < end; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else sum += u[i];
           }
@@ -263,62 +269,82 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // \sum_i r_i(x_i): Sum of regularization function for all entries of X
-    public final double regularize_x(double[][] u) { return regularize(u, _regularization_x); }
-    public final double regularize_y(double[][] u) { return regularize(u, _regularization_y); }
-    public final double regularize(double[][] u, Regularizer regularization) {
-      if(u == null || regularization == Regularizer.None) return 0;
+    // \sum_i r_i(x_i), \sum_j r_j(y_j): Sum of regularization function for all entries of X or Y
+    public final double regularize_x(double[][] u) {
+      if(_offset && u == null) return Double.POSITIVE_INFINITY;
+      if(_regularization_x == Regularizer.None) return 0;
+
+      double ureg = 0;
+      int last = u[0].length;
+      for(int i = 0; i < u.length; i++) {
+        if(_offset && !MathUtils.equalsWithinOneSmallUlp(u[i][last-1], 1))
+          return Double.POSITIVE_INFINITY;
+        ureg += regularize(u[i], _regularization_x);
+        if(Double.isInfinite(ureg)) return ureg;
+      }
+      return ureg;
+    }
+    public final double regularize_y(double[][] u) {
+      if(u == null || _regularization_y == Regularizer.None) return 0;
 
       double ureg = 0;
       for(int i = 0; i < u.length; i++) {
-        ureg += regularize(u[i], regularization);
+        ureg += regularize(u[i], _regularization_y);
         if(Double.isInfinite(ureg)) return ureg;
       }
       return ureg;
     }
 
     // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u
-    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, rand); }
-    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, rand); }
-    // public final double[] rproxgrad_x(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, RandomUtils.getRNG(_seed)); }
-    // public final double[] rproxgrad_y(double[] u, double alpha) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, RandomUtils.getRNG(_seed)); }
-    static double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
+    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) {
+      double[] v = rproxgrad(u, alpha, _gamma_x, _regularization_x, rand);
+      if(_offset) v[v.length - 1] = 1;    // Last column of X should be all ones
+      return v;
+    }
+    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) {
+      double[] v = rproxgrad(u, alpha, _gamma_y, _regularization_y, rand);
+      if(_offset) v[v.length - 1] = u[u.length - 1];    // Last row of Y is unpenalized
+      return v;
+    }
+    public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
       if(u == null || alpha == 0 || gamma == 0) return u;
+      int last = u.length - (_offset ? 1 : 0);
       double[] v = new double[u.length];
 
       switch(regularization) {
         case None:
-          return u;
+          return (_offset ? u.clone() : u);
         case Quadratic:
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < last; i++)
             v[i] = u[i]/(1+2*alpha*gamma);
           return v;
         case L2:
           // Proof uses Moreau decomposition; see section 6.5.1 of Parikh and Boyd https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf
-          double weight = 1 - alpha*gamma/ArrayUtils.l2norm(u);
+          double weight = 1 - alpha*gamma/ArrayUtils.l2norm(u,_offset);
           if(weight < 0) return v;   // Zero vector
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < last; i++)
             v[i] = weight * u[i];
           return v;
         case L1:
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < last; i++)
             v[i] = Math.max(u[i]-alpha*gamma,0) + Math.min(u[i]+alpha*gamma,0);
           return v;
         case NonNegative:
-          for(int i = 0; i < u.length; i++)
+          for(int i = 0; i < last; i++)
             v[i] = Math.max(u[i],0);
           return v;
         case OneSparse:
-          int idx = ArrayUtils.maxIndex(u, rand);
+          int idx = ArrayUtils.maxIndex(u, rand, _offset);
           v[idx] = u[idx] > 0 ? u[idx] : 1e-6;
           return v;
         case UnitOneSparse:
-          idx = ArrayUtils.maxIndex(u, rand);
+          idx = ArrayUtils.maxIndex(u, rand, _offset);
           v[idx] = 1;
           return v;
         case Simplex:
           // Proximal gradient algorithm by Chen and Ye in http://arxiv.org/pdf/1101.6081v2.pdf
           // 1) Sort input vector u in ascending order: u[1] <= ... <= u[n]
+          if(_offset) throw H2O.unimpl();   // TODO: Clone u and skip last element when offset
           int n = u.length;
           int[] idxs = new int[n];
           for(int i = 0; i < n; i++) idxs[i] = i;
@@ -351,13 +377,42 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
+    // Clone array and set last entry to specified value
+    private static double[] set_last(double[] u, double last) {
+      if(u == null) return null;
+      double[] v = u.clone();
+      v[v.length-1] = last;
+      return v;
+    }
+
     // Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization.
-    public final double[] project_x(double[] u, Random rand) { return project(u, _regularization_x, rand); }
-    public final double[] project_y(double[] u, Random rand) { return project(u, _regularization_y, rand); }
-    public final double[] project(double[] u, Regularizer regularization, Random rand) {
+    public final double[] project_x(double[] u, Random rand) {
       if(u == null) return u;
 
-      switch(regularization) {
+      switch(_regularization_x) {
+        // Domain is all real numbers
+        case None:
+        case Quadratic:
+        case L2:
+        case L1:
+          return _offset ? set_last(u, 1) : u;
+        // Proximal operator of indicator function for a set C is (Euclidean) projection onto C
+        case NonNegative:
+        case OneSparse:
+        case UnitOneSparse:
+          return rproxgrad_x(u, 1, rand);
+        case Simplex:
+          double reg = regularize(u, _regularization_x);   // Check if inside simplex before projecting since algo is complicated
+          if (reg == 0) return _offset ? set_last(u, 1) : u;
+          return rproxgrad_x(u, 1, rand);
+        default:
+          throw new RuntimeException("Unknown regularization function " + _regularization_x);
+      }
+    }
+    public final double[] project_y(double[] u, Random rand) {
+      if(u == null) return u;
+
+      switch(_regularization_y) {
         // Domain is all real numbers
         case None:
         case Quadratic:
@@ -368,13 +423,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case NonNegative:
         case OneSparse:
         case UnitOneSparse:
-          return rproxgrad(u, 1, 1, regularization, rand);
+          return rproxgrad_y(u, 1, rand);
         case Simplex:
-          double reg = regularize(u, regularization);   // Check if inside simplex before projecting since algo is complicated
+          double reg = regularize(u, _regularization_y);   // Check if inside simplex before projecting since algo is complicated
           if (reg == 0) return u;
-          return rproxgrad(u, 1, 1, regularization, rand);
+          return rproxgrad_y(u, 1, rand);
         default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
+          throw new RuntimeException("Unknown regularization function " + _regularization_y);
       }
     }
 

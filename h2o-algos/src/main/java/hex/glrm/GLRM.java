@@ -214,7 +214,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
     }
 
-    _ncolX = _parms._k;
+    _ncolX = _parms._k + (_parms._offset ? 1 : 0);
     _ncolA = _train.numCols();
   }
 
@@ -271,6 +271,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
+      // TODO: Need to append column of 1's to X and additional row of constants to Y when user-specified
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
           Vec[] yVecs = _parms._user_y.get().vecs();
@@ -285,8 +286,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // Permute cluster columns to align with dinfo and expand out categoricals
           centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
           centers_exp = expandCats(centers, tinfo);
+          // TODO: if _offset is true, then append constant row to Y
         } else
-          centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+          centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
 
         if (null != _parms._user_x) {   // Set X = user-specified initial points
           Frame tmp = new Frame(dfrm);
@@ -296,10 +298,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           new MRTask() {
             @Override public void map(Chunk[] cs) {
               for(int row = 0; row < cs[0]._len; row++) {
-                for (int i = _ncolA; i < _ncolA+_ncolX; i++) {
+                for (int i = _ncolA; i < _ncolA+_parms._k; i++) {
                   double x = cs[2*_ncolX + i].atd(row);
                   cs[i].set(row, x);
                   cs[_ncolX + i].set(row, x);
+                }
+                if(_parms._offset) {    // Last column of X is 1's when offset included
+                  cs[_ncolA+_ncolX-1].set(row, 1);
+                  cs[_ncolA+2*_ncolX-1].set(row, 1);
                 }
               }
             }
@@ -311,7 +317,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
-        centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
         InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
         xtsk.doAll(dfrm);
 
@@ -322,7 +328,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._use_all_factor_levels = true;   // Since GLRM requires Y matrix to have fully expanded ncols
-        parms._nv = _parms._k;
+        parms._nv = _ncolX;
         parms._transform = _parms._transform;
         parms._svd_method = _parms._svd_method;
         parms._max_iterations = parms._svd_method == SVDParameters.Method.Randomized ? _parms._k : _parms._max_iterations;
@@ -345,17 +351,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Set X and Y appropriately given SVD of A = UDV'
           // a) Set Y = D^(1/2)V'S where S = diag(\sigma)
-          final double[] dsqrt = new double[_parms._k];
-          for(int i = 0; i < _parms._k; i++) {
+          final double[] dsqrt = new double[_ncolX];
+          for(int i = 0; i < _ncolX; i++) {
             dsqrt[i] = Math.sqrt(svd._output._d[i]);
             ArrayUtils.mult(centers_exp[i], dsqrt[i]);  // This gives one row of D^(1/2)V'
           }
 
           // b) Set X = UD^(1/2) = AVD^(-1/2)
           Frame uFrm = DKV.get(svd._output._u_key).get();
-          assert uFrm.numCols() == _parms._k;
+          assert uFrm.numCols() == _ncolX : "U matrix from SVD should have " + _ncolX + " columns";
           Frame fullFrm = (new Frame(uFrm)).add(dfrm);  // Jam matrices together into frame [U,A,X,W]
-          InitialXSVD xtsk = new InitialXSVD(dsqrt, _parms._k, _ncolA, _ncolX);
+          InitialXSVD xtsk = new InitialXSVD(dsqrt, _ncolA, _ncolX);
           xtsk.doAll(fullFrm);
         } finally {
           if (job != null) job.remove();
@@ -373,7 +379,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._ignore_const_cols = _parms._ignore_const_cols;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
-        parms._k = _parms._k;
+        parms._k = _ncolX;
         parms._max_iterations = _parms._max_iterations;
         parms._standardize = true;
         parms._seed = _parms._seed;
@@ -406,15 +412,15 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         error("_init", "Initialization method " + _parms._init + " is undefined");
 
       // If all centers are zero or any are NaN, initialize to standard Gaussian random matrix
-      assert centers_exp != null && centers_exp.length == _parms._k && centers_exp[0].length == _ncolY : "Y must have " + _parms._k + " rows and " + _ncolY + " columns";
+      assert centers_exp != null && centers_exp.length == _ncolX && centers_exp[0].length == _ncolY : "Y must have " + _ncolX + " rows and " + _ncolY + " columns";
       double frob = frobenius2(centers_exp);   // TODO: Don't need to calculate twice if k-means++
       if(frob == 0 || Double.isNaN(frob)) {
         warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead");
-        centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
       }
 
       // Project rows of Y into appropriate subspace for regularizer
-      for(int i = 0; i < _parms._k; i++)
+      for(int i = 0; i < _ncolX; i++)
         centers_exp[i] = _parms.project_y(centers_exp[i], rand);
       return centers_exp;
     }
@@ -951,7 +957,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
 
       for(int row = 0; row < chks[0]._len; row++) {
-        double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
+        double[] xrow = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
         xrow = _parms.project_x(xrow, rand);
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
@@ -964,16 +970,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Initialize X = UD, where U is n by k and D is a diagonal k by k matrix
   private static class InitialXSVD extends MRTask<InitialXSVD> {
     final double[] _diag;   // Diagonal of D
-    final int _ncolU;       // Number of cols in U (k)
+    final int _ncolU;       // Number of cols in U = cols in X (k)
     final int _offX;        // Column offset to X matrix
     final int _offW;        // Column offset to W matrix
 
-    InitialXSVD(double[] diag, int ncolU, int ncolA, int ncolX) {
+    InitialXSVD(double[] diag, int ncolA, int ncolU) {
       assert diag != null && diag.length == ncolU;
       _diag = diag;
       _ncolU = ncolU;
-      _offX = ncolU + ncolA;
-      _offW = _offX + ncolX;
+      _offX = ncolU + ncolA;    // Input frame is [U,A,X,W]
+      _offW = _offX + ncolU;
     }
 
     @Override public void map(Chunk chks[]) {
@@ -1002,13 +1008,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     @Override public void map( Chunk chks[] ) {
-      double tmp [] = new double[_ncolA];
+      double[] tmp = new double[_ncolA];
       Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
 
       for(int row = 0; row < chks[0]._len; row++) {
-        // double preds[] = new double[_ncolX];
-        // double p[] = _model.score_indicator(chks, row, tmp, preds);
-        double p[] = _model.score_ratio(chks, row, tmp);
+        // double[] preds = new double[_ncolX];
+        // double[] p = _model.score_indicator(chks, row, tmp, preds);
+        double[] p = _model.score_ratio(chks, row, tmp);
         p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
         for(int c = 0; c < p.length; c++) {
           chks[_ncolA+c].set(row, p[c]);
@@ -1427,6 +1433,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // _chol.solve(xrow);
         Matrix tmp = _chol.solve(new Matrix(new double[][] {xrow}).transpose());
         xrow = tmp.getColumnPackedCopy();
+        if(_parms._offset) xrow[xrow.length-1] = 1;   // Last column of X is indicator (all ones)
 
         // 3) Save row of solved values into X (and copy W = X)
         int i = 0;
