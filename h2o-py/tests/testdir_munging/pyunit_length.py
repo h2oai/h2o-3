@@ -9,8 +9,8 @@ def length_check():
 
     # single column (frame)
     length_frame = frame["name"].length()
-    assert length_frame[0,0] == 28, "Expected 28, but got {}".format(length_frame[0,0])
-    assert length_frame[1,0] == 27, "Expected 27, but got {}".format(length_frame[1,0])
+    assert length_frame[0,0] == 26, "Expected 26, but got {}".format(length_frame[0,0])
+    assert length_frame[1,0] == 19, "Expected 19, but got {}".format(length_frame[1,0])
     assert length_frame[2,0] == 19, "Expected 19, but got {}".format(length_frame[2,0])
 
     # single column (vec)
