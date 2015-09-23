@@ -240,30 +240,29 @@ public class RapidsTest extends TestUtil {
     }
   }
 
-//  @Test public void testMerge() {
-//    Frame l=null,r=null,f=null;
-//    try {
-//      l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
-//      l.    add("age"  ,vec(ar(">dirt" ,"middle","middle","young'n"),ari(0,1,2,3)));
-//      l = new Frame(l);
-//      DKV.put(l);
-//      System.out.println(l);
-//      r = frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
-//      r.    add("skill",vec(ar("science","linearmath","sparkling","hacker"),ari(0,1,2,3)));
-//      r = new Frame(r);
-//      DKV.put(r);
-//      System.out.println(r);
-//      String x = String.format("(merge %%%s %%%s #1 #0 )",l._key,r._key);
-//      Env env = Exec.exec(x);
-//      System.out.println(env.toString());
-//      f = env.popAry();
-//      System.out.println(f);
-//    } finally {
-//      if( f != null ) f.delete();
-//      if( r != null ) r.delete();
-//      if( l != null ) l.delete();
-//    }
-//  }
+  @Test public void testMerge() {
+    Frame l=null,r=null,f=null;
+    try {
+      l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
+      l.    add("age"  ,vec(ar(">dirt" ,"middle","middle","young'n"),ari(0,1,2,3)));
+      l = new Frame(l);
+      DKV.put(l);
+      System.out.println(l);
+      r = frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
+      r.    add("skill",vec(ar("science","linearmath","sparkling","hacker"),ari(0,1,2,3)));
+      r = new Frame(r);
+      DKV.put(r);
+      System.out.println(r);
+      String x = String.format("(merge %s %s #1 #0 )",l._key,r._key);
+      Val res = Exec.exec(x);
+      f = res.getFrame();
+      System.out.println(f);
+    } finally {
+      if( f != null ) f.delete();
+      if( r != null ) r.delete();
+      if( l != null ) l.delete();
+    }
+  }
 
 
   @Test public void testQuantile() {
@@ -437,10 +436,10 @@ public class RapidsTest extends TestUtil {
       weather.remove();
 
       // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
-      Frame nary_op_37 = exec_str("(merge subset_35 census.hex [] FALSE FALSE)", "nary_op_37");
+      Frame nary_op_37 = exec_str("(merge subset_35 census.hex FALSE FALSE)", "nary_op_37");
 
       // nary_op_38 = merge( nary_op_37 subset_36); Vecs in nary_op_38 and nary_pop_37 and X shared
-      Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 [] FALSE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");
+      Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");
 
       // Standard "head of 10 rows" pattern for printing
       Frame subset_44 = exec_str("(rows subset_41 [0:10])", "subset_44");

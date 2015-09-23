@@ -530,7 +530,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
       zeros.append(v["zero_count"])
       miss.append(v["missing_count"])
 
-    table = [type,mins,maxs,sigma,zeros,miss]
+    table = [type,mins,maxs,mean,sigma,zeros,miss]
     headers = self._col_names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
@@ -930,7 +930,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if isinstance(by, basestring):     by     = self._find_idx(by)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
-  def merge(self, other, by=None, allLeft=False, allRite=False):
+  def merge(self, other, allLeft=True, allRite=False):
     """
     Merge two datasets based on common column names
 
@@ -939,7 +939,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param allRite: If true, include all rows from the right/other frame
     :return: Original self frame enhanced with merged columns and rows
     """
-    return H2OFrame(expr=ExprNode("merge", self, other, by, allLeft, allRite))._frame()
+    return H2OFrame(expr=ExprNode("merge", self, other, allLeft, allRite))._frame()
 
   def insert_missing_values(self, fraction=0.1, seed=None):
     """
@@ -1066,6 +1066,15 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("trim", self))
+
+  def length(self):
+    """
+    Create a column containing the length of the strings in the target column (only operates on frame with one column)
+
+    :return: H2OFrame
+    """
+    return H2OFrame(expr=ExprNode("length", self))
+
 
   def table(self, data2=None):
     """

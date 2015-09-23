@@ -2,10 +2,12 @@ package water.rapids;
 
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
+import water.fvec.CStrChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.ValueString;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -230,14 +232,59 @@ class ASTTrim extends ASTPrim {
   public String str() { return "trim"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec res = null;
     if (fr.numCols() != 1) throw new IllegalArgumentException("trim works on a single column at a time.");
     Vec vec = fr.anyVec();   assert vec != null;
-    if( !vec.isEnum() ) throw new IllegalArgumentException("column must be character.");
+    if( vec.isEnum() ) res = trimEnumCol(vec);
+    else if ( vec.isString() ) res = trimStringCol(vec);
+    else throw new IllegalArgumentException("trim requires a categorical or string column. Received "+fr.anyVec().get_type_str()+".");
+    return new ValFrame(new Frame(res));
+  }
+  // FIXME: this should resolve any categoricals that now have the same value after the trim
+  private Vec trimEnumCol(Vec vec) {
     String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
-
-    // COW
     Vec v = vec.makeCopy(doms);
-    return new ValFrame(new Frame(v));
+    return v;
+  }
+
+  private Vec trimStringCol(Vec vec) {
+    Vec res = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        ((CStrChunk)chk).trim(newChk);
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
+
+    return res;
+  }
+}
+
+class ASTStrLength extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override int nargs() { return 1+1; }
+  @Override public String str() { return "length"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec res = null;
+    if (fr.numCols() != 1) throw new IllegalArgumentException("length works on a single column at a time.");
+    Vec vec = fr.anyVec();   assert vec != null;
+    if( vec.isEnum() ) res = lengthEnumCol(vec);
+    else if ( vec.isString() ) res = lengthStringCol(vec);
+    else throw new IllegalArgumentException("length requires a categorical or string column. Received "+fr.anyVec().get_type_str()+".");
+    return new ValFrame(new Frame(res));
+  }
+  private Vec lengthEnumCol(Vec vec) {
+    // FIXME not implemented yet
+    return vec.makeCopy();
+  }
+
+  private Vec lengthStringCol(Vec vec) {
+    Vec res = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        ((CStrChunk)chk).length(newChk);
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
+
+    return res;
   }
 }

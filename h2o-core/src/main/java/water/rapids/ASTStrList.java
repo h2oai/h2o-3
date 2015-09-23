@@ -30,6 +30,15 @@ public class ASTStrList extends ASTParameter {
   // the execution stack
   @Override public Val exec(Env env) { throw H2O.fail(); }
   @Override public String str() { return Arrays.toString(_strs); }
+  // Select columns by number or String.
+  @Override int[] columns( String[] names ) { 
+    int[] idxs = new int[_strs.length];
+    for( int i=0; i < _strs.length; i++ ) {
+      int idx = idxs[i] = water.util.ArrayUtils.find(names,_strs[i]);
+      if( idx == -1 ) throw new IllegalArgumentException("Column "+_strs[i]+" not found");
+    }
+    return idxs;
+  }
 }
 
 /** Assign column names */

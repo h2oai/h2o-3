@@ -35,6 +35,9 @@ abstract public class AST extends Iced<AST> {
   // binary operator like '+' actually has 3 nargs.
   abstract int nargs();
 
+  // Select columns by number or String.
+  int[] columns( String[] names ) {  throw new IllegalArgumentException("Requires a number-list, but found a "+getClass()); }
+
   // Built-in primitives, done after other namespace lookups happen
   static final HashMap<String,AST> PRIMS = new HashMap<>();
   static void init(AST ast) { PRIMS.put(ast.str(),ast); }
@@ -200,6 +203,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTToLower());
     init(new ASTCountMatches());
     init(new ASTToUpper());
+    init(new ASTStrLength());
 
     // Functional data mungers
     init(new ASTApply());
@@ -231,6 +235,7 @@ class ASTNum extends ASTParameter {
   ASTNum( Exec e ) { super(e); }
   ASTNum( double d ) { super(d); }
   @Override public Val exec(Env env) { return _v; }
+  @Override int[] columns( String[] names ) { return new int[]{(int)_v.getNum()}; }
 }
 
 /** A String.  Execution is just to return the constant. */
@@ -240,6 +245,11 @@ class ASTStr extends ASTParameter {
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
+  @Override int[] columns( String[] names ) { 
+    int i = water.util.ArrayUtils.find(names,_v.getStr());
+    if( i == -1 ) throw new IllegalArgumentException("Column "+_v.getStr()+" not found");
+    return new int[]{i}; 
+  }
 }
 
 /** A Frame.  Execution is just to return the constant. */
