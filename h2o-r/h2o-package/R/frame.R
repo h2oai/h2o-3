@@ -1103,7 +1103,7 @@ h2o.head <- function(x, ..., n=6L) {
   if( n >= 0L && n <= 1000L ) # Short version, just report the cached internal DF
     head(.fetch.data(x,n),n)
   else # Long version, fetch all asked for "the hard way"
-    .newExpr("rows",x,paste0("[0:",n,"]"))
+    as.data.frame(.newExpr("rows",x,paste0("[0:",n,"]")))
 }
 
 #' @rdname h2o.head
@@ -1118,7 +1118,7 @@ h2o.tail <- function(x, ..., n=6L) {
   if( n==0L ) head(x,n=0L)
   else {
     startidx <- max(1L, endidx - n + 1)
-    .newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]"))
+    as.data.frame(.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")))
   }
 }
 
