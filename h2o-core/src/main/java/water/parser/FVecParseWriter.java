@@ -176,4 +176,5 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public void setColumnNames(String [] names){}
   @Override public final void rollbackLine() {}
   @Override public void invalidLine(String err) { newLine(); }
+  @Override public void setIsAllASCII(int colIdx, boolean b) {_nvs[colIdx]._isAllASCII = b;}
 }

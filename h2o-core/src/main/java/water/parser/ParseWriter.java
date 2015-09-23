@@ -21,4 +21,5 @@ interface ParseWriter extends Freezable {
   // Final rolling back of partial line
   void rollbackLine();
   void invalidLine(String err);
+  void setIsAllASCII(int colIdx, boolean b);
 }

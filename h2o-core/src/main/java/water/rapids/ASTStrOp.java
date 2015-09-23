@@ -7,6 +7,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.ValueString;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -243,7 +244,9 @@ class ASTTrim extends ASTPrim {
   private Vec trimStringCol(Vec vec) {
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
-        ((CStrChunk)chk).trim(newChk);
+        // Java String.trim() only operates on ASCII whitespace
+        // so UTF-8 safe methods are not needed here.
+        ((CStrChunk)chk).asciiTrim(newChk);
       }
     }.doAll(1, vec).outputFrame().anyVec();
 
@@ -269,7 +272,17 @@ class ASTStrLength extends ASTPrim {
   private Vec lengthStringCol(Vec vec) {
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
-        ((CStrChunk)chk).length(newChk);
+        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+          ((CStrChunk) chk).asciiLength(newChk);
+        } else { //UTF requires Java string methods for accuracy
+          ValueString vs= new ValueString();
+          for(int i =0; i < chk._len; i++){
+            if (chk.isNA(i))
+              newChk.addNA();
+            else
+              newChk.addNum(chk.atStr(vs, i).toString().length(), 0);
+          }
+        }
       }
     }.doAll(1, vec).outputFrame().anyVec();
 
