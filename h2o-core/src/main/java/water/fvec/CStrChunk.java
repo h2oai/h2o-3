@@ -99,6 +99,7 @@ public class CStrChunk extends Chunk {
         while( _mem[_valstart+off+j] > 0 && _mem[_valstart+off+j] < 0x21) j++;
         if (j > 0) nc._is[i] = off + j;
         while( _mem[_valstart+off+j] != 0 ) j++; //Find end
+        j--;
         while( _mem[_valstart+off+j] > 0 && _mem[_valstart+off+j] < 0x21) { //March back to find first non-space
           nc._ss[off+j] = 0; //Set new end
           j--;
