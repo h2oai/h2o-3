@@ -29,7 +29,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _period = 1;                       // Length of the period when _loss = Periodic
     public Loss[] _loss_by_col;                // Override default loss function for specific columns
     public int[] _loss_by_col_idx;
-    public boolean _offset = false;     // Include additional offset term in loss?
 
     // Regularization functions
     public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
@@ -211,43 +210,42 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // r_i(x_i), r_j(y_j): Regularization function for single row x_i or column y_j
-    public final double regularize_x(double[] u) { return (_offset && !MathUtils.equalsWithinOneSmallUlp(u[0], 1)) ? Double.POSITIVE_INFINITY : regularize(u, _regularization_x); }
+    public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
     public final double regularize(double[] u, Regularizer regularization) {
       if(u == null) return 0;
-      int end = u.length - (_offset ? 1 : 0);
       double ureg = 0;
 
       switch(regularization) {
         case None:
           return 0;
         case Quadratic:
-          for(int i = 0; i < end; i++)
+          for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
           return ureg;
         case L2:
-          for(int i = 0; i < end; i++)
+          for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
           return Math.sqrt(ureg);
         case L1:
-          for(int i = 0; i < end; i++)
+          for(int i = 0; i < u.length; i++)
             ureg += Math.abs(u[i]);
           return ureg;
         case NonNegative:
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
           }
           return 0;
         case OneSparse:
           int card = 0;
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else if(u[i] > 0) card++;
           }
           return card == 1 ? 0 : Double.POSITIVE_INFINITY;
         case UnitOneSparse:
           int ones = 0, zeros = 0;
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] == 1) ones++;
             else if(u[i] == 0) zeros++;
             else return Double.POSITIVE_INFINITY;
@@ -255,7 +253,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
         case Simplex:
           double sum = 0;
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else sum += u[i];
           }
