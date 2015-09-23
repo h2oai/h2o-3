@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.CStrChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -274,8 +275,28 @@ class ASTStrLength extends ASTPrim {
     return new ValFrame(new Frame(res));
   }
   private Vec lengthEnumCol(Vec vec) {
-    // FIXME not implemented yet
-    return vec.makeCopy();
+    String[] doms = vec.domain();
+    int[] catLengths = new int[doms.length];
+    for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+    Vec res = new MRTask() {
+      transient int[] catLengths;
+      @Override public void setupLocal() {
+        String[] doms = _fr.anyVec().domain();
+        catLengths = new int[doms.length];
+        for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+      }
+      @Override public void map(Chunk chk, NewChunk newChk){
+        // pre-allocate since the size is known
+        newChk._ls = MemoryManager.malloc8(chk._len);
+        newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
+        for (int i =0; i < chk._len; i++)
+          if(chk.isNA(i))
+            newChk.addNA();
+          else
+            newChk.addNum(catLengths[(int)chk.atd(i)],0);
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
+    return res;
   }
 
   private Vec lengthStringCol(Vec vec) {
