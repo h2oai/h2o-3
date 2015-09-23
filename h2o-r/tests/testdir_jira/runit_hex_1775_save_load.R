@@ -1,14 +1,5 @@
-##
-# Test: Saving and Loading GLM Model (HEX-1775)
-# Description: Build GLM model, save model in R, copy model and load in R
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
-#setwd("/Users/Amy/Documents/h2o/R/tests/testdir_jira")
-
 source('../h2o-runit.R')
-conn = h2o.init()
 
 test.hex_1775 <- function() {
   temp_dir = tempdir()
