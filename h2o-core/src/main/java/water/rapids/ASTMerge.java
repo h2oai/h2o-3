@@ -52,115 +52,90 @@ public class ASTMerge extends ASTPrim {
     if( ncols == 0 ) 
       throw new IllegalArgumentException("Frames must have at least one column in common to merge them");
 
-    // Pick the frame to replicate & hash; smallest bytesize of the non-key
-    // columns.  Hashed dataframe is completely replicated per-node
-    long lsize = 0, rsize = 0;
-    assert ncols > 0;
-    for( int i=ncols-1; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
-    for( int i=ncols-1; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
-    Frame small = lsize < rsize ? l : r;
-    Frame large = lsize < rsize ? r : l;
+    // Pick the frame to replicate & hash.  If one set is "all" and the other
+    // is not, the "all" set must be walked, so the "other" is hashed.  If both
+    // or neither are "all", then pick the smallest bytesize of the non-key
+    // columns.  The hashed dataframe is completely replicated per-node
+    boolean walkLeft;
+    if( allLeft == allRite ) {
+      long lsize = 0, rsize = 0;
+      for( int i=ncols; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
+      for( int i=ncols; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
+      walkLeft = lsize > rsize;
+    } else {
+      walkLeft = allLeft;
+    }
+    Frame walked = walkLeft ? l : r;
+    Frame hashed = walkLeft ? r : l;
+    if( !walkLeft ) { boolean tmp = allLeft;  allLeft = allRite;  allRite = tmp; }
 
-    // Build enum mappings, to rapidly convert enums from the larger
-    // distributed set to the smaller hashed & replicated set.
+    // Build enum mappings, to rapidly convert enums from the distributed set
+    // to the hashed & replicated set.
     int[][] enum_maps = new int[ncols][];
     int[][]   id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
-      Vec lv = large.vecs()[i];
+      Vec lv = walked.vecs()[i];
       if( lv.isEnum() ) {
-        EnumWrappedVec ewv = new EnumWrappedVec(lv.domain(),small.vecs()[i].domain());
+        EnumWrappedVec ewv = new EnumWrappedVec(lv.domain(),hashed.vecs()[i].domain());
         int[] ids = enum_maps[i] = ewv.enum_map();
         DKV.remove(ewv._key);
-        // Build an Identity map for the smaller hash
+        // Build an Identity map for the hashed set
         id_maps[i] = new int[ids.length];
         for( int j=0; j<ids.length; j++ )  id_maps[i][j] = j;
       }
     }
     
-    // The lifetime of the large dataset is independent of the original
-    // dataset, so it needs to be a deep copy.  
+    // The lifetime of the distributed dataset is independent of the original
+    // dataset, so it needs to be a deep copy.
     // TODO: COW Optimization
-    large = large.deepCopy(null);
+    walked = walked.deepCopy(null);
 
-    // MergeSet is from local (non-replicated) chunks/row to other-chunks/row.
-    // Row object in table has e.g. chunks and a row number; passed-in Row
-    // object can also have chunks & a row number.  Hash based on contents of
-    // chunks.  Returns matched Row object (which has replicated chunk ptrs & row).
-    Key uniq = new MergeSet(ncols,id_maps,small).doAllNodes()._uniq;
+    // Build the hashed version of the hashed frame.  Hash and equality are
+    // based on the known-integer key columns.  Duplicates are either ignored
+    // (!allRite) or accumulated, and can force replication of the walked set.
+    Key uniq = new MergeSet(ncols,id_maps,allRite).doAll(hashed)._uniq;
 
     // run a global parallel work: lookup non-hashed rows in hashSet; find
     // matching row; append matching column data
-    String[]   names  = Arrays.copyOfRange(small._names,   ncols,small._names   .length);
-    String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small.domains().length);
-    Frame res = new DoJoin(ncols,uniq,enum_maps,allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
-    return new ValFrame(large.add(res));
+    String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
+    String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
+    Frame res = new DoJoin(ncols,uniq,hashed,allLeft,allRite).doAll(hashed.numCols()-ncols,walked).outputFrame(names,domains);
+    return new ValFrame(walked.add(res));
   }
 
   // One Row object per row of the smaller dataset, so kept as small as
-  // possible.  The _chks[] array is shared across many Rows.
+  // possible.
   private static class Row {
-    public final Chunk _chks[]; // Chunks
-    public int[][] _enum_maps;
-    public int _row;    // Row in chunk
-    public int _hash;
-    Row( Chunk chks[] ) { _chks = chks; }
-    Row fill( int row, int ncols, int[][] enum_maps ) {
-      _row = row; 
-      _enum_maps = enum_maps;
+    final long[] _keys;   // Key: first ncols of longs
+    int _hash;            // Hash of keys; not final as Row objects are reused
+    boolean _dup;         // True if dups (TODO: actually the list of dup rows/chks)
+    long _row;            // Row in Vec; the payload is vecs[].atd(_row)
+    Row( int ncols ) { _keys = new long[ncols]; }
+    Row fill( final Chunk[] chks, final int[][] enum_maps, final int row ) {
       // Precompute hash: columns are integer only (checked before we started
       // here).  NAs count as a zero for hashing.
-      long hash = 0;
-      for( int i=0; i<ncols; i++ ) {
-        if( _chks[i].isNA(_row) ) continue;
-        long l = _chks[i].at8(_row);
-        hash += enum_maps[i]==null ? l : enum_maps[i][(int)l];
+      long l,hash = 0;
+      for( int i=0; i<_keys.length; i++ ) {
+        if( chks[i].isNA(row) ) l = 0;
+        else {
+          l = chks[i].at8(row);
+          hash += (enum_maps == null || enum_maps[i]==null) ? l : enum_maps[i][(int)l];
+        }
+        _keys[i] = l;
       }
       _hash = (int)(hash^(hash>>32));
+      _dup = false;               // No dups yet...
+      _row = chks[0].start()+row; // Payload: actual absolute row number
       return this;
     }
     @Override public int hashCode() { return _hash; }
     @Override public boolean equals( Object o ) {
-      assert o instanceof Row;
+      if( !(o instanceof Row) ) return false;
       Row r = (Row)o;
-      if( _hash != r._hash ) return false;
-      if( _chks == r._chks && _row == r._row ) return true;
-      // Now must check field contents
-      int len = _enum_maps.length;
-      for( int c=0; c<len; c++ ) {
-        boolean lb = _chks[c].isNA(_row), rb = r._chks[c].isNA(r._row);
-        if( lb && rb ) continue;     // Both NA, count as equal
-        if( lb || rb ) return false; // One NA, one not - count as unequal
-        // Check longs for equality (thru the enum maps, if needed)
-        long ll = _chks[c].at8(_row), rl = r._chks[c].at8(r._row);
-        if( _enum_maps[c] == null ) {
-          if( ll != rl ) return false;
-        } else {
-          if( _enum_maps[c][(int) ll] != r._enum_maps[c][(int) rl] ) return false;
-        }
-      }
-      return true;
-    }
-    public boolean rowEquals(Row r) {
-      if( _chks == r._chks && _row == r._row ) return true;
-      int len = _chks.length;
-      for(int c=0;c<len;++c) {
-        boolean lb = _chks[c].isNA(_row), rb = r._chks[c].isNA(r._row);
-        if( lb && rb ) continue;     // both NA, equal
-        if( lb || rb ) return false; // one was NA, unequal
-        // attempt left.atd == rite.atd
-        if( _chks[c].atd(_row) != r._chks[c].atd(r._row) ) return false;
-      }
-      return true;
-    }
-    public Row reHash() { // found a dupe row based on key, compute new hash based on entire row contents
-      long hash=0;
-      for (Chunk _chk : _chks) {
-        if (!_chk.isNA(_row)) {
-          hash += Double.doubleToRawLongBits(_chk.atd(_row));
-        }
-      }
-      _hash = (int)(hash^(hash>>32));
-      return this;
+      if( _hash != r._hash ) return false; // Shortcut
+      if( _row == r._row ) return true; // Another shortcut: same absolute row
+      // Now must check key contents
+      return Arrays.equals(_keys,r._keys); 
     }
   }
 
@@ -172,39 +147,34 @@ public class ASTMerge extends ASTPrim {
     final Key _uniq;      // Key to allow sharing of this MergeSet on each Node
     final int _ncols;     // Number of leading columns for the Hash Key
     final int[][] _id_maps;
-    final Frame _fr;      // Frame to hash-all-rows locally per-node
+    final boolean _allRite;
     transient NonBlockingHashSet<Row> _rows;
 
-    MergeSet( int ncols, int[][] id_maps, Frame fr ) { 
-      _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps; _fr = fr; 
+    MergeSet( int ncols, int[][] id_maps, boolean allRite ) { 
+      _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps;  _allRite = allRite;
     }
-    // Per-node, hash the entire _fr dataset
+    // Per-node, make the empty hashset for later reduction
     @Override public void setupLocal() {
-      MERGE_SETS.put(_uniq,this);
       _rows = new NonBlockingHashSet<>();
-      new MakeHash(this).doAll(_fr,true/*run locally*/);
+      MERGE_SETS.put(_uniq,this);
     }
 
-    // Executed locally only, build a local HashSet over the entire given dataset
-    private static class MakeHash extends MRTask<MakeHash> {
-      transient final MergeSet _ms;
-      MakeHash( MergeSet ms ) { _ms = ms; }
-      @Override public void map( Chunk chks[] ) {
-        int len = chks[0]._len;
-        for( int i=0; i<len; i++ ) {
-          Row row = new Row(chks).fill(i,_ms._ncols,_ms._id_maps);
-          boolean added = _ms._rows.add(row);
-          if( !added ) { // dup handling: keys are identical, row content may not be... => need hash based on row content now rather than key content.
-            Row other = _ms._rows.get(row); // fetch existing row
-            if( !row.rowEquals(other) ) {
-              added = _ms._rows.add(row.reHash());
-              if( !added )
-                throw H2O.unimpl("Failed to add duplicate key (unequal rows): (" + row._row + "," + other._row + ")");
-            }
-            else throw H2O.unimpl("Found entirely duplicate rows in make hash: (" + row._row + "," + other._row + ")");
-          }
+    @Override public void map( Chunk chks[] ) {
+      final NonBlockingHashSet<Row> rows = _rows; // Shared per-node hashset
+      final int len = chks[0]._len;
+      Row row = new Row(_ncols);
+      for( int i=0; i<len; i++ ) {
+        boolean added = _rows.add(row.fill(chks,_id_maps,i));
+        if( !added ) {                    // dup handling: keys are identical
+          if( _allRite ) row._dup = true; // Flag as having dups (TODO: actually gather the dups)
+        } else {                          // Else was added
+          row = new Row(_ncols);          // So do not re-use, but make new
         }
       }
+    }
+    @Override public void reduce( MergeSet ms ) {
+      if( _rows == ms._rows ) return;
+      throw H2O.unimpl();
     }
   }
 
@@ -212,30 +182,43 @@ public class ASTMerge extends ASTPrim {
   // dataset, doing a hash-lookup on the smaller replicated dataset, and adding
   // in the matching columns.
   private static class DoJoin extends MRTask<DoJoin> {
-    private final int _ncols;     // Number of merge columns
     private final Key _uniq;      // Which mergeset being merged
-    private final int[][] _enum_maps; // Mapping enum domains
-    private final boolean _allLeft;
-    DoJoin( int ncols, Key uniq, int[][] enum_maps, boolean allLeft ) {
-      _ncols = ncols; _uniq = uniq; _enum_maps = enum_maps; _allLeft = allLeft;
+    private final int _ncols;     // Number of merge columns
+    private final Frame _hashed;
+    private final boolean _allLeft, _allRite;
+    DoJoin( int ncols, Key uniq, Frame hashed, boolean allLeft, boolean allRite ) {
+      _uniq = uniq; _ncols = ncols; _hashed = hashed; _allLeft = allLeft; _allRite = allRite;
     }
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       // Shared common hash map
       NonBlockingHashSet<Row> rows = MergeSet.MERGE_SETS.get(_uniq)._rows;
+      Vec[] vecs = _hashed.vecs(); // Data source from hashed set
+      assert vecs.length == _ncols + nchks.length;
+      Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
+      water.parser.ValueString vstr = new water.parser.ValueString(); // Recycled value string
       int len = chks[0]._len;
-      Row row = new Row(chks);  // Recycled Row object on the bigger dataset
       for( int i=0; i<len; i++ ) {
-        Row smaller = rows.get(row.fill(i,_ncols,_enum_maps));
-        if( smaller == null ) { // Smaller is missing
+        Row hashed = rows.get(row.fill(chks,null,i));
+        if( hashed == null ) {  // Hashed is missing
           if( _allLeft )        // But need all of larger, so force a NA row
             for( NewChunk nc : nchks ) nc.addNA();
           else
-            throw H2O.unimpl(); // Need to remove larger row
+            throw H2O.unimpl(); // Need to remove walked row
         } else {
+          if( hashed._dup && _allRite )
+            throw H2O.unimpl(); // Need to dup walked row
           // Copy fields from matching smaller set into larger set
-          assert smaller._chks.length == _ncols + nchks.length;
-          for( int c = 0; c < nchks.length; c++ )
-            nchks[c].addNum(smaller._chks[_ncols + c].atd(smaller._row));
+          final long absrow = hashed._row;
+          for( int c = 0; c < nchks.length; c++ ) {
+            Vec v = vecs[_ncols+c];
+            switch( v.get_type() ) {
+            case Vec.T_NUM : nchks[c].addNum(v.at(absrow)); break;
+            case Vec.T_ENUM: 
+            case Vec.T_TIME: if( v.isNA(absrow) ) nchks[c].addNA(); else nchks[c].addNum(v.at8(absrow)); break;
+            case Vec.T_STR : nchks[c].addStr(v.atStr(vstr,absrow)); break;
+            default: throw H2O.unimpl();
+            }
+          }
         }
       }
     }
