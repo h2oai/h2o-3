@@ -23,7 +23,7 @@ expect_equal(1, dim(loc)[1])
 expect_equal(1, dim(loc)[2])
 
 # H2O multiply
-remote <- prostate.hex$AGE %*% prostate.hex$CAPSULE
+remote <- t(prostate.hex$AGE) %*% prostate.hex$CAPSULE
 expect_equal(1, dim(remote)[1])
 expect_equal(1, dim(remote)[2])
 
