@@ -1066,6 +1066,15 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("trim", self))
 
+  def length(self):
+    """
+    Create a column containing the length of the strings in the target column (only operates on frame with one column)
+
+    :return: H2OFrame
+    """
+    return H2OFrame(expr=ExprNode("length", self))
+
+
   def table(self, data2=None):
     """
     Parameters
