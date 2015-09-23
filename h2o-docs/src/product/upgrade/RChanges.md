@@ -20,11 +20,11 @@ The data shape returned by `apply` is now identical to the default behavior in R
 
 For example, in previous versions, if `apply` on `MARGIN` was equal to `2`, then 200 rows would be returned in one column. Now, 200 columns are produced in one row. 
 
-To revert to the previous behavior, use `transpose`. 
+To revert to the previous behavior, use the transpose function using the R command `t`. 
 
 ##Temp Management
 
-For users who regularly remove the temp directory files manually, the temp management rules have been improved in the following ways:
+For users who regularly remove the temporary data frames and keys manually, the temp management rules have been improved in the following ways:
 
 - For a data frame created in R: 
 
@@ -32,19 +32,15 @@ For users who regularly remove the temp directory files manually, the temp manag
 
   - If a name is specified, that name is used until it is manually deleted
 
-- Input data and modes are not automatically deleted when the cluster is stopped; a temporary column holds the parsed data until it is deleted during the R GC cycle 
+- Parsed input data and models are given names and not automatically deleted when the cluster is stopped; a temporary column holds the parsed data until it is deleted during the R GC cycle 
 
-- If your cluster is running low on memory, run a GC cycle to delete temporary files
+- If your cluster is running low on memory, run an R GC cycle to delete temporary data frames and keys
 
 
 ##S4 to S3
 
-The internal H2O object, which was previously an S4 object, is now an S3 object. You must use S3 operations to access objects (instead of S4). The risk of overloading depends on the current package type. 
+The internal H2O object, which was previously an S4 object, is now an S3 object. You must use S3 operations to access objects (instead of S4). The risk of overloading depends on whether the package overloads the existing package type. 
 
 ##`frame_id` to `id`
 
-The `frame_id` property has been renamed to `id`. This property is used in the following commands: 
-
-- `h2o.getFrame`
-- `H2OFrame-class`
-- `H2ORawData-class`
+The `frame_id` property has been renamed to `id`. This property is used in the `h2o.getFrame` command. 
