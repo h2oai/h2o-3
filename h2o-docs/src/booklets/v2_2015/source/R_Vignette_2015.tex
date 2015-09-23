@@ -13,24 +13,29 @@
 \textsc{\Large\bf{Fast Scalable R with H2O}}
 \\
 \bigskip
-\textsc{\small{Spencer Aiello \hspace{10pt} Eric Eckstrand \hspace{10pt} Anqi Fu \\  \hspace{10pt} Mark Landry  \hspace{10pt}  Jessica Lanford \hspace{10pt}  Patrick Aboyoun }}
-\\
+\line(1,0){250}  %inserts  horizontal line 
+
+\textsc{\small {Spencer Aiello \hspace{10pt} Eric Eckstrand \hspace{10pt} Anqi Fu}}
+
+\textsc{\small {Mark Landry  \hspace{10pt}  Jessica Lanford \hspace{10pt}  Patrick Aboyoun}}
+
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-August 2015: Third Edition 
-\\%add front page image here? (wavy lines)
+September 2015: Third Edition 
+\\
 \bigskip
 \end{center}
 
-\null\vfill
-\begin{figure}[!b]
-\noindent\makebox[\textwidth]{%
-\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
-\end{figure}
+% commenting out lines image due to print issues, but leaving in for later
+%\null\vfill
+%\begin{figure}[!b]
+%\noindent\makebox[\textwidth]{%
+%\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+%\end{figure}
 
 \newpage
 \restoregeometry
@@ -52,7 +57,7 @@ Mountain View, CA 94043\\
 \textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-August 2015: Third Edition
+September 2015: Third Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -451,7 +456,7 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 
 {\textbf{Grid Search}}: Performs standard hyper-parameter optimization to simplify model configuration. %%should be supported in latest version, but adding note in case
 
-After creating a model, use it to make predictions. For more information about predictions, refer to ``Predictions." 
+After creating a model, use it to make predictions. For more information about predictions, refer to \nameref{ssec:Predictions}.
 
 %%mal: this feels too lengthy for a modeling example here; perhaps it would be better to have entire work flows at the end?
 \newpage
@@ -987,11 +992,11 @@ Top-3 Hit Ratios:
 \subsection{Generalized Linear Models (GLM)}
 
 
-Generalized linear models (GLM) are some of the most commonly-used models for many types of data analysis use cases. While some data analysis can be done using general linear models, if the variables are more complex, general linear models may not be as accurate. For example, if the dependent variable has a non-continuous distribution or if the effect of the predictors is not linear, generalized linear models will produce more accurate results than general linear models.  
+Generalized linear models (GLM) are some of the most commonly-used models for many types of data analysis use cases. While some data can be analyzed using general linear models, general linear models may not be as accurate if the variables are more complex. For example, if the dependent variable has a non-continuous distribution or if the effect of the predictors is not linear, generalized linear models will produce more accurate results than general linear models.  
 
 Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions in general. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, gamma and Tweedie distributions. Each serves a different purpose, and depending on distribution and link function choice, it can be used either for prediction or classification.
 
-H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast,and scales extremely well for models with a limited number (\~\ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute gaussian (linear), logistic, poisson, and gamma regression models.
+H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast,and scales extremely well for models with a limited number ($\sim$ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute Gaussian (linear), logistic, Poisson, and gamma regression models.
 
 
 To generate a generalized linear model for developing linear models for exponential distributions, use {\texttt{h2o.glm()}}. You can apply regularization to the model by adjusting the lambda and alpha parameters. 
@@ -1092,6 +1097,7 @@ Cumulative Proportion  0.383120 0.668942 0.801859
 \end{lstlisting}
 
 \subsection{Predictions}
+\label{ssec:Predictions}
 
 The following section describes some of the prediction methods available in H2O. 
 
