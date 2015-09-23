@@ -212,9 +212,9 @@ public class ASTMerge extends ASTPrim {
           for( int c = 0; c < nchks.length; c++ ) {
             Vec v = vecs[_ncols+c];
             switch( v.get_type() ) {
-            case Vec.T_NUM : nchks[c].addNum(v.at   (     absrow)); break;
+            case Vec.T_NUM : nchks[c].addNum(v.at(absrow)); break;
             case Vec.T_ENUM: 
-            case Vec.T_TIME: nchks[c].addNum(v.at8  (     absrow)); break;
+            case Vec.T_TIME: if( v.isNA(absrow) ) nchks[c].addNA(); else nchks[c].addNum(v.at8(absrow)); break;
             case Vec.T_STR : nchks[c].addStr(v.atStr(vstr,absrow)); break;
             default: throw H2O.unimpl();
             }
