@@ -929,7 +929,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if isinstance(by, basestring):     by     = self._find_idx(by)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
-  def merge(self, other, allLeft=False, allRite=False):
+  def merge(self, other, allLeft=True, allRite=False):
     """
     Merge two datasets based on common column names
 

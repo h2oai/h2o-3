@@ -201,16 +201,6 @@ public class ASTMerge extends ASTPrim {
               if( !added )
                 throw H2O.unimpl("Failed to add duplicate key (unequal rows): (" + row._row + "," + other._row + ")");
             }
-
-            /*
-            ... bikes is small, weather is big (4x bigger, 2x more cols?)
-            bikes gets replicated locally; based on Days - and has 1
-            day-per-station, so about 340 rows for each unique Day
-
-            weather: did it per-hour, but now need to average per-hour to get a per-day value
-
-            
-            */
             else throw H2O.unimpl("Found entirely duplicate rows in make hash: (" + row._row + "," + other._row + ")");
           }
         }

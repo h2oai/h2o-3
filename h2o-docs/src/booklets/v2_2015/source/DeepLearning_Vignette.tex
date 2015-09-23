@@ -39,26 +39,30 @@
 
 
 \bigskip
-\textsc{\small{Anisha Arora \hspace{10pt} Arno Candel \hspace{10pt} Jessica Lanford \\ \hspace{10pt} Erin LeDell \hspace{10pt} Viraj Parmar} }
-\\
+
+\textsc{\small{Anisha Arora \hspace{10pt} Arno Candel \hspace{10pt} Jessica Lanford}}
+
+\textsc{\small{Erin LeDell \hspace{10pt} Viraj Parmar}}
+
 \bigskip
 
 \line(1,0){250}  %inserts  horizontal line
 
 {\url{http://h2o.ai/resources/}}
 
-
+\normalsize
 \bigskip
-August 2015: Third Edition 
-\\%add front page image here? (wavy lines)
+September 2015: Third Edition 
+
 \bigskip
 \end{center}
 
-\null\vfill
-\begin{figure}[!b]
-\noindent\makebox[\textwidth]{%
-\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
-\end{figure}
+% commenting out lines image due to print issues, but leaving in for later
+%\null\vfill
+%\begin{figure}[!b]
+%\noindent\makebox[\textwidth]{%
+%\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+%\end{figure}
 
 
 \newpage
@@ -82,7 +86,7 @@ Mountain View, CA 94043\\
 \textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-August 2015: Third Edition
+September 2015: Third Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -412,7 +416,7 @@ Dropout constrains the online optimization so that during forward propagation fo
 
 There are two effects: as with $\ell_2$ regularization, the network weight values are scaled toward 0.  Although they share the same global parameters, each training example trains a different model. As a result, dropout allows an exponentially large number of models to be averaged as an ensemble to help prevent overfitting and improve generalization. 
 
-If the feature space is large and noisy, specifying an input dropout using the \texttt{input\_dropout\_ratio} parameter can be especially useful. Note that input dropout can be specified independently of the dropout specification in the hidden layers (which requires \texttt{activation} to be \texttt{TanhWithDropout},  \texttt{MaxoutWithDropout}, or \texttt{RectifierWithDropout}). The amount of hidden dropout per hidden layer can be specified using the \texttt{hidden\_dropout\_ratios} parameter, which is set to 0.5 by default.
+If the feature space is large and noisy, specifying an input dropout using the \texttt{input\_dropout\_ratio} parameter can be especially useful. Note that input dropout can be specified independently of the dropout specification in the hidden layers (which requires \texttt{activation} to be \texttt{TanhWithDropout},  \texttt{MaxoutWithDropout}, or \texttt{RectifierWithDropout}). The amount of hidden dropout per hidden layer can be specified using the  \\ \texttt{hidden\_dropout\_ratios} parameter, which is set to 0.5 by default.
 
 \subsection{Advanced Optimization} 
 H2O features manual and automatic advanced optimization modes. The manual mode features include momentum training and learning rate annealing and the automatic mode features an adaptive learning rate.
@@ -495,7 +499,7 @@ The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known aca
 \caption{Example MNIST digit images \label{overflow}}
 \end{figure}
 
-This example downloads and imports the training and testing datasets from a \href{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}{public Amazon S3 bucket}.
+This example downloads and imports the training and testing datasets from a public Amazon S3 bucket (\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}).
 The training file is 13MB and the testing file is 2.1MB. The data is downloaded directly, so the data import speed is dependent on download speed.  Files can be uploaded from a variety of sources, including remote locations and HDFS.
 \newpage
 \waterExampleInR
@@ -615,11 +619,11 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 \subsection{Grid Search for Model Comparison} 
 \label{ssec:GridSearch}
 
-H2O supports model tuning in  grid search by allowing users to specify sets of values for parameter arguments and observe changes in model behavior. An example in R is provided below; currently, the Python grid search API is in development.   
+H2O supports model tuning in  grid search by allowing users to specify sets of values for parameter arguments and observe changes in model behavior. An example in R is provided below; the Python grid search API is currently in development.   
 
 In this example, three different network topologies and two different $\ell_1$ norm weights are specified. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. 
 
-This provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to \nameref{sec:Parameters} for parameter descriptions and configurable values. 
+Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to \nameref{sec:Parameters} for parameter descriptions and configurable values. 
 
 \waterExampleInR
 To run a grid search in R, use the following: 
@@ -940,7 +944,7 @@ The default is 0, which disables cross-validation.
 \section{Common R Commands}
 \begin{itemize}
 
-\item \texttt{library(h2o)}: Imports the h2o R package.
+\item \texttt{library(h2o)}: Imports the H2O R package.
 
 \item \texttt{h2o.init()}:  Connects to (or starts) an H2O cluster.
 
@@ -970,7 +974,7 @@ The default is 0, which disables cross-validation.
 
 \item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}: \\ Creates a Deep Learning model.
 
-\item \texttt{h2o.grid} (not yet available): Starts H2O grid support and gives results.
+%\item \texttt{h2o.grid} (not yet available): Starts H2O grid support and gives results.
 
 \item \texttt{h2o.predict(model, newdata)}: Generate predictions from an H2O model on a test set.
 
