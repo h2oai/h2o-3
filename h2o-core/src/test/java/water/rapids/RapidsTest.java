@@ -243,12 +243,12 @@ public class RapidsTest extends TestUtil {
   @Test public void testMerge() {
     Frame l=null,r=null,f=null;
     try {
-      l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
+      l = ArrayUtils.frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
       l.    add("age"  ,vec(ar(">dirt" ,"middle","middle","young'n"),ari(0,1,2,3)));
       l = new Frame(l);
       DKV.put(l);
       System.out.println(l);
-      r = frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
+      r = ArrayUtils.frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
       r.    add("skill",vec(ar("science","linearmath","sparkling","hacker"),ari(0,1,2,3)));
       r = new Frame(r);
       DKV.put(r);
