@@ -18,27 +18,37 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Generalized Linear Modeling with H2O}}
+\textsc{\Large\bf{Generalized Linear Modeling with H2O's R Package}}
 \\
 \bigskip
-\textsc{\small{Nadine Hussami  \hspace{10pt} Tom Kraljevic \hspace{10pt} \hspace{10pt} Jessica Lanford \\ \hspace{10pt} Tomas Nykodym \hspace{10pt} Ariel Rao \hspace{10pt} Amy Wang }}
+\small
+
+\line(1,0){250}  %inserts  horizontal line 
+
+\textsc{Nadine Hussami  \hspace{10pt} Tom Kraljevic \hspace{10pt} \hspace{10pt} Jessica Lanford}
+
+\textsc{Tomas Nykodym \hspace{10pt} Ariel Rao \hspace{10pt} Amy Wang }
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
+\normalsize
+
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-August 2015: Third Edition 
-\\%add front page image here? (wavy lines)
+September 2015: Third Edition
+
+ 
 \bigskip
 \end{center}
 
-\null\vfill
-\begin{figure}[!b]
-\noindent\makebox[\textwidth]{%
-\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
-\end{figure}
+% commenting out lines image due to print issues, but leaving in since it took a while to figure it out
+%\null\vfill
+%\begin{figure}[!b]
+%\noindent\makebox[\textwidth]{%
+%\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+%\end{figure}
 
 \newpage
 \restoregeometry
@@ -50,7 +60,7 @@ August 2015: Third Edition
 
 {\raggedright\vfill\ 
 
-Generalized Linear Modeling with H2O\\
+Generalized Linear Modeling with H2O's R Package\\
 
 by Nadine Hussami, Tom Kraljevic, \\ Jessica Lanford, Tomas Nykodym, \\ Ariel Rao,  \& \ Amy Wang \\
 \bigskip
@@ -61,7 +71,7 @@ Mountain View, CA 94043\\
 \textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-August 2015: Third Edition
+September 2015: Third Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -272,7 +282,7 @@ tends to select only one of them and set the other coefficients to zero. Using t
 
 The elastic net both selects variables and preserves the grouping effect (shrinking coefficients of correlated columns together). Moreover, while the number of predictors that can enter a Lasso model saturates at $\min(n,p)$ (where $n$ is the number of observations and $p$ is the number of variables in the model), the elastic net does not have this limitation and can fit models with a larger number of predictors. %It is also useful to always add a small $\ell_2$ penalty to increase numerical stability.
 
-\subsubsection{Elastic net penalty}
+\subsubsection{Elastic Net Penalty}
 
 H2O supports elastic net regularization, which is a combination of the $\ell_1$ and $\ell_2$ penalties parametrized by the $\alpha$ and $\lambda$ arguments (similar to \citetalias{glmnet}).
 \begin{itemize}
@@ -882,9 +892,9 @@ Scoring History:
 \section{Making Predictions}
 
 Once you have built a model, you can use it to make predictions using two different approaches:  the in-H2O batch
-scoring approach and the real-time NanoFast POJO approach.
+scoring approach and the real-time nano-fast POJO approach.
 
-\subsection{Batch in-H2O predictions}
+\subsection{Batch In-H2O Predictions}
 
 Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  In addition to predictions, you
 can also get metrics like AUC if you include the response column in the new data.  Refer to the following example for logistic regression (i.e. binomial classification).
@@ -1004,7 +1014,7 @@ categoricals into a set of binary vectors, with one vector per each categorical 
 {\texttt{model.matrix}} in R). H2O performs similar expansions automatically and no prior changes to the dataset
 are needed. Each categorical column is treated as a set of sparse binary vectors.
 
-\subsubsection{Largest categorical speed optimization}
+\subsubsection{Largest Categorical Speed Optimization}
 
 Categoricals have special handling during GLM computation as well. When forming the gram matrix, we can take
 advantage of the fact that columns belonging to the same categorical never co-occur and the gram matrix region
