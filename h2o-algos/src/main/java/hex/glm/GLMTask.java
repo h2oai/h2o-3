@@ -428,6 +428,7 @@ public abstract class GLMTask  {
         final Row row = rows.row(r);
         int y = (int)row.response(0);
         assert y == row.response(0);
+
         if(row.bad || row.weight == 0) continue;
         double maxRow = 0;
         for(int c = 0; c < _beta.length; ++c) {
@@ -451,10 +452,11 @@ public abstract class GLMTask  {
         ++_nobs;
         _val.add(y,exps, row.weight,row.offset);
         for(int c = 0; c < _beta.length; ++c) {
-          double val = row.weight * exps[c];
+          double iY = y == c?1:0;
+          double val = row.weight*(exps[c+1]-iY);
           for (int i = 0; i < _dinfo._cats; ++i) {
             int id = row.binIds[i];
-            grad[c * P + id] -= val;
+            grad[c * P + id] -= row.weight*val;
           }
           if (row.numIds == null) {
             int off = _dinfo.numStart();
@@ -464,19 +466,6 @@ public abstract class GLMTask  {
             for (int i = 0; i < row.nNums; ++i)
               grad[c * P + row.numIds[i]] -= row.weight * row.numVals[i] * val;
           }
-        }
-        for(int i = 0; i < _dinfo._cats; ++i) {
-          int id = row.binIds[i];
-          grad[y*P+id] += row.weight;
-        }
-
-        if (row.numIds == null) {
-          int off = _dinfo.numStart();
-          for (int i = 0; i < _dinfo._nums; ++i)
-            grad[y*P+i+off] += row.weight*row.numVals[i];
-        } else {
-          for (int i = 0; i < row.nNums; ++i)
-            grad[y*P+row.numIds[i]] -= row.weight * row.numVals[i];
         }
       }
       _gradient = grad;
@@ -929,6 +918,48 @@ public abstract class GLMTask  {
 //      ArrayUtils.add(_xy, t._xy);
 //    }
 //  }
+
+
+//  /**
+//   * Compute initial solution for multinomial problem (Simple weighted LR with all weights = 1/4)
+//   */
+//  public static final class GLMMultinomialInitTsk extends MRTask<GLMMultinomialInitTsk>  {
+//    double [] _mu;
+//    DataInfo _dinfo;
+//    Gram _gram;
+//    double [][] _xy;
+//
+//    @Override public void map(Chunk [] chks) {
+//      Rows rows = _dinfo.rows(chks);
+//      _gram = new Gram(_dinfo);
+//      _xy = new double[_mu.length][_dinfo.fullN()+1];
+//      int numStart = _dinfo.numStart();
+//      double [] ds = new double[_mu.length];
+//      for(int i = 0; i < ds.length; ++i)
+//        ds[i] = 1.0/(_mu[i] * (1-_mu[i]));
+//      for(int i = 0; i < rows._nrows; ++i) {
+//        Row r = rows.row(i);
+//        double y = r.response(0);
+//        _gram.addRow(r,.25);
+//        for(int c = 0; c < _mu.length; ++c) {
+//          double iY = y == c?1:0;
+//          double z = (y-_mu[c]) * ds[i];
+//          for(int j = 0; j < r.nBins; ++j)
+//            _xy[c][r.binIds[j]] += z;
+//          for(int j = 0; j < r.nNums; ++j){
+//            int id = r.numIds == null?(j + numStart):r.numIds[j];
+//            double val = r.numVals[j];
+//            _xy[c][id] += z*val;
+//          }
+//        }
+//      }
+//    }
+//    @Override public void reduce(){
+//
+//    }
+//  }
+
+
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *
@@ -945,6 +976,7 @@ public abstract class GLMTask  {
     double _yy;
     GLMValidation _val; // validation of previous model
     final double [] _ymu;
+
     long _nobs;
     final boolean _validate;
     int [] _ti;

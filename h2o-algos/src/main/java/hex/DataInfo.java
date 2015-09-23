@@ -654,6 +654,13 @@ public class DataInfo extends Keyed {
     public Row row(int i) {return _sparse?_sparseRows[i]:extractDenseRow(_chks,i,_denseRow);}
   }
 
+  public Rows rows(Chunk [] chks) {
+    int cnt = 0;
+    for(Chunk c:chks)
+      if(c.isSparse())
+        ++cnt;
+    return rows(chks,cnt > (chks.length >> 1));
+  }
   public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
 
   /**
