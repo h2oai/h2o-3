@@ -1,10 +1,8 @@
-package hex.tree.drf;
+package hex.tree;
 
 import java.util.Arrays;
 import java.util.Random;
 
-import hex.tree.*;
-import hex.tree.DTreeScorer;
 import water.*;
 import water.fvec.Chunk;
 
@@ -15,7 +13,7 @@ import water.fvec.Chunk;
  * <p>It prepares voter per tree and also marks
  * rows which were consider out-of-bag.</p>
  */
-/* package */ class OOBScorer extends DTreeScorer<OOBScorer> {
+/* package */ public class OOBScorer extends DTreeScorer<OOBScorer> {
 
   /* @IN */ final protected float _rate;
 
@@ -52,7 +50,7 @@ import water.fvec.Chunk;
                 ctree.set(row, (float) (ctree.atd(row) + prediction));
             }
           }
-          // Mark oob row and store number of trees voting for this row (only for regression)
+          // Mark oob row and store number of trees voting for this row
           coobt.set(row, coobt.atd(row)+1);
         }
       }

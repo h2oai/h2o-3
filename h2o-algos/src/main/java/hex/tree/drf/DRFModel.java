@@ -9,12 +9,12 @@ import water.util.SBPrintStream;
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
-    public int _mtries = -1;
-    public float _sample_rate = 0.632f;
     public boolean _binomial_double_trees = false;
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
+      _mtries = -1;
+      _sample_rate = 0.632f;
       _max_depth = 20;
       _min_rows = 1;
     }

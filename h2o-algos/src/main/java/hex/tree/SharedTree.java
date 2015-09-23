@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+  protected int _mtry;
 
   public static final int MAX_NTREES = 100000;
 
@@ -406,7 +407,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp()]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
-  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c )]; }
+  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
@@ -421,7 +422,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   }
 
   // Builder-specific decision node
-  abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );
+  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] ) {
+    return new DTree.DecidedNode(udn, hs);
+  }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum

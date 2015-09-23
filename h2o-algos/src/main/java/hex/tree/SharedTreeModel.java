@@ -53,6 +53,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
 
+    public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+
+    public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
+
     /** Fields which can be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */

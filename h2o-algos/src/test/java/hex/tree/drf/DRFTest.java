@@ -1159,4 +1159,45 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testMTrys() {
+    Frame tfr = null;
+    Vec old = null;
+    DRFModel drf1 = null;
+
+    for (int i=1; i<=6; ++i) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr.remove("name").remove(); // Remove unique id
+        tfr.remove("economy").remove();
+        old = tfr.remove("economy_20mpg");
+        tfr.add("economy_20mpg", old.toEnum()); // response to last column
+        DKV.put(tfr);
+
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "economy_20mpg";
+        parms._min_rows = 2;
+        parms._ntrees = 5;
+        parms._max_depth = 5;
+        parms._nfolds = 3;
+        parms._mtries = i;
+
+        DRF job1 = new DRF(parms);
+        drf1 = job1.trainModel().get();
+
+        ModelMetricsBinomial mm1 = (ModelMetricsBinomial) drf1._output._cross_validation_metrics;
+        Assert.assertTrue(mm1._auc != null);
+
+        job1.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (old != null) old.remove();
+        if (drf1 != null) drf1.delete();
+        Scope.exit();
+      }
+    }
+  }
 }
