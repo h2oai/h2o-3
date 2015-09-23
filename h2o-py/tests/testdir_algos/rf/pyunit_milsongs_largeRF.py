@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(1, "../../../")
-import h2o, tests
+import h2o,tests
 import random
 
 def milsong_checkpoint():
@@ -19,8 +19,12 @@ def milsong_checkpoint():
                                validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
 
     # save the model, then load the model
-    path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"../..","results")
+    path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","results"))
+
+    assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
     model_path = h2o.save_model(model1, path=path, force=True)
+
+    assert os.path.isdir(model_path), "Expected load directory {0} to exist, but it does not.".format(model_path)
     restored_model = h2o.load_model(model_path)
 
     # continue building the model

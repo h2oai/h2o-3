@@ -10,7 +10,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 conn = h2o.init()
 
-test.hex_1775 <- function(conn) {
+test.hex_1775 <- function() {
   temp_dir = tempdir()
   temp_subdir1 = paste(temp_dir, "tmp", sep = .Platform$file.sep)
   temp_subdir2 = paste(temp_dir, "tmp2", sep = .Platform$file.sep)
@@ -18,8 +18,8 @@ test.hex_1775 <- function(conn) {
 
   # Test saving and loading of GLM model
   Log.info("Importing prostate.csv...")
-  prostate.hex = h2o.uploadFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
-  iris.hex = h2o.uploadFile(conn, normalizePath(locate('smalldata/iris/iris.csv')))
+  prostate.hex = h2o.uploadFile(normalizePath(locate('smalldata/logreg/prostate.csv')))
+  iris.hex = h2o.uploadFile(normalizePath(locate('smalldata/iris/iris.csv')))
 
   # Build GLM, RandomForest, GBM, Naive Bayes, and Deep Learning models
   Log.info("Build GLM model")
@@ -60,7 +60,7 @@ test.hex_1775 <- function(conn) {
   iris.dl.path = h2o.saveModel(object = iris.dl, dir = temp_subdir1, save_cv  = FALSE, force = TRUE)
 
   # All keys removed to test that cross validation models are actually being loaded
-  h2o.removeAll(object = conn)
+  h2o.removeAll()
 
   # Proving we can move files from one directory to another and not affect the load of the model
   Log.info(paste("Moving models from", temp_subdir1, "to", temp_subdir2))
@@ -74,15 +74,15 @@ test.hex_1775 <- function(conn) {
   }
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
-  prostate.hex = h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
-  iris.hex = h2o.importFile(conn, normalizePath(locate('smalldata/iris/iris.csv')))
+  prostate.hex = h2o.importFile(normalizePath(locate('smalldata/logreg/prostate.csv')))
+  iris.hex = h2o.importFile(normalizePath(locate('smalldata/iris/iris.csv')))
 
   Log.info(paste("Model saved in", temp_subdir2))
 
   reloaded_models = {}
   for(path in new_model_paths) {
     Log.info(paste("Loading model from",path,sep=" "))
-    model_obj = h2o.loadModel(conn, path)
+    model_obj = h2o.loadModel(path)
     reloaded_models = append(x = reloaded_models, values = model_obj)
   }
 

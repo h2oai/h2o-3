@@ -7,8 +7,8 @@ source('../h2o-runit.R')
 
 # setupRandomSeed(1994831827)
 
-test <- function(conn) {
-	hex = h2o.importFile(conn, "/home/0xdiag/datasets/airlines/airlines_all.csv", "hex")
+test <- function() {
+	hex = h2o.importFile("/home/0xdiag/datasets/airlines/airlines_all.csv", "hex")
   print(hex)
       
     testEnd()

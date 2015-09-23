@@ -506,6 +506,28 @@ Currently, we do not support this capability. If you are interested in contribut
 
 ---
 
+**How can I continue working on a model in H2O after restarting?**
+
+There are a number of ways you can save your model in H2O: 
+
+- In the web UI, click the **Flow** menu then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right. 
+- In the web UI, click the **Flow** menu then click **Download this Flow...**. Your flow is saved to the location you specify in the pop-up **Save As** window that appears. 
+- (For DRF, GBM, and DL models only): Use model checkpointing to resume training a model. Copy the `model_id` number from a built model and paste it into the *checkpoint* field in the `buildModel` cell. 
+
+
+---
+
+**How can I find out more about H2O's real-time, nano-fast scoring engine?** 
+
+H2O's scoring engine uses a Plain Old Java Object (POJO). The POJO code runs quickly but is single-threaded.  It is intended for embedding into lightweight real-time environments.
+
+All the work is done by the call to the appropriate predict method.  There is no involvement from H2O in this case.
+
+To compare multiple models simultaneously, use the POJO to call the models using multiple threads. For more information on using POJOs, refer to the [POJO Quick Start Guide](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-docs/index.html#POJO%20Quick%20Start) and [POJO Java Documentation](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-genmodel/javadoc/index.html)
+
+In-H2O scoring is triggered on an existing H2O cluster, typically using a REST API call. H2O evaluates the predictions in a parallel and distributed fashion for this case.  The predictions are stored into a new Frame and can be written out using `h2o.exportFile()`, for example.
+
+---
 
 ##Hadoop
 

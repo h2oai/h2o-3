@@ -20,7 +20,7 @@ import water.parser.ParseDataset;
  */
 public class DeepLearningScoreTest extends TestUtil {
   @BeforeClass
-  public static void setup() { stall_till_cloudsize(5); }
+  public static void setup() { stall_till_cloudsize(1); }
 
   /** Load simple dataset, rebalance to a number of chunks > number of rows, and run deep learning */
   @Test public void testPubDev928() {

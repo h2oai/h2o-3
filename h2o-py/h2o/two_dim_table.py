@@ -13,22 +13,25 @@ class H2OTwoDimTable(object):
   """
   def __init__(self, row_header=None, col_header=None, col_types=None,
              table_header=None, raw_cell_values=None,
-             col_formats=None, cell_values=None):
+             col_formats=None, cell_values=None, table_description=None):
     self.row_header = row_header
     self.col_header = col_header
     self.col_types = col_types
     self.table_header = table_header
     self.cell_values = cell_values if cell_values else self._parse_values(raw_cell_values, col_types)
     self.col_formats = col_formats
+    self.table_description = table_description
 
   def show(self, header=True):
-    if h2o.can_use_pandas():
-      import pandas
-      pandas.options.display.max_rows = 20
-      print pandas.DataFrame(self.cell_values,columns=self.col_header)
-      return
+    #if h2o.can_use_pandas():
+    #  import pandas
+    #  pandas.options.display.max_rows = 20
+    #  print pandas.DataFrame(self.cell_values,columns=self.col_header)
+    #  return
     print
-    if header: print self.table_header + ":"
+    if header:
+      print self.table_header + ":",
+      if self.table_description: print self.table_description
     print
     table = copy.deepcopy(self.cell_values)
     nr=0

@@ -1,10 +1,7 @@
 package water.util;
 
 import hex.Interaction;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
@@ -37,7 +34,7 @@ public class Tabulate extends Job<Tabulate> {
   public TwoDimTable _response_table;
 
   // helper to speed up stuff
-  static private class Stats {
+  static private class Stats extends Iced {
     Stats(Vec v) {
       _min = v.min();
       _max = v.max();

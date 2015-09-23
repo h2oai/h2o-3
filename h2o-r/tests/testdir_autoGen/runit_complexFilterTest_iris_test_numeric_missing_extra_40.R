@@ -5,10 +5,11 @@
 ##
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-complexFilterTest_iris_test_numeric_missing_extra_40 <- function(conn) {
+
+complexFilterTest_iris_test_numeric_missing_extra_40 <- function() {
     Log.info("A munge-task R unit test on data <iris_test_numeric_missing_extra> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
     Log.info("Uploading iris_test_numeric_missing_extra")
-    hex <- h2o.importFile(conn, locate("smalldata/iris/iris_test_numeric_missing_extra.csv"), "riris_test_numeric_missing_extra.hex")
+    hex <- h2o.importFile(locate("smalldata/iris/iris_test_numeric_missing_extra.csv"), "riris_test_numeric_missing_extra.hex")
 Log.info("Performing compound task !( ( hex[,c(\"species\")] != 1.2108297567 ) & ( hex[,c(\"petal_len\")] >= 5.18451212374 ) | ( ( hex[,c(\"petal_len\")] >= 3.39830058306 )) ) on dataset <iris_test_numeric_missing_extra>")
          filterHex <- hex[!( ( hex[,c("species")] != 1.2108297567 ) & ( hex[,c("petal_len")] >= 5.18451212374 ) | ( ( hex[,c("petal_len")] >= 3.39830058306 )) ),]
 Log.info("Performing compound task !( ( hex[,c(\"petal_len\")] != 4.56344348577 ) & ( hex[,c(\"petal_len\")] >= 3.54674974992 ) | ( ( hex[,c(\"species\")] >= 2.26145385905 )) ) on dataset iris_test_numeric_missing_extra, and also subsetting columns.")

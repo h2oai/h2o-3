@@ -30,7 +30,6 @@ class CsvParser extends Parser {
     byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
     int state;
     boolean isNa = false;
-    boolean checkForExtAscii = false;
     // If handed a skipping offset, then it points just past the prior partial line.
     if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
     else {
@@ -102,8 +101,6 @@ MAIN_LOOP:
           }
           if (!isEOL(c) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
             str.addChar();
-            if ( (c & 0x80) == 128) // beyond std ASCII
-              checkForExtAscii = true;
             break;
           }
           // fallthrough to STRING_END
@@ -127,15 +124,12 @@ MAIN_LOOP:
             }
           }
           if (!isNa) {
-            if (checkForExtAscii && !str.isUTF8()) //presume ISO_8859_1
-              str = str.convertISO_8859_1();
             dout.addStrCol(colIdx, str);
           } else {
             dout.addInvalidCol(colIdx);
             isNa = false;
           }
           str.set(null, 0, 0);
-          checkForExtAscii = false;
           ++colIdx;
           state = SEPARATOR_OR_EOL;
           // fallthrough to SEPARATOR_OR_EOL

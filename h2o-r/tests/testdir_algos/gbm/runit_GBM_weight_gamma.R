@@ -2,9 +2,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
+test <- function() {
 	
-	htable  = h2o.uploadFile(h, locate("smalldata/gbm_test/moppe.csv"))
+	htable  = h2o.uploadFile(locate("smalldata/gbm_test/moppe.csv"))
 	htable$premiekl = as.factor(htable$premiekl)
 	htable$moptva = as.factor(htable$moptva)
 	htable$zon = as.factor(htable$zon)

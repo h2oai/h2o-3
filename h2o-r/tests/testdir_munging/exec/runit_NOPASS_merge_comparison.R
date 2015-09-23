@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../h2o-runit.R")
 
-check.merge_comparison <- function(conn) {
+check.merge_comparison <- function() {
   Log.info("Verify accuracy of merge")
 
   left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),

@@ -6,10 +6,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.LR.betaConstraints <- function(conn){
+test.LR.betaConstraints <- function(){
 
   #Log.info("Importing prostate dataset...")
-  prostate_h2o <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
+  prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
 
   #Log.info("Create beta constraints frame...")
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")

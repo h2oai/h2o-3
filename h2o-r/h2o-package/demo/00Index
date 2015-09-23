@@ -2,6 +2,7 @@ h2o.anomaly   H2O anomaly using prostate cancer data
 h2o.deeplearning   H2O deeplearning using prostate cancer data
 h2o.gbm   H2O generalized boosting machines using prostate cancer data
 h2o.glm   H2O GLM using prostate cancer data
+h2o.glrm   H2O GLRM using walking gait data
 h2o.kmeans   H2O K-means using prostate cancer data
 h2o.naiveBayes   H2O naive Bayes using iris and Congressional voting data
 h2o.prcomp   H2O PCA using Australia coast data
@@ -10,6 +11,7 @@ h2o.anomaly.remote   H2O anomaly using prostate cancer data run on a remote serv
 h2o.deeplearning.remote   H2O deeplearning using prostate cancer data run on a remote server provided by user
 h2o.gbm.remote   H2O generalized boosting machines using prostate cancer data run on a remote server provided by user
 h2o.glm.remote   H2O GLM using prostate cancer data run on a remote server provided by user
+h2o.glrm.remote   H2O GLRM using walking gait data run on a remote server provided by the user
 h2o.kmeans.remote   H2O K-means using prostate cancer data run on a remote server provided by user
 h2o.naiveBayes.remote   H2O naive Bayes using iris and Congressional voting data run on a remote server provided by the user
 h2o.prcomp.remote   H2O PCA using Australia coast data run on a remote server provided by user

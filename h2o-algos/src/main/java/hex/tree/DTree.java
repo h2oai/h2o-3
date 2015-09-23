@@ -210,7 +210,7 @@ public class DTree extends Iced {
         if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name,adj_nbins, nbins_cats, h._isInt, min, maxEx);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, nbins_cats, h._isInt, min, maxEx);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;

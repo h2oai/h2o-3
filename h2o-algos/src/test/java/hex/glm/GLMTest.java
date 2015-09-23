@@ -892,8 +892,8 @@ public class GLMTest  extends TestUtil {
     double[] d8 = MemoryManager.malloc8d(1000);
     double[] d9 = MemoryManager.malloc8d(1000);
 
-    int[] c1 = MemoryManager.malloc4(1000);
-    int[] c2 = MemoryManager.malloc4(1000);
+    long[] c1 = MemoryManager.malloc8(1000);
+    long[] c2 = MemoryManager.malloc8(1000);
     String[] dom = new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
     for (int i = 0; i < d1.length; ++i) {
       c1[i] = rnd.nextInt(dom.length);
@@ -1106,6 +1106,7 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._lambda_search = true;
+      params._nlambdas = 5;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
       double [] beta = model1.beta();
@@ -1179,6 +1180,7 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;//IRLSM
       params._lambda_search = true;
+      params._nlambdas = 5;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
@@ -1215,6 +1217,7 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
+      params._nlambdas = 5;
       job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
       model1 = job.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
@@ -1660,4 +1663,35 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  /** Test large GLM POJO model generation.
+   *  Make a 10K predictor model, emit, javac, and score with it.
+   */
+  @Test public void testBigPOJO() {
+    GLM job = null;
+    GLMModel model = null;
+    Frame fr = parse_test_file(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
+    try{
+      Scope.enter();
+      // test LBFGS with l1 pen
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      // params._response = 0;
+      params._lambda = null;
+      params._response_column = fr._names[0];
+      params._train = fr._key;
+      params._max_active_predictors = 100000;
+      params._alpha = new double[]{0};
+      params._solver = Solver.L_BFGS;
+      job = new GLM(Key.make("arcene_model"), "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.getGet(job._dest);
+      res = model.score(fr);
+      model.testJavaScoring(fr,res,0.0);
+    } finally {
+      fr.delete();
+      if(model != null) model.delete();
+      if( res != null ) res.delete();
+      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
 }

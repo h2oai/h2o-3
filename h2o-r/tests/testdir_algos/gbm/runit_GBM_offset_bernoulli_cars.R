@@ -3,8 +3,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test <- function(h) {
-    cars = h2o.uploadFile(conn, locate("smalldata/junit/cars_20mpg.csv"))
+test <- function() {
+    cars = h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[!is.na(cars$economy_20mpg),]
     cars$economy_20mpg = as.factor(cars$economy_20mpg)
     offset = as.h2o(data.frame(rep(.5,398)))

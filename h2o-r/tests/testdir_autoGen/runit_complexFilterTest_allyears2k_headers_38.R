@@ -5,10 +5,11 @@
 ##
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
-complexFilterTest_allyears2k_headers_38 <- function(conn) {
+
+complexFilterTest_allyears2k_headers_38 <- function() {
     Log.info("A munge-task R unit test on data <allyears2k_headers> testing the functional unit <['', '<=']> ")
     Log.info("Uploading allyears2k_headers")
-    hex <- h2o.importFile(conn, locate("smalldata/airlines/allyears2k_headers.zip"), "rallyears2k_headers.hex")
+    hex <- h2o.importFile(locate("smalldata/airlines/allyears2k_headers.zip"), "rallyears2k_headers.hex")
 Log.info("Performing compound task ( ( hex[,c(\"Cancelled\")] <= 0.252596694009 ))  on dataset <allyears2k_headers>")
          filterHex <- hex[( ( hex[,c("Cancelled")] <= 0.252596694009 )) ,]
 Log.info("Performing compound task ( ( hex[,c(\"Diverted\")] <= 0.952276526236 ))  on dataset allyears2k_headers, and also subsetting columns.")

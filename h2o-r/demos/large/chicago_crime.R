@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+## Set your working directory
+setwd("~/Downloads/")
 
 # Connect to a cluster
 # Set this to True if you want to fetch the data directly from S3.

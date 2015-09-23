@@ -93,7 +93,7 @@ public class PrettyPrint {
   };
 
   public static double pow10(int exp){ return ((exp >= -10 && exp <= 10)?powers10[exp+10]:Math.pow(10, exp)); }
-  public static long pow10i(int exp){ return powers10i[exp]; }
+  public static long pow10i(int exp){ return ((exp > -1 && exp < 19)?powers10i[exp]:(long)Math.pow(10, exp)); }
   public static final boolean fitsIntoInt(double d) { return Math.abs((int)d - d) < 1e-8; }
 
 
@@ -114,4 +114,27 @@ public class PrettyPrint {
     return s;
   }
 
+  /**
+   * This method takes a number, and returns the
+   * string form of the number with the proper
+   * ordinal indicator attached (e.g. 1->1st, and 22->22nd)
+   * @param i - number to have ordinal indicator attached
+   * @return string form of number along with ordinal indicator as a suffix
+   */
+  public static String withOrdinalIndicator(long i) {
+    String ord;
+    // Grab second to last digit
+    int d = (int) (Math.abs(i) / Math.pow(10, 1)) % 10;
+    if (d == 1) ord = "th"; //teen values all end in "th"
+    else { // not a weird teen number
+      d = (int) (Math.abs(i) / Math.pow(10, 0)) % 10;
+      switch (d) {
+        case 1: ord = "st"; break;
+        case 2: ord = "nd"; break;
+        case 3: ord = "rd"; break;
+        default: ord = "th";
+      }
+    }
+    return i+ord;
+  }
 }

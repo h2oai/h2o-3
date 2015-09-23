@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.summary.factor <- function(conn) {
+test.summary.factor <- function() {
   Log.info("Importing prostate.csv data...\n")
   prostate.dat <- read.csv(normalizePath(locate("smalldata/logreg/prostate.csv")), header = TRUE)
-  prostate.hex <- h2o.importFile(conn, normalizePath(locate("smalldata/logreg/prostate.csv")))
+  prostate.hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")))
   
   Log.info("Comparing R and H2O summaries...\n")
   sumR <- summary(prostate.dat)

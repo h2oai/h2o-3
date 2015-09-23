@@ -69,11 +69,11 @@ class ModelBase(object):
     :param test_data: Data to be predicted on.
     :return: A new H2OFrame filled with predictions.
     """
-    if not test_data: raise ValueError("Must specify test data")
+    if not isinstance(test_data, H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
     test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id)
-    prediction_frame_id = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    return h2o.get_frame(prediction_frame_id)
+    # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
+    return h2o.get_frame(j["predictions_frame"]["name"])
 
   def is_cross_validated(self):
     """

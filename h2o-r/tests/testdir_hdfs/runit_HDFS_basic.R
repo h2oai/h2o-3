@@ -25,7 +25,7 @@ if (running_inside_h2o) {
 
 
 heading("BEGIN TEST")
-check.hdfs_basic <- function(conn) {
+check.hdfs_basic <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.
@@ -33,7 +33,7 @@ check.hdfs_basic <- function(conn) {
 
   heading("Testing single file importHDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-  iris.hex <- h2o.importFile(conn, url)
+  iris.hex <- h2o.importFile(url)
   head(iris.hex)
   tail(iris.hex)
   n <- nrow(iris.hex)
@@ -41,7 +41,7 @@ check.hdfs_basic <- function(conn) {
   if (n != 150) {
       stop("nrows is wrong")
   }
-  if (class(iris.hex) != "H2OFrame") {
+  if (class(iris.hex) != "Frame") {
       stop("iris.hex is the wrong type")
   }
   print ("Import worked")
@@ -52,7 +52,7 @@ check.hdfs_basic <- function(conn) {
 
   heading("Testing directory importHDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_dir)
-  iris.dir.hex <- h2o.importFile(conn, url)
+  iris.dir.hex <- h2o.importFile(url)
   head(iris.dir.hex)
   tail(iris.dir.hex)
   n <- nrow(iris.dir.hex)
@@ -60,7 +60,7 @@ check.hdfs_basic <- function(conn) {
   if (n != 150) {
       stop("nrows is wrong")
   }
-  if (class(iris.dir.hex) != "H2OFrame") {
+  if (class(iris.dir.hex) != "Frame") {
       stop("iris.dir.hex is the wrong type")
   }
   print ("Import worked")

@@ -166,7 +166,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   @Override public void reduce(DeepLearningTask other){
     if (_localmodel != null && other._localmodel != null && other._localmodel.get_processed_local() > 0 //other DLTask was active (its model_info should be used for averaging)
-            && other._localmodel != _localmodel) //other DLTask worked on a different model_info
+        && other._localmodel != _localmodel) //other DLTask worked on a different model_info
     {
       // avoid adding remote model info to unprocessed local data, still random
       // (this can happen if we have no chunks on the master node)
@@ -177,7 +177,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _localmodel.add(other._localmodel);
         _chunk_node_count += other._chunk_node_count;
       }
-      if (other._localmodel.unstable()) _localmodel.set_unstable();
+      if (other._localmodel.isUnstable()) _localmodel.setUnstable();
     }
   }
 
@@ -196,7 +196,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
 //        Log.info("Synchronizing across " + _chunk_node_count + " H2O node(s).");
         Log.warn(H2O.CLOUD.size() - _chunk_node_count + " node(s) (out of " + H2O.CLOUD.size()
-                + ") are not contributing to model updates. Consider setting replicate_training_data to true or using a larger training dataset (or fewer H2O nodes).");
+            + ") are not contributing to model updates. Consider setting replicate_training_data to true or using a larger training dataset (or fewer H2O nodes).");
         _lastWarn = now;
         _warnCount++;
       }
@@ -290,41 +290,33 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
                           DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double offset) {
-    try {
-      // Forward propagation
-      for (int i=1; i<neurons.length; ++i)
-        neurons[i].fprop(seed, training);
+    // Forward propagation
+    for (int i=1; i<neurons.length; ++i)
+      neurons[i].fprop(seed, training);
 
-      // Add offset (in link space) if applicable
-      if (offset > 0) {
-        assert (!minfo._classification); // Regression
-        double[] m = minfo.data_info()._normRespMul;
-        double[] s = minfo.data_info()._normRespSub;
-        double mul = m == null ? 1 : m[0];
-        double sub = s == null ? 0 : s[0];
-        neurons[neurons.length - 1]._a.add(0, ((offset - sub) * mul));
-      }
+    // Add offset (in link space) if applicable
+    if (offset > 0) {
+      assert (!minfo._classification); // Regression
+      double[] m = minfo.data_info()._normRespMul;
+      double[] s = minfo.data_info()._normRespSub;
+      double mul = m == null ? 1 : m[0];
+      double sub = s == null ? 0 : s[0];
+      neurons[neurons.length - 1]._a.add(0, ((offset - sub) * mul));
+    }
 
-      if (training) {
-        // Compute the gradient at the output layer
-        // auto-encoder: pass a dummy "response" (ignored)
-        // otherwise: class label or regression target
-        neurons[neurons.length - 1].setOutputLayerGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
+    if (training) {
+      // Compute the gradient at the output layer
+      // auto-encoder: pass a dummy "response" (ignored)
+      // otherwise: class label or regression target
+      neurons[neurons.length - 1].setOutputLayerGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
 
-        // Elastic Averaging - set up helpers needed during back-propagation
-        if (consensus_minfo != null) {
-          for (int i = 1; i < neurons.length; i++) {
-            neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
-            neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
-          }
+      // Elastic Averaging - set up helpers needed during back-propagation
+      if (consensus_minfo != null) {
+        for (int i = 1; i < neurons.length; i++) {
+          neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
+          neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
         }
       }
     }
-    catch(Throwable ex) {
-      Log.warn(ex.getMessage());
-      minfo.set_unstable();
-      throw ex;
-    }
   }
-
 }

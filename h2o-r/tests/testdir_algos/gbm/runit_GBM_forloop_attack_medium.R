@@ -48,8 +48,8 @@ randomParams <- function(distribution, train, test, x, y) {
       if (!is.null(val))
         if (is.vector(val))
           Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
-        else if (inherits(val, "H2OFrame"))
-          Log.info(paste0(sub("_", " ", parm), ": ", val@frame_id))
+        else if (class(val) == "Frame")
+          Log.info(paste("Frame: ", head(val)))
         else
           Log.info(paste0(sub("_", " ", parm), ": ", val))
       return(val)
@@ -85,33 +85,27 @@ randomParams <- function(distribution, train, test, x, y) {
 
 }
 
-test.GBM.rand_attk_forloop <- function(conn) {
+test.GBM.rand_attk_forloop <- function() {
   Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv"))
+  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
   seed <- as.integer(runif(1,1,.Machine$integer.max))
   print("SEED: ")
   print(seed)
   p.sid <- h2o.runif(pros.hex,seed=seed)
 
-  pros.train <- h2o.assign(pros.hex[p.sid > .3, ], "pros.train")
-  pros.train[,2] <- as.factor(pros.train[,2])
-  pros.train[,5] <- as.factor(pros.train[,5])
-  pros.train[,6] <- as.factor(pros.train[,6])
-  pros.train[,9] <- as.factor(pros.train[,9])
+  pros.hex[,2] <- as.factor(pros.hex[,2])
+  pros.hex[,5] <- as.factor(pros.hex[,5])
+  pros.hex[,6] <- as.factor(pros.hex[,6])
+  pros.hex[,9] <- as.factor(pros.hex[,9])
+  pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
+  pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  pros.test <- h2o.assign(pros.hex[p.sid <= .3, ], "pros.test")
-  pros.test[,2] <- as.factor(pros.test[,2])
-  pros.test[,5] <- as.factor(pros.test[,5])
-  pros.test[,6] <- as.factor(pros.test[,6])
-  pros.test[,9] <- as.factor(pros.test[,9])
-
-
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex,seed=seed)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
 
-  cars.hex <- h2o.uploadFile(conn, locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex,seed=seed)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")

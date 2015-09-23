@@ -1,4 +1,5 @@
 *.java text eol=lf
 *.py text eol=lf
 *.sh text eol=lf
+*.R text eol=lf
 .git* text eol=lf

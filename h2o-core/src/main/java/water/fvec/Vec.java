@@ -188,7 +188,6 @@ public class Vec extends Keyed<Vec> {
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
   public static final boolean DO_HISTOGRAMS = true;
-  public static final boolean NO_HISTOGRAMS = false;
   final private Key _rollupStatsKey;
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
@@ -238,9 +237,10 @@ public class Vec extends Keyed<Vec> {
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
+    setMeta(type,domain);
     _type = type;
-    _espc = espc;
     _domain = domain;
+    _espc = espc;
     _rollupStatsKey = chunkKey(-2);
   }
 
@@ -286,7 +286,14 @@ public class Vec extends Keyed<Vec> {
     RollupStats rs = rollupStats();
     return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
   }
-  
+
+  private void setMeta( byte type, String[] domain) {
+    assert (type==T_ENUM && domain!=null) || (type!=T_ENUM && domain==null);
+    _domain = domain;
+    _type = type;
+  }
+  public void copyMeta( Vec src, Futures fs ) { setMeta(src._type,src._domain); DKV.put(this,fs); }
+
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
   public static Vec makeZero( long len, boolean redistribute ) {
@@ -337,7 +344,7 @@ public class Vec extends Keyed<Vec> {
       H2O.submitTask(rb);
       rb.join();
       Keyed.remove(v0._key);
-      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(null); // this is gross.
+      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(); // this is gross.
       Keyed.remove(newKey);
     }
     return v0;
@@ -355,42 +362,33 @@ public class Vec extends Keyed<Vec> {
    *  one, and initialized to zero, with the given enum domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
-  /**
-   * A new vector which is a copy of {@code this} one.
-   * @return a copy of the vector.
-   */
-  public Vec makeCopy(String[] domain){
-    Vec v = doCopy();
-    v._domain = domain;
-    v._type = _type;
-    DKV.put(v._key, v);
-    return v;
-  }
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy() { return makeCopy(domain()); }
+
+  /** A new vector which is a copy of {@code this} one.
+   *  @return a copy of the vector.  */
+  public Vec makeCopy(String[] domain){ return makeCopy(domain,_type); }
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
-    v._domain = domain;
-    v._type = type;
-    DKV.put(v._key, v);
+    v.setMeta(type,domain);
+    DKV.put(v);
     return v;
   }
 
-  private Vec doCopy() {
+  public Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
-        Chunk c2 = (Chunk)c.clone();
-        c2._vec=null;
-        c2._start=-1;
-        c2._cidx=-1;
-        c2._mem = c2._mem.clone();
+        Chunk c2 = c.deepCopy();
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
     return v;
   }
 
-  private static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+  public static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
     new MRTask() {              // Body of all zero chunks
@@ -414,29 +412,36 @@ public class Vec extends Keyed<Vec> {
     for(double d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key, v, fs);
+    DKV.put(v._key,v,fs);
     fs.blockForPending();
     return v;
   }
-  public static Vec makeVec(int [] vals, String [] domain, Key<Vec> vecKey){
+  public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
     Vec v = new Vec(vecKey,espc, domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
-    for(double d:vals)
+    for(long d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key,v,fs);
+    DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
+  }
+
+  public static Vec[] makeCons(double x, long len, int n) {
+    Vec[] vecs = new Vec[n];
+    for( int i=0; i<n; i++ )
+      vecs[i] = makeCon(x,len,true);
+    return vecs;
   }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d,group(),_espc); }
+  public Vec makeCon( final double d ) { return makeCon(d, group(), _espc); }
 
   private static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
     if( (long)d==d ) return makeCon((long)d, null, group, espc);
@@ -450,7 +455,7 @@ public class Vec extends Keyed<Vec> {
         }
       }
     }.doAllNodes();
-    DKV.put(v0._key,v0);        // Header last
+    DKV.put(v0._key, v0);        // Header last
     return v0;
   }
 
@@ -559,19 +564,6 @@ public class Vec extends Keyed<Vec> {
     return randVec;
   }
 
-  /** Make a new vector initialized to Gaussian random numbers with the given seed */
-  public Vec makeGaus( final long seed ) {
-    Vec gausVec = makeZero();
-    new MRTask() {
-      @Override public void map(Chunk c){
-        Random rng = RandomUtils.getRNG(seed * (c.cidx() + 1));
-        for(int i = 0; i < c._len; ++i)
-          c.set(i, rng.nextGaussian());
-      }
-    }.doAll(gausVec);
-    return gausVec;
-  }
-
   // ======= Rollup Stats ======
 
   /** Vec's minimum value 
@@ -579,13 +571,13 @@ public class Vec extends Keyed<Vec> {
   public double min()  { return mins()[0]; }
   /** Vec's 5 smallest values 
    *  @return Vec's 5 smallest values */
-  public double[]mins(){ return rollupStats()._mins; }
+  public double[] mins(){ return rollupStats()._mins; }
   /** Vec's maximum value 
    *  @return Vec's maximum value */
   public double max()  { return maxs()[0]; }
   /** Vec's 5 largest values 
    *  @return Vec's 5 largeest values */
-  public double[]maxs(){ return rollupStats()._maxs; }
+  public double[] maxs(){ return rollupStats()._maxs; }
   /** True if the column contains only a constant value and it is not full of NAs 
    *  @return True if the column is constant */
   public final boolean isConst() { return min() == max(); }
@@ -598,6 +590,13 @@ public class Vec extends Keyed<Vec> {
   /** Vecs's standard deviation
    *  @return Vec's standard deviation */
   public double sigma(){ return rollupStats()._sigma; }
+  /** Vecs's mode
+   * @return Vec's mode */
+  public int mode() {
+    if (!isEnum()) throw H2O.unimpl();
+    long[] bins = bins();
+    return ArrayUtils.maxIndex(bins);
+  }
   /** Count of missing elements
    *  @return Count of missing elements */
   public long  naCnt() { return rollupStats()._naCnt; }
@@ -744,7 +743,7 @@ public class Vec extends Keyed<Vec> {
   public static Key chunkKey(Key veckey, int cidx ) {
     byte [] bits = veckey._kb.clone();
     bits[0] = Key.CHK;
-    UnsafeUtils.set4(bits,6,cidx); // chunk#
+    UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
   }
   Key rollupStatsKey() { return _rollupStatsKey; }
@@ -783,7 +782,7 @@ public class Vec extends Keyed<Vec> {
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
   static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
-    byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
+    byte [] bits = MemoryManager.malloc1(kb.length + KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
     bits[1] = -1;         // Not homed
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
@@ -830,19 +829,10 @@ public class Vec extends Keyed<Vec> {
     return c;
   }
 
-  /** The Chunk for a row#.  Warning: this loads the data locally!  */
-  private Chunk chunkForRow_impl(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
-
-  // Cache of last Chunk accessed via at/set api
-  transient Chunk _cache;
-
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a row# */
-  public final Chunk chunkForRow(long i) {
-    Chunk c = _cache;
-    return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow_impl(i));
-  }
+  public final Chunk chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
   // ======= Direct Data Accessors ======
 
@@ -874,6 +864,28 @@ public class Vec extends Keyed<Vec> {
    *  @return {@code i}th element as {@link ValueString} or null if missing, or
    *  throw if not a String */
   public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr_abs(vstr, i); }
+
+  /** A more efficient way to read randomly to a Vec - still single-threaded,
+   *  but much faster than Vec.at(i).  Limited to single-threaded
+   *  single-machine reads.
+   *
+   * Usage:
+   * Vec.Reader vr = vec.new Reader();
+   * x = vr.at(0);
+   * y = vr.at(1);
+   * z = vr.at(2);
+   */
+  public final class Reader {
+    private Chunk _cache;
+    private Chunk chk(long i) {
+      Chunk c = _cache;
+      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    }
+    public final long    at8( long i ) { return chk(i). at8_abs(i); }
+    public final double   at( long i ) { return chk(i).  at_abs(i); }
+    public final boolean isNA(long i ) { return chk(i).isNA_abs(i); }
+    public final long length() { return Vec.this.length(); }
+  }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
@@ -922,27 +934,31 @@ public class Vec extends Keyed<Vec> {
    *  single-machine writes.
    *
    * Usage:
-   * Vec.Writer vw = vec.open();
-   * vw.set(0, 3.32);
-   * vw.set(1, 4.32);
-   * vw.set(2, 5.32);
-   * vw.close();
+   * try( Vec.Writer vw = vec.open() ) {
+   *   vw.set(0, 3.32);
+   *   vw.set(1, 4.32);
+   *   vw.set(2, 5.32);
+   * }
    */
-  public final static class Writer implements java.io.Closeable {
-    final Vec _vec;
-    private Writer(Vec v) { (_vec=v).preWriting(); }
-    public final void set( long i, long   l) { _vec.chunkForRow(i).set_abs(i, l); }
-    public final void set( long i, double d) { _vec.chunkForRow(i).set_abs(i, d); }
-    public final void set( long i, float  f) { _vec.chunkForRow(i).set_abs(i, f); }
-    public final void setNA( long i        ) { _vec.chunkForRow(i).setNA_abs(i); }
-    public final void set( long i, String str) { _vec.chunkForRow(i).set_abs(i, str); }
-    public Futures close(Futures fs) { return _vec.postWrite(_vec.closeLocal(fs)); }
+  public final class Writer implements java.io.Closeable {
+    private Chunk _cache;
+    private Chunk chk(long i) {
+      Chunk c = _cache;
+      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    }
+    private Writer() { preWriting(); }
+    public final void set( long i, long   l) { chk(i).set_abs(i, l); }
+    public final void set( long i, double d) { chk(i).set_abs(i, d); }
+    public final void set( long i, float  f) { chk(i).set_abs(i, f); }
+    public final void setNA( long i        ) { chk(i).setNA_abs(i); }
+    public final void set( long i,String str){ chk(i).set_abs(i, str); }
+    public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
     public void close() { close(new Futures()).blockForPending(); }
   }
 
   /** Create a writer for bulk serial writes into this Vec.
    *  @return A Writer for bulk serial writes */
-  public final Writer open() { return new Writer(this); }
+  public final Writer open() { return new Writer(); }
 
   /** Close all chunks that are local (not just the ones that are homed)
    *  This should only be called from a Writer object */
@@ -1044,8 +1060,7 @@ public class Vec extends Keyed<Vec> {
 //  }
 
   /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
-   *  The original Vec is not mutated.
-   */
+   *  The original Vec is not mutated.  */
   public Vec toEnum() {
     if( isEnum() ) return makeCopy(domain());
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
@@ -1056,6 +1071,10 @@ public class Vec extends Keyed<Vec> {
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
     return copyOver(dom);
   }
+
+  /** Create a new Vec (as opposed to wrapping it) that is the Numeric'd version of the original.
+   *  The original Vec is not mutated.  */
+  public Vec toNumeric() { return makeCopy(null,T_NUM); }
 
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
@@ -1096,7 +1115,7 @@ public class Vec extends Keyed<Vec> {
     boolean useDomain=false;
     Vec newVec = copyOver(null);
     try {
-      int ignored = Integer.parseInt(this._domain[0]);
+      Integer.parseInt(this._domain[0]);
       useDomain=true;
     } catch (NumberFormatException e) {
       // makeCopy and return...
@@ -1105,7 +1124,8 @@ public class Vec extends Keyed<Vec> {
       new MRTask() {
         @Override public void map(Chunk c) {
           for (int i=0;i<c._len;++i)
-            c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
+            if( !c.isNA(i) )
+              c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
         }
       }.doAll(newVec);
     }
@@ -1125,9 +1145,18 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new String Vec  */
-  public StrWrappedVec toStringVec() {
+  public Vec toStringVec() {
     if( !isEnum() ) throw new IllegalArgumentException("String conversion only works on enum columns");
-    return new StrWrappedVec(group().addVec(),_espc,this._key);
+    return new Enum2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
+  }
+
+  private class Enum2StrChkTask extends MRTask<Enum2StrChkTask> {
+    final String[] _domain;
+    Enum2StrChkTask(String[] domain) { _domain=domain; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      for(int i=0;i<c._len;++i)
+        nc.addStr(new ValueString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));
+    }
   }
 
   /** Convert entire Vec to an array of doubles, loading all of the data into a
@@ -1311,7 +1340,7 @@ public class Vec extends Keyed<Vec> {
     }
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */
-    private static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
+    private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
       final Key _key;
       int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
       private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
@@ -1338,7 +1367,7 @@ public class Vec extends Keyed<Vec> {
      * Task to atomically add vectors into existing group.
      * @author tomasnykodym
      */
-    private static class ReturnKeysTsk extends TAtomic<VectorGroup>{
+    private final static class ReturnKeysTsk extends TAtomic<VectorGroup>{
       final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
       final int _oldCnt;
       private ReturnKeysTsk(int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}

@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GLM.covtype <- function(conn) {
+test.GLM.covtype <- function() {
   Log.info("Importing covtype.20k.data...\n")
-  covtype.hex = h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
+  covtype.hex = h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
   
   myY = 55
   myX = setdiff(1:54, c(21,29))   # Cols 21 and 29 are constant, so must be explicitly ignored
@@ -24,7 +24,7 @@ test.GLM.covtype <- function(conn) {
   Log.info(cat("GLM (L2) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o1)
 
-  covtype.h2o1 <- h2o.getModel(conn, covtype.h2o1@model_id)
+  covtype.h2o1 <- h2o.getModel(covtype.h2o1@model_id)
   
   # Elastic: alpha = 0.5, lambda = 1e-4
   start = Sys.time()
@@ -33,7 +33,7 @@ test.GLM.covtype <- function(conn) {
   Log.info(cat("GLM (Elastic) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o2)
 
-  covtype.h2o2 <- h2o.getModel(conn, covtype.h2o2@model_id)
+  covtype.h2o2 <- h2o.getModel(covtype.h2o2@model_id)
   
   # L1: alpha = 1, lambda = 1e-4
   start = Sys.time()
@@ -42,7 +42,7 @@ test.GLM.covtype <- function(conn) {
   Log.info(cat("GLM (L1) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o3)
 
-  covtype.h2o3 <- h2o.getModel(conn, covtype.h2o3@model_id)
+  covtype.h2o3 <- h2o.getModel(covtype.h2o3@model_id)
 
 
   print(covtype.h2o3)

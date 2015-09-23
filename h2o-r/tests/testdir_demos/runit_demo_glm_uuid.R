@@ -1,15 +1,12 @@
 ##
 # Testing parsing, splitting, modelling, and computation on data with UUID column
 ##
-
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-
-test <- function(conn) {
+test <- function() {
   print("Reading in data (tiny airline with UUIDs).")
-    airline.hex <- h2o.uploadFile(conn, locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
+    airline.hex <- h2o.uploadFile(locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
     print("Summary of airline data: ")
     print(summary(airline.hex))
     print("Head of airline data: ")
@@ -73,7 +70,7 @@ test <- function(conn) {
     perf@metrics$AUC
 
   print("Show distribution of predictions with quantile.")
-    print(quant <- quantile.H2OFrame(air.results$'p1'))
+    print(quant <- quantile.Frame(air.results$'p1'))
   print("Extract strongest predictions.")
     top.air <- h2o.assign(air.results[air.results$'p1' > quant['75%'], ],key="top.air")
     print("Dimension of strongest predictions: ")

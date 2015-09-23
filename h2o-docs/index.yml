@@ -11,6 +11,7 @@ sources:
   - src/product/upgrade/Migration.md
   - src/product/howto/POJO_QuickStart.md
   - src/product/tutorials/GridSearch.md
+  - src/product/security/Security.md
   - src/product/howto/FAQ.md
   - src/product/howto/Videos.md
 

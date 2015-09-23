@@ -17,7 +17,7 @@ library(RCurl)
 library(h2o)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
 hdfs_data_file = "/datasets/bigdata/7MRows_4400KCols.csv"
@@ -26,9 +26,16 @@ hdfs_data_file = "/datasets/bigdata/7MRows_4400KCols.csv"
 #----------------------------------------------------------------------
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
+<<<<<<< HEAD:h2o-test-integ/tests/hdfs-bigdata/runit_GBM_7MRows_4.4KCols_xlarge.R
 parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
 print("Time it took to parse")
 print(parse_time)
+=======
+data.hex <- h2o.importFile(url)
+
+response=1 #1:1000 imbalance
+predictors=c(3:ncol(data.hex))
+>>>>>>> master:h2o-test-integ/tests/hdfs-bigdata/runit_NOPASS_15MRows_2.2KCols.R
 
 # Start modeling   
 # GBM 

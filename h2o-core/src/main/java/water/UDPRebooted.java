@@ -1,8 +1,6 @@
 package water;
 
-import java.io.IOException;
-import water.init.NetworkInit;
-import water.persist.PersistManager;
+
 import water.util.Log;
 
 /**
@@ -35,15 +33,57 @@ class UDPRebooted extends UDP {
     suicide( T.values()[type], ab._h2o);
   }
 
-  static void suicide( T cause, H2ONode killer ) {
+
+
+  public static class ShutdownTsk extends DTask<ShutdownTsk> {
+    final H2ONode _killer;
+    final int _timeout;
+    final transient boolean [] _confirmations;
+    final int _nodeId;
+
+    public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations){
+      _nodeId = nodeId;
+      _killer = killer;
+      _timeout = timeout;
+      _confirmations = confirmations;
+    }
+    @Override public byte priority(){
+      return H2O.GUI_PRIORITY;
+    }
+    transient boolean _didShutDown;
+    private synchronized void doShutdown(int exitCode, String msg){
+      if(_didShutDown)return;
+      Log.info(msg);
+      H2O.closeAll();
+      H2O.exit(exitCode);
+    }
+    @Override
+    protected void compute2() {
+      Log.info("Orderly shutdown from " + _killer);
+      // start a separate thread which will force termination after timeout expires (in case we don't get ack ack in time)
+      new Thread(){
+        @Override public void run(){
+          try {Thread.sleep(_timeout);} catch (InterruptedException e) {}
+          doShutdown(0,"Orderly shutdown may not have been acknowledged to " + _killer + " (no ackack), still exiting with exit code 0.");
+        }
+      }.start();
+      tryComplete();
+    }
+    @Override public void onAck(){
+      _confirmations[_nodeId] = true;
+    }
+    @Override public void onAckAck(){
+      doShutdown(0,"Orderly shutdown acknowledged to " + _killer + ", exiting with exit code 0.");
+    }
+
+  }
+  static void suicide( T cause, final H2ONode killer ) {
     String m;
     switch( cause ) {
     case none:   return;
     case reboot: return;
     case shutdown:
-      closeAll();
-      Log.info("Orderly shutdown command from "+killer);
-      H2O.exit(0);
+      Log.warn("Orderly shutdown should be handled via ShutdownTsk. Message is from outside of the cloud? Ignoring it.");
       return;
     case oom:      m = "Out of Memory, Heap Space exceeded, increase Heap Size,";                                break;
     case error:    m = "Error leading to a cloud kill";                                                          break;
@@ -51,26 +91,18 @@ class UDPRebooted extends UDP {
     case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
     default:       m = "Received kill " + cause;                                                                 break;
     }
-    closeAll();
+    H2O.closeAll();
     Log.err(m+" from "+killer);
     H2O.die("Exiting.");
   }
 
   @Override AutoBuffer call(AutoBuffer ab) {
-    if( ab._h2o != null ) ab._h2o.rebooted();
+    checkForSuicide(udp.rebooted.ordinal(),ab);
+    if( ab._h2o != null )
+      ab._h2o.rebooted();
     return ab;
   }
 
-  // Try to gracefully close/shutdown all i/o channels.
-  private static void closeAll() {
-    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
-    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
-    if(!H2O.ARGS.useUDP)
-      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
-    PersistManager PM = H2O.getPM();
-    if( PM != null ) PM.getIce().cleanUp();
-  }
 
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum
   @Override String print16( AutoBuffer ab ) {

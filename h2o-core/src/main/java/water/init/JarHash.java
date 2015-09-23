@@ -3,11 +3,18 @@ package water.init;
 import water.util.Log;
 
 import java.io.*;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 
 /** Self-jar file MD5 hash, to help make sure clusters are made from the same jar. */
@@ -107,5 +114,51 @@ public abstract class JarHash {
     // This is the right file location of resource inside jar bundled by gradle
     is = cl.getResourceAsStream("www" + uri);
     return is;
+  }
+
+  /**
+   * Given a path name (without preceding and appending "/"),
+   * return the names of all file and directory names contained
+   * in the path location (not recursive).
+   *
+   * @param path - name of resource path
+   * @return - list of resource names at that path
+   */
+  public static List<String> getResourcesList(String path) {
+    Set<String> resList = new HashSet<>(); // subdirectories can cause duplicate entries
+    try {
+      // Java doesn't allow simple exploration of resources as directories
+      // when the resources are inside a jar file. This searches the contents
+      // of the jar to get the list
+      URL classUrl = JarHash.class.getResource("/water/H2O.class");
+      if (classUrl != null && classUrl.getProtocol().equals("jar")) {
+        // extract jarPath from classUrl string
+        String jarPath = classUrl.getPath().substring(5, classUrl.getPath().indexOf("!"));
+        JarFile jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"));
+        Enumeration<JarEntry> files = jar.entries();
+        // look for all entries within the supplied resource path
+        while (files.hasMoreElements()) {
+          String fName = files.nextElement().getName();
+          if (fName.startsWith(path + "/")) {
+            String resourceName = fName.substring((path + "/").length());
+            int checkSubdir = resourceName.indexOf("/");
+            if (checkSubdir >= 0) // subdir, trim to subdir name
+              resourceName = resourceName.substring(0, checkSubdir);
+            if (resourceName.length() > 0) resList.add(resourceName);
+          }
+        }
+      } else { // not a jar, retrieve resource from file system
+        String resourceName;
+        BufferedReader resources = new BufferedReader(new InputStreamReader(JarHash.class.getResourceAsStream("/gaid")));
+        if (resources != null) {
+          while ((resourceName = resources.readLine()) != null)
+            if (resourceName.length() > 0)
+              resList.add(resourceName);
+        }
+      }
+    }catch(Exception ignore){
+      Log.debug("Failed in reading gaid resources.");
+    }
+    return new ArrayList<>(resList);
   }
 }

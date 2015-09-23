@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pubdev.1776 <- function(conn) {
+test.pubdev.1776 <- function() {
 
   cars <- h2o.importFile(path=locate("smalldata/junit/cars_20mpg.csv"))
   predictors <- c("displacement","power","weight","acceleration","year")

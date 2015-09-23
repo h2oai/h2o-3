@@ -8,6 +8,8 @@ import water.fvec.Frame;
 public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   public double _numerr;
   public double _caterr;
+  public long   _numcnt;
+  public long   _catcnt;
 
   public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr) {
     super(model, frame, Double.NaN);
@@ -15,15 +17,21 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     _caterr = caterr;
   }
 
+  public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr, long numcnt, long catcnt) {
+    this(model, frame, numerr, caterr);
+    _numcnt = numcnt;
+    _catcnt = catcnt;
+  }
+
   public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
     public double _miscls;     // Number of misclassified categorical values
-    public long _ncount;      // Number of observed numeric entries
-    public long _ccount;     // Number of observed categorical entries
+    public long _numcnt;      // Number of observed numeric entries
+    public long _catcnt;     // Number of observed categorical entries
     public int[] _permutation;  // Permutation array for shuffling cols
 
     public GLRMModelMetrics(int dims, int[] permutation) {
       _work = new double[dims];
-      _miscls = _ncount = _ccount = 0;
+      _miscls = _numcnt = _catcnt = 0;
       _permutation = permutation;
     }
 
@@ -41,7 +49,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
         int idx = _permutation[i];
         if (Double.isNaN(dataRow[idx])) continue;
         if (dataRow[idx] != preds[idx]) _miscls++;
-        _ccount++;
+        _catcnt++;
       }
 
       int c = 0;
@@ -50,7 +58,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
         if (Double.isNaN(dataRow[idx])) { c++; continue; }
         double diff = (dataRow[idx] - sub[c]) * mul[c] - preds[idx];
         _sumsqe += diff * diff;
-        _ncount++;
+        _numcnt++;
         c++;
       }
       assert c == gm._output._nnums;
@@ -62,16 +70,16 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       GLRMModelMetrics mm = (GLRMModelMetrics) mb;
       super.reduce(mm);
       _miscls += mm._miscls;
-      _ncount += mm._ncount;
-      _ccount += mm._ccount;
+      _numcnt += mm._numcnt;
+      _catcnt += mm._catcnt;
     }
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f) {
-      // double numerr = _ncount > 0 ? _sumsqe / _ncount : Double.NaN;
-      // double caterr = _ccount > 0 ? _miscls / _ccount : Double.NaN;
+      // double numerr = _numcnt > 0 ? _sumsqe / _numcnt : Double.NaN;
+      // double caterr = _catcnt > 0 ? _miscls / _catcnt : Double.NaN;
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
-      return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls));
+      return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls, _numcnt, _catcnt));
     }
   }
 }

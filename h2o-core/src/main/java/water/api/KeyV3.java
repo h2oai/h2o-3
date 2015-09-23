@@ -1,20 +1,17 @@
 package water.api;
 
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
-
 import hex.Model;
 import hex.grid.Grid;
-import water.DKV;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Keyed;
-import water.Value;
+import water.*;
+import water.rapids.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.KeyedVoid;
 import water.util.ReflectionUtils;
+
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 /**
  * <p>
@@ -95,6 +92,8 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
       return KeyV3.make(VecKeyV3.class, key);
     else if (Grid.class.isAssignableFrom(keyed_class))
       return KeyV3.make(GridKeyV3.class, key);
+    else if (KeyedVoid.class.isAssignableFrom(keyed_class))
+      return KeyV3.make(KeyedVoidV3.class, key);
     else
       return KeyV3.make(KeyV3.class, key);
   }
@@ -134,6 +133,21 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public GridKeyV3(Key<Grid> key) {
       super(key);
     }
+  }
+
+  public static class KeyedVoidV3 extends KeyV3<Iced, KeyedVoidV3, KeyedVoid> {
+
+    public KeyedVoidV3() {
+    }
+
+    public KeyedVoidV3(Key<KeyedVoid> key) {
+      super(key);
+    }
+  }
+
+  public static class AssemblyKeyV3 extends KeyV3<Iced, AssemblyKeyV3, Assembly> {
+    public AssemblyKeyV3() {}
+    public AssemblyKeyV3(Key<Assembly> key) { super(key); }
   }
 
   @Override

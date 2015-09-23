@@ -186,7 +186,7 @@ The GLM suite includes:
 - **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
@@ -195,7 +195,7 @@ The GLM suite includes:
 
 - **tweedie_link_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
-- **solver**: Select the solver to use (IRLSM, L\_BFGS, or auto). IRLSM is fast on problems with small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  
+- **solver**: Select the solver to use (AUTO, IRLSM, L\_BFGS, COORDINATE\_DESCENT\_NAIVE, or COORDINATE\_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns.  COORDINATE\_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE and COORDINATE\_DESCENT are currently experimental. 
 
 - **alpha**: Specify the regularization distribution between L2 and L2.  
 
@@ -428,7 +428,7 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 - **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **ntrees**: Specify the number of trees.  
@@ -945,7 +945,7 @@ There was some code cleanup and refactoring to support the following features:
 - **offset_column**: Select a column to use as the offset. 
 	>*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). 
 
-- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **ntrees**: Specify the number of trees.  
@@ -1138,7 +1138,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **weights_column**: Select a column to use for the observation weights, which are used for bias correction.
+- **weights_column**: Select a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
 - **offset_column**: Select a column to use as the offset. 

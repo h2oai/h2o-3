@@ -8,21 +8,31 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SB;
+import water.util.SBPrintStream;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
+    public Method _svd_method = Method.GramSVD;   // Method for computing SVD
     public int _nv = 1;    // Number of right singular vectors to calculate
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
     public boolean _keep_u = true;    // Should left singular vectors be saved in memory? (Only applies if _only_v = false)
     // public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
     public String _u_name;
-    public boolean _only_v = false;   // Compute only right singular vectors? (Faster if true)
+    public boolean _only_v = false;   // For power method (others ignore): Compute only right singular vectors? (Faster if true)
     public boolean _use_all_factor_levels = true;   // When expanding categoricals, should first level be dropped?
+    public boolean _impute_missing = false;   // Should missing numeric values be imputed with the column mean?
+
+    public enum Method {
+      GramSVD, Power, Randomized
+    }
   }
 
   public static class SVDOutput extends Model.Output {
+    // Iterations executed (Power and Randomized methods only)
+    public int _iterations;
+
     // Right singular vectors (V)
     public double[][] _v;
 
@@ -138,7 +148,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return preds;
   }
 
-  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContextSB) {
     sb = super.toJavaInit(sb, fileContextSB);
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
@@ -154,7 +164,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return sb;
   }
 
-  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
+  @Override protected void toJavaPredictBody(final SBPrintStream bodySb, final SB classCtxSb, final SB fileCtxSb, boolean verboseCode) {
     SB model = new SB();
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     final int cats = _output._ncats;

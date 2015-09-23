@@ -7,7 +7,7 @@ if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
 require(LiblineaR)
 require(ROCR)
 
-test.LiblineaR.airlines <- function(conn) {
+test.LiblineaR.airlines <- function() {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {
     Log.info("Using these parameters for LiblineaR: \n")
     Log.info("   type =    0: Logistic Regression L1-Regularized\n")
@@ -42,12 +42,12 @@ test.LiblineaR.airlines <- function(conn) {
     
     h2op         <- predict(h2o.m, testhex)
     h2operf      <- h2o.performance(h2o.m, testhex)
-    h2opreds     <- head(h2op, nrow(h2op))
-    h2oCM        <- table(testLabels, h2opreds$predict)
+    h2opreds     <- as.data.frame(h2op)[,1]
+    h2oCM        <- table(testLabels, as.logical(h2opreds))
     h2oPrecision <- h2oCM[1] / (h2oCM[1] + h2oCM[3])
     h2oRecall    <- h2oCM[1] / (h2oCM[1] + h2oCM[2])
     h2oF1        <- 2 * (h2oPrecision * h2oRecall) / (h2oPrecision + h2oRecall)
-    h2oAUC       <- performance(prediction(h2opreds$predict, testLabels), measure = "auc")@y.values
+    h2oAUC       <- performance(prediction(h2opreds, testLabels), measure = "auc")@y.values
     
     Log.info("                ============= H2O Performance =============\n")
     Log.info(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n", sep = ""))
@@ -62,7 +62,7 @@ test.LiblineaR.airlines <- function(conn) {
     return(list(h2o.m,LibR.m));
   }
 
-  compareCoefs <- function(h2o, libR, conn) {
+  compareCoefs <- function(h2o, libR) {
     Log.info("
             Comparing the L1-regularized LR coefficients (should be close in magnitude)
             Expect a sign flip because modeling against log(../(1-p)) vs log((1-p)/p).
@@ -85,8 +85,8 @@ test.LiblineaR.airlines <- function(conn) {
   airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
   aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
   aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
-  trainhex      <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
-  testhex       <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
+  trainhex      <- h2o.uploadFile(paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
+  testhex       <- h2o.uploadFile(paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
   # remove_exdir(exdir)
   
   print(trainhex)
@@ -105,7 +105,7 @@ test.LiblineaR.airlines <- function(conn) {
   xTest   <- scale(data.frame(aTest$DepTime, aTest$ArrTime, aTest$Distance))
   yTest   <- aTest[,12]
   models  <- L1logistic(xTrain,yTrain,xTest,yTest,trainhex,testhex)
-  compareCoefs(models[[1]], models[[2]], conn)
+  compareCoefs(models[[1]], models[[2]])
   
   testEnd()
 }

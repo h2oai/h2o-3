@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -21,8 +22,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
-import static water.util.RandomUtils.getRNG;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -290,7 +289,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Step 1: Assign each row to a fold
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-    final Vec foldAssignment;
+    Vec foldAssignment;
 
     final Integer N;
     if (_parms._fold_column != null) {
@@ -309,30 +308,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           }
         }
       }
-      final long actualSeed = seed;
-      Log.info("Creating " + N + " cross-validation splits with random number seed: " + actualSeed);
+      Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
       foldAssignment = origTrainFrame.anyVec().makeZero();
       final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
-      new MRTask() {
-        @Override
-        public void map(Chunk foldAssignment) {
-          for (int i = 0; i < foldAssignment._len; ++i) {
-            int fold;
-            switch (foldAssignmentScheme) {
-              case AUTO:
-              case Random:
-                fold = Math.abs(getRNG(foldAssignment.start() + actualSeed + i).nextInt()) % N;
-                break;
-              case Modulo:
-                fold = ((int) (foldAssignment.start() + i)) % N;
-                break;
-              default:
-                throw H2O.unimpl();
-            }
-            foldAssignment.set(i, fold);
-          }
-        }
-      }.doAll(foldAssignment);
+      switch(foldAssignmentScheme) {
+        case AUTO:
+        case Random:
+          foldAssignment = ASTKFold.kfoldColumn(foldAssignment,N,seed); break;
+        case Modulo:
+          foldAssignment = ASTKFold.moduloKfoldColumn(foldAssignment, N); break;
+        case Stratified:
+          foldAssignment = ASTKFold.stratifiedKFoldColumn(response(),N,seed); break;
+        default:
+          throw H2O.unimpl();
+      }
     }
 
     final Key[] modelKeys = new Key[N];
@@ -679,6 +668,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (isSupervised())
           error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
       } else {
+        if(_response == _offset)
+          error("_response", "Response must be different from offset_column");
+        if(_response == _weights)
+          error("_response", "Response must be different from weights_column");
+        if(_response == _fold)
+          error("_response", "Response must be different from fold_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }
