@@ -11,6 +11,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MathUtils;
@@ -76,10 +77,10 @@ public class KMeansTest extends TestUtil {
 
   @Test public void testArrests() {
     // Initialize using first 4 rows of USArrests
-    Frame init = frame(ard(ard(13.2, 236, 58, 21.2),
-                           ard(10.0, 263, 48, 44.5),
-                           ard( 8.1, 294, 80, 31.0),
-                           ard( 8.8, 190, 50, 19.5)));
+    Frame init = ArrayUtils.frame(ard(ard(13.2, 236, 58, 21.2),
+                                      ard(10.0, 263, 48, 44.5),
+                                      ard(8.1, 294, 80, 31.0),
+                                      ard(8.8, 190, 50, 19.5)));
 
     // R k-means results for comparison
     double totssR = 355807.821599;
@@ -89,7 +90,7 @@ public class KMeansTest extends TestUtil {
                               ard( 8.214286, 173.285714, 70.642857, 22.842857),
                               ard(11.766667, 257.916667, 68.416667, 28.933333),
                               ard(11.950000, 316.500000, 68.000000, 26.700000));
-    Frame predR = frame(ar("predict"), ear(1, 1, 2, 0, 1, 0, 3, 1, 2, 0, 3, 3, 1, 3,
+    Frame predR = ArrayUtils.frame(ar("predict"), ear(1, 1, 2, 0, 1, 0, 3, 1, 2, 0, 3, 3, 1, 3,
                                            3, 3, 3, 1, 3, 2, 0, 1, 3, 1, 0, 3, 3, 1,
                                            3, 0, 1, 1, 2, 3, 3, 0, 0, 3, 0, 1, 3, 0,
                                            0, 3, 3, 0, 0, 3, 3, 0));
@@ -199,7 +200,7 @@ public class KMeansTest extends TestUtil {
 
   @Test
   public void testCentroids(){
-    Frame fr = frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
+    Frame fr = ArrayUtils.frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
     Frame fr2=null;
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -241,7 +242,7 @@ public class KMeansTest extends TestUtil {
   }
 
   @Test public void test1Dimension() {
-    Frame fr = frame(ard(d(1,0),d(0,0),d(-1,0),d(4,0),d(1,0),d(2,0),d(0,0),d(0,0)));
+    Frame fr = ArrayUtils.frame(ard(d(1,0),d(0,0),d(-1,0),d(4,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     Frame fr2=null;
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -268,7 +269,7 @@ public class KMeansTest extends TestUtil {
 
   // Negative test - expect to throw IllegalArgumentException
   @Test (expected = H2OModelBuilderIllegalArgumentException.class) public void testTooManyK() {
-    Frame fr = frame(ard(d(1,0),d(0,0),d(1,0),d(2,0),d(0,0),d(0,0)));
+    Frame fr = ArrayUtils.frame(ard(d(1,0),d(0,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     Frame fr2=null;
     KMeansModel kmm = null;
     KMeansModel.KMeansParameters parms;

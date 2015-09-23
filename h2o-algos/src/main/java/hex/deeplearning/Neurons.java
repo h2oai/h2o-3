@@ -790,7 +790,7 @@ public abstract class Neurons {
           case Absolute:
             g = (2 * t - 1) * (1f - y) * y; //-dL/dy = 2*t-1
             break;
-          case MeanSquare:
+          case Quadratic:
             //-dMSE/dy = target-y
             g = (t - y) * (1f - y) * y;
             break;

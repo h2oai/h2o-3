@@ -63,7 +63,7 @@ public class GLRMCategoricalTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GLRMParameters.Loss.L1;
+      parms._loss = GLRMParameters.Loss.Absolute;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = true;
@@ -173,7 +173,7 @@ public class GLRMCategoricalTest extends TestUtil {
 
       for(GLRMParameters.Loss loss : new GLRMParameters.Loss[] {
               GLRMParameters.Loss.Quadratic,
-              GLRMParameters.Loss.L1,
+              GLRMParameters.Loss.Absolute,
               GLRMParameters.Loss.Huber,
               GLRMParameters.Loss.Poisson,
               GLRMParameters.Loss.Hinge,
@@ -254,7 +254,7 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._k = 12;
       parms._loss = GLRMParameters.Loss.Quadratic;
       parms._multi_loss = GLRMParameters.Loss.Categorical;
-      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Ordinal, GLRMParameters.Loss.Poisson, GLRMParameters.Loss.L1 };
+      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Ordinal, GLRMParameters.Loss.Poisson, GLRMParameters.Loss.Absolute};
       parms._loss_by_col_idx = new int[] { 3 /* DPROS */, 1 /* AGE */, 6 /* VOL */ };
       parms._init = GLRM.Initialization.PlusPlus;
       parms._min_step_size = 1e-5;

@@ -710,6 +710,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
   def _find_idx(self,name):
+    self._eager()
     for i,v in enumerate(self._col_names):
       if name == v: return i
     raise ValueError("Name " + name + " not in Frame")

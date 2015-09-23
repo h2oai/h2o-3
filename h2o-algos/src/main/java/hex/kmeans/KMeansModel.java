@@ -111,6 +111,19 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return preds;
   }
 
+  public double[] score_ratio(Chunk[] chks, int row_in_chunk, double[] tmp) {
+    assert _parms._pred_indicator;
+    assert tmp.length == _output._names.length;
+    for(int i = 0; i < tmp.length; i++)
+      tmp[i] = chks[i].atd(row_in_chunk);
+
+    double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
+    double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains,_output._normSub,_output._normMul);
+    assert preds.length == _parms._k;
+    assert Math.abs(ArrayUtils.sum(preds) - 1) < 1e-6 : "Sum of k-means distance ratios should equal 1";
+    return preds;
+  }
+
   @Override
   protected double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (weight == 0) return data; //0 distance from itself - validation holdout points don't increase metrics

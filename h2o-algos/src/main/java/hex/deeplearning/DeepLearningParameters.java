@@ -4,7 +4,7 @@ import hex.Distribution;
 import hex.Model;
 import water.H2O;
 import static water.H2O.technote;
-import water.Key;
+
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -411,11 +411,11 @@ public class DeepLearningParameters extends Model.Parameters {
 
   /**
    * Loss functions
-   * Absolute, MeanSquare, Huber for regression
-   * Absolute, MeanSquare, Huber or CrossEntropy for classification
+   * Absolute, Quadratic, Huber for regression
+   * Absolute, Quadratic, Huber or CrossEntropy for classification
    */
   public enum Loss {
-    Automatic, MeanSquare, CrossEntropy, Huber, Absolute
+    Automatic, Quadratic, CrossEntropy, Huber, Absolute
   }
 
   /**
@@ -505,7 +505,7 @@ public class DeepLearningParameters extends Model.Parameters {
     }
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
-        dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
+        dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), Quadratic, Absolute or Huber for numerical response (regression).");
       }
       //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
     } else {
@@ -515,7 +515,7 @@ public class DeepLearningParameters extends Model.Parameters {
         dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
     }
     if (!classification && _loss == Loss.CrossEntropy)
-      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
+      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, Quadratic, Absolute or Huber loss for regression, or use a categorical response.");
     if (classification) {
       switch(_distribution) {
         case gaussian:
@@ -840,7 +840,7 @@ public class DeepLearningParameters extends Model.Parameters {
 
       // Automatically set the distribution
       if (fromParms._distribution == Distribution.Family.AUTO) {
-        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/MeanSquare/Huber/Absolute
+        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
         if (nClasses > 1) {
           toParms._distribution = nClasses == 2 ? Distribution.Family.bernoulli : Distribution.Family.multinomial;
         }
@@ -848,7 +848,7 @@ public class DeepLearningParameters extends Model.Parameters {
           //regression/autoencoder
           switch(fromParms._loss) {
             case Automatic:
-            case MeanSquare:
+            case Quadratic:
               toParms._distribution = Distribution.Family.gaussian;
               break;
             case Absolute:
@@ -866,7 +866,7 @@ public class DeepLearningParameters extends Model.Parameters {
       if (fromParms._loss == Loss.Automatic) {
         switch (fromParms._distribution) {
           case gaussian:
-            toParms._loss = Loss.MeanSquare;
+            toParms._loss = Loss.Quadratic;
             break;
           case laplace:
             toParms._loss = Loss.Absolute;
