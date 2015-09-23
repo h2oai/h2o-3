@@ -17,44 +17,22 @@ class ASTColSlice extends ASTPrim {
   public String str() { return "cols" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Frame fr2 = new Frame();
-    if( asts[2] instanceof ASTNumList ) {
-      // Work down the list of columns, picking out the keepers
-      ASTNumList nums =(ASTNumList)asts[2];
-      int[] cols = nums.expand4Sort();
-      if( cols.length==0 ) {      // Empty inclusion list?
-      } else if( cols[0] >= 0 ) { // Positive (inclusion) list
-        if( cols[cols.length-1] > fr.numCols() )
-          throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
-        for( int col : cols )
-          fr2.add(fr.names()[col],fr.vecs()[col]);
-      } else {                  // Negative (exclusion) list
-        fr2 = new Frame(fr);    // All of them at first
-        // This loop depends on ASTNumList return values in sorted order
-        for( int col : cols )
-          if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
-            fr2.remove(-col-1); // Remove named column
-      }
-    } else if( (asts[2] instanceof ASTNum) ) {
-      int col = (int) (((ASTNum) asts[2])._v.getNum());
-      if( col < 0 ) fr2.add(fr).remove(-col-1);  // neg index is 1-based; e.g., -1 => -1*-1 - 1 = 0
-      else fr2.add(fr.names()[col], fr.vecs()[col]);
+    int[] cols = asts[2].columns(fr.names());
 
-    } else if( (asts[2] instanceof ASTStr) ) {
-      int col = fr.find(asts[2].str());
-      if (col == -1)
-        throw new IllegalArgumentException("No column named '" + asts[2].str() + "' in Frame");
-      fr2.add(fr.names()[col], fr.vecs()[col]);
-    } else if( (asts[2] instanceof ASTStrList) ) {
-      ASTStrList strs = (ASTStrList)asts[2];
-      for( String scol:strs._strs ) {
-        int col = fr.find(scol);
-        if (col == -1)
-          throw new IllegalArgumentException("No column named '" + scol + "' in Frame");
-        fr2.add(scol, fr.vecs()[col]);
-      }
-    } else
-      throw new IllegalArgumentException("Column slicing requires a number-list as the last argument, but found a "+asts[2].getClass());
+    Frame fr2 = new Frame();
+    if( cols.length==0 ) {        // Empty inclusion list?
+    } else if( cols[0] >= 0 ) { // Positive (inclusion) list
+      if( cols[cols.length-1] > fr.numCols() )
+        throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
+      for( int col : cols )
+        fr2.add(fr.names()[col],fr.vecs()[col]);
+    } else {                    // Negative (exclusion) list
+      fr2 = new Frame(fr);      // All of them at first
+      Arrays.sort(cols);     // This loop depends on the values in sorted order
+      for( int col : cols )
+        if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
+          fr2.remove(-col-1);   // Remove named column
+    }
     
     return new ValFrame(fr2);
   }

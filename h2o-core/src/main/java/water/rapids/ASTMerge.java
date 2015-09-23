@@ -18,41 +18,25 @@ import java.util.Arrays;
  *  allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
  */
 public class ASTMerge extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"left","rite", "by", "all_left", "all_rite"}; }
-  @Override
-  public String str(){ return "merge";}
-  @Override int nargs() { return 1+5; } // (merge left rite all.left all.rite)
+  @Override public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
+  @Override public String str(){ return "merge";}
+  @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
-    String[] bynames = l._names;
-    if( asts[3] instanceof ASTStr ) { bynames = new String[]{asts[3].str()}; }
-    else if( asts[3] instanceof ASTNum ) { bynames = new String[]{l.names()[(int)((ASTNum)asts[3])._v.getNum()]}; }
-    else if( asts[3] instanceof ASTStrList ) { bynames = ((ASTStrList)asts[3])._strs; }
-    else if( asts[3] instanceof ASTNumList ) {
-      ASTNumList colIdxs = ((ASTNumList)asts[3]);
-      if( !colIdxs.isEmpty() ) {
-        int[] idxs = colIdxs.expand4();
-        bynames = new String[idxs.length];
-        for(int i=0; i<idxs.length; ++i)
-          bynames[i] = l.names()[i];
-      }
-    }
-    boolean allLeft = asts[4].exec(env).getNum() == 1;
-    boolean allRite = asts[5].exec(env).getNum() == 1;
+    boolean allLeft = asts[3].exec(env).getNum() == 1;
+    boolean allRite = asts[4].exec(env).getNum() == 1;
 
     // Look for the set of columns in common; resort left & right to make the
     // leading prefix of column names match.  Bail out if we find any weird
     // column types.
     int ncols=0;                // Number of columns in common
-    for( int i=0; i<bynames.length; i++ ) {
-      int lidx = l.find(bynames[i]);
-      int ridx = r.find(bynames[i]);
-      if( ridx != -1 && lidx!=-1 ) {
-        l.swap(lidx,ncols);
-        r.swap(ridx,ncols);
+    for( int i=0; i<l._names.length; i++ ) {
+      int idx = r.find(l._names[i]);
+      if( idx != -1 ) {
+        l.swap(i  ,ncols);
+        r.swap(idx,ncols);
         Vec lv = l.vecs()[ncols];
         Vec rv = r.vecs()[ncols];
         if( lv.get_type() != rv.get_type() )
@@ -253,10 +237,10 @@ public class ASTMerge extends ASTPrim {
       for( int i=0; i<len; i++ ) {
         Row smaller = rows.get(row.fill(i,_ncols,_enum_maps));
         if( smaller == null ) { // Smaller is missing
-//          if( _allLeft )        // But need all of larger, so force a NA row
+          if( _allLeft )        // But need all of larger, so force a NA row
             for( NewChunk nc : nchks ) nc.addNA();
-//          else
-//            throw H2O.unimpl(); // Need to remove larger row
+          else
+            throw H2O.unimpl(); // Need to remove larger row
         } else {
           // Copy fields from matching smaller set into larger set
           assert smaller._chks.length == _ncols + nchks.length;
