@@ -77,19 +77,11 @@ h2o.gbm <- function(x, y, training_frame,
                     keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
-                    weights_column = NULL,
-                    ...)
+                    weights_column = NULL)
 {
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")
-
-  # Pass over ellipse parameters
-  do_future <- FALSE
-  if (length(list(...)) > 0) {
-    dots <- list(...) #.model.ellipses( list(...))
-    if( !is.null(dots$future) ) do_future <- TRUE
-  }
 
   # Training_frame may be a key or an Frame object
   if (!is.Frame(training_frame))
@@ -154,6 +146,6 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
-  .h2o.modelJob('gbm', parms, do_future)
+  .h2o.modelJob('gbm', parms)
 }
 

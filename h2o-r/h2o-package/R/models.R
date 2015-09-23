@@ -92,13 +92,12 @@
 }
 
 
-.h2o.modelJob <- function( algo, params, do_future, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
+.h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
   .eval.frame(params$training_frame)
-  if( !is.null(params$validation_frame) ) 
+  if( !is.null(params$validation_frame) )
     .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-  if( do_future )         job
-  else h2o.getFutureModel(job)
+  h2o.getFutureModel(job)
 }
 
 
@@ -1781,19 +1780,19 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
         metric <- "logloss"
       } else if (!(metric %in% c("r2","logloss","AUC","classification_error","MSE"))) {
         stop("metric for H2OBinomialModel must be one of: AUTO, r2, logloss, AUC, classification_error, MSE")
-      } 
+      }
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
       } else if (!(metric %in% c("r2","logloss","classification_error","MSE"))) {
         stop("metric for H2OMultinomialModel must be one of: AUTO, r2, logloss, classification_error, MSE")
-      } 
+      }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "MSE"
       } else if (!(metric %in% c("MSE","deviance"))) {
         stop("metric for H2OMultinomialModel must be one of: MSE, deviance")
-      } 
+      }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
     }
@@ -1803,7 +1802,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
         timestep <- "number_of_trees"
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
         stop("timestep for gbm or drf must be one of: duration, number_of_trees")
-      } 
+      }
     } else if (x@algorithm == "deeplearning") {
       # Delete first row of DL scoring history since it contains NAs & NaNs
       if (df$samples[1] == 0) {
@@ -1813,7 +1812,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
         timestep <- "epochs"
       } else if (!(timestep %in% c("epochs","samples","duration"))) {
         stop("timestep for deeplearning must be one of: epochs, samples, duration")
-      } 
+      }
     } else {
       stop("Plotting not implemented for this type of model")
     }
