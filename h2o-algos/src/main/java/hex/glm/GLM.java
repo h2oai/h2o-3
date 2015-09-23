@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   static final double LINE_SEARCH_STEP = .75;
-  public static final double MINLINE_SEARCH_STEP = 1e-6;
+  public static final double MINLINE_SEARCH_STEP = 1e-10;
   static final int NUM_LINE_SEARCH_STEPS = 16;
 
   public boolean isSupervised(){return true;}
@@ -948,13 +948,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     double l2normSum = 0;
     for(double [] b:beta){
       l1normSum += ArrayUtils.l1norm(b, intercept);
-      l2normSum += ArrayUtils.l2norm(b, intercept);
+      l2normSum += ArrayUtils.l2norm2(b, intercept);
     }
 
     double res = likelihood / nobs
             + proximalPen
-            + lambda * (alpha * l1normSum)
-            + lambda * (1 - alpha) * .5 * l2normSum;
+            + lambda * ((alpha * l1normSum) + (1 - alpha) * .5 * l2normSum);
     return res;
   }
   double objVal(double likelihood, double[] beta, double lambda, long nobs, boolean intercept) {
@@ -1979,9 +1978,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert (Double.isNaN(_expectedLikelihood) || Double.isInfinite(_expectedLikelihood)) || Math.abs(lst._likelihoods[0] - _expectedLikelihood)/_expectedLikelihood < 1e-6:"expected likelihood = " + _expectedLikelihood + ", got " + lst._likelihoods[0];
         double t = lst._initialStep;
         double [][] betaM = lst._betaMultinomial.clone();
+        betaM[_c] = ArrayUtils.wadd(_taskInfo._beta_multinomial[lst._c].clone(), lst._direction, t);
+        double firstObj = objVal(lst._likelihoods[0], betaM, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);;
+        double newObj = 0;
         for (int i = 0; i < lst._likelihoods.length && t >= MINLINE_SEARCH_STEP; ++i, t *= lst._stepDec) {
           betaM[_c] = ArrayUtils.wadd(_taskInfo._beta_multinomial[lst._c].clone(), lst._direction, t);
-          double newObj = objVal(lst._likelihoods[i], betaM, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
+          newObj = objVal(lst._likelihoods[i], betaM, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
+          System.out.println("step = " + t + ", newObj = " + newObj);
           if (_taskInfo._objVal > newObj) {
             assert t < 1;
             LogInfo("line search: found admissible step = " + t + ",  objval = " + newObj);
@@ -1990,7 +1993,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             return;
           }
         }
-        if(t > MINLINE_SEARCH_STEP) {
+        if(newObj < firstObj && t > MINLINE_SEARCH_STEP) {
           getCompleter().addToPendingCount(1);
           t /= lst._stepDec;
           // GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {

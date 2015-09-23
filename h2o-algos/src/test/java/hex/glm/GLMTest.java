@@ -1111,7 +1111,7 @@ public class GLMTest  extends TestUtil {
       model1 = job.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
-      double l2pen = ArrayUtils.l2norm(beta,true);
+      double l2pen = ArrayUtils.l2norm2(beta,true);
       //System.out.println( " lambda min " + params._lambda[params._lambda.length-1] );
       //System.out.println( " lambda_max " + model1._lambda_max);
       //System.out.println(" intercept " + beta[beta.length-1]);
@@ -1149,7 +1149,7 @@ public class GLMTest  extends TestUtil {
       model1 = job.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
-      double l2pen = ArrayUtils.l2norm(beta,true);
+      double l2pen = ArrayUtils.l2norm2(beta,true);
       double objective = job.likelihood()/model1._nobs +
               params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
       System.out.println( " objective value " + objective);
@@ -1187,7 +1187,7 @@ public class GLMTest  extends TestUtil {
       double [] beta = sm.beta;
       System.out.println("lambda " + sm.lambda_value);
       double l1pen = ArrayUtils.l1norm(beta,true);
-      double l2pen = ArrayUtils.l2norm(beta,true);
+      double l2pen = ArrayUtils.l2norm2(beta,true);
       double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
               params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
       assertEquals(0.65689, objective,1e-4);
@@ -1224,7 +1224,7 @@ public class GLMTest  extends TestUtil {
       double [] beta = sm.beta;
       System.out.println("lambda " + sm.lambda_value);
       double l1pen = ArrayUtils.l1norm(beta,true);
-      double l2pen = ArrayUtils.l2norm(beta,true);
+      double l2pen = ArrayUtils.l2norm2(beta,true);
       double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
               params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
       assertEquals(0.65689, objective,1e-4);

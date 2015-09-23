@@ -456,16 +456,17 @@ public abstract class GLMTask  {
           double val = row.weight*(exps[c+1]-iY);
           for (int i = 0; i < _dinfo._cats; ++i) {
             int id = row.binIds[i];
-            grad[c * P + id] -= row.weight*val;
+            grad[c * P + id] -= val;
           }
           if (row.numIds == null) {
             int off = _dinfo.numStart();
             for (int i = 0; i < _dinfo._nums; ++i)
-              grad[c * P + i + off] -= row.weight * row.numVals[i] * val;
+              grad[c * P + i + off] += row.numVals[i] * val;
           } else {
             for (int i = 0; i < row.nNums; ++i)
-              grad[c * P + row.numIds[i]] -= row.weight * row.numVals[i] * val;
+              grad[c * P + row.numIds[i]] += row.numVals[i] * val;
           }
+          grad[(c+1) * P -1] += val;
         }
       }
       _gradient = grad;
@@ -972,8 +973,7 @@ public abstract class GLMTask  {
     final int _c;
     protected Gram  _gram; // wx%*%x
     double [] _xy; // wx^t%*%z,
-    double _wz;
-    double _yy;
+
     GLMValidation _val; // validation of previous model
     final double [] _ymu;
 
@@ -1053,12 +1053,12 @@ public abstract class GLMTask  {
       final double eta;
       double mu;
       final double var;
-      final double z;
+      final double wz;
       final int numStart = _dinfo.numStart();
       double d = 1;
       if( _params._family == Family.gaussian && _params._link == Link.identity){
         w = r.weight;
-        z = y - r.offset;
+        wz = w*(y - r.offset);
         mu = 0;
         eta = mu;
       } else {
@@ -1081,16 +1081,17 @@ public abstract class GLMTask  {
           double logSumExp = Math.log(sumExp) + maxrow;
           _likelihood -= r.weight * (_etas[(int)r.response(0)] - logSumExp);
           d = mu*(1-mu);
-          z = eta + (y-mu)/d;
-          w = r.weight * d;
+          wz = r.weight * (eta * d + (y-mu));
+          w  = r.weight * d;
         } else {
           eta = r.innerProduct(_beta,_sparseOffset);
           mu = _params.linkInv(eta + r.offset);
           _likelihood += r.weight*_params.likelihood(y,mu);
           var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
           d = _params.linkDeriv(mu);
-          z = eta + (y-mu)*d;
+          double z = eta + (y-mu)*d;
           w = r.weight/(var*d*d);
+          wz = w*z;
           if(_validate)
             _val.add(y, mu, r.weight, r.offset);
         }
@@ -1098,9 +1099,6 @@ public abstract class GLMTask  {
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       wsum+=w;
       wsumu+=r.weight; // just add the user observation weight for the scaling.
-      double wz = w * z;
-      _wz += wz;
-      _yy += wz * z;
       for(int i = 0; i < r.nBins; ++i) {
         _xy[r.binIds[i]] += wz;
       }
@@ -1118,9 +1116,7 @@ public abstract class GLMTask  {
     public void reduce(GLMIterationTask git){
       ArrayUtils.add(_xy, git._xy);
       _gram.add(git._gram);
-      _yy += git._yy;
       _nobs += git._nobs;
-      _wz += git._wz;
       wsum += git.wsum;
       wsumu += git.wsumu;
       if (_validate) _val.reduce(git._val);
