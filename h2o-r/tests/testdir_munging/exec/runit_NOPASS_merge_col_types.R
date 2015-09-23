@@ -3,9 +3,9 @@ source("../../h2o-runit.R")
 
 check.merge_col_types <- function() {
   left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
-    color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
+                     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
   rite <- data.frame(fruit = c(1, 5, 2, 4, 6,3),
-    citrus = c(F, T, F, T, F, F))
+                     citrus = c(F, T, F, T, F, F))
 
   l.hex <- as.h2o(left)
   r.hex <- as.h2o(rite)

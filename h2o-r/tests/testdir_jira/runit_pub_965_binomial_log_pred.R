@@ -24,16 +24,16 @@ test.linkFunctions <- function() {
 	myX = c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
 
 	print("Create model with link: LOG")
-	model.h2o.binomial.log <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, family="binomial", link="log",alpha=0.5, lambda=0, nfolds=0)
+	model.h2o.binomial.log <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, family="binomial", link="logit",alpha=0.5, lambda=0, nfolds=0)
 
 	print("Predict")
 	prediction.h2o.binomial.log <- predict(model.h2o.binomial.log, prostate.test)
 	print(head(prediction.h2o.binomial.log))
 
 	print("Check strength of predictions all within [0,1] domain")
-	outside.domain <- prediction.h2o.binomial.log[prediction.h2o.binomial.log$"0"<0 | prediction.h2o.binomial.log$"0">1,]
-	print(outside.domain)
-	stopifnot(dim(outside.domain)[1] == 0) # There should be no predictions with strength less than 0 or greater than 1
+	zero <- prediction.h2o.binomial.log[prediction.h2o.binomial.log$"p0"<0,]
+	one <- prediction.h2o.binomial.log[prediction.h2o.binomial.log$"p0">1,]
+	expect_equal(nrow(zero)+nrow(one), 0) # There should be no predictions with strength less than 0 or greater than 1
 
 testEnd()
 }
