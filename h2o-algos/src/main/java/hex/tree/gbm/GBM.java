@@ -161,7 +161,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Reconstruct the working tree state from the checkpoint
       if( _parms.hasCheckpoint() ) {
         Timer t = new Timer();
-        new OOBScorer(_ncols, _nclass, numSpecialCols(),_parms._sample_rate,_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
+        new ResidualsCollector(_ncols, _nclass, numSpecialCols(),                    _model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
+        new OOBScorer(         _ncols, _nclass, numSpecialCols(),_parms._sample_rate,_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
         Log.info("Reconstructing oob stats from checkpointed model took " + t);
       }
 
@@ -178,7 +179,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
           double training_r2 = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping ) {
-            doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
+            doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
             return;             // Stop when approaching round-off error
           }
         }
@@ -446,11 +447,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
-      Sample ss[] = new Sample[_nclass];
-      for( int k=0; k<_nclass; k++)
-        if (ktrees[k] != null) ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(0,new Frame(vec_nids(_train,k),vec_resp(_train)), _parms._build_tree_one_node);
-      for( int k=0; k<_nclass; k++)
-        if( ss[k] != null ) ss[k].getResult();
+      if (_parms._sample_rate < 1) {
+        Sample ss[] = new Sample[_nclass];
+        for (int k = 0; k < _nclass; k++)
+          if (ktrees[k] != null)
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(0, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
+        for (int k = 0; k < _nclass; k++)
+          if (ss[k] != null) ss[k].getResult();
+      }
 
       // ----
       // ESL2, page 387.  Step 2b ii.

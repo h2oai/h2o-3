@@ -40,10 +40,16 @@ public class DTree extends Iced {
   final long _seeds[];        // One seed for each chunk, for sampling
   public final transient Random _rand; // RNG for split decisions & sampling
 
-  public DTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows ) { this(fr,ncols,nbins,nbins_cats,nclass,min_rows,-1,-1); }
   public DTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, long seed ) {
-    _names = fr.names(); _ncols = ncols; _nbins=nbins; _nbins_cats=nbins_cats; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed;
+    _names = fr.names();
+    _ncols = ncols;
+    _nbins=nbins;
+    _nbins_cats=nbins_cats;
+    _nclass=nclass;
+    _min_rows = min_rows;
+    _ns = new Node[1];
     _mtrys = mtrys;
+    _seed = seed;
     _rand = SharedTree.createRNG(seed);
     _seeds = new long[fr.vecs()[0].nChunks()];
     for (int i = 0; i < _seeds.length; i++)
@@ -260,6 +266,7 @@ public class DTree extends Iced {
     // Can return null for 'all columns'.
     public int[] scoreCols( DHistogram[] hs ) {
       DTree tree = _tree;
+      if (tree._mtrys == hs.length) return null;
       int[] cols = new int[hs.length];
       int len=0;
       // Gather all active columns to choose from.
@@ -394,8 +401,10 @@ public class DTree extends Iced {
       // scores on all columns and selects splits on all columns.
       DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
-      for( int i=0; i<u._scoreCols.length; i++ ) {
-        int col = u._scoreCols[i];
+      final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
+      for( int i=0; i<maxCols; i++ ) {
+        int col = u._scoreCols == null ? i : u._scoreCols[i];
+        if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
         DTree.Split s = hs[col].scoreMSE(col, _tree._min_rows);
         if( s == null ) continue;
         if( s.se() < best.se() ) best = s;
