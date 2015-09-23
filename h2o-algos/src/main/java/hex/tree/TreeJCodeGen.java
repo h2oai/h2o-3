@@ -135,6 +135,5 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     visit();
     closure(_sb);
     _sb.p(_csb);
-    System.err.print(_csb.toString());
   }
 }
