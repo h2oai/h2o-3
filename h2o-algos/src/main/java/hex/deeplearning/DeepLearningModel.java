@@ -34,7 +34,10 @@ import water.MRTask;
 import water.Scope;
 import water.Value;
 import water.api.ModelSchema;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -43,7 +46,6 @@ import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.Log;
 import water.util.PrettyPrint;
-import water.util.SB;
 import water.util.SBPrintStream;
 import water.util.Timer;
 import water.util.TwoDimTable;
@@ -1045,11 +1047,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     return sb.toString();
   }
 
-  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContextSB) {
-    sb = super.toJavaInit(sb, fileContextSB);
-    String mname = JCodeGen.toJavaId(_key.toString());
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb = super.toJavaInit(sb, fileCtx);
+    final String mname = JCodeGen.toJavaId(_key.toString());
 
-    Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
+    final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
@@ -1073,7 +1075,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       JCodeGen.toStaticVar(sb, "HIDDEN_DROPOUT_RATIOS", p._hidden_dropout_ratios, "Hidden layer dropout ratios.");
     }
 
-    int[] layers = new int[neurons.length];
+    final int[] layers = new int[neurons.length];
     for (int i=0;i<neurons.length;++i)
       layers[i] = neurons[i].units;
     JCodeGen.toStaticVar(sb, "NEURONS", layers, "Number of neurons for each layer.");
@@ -1084,7 +1086,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       sb.i(1).p("public String getHeader() { return \"" + getHeader() + "\"; }").nl();
     }
 
-    // activation storage
+    // Generate activation storage
     sb.i(1).p("// Storage for neuron activation values.").nl();
     sb.i(1).p("public static final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
@@ -1093,10 +1095,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       sb.p(colInfoClazz).p(".VALUES");
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
-      fileContextSB.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, new double[layers[i]]);
     }
     sb.i(1).p("};").nl();
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        for (int i=0; i<neurons.length; i++) {
+          String colInfoClazz = mname + "_Activation_"+i;
+          out.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
+          JCodeGen.toClassWithArray(out, null, colInfoClazz, new double[layers[i]]);
+        }
+      }
+    });
 
     // biases
     sb.i(1).p("// Neuron bias values.").nl();
@@ -1107,16 +1117,25 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       sb.p(colInfoClazz).p(".VALUES");
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
-      fileContextSB.i().p("// Neuron bias values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-      double[] bias = i == 0 ? null : new double[model_info().get_biases(i-1).size()];
-      if (i>0) {
-        for (int j=0; j<bias.length; ++j) bias[j] = model_info().get_biases(i-1).get(j);
-      }
-      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, bias);
     }
     sb.i(1).p("};").nl();
+    // Generate additonal classes
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        for (int i=0; i<neurons.length; i++) {
+          String colInfoClazz = mname + "_Bias_"+i;
+          out.i().p("// Neuron bias values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
+          double[] bias = i == 0 ? null : new double[model_info().get_biases(i-1).size()];
+          if (i>0) {
+            for (int j=0; j<bias.length; ++j) bias[j] = model_info().get_biases(i-1).get(j);
+          }
+          JCodeGen.toClassWithArray(out, null, colInfoClazz, bias);
+        }
+      }
+    });
 
-    // weights
+    // Weights
     sb.i(1).p("// Connecting weights between neurons.").nl();
     sb.i(1).p("public static final float[][] WEIGHT = new float[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
@@ -1125,23 +1144,36 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       sb.p(colInfoClazz).p(".VALUES");
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
-      if (i > 0) {
-        fileContextSB.i().p("// Neuron weights connecting ").
+    }
+    sb.i(1).p("};").nl();
+    // Generate weight classes
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        for (int i = 0; i < neurons.length; i++) {
+          String colInfoClazz = mname + "_Weight_" + i;
+          if (i > 0) {
+            out.i().p("// Neuron weights connecting ").
                 p(neurons[i - 1].getClass().getSimpleName()).p(" and ").
                 p(neurons[i].getClass().getSimpleName()).
                 p(" layer").nl();
+          }
+          float[]
+              weights =
+              i == 0 ? null : new float[model_info().get_weights(i - 1).rows() * model_info()
+                  .get_weights(i - 1).cols()];
+          if (i > 0) {
+            final int rows = model_info().get_weights(i - 1).rows();
+            final int cols = model_info().get_weights(i - 1).cols();
+            for (int j = 0; j < rows; ++j)
+              for (int k = 0; k < cols; ++k)
+                weights[j * cols + k] = model_info().get_weights(i - 1).get(j, k);
+          }
+          JCodeGen.toClassWithArray(out, null, colInfoClazz, weights);
+        }
       }
-      float[] weights = i == 0 ? null : new float[model_info().get_weights(i-1).rows()*model_info().get_weights(i-1).cols()];
-      if (i>0) {
-        final int rows = model_info().get_weights(i-1).rows();
-        final int cols = model_info().get_weights(i-1).cols();
-        for (int j=0; j<rows; ++j)
-          for (int k=0; k<cols; ++k)
-            weights[j*cols+k] = model_info().get_weights(i-1).get(j,k);
-      }
-      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, weights);
-    }
-    sb.i(1).p("};").nl();
+    });
+
     return sb;
   }
 
@@ -1180,8 +1212,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     return bodySb;
   }
 
-  @Override protected void toJavaPredictBody(final SBPrintStream bodySb, final SB classCtxSb, final SB fileCtxSb, boolean verboseCode) {
-    SB model = new SB();
+  @Override protected void toJavaPredictBody(SBPrintStream bodySb,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     final DeepLearningParameters p = model_info.get_params();
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     final int cats = model_info().data_info()._cats;
@@ -1326,7 +1360,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //      bodySb.i().p("System.out.println(java.util.Arrays.toString(preds));").nl();
 //      bodySb.i().p("System.out.println(\"\");").nl();
     }
-    fileCtxSb.p(model);
     if (_output.autoencoder) return;
     if (_output.isClassifier()) {
       if (_parms._balance_classes)
