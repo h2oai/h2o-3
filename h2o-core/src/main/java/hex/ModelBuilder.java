@@ -3,7 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.currents.ASTKFold;
+import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -668,6 +668,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (isSupervised())
           error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
       } else {
+        if(_response == _offset)
+          error("_response", "Response must be different from offset_column");
+        if(_response == _weights)
+          error("_response", "Response must be different from weights_column");
+        if(_response == _fold)
+          error("_response", "Response must be different from fold_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }

@@ -1,7 +1,7 @@
 package hex.genmodel;
 
-import water.genmodel.IGeneratedModel;
 import hex.ModelCategory;
+import water.genmodel.IGeneratedModel;
 
 import java.io.Serializable;
 import java.util.*;

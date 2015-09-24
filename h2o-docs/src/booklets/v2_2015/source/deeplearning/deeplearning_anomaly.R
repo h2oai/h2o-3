@@ -1,20 +1,23 @@
 # Download and import ECG train and test data into the H2O cluster
-train_ecg <- h2o.importFile(path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv", 
-                            header = FALSE, 
-                            sep = ",")
-test_ecg <- h2o.importFile(path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv", 
-                           header = FALSE, 
-                           sep = ",")
+train_ecg <- h2o.importFile(
+        path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv", 
+        header = FALSE, 
+        sep = ",")
+test_ecg <- h2o.importFile(
+        path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv", 
+        header = FALSE, 
+        sep = ",")
 
 # Train deep autoencoder learning model on "normal" 
 # training data, y ignored 
-anomaly_model <- h2o.deeplearning(x = names(train), 
-                                 training_frame = train_ecg, 
-                                 activation = "Tanh", 
-                                 autoencoder = TRUE, 
-                                 hidden = c(50,20,50), 
-                                 l1 = 1e-4, 
-                                 epochs = 100)                 
+anomaly_model <- h2o.deeplearning(
+        x = names(train), 
+        training_frame = train_ecg, 
+        activation = "Tanh", 
+        autoencoder = TRUE, 
+        hidden = c(50,20,50), 
+        l1 = 1e-4, 
+        epochs = 100)                 
 
 # Compute reconstruction error with the Anomaly 
 # detection app (MSE between output layer and input layer)

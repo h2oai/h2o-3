@@ -20,12 +20,11 @@
 #'        name and parameters specify super/unsupervised algorithm.
 #' @param do_hyper_params_check  perform client check for specified hyper parameters. It can be time expensive for
 #'        large hyper space
-#' @param conn connection to H2O cluster
 #' @importFrom jsonlite toJSON
 #' @examples
 #' library(h2o)
 #' library(jsonlite)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' iris.hex <- as.h2o(iris)
 #' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex,
 #'                  hyper_params = list(ntrees = c(1,2,3)))
@@ -108,7 +107,7 @@ h2o.grid <- function(algorithm,
 #' @examples
 #' library(h2o)
 #' library(jsonlite)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' iris.hex <- as.h2o(iris)
 #' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5,
 #'          training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))

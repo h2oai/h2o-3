@@ -5,7 +5,7 @@
 #' to calculate the singular value decomposition of the Gram matrix.
 #'
 #'
-#' @param training_frame An \linkS4class{Frame} object containing the
+#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
@@ -36,9 +36,9 @@
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
 #' @export
 h2o.prcomp <- function(training_frame, x, k,

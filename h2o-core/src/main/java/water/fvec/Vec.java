@@ -237,9 +237,10 @@ public class Vec extends Keyed<Vec> {
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
+    setMeta(type,domain);
     _type = type;
-    _espc = espc;
     _domain = domain;
+    _espc = espc;
     _rollupStatsKey = chunkKey(-2);
   }
 
@@ -286,12 +287,13 @@ public class Vec extends Keyed<Vec> {
     return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
   }
 
-  public void copyMeta( Vec src, Futures fs ) {
-    _domain = src._domain;
-    _type = src._type;
-    DKV.put(this,fs);
+  private void setMeta( byte type, String[] domain) {
+    assert (type==T_ENUM && domain!=null) || (type!=T_ENUM && domain==null);
+    _domain = domain;
+    _type = type;
   }
-  
+  public void copyMeta( Vec src, Futures fs ) { setMeta(src._type,src._domain); DKV.put(this,fs); }
+
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
   public static Vec makeZero( long len, boolean redistribute ) {
@@ -370,9 +372,8 @@ public class Vec extends Keyed<Vec> {
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
-    v._domain = domain;
-    v._type = type;
-    DKV.put(v._key, v);
+    v.setMeta(type,domain);
+    DKV.put(v);
     return v;
   }
 
@@ -1123,7 +1124,8 @@ public class Vec extends Keyed<Vec> {
       new MRTask() {
         @Override public void map(Chunk c) {
           for (int i=0;i<c._len;++i)
-            c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
+            if( !c.isNA(i) )
+              c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
         }
       }.doAll(newVec);
     }

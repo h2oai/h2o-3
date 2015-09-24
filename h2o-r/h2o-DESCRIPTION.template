@@ -25,7 +25,9 @@ Imports: graphics,
          utils
 Suggests: devtools,
           roxygen2,
-          testthat
+          testthat,
+          ggplot2,
+          mlbench
 Collate:
          'astfun.R'
          'classes.R'

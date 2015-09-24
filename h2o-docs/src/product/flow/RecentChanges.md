@@ -2,12 +2,67 @@
 
 ##H2O
 
-###Slater (3.2.0.1) - 09/12/15
 
+###Slater (3.2.0.3) - 09/21/15
 
 ####New Features
 The following changes represent features that have been added since the previous release:
 
+#####R
+
+- [PUBDEV-2078](https://0xdata.atlassian.net/browse/PUBDEV-2078): H2O now returns per-feature reconstruction error for `h2o.anomaly()` [(GitHub commit)](https://github.com/h2oai/h2o-3/commit/e818860af87cad796699e27f8dfb4ff6fc9354e8)
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1def2121ac811eebd9ea0e4ed9fa9f4d296a10ad): Added back support for sparse activations in DL; currently changes results as numerical values are de-scaled only, no standardized 
+
+#####Python
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f37ef949bd428d362b20f424f9df02761c33a419): Adjusted `import_file` in Python to accept the same parameters as `import_file` in R 
+
+
+#####R
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b5e21d2f40a544303ef4acbe3f64f20d47d9d864): H2O now sets CRAN-based R clients to permanent opt-out. 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/0f2c3d67e4ab40d3fc2a5874acc1efce0bbe6bc4): Modified output of h2o.tabulate in R 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e6cfe9d6408539645996486f10b579f9240e5b90): Added default plotting for models in R 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a9ac5058c4f07e106d6b6b16002839cab8f9b2ef): Pre-pended graphics pkg to `plot.H2OModel` methods 
+
+
+####Bug Fixes 
+
+The following changes are to resolve incorrect software behavior:
+
+#####Algorithms
+
+- [PUBDEV-2091](https://0xdata.atlassian.net/browse/PUBDEV-2091): All algos: when offset is the same as the response, all train errors should be zero [(GitHub commit)](https://github.com/h2oai/h2o-3/commit/7515360a4c4181f639a18f70436f59969d4a0a46) 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c244867c3e4eb7813070c804882a88ab47c90f43): Fixed DL POJO for large input columns
+
+#####R
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/43d22d18d284bf26b8553a31c02daf1ea3bb92d6): Fixed bugs in model 
+plotting in R 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ed4afe55e64ae681cf37e71179cbfa4a9c0f88c9): Fixed bugs in R plot.H2OModel for DL 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/42f4635f6c5b17937b1eb58a46c505507979b89c): Fixed bug in plot.H2OModel 
+
+#####System
+
+
+- [PUBDEV-1850](https://0xdata.atlassian.net/browse/PUBDEV-1850): Parse not setting NA strings properly [(GitHub commit)](https://github.com/h2oai/h2o-3/commit/6196b23ef68c364559fe304dbe342780fe8afbeb) 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6d269ee2b59c71df178cae120c232f1551854700): H2O now escapes XML entities 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/afe4ff2f0dea41595a44eefa40fa256b353547f8): Fixed Java 6 build -replaced AutoCloseable with Closeable 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7548c71de44e1e2adf4e165e0ec41105d0ac607b): Restored code that was needed for detecting NA strings 
+
+---
+
+###Slater (3.2.0.1) - 09/12/15
+
+
+####New Features
 
 #####Algorithms
 
@@ -62,8 +117,6 @@ The following changes represent features that have been added since the previous
 
 
 ####Enhancements
-The following changes are improvements to existing features (which includes changed default values):
-
 
 #####Algorithms
 
@@ -192,8 +245,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes 
-
-The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 

@@ -247,7 +247,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // can trigger a table resize.  Several places must have exact agreement on
   // what the reprobe_limit is, so we share it here.
   private static final int reprobe_limit( int len ) {
-    return REPROBE_LIMIT + (len>>2);
+    return REPROBE_LIMIT + (len>>8);
   }
 
   // --- NonBlockingHashMap --------------------------------------------------
@@ -908,8 +908,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
       long tm = System.currentTimeMillis();
       long q=0;
       if( newsz <= oldlen && // New table would shrink or hold steady?
-          tm <= topmap._last_resize_milli+10000 && // Recent resize (less than 1 sec ago)
-          (q=_slots.estimate_get()) >= (sz<<1) ) // 1/2 of keys are dead?
+          (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 1 sec ago)
+           (q=_slots.estimate_get()) >= (sz<<1)) )  // 1/2 of keys are dead?
         newsz = oldlen<<1;      // Double the existing size
 
       // Do not shrink, ever
@@ -926,9 +926,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
       while( !_resizerUpdater.compareAndSet(this,r,r+1) )
         r = _resizers;
       // Size calculation: 2 words (K+V) per table entry, plus a handful.  We
-      // guess at 32-bit pointers; 64-bit pointers screws up the size calc by
+      // guess at 64-bit pointers; 32-bit pointers screws up the size calc by
       // 2x but does not screw up the heuristic very much.
-      int megs = ((((1<<log2)<<1)+4)<<3/*word to bytes*/)>>20/*megs*/;
+      int megs = ((((1<<log2)<<1)+8)<<3/*word to bytes*/)>>20/*megs*/;
       if( r >= 2 && megs > 0 ) { // Already 2 guys trying; wait and see
         newkvs = _newkvs;        // Between dorking around, another thread did it
         if( newkvs != null )     // See if resize is already in progress
@@ -938,7 +938,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         //synchronized( this ) { wait(8*megs); }         // Timeout - we always wakeup
         // For now, sleep a tad and see if the 2 guys already trying to make
         // the table actually get around to making it happen.
-        try { Thread.sleep(8*megs); } catch( Exception e ) { }
+        try { Thread.sleep(megs); } catch( Exception e ) { }
       }
       // Last check, since the 'new' below is expensive and there is a chance
       // that another thread slipped in a new thread while we ran the heuristic.

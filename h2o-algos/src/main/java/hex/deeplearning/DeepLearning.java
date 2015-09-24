@@ -53,7 +53,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   /** Start the DeepLearning training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<DeepLearningModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<DeepLearningModel> trainModelImpl(long work, boolean restartTimer) {
     // We look at _train before init(true) is called, so step around that here:
     return start(new DeepLearningDriver(), work, restartTimer);
   }
@@ -157,6 +157,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
+    protected DeepLearningDriver() { super(true); } // bump priority of drivers
     @Override protected void compute2() {
       try {
         long cs = _parms.checksum();

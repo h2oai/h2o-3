@@ -4,7 +4,7 @@
 #' Singular value decomposition of a H2O dataset using the power method.
 #'
 #'
-#' @param training_frame An \linkS4class{Frame} object containing the
+#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param nv The number of right singular vectors to be computed. This must be
@@ -34,9 +34,9 @@
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' h2o.svd(training_frame = australia.hex, nv = 8)
 #' @export
 h2o.svd <- function(training_frame, x, nv,

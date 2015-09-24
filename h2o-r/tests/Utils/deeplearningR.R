@@ -62,5 +62,5 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   parms <- lapply(as.list(match.call()[-1L]), eval, env)
   parms$nfolds <- NULL
 
-  do.call("h2o.crossValidateQ", list(model.type = 'deeplearning', nfolds = nfolds, params = parms))
+  do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms))
 }

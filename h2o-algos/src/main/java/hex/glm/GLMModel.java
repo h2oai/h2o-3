@@ -1,16 +1,28 @@
 package hex.glm;
 
-import hex.*;
+import java.util.Arrays;
+import java.util.HashMap;
+
+import hex.DataInfo;
 import hex.DataInfo.TransformType;
+import hex.Model;
+import hex.ModelMetrics;
 import hex.glm.GLMModel.GLMParameters.Family;
-import water.*;
+import water.DKV;
+import water.H2O;
+import water.Iced;
+import water.Key;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
-
-import java.util.Arrays;
-import java.util.HashMap;
+import water.util.ArrayUtils;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.SB;
+import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -887,13 +899,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return preds;
   }
 
-  @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
+  @Override protected void toJavaPredictBody(SBPrintStream body, SB classCtx, SB file, boolean verboseCode) {
     final int nclass = _output.nclasses();
     String mname = JCodeGen.toJavaId(_key.toString());
-    JCodeGen.toStaticVar(classCtx,"BETA",beta(),"The Coefficients");
+    JCodeGen.toClassWithArray(classCtx,"static","BETA",beta()); // "The Coefficients"
     JCodeGen.toStaticVar(classCtx,"CATOFFS",dinfo()._catOffsets,"Categorical Offsets");
     body.ip("double eta = 0.0;").nl();
-    body.ip("final double [] b = BETA;").nl();
+    body.ip("final double [] b = BETA.VALUES;").nl();
     if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
       body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
       body.ip("  int ival = (int)data[i] - 1;").nl();
@@ -926,7 +938,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  @Override protected SB toJavaInit(SB sb, SB fileContext) {
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContext) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();

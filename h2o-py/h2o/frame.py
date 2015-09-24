@@ -33,7 +33,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   COUNTING = True
   dropped_instances = []  # keep track of dropped instances while not counting
 
-  def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None):
+  def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
@@ -67,7 +67,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     if expr is not None:         self._ast = expr
     elif python_obj is not None: self._upload_python_object(python_obj)
-    elif file_path is not None:  self._import_parse(file_path)
+    elif file_path is not None:  self._import_parse(file_path, destination_frame, header, separator, column_names, column_types, na_strings)
     elif raw_id is not None:     self._handle_text_key(raw_id)
     else: pass
 
@@ -83,11 +83,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     fr._col_names = [c["label"] for c in res["columns"]]
     return fr
 
-  def __str__(self): return self.__repr__()
+  def __str__(self): return self._id
 
-  def _import_parse(self,file_path):
+  def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(file_path)
-    setup = h2o.parse_setup(rawkey)
+    setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
     parse = h2o.parse(setup, _py_tmp_key())  # create a new key
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
@@ -380,7 +380,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     nrows = min(self.nrow,rows)
     ncols = min(self.ncol, cols)
     colnames = self.names[:ncols]
-    head = self[0:nrows,0:ncols]
+    if nrows == self.nrow and ncols == self.ncol: head = self
+    else:                                        head = self[0:nrows,0:ncols]
     res = head.as_data_frame(as_pandas) if as_pandas else head.as_data_frame(as_pandas)[1:]
     if show: self._do_show(as_pandas,res,colnames)
     return res if as_pandas else head
@@ -529,7 +530,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
       zeros.append(v["zero_count"])
       miss.append(v["missing_count"])
 
-    table = [type,mins,maxs,sigma,zeros,miss]
+    table = [type,mins,maxs,mean,sigma,zeros,miss]
     headers = self._col_names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
@@ -928,7 +929,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if isinstance(by, basestring):     by     = self._find_idx(by)
     return H2OFrame(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, inplace))._frame()
 
-  def merge(self, other, allLeft=False, allRite=False):
+  def merge(self, other, allLeft=True, allRite=False):
     """
     Merge two datasets based on common column names
 
@@ -1064,6 +1065,15 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("trim", self))
+
+  def length(self):
+    """
+    Create a column containing the length of the strings in the target column (only operates on frame with one column)
+
+    :return: H2OFrame
+    """
+    return H2OFrame(expr=ExprNode("length", self))
+
 
   def table(self, data2=None):
     """

@@ -120,16 +120,20 @@ public class EnumWrappedVec extends WrappedVec {
     for( int i=0; i<to.length; i++ ) h.put(to[i],i);
     String[] ss = to;
     int extra = to.length;
+    int actualLen = extra;
     for( int j=0; j<from.length; j++ ) {
       Integer x = h.get(from[j]);
       if( x!=null ) _map[j] = x;
       else {
         _map[j] = extra++;
-        ss = Arrays.copyOf(ss,extra);
+        if (extra > ss.length) {
+          ss = Arrays.copyOf(ss, 2*ss.length);
+        }
         ss[extra-1] = from[j];
+        actualLen = extra;
       }
     }
-    setDomain(ss);
+    setDomain(Arrays.copyOf(ss, actualLen));
   }
 
 

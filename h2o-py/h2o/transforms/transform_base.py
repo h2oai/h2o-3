@@ -1,3 +1,5 @@
+from ..frame import H2OFrame
+
 class TransformAttributeError(AttributeError):
   def __init__(self,obj,method):
     super(AttributeError, self).__init__("No {} method for {}".format(method,obj.__class__.__name__))
@@ -41,3 +43,13 @@ class H2OTransformer(object):
   def set_params(self, **params):
     self.parms.update(params)
     return self
+
+  @staticmethod
+  def _dummy_frame():
+    dummy = H2OFrame()
+    dummy._id = "py_dummy"
+    dummy._computed = True
+    return dummy
+
+  def to_rest(self, args):
+    return "{}__{}__{}__{}".format(*args)

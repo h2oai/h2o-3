@@ -1663,4 +1663,35 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  /** Test large GLM POJO model generation.
+   *  Make a 10K predictor model, emit, javac, and score with it.
+   */
+  @Test public void testBigPOJO() {
+    GLM job = null;
+    GLMModel model = null;
+    Frame fr = parse_test_file(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
+    try{
+      Scope.enter();
+      // test LBFGS with l1 pen
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      // params._response = 0;
+      params._lambda = null;
+      params._response_column = fr._names[0];
+      params._train = fr._key;
+      params._max_active_predictors = 100000;
+      params._alpha = new double[]{0};
+      params._solver = Solver.L_BFGS;
+      job = new GLM(Key.make("arcene_model"), "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.getGet(job._dest);
+      res = model.score(fr);
+      model.testJavaScoring(fr,res,0.0);
+    } finally {
+      fr.delete();
+      if(model != null) model.delete();
+      if( res != null ) res.delete();
+      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
 }

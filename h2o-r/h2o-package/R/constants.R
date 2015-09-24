@@ -22,7 +22,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #'
 .h2o.primitives = c( 
   "*", "+", "/", "-", 
-  "cos", "sin", "acos", "cosh", "tan", "tanh", "exp", "log", "sqrt", 
+  "==", "!=", "<", ">", "<=", ">=",
+   "cos", "sin", "acos", "cosh", "tan", "tanh", "exp", "log", "sqrt", 
   "abs", "ceiling", "floor", 
   "mean", "sd", "sum", "prod", "all", "any", "min", "max", 
   "is.factor", "nrow", "ncol", "length" 
@@ -86,7 +87,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Export Files Endpoint Generator
 .h2o.__EXPORT_FILES <- function(frame,path,force) {
-  paste0("Frames/", .eval.frame(frame):id, "/export/",path,"/overwrite/",force)
+  paste0("Frames/", attr(.eval.frame(frame),"id"), "/export/",path,"/overwrite/",force)
 }
 
 #' Model Endpoint

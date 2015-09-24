@@ -10,7 +10,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
+#' @param training_frame An Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
@@ -23,12 +23,12 @@
 #' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
 #' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
-#' @param validation_frame An \code{\link{Frame}} object indicating the validation dataset used to contruct the
+#' @param validation_frame An Frame object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
-#'        than 1.0)
+#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling when balance_classes=T)
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
@@ -44,11 +44,11 @@
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #'
 #' # Run regression GBM on australia.hex data
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
 #'                  "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"

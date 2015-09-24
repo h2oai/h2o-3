@@ -43,8 +43,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new PCAV3();
   }
 
-  @Override
-  public Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new PCADriver(), work, restartTimer);
   }
 
@@ -101,6 +100,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
+    protected PCADriver() { super(true); } // bump driver priority
 
     protected void buildTables(PCAModel pca, String[] rowNames) {
       // Eigenvectors are just the V matrix

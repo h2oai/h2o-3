@@ -36,8 +36,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
 
   public boolean isSupervised(){return true;}
 
-  @Override
-  public Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new NaiveBayesDriver(), work, restartTimer);
   }
 
@@ -100,6 +99,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
+    protected NaiveBayesDriver() { super(true); } // bump driver priority
 
     public boolean computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
       model._output._levels = _response.domain();

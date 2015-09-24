@@ -2,22 +2,49 @@ package water.api;
 
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
-import water.*;
-import water.exceptions.*;
-import water.fvec.Frame;
-import water.init.NodePersistentStorage;
-import water.nbhm.NonBlockingHashMap;
-import water.util.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import water.DKV;
+import water.H2O;
+import water.H2OError;
+import water.H2OModelBuilderError;
+import water.H2ONode;
+import water.HeartBeatThread;
+import water.NanoHTTPD;
+import water.exceptions.H2OAbstractRuntimeException;
+import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
+import water.fvec.Frame;
+import water.init.NodePersistentStorage;
+import water.nbhm.NonBlockingHashMap;
+import water.rapids.Assembly;
+import water.util.GAUtils;
+import water.util.GetLogsFromNode;
+import water.util.HttpResponseStatus;
+import water.util.JCodeGen;
+import water.util.Log;
+import water.util.PojoUtils;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -162,16 +189,23 @@ public class RequestServer extends NanoHTTPD {
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll", null,
       "Delete all Frames from the H2O distributed K/V store.");
-    register("/3/Models/(?<model_id>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview", null,
-      "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<model_id>.*?)(\\.java)?"                  ,"GET"   ,ModelsHandler.class, "fetch", null,
+    // Handle models
+    register("/3/Models/(?<model_id>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch", null,
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
-    register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list", null,
+    register("/3/Models"                                              ,"GET"   ,ModelsHandler.class, "list", null,
       "Return all Models from the H2O distributed K/V store.");
     register("/3/Models/(?<model_id>.*)"                              ,"DELETE",ModelsHandler.class, "delete", null,
       "Delete the specified Model from the H2O distributed K/V store.");
-    register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll", null,
+    register("/3/Models"                                              ,"DELETE",ModelsHandler.class, "deleteAll", null,
       "Delete all Models from the H2O distributed K/V store.");
+
+    // Get java code for models as
+    register("/3/Models.java/(?<model_id>.*)/preview"                 ,"GET"   ,ModelsHandler.class, "fetchPreview", null,
+             "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
+    // Register resource also with .java suffix since we do not want to break API
+    // FIXME: remove in new REST API version
+    register("/3/Models.java/(?<model_id>.*)"                 ,"GET"   ,ModelsHandler.class, "fetchJavaCode", null,
+             "Return the stream containing model implementation in Java code.");
 
     // Model serialization - import/export calls
     register("/99/Models.bin/(?<model_id>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel", null,
@@ -261,8 +295,10 @@ public class RequestServer extends NanoHTTPD {
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", null, "Kill minus 3 on *this* node");
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
+    register("/99/Assembly.java/(?<assembly_id>.*)/(?<pojo_name>.*)"   ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
+    register("/99/Assembly"                                        ,"POST"  ,AssemblyHandler.class, "fit", null, "Fit an assembly to an input frame");
     register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
-    register("/3/DownloadDataset.bin"                                  ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
+    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", null, "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", null, "Save a message to the H2O logfile.");
@@ -667,19 +703,20 @@ public class RequestServer extends NanoHTTPD {
       if (s instanceof H2OErrorV3) {
         return new Response(http_response_header, MIME_JSON, s.toJsonString());
       }
-      if (! (s instanceof ModelsBase)) {
+      if (s instanceof AssemblyV99) {
+        Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
+        Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
+        r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
+        return r;
+      } else if (s instanceof StreamingSchema) {
+        StreamingSchema ss = (StreamingSchema) s;
+        Response r = new StreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
+        // Needed to make file name match class name
+        r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
+        return r;
+      } else {
         throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());
       }
-      ModelsBase mb = (ModelsBase) s;
-      if (mb.models.length != 1) {
-        throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
-      }
-      ModelSchema ms = (ModelSchema)mb.models[0];
-      Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
-
-      // Needed to make file name match class name
-      r.addHeader("Content-Disposition", "attachment; filename=\"" + JCodeGen.toJavaId(ms.model_id.key().toString()) + ".java\"");
-      return r;
     default:
       throw H2O.unimpl("Unknown type to wrap(): " + type);
     }

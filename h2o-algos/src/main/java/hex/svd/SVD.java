@@ -44,7 +44,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return new SVDV99();
   }
 
-  @Override public Job<SVDModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<SVDModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new SVDDriver(), work, restartTimer);
   }
 
@@ -122,6 +122,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
+    protected SVDDriver() { super(true); } // bump driver priority
 
     // private double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
     private double[] powerLoop(Gram gram, long seed) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed)); }

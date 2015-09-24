@@ -242,6 +242,11 @@ public class ArrayUtils {
     for (int i=0; i<ary.length; i++) mult(ary[i], n);
     return ary;
   }
+  public static double[] invert(double[] ary) {
+    if(ary == null) return null;
+    for(int i=0;i<ary.length;i++) ary[i] = 1. / ary[i];
+    return ary;
+  }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
     if(ary == null || nums == null) return null;
@@ -372,6 +377,18 @@ public class ArrayUtils {
       x *= step;
     }
     return res;
+  }
+
+  public static String arrayToString(int[] ary) {
+    if (ary == null || ary.length==0 ) return "";
+    int m = ary.length - 1;
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; ; i++) {
+      sb.append(ary[i]);
+      if (i == m) return sb.toString();
+      sb.append(", ");
+    }
   }
 
   // Convert array of primitives to an array of Strings.
@@ -918,6 +935,12 @@ public class ArrayUtils {
     } else
       System.arraycopy(original, 0, newArray, 0, newLength);
     return newArray;
+  }
+
+  static public double[] copyFromIntArray(int[] a) {
+    double[] da = new double[a.length];
+    for(int i=0;i<a.length;++i) da[i] = a[i];
+    return da;
   }
 
   // sparse sortedMerge (ids and vals)

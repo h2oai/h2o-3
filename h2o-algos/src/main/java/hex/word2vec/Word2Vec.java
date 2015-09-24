@@ -32,7 +32,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   /** Start the KMeans training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new Word2VecDriver(), work, restartTimer);
   }
 
@@ -64,6 +64,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   }
 
   private class Word2VecDriver extends H2O.H2OCountedCompleter<Word2VecDriver> {
+    protected Word2VecDriver() { super(true); } // bump driver priority
     @Override
     protected void compute2() {
       Word2VecModel model = null;

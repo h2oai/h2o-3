@@ -68,5 +68,41 @@ public class CStrChunk extends Chunk {
     System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);
     return nc;
   }
+
+  public NewChunk trim(NewChunk nc) {
+    // copy existing data
+    nc = this.inflate_impl(nc);
+    //update offsets and byte array
+    for(int i=0; i < _len; i++) {
+      int j = 0;
+      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      if (off != NA) {
+        while( _mem[_valstart+off+j] < 0x21) j++; //per Java spec, space is any char 0x20 and lower
+        if (j > 0) nc._is[i] = off + j;
+        while( _mem[_valstart+off+j] != 0 ) j++; //Find end
+        while( _mem[_valstart+off+j] < 0x21) { //March back to find first non-space
+          nc._ss[off+j] = 0; //Set new end
+          j--;
+        }
+      }
+    }
+    return nc;
+  }
+
+  public NewChunk length(NewChunk nc) {
+    //pre-allocate since size is known
+    nc._ls = MemoryManager.malloc8(_len);
+    nc._xs = MemoryManager.malloc4(_len); // sadly, a waste
+    // fill in lengths
+    for(int i=0; i < _len; i++) {
+      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      int len = 0;
+      if (off != NA) {
+        while (_mem[_valstart + off + len] != 0) len++;
+        nc.addNum(len, 0);
+      } else nc.addNA();
+    }
+    return nc;
+  }
 }
 
