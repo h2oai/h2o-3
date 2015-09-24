@@ -65,6 +65,7 @@ public class NewChunk extends Chunk {
   public int _timCnt = 0;
   protected static final int MIN_SPARSE_RATIO = 32;
   private int _sparseRatio = MIN_SPARSE_RATIO;
+  public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
 
@@ -715,7 +716,7 @@ public class NewChunk extends Chunk {
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, sparseLen());
     if( mode==AppendableVec.STRING )
-      return new CStrChunk(_sslen, _ss, sparseLen(), _len, _is);
+      return new CStrChunk(_sslen, _ss, sparseLen(), _len, _is, _isAllASCII);
     boolean rerun=false;
     if(mode == AppendableVec.ENUM){
       for( int i=0; i< sparseLen(); i++ )
