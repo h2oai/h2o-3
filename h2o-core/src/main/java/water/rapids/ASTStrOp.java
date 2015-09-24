@@ -1,19 +1,13 @@
 package water.rapids;
 
-import org.apache.commons.lang.StringUtils;
-import water.MRTask;
-import water.fvec.C0DChunk;
-import water.fvec.CStrChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.parser.ValueString;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import org.apache.commons.lang.StringUtils;
+import water.MRTask;
+import water.fvec.*;
+import water.parser.ValueString;
 
 public class ASTStrOp { /*empty*/}
 
@@ -91,56 +85,56 @@ class ASTStrSplit extends ASTPrim {
 }
 
 class ASTCountMatches extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "pattern"}; }
+  @Override public String[] args() { return new String[]{"ary", "pattern"}; }
   @Override int nargs() { return 1+2; } // (countmatches x pattern)
-  @Override
-  public String str() { return "countmatches"; }
+  @Override public String str() { return "countmatches"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    final String[] pattern;
-    if( asts[2] instanceof ASTStrList ) pattern = ((ASTStrList)asts[2])._strs;
-    else                                pattern = new String[]{asts[2].exec(env).getStr()};
+    final String[] pattern = asts[2] instanceof ASTStrList 
+      ? ((ASTStrList)asts[2])._strs 
+      : new String[]{asts[2].exec(env).getStr()};
 
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("countmatches only takes a single column of data. " +
                                          "Got " + fr.numCols() + " columns.");
     Vec vec = fr.anyVec();  assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("countmatches requires a string column."
-        +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    else {
-
-      Frame fr2 = new MRTask() {
-        @Override
-        public void map(Chunk chk, NewChunk newChk) {
-          if ( chk instanceof C0DChunk ) // all NAs
-            for (int i = 0; i < chk.len(); i++)
-              newChk.addNA();
-          else {
-            ValueString vs = new ValueString();
-            for (int i = 0; i < chk._len; ++i) {
-              if (!chk.isNA(i)) {
-                int cnt = 0;
-                for (String aPattern : pattern)
-                  cnt += StringUtils.countMatches(chk.atStr(vs, i).toString(), aPattern);
-                newChk.addNum(cnt, 0);
-              } else newChk.addNA();
+    if ( !vec.isString() ) throw new IllegalArgumentException("countmatches requires a string column.  Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk) {
+        if ( chk instanceof C0DChunk ) // all NAs
+          for( int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else {
+          ValueString vs = new ValueString();
+          for( int i = 0; i < chk._len; ++i ) {
+            if( chk.isNA(i) ) newChk.addNA();
+            else {
+              int cnt = 0;
+              for (String aPattern : pattern)
+                cnt += StringUtils.countMatches(chk.atStr(vs, i).toString(), aPattern);
+              newChk.addNum(cnt, 0);
             }
           }
         }
-      }.doAll(1, vec).outputFrame();
-      return new ValFrame(fr2);
-    }
+      }
+    }.doAll(1, vec).outputFrame();
+    return new ValFrame(fr2);
+  }
+
+  int[] countMatches(String[] domain, String[] pattern) {
+    int[] res = new int[domain.length];
+    for (int i=0; i < domain.length; i++)
+      for (String aPattern : pattern)
+        res[i] += StringUtils.countMatches(domain[i], aPattern);
+    return res;
   }
 }
 
 // mutating call
 class ASTToLower extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(tolower x)
-  @Override
-  public String str() { return "tolower"; }
+  @Override public String str() { return "tolower"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1)
@@ -178,11 +172,9 @@ class ASTToLower extends ASTPrim {
 }
 
 class ASTToUpper extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(toupper x)
-  @Override
-  public String str() { return "toupper"; }
+  @Override public String str() { return "toupper"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1)
@@ -223,8 +215,7 @@ class ASTReplaceFirst extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
-  @Override
-  public String str() { return "sub"; }
+  @Override public String str() { return "sub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     final String _pattern     = asts[1].exec(env).getStr();
     final String _replacement = asts[2].exec(env).getStr();
@@ -271,8 +262,7 @@ class ASTReplaceAll extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
-  @Override
-  public String str() { return "gsub"; }
+  @Override public String str() { return "gsub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     final String _pattern     = asts[1].exec(env).getStr();
     final String _replacement = asts[2].exec(env).getStr();
@@ -316,11 +306,9 @@ class ASTReplaceAll extends ASTPrim {
 }
 
 class ASTTrim extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (trim x)
-  @Override
-  public String str() { return "trim"; }
+  @Override public String str() { return "trim"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec res = null;
@@ -378,10 +366,8 @@ class ASTStrLength extends ASTPrim {
         } else { //UTF requires Java string methods for accuracy
           ValueString vs= new ValueString();
           for(int i =0; i < chk._len; i++){
-            if (chk.isNA(i))
-              newChk.addNA();
-            else
-              newChk.addNum(chk.atStr(vs, i).toString().length(), 0);
+            if (chk.isNA(i))  newChk.addNA();
+            else              newChk.addNum(chk.atStr(vs, i).toString().length(), 0);
           }
         }
       }
