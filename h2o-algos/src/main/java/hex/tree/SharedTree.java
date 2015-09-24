@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+  protected int _mtry;
 
   public static final int MAX_NTREES = 100000;
 
@@ -119,6 +120,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_top_level >= 1<<16) error ("_nbins_top_level", "nbins_top_level must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
+      error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate);
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -406,7 +409,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp()]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
-  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c )]; }
+  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
@@ -421,7 +424,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   }
 
   // Builder-specific decision node
-  abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );
+  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] ) {
+    return new DTree.DecidedNode(udn, hs);
+  }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum

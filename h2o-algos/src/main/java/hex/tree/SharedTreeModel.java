@@ -55,13 +55,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
 
-    /** Fields which can be modified if checkpoint is specified.
+    public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
+
+    /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
-    private static String[] MODIFIABLE_BY_CHECKPOINT_FIELDS = new String[] { "_ntrees", "_max_depth", "_min_rows", "_r2_stopping"};
+    private static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = new String[] { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
 
-    protected String[] getCheckpointModifiableFields() {
-      return MODIFIABLE_BY_CHECKPOINT_FIELDS;
+    protected String[] getCheckpointNonModifiableFields() {
+      return CHECKPOINT_NON_MODIFIABLE_FIELDS;
     }
 
     /** This method will take actual parameters and validate them with parameters of
@@ -70,22 +72,19 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
      * @param checkpointParameters checkpoint parameters
      */
     public void validateWithCheckpoint(SharedTreeParameters checkpointParameters) {
-      String[] fieldNames = getCheckpointModifiableFields();
-      Field[] allFields = this.getClass().getDeclaredFields();
-      for (Field f : allFields) {
-        for (String modifiableFieldName : fieldNames) {
-          // Skip modifiable fields
-          if (modifiableFieldName.equals(f.getName())) {
-            continue;
-          }
-          // Make sure that value in fields are same!
-
-          try {
-            if (!PojoUtils.equals(this, f, checkpointParameters, checkpointParameters.getClass().getDeclaredField(f.getName()))) {
-              throw new H2OIllegalArgumentException(f.getName(), "TreeBuilder", "Field cannot be modified if checkpoint is specified!");
+      for (Field fAfter : this.getClass().getFields()) {
+        // only look at non-modifiable fields
+        if (ArrayUtils.contains(getCheckpointNonModifiableFields(),fAfter.getName())) {
+          for (Field fBefore : checkpointParameters.getClass().getFields()) {
+            if (fBefore.equals(fAfter)) {
+              try {
+                if (!PojoUtils.equals(this, fAfter, checkpointParameters, checkpointParameters.getClass().getField(fAfter.getName()))) {
+                  throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " cannot be modified if checkpoint is specified!");
+                }
+              } catch (NoSuchFieldException e) {
+                throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " is not supported by checkpoint!");
+              }
             }
-          } catch (NoSuchFieldException e) {
-            throw new H2OIllegalArgumentException(f.getName(), "TreeBuilder", "Field is not supported by checkpoint!");
           }
         }
       }

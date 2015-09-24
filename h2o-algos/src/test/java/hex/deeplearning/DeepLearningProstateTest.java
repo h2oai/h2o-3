@@ -263,6 +263,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert(model1.model_info().get_params()._l1 == 0);
                                           assert(model1.model_info().get_params()._l2 == 0);
 
+                                          if (n_folds != 0) continue;
                                           // Do some more training via checkpoint restart
                                           // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
                                           DeepLearningParameters p2 = new DeepLearningParameters();
@@ -271,7 +272,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                           {
                                             p2._model_id = Key.make();
                                             p2._checkpoint = model1._key;
-                                            p2._nfolds = 0;
+                                            p2._distribution = dist;
+                                            p2._loss = loss;
+                                            p2._nfolds = n_folds;
                                             p2._train = frame._key;
                                             p2._activation = activation;
                                             p2._hidden = hidden;

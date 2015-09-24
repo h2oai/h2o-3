@@ -8,7 +8,18 @@ import water.util.SBPrintStream;
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
-    public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
+    public float _learn_rate;
+    public float _col_sample_rate;
+
+    public GBMParameters() {
+      super();
+      _learn_rate = 0.1f;
+      _col_sample_rate = 1.0f;
+      _sample_rate = 1.0f;
+      _ntrees = 50;
+      _max_depth = 5;
+    }
+
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
