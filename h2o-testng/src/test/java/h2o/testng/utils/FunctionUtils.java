@@ -131,12 +131,12 @@ public class FunctionUtils {
 		// "GLEASON, -.5, .5"
 		String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
 		List<String> predictorNames = Arrays.asList(trainFrame._names);
-		// predictorNames.remove(glmParams._response_column); // remove the response column name. we only want
-		// predictors
 		for (String name : predictorNames) {
-			if (!name.equals(responseColumn)) {
-				if (trainFrame.vec(name).isEnum()) { // need coefficient names for each level of a categorical
-														// column
+			// ignore the response column and any constant column in bc.
+			// we only want predictors
+			if (!name.equals(responseColumn) && !trainFrame.vec(name).isConst()) {
+				// need coefficient names for each level of a categorical column
+				if (trainFrame.vec(name).isEnum()) {
 					for (String level : trainFrame.vec(name).domain()) {
 						betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
 					}
@@ -173,6 +173,8 @@ public class FunctionUtils {
 				if (drfFamily != null) {
 					System.out.println("Set _distribution: " + drfFamily);
 					modelParameter._distribution = drfFamily;
+					
+					isTunedValue = true;
 				}
 				break;
 
@@ -187,10 +189,14 @@ public class FunctionUtils {
 				if (glmFamily != null) {
 					System.out.println("Set _family: " + glmFamily);
 					((GLMParameters) modelParameter)._family = glmFamily;
+					
+					isTunedValue = true;
 				}
 				if (s != null) {
 					System.out.println("Set _solver: " + s);
 					((GLMParameters) modelParameter)._solver = s;
+					
+					isTunedValue = true;
 				}
 				break;
 
@@ -204,6 +210,8 @@ public class FunctionUtils {
 				if (gbmFamily != null) {
 					System.out.println("Set _distribution: " + gbmFamily);
 					modelParameter._distribution = gbmFamily;
+					
+					isTunedValue = true;
 				}
 				break;
 
@@ -212,7 +220,7 @@ public class FunctionUtils {
 		}
 
 		// set AutoSet params
-		isTunedValue = Param.setAutoSetParams(modelParameter, params, rawInput);
+		isTunedValue |= Param.setAutoSetParams(modelParameter, params, rawInput);
 
 		// It is got and saved to DB in MySQL class.
 		if (isTunedValue) {
@@ -347,16 +355,18 @@ public class FunctionUtils {
 			if (!isNegativeTestcase) {
 				System.out.println("Testcase passed.");
 
-				//write the result to log and database
+				// write the result to log and database
 				System.out.println("MSE: " + modelMetrics._MSE);
-				MySQL.save("MSE", String.valueOf(modelMetrics._MSE), rawInput);
+//				MySQL.save("MSE", String.valueOf(modelMetrics._MSE), rawInput);
 
 				if (modelMetrics.auc() != null) {
 					System.out.println("AUC: " + modelMetrics.auc()._auc);
-					MySQL.save("AUC", String.valueOf(modelMetrics.auc()._auc), rawInput);
+//					MySQL.save("AUC", String.valueOf(modelMetrics.auc()._auc), rawInput);
+					MySQL.save(String.valueOf(modelMetrics._MSE), String.valueOf(modelMetrics.auc()._auc), rawInput);
 				}
 				else {
 					System.out.println("AUC: NA");
+					MySQL.save(String.valueOf(modelMetrics._MSE), "", rawInput);
 				}
 			}
 		}

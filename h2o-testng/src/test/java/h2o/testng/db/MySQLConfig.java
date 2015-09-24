@@ -31,7 +31,7 @@ public class MySQLConfig {
 
 		File configFile = new File(dbConfigFilePath);
 		if (!configFile.exists()) {
-			System.out.println("Database config file not found");
+			System.out.println("Database config file not exists: " + dbConfigFilePath);
 			System.exit(-1);
 		}
 
@@ -41,12 +41,12 @@ public class MySQLConfig {
 			properties.load(new BufferedReader(new FileReader(configFile)));
 		}
 		catch (FileNotFoundException ex) {
-			System.out.println("Database config file not found");
+			System.out.println("Database config file not found: " + dbConfigFilePath);
 			ex.printStackTrace();
 			System.exit(-1);
 		}
 		catch (IOException ex) {
-			System.out.println("Can not read config file");
+			System.out.println("Can not read config file: " + dbConfigFilePath);
 			ex.printStackTrace();
 			System.exit(-1);
 		}

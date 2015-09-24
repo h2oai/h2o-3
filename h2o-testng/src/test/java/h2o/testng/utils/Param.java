@@ -68,6 +68,7 @@ public class Param {
 	public static boolean setAutoSetParams(Model.Parameters modelParameter, Param[] params,
 			HashMap<String, String> rawInput) {
 
+		System.out.println("set auto_set params");
 		boolean isSetValue = false;
 
 		// set AutoSet params
@@ -156,19 +157,19 @@ public class Param {
 		value = value.trim();
 		Object v = null;
 
+		// is this a non-blank value? if it's NOT, no need to set: use Default value one!
+		// TODO: if this is a required value then this input doesn't make sense!!!
+		if ("".equals(value)) {
+			// System.out.println("Value is empty, so ignore this");
+			return false;
+		}
+
 		// Only boolean has a special case: "" can be used as false.
 		// So it is parsed here before other datatypes will be parsed.
 		if ("boolean".equals(type)) {
 			v = parseBoolean(value);
 		}
 		else {
-			// is this a non-blank value? if it's NOT, no need to set: use Default value one!
-			// TODO: if this is a required value then this input doesn't make sense!!!
-			if ("".equals(value)) {
-				// System.out.println("Value is empty, so ignore this");
-				return false;
-			}
-
 			switch (type) {
 			// case "boolean": this case has already been checked previously
 
@@ -208,9 +209,14 @@ public class Param {
 			try {
 				Field field = clazz.getDeclaredField(name);
 				// field.setAccessible(true); // is this needed?!?
-				System.out.println("Set " + name + ": " + value);
-				// TODO: check old value is different with new value
-				field.set(params, v);
+
+				// Check old value is different with new value
+				Object oldValue = field.get(params);
+
+				if (!v.equals(oldValue)) {
+					System.out.println("Set " + name + ": " + v);
+					field.set(params, v);
+				}
 				return true;
 
 			}
