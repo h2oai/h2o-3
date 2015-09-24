@@ -1,13 +1,17 @@
 package hex.svd;
 
-import hex.*;
+import hex.DataInfo;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
+import hex.ModelMetricsUnsupervised;
 import water.DKV;
 import water.Key;
 import water.MRTask;
+import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.JCodeGen;
-import water.util.SB;
 import water.util.SBPrintStream;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
@@ -152,8 +156,8 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return preds;
   }
 
-  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContextSB) {
-    sb = super.toJavaInit(sb, fileContextSB);
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb = super.toJavaInit(sb, fileCtx);
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+_parms._nv+"; }").nl();
@@ -168,8 +172,10 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return sb;
   }
 
-  @Override protected void toJavaPredictBody(final SBPrintStream bodySb, final SB classCtxSb, final SB fileCtxSb, boolean verboseCode) {
-    SB model = new SB();
+  @Override protected void toJavaPredictBody(SBPrintStream bodySb,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     final int cats = _output._ncats;
     final int nums = _output._nnums;
@@ -189,6 +195,5 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     bodySb.i(2).p("preds[i] += (data[PERMUTE[j" + (cats > 0 ? "+" + cats : "") + "]]-NORMSUB[j])*NORMMUL[j]*EIGVECS[j" + (cats > 0 ? "+ nstart" : "") +"][i];").nl();
     bodySb.i(1).p("}").nl();
     bodySb.i().p("}").nl();
-    fileCtxSb.p(model);
   }
 }

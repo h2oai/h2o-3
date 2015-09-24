@@ -14,13 +14,11 @@ test.GLM.prostate <- function() {
   for(maxx in 4:9) {
     myX = 3:maxx
     myX = myX[which(myX != myY)]
-    # myX = paste(myX, collapse=",")
     
     Log.info(cat("B)H2O GLM (binomial) with parameters:\nX:", myX, "\nY:", myY, "\n"))
     prostate.glm.h2o = h2o.glm(y = myY, x = myX, training_frame = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
     print(prostate.glm.h2o)
-    
-    # prostate.glm = glm.fit(y = prostate.data[,myY], x = prostate.data[,myX], family = binomial)
+
     prostate.glm = glmnet(y = prostate.data[,myY], x = data.matrix(prostate.data[,myX]), family = "binomial", alpha = 0.5)
     checkGLMModel(prostate.glm.h2o, prostate.glm)
   }

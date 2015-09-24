@@ -1,4 +1,3 @@
-
 #----------------------------------------------------------------------
 # Purpose:  This test exercises building 15MRows2KCols
 #             
@@ -20,33 +19,25 @@ heading("BEGIN TEST")
 h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
-hdfs_data_file = "/datasets/15Mx2.2k.csv"
+hdfs_data_file = "/datasets/bigdata/7MRows_4400KCols.csv"
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
-data.hex <- h2o.importFile(url)
-
-response=1 #1:1000 imbalance
-predictors=c(3:ncol(data.hex))
+parse_time <- system.time(data.hex <- h2o.importFile(url))
+print("Time it took to parse")
+print(parse_time)
 
 # Start modeling   
-# GLM
-mdl.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family = "binomial")
-mdl.glm
+# DL 
+response="C1" #1:1000 imbalance
+predictors=c(4:ncol(data.hex))
 
-# Gradient Boosted Trees
-mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "bernoulli")
-mdl.gbm
-
-#Random Forest
-#mdl.rf = h2o.gbm(x=predictors, y=response, training_frame=data.hex, ntrees=10, max_depth=5)
-#mdl.rf
-
-#  DL
-#mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE)
-#mdl.dl
+dl_time <- system.time(mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5)))
+mdl.dl
+print("Time it took to build DL")
+print(dl_time)
 
 PASS_BANNER()
 

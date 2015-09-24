@@ -23,7 +23,7 @@ test <- function() {
   h2o.removeAll()
 
   Log.info("h2o.ls() should return an empty list")
-  expect_equal(length(h2o.ls()$key), 0)
+  expect_equal(nrow(h2o.ls()$key), 0)
 
   testEnd()
 }

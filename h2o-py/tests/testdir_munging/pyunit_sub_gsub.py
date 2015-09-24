@@ -6,7 +6,7 @@ def sub_gsub_check():
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    frame = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
 
     # single column (frame)
     frame["C5"] = frame["C5"].gsub("s", "z")

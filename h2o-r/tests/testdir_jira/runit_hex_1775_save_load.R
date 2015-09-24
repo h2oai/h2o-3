@@ -1,14 +1,5 @@
-##
-# Test: Saving and Loading GLM Model (HEX-1775)
-# Description: Build GLM model, save model in R, copy model and load in R
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
-#setwd("/Users/Amy/Documents/h2o/R/tests/testdir_jira")
-
 source('../h2o-runit.R')
-conn = h2o.init()
 
 test.hex_1775 <- function() {
   temp_dir = tempdir()
@@ -19,6 +10,7 @@ test.hex_1775 <- function() {
   # Test saving and loading of GLM model
   Log.info("Importing prostate.csv...")
   prostate.hex = h2o.uploadFile(normalizePath(locate('smalldata/logreg/prostate.csv')))
+  prostate.hex[,2] = as.factor(prostate.hex[,2])
   iris.hex = h2o.uploadFile(normalizePath(locate('smalldata/iris/iris.csv')))
 
   # Build GLM, RandomForest, GBM, Naive Bayes, and Deep Learning models
@@ -27,13 +19,13 @@ test.hex_1775 <- function() {
   Log.info("Build GBM model")
   prostate.gbm = h2o.gbm(y = 2, x = 3:9, training_frame = prostate.hex, nfolds = 5, distribution = "multinomial")
   Log.info("Build Speedy Random Forest Model")
-  iris.speedrf = h2o.randomForest(x = c(2,3,4), y = 5, data = iris.hex, ntree = 10, depth = 20, type = "fast")
+  iris.speedrf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10, depth = 20, type = "fast")
   Log.info("Build BigData Random Forest Model")
-  iris.rf = h2o.randomForest(x = c(2,3,4), y = 5, data = iris.hex, ntree = 10, depth = 20, nfolds = 5, type = "BigData")
+  iris.rf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10, depth = 20, nfolds = 5, type = "BigData")
   Log.info("Build Naive Bayes Model")
-  iris.nb = h2o.naiveBayes(y = 5, x = 1:4, data = iris.hex)
+  iris.nb = h2o.naiveBayes(y = 5, x = 1:4, training_frame = iris.hex)
   Log.info("Build Deep Learning model")
-  iris.dl = h2o.deeplearning(y = 5, x= 1:4, data = iris.hex)
+  iris.dl = h2o.deeplearning(y = 5, x= 1:4, training_frame = iris.hex)
 
   # Predict on models and save results in R
   Log.info("Scoring on models and saving predictions to R")
@@ -52,12 +44,12 @@ test.hex_1775 <- function() {
 
   # Save models to disk
   Log.info("Saving models to disk")
-  prostate.glm.path = h2o.saveModel(object = prostate.glm, dir = temp_subdir1, save_cv  = FALSE, force = TRUE)
-  prostate.gbm.path = h2o.saveModel(object = prostate.gbm, dir = temp_subdir1, save_cv  = TRUE, force = TRUE)
-  iris.speedrf.path = h2o.saveModel(object = iris.speedrf, dir = temp_subdir1, save_cv  = FALSE, force = TRUE)
-  iris.rf.path = h2o.saveModel(object = iris.rf, dir = temp_subdir1, save_cv  = TRUE, force = TRUE)
-  iris.nb.path = h2o.saveModel(object = iris.nb, dir = temp_subdir1, save_cv  = FALSE, force = TRUE)
-  iris.dl.path = h2o.saveModel(object = iris.dl, dir = temp_subdir1, save_cv  = FALSE, force = TRUE)
+  prostate.glm.path = h2o.saveModel(object = prostate.glm, path = temp_subdir1, force = TRUE)
+  prostate.gbm.path = h2o.saveModel(object = prostate.gbm, path = temp_subdir1, force = TRUE)
+  iris.speedrf.path = h2o.saveModel(object = iris.speedrf, path = temp_subdir1, force = TRUE)
+  iris.rf.path = h2o.saveModel(object = iris.rf, path = temp_subdir1, force = TRUE)
+  iris.nb.path = h2o.saveModel(object = iris.nb, path = temp_subdir1, force = TRUE)
+  iris.dl.path = h2o.saveModel(object = iris.dl, path = temp_subdir1, force = TRUE)
 
   # All keys removed to test that cross validation models are actually being loaded
   h2o.removeAll()

@@ -127,6 +127,8 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
     if( _errors.size() < 10 )
       _errors.add("Error at line: " + _nlines + ", reason: " + err);
   }
+  @Override public void setIsAllASCII(int colIdx, boolean b) {}
+
   String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
 
   public byte[] guessTypes() {

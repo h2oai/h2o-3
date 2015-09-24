@@ -4,10 +4,10 @@ source('../../h2o-runit.R')
 check.test_KDD_trees <- function(){
     Log.info("Test to verify that identical models produce idential MSEs")
 
-    cup98LRN_z = h2o.uploadFile(conn = conn, path = locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
+    cup98LRN_z = h2o.uploadFile(path = locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
     cup98LRN_z$DOB <- as.factor(cup98LRN_z$DOB)
     
-    cup98VAL_z = h2o.uploadFile(conn = conn, path = locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
+    cup98VAL_z = h2o.uploadFile(path = locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
     cup98VAL_z$DOB <- as.factor(cup98VAL_z$DOB)
     
     # keep only minimum number of columns
