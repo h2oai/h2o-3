@@ -77,10 +77,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
             if (fBefore.equals(fAfter)) {
               try {
                 if (!PojoUtils.equals(this, fAfter, checkpointParameters, checkpointParameters.getClass().getField(fAfter.getName()))) {
-                  throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field cannot be modified if checkpoint is specified!");
+                  throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " cannot be modified if checkpoint is specified!");
                 }
               } catch (NoSuchFieldException e) {
-                throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field is not supported by checkpoint!");
+                throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " is not supported by checkpoint!");
               }
             }
           }
