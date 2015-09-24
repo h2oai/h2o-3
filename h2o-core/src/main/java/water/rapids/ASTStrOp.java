@@ -105,7 +105,7 @@ class ASTCountMatches extends ASTPrim {
       throw new IllegalArgumentException("countmatches only takes a single column of data. " +
                                          "Got " + fr.numCols() + " columns.");
     Vec vec = fr.anyVec();  assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("replacefirst requires a string column."
+    if ( !vec.isString() ) throw new IllegalArgumentException("countmatches requires a string column."
         +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
     else {
 
