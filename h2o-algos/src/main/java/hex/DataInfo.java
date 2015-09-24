@@ -207,7 +207,9 @@ public class DataInfo extends Keyed {
   }
 
   public double[] denormalizeBeta(double [] beta) {
-    assert beta.length == fullN()+1;
+    if(beta.length != fullN()+1)
+      System.out.println("haha");
+    assert beta.length == fullN()+1:"beta len = " + beta.length;
     beta = MemoryManager.arrayCopyOf(beta,beta.length);
     if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
       double norm = 0.0;        // Reverse any normalization on the intercept

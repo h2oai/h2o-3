@@ -418,18 +418,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      * @param devTrain
      * @param devTest
      */
-    public Submodel(double lambda , double [][] beta, int iteration, double devTrain, double devTest){
+    public Submodel(double lambda , double [][] beta, int [] idxs, int iteration, double devTrain, double devTest){
       this.lambda_value = lambda;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
       this.devianceTest = devTest;
-      this.idxs = null;
       this.beta = null;
       // grab the indeces of non-zero coefficients
-      this.betaMultinomial = new double[beta.length][];
-      for(int i =0; i < beta.length; ++i)
-        this.betaMultinomial[i] = beta[i].clone();
+      this.betaMultinomial = beta;
+      this.idxs = idxs;
+      assert idxs == null || idxs.length == beta[0].length-1:"idxs = " + Arrays.toString(idxs) + ", beta = " + Arrays.toString(betaMultinomial[0]);
     }
+
+
     public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
       this.lambda_value = lambda;
       this.iteration = iteration;
@@ -550,11 +551,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public double[][] getNormBetaMultinomial() {
+      return getNormBetaMultinomial(_best_lambda_idx);
+    }
+
+    public double[][] getNormBetaMultinomial(int idx) {
       double [][] res = new double[nclasses()][];
-      Submodel sm = _submodels[_best_lambda_idx];
-      for(int i = 0; i < res.length; ++i)
-        if(sm.idxs == null) res[i] = sm.betaMultinomial[i].clone();
-        else throw H2O.unimpl();
+      Submodel sm = _submodels[idx];
+      for(int i = 0; i < res.length; ++i) {
+        if (sm.idxs == null) res[i] = sm.betaMultinomial[i].clone();
+        else {
+          res[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+          int j = 0;
+          for (int id : sm.idxs)
+            res[i][id] = sm.betaMultinomial[i][j++];
+          res[i][_dinfo.fullN()] = sm.betaMultinomial[i][sm.betaMultinomial[i].length-1];
+        }
+      }
       return res;
     }
 
@@ -569,10 +581,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void setSubmodelIdx(int l){
       _best_lambda_idx = l;
       if(_multinomial) {
-        if(_global_beta_multinomial == null)
-          _global_beta_multinomial = new double[nclasses()][];
+        _global_beta_multinomial = getNormBetaMultinomial(l);
         for(int i = 0; i < _global_beta_multinomial.length; ++i)
-          _global_beta_multinomial[i] = _dinfo.denormalizeBeta(_submodels[l].betaMultinomial[i]);
+          _global_beta_multinomial[i] = _dinfo.denormalizeBeta(_global_beta_multinomial[i]);
       } else {
         if (_global_beta == null)
           _global_beta = MemoryManager.malloc8d(_coefficient_names.length);

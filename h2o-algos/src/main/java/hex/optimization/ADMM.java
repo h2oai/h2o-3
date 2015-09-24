@@ -227,9 +227,9 @@ public class ADMM {
   public static void subgrad(final double lambda, final double [] beta, final double [] grad){
     if(beta == null)return;
     for(int i = 0; i < grad.length-1; ++i) {// add l2 reg. term to the gradient
-      if(beta[i] < 0) grad[i] = shrinkage(grad[i]-lambda,lambda*1e-3);
-      else if(beta[i] > 0) grad[i] = shrinkage(grad[i] + lambda,lambda*1e-3);
-      else grad[i] = shrinkage(grad[i], 1.001*lambda);
+      if(beta[i] < 0) grad[i] = shrinkage(grad[i]-lambda,lambda*1e-4);
+      else if(beta[i] > 0) grad[i] = shrinkage(grad[i] + lambda,lambda*1e-4);
+      else grad[i] = shrinkage(grad[i], lambda);
     }
   }
 }
