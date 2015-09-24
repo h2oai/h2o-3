@@ -4,9 +4,8 @@ import h2o, tests
 
 def trim_check():
     # Connect to a pre-existing cluster
-    
-
-    frame = h2o.import_file(path=h2o.locate("smalldata/junit/cars_trim.csv"))
+    # testing on a string column
+    frame = h2o.import_file(path=h2o.locate("smalldata/junit/cars_trim.csv"), col_types=["string","numeric","numeric","numeric","numeric","numeric","numeric","numeric"])
 
     # single column (frame)
     trimmed_frame = frame["name"].trim()

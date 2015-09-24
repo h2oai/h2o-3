@@ -108,7 +108,6 @@ gbm_logreg_prostate.flow
 gbm_test_alphabet_cattest.flow
 gbm_test_bigcat_5000x2.flow
 glm_flow_examples_arrhythmia.flow
-dl_mllib_bench_bigcross_centers_5.flow
 dl_mllib_bench_bigcross_centers_10.flow
 dl_mllib_bench_bigcross_centers_15.flow
 dl_mllib_bench_bigcross_centers_20.flow
@@ -183,7 +182,6 @@ dl_junit_iris_gz.flow
 dl_junit_iris_zip.flow
 dl_junit_iris.flow
 dl_junit_two_spiral.flow
-dl_junit_ven-11.flow
 dl_junit_weather.flow
 dl_junit_weights_all_ones_twos.flow
 dl_junit_weights_all_ones.flow
@@ -213,7 +211,6 @@ gbm_junit_bestbuy_train_10k.flow
 gbm_junit_cars_20mpg.flow
 gbm_junit_cars.flow
 gbm_junit_two_spiral.flow
-gbm_junit_ven-11.flow
 gbm_junit_weather.flow
 gbm_junit_weights_all_ones_twos.flow
 gbm_junit_weights.flow

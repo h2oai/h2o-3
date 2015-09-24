@@ -15,14 +15,18 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Gradient Boosted Machines with H2O}}
+\textsc{\Large\bf{Gradient Boosted Models with H2O's R Package}}
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
 \\
 \bigskip
+\small
+\textsc{Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} Michal Malohlava}
 
-\textsc{\small{Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} Michal Malohlava \\ \hspace{10pt} Viraj Parmar \hspace{10pt} Hank Roark }}
+\textsc{Viraj Parmar \hspace{10pt} Hank Roark}
+
+\normalsize
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -30,16 +34,17 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-August 2015: Third Edition 
-\\%add front page image here? (wavy lines)
+September 2015: Third Edition 
+\\ 
 \bigskip
 \end{center}
 
-\null\vfill
-\begin{figure}[!b]
-\noindent\makebox[\textwidth]{%
-\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
-\end{figure}
+% commenting out lines image due to print issues, but leaving in for later
+%\null\vfill
+%\begin{figure}[!b]
+%\noindent\makebox[\textwidth]{%
+%\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+%\end{figure}
 
 \newpage
 \restoregeometry
@@ -50,7 +55,7 @@ August 2015: Third Edition
 
 {\raggedright 
 
-Gradient Boosted Machines with H2O\\
+Gradient Boosted Models with H2O's R Package\\
 
   by Cliff Click, Jessica Lanford, \\
 Michal Malohlava, Viraj Parmar, \\
@@ -63,7 +68,7 @@ Mountain View, CA 94043\\
 \textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-August 2015: Third Edition
+September 2015: Third Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -91,7 +96,7 @@ Printed in the United States of America.
 \newpage
 
 \section{Introduction}
-This document describes how to use Gradient Boosted Machines (GBM) with H2O.  
+This document describes how to use Gradient Boosted Models (GBM) with H2O.  
 Examples are written in R and Python.
 Topics include: 
 \begin{itemize}
@@ -126,7 +131,7 @@ The document source itself can be found here:\\
 
 To cite this booklet, use the following: 
 
-Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \textit{Gradient Boosted Machines with H2O}. \url{http://h2o.ai/resources/}. 
+Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \textit{Gradient Boosted Models with H2O}. \url{http://h2o.ai/resources/}. 
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -155,7 +160,7 @@ H2O's GBM functionalities include:
 \end{itemize}
 
 
-Gradient boosted machines sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
+Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
 
 
 \subsection{Theory and Framework}

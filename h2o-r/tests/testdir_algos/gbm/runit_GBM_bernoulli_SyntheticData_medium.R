@@ -51,38 +51,41 @@ test.GBM.bernoulli.SyntheticData <- function() {
     str(alldata)
 
     myX <- c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10")
-
     myY <- "y"
+    test[,myY] <- as.factor(test[,myY])
+    alldata[,myY] <- as.factor(alldata[,myY])
 
     #  Run H2O-GBM grid job
     print("H2O GBM grid search")
-    system.time(tru.gbm <- h2o.gbm(x = myX, y = myY, training_frame = alldata, distribution = "bernoulli", ntrees = c(150), min_rows = 1, max_depth = c(1,2,3,4), learn_rate = c(1,.1,.01), nbins = c(20)) )
+    grid_space <- list()
+    grid_space$ntrees <- c(150)
+    grid_space$min_rows <- c(1)
+    grid_space$max_depth <- c(1,2,3,4)
+    grid_space$learn_rate <- c(1,.1,.01)
+    grid_space$nbins <- c(20)
+    grid_space$distribution <- "bernoulli"
+    system.time(tru.gbm <- h2o.grid("gbm", x = myX, y = myY, training_frame = alldata, hyper_params = grid_space))
 
-    num_models <- length(tru.gbm@sumtable)
+    num_models <- length(tru.gbm@model_ids)
     print(paste("Number of gbm models created:", num_models,sep ='') )
     expect_equal(num_models,12)
     print("GBM models summary")
     print(tru.gbm)
-    
+
+    gg_models <- lapply(tru.gbm@model_ids, function(mid) { model = h2o.getModel(mid) })
     for(i in 1:num_models){
-        model <- tru.gbm@model[[i]]
-        gg<-gbm(y~., data=all.data2, distribution="bernoulli", n.trees=tru.gbm@sumtable[[i]]$n.trees,
-                      interaction.depth=tru.gbm@sumtable[[i]]$interaction.depth,n.minobsinnode=tru.gbm@sumtable[[i]]$n.minobsinnode, 
-                      shrinkage=tru.gbm@sumtable[[i]]$shrinkage,bag.fraction=1)                # R gbm model             
-        mm_y <- predict.gbm(gg,newdata=test.data2,n.trees=tru.gbm@sumtable[[i]]$n.trees,type='response')  # R Predict
+        model <- gg_models[[i]]
+        gg<-gbm(y~., data=all.data2, distribution="bernoulli", n.trees=model@parameters$ntrees,
+                      interaction.depth=model@parameters$max_depth,n.minobsinnode=model@parameters$min_rows,
+                      shrinkage=model@parameters$learn_rate,bag.fraction=1)                # R gbm model
+        mm_y <- predict.gbm(gg,newdata=test.data2,n.trees=model@parameters$ntrees,type='response')  # R Predict
         R_auc <- round(gbm.roc.area(test.data2$y,mm_y), digits=3)
         pred <- predict(model,test)                                                                #H2O Predict
-        H2O_perf <- h2o.performance(pred$'1',test$y,measure="F1")
-        H2O_auc <- round(H2O_perf@model$AUC, digits=3)
-        print(paste ( tru.gbm@sumtable[[i]]$model_key,
-                " trees:", tru.gbm@sumtable[[i]]$ntrees,
-                " depth:",tru.gbm@sumtable[[i]]$max_depth,
-                " shrinkage:",tru.gbm@sumtable[[i]]$learn_rate,
-                " min row: ",tru.gbm@sumtable[[i]]$min_rows,
-                " bins:",tru.gbm@sumtable[[i]]$nbins,
-                " H2O_auc:", H2O_auc, 
-                " R_auc:", R_auc, sep=''),quote=F)
-                expect_that(H2O_auc >= (R_auc-.01), is_true())                     # Compare H2O and R auc's; here tolerance is 0.01
+        H2O_perf <- h2o.performance(model,test)
+        H2O_auc <- round(h2o.auc(H2O_perf), digits=3)
+        print(paste ( " H2O_auc:", H2O_auc,
+                      " R_auc:", R_auc, sep=''),quote=F)
+                      expect_that(H2O_auc >= (R_auc-.01), is_true()) # Compare H2O and R auc's; here tolerance is 0.01
     }
     testEnd()
 }

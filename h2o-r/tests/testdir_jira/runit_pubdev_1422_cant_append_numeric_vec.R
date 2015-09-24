@@ -20,9 +20,9 @@ test.cant.assign.to.new.col <- function() {
 
   Log.info("Creating an R vec of randomly uniformly distributed values between 0 and 10 for cars..")
   weights.train <- runif(nrow(cars.hex), min = 0, max = 10)
-  print(weights.cars)
+  print(weights.train)
   Log.info("Appending to cars..")
-  cars.hex$weights <- as.h2o(weights.cars)
+  cars.hex$weights <- as.h2o(weights.train)
 
   testEnd()
 }

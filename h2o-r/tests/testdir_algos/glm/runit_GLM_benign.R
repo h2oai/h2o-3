@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-glm2Benign <- function() { 
-  # bhexFV <- h2o.importFile("./smalldata/logreg/benign.csv", destination_frame="benignFV.hex")
+glm2Benign <- function() {
+
   bhexFV <- h2o.uploadFile(locate("smalldata/logreg/benign.csv"), destination_frame="benignFV.hex")
   maxX <- 11
   Y <- 4
@@ -17,15 +17,13 @@ glm2Benign <- function() {
   Log.info("===================Columns passed in: ================")
   Log.info(paste("index ", X ," ", names(bhexFV)[X], "\n", sep=""))
   Log.info("======================================================")
-  preds <- mFV@model$coefficients_table$Column
-  preds <- preds[1:length(preds)-1]
+  preds <- mFV@model$coefficients_table$names
+  preds <- preds[2:length(preds)]
   Log.info("===================Columns Used in Model: =========================")
   Log.info(paste(preds, "\n", sep=""))
   Log.info("================================================================")
-  
-  #Check coeffs here
-  #tryCatch(expect_that(mFV@model$x, equals(colnames(bhexFV)[X])), error = function(e) Log.warn("Not getting colnames back, just indices"))
-   expect_that(preds, equals(colnames(bhexFV)[X]))
+
+  expect_that(preds, equals(colnames(bhexFV)[X]))
   testEnd()
 }
 

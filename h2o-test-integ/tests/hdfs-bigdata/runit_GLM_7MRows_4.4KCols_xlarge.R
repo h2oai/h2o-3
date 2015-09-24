@@ -17,36 +17,38 @@ library(RCurl)
 library(h2o)
 
 heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
-hdfs_data_file = "/datasets/15Mx2.2k.csv"
+hdfs_data_file = "/datasets/bigdata/7MRows_4400KCols.csv"
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
-data.hex <- h2o.importFile(url)
-
-response=1 #1:1000 imbalance
-predictors=c(3:ncol(data.hex))
+parse_time <- system.time(data.hex <- h2o.importFile(conn, url))
+print("Time it took to parse")
+print(parse_time)
 
 # Start modeling   
-# GLM
-mdl.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family = "binomial")
+# GLM gaussian
+response="C1" #1:1000 imbalance
+predictors=c(3:ncol(data.hex))
+
+glm_time <- system.time(mdl.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family="gaussian", solver = "L_BFGS"))
 mdl.glm
+print("Time it took to build GLM")
+print(glm_time)
 
-# Gradient Boosted Trees
-mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "bernoulli")
-mdl.gbm
+# GLM binomial
+response="C2" #1:1000 imbalance
+predictors=c(4:ncol(data.hex))
 
-#Random Forest
-#mdl.rf = h2o.gbm(x=predictors, y=response, training_frame=data.hex, ntrees=10, max_depth=5)
-#mdl.rf
+glm2_time <- system.time(mdl2.glm <- h2o.glm(x=predictors, y=response, training_frame=data.hex, family="binomial", solver = "L_BFGS"))
+mdl2.glm
+print("Time it took to build GLM")
+print(glm2_time)
 
-#  DL
-#mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE)
-#mdl.dl
 
 PASS_BANNER()
 
