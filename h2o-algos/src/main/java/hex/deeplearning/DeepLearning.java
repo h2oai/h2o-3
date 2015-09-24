@@ -213,9 +213,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw new IllegalArgumentException("Model type must be the same as for the checkpointed model.");
 
         // check the user-given arguments for consistency
-        DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
+        DeepLearningParameters oldP = previous._parms; //sanitized parameters for checkpointed model
         DeepLearningParameters newP = _parms; //user-given parameters for restart
-        DeepLearningParameters.Sanity.checkpoint(oldP, newP);
+
+        DeepLearningParameters oldP2 = (DeepLearningParameters)oldP.clone();
+        DeepLearningParameters newP2 = (DeepLearningParameters)newP.clone();
+        DeepLearningParameters.Sanity.modifyParms(oldP, oldP2, nclasses()); //sanitize the user-given parameters
+        DeepLearningParameters.Sanity.modifyParms(newP, newP2, nclasses()); //sanitize the user-given parameters
+        DeepLearningParameters.Sanity.checkpoint(oldP2, newP2);
 
         try {
           final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
