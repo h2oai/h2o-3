@@ -80,7 +80,7 @@
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
-  .eval.frame(.newExpr("ls"))
+  as.data.frame(.eval.frame(.newExpr("ls")))
 }
 
 #'
