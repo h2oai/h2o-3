@@ -2,11 +2,27 @@
 
 ##H2O
 
+###Slater (3.2.0.5) - 09/24/15
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+* [PUBDEV-2133](https://0xdata.atlassian.net/browse/PUBDEV-2133): Enum test/train mapping is faster [(GitHub commit)](https://github.com/h2oai/h2o-3/commit/fe94591e6ef84e1f2b051d18beece2b10006de7a)
+
+#####R
+
+- All R users should review this [document](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/RChanges.md), which outlines some of the recent changes to H2O's R wrapper.
+
+- [PUBDEV-2030](https://0xdata.atlassian.net/browse/PUBDEV-2030): Improved POJO support to DRF
+
+---
 
 ###Slater (3.2.0.3) - 09/21/15
 
 ####New Features
-The following changes represent features that have been added since the previous release:
 
 #####R
 
@@ -14,7 +30,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -34,8 +49,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes 
-
-The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 
