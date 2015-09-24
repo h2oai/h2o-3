@@ -6,11 +6,13 @@ import hex.ModelMetricsClustering;
 import water.DKV;
 import water.Key;
 import water.MRTask;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
-import water.util.SB;
 import water.util.SBPrintStream;
 
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
@@ -125,19 +127,36 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   // Override in subclasses to provide some top-level model-specific goodness
-  @Override protected void toJavaPredictBody(SBPrintStream bodySb, SB classCtxSb, SB fileCtxSb, boolean verboseCode) {
-    // fileCtxSb.ip("").nl(); // at file level
-    // Two class statics to support prediction
+  @Override protected void toJavaPredictBody(SBPrintStream body,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     if(_parms._standardize) {
-      JCodeGen.toStaticVar(classCtxSb,"MEANS",_output._normSub,"Column means of training data");
-      JCodeGen.toStaticVar(classCtxSb,"MULTS",_output._normMul,"Reciprocal of column standard deviations of training data");
-      JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_std_raw, "Normalized cluster centers[K][features]");
+      classCtx.add(new CodeGenerator() {
+        @Override
+        public void generate(JCodeSB out) {
+          JCodeGen.toStaticVar(out, "MEANS", _output._normSub,
+                               "Column means of training data");
+          JCodeGen.toStaticVar(out, "MULTS", _output._normMul,
+                               "Reciprocal of column standard deviations of training data");
+          JCodeGen.toStaticVar(out, "CENTERS", _output._centers_std_raw,
+                               "Normalized cluster centers[K][features]");
+        }
+      });
+
       // Predict function body: main work function is a utility in GenModel class.
-      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,MEANS,MULTS);").nl(); // at function level
+      body.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,MEANS,MULTS);").nl(); // at function level
     } else {
-      JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_raw, "Denormalized cluster centers[K][features]");
+      classCtx.add(new CodeGenerator() {
+        @Override
+        public void generate(JCodeSB out) {
+          JCodeGen.toStaticVar(out, "CENTERS", _output._centers_raw,
+                               "Denormalized cluster centers[K][features]");
+        }
+      });
+
       // Predict function body: main work function is a utility in GenModel class.
-      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
+      body.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
     }
   }
 
