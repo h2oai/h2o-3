@@ -128,13 +128,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
+    if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
+      error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
 
   // ----------------------
   private class GBMDriver extends Driver {
 
     @Override protected void buildModel() {
-      _mtry = (_parms._mtries==-1) ? _ncols : _parms._mtries;
+      _mtry = Math.max(1, (int)(_parms._col_sample_rate * _ncols));
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
       // Append number of trees participating in on-the-fly scoring
       _train.add("OUT_BAG_TREES", _response.makeZero());

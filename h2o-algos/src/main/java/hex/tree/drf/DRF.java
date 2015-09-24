@@ -61,9 +61,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // Initialize local variables
-    if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
-      throw new IllegalArgumentException("Sample rate should be interval [0,1] but it is " + _parms._sample_rate);
-    if( _parms._mtries < 1 && _parms._mtries != -1 ) error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
+    if( _parms._mtries < 1 && _parms._mtries != -1 )
+      error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
@@ -133,17 +132,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
 
     @Override protected void buildModel() {
-      // Start with class distribution as null-model
-      // FIXME: Test/Investigate this
-//      if( _nclass >= 2 ) {
-//        for( int c=0; c<_nclass; c++ ) {
-//          final double init = _model._output._priorClassDist[c];
-//          new MRTask() {
-//            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-//          }.doAll(vec_tree(_train,c));
-//        }
-//      }
-
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
               ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
       // How many trees was in already in provided checkpointed model

@@ -6,10 +6,14 @@ import water.util.MathUtils;
 import water.util.SB;
 import water.util.SBPrintStream;
 
+import java.util.Arrays;
+
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     public boolean _binomial_double_trees = false;
+    public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
