@@ -2,7 +2,7 @@
 
 This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html) for more information, including packages. 
 
- >**Note**: If the source file is larger than 1 GB, a Java C error displays. 
+ >**Note**: POJOs are not supported for source files larger than 1G. For more information, refer to the [FAQ](#POJO_Err) below. 
 
 ##What is a POJO? 
 
@@ -183,3 +183,29 @@ The PredictCsv class is used by the H2O test harness to make predictions on new 
 
   Yes, but this way of making predictions is separate from the POJO.
 For more information about in-H2O predictions (as opposed to POJO predictions), see the documentation for the H2O REST API endpoint /3/Predictions.
+
+<a name="POJO_Err"></a>
+- **Why did I receive the following error when trying to compile the POJO?**
+
+```
+Michals-MBP:b michal$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m drf_b9b9d3be_cf5a_464a_b518_90701549c12a.java
+An exception has occurred in the compiler (1.7.0_60). Please file a bug at the Java Developer Connection (http://java.sun.com/webapps/bugreport)  after checking the Bug Parade for duplicates. Include your program and the following diagnostic in your report.  Thank you.
+java.lang.IllegalArgumentException
+    at java.nio.ByteBuffer.allocate(ByteBuffer.java:330)
+    at com.sun.tools.javac.util.BaseFileManager$ByteBufferCache.get(BaseFileManager.java:308)
+    at com.sun.tools.javac.util.BaseFileManager.makeByteBuffer(BaseFileManager.java:280)
+    at com.sun.tools.javac.file.RegularFileObject.getCharContent(RegularFileObject.java:112)
+    at com.sun.tools.javac.file.RegularFileObject.getCharContent(RegularFileObject.java:52)
+    at com.sun.tools.javac.main.JavaCompiler.readSource(JavaCompiler.java:571)
+    at com.sun.tools.javac.main.JavaCompiler.parse(JavaCompiler.java:632)
+    at com.sun.tools.javac.main.JavaCompiler.parseFiles(JavaCompiler.java:909)
+    at com.sun.tools.javac.main.JavaCompiler.compile(JavaCompiler.java:824)
+    at com.sun.tools.javac.main.Main.compile(Main.java:439)
+    at com.sun.tools.javac.main.Main.compile(Main.java:353)
+    at com.sun.tools.javac.main.Main.compile(Main.java:342)
+    at com.sun.tools.javac.main.Main.compile(Main.java:333)
+    at com.sun.tools.javac.Main.compile(Main.java:76)
+    at com.sun.tools.javac.Main.main(Main.java:61)
+```
+
+This error is generated when the source file is larger than 1G. 
