@@ -70,7 +70,8 @@ check.demo_interact <- function() {
 
   h2o.rm(interaction.matrix)
 
-  lapply(as.vector(h2o.ls()[as.h2o(grepl("^l", as.vector(h2o.ls()[,1]))),]), function(x) h2o.rm(x))
+  keys <- as.vector(h2o.ls())
+  sapply(keys[grep("^l", keys)], function(x) h2o.rm(x))
 
   print(augmented_data_set)
 

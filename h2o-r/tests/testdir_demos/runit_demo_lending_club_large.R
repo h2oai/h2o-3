@@ -34,9 +34,9 @@ plot_scoring <- function(model) {
   }
 }
 
-clean_up <- function(client) {
+clean_up <- function() {
   keys <- as.vector(h2o.ls())
-  sapply(grep("subset|nary|group|rapids|file", keys), function (x) h2o.rm(as.character(x)))
+  sapply(keys[grep("subset|nary|group|rapids|file", keys)], function (x) h2o.rm(x))
 }
 
 
