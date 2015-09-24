@@ -1396,6 +1396,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Ignore
   @Test
   public void testStochasticGBM() {
     Frame tfr = null, vfr = null;
