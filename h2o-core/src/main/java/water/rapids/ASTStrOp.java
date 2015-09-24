@@ -97,33 +97,34 @@ class ASTCountMatches extends ASTPrim {
   public String str() { return "countmatches"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String[] pattern;
+    final String[] pattern;
     if( asts[2] instanceof ASTStrList ) pattern = ((ASTStrList)asts[2])._strs;
     else                                pattern = new String[]{asts[2].exec(env).getStr()};
 
-    if (fr.numCols() != 1) throw new IllegalArgumentException("countmatches requires a single column.");
-    final int[] matchCounts = countMatches(fr.anyVec().domain(),pattern);
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("countmatches only takes a single column of data. " +
+                                         "Got " + fr.numCols() + " columns.");
+    Vec vec = fr.anyVec();  assert vec != null;
+    if ( !vec.isString() ) throw new IllegalArgumentException("replacefirst requires a string column."
+        +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
+    else {
 
-    Frame fr2 = new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
-          if( !c.isNA(i) ) {
-            int idx = (int) c.at8(i);
-            ncs[0].addNum(matchCounts[idx]);
-          } else ncs[i].addNA();
+      Frame fr2 = new MRTask() {
+        @Override
+        public void map(Chunk chk, NewChunk newChk) {
+          ValueString vs = new ValueString();
+          for (int i = 0; i < chk._len; ++i) {
+            if (!chk.isNA(i)) {
+              int cnt = 0;
+              for (String aPattern : pattern)
+                cnt += StringUtils.countMatches(chk.atStr(vs, i).toString(), aPattern);
+              newChk.addNum(cnt, 0);
+            } else newChk.addNA();
+          }
         }
-      }
-    }.doAll(1, fr).outputFrame();
-    return new ValFrame(fr2);
-  }
-
-  int[] countMatches(String[] domain, String[] pattern) {
-    int[] res = new int[domain.length];
-    for (int i=0; i < domain.length; i++)
-      for (String aPattern : pattern)
-        res[i] += StringUtils.countMatches(domain[i], aPattern);
-    return res;
+      }.doAll(1, vec).outputFrame();
+      return new ValFrame(fr2);
+    }
   }
 }
 
