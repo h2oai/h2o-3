@@ -1,40 +1,49 @@
 package hex.glm;
 
-import hex.DataInfo;
-import hex.DataInfo.TransformType;
-import hex.ModelMetrics;
-import hex.ModelMetricsBinomialGLM;
-import hex.ModelMetricsRegressionGLM;
-import hex.glm.GLMModel.GLMParameters.Link;
-import hex.glm.GLMModel.GLMParameters.Solver;
-import hex.glm.GLMTask.GLMIterationTask;
-import hex.glm.GLMTask.GLMGradientTask;
-import hex.glm.GLMTask.GLMLineSearchTask;
-import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.concurrent.ExecutionException;
+
+import hex.DataInfo;
+import hex.DataInfo.TransformType;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomialGLM;
+import hex.ModelMetricsRegressionGLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import water.*;
+import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.glm.GLMTask.GLMGradientTask;
+import hex.glm.GLMTask.GLMIterationTask;
+import hex.glm.GLMTask.GLMLineSearchTask;
+import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
+import water.DKV;
+import water.H2O;
 import water.H2O.H2OCountedCompleter;
+import water.Key;
+import water.MemoryManager;
+import water.Scope;
+import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.FVecTest;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
-import water.util.MathUtils;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class GLMTest  extends TestUtil {
+public class GLMTest extends TestUtil {
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);

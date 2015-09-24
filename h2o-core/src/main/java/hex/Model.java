@@ -22,6 +22,9 @@ import water.MRTask;
 import water.MemoryManager;
 import water.Weaver;
 import water.api.StreamWriter;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.JCodeSB;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.EnumWrappedVec;
@@ -33,7 +36,6 @@ import water.util.JCodeGen;
 import water.util.LineLimitOutputStreamWrapper;
 import water.util.Log;
 import water.util.MathUtils;
-import water.util.SB;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
@@ -908,7 +910,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   protected SBPrintStream toJava(SBPrintStream sb, boolean isGeneratingPreview, boolean verboseCode) {
-    SB fileContext = new SB();  // preserve file context
+    CodeGeneratorPipeline fileCtx = new CodeGeneratorPipeline();  // preserve file context
     String modelName = JCodeGen.toJavaId(_key.toString());
     // HEADER
     sb.p("/*").nl();
@@ -952,48 +954,59 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("import hex.genmodel.GenModel;").nl();
     sb.nl();
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
-    sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory."+_output.getModelCategory()+"; }").nl();
-    toJavaInit(sb, fileContext).nl();
-    toJavaNAMES(sb, fileContext);
+    sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory." + _output
+        .getModelCategory() + "; }").nl();
+    toJavaInit(sb, fileCtx).nl();
+    toJavaNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);
-    toJavaDOMAINS(sb, fileContext);
+    toJavaDOMAINS(sb, fileCtx);
     toJavaPROB(sb);
     toJavaSuper(modelName, sb); //
     sb.p("  public String getUUID() { return Long.toString("+checksum()+"L); }").nl();
-    toJavaPredict(sb, fileContext, verboseCode);
+    toJavaPredict(sb, fileCtx, verboseCode);
     sb.p("}").nl().di(1);
-    sb.p(fileContext).nl(); // Append file
+    fileCtx.generate(sb); // Append file context
+    sb.nl();
     return sb;
   }
   /** Generate implementation for super class. */
   protected SBPrintStream toJavaSuper(String modelName, SBPrintStream sb) {
     return sb.nl().ip("public " + modelName + "() { super(NAMES,DOMAINS); }").nl();
   }
-  private SBPrintStream toJavaNAMES(SBPrintStream sb, SB fileContextSB) {
-    String modelName = JCodeGen.toJavaId(_key.toString());
-    String namesHolderClassName = "NamesHolder_"+modelName;
+  private SBPrintStream toJavaNAMES(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    final String modelName = JCodeGen.toJavaId(_key.toString());
+    final String namesHolderClassName = "NamesHolder_"+modelName;
     sb.i().p("// ").p("Names of columns used by model.").nl();
     sb.i().p("public static final String[] NAMES = "+namesHolderClassName+".VALUES;").nl();
     // Generate class which fills the names into array
-    fileContextSB.i().p("// The class representing training column names").nl();
-    JCodeGen.toClassWithArray(fileContextSB, null, namesHolderClassName, Arrays.copyOf(_output._names, _output.nfeatures()));
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        out.i().p("// The class representing training column names").nl();
+        JCodeGen.toClassWithArray(out, null, namesHolderClassName,
+                                  Arrays.copyOf(_output._names, _output.nfeatures()));
+      }
+    });
+
     return sb;
   }
+
   protected SBPrintStream toJavaNCLASSES(SBPrintStream sb ) {
     return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES",
-                                                                       _output.nclasses(),
-                                                                       "Number of output classes included in training data response column.")
+                                                         _output.nclasses(),
+                                                         "Number of output classes included in training data response column.")
                                   : sb;
   }
 
-  private SBPrintStream toJavaDOMAINS(SBPrintStream sb, SB fileContext) {
+  private SBPrintStream toJavaDOMAINS(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     String modelName = JCodeGen.toJavaId(_key.toString());
     sb.nl();
     sb.ip("// Column domains. The last array contains domain of response column.").nl();
     sb.ip("public static final String[][] DOMAINS = new String[][] {").nl();
     for (int i=0; i<_output._domains.length; i++) {
-      String[] dom = _output._domains[i];
-      String colInfoClazz = modelName+"_ColInfo_"+i;
+      final int idx = i;
+      final String[] dom = _output._domains[i];
+      final String colInfoClazz = modelName+"_ColInfo_"+i;
       sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
       if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
       if (i!=_output._domains.length-1) sb.p(',');
@@ -1001,8 +1014,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Right now do not generate the class representing column
       // since it does not hold any interesting information except String array holding domain
       if (dom != null) {
-        fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
-        JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
+        fileCtx.add(new CodeGenerator() {
+                      @Override
+                      public void generate(JCodeSB out) {
+                        out.ip("// The class representing column ").p(_output._names[idx]).nl();
+                        JCodeGen.toClassWithArray(out, null, colInfoClazz, dom);
+                      }
+                    }
+        );
       }
     }
     return sb.ip("};").nl();
@@ -1019,26 +1038,33 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return true;
   }
   // Override in subclasses to provide some top-level model-specific goodness
-  protected SBPrintStream toJavaInit(SBPrintStream sb, SB fileContext) { return sb; }
+  protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileContext) { return sb; }
   // Override in subclasses to provide some inside 'predict' call goodness
   // Method returns code which should be appended into generated top level class after
   // predict method.
-  protected void toJavaPredictBody(SBPrintStream body, SB cls, SB file, boolean verboseCode) {
+  protected void toJavaPredictBody(SBPrintStream body,
+                                   CodeGeneratorPipeline classCtx,
+                                   CodeGeneratorPipeline fileCtx,
+                                   boolean verboseCode) {
     throw new IllegalArgumentException("This model type does not support conversion to Java");
   }
   // Wrapper around the main predict call, including the signature and return value
-  private SBPrintStream toJavaPredict(SBPrintStream ccsb, SB file, boolean verboseCode) { // ccsb = classContext
+  private SBPrintStream toJavaPredict(SBPrintStream ccsb,
+                                      CodeGeneratorPipeline fileCtx,
+                                      boolean verboseCode) { // ccsb = classContext
     ccsb.nl();
     ccsb.ip("// Pass in data in a double[], pre-aligned to the Model's requirements.").nl();
     ccsb.ip("// Jam predictions into the preds[] array; preds[0] is reserved for the").nl();
     ccsb.ip("// main prediction (class for classifiers or value for regression),").nl();
     ccsb.ip("// and remaining columns hold a probability distribution for classifiers.").nl();
     ccsb.ip("public final double[] score0( double[] data, double[] preds ) {").nl();
-    SB classCtxSb = new SB().ii(1);
-    toJavaPredictBody(ccsb.ii(1), classCtxSb, file, verboseCode);
+    CodeGeneratorPipeline classCtx = new CodeGeneratorPipeline(); //new SB().ii(1);
+    toJavaPredictBody(ccsb.ii(1), classCtx, fileCtx, verboseCode);
     ccsb.ip("return preds;").nl();
     ccsb.di(1).ip("}").nl();
-    ccsb.p(classCtxSb);
+    // Output class context
+    classCtx.generate(ccsb.ii(1));
+    ccsb.di(1);
     return ccsb;
   }
 
@@ -1055,7 +1081,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String[] warns = adaptTestForTrain(fr,true, computeMetrics);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
-      
+
       // Output is in the model's domain, but needs to be mapped to the scored
       // dataset's domain.
       int[] omap = null;
@@ -1075,7 +1101,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String java_text = toJava(preview, true);
       //System.out.println(java_text);
       GenModel genmodel;
-      try { 
+      try {
         Class clz = JCodeGen.compile(modelName,java_text);
         genmodel = (GenModel)clz.newInstance();
       } catch (Exception e) {
@@ -1084,7 +1110,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
-    
+
       double features   [] = MemoryManager.malloc8d(genmodel._names.length);
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
