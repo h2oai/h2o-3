@@ -366,7 +366,7 @@ public class FunctionUtils {
 				}
 				else {
 					System.out.println("AUC: NA");
-					MySQL.save(String.valueOf(modelMetrics._MSE), "", rawInput);
+					MySQL.save(String.valueOf(modelMetrics._MSE), "0", rawInput);
 				}
 			}
 		}
