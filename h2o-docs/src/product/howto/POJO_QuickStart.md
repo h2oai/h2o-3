@@ -2,6 +2,8 @@
 
 This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html) for more information, including packages. 
 
+ >**Note**: If the source file is larger than 1 GB, a Java C error displays. 
+
 ##What is a POJO? 
 
 H2O allows you to convert the models you have built to a Plain Old Java Object (POJO), which can then be easily deployed within your Java app and scheduled to run on a specified dataset.
