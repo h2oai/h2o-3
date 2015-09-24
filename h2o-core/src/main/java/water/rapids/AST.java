@@ -197,8 +197,8 @@ abstract public class AST extends Iced<AST> {
 
     // String Ops
     init(new ASTStrSplit());
-    init(new ASTStrSub());
-    init(new ASTGSub());
+    init(new ASTReplaceFirst());
+    init(new ASTReplaceAll());
     init(new ASTTrim());
     init(new ASTToLower());
     init(new ASTCountMatches());
