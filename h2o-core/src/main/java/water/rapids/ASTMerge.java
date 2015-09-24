@@ -77,13 +77,12 @@ public class ASTMerge extends ASTPrim {
 
     // Build enum mappings, to rapidly convert enums from the distributed set
     // to the hashed & replicated set.
-    int[][] enum_maps = new int[ncols][];
     int[][]   id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
       if( lv.isEnum() ) {
         EnumWrappedVec ewv = new EnumWrappedVec(lv.domain(),hashed.vecs()[i].domain());
-        int[] ids = enum_maps[i] = ewv.enum_map();
+        int[] ids = ewv.enum_map();
         DKV.remove(ewv._key);
         // Build an Identity map for the hashed set
         id_maps[i] = new int[ids.length];
@@ -301,10 +300,8 @@ public class ASTMerge extends ASTPrim {
           }
         } else {
           if( hashed._dups!=null ) {
-            for(int dup=0;dup<hashed._dups.length;++dup)
-              addRow(nchks,chks,vecs,i,hashed._dups[dup],vstr);
-          } else
-            addRow(nchks,chks,vecs,i,hashed._row,vstr);
+            for(int dup=0;dup<hashed._dups.length;++dup) addRow(nchks,chks,vecs,i,hashed._dups[dup],vstr);
+          } else                                         addRow(nchks,chks,vecs,i,hashed._row,vstr);
         }
       }
     }
