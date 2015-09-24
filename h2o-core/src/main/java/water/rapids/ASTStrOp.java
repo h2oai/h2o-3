@@ -143,7 +143,7 @@ class ASTToLower extends ASTPrim {
     Vec vec = fr.anyVec();  assert vec != null;
     if (vec.isString()) res = toLowerStringCol(vec);
     else throw new IllegalArgumentException("tolower requires a string column. "
-        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to a string first.");
+        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to strings first.");
     return new ValFrame(new Frame(res));
   }
   private Vec toLowerStringCol(Vec vec) {
@@ -182,7 +182,7 @@ class ASTToUpper extends ASTPrim {
     Vec vec = fr.anyVec();   assert vec != null;
     if (vec.isString()) res = toUpperStringCol(vec);
     else throw new IllegalArgumentException("toupper requires a string column. "
-        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to a string first.");
+        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to strings first.");
     return new ValFrame(new Frame(res));
   }
   private Vec toUpperStringCol(Vec vec) {
@@ -206,55 +206,89 @@ class ASTToUpper extends ASTPrim {
   }
 }
 
-class ASTStrSub extends ASTPrim {
+class ASTReplaceFirst extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignoreCase"}; }
+  public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
   @Override
   public String str() { return "sub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    String pattern     = asts[1].exec(env).getStr();
-    String replacement = asts[2].exec(env).getStr();
+    final String _pattern     = asts[1].exec(env).getStr();
+    final String _replacement = asts[2].exec(env).getStr();
     Frame fr = stk.track(asts[3].exec(env)).getFrame();
-    boolean ignoreCase = asts[4].exec(env).getNum()==1;
+    final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
 
-    if (fr.numCols() != 1) throw new IllegalArgumentException("sub works on a single column at a time.");
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("replacefirst works on a single column at a time." +
+          "Got "+ fr.numCols()+" columns.");
+    Vec res = null;
     Vec vec = fr.anyVec();   assert vec != null;
-    String[] doms = vec.domain();
-    for (int i = 0; i < doms.length; ++i)
-      doms[i] = ignoreCase
-              ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
-              : doms[i].replaceFirst(pattern, replacement);
-
-    // COW
-    Vec v = vec.makeCopy(doms);
-    return new ValFrame(new Frame(v));
+    if ( !vec.isString() ) throw new IllegalArgumentException("replacefirst requires a string column."
+        +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
+    else {
+      res = new MRTask() {
+        @Override public void map(Chunk chk, NewChunk newChk){
+//        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+//          ((CStrChunk) chk).asciiReplaceFirst(newChk);
+//        } else { //UTF requires Java string methods for accuracy
+          ValueString vs= new ValueString();
+          for(int i =0; i < chk._len; i++){
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              if (_ignoreCase)
+                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(_pattern, _replacement)));
+              else
+                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().replaceFirst(_pattern, _replacement)));
+            }
+          }
+        }
+      }.doAll(1, vec).outputFrame().anyVec();
+    }
+    return new ValFrame(new Frame(res));
   }
 }
 
-class ASTGSub extends ASTPrim {
+class ASTReplaceAll extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
   @Override
   public String str() { return "gsub"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    String pattern     = asts[1].exec(env).getStr();
-    String replacement = asts[2].exec(env).getStr();
+    final String _pattern     = asts[1].exec(env).getStr();
+    final String _replacement = asts[2].exec(env).getStr();
     Frame fr = stk.track(asts[3].exec(env)).getFrame();
-    boolean ignoreCase = asts[4].exec(env).getNum()==1;
+    final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
 
-    if (fr.numCols() != 1) throw new IllegalArgumentException("sub works on a single column at a time.");
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("replaceall works on a single column at a time." +
+                                         "Got "+ fr.numCols()+" columns.");
+    Vec res = null;
     Vec vec = fr.anyVec();   assert vec != null;
-    String[] doms = vec.domain();
-    for (int i = 0; i < doms.length; ++i)
-      doms[i] = ignoreCase
-              ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
-              : doms[i].replaceAll(pattern, replacement);
-
-    // COW
-    Vec v = vec.makeCopy(doms);
-    return new ValFrame(new Frame(v));
+    if ( !vec.isString() ) throw new IllegalArgumentException("replaceall requires a string column."
+        +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
+    else {
+      res = new MRTask() {
+        @Override public void map(Chunk chk, NewChunk newChk){
+//        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+//          ((CStrChunk) chk).asciiReplaceAll(newChk);
+//        } else { //UTF requires Java string methods for accuracy
+          ValueString vs= new ValueString();
+          for(int i =0; i < chk._len; i++){
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              if (_ignoreCase)
+                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(_pattern, _replacement)));
+              else
+                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().replaceAll(_pattern, _replacement)));
+            }
+          }
+        }
+      }.doAll(1, vec).outputFrame().anyVec();
+    }
+    return new ValFrame(new Frame(res));
   }
 }
 
@@ -273,7 +307,7 @@ class ASTTrim extends ASTPrim {
     Vec vec = fr.anyVec();   assert vec != null;
     if ( vec.isString() ) res = trimStringCol(vec);
     else throw new IllegalArgumentException("trim requires a string column. "
-        +"Received "+fr.anyVec().get_type_str()+". Please convert column to a string first.");
+        +"Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
     return new ValFrame(new Frame(res));
   }
 
@@ -303,7 +337,7 @@ class ASTStrLength extends ASTPrim {
     Vec vec = fr.anyVec();   assert vec != null;
     if ( vec.isString() ) res = lengthStringCol(vec);
     else throw new IllegalArgumentException("length requires a string column. "
-        +"Received "+fr.anyVec().get_type_str()+". Please convert column to a string first.");
+        +"Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
     return new ValFrame(new Frame(res));
   }
 
