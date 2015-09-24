@@ -1415,6 +1415,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._nrows = res["rows"]
     self._ncols = len(res["columns"])
     self._col_names = [c["label"] for c in res["columns"]]
+    self._types = [c["type"] for c in res["columns"]]
     self._computed=True
     self._ast=None
   #### DO NOT ADD ANY MEMBER METHODS HERE ####

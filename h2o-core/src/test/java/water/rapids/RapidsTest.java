@@ -436,7 +436,7 @@ public class RapidsTest extends TestUtil {
       weather.remove();
 
       // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
-      Frame nary_op_37 = exec_str("(merge subset_35 census.hex FALSE FALSE)", "nary_op_37");
+      Frame nary_op_37 = exec_str("(merge subset_35 census.hex TRUE FALSE)", "nary_op_37");
 
       // nary_op_38 = merge( nary_op_37 subset_36); Vecs in nary_op_38 and nary_pop_37 and X shared
       Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");
