@@ -514,6 +514,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Standardization arrays for numeric data columns
     public double[] _normSub;   // Mean of each numeric column
     public double[] _normMul;   // One over standard deviation of each numeric column
+    public int _ncolX;    // Number of columns in X (equal to k if no offset, k+1 otherwise)
 
     // Permutation array mapping adapted to original training col indices
     public int[] _permutation;  // _permutation[i] = j means col i in _adaptedFrame maps to col j of _train
@@ -557,7 +558,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       v.setDomain(adaptedDomme[i]);
       fullFrm.add(prefix + _output._names[i], v);
     }
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, true).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, loadingFrm.numCols(), true).doAll(fullFrm);
 
     // Return the imputed training frame
     int x = ncols + _parms._k, y = fullFrm.numCols();
@@ -655,12 +656,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame loadingFrm = DKV.get(_output._loading_key).get();
     fullFrm.add(loadingFrm);
 
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, loadingFrm.numCols(), false).doAll(fullFrm);
     ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation);
+    return new ModelMetricsGLRM.GLRMModelMetrics(_output._ncolX, _output._permutation);
   }
 }

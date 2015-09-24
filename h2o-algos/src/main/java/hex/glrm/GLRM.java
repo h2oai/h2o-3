@@ -249,16 +249,25 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // More efficient implementation assuming sdata cols aligned with adaptedFrame
-  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) {
-    if(sdata == null || dinfo._cats == 0) return sdata;
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) { return expandCats(sdata, dinfo, false); }
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo, boolean appendRow) {
+    if(sdata == null || (dinfo._cats == 0 && !appendRow)) return sdata;
     assert sdata[0].length == dinfo._adaptedFrame.numCols();
 
     // Column count for expanded matrix
     int catsexp = dinfo._catOffsets[dinfo._catOffsets.length-1];
-    double[][] cexp = new double[sdata.length][catsexp + dinfo._nums];
+    double[][] cexp = new double[sdata.length + (appendRow ? 1:0)][catsexp + dinfo._nums];
 
     for(int i = 0; i < sdata.length; i++)
       LinearAlgebraUtils.expandRow(sdata[i], dinfo, cexp[i], false);
+
+    if(appendRow) {   // Initialize offset for numeric cols to column mean
+      int exp_cnt = dinfo.numStart();
+      for(int col = dinfo._cats; col < dinfo._adaptedFrame.numCols(); col++) {
+        cexp[sdata.length][exp_cnt] = dinfo._adaptedFrame.vec(col).mean();
+        exp_cnt++;
+      }
+    }
     return cexp;
   }
 
@@ -271,7 +280,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
-      // TODO: Need to append column of 1's to X and additional row of constants to Y when user-specified
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
           Vec[] yVecs = _parms._user_y.get().vecs();
@@ -285,8 +293,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Permute cluster columns to align with dinfo and expand out categoricals
           centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-          centers_exp = expandCats(centers, tinfo);
-          // TODO: if _offset is true, then append constant row to Y
+          centers_exp = expandCats(centers, tinfo, _parms._offset);    // To include offset, append additional row to bottom of Y
         } else
           centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
 
@@ -298,14 +305,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           new MRTask() {
             @Override public void map(Chunk[] cs) {
               for(int row = 0; row < cs[0]._len; row++) {
-                for (int i = _ncolA; i < _ncolA+_parms._k; i++) {
-                  double x = cs[2*_ncolX + i].atd(row);
-                  cs[i].set(row, x);
-                  cs[_ncolX + i].set(row, x);
+                for (int i = 0; i < _parms._k; i++) {
+                  double x = cs[_ncolA + 2*_ncolX + i].atd(row);
+                  cs[_ncolA + i].set(row, x);
+                  cs[_ncolA + _ncolX + i].set(row, x);
                 }
                 if(_parms._offset) {    // Last column of X is 1's when offset included
-                  cs[_ncolA+_ncolX-1].set(row, 1);
-                  cs[_ncolA+2*_ncolX-1].set(row, 1);
+                  cs[_ncolA + _ncolX - 1].set(row, 1);
+                  cs[_ncolA + 2*_ncolX - 1].set(row, 1);
                 }
               }
             }
@@ -314,6 +321,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
           xtsk.doAll(dfrm);
         }
+        assert centers_exp != null && centers_exp.length == _ncolX && centers_exp[0].length == _ncolY : "Y must have " + _ncolX + " rows and " + _ncolY + " columns";
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
@@ -502,6 +510,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Recover singular values and eigenvectors of XY
     public void recoverSVD(GLRMModel model, DataInfo xinfo) {
+      if(_parms._offset) throw H2O.unimpl();    // TODO: This breaks when offset X col and Y row included
       // NOTE: Gram computes X'X/n where n = nrow(A) = number of rows in training set
       GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
       Cholesky xxchol = regularizedCholesky(xgram._gram);
@@ -675,6 +684,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
+        model._output._ncolX = _ncolX;
         model._output._loading_key = Key.make(_parms._loading_name);
         Frame x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
