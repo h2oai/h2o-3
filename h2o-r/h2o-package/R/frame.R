@@ -925,6 +925,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     }
     # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
+    .fetch.data(x,1) #trigger a cache update if needed
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
     #.h2o.gc()
@@ -1707,9 +1708,17 @@ as.data.frame.Frame <- function(x, ...) {
     ttt <- ttt2
   }
 
+  # Get column types from H2O to set the dataframe types correctly
+  colClasses <- attr(x, "types")
+  colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
+  colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
+  colClasses <- gsub("real", NA, colClasses) # let R guess the appropriate numeric type
+  colClasses <- gsub("enum", "factor", colClasses)
+  colClasses <- gsub("uuid", "character", colClasses)
+  colClasses <- gsub("string", "character", colClasses)
+  colClasses <- gsub("time", "Date", colClasses)
   # Substitute NAs for blank cells rather than skipping
-  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", ...)
-  # df <- read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
+  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
   close(tcon)
   df
 }
