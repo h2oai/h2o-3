@@ -77,7 +77,49 @@ public class CStrChunk extends Chunk {
   }
 
   /**
-   * Optimized trim() method to operate across the entire StrChunk buffer in one pass.
+   * Optimized toLower() method to operate across the entire CStrChunk buffer in one pass.
+   * This method only changes the values of ASCII uppercase letters in the text.
+   *
+   * NewChunk is the same size as the original.
+   *
+   * @param nc NewChunk to be filled with the toLower version of ASCII strings in this chunk
+   * @return Filled NewChunk
+   */
+  public NewChunk asciiToLower(NewChunk nc) {
+    // copy existing data
+    nc = this.inflate_impl(nc);
+    //update offsets and byte array
+    for(int i= 0; i < nc._sslen; i++) {
+      if (nc._ss[i] > 0x40 && nc._ss[i] < 0x5B) // check for capital letter
+        nc._ss[i] += 0x20; // lower it
+    }
+
+    return nc;
+  }
+
+  /**
+   * Optimized toUpper() method to operate across the entire CStrChunk buffer in one pass.
+   * This method only changes the values of ASCII lowercase letters in the text.
+   *
+   * NewChunk is the same size as the original.
+   *
+   * @param nc NewChunk to be filled with the toUpper version of ASCII strings in this chunk
+   * @return Filled NewChunk
+   */
+  public NewChunk asciiToUpper(NewChunk nc) {
+    // copy existing data
+    nc = this.inflate_impl(nc);
+    //update offsets and byte array
+    for(int i= 0; i < nc._sslen; i++) {
+      if (nc._ss[i] > 0x60 && nc._ss[i] < 0x7B) // check for capital letter
+        nc._ss[i] -= 0x20; // upper it
+    }
+
+    return nc;
+  }
+
+  /**
+   * Optimized trim() method to operate across the entire CStrChunk buffer in one pass.
    * This mimics Java String.trim() by only considering characters of value
    * <code>'&#92;u0020'</code> or less as whitespace to be trimmed. This means that like
    * Java's String.trim() it ignores 16 of the 17 characters regarded as a space in UTF.

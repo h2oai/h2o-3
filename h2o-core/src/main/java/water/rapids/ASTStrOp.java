@@ -136,17 +136,34 @@ class ASTToLower extends ASTPrim {
   public String str() { return "tolower"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1) throw new IllegalArgumentException("tolower only takes a single column of data. Got "+ fr.numCols()+" columns.");
-    Vec vec = fr.anyVec();   assert vec != null;
-    if( !vec.isEnum() ) throw new IllegalArgumentException("expected categorical column.");
-    String[] dom = vec.domain();
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("tolower only takes a single column of data. " +
+                                         "Got " + fr.numCols() + " columns.");
+    Vec res = null;
+    Vec vec = fr.anyVec();  assert vec != null;
+    if (vec.isString()) res = toLowerStringCol(vec);
+    else throw new IllegalArgumentException("tolower requires a string column. "
+        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to a string first.");
+    return new ValFrame(new Frame(res));
+  }
+  private Vec toLowerStringCol(Vec vec) {
+    Vec res = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+          ((CStrChunk) chk).asciiToLower(newChk);
+        } else { //UTF requires Java string methods for accuracy
+          ValueString vs= new ValueString();
+          for(int i =0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else
+              newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH)));
+          }
+        }
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
 
-    for (int i = 0; i < dom.length; ++i)
-      dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
-
-    // COW
-    Vec v = vec.makeCopy(dom);
-    return new ValFrame(new Frame(v));
+    return res;
   }
 }
 
@@ -158,17 +175,34 @@ class ASTToUpper extends ASTPrim {
   public String str() { return "toupper"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1) throw new IllegalArgumentException("toupper only takes a single column of data. Got "+ fr.numCols()+" columns.");
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("toupper only takes a single column of data. " +
+                                         "Got "+ fr.numCols()+" columns.");
+    Vec res = null;
     Vec vec = fr.anyVec();   assert vec != null;
-    if( !vec.isEnum() ) throw new IllegalArgumentException("expected categorical column.");
-    String[] dom = vec.domain();
+    if (vec.isString()) res = toUpperStringCol(vec);
+    else throw new IllegalArgumentException("toupper requires a string column. "
+        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to a string first.");
+    return new ValFrame(new Frame(res));
+  }
+  private Vec toUpperStringCol(Vec vec) {
+    Vec res = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+          ((CStrChunk) chk).asciiToUpper(newChk);
+        } else { //UTF requires Java string methods for accuracy
+          ValueString vs= new ValueString();
+          for(int i =0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else
+              newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toUpperCase(Locale.ENGLISH)));
+          }
+        }
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
 
-    for (int i = 0; i < dom.length; ++i)
-      dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
-
-    // COW
-    Vec v = vec.makeCopy(dom);
-    return new ValFrame(new Frame(v));
+    return res;
   }
 }
 
@@ -233,7 +267,9 @@ class ASTTrim extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec res = null;
-    if (fr.numCols() != 1) throw new IllegalArgumentException("trim only works on a single column at a time.");
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("trim only works on a single column at a time." +
+                                         "Got "+ fr.numCols()+" columns.");
     Vec vec = fr.anyVec();   assert vec != null;
     if ( vec.isString() ) res = trimStringCol(vec);
     else throw new IllegalArgumentException("trim requires a string column. "
@@ -261,7 +297,9 @@ class ASTStrLength extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec res = null;
-    if (fr.numCols() != 1) throw new IllegalArgumentException("length only works on a single column at a time.");
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("length only works on a single column at a time." +
+                                         "Got "+ fr.numCols()+" columns.");
     Vec vec = fr.anyVec();   assert vec != null;
     if ( vec.isString() ) res = lengthStringCol(vec);
     else throw new IllegalArgumentException("length requires a string column. "
