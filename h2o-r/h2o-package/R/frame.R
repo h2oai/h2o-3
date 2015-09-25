@@ -1716,10 +1716,13 @@ as.data.frame.Frame <- function(x, ...) {
   colClasses <- gsub("enum", "factor", colClasses)
   colClasses <- gsub("uuid", "character", colClasses)
   colClasses <- gsub("string", "character", colClasses)
-  colClasses <- gsub("time", "Date", colClasses)
+  colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
+  print(colClasses)
+  print(ttt)
   # Substitute NAs for blank cells rather than skipping
   df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
   close(tcon)
+  # FIXME now convert all date columns to POSIXct
   df
 }
 
