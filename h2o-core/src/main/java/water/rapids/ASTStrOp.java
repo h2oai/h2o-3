@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
+import water.fvec.C0DChunk;
 import water.fvec.CStrChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -112,14 +113,19 @@ class ASTCountMatches extends ASTPrim {
       Frame fr2 = new MRTask() {
         @Override
         public void map(Chunk chk, NewChunk newChk) {
-          ValueString vs = new ValueString();
-          for (int i = 0; i < chk._len; ++i) {
-            if (!chk.isNA(i)) {
-              int cnt = 0;
-              for (String aPattern : pattern)
-                cnt += StringUtils.countMatches(chk.atStr(vs, i).toString(), aPattern);
-              newChk.addNum(cnt, 0);
-            } else newChk.addNA();
+          if ( chk instanceof C0DChunk ) // all NAs
+            for (int i = 0; i < chk.len(); i++)
+              newChk.addNA();
+          else {
+            ValueString vs = new ValueString();
+            for (int i = 0; i < chk._len; ++i) {
+              if (!chk.isNA(i)) {
+                int cnt = 0;
+                for (String aPattern : pattern)
+                  cnt += StringUtils.countMatches(chk.atStr(vs, i).toString(), aPattern);
+                newChk.addNum(cnt, 0);
+              } else newChk.addNA();
+            }
           }
         }
       }.doAll(1, vec).outputFrame();
@@ -149,8 +155,11 @@ class ASTToLower extends ASTPrim {
   }
   private Vec toLowerStringCol(Vec vec) {
     Vec res = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+      @Override public void map(Chunk chk, NewChunk newChk) {
+        if (chk instanceof C0DChunk) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiToLower(newChk);
         } else { //UTF requires Java string methods for accuracy
           ValueString vs= new ValueString();
@@ -189,7 +198,10 @@ class ASTToUpper extends ASTPrim {
   private Vec toUpperStringCol(Vec vec) {
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
-        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiToUpper(newChk);
         } else { //UTF requires Java string methods for accuracy
           ValueString vs= new ValueString();
@@ -229,18 +241,23 @@ class ASTReplaceFirst extends ASTPrim {
     else {
       res = new MRTask() {
         @Override public void map(Chunk chk, NewChunk newChk){
+          if ( chk instanceof C0DChunk ) // all NAs
+            for (int i = 0; i < chk.len(); i++)
+              newChk.addNA();
+          else {
 //        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
 //          ((CStrChunk) chk).asciiReplaceFirst(newChk);
 //        } else { //UTF requires Java string methods for accuracy
-          ValueString vs= new ValueString();
-          for(int i =0; i < chk._len; i++){
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              if (_ignoreCase)
-                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(_pattern, _replacement)));
-              else
-                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().replaceFirst(_pattern, _replacement)));
+            ValueString vs = new ValueString();
+            for (int i = 0; i < chk._len; i++) {
+              if (chk.isNA(i))
+                newChk.addNA();
+              else {
+                if (_ignoreCase)
+                  newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(_pattern, _replacement)));
+                else
+                  newChk.addStr(new ValueString(chk.atStr(vs, i).toString().replaceFirst(_pattern, _replacement)));
+              }
             }
           }
         }
@@ -272,18 +289,23 @@ class ASTReplaceAll extends ASTPrim {
     else {
       res = new MRTask() {
         @Override public void map(Chunk chk, NewChunk newChk){
+          if ( chk instanceof C0DChunk ) // all NAs
+            for (int i = 0; i < chk.len(); i++)
+              newChk.addNA();
+          else {
 //        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
 //          ((CStrChunk) chk).asciiReplaceAll(newChk);
 //        } else { //UTF requires Java string methods for accuracy
-          ValueString vs= new ValueString();
-          for(int i =0; i < chk._len; i++){
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              if (_ignoreCase)
-                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(_pattern, _replacement)));
-              else
-                newChk.addStr(new ValueString(chk.atStr(vs, i).toString().replaceAll(_pattern, _replacement)));
+            ValueString vs = new ValueString();
+            for (int i = 0; i < chk._len; i++) {
+              if (chk.isNA(i))
+                newChk.addNA();
+              else {
+                if (_ignoreCase)
+                  newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(_pattern, _replacement)));
+                else
+                  newChk.addStr(new ValueString(chk.atStr(vs, i).toString().replaceAll(_pattern, _replacement)));
+              }
             }
           }
         }
@@ -315,9 +337,12 @@ class ASTTrim extends ASTPrim {
   private Vec trimStringCol(Vec vec) {
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
         // Java String.trim() only operates on ASCII whitespace
         // so UTF-8 safe methods are not needed here.
-        ((CStrChunk)chk).asciiTrim(newChk);
+        else ((CStrChunk)chk).asciiTrim(newChk);
       }
     }.doAll(1, vec).outputFrame().anyVec();
 
@@ -345,7 +370,10 @@ class ASTStrLength extends ASTPrim {
   private Vec lengthStringCol(Vec vec) {
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
-        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiLength(newChk);
         } else { //UTF requires Java string methods for accuracy
           ValueString vs= new ValueString();
