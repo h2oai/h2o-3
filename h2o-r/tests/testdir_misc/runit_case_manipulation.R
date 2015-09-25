@@ -3,15 +3,15 @@ source('../h2o-runit.R')
 
 test.string.case.manipulation <- function() {
   Log.info("Importing letters...")
-  hex <- as.h2o(letters)
+  hex <- as.character(as.h2o(letters))
   print(hex)
   Log.info("Changing to upper case...")
   hex <- h2o.toupper(hex)
   print(hex)
-  upper.r <- as.character(as.data.frame(hex)[1:26,])
+  upper.r <- as.data.frame(hex)[1:26,]
   Log.info("Changing to lower case...")
   hex <- h2o.tolower(hex)
-  lower.r <- as.character(as.data.frame(hex)[1:26,])
+  lower.r <- as.data.frame(hex)[1:26,]
   print(hex)
 
   expect_equal(upper.r, toupper(letters))
