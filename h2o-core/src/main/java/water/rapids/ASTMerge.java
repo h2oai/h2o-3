@@ -1,9 +1,6 @@
 package water.rapids;
 
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.*;
 import water.parser.ValueString;
 import water.util.IcedHashMap;
@@ -123,7 +120,7 @@ public class ASTMerge extends ASTPrim {
 
   // One Row object per row of the smaller dataset, so kept as small as
   // possible.
-  private static class Row {
+  private static class Row extends Iced {
     final long[] _keys;   // Key: first ncols of longs
     int _hash;            // Hash of keys; not final as Row objects are reused
     long _row;            // Row in Vec; the payload is vecs[].atd(_row)
