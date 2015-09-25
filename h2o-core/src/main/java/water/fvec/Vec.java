@@ -644,6 +644,7 @@ public class Vec extends Keyed<Vec> {
    *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}. 
    *  @return A set of percentiles */
   public double[] pctiles() { return RollupStats.get(this, true)._pctiles;   }
+  public double median() { return pctiles()[5]; }
 
 
   /** Compute the roll-up stats as-needed */

@@ -109,9 +109,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // L(u,a): Loss function
     public final double loss(double u, double a) {
-      return loss(u, a, _loss);
+      return loss(u, a, _loss, _period);
     }
-    public final double loss(double u, double a, Loss loss) {
+    public static double loss(double u, double a, Loss loss, int period) {
       assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
       switch(loss) {
         case Quadratic:
@@ -130,7 +130,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           // return Math.log(1 + Math.exp(-a * u));
           return Math.log(1 + Math.exp(a == 0 ? u : -u));    // Booleans are coded {0,1} instead of {-1,1}
         case Periodic:
-          return 1-Math.cos((a-u)*(2*Math.PI)/_period);
+          return 1-Math.cos((a-u)*(2*Math.PI)/period);
         default:
           throw new RuntimeException("Unknown loss function " + loss);
       }
@@ -376,59 +376,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
-    public final double[] offset(Frame fr, Loss[] losses) {
-      double[] mu = new double[fr.numCols()];
-      for(int i = 0; i < fr.numCols(); i++)
-        mu[i] = offset(fr.vec(i), losses[i]);
-      return mu;
-    }
-    public final double offset(Vec v, Loss loss) {
-      switch(loss) {
-        case Quadratic:
-          return v.mean();
-        case Poisson:
-          return Math.log(v.mean());
-        case Absolute:  // Column median
-        case Huber:
-        case Periodic:
-        case Logistic:
-        case Hinge:
-        case Categorical:
-        case Ordinal:
-          throw H2O.unimpl("Generalized column mean not available for loss function " + loss);
-        default:
-          throw new RuntimeException("Unknown loss function " + loss);
-      }
-    }
-
-    // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
-    // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
-    public final double[] scale(Frame fr, Loss[] losses) {
-      double[] sigma2 = new double[fr.numCols()];
-      for(int i = 0; i < fr.numCols(); i++)
-        sigma2[i] = scale(fr.vec(i), losses[i]);
-      return sigma2;
-    }
-    // TODO: Do this in MRTask with pre-computed offsets and call to loss/mloss functions
-    public final double scale(Vec v, Loss loss) {
-      switch(loss) {
-        case Quadratic:
-          return 1.0 / v.sigma() * v.sigma();
-        case Absolute:  // Sum of absolute values of deviations from median
-        case Huber:
-        case Poisson:
-        case Periodic:
-        case Logistic:
-        case Hinge:
-        case Categorical:
-        case Ordinal:
-          throw H2O.unimpl("Generalized column variance not available for loss function " + loss);
-        default:
-          throw new RuntimeException("Unknown loss function " + loss);
-      }
-    }
-
     // Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization.
     public final double[] project_x(double[] u, Random rand) {
       if(u == null) return u;
@@ -498,7 +445,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Periodic:
           return u;
         case Poisson:
-          return Math.exp(u)-1;
+          return Math.round(Math.exp(u));   // Poisson count requires non-negative integers
         case Hinge:
         case Logistic:
           return u > 0 ? 1 : 0;   // Booleans are coded as {0,1} instead of {-1,1}
@@ -523,6 +470,113 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return ArrayUtils.minIndex(cand);
         default:
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
+      }
+    }
+
+    // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
+    public final double[] offset(DataInfo dinfo, Loss[] losses) {
+      if(dinfo._nums == 0) return new double[0];
+      double[] mu = new double[dinfo._nums];
+      for(int i = dinfo._cats; i < dinfo._adaptedFrame.numCols(); i++)
+        mu[i] = offset(dinfo._adaptedFrame.vec(i), losses[i]);
+      return mu;
+    }
+    public final double offset(Vec v, Loss loss) {
+      switch(loss) {
+        case Quadratic:
+          return v.mean();
+        case Absolute:
+          return v.median();
+        case Poisson:
+          return Math.log(v.mean());
+        case Hinge:
+          double ones = v.nzCnt();
+          double zeros = v.length() - v.naCnt() - ones;
+          return ones > zeros ? 1 : 0;
+        case Huber:
+        case Periodic:
+        case Logistic:
+          throw H2O.unimpl("Generalized column mean not available for loss function " + loss);
+        default:
+          throw new RuntimeException("Unknown loss function " + loss);
+      }
+    }
+
+    public final double[][] moffset(DataInfo dinfo, Loss[] losses) {
+      if(dinfo._cats == 0) return new double[0][];
+      double[][] mu = new double[dinfo._cats][];
+      for(int i = 0; i < dinfo._cats; i++)
+        mu[i] = moffset(dinfo._adaptedFrame.vec(i), losses[i]);
+      return mu;
+    }
+    public final double[] moffset(Vec v, Loss multi_loss) {
+      switch(multi_loss) {
+        case Categorical:
+        case Ordinal:
+          throw H2O.unimpl("Generalized column mean not available for multidimensional loss function " + multi_loss);
+        default:
+          throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
+      }
+    }
+
+    // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
+    // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
+    public final double[] scale(DataInfo dinfo, Loss[] losses) {
+      double[] offsetNum = offset(dinfo, losses);
+      double[][] offsetCat = moffset(dinfo, losses);
+
+      LossScaleTsk lscale = new LossScaleTsk(dinfo._cats, losses, _period, offsetNum, offsetCat);
+      lscale.doAll(dinfo._adaptedFrame);
+      return lscale._scale;
+    }
+
+    private static class LossScaleTsk extends MRTask<LossScaleTsk> {
+      final int _ncats;
+      final Loss[] _lossFunc;
+      final int _period;
+      final double[] _offsetNum;
+      final double[][] _offsetCat;
+
+      long[] _count;
+      double[] _scale;
+
+      LossScaleTsk(int ncats, Loss[] lossFunc, int period, double[] offsetNum, double[][] offsetCat) {
+        _ncats = ncats;
+        _lossFunc = lossFunc;
+        _period = period;
+        _offsetNum = offsetNum;
+        _offsetCat = offsetCat;
+      }
+
+      @Override public void map(Chunk[] cs) {
+        _scale = new double[cs.length];
+        _count = new long[cs.length];
+
+        for(int row = 0; row < cs[0]._len; row++) {
+          for(int col = 0; col < _ncats; col++) {
+            double a = cs[col].atd(row);
+            if(Double.isNaN(a)) continue;
+            _scale[col] += mloss(_offsetCat[col], (int)a, _lossFunc[col]);
+            _count[col]++;
+          }
+
+          for(int col = _ncats; col < cs.length; col++) {
+            double a = cs[col].atd(row);
+            if(Double.isNaN(a)) continue;
+            _scale[col] += loss(_offsetNum[col-_ncats], a, _lossFunc[col], _period);
+            _count[col]++;
+          }
+        }
+      }
+
+      @Override public void reduce(LossScaleTsk other) {
+        ArrayUtils.add(_scale, other._scale);
+        ArrayUtils.add(_count, other._count);
+      }
+
+      @Override protected void postGlobal() {
+        for(int i = 0; i < _scale.length; i++)
+          _scale[i] /= _count[i]-1;
       }
     }
   }

@@ -596,7 +596,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Calculate one over generalized column variance for appropriate scaling
         if(_parms._scale)
-          model._output._lossScale = _parms.scale(tinfo._adaptedFrame, _lossFunc);
+          model._output._lossScale = _parms.scale(tinfo, _lossFunc);
         else {
           model._output._lossScale = new double[_ncolA];
           Arrays.fill(model._output._lossScale, 1.0);
@@ -1178,7 +1178,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           int js = j - _ncats;
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double xy = _yt.lmulNumCol(xnew, js);
-          _loss += _lossScale[j] * _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          _loss += _lossScale[j] * _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j], _parms._period);
         }
         _loss *= cweight;
       }
@@ -1385,7 +1385,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           int js = j - _ncats;
           for(int k = 0; k < _ncolX; k++)
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt.getNum(js, k);
-          _loss += _lossScale[j] * _parms.loss(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          _loss += _lossScale[j] * _parms.loss(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j], _parms._period);
         }
         _loss *= cweight;
 
