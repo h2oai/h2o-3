@@ -830,12 +830,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -875,12 +876,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -920,12 +922,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -965,12 +968,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -1009,12 +1013,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -1054,12 +1059,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -1404,35 +1410,29 @@ public class GBMTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
       for (String s : new String[]{
-              "DepTime", "ArrTime", "ActualElapsedTime",
-              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-              "CancellationCode", "CarrierDelay", "WeatherDelay",
-              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+              "name",
       }) {
         tfr.remove(s).remove();
       }
       DKV.put(tfr);
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;
-      parms._response_column = "IsDepDelayed";
+      parms._response_column = "cylinders"; //regression
       parms._seed = 234;
       parms._min_rows = 2;
       parms._max_depth = 5;
       parms._ntrees = 5;
-      parms._col_sample_rate = 0.5f;
+      parms._col_sample_rate = 1f;
       parms._sample_rate = 0.5f;
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
-      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(0.7264331810371721, mm.auc()._auc, 1e-4); // 1 node
-      assertEquals(0.22686348162897116, mm.mse(), 1e-4);
-      assertEquals(0.09039195554728074, mm.r2(), 1e-4);
-      assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
+      ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+      assertEquals(1.03088, mm.mse(), 1e-4);
 
       job.remove();
     } finally {

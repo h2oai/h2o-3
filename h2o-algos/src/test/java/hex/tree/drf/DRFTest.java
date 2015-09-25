@@ -864,7 +864,7 @@ public class DRFTest extends TestUtil {
 
 
       // test set scoring (on the same dataset, but without normalizing the weights)
-      drf.score(parms.train());
+      Frame pred = drf.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
 
       // Non-OOB
@@ -873,6 +873,7 @@ public class DRFTest extends TestUtil {
       assertEquals(0.9753086419753086, mm2.r2(), 1e-8);
       assertEquals(0.02252583933934247, mm2.logloss(), 1e-8);
 
+      pred.remove();
       job.remove();
     } finally {
       if (tfr != null) tfr.remove();
