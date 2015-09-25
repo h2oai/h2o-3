@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_542_kmeans_mismatched_size <- function(H2Oserver) {
+test.pub_542_kmeans_mismatched_size <- function() {
   Log.info("Importing iris_wheader.csv data...\n")
   iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
   iris.sum <- summary(iris.hex)
   print(iris.sum)
   

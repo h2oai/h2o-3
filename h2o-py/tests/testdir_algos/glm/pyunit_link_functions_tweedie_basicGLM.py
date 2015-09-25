@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def link_functions_tweedie_basic(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def link_functions_tweedie_basic():
+    
+    
 
     print "Read in prostate data."
     hdf = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))
@@ -25,5 +25,5 @@ def link_functions_tweedie_basic(ip,port):
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, link_functions_tweedie_basic)
+    tests.run_test(sys.argv, link_functions_tweedie_basic)
 

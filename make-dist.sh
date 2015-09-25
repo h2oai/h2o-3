@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1"
+HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1 mapr5.0"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -65,6 +65,7 @@ if [ -n "$DO_RELEASE" ]; then
 fi
 
 # Run some required gradle tasks to produce final build output.
+./gradlew booklets
 ./gradlew $DO_RELEASE publish
 
 # Create target dir, which is uploaded to s3.
@@ -92,6 +93,10 @@ cd target/Rcran
 cp -p ../R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz .
 tar zxvf h2o_${PROJECT_VERSION}.tar.gz
 mv h2o/inst/java/h2o.jar ../Rjar
+mkdir gaid
+touch gaid/CRAN
+jar -uf ../Rjar/h2o.jar gaid/CRAN
+rm -rf gaid
 rm -f h2o_${PROJECT_VERSION}.tar.gz
 tar cvf h2o_${PROJECT_VERSION}.tar h2o
 gzip h2o_${PROJECT_VERSION}.tar
@@ -124,17 +129,40 @@ cp -rp build/repo target/maven
 # Add documentation to target.
 mkdir target/docs-website
 mkdir target/docs-website/h2o-docs
+mkdir target/docs-website/h2o-docs/booklets
 mkdir target/docs-website/h2o-r
 mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
+mkdir target/docs-website/h2o-genmodel
 mkdir target/docs-website/h2o-scala
 cp -rp h2o-docs/web/* target/docs-website/h2o-docs
+cp -p h2o-docs/src/booklets/v2_2015/source/*.pdf target/docs-website/h2o-docs/booklets
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
+cp -rp h2o-py/docs/docs/ target/docs-website/h2o-py
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
 cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
-cp -rp h2o-py/docs/docs/ target/docs-website/h2o-py
+cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel
 cp -rp h2o-scala/build/docs/scaladoc target/docs-website/h2o-scala
 
+# Copy content of distribution site
+cp h2o-dist/* target/ 2>/dev/null || true
+
 # Create index file.
-cat h2o-dist/index.html | sed -e "s/SUBST_WHEEL_FILE_NAME/${name}/g" | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" > target/index.html
+cat h2o-dist/index.html \
+  | sed -e "s/SUBST_WHEEL_FILE_NAME/${name}/g" \
+  | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" \
+  | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" \
+  > target/index.html
+
+# Create json metadata file.
+cat h2o-dist/buildinfo.json \
+  | sed -e "s/SUBST_WHEEL_FILE_NAME/${name}/g" \
+  | sed -e "s/SUBST_BUILD_TIME_MILLIS/${BUILD_TIME_MILLIS}/g" \
+  | sed -e "s/SUBST_BUILD_TIME_ISO8601/${BUILD_TIME_ISO8601}/g" \
+  | sed -e "s/SUBST_BUILD_TIME_LOCAL/${BUILD_TIME_LOCAL}/g" \
+  | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" \
+  | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" \
+  | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" \
+  | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" \
+  > target/buildinfo.json

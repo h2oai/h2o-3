@@ -143,7 +143,7 @@ public class Frame extends Lockable<Frame> {
     catch( NumberFormatException fe ) { }
     return 0;
   }
-  private String uniquify( String name ) {
+  public String uniquify( String name ) {
     String n = name;
     int lastName = 0;
     if( name.length() > 0 && name.charAt(0)=='C' )
@@ -350,8 +350,6 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
-
-
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
@@ -367,12 +365,21 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Type for every Vec */
-  byte[] types() {
+  public byte[] types() {
     Vec[] vecs = vecs();
     byte bs[] = new byte[vecs.length];
     for( int i=0; i<vecs.length; i++ )
       bs[i] = vecs[i]._type;
     return bs;
+  }
+
+  /** String name for each Vec type */
+  public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
+    Vec[] vecs = vecs();
+    String s[] = new String[vecs.length];
+    for(int i=0;i<vecs.length;++i)
+      s[i] = vecs[i].get_type_str();
+    return s;
   }
 
   /** All the domains for enum columns; null for non-enum columns.  
@@ -385,10 +392,39 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
+  /** Number of categorical levels for enum columns; -1 for non-enum columns.
+   * @return the number of levels for enum columns */
+  public int[] cardinality() {
+    Vec[] vecs = vecs();
+    int[] card = new int[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      card[i] = vecs[i].cardinality();
+    return card;
+  }
+
+  private Vec[] bulkRollups() {
+    Futures fs = new Futures();
+    Vec[] vecs = vecs();
+    for(Vec v : vecs)  v.startRollupStats(fs);
+    fs.blockForPending();
+    return vecs;
+  }
+
+  /** Majority class for enum columns; -1 for non-enum columns.
+   * @return the majority class for enum columns */
+  public int[] modes() {
+    Vec[] vecs = bulkRollups();
+    int[] modes = new int[vecs.length];
+    for( int i = 0; i < vecs.length; i++ ) {
+      modes[i] = vecs[i].isEnum() ? vecs[i].mode() : -1;
+    }
+    return modes;
+  }
+
   /** All the column means.
    *  @return the mean of each column */
   public double[] means() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] means = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ )
       means[i] = vecs[i].mean();
@@ -398,7 +434,7 @@ public class Frame extends Lockable<Frame> {
   /** One over the standard deviation of each column.
    *  @return Reciprocal the standard deviation of each column */
   public double[] mults() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] mults = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
       double sigma = vecs[i].sigma();
@@ -415,8 +451,8 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
+    Vec[] vecs = bulkRollups();
     long sum=0;
-    Vec[] vecs = vecs();
     for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
   }
@@ -835,7 +871,7 @@ public class Frame extends Lockable<Frame> {
       if (n > MAX_EQ2_COLS)
         throw new IllegalArgumentException("Too many requested columns (requested " + n +", max " + MAX_EQ2_COLS + ")");
       cols = new long[(int)n];
-      Vec v = fr.anyVec();
+      Vec.Reader v = fr.anyVec().new Reader();
       for (long i = 0; i < v.length(); i++)
         cols[(int)i] = v.at8(i);
     } else
@@ -1028,9 +1064,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
-      case Vec.T_TIME+1:
-      case Vec.T_TIME+2:
-        coltypes[i] = "string"; 
+        coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
@@ -1121,6 +1155,7 @@ public class Frame extends Lockable<Frame> {
           for(int row=0;row<cs[0]._len;++row) {
             if( cs[col].isNA(row) ) ncs[col].addNA();
             else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
+            else if( cs[col] instanceof StrWrappedVec.StrWrappedChunk) ncs[col].addStr(cs[col], row);
             else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
             else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
             else ncs[col].addNum(cs[col].atd(row));
@@ -1211,6 +1246,29 @@ public class Frame extends Lockable<Frame> {
     return f2;
   }
 
+  private boolean isLastRowOfCurrentNonEmptyChunk(int chunkIdx, long row) {
+    long lastRowOfCurrentChunk = anyVec().get_espc()[chunkIdx + 1] - 1;
+
+    // Assert chunk is non-empty.
+    assert anyVec().get_espc()[chunkIdx + 1] > anyVec().get_espc()[chunkIdx];
+
+    // Assert row numbering sanity.
+    assert row <= lastRowOfCurrentChunk;
+
+    return row >= lastRowOfCurrentChunk;
+  }
+
+  /**
+   * Flush a chunk if it's not homed here.
+   * Do this to avoid filling up memory when streaming a large dataset.
+   */
+  private void hintFlushRemoteChunk(Vec v, int cidx) {
+    Key k = v.chunkKey(cidx);
+    if( ! k.home() ) {
+      H2O.raw_remove(k);
+    }
+  }
+
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
    *  @return An InputStream containing this Frame as a CSV */
@@ -1222,7 +1280,7 @@ public class Frame extends Lockable<Frame> {
     private final boolean _hex_string;
     byte[] _line;
     int _position;
-    public int _curChkIdx;
+    public volatile int _curChkIdx;
     long _row;
 
     CSVStream(boolean headers, boolean hex_string) {
@@ -1239,42 +1297,63 @@ public class Frame extends Lockable<Frame> {
       _line = sb.toString().getBytes();
     }
 
-    @Override public int available() throws IOException {
-      if(_position == _line.length) {
-        if(_row == numRows())
-          return 0;
-        StringBuilder sb = new StringBuilder();
-        Vec vs[] = vecs();
-        for( int i = 0; i < vs.length; i++ ) {
-          _curChkIdx = vs[0].elem2ChunkIdx(_row);
-          if(i > 0) sb.append(',');
-          if(!vs[i].isNA(_row)) {
-            if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
-            else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
-            else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-            else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
-            else {
-              double d = vs[i].at(_row);
-              // R 3.1 unfortunately changed the behavior of read.csv().
-              // (Really type.convert()).
-              //
-              // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
-              //
-              // See these discussions:
-              //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
-              //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
-              //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-              String s = _hex_string ? Double.toHexString(d) : Double.toString(d);
-              sb.append(s);
-            }
+    byte[] getBytesForRow() {
+      StringBuilder sb = new StringBuilder();
+      Vec vs[] = vecs();
+      for( int i = 0; i < vs.length; i++ ) {
+        if(i > 0) sb.append(',');
+        if(!vs[i].isNA(_row)) {
+          if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
+          else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
+          else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
+          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
+          else {
+            double d = vs[i].at(_row);
+            // R 3.1 unfortunately changed the behavior of read.csv().
+            // (Really type.convert()).
+            //
+            // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
+            //
+            // See these discussions:
+            //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
+            //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
+            //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
+            String s = _hex_string ? Double.toHexString(d) : Double.toString(d);
+            sb.append(s);
           }
         }
-        sb.append('\n');
-        _line = sb.toString().getBytes();
-        _position = 0;
-        _row++;
       }
-      return _line.length - _position;
+      sb.append('\n');
+      return sb.toString().getBytes();
+    }
+
+    @Override public int available() throws IOException {
+      // Case 1:  There is more data left to read from the current line.
+      if (_position != _line.length) {
+        return _line.length - _position;
+      }
+
+      // Case 2:  Out of data.
+      if (_row == numRows()) {
+        return 0;
+      }
+
+      // Case 3:  Return data for the current row.
+      //          Note this will fast-forward past empty chunks.
+      _curChkIdx = anyVec().elem2ChunkIdx(_row);
+      _line = getBytesForRow();
+      _position = 0;
+
+      // Flush non-empty remote chunk if we're done with it.
+      if (isLastRowOfCurrentNonEmptyChunk(_curChkIdx, _row)) {
+        for (Vec v : vecs()) {
+          hintFlushRemoteChunk(v, _curChkIdx);
+        }
+      }
+
+      _row++;
+
+      return _line.length;
     }
 
     @Override public void close() throws IOException {

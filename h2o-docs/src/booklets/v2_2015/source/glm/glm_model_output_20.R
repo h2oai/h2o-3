@@ -1,0 +1,1 @@
+binomial.fit@model$coefficients

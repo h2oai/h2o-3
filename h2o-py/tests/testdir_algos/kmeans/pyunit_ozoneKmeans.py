@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def ozoneKM(ip, port):
+def ozoneKM():
   # Connect to a pre-existing cluster
-  h2o.init(ip, port)  # connect to localhost:54321
+    # connect to localhost:54321
 
-  train = h2o.import_frame(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+  train = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
 
   # See that the data is ready
   print train.describe()
@@ -24,4 +24,4 @@ def ozoneKM(ip, port):
   my_pred.describe()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, ozoneKM)
+  tests.run_test(sys.argv, ozoneKM)

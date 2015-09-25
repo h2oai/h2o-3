@@ -1,11 +1,11 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
-def random_attack(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def random_attack():
+    
+    
 
     def attack(family, train, valid, x, y):
         kwargs = {}
@@ -36,12 +36,12 @@ def random_attack(ip,port):
         if random.randint(0,1):
             bc = []
             for n in x:
-                name = train.names()[n]
+                name = train.names[n]
                 lower_bound = random.uniform(-1,1)
                 upper_bound = lower_bound + random.random()
                 bc.append([name, lower_bound, upper_bound])
             beta_constraints = h2o.H2OFrame(python_obj=bc)
-            beta_constraints.setNames(['names', 'lower_bounds', 'upper_bounds'])
+            beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
             kwargs['beta_constraints'] = beta_constraints.send_frame()
 
         # display the parameters and their corresponding values
@@ -62,7 +62,7 @@ def random_attack(ip,port):
     print "Import and data munging..."
     pros = h2o.upload_file(h2o.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
-    r = pros[0].runif() # a column of length pros.nrow() with values between 0 and 1
+    r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
@@ -101,4 +101,4 @@ def random_attack(ip,port):
         attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, random_attack)
+    tests.run_test(sys.argv, random_attack)

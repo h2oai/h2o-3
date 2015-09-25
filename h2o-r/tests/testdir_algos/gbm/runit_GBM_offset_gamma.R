@@ -21,7 +21,7 @@ test <- function(h) {
 	class(Insurance$Age) <- "factor" 
 	df = data.frame(Insurance,offset) 
 	hdf = as.h2o(df,destination_frame = "hdf") 
-
+	hdf$Claims <- hdf$Claims+1e-19
 
 	hh = h2o.gbm(x = 1:3,y = "Claims",distribution ="gamma",ntrees = 600,max_depth = 1,min_rows = 1,learn_rate = .1,offset_column = "offset",training_frame = hdf) 
 	ph = as.data.frame(h2o.predict(hh,newdata = hdf)) 
@@ -30,10 +30,10 @@ test <- function(h) {
 #	expect_equal(min(pr), min(ph[,1]) ,tolerance=1e-5)
 #	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-5)
 
-	expect_equal(-1.714958, hh@model$init_f, tolerance=1e-5)
-	expect_equal(50.10707, mean(ph[,1]),tolerance=1e-5 )
-	expect_equal(0.9133843, min(ph[,1]) ,tolerance=1e-5)
-	expect_equal(392.6667, max(ph[,1]) ,tolerance=1e-5)
+	expect_equal(-1.714958, hh@model$init_f, tolerance=1e-4)
+	expect_equal(50.10707, mean(ph[,1]),tolerance=1e-4 )
+	expect_equal(0.9133843, min(ph[,1]) ,tolerance=1e-3)
+	expect_equal(392.6667, max(ph[,1]) ,tolerance=1e-3)
 	
 	testEnd()
 }

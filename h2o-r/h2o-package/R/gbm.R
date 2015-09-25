@@ -3,16 +3,17 @@
 #' Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
 #'
 #' The default distribution function will guess the model type
-#' based on the response column typerun properly the response column must be an numeric for "gaussian" or an
+#' based on the response column type. In order to run properly, the response column must be an numeric for "gaussian" or an
 #' enum for "bernoulli" or "multinomial".
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GBM model.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param training_frame An Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
@@ -22,19 +23,19 @@
 #' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
 #' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
-#' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
+#' @param validation_frame An Frame object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
-#'        than 1.0)
+#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling when balance_classes=T)
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
@@ -43,11 +44,11 @@
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #'
 #' # Run regression GBM on australia.hex data
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
 #'                  "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"
@@ -56,6 +57,7 @@
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
+                    checkpoint,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
                     tweedie_power = 1.5,
                     ntrees = 50,
@@ -71,7 +73,7 @@ h2o.gbm <- function(x, y, training_frame,
                     build_tree_one_node = FALSE,
                     nfolds = 0,
                     fold_column = NULL,
-                    fold_assignment = c("Random","Modulo"),
+                    fold_assignment = c("AUTO","Random","Modulo"),
                     keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
@@ -85,22 +87,21 @@ h2o.gbm <- function(x, y, training_frame,
   # Pass over ellipse parameters
   do_future <- FALSE
   if (length(list(...)) > 0) {
-#    browser()
     dots <- list(...) #.model.ellipses( list(...))
     if( !is.null(dots$future) ) do_future <- TRUE
   }
 
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   if (!is.null(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                   stop("argument \"validation_frame\" must be a valid Frame or key")
                  })
   }
 
@@ -108,13 +109,15 @@ h2o.gbm <- function(x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if (!missing(model_id))
     parms$model_id <- model_id
+  if(!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(tweedie_power))
@@ -150,7 +153,7 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
-  if( do_future ) .h2o.startModelJob(training_frame@conn, 'gbm', parms)
-  else            .h2o.createModel(training_frame@conn, 'gbm', parms)
+
+  .h2o.modelJob('gbm', parms, do_future)
 }
 

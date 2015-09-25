@@ -14,7 +14,6 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
 				"training_frame",
 				"validation_frame",
         "nfolds",
-        "keep_cross_validation_splits",
         "keep_cross_validation_predictions",
         "fold_assignment",
         "fold_column",
@@ -33,7 +32,7 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
     @API(help = "User-specified points", required = false)
     public KeyV3.FrameKeyV3 user_points;
 
-    @API(help="Maximum training iterations")
+    @API(help="Maximum training iterations", gridable = true)
     public int max_iterations;        // Max iterations
 
     @API(help = "Standardize columns", level = API.Level.secondary, gridable = true)

@@ -12,14 +12,13 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 				"training_frame",
 				"validation_frame",
         "nfolds",
-        "keep_cross_validation_splits",
         "keep_cross_validation_predictions",
+        "score_each_iteration",
         "fold_assignment",
         "fold_column",
 				"response_column",
 				"ignored_columns",
 				"ignore_const_cols",
-				"score_each_iteration",
 				"offset_column",
 				"weights_column",
 				"balance_classes",
@@ -31,21 +30,20 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 				"max_depth",
 				"min_rows",
 				"nbins",
+        "nbins_top_level",
 				"nbins_cats",
 				"r2_stopping",
 				"seed",
 				"build_tree_one_node",
         "mtries",
         "sample_rate",
-        "binomial_double_trees"
+        "binomial_double_trees",
+        "checkpoint"
     };
 
     // Input fields
     @API(help = "Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification and p/3 for regression (where p is the # of predictors", gridable = true)
     public int mtries;
-
-    @API(help = "Sample rate, from 0. to 1.0", gridable = true)
-    public float sample_rate;
 
     @API(help="For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.", level = API.Level.secondary)
     public boolean binomial_double_trees;

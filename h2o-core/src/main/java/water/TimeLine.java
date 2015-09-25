@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 
 import sun.misc.Unsafe;
 import water.nbhm.UtilUnsafe;
+import water.util.Log;
 
 /**
 
@@ -92,26 +93,40 @@ public class TimeLine extends UDP {
   }
 
   private static void record1( AutoBuffer b, boolean tcp, int sr, int drop) {
-    if( b.position() < 16 ) b.position(16);
-    final long ns = System.nanoTime();
-    record2(b._h2o, ns, tcp,sr,drop,b.get8(0),b.get8(8));
+    try {
+      int lim = b._bb.limit();
+      int pos = b._bb.position();
+      b._bb.limit(16);
+      long lo = b.get8(0), hi = b.get8(8);
+      final long ns = System.nanoTime();
+      record2(b._h2o, ns, tcp, sr, drop, lo, hi);
+      b._bb.limit(lim);
+      b._bb.position(pos);
+    } catch(Throwable t) {
+      System.err.println("Timeline record failed, " + t.toString());
+      Log.err(t);
+    }
   }
-  static void record_send( AutoBuffer b, boolean tcp)           { record1(b,tcp,0,   0); }
-  static void record_recv( AutoBuffer b, boolean tcp, int drop) { record1(b,tcp,1,drop); }
+  static void record_send( AutoBuffer b, boolean tcp)           {
+    record1(b,tcp,0,   0);
+  }
+  static void record_recv( AutoBuffer b, boolean tcp, int drop) {
+    record1(b,tcp,1,drop);
+  }
 
   // Record a completed I/O event.  The nanosecond time slot is actually nano's-blocked-on-io
-  static void record_IOclose( AutoBuffer b, int flavor ) {
-    H2ONode h2o = b._h2o==null ? H2O.SELF : b._h2o;
-    // First long word going out has sender-port and a 'bad' control packet
-    long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
-    b0 |= H2O.SELF._key.udp_port()<<8;
-    b0 |= flavor<<24;           // I/O flavor; one of the Value.persist backends
-    long iotime = b._time_start_ms > 0 ? (b._time_close_ms - b._time_start_ms) : 0;
-    b0 |= iotime<<32;           // msec from start-to-finish, including non-i/o overheads
-    long b8 = b._size;          // byte's transfered in this I/O
-    long ns = b._time_io_ns;    // nano's blocked doing I/O
-    record2(h2o,ns,true,b.readMode()?1:0,0,b0,b8);
-  }
+//  static void record_IOclose( AutoBuffer b, int flavor ) {
+//    H2ONode h2o = b._h2o==null ? H2O.SELF : b._h2o;
+//    // First long word going out has sender-port and a 'bad' control packet
+//    long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
+//    b0 |= H2O.SELF._key.udp_port()<<8;
+//    b0 |= flavor<<24;           // I/O flavor; one of the Value.persist backends
+//    long iotime = b._time_start_ms > 0 ? (b._time_close_ms - b._time_start_ms) : 0;
+//    b0 |= iotime<<32;           // msec from start-to-finish, including non-i/o overheads
+//    long b8 = b._size;          // byte's transfered in this I/O
+//    long ns = b._time_io_ns;    // nano's blocked doing I/O
+//    record2(h2o,ns,true,b.readMode()?1:0,0,b0,b8);
+//  }
 
   /* Record an I/O call without using an AutoBuffer / NIO.
    * Used by e.g. HDFS & S3
@@ -122,16 +137,16 @@ public class TimeLine extends UDP {
    * @param size - bytes read/written
    * @param flavor - Value.HDFS or Value.S3
    */
-  public static void record_IOclose( long start_ns, long start_io_ms, int r_w, long size, int flavor ) {
-    long block_ns = System.nanoTime() - start_ns;
-    long io_ms = System.currentTimeMillis() - start_io_ms;
-    // First long word going out has sender-port and a 'bad' control packet
-    long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
-    b0 |= H2O.SELF._key.udp_port()<<8;
-    b0 |= flavor<<24;           // I/O flavor; one of the Value.persist backends
-    b0 |= io_ms<<32;            // msec from start-to-finish, including non-i/o overheads
-    record2(H2O.SELF,block_ns,true,r_w,0,b0,size);
-  }
+//  public static void record_IOclose( long start_ns, long start_io_ms, int r_w, long size, int flavor ) {
+//    long block_ns = System.nanoTime() - start_ns;
+//    long io_ms = System.currentTimeMillis() - start_io_ms;
+//    // First long word going out has sender-port and a 'bad' control packet
+//    long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
+//    b0 |= H2O.SELF._key.udp_port()<<8;
+//    b0 |= flavor<<24;           // I/O flavor; one of the Value.persist backends
+//    b0 |= io_ms<<32;            // msec from start-to-finish, including non-i/o overheads
+//    record2(H2O.SELF,block_ns,true,r_w,0,b0,size);
+//  }
 
   // Accessors, for TimeLines that come from all over the system
   public static int length( ) { return MAX_EVENTS; }
@@ -188,7 +203,7 @@ public class TimeLine extends UDP {
         SNAPSHOT = new long[CLOUD.size()][];
         // Broadcast a UDP packet, with the hopes of getting all SnapShots as close
         // as possible to the same point in time.
-        new AutoBuffer(H2O.SELF).putUdp(udp.timeline).close();
+        new AutoBuffer(H2O.SELF,udp.timeline._prior).putUdp(udp.timeline).close();
       }
       // Spin until all snapshots appear
       while( true ) {
@@ -214,18 +229,9 @@ public class TimeLine extends UDP {
             SNAPSHOT[i] = a;
         TimeLine.class.notify();
       }
-      return null; // No I/O needed for my own snapshot
-    }
-    // Send timeline to remote
-    while( true ) {
-      AutoBuffer tab = new AutoBuffer(ab._h2o);
-      try {
-        tab.putUdp(UDP.udp.timeline).putA8(a).close();
-        return null;
-      } catch( AutoBuffer.AutoBufferException tue ) {
-        tab.close();
-      }
-    }
+    } else // Send timeline to remote
+      new AutoBuffer(ab._h2o,udp.timeline._prior).putUdp(UDP.udp.timeline).putA8(a).close();
+    return null;
   }
 
   // Receive a remote timeline
@@ -233,10 +239,12 @@ public class TimeLine extends UDP {
     ab.getPort();
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
-    if( idx >= 0 && idx < SNAPSHOT.length )
+    if (idx >= 0 && idx < SNAPSHOT.length)
       SNAPSHOT[idx] = snap;     // Ignore out-of-cloud timelines
     ab.close();
-    synchronized(TimeLine.class) {  TimeLine.class.notify();  }
+    synchronized (TimeLine.class) {
+      TimeLine.class.notify();
+    }
   }
 
   String print16( AutoBuffer ab ) { return ""; } // no extra info in a timeline packet

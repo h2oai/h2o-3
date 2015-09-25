@@ -1,14 +1,14 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 import random
 import math
 import scipy.special
 
-def frame_math_ops(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def frame_math_ops():
+    
+    
 
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]
     asin_acos_atanh_data = [[random.uniform(-1,1) for r in range(10)] for c in range(10)]
@@ -34,12 +34,12 @@ def frame_math_ops(ip,port):
         r = h2o_round[0,0]
         assert s == r, "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
     h2o_transposed = h2o_data1[0:5].transpose()
-    r, c = h2o_transposed.dim()
+    r, c = h2o_transposed.dim
     assert r == 5 and c == 10, "Expected 5 rows and 10 columns, but got {0} rows and {1} columns".format(r,c)
-    h2o.np_comparison_check(h2o_transposed, np.transpose(np_data1[:,0:5]), 10)
-    h2o.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)
-    h2o.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
-    h2o.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
+    tests.np_comparison_check(h2o_transposed, np.transpose(np_data1[:,0:5]), 10)
+    tests.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)
+    tests.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
+    tests.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, frame_math_ops)
+    tests.run_test(sys.argv, frame_math_ops)

@@ -23,21 +23,24 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+check.kmeans_airlines <- function() {
 
-#----------------------------------------------------------------------
-# Single file cases.
-#----------------------------------------------------------------------
+  #----------------------------------------------------------------------
+  # Single file cases.
+  #----------------------------------------------------------------------
 
-heading("Import airlines_all.csv from HDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_file)
-airlines.hex <- h2o.importFile(conn, url)
-n <- nrow(airlines.hex)
-print(paste("Imported n =", n, "rows"))
+  heading("Import airlines_all.csv from HDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_file)
+  airlines.hex <- h2o.importFile(url)
+  n <- nrow(airlines.hex)
+  print(paste("Imported n =", n, "rows"))
 
-heading(paste("Run k-means++ with k = 7 and max_iterations = 10"))
-myX <- c(1:8, 10, 12:16, 19:21, 25:29)
-airlines.km <- h2o.kmeans(training_frame = airlines.hex, x = myX, k = 7, init = "Furthest", max_iterations = 10, standardize = TRUE)
-airlines.km
+  heading(paste("Run k-means++ with k = 7 and max_iterations = 10"))
+  myX <- c(1:8, 10, 12:16, 19:21, 25:29)
+  airlines.km <- h2o.kmeans(training_frame = airlines.hex, x = myX, k = 7, init = "Furthest", max_iterations = 10, standardize = TRUE)
+  airlines.km
 
-PASS_BANNER()
+  testEnd()
+}
+
+doTest("K-means on Airlines dataset", check.kmeans_airlines)

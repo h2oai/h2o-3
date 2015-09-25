@@ -250,6 +250,9 @@ class RollupStats extends Iced {
           _rs._mins[4-i] = Double.NaN;
         }
       }
+      // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
+      if( _fr.anyVec().isEnum() && _fr.anyVec().domain().length > 2 )
+        _rs._mean = _rs._sigma = Double.NaN;
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
@@ -442,7 +445,7 @@ class RollupStats extends Iced {
       int nbins=MAX_SIZE;
       if( rs._isInt && span < Integer.MAX_VALUE ) {
         nbins = (int)span+1;      // 1 bin per int
-        int lim = vec.isEnum() ? Categorical.MAX_ENUM_SIZE : MAX_SIZE;
+        int lim = vec.isEnum() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels
       }
       addToPendingCount(1);

@@ -1,6 +1,5 @@
 package water.api;
 
-import hex.Model;
 import water.Iced;
 
 /**

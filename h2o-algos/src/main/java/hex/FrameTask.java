@@ -1,9 +1,7 @@
 package hex;
 
 import water.*;
-import water.Job.JobCancelledException;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
@@ -45,7 +43,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   @Override protected void closeLocal(){ _dinfo = null;}
 
   /**
-   * Method to process one row of the data for GLM functions.
+   * Method to process one row of the data. See for separate mini-batch logic below.
    * Numeric and categorical values are passed separately, as is response.
    * Categoricals are passed as absolute indexes into the expanded beta vector, 0-levels are skipped
    * (so the number of passed categoricals will not be the same for every row).
@@ -66,6 +64,19 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected void processRow(long gid, DataInfo.Row r, NewChunk [] outputs){throw new RuntimeException("should've been overridden!");}
 
   /**
+   * Mini-Batch update of model parameters
+   * @param n number of trained examples in this last mini batch
+   */
+  protected void applyMiniBatchUpdate(int n){}
+
+  /**
+   * Return the mini-batch size
+   * Note: If this is overridden, then applyMiniBatch must be overridden as well to perform the model/weight mini-batch update
+   * @return
+   */
+  protected int getMiniBatchSize(){ return 1; }
+
+  /**
    * Override this to initialize at the beginning of chunk processing.
    * @return whether or not to process this chunk
    */
@@ -80,8 +91,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Extracts the values, applies regularization to numerics, adds appropriate offsets to categoricals,
    * and adapts response according to the CaseMode/CaseValue if set.
    */
-  @Override public final void map(Chunk [] chunks, NewChunk [] outputs){
-    if(_jobKey != null && !Job.isRunning(_jobKey))throw new JobCancelledException();
+  @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
+    if (_jobKey != null && !Job.isRunning(_jobKey)) return;
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     boolean doWork = chunkInit();
@@ -96,17 +107,16 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     if (obs_weights) {
       weight_map = new double[nrows];
       double weight_sum = 0;
-      for (int i=0;i<nrows;++i) {
+      for (int i = 0; i < nrows; ++i) {
         row = _dinfo.extractDenseRow(chunks, i, row);
-        weight_sum+=row.weight;
-        weight_map[i]=weight_sum;
-        assert(i == 0 || row.weight == 0 || weight_map[i] > weight_map[i-1]);
+        weight_sum += row.weight;
+        weight_map[i] = weight_sum;
+        assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
       }
       if (weight_sum > 0) {
         ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
         relative_chunk_weight = global_weight_sum * nrows / _fr.numRows() / weight_sum;
-      }
-      else return; //nothing to do here - all rows have 0 weight
+      } else return; //nothing to do here - all rows have 0 weight
     }
 
     //Example:
@@ -115,14 +125,22 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     // _useFraction = 1.1 -> 2 repeats with fraction = 0.55
     // _useFraction = 2.1 -> 3 repeats with fraction = 0.7
     // _useFraction = 3.0 -> 3 repeats with fraction = 1.0
-    final int repeats = (int)Math.ceil(_useFraction * relative_chunk_weight);
-    final float fraction = (float)(_useFraction * relative_chunk_weight) / repeats;
-    assert(fraction <= 1.0);
+    final int repeats = (int) Math.ceil(_useFraction * relative_chunk_weight);
+    final float fraction = (float) (_useFraction * relative_chunk_weight) / repeats;
+    assert (fraction <= 1.0);
 
     final boolean sample = (fraction < 0.999 || obs_weights || _shuffle);
-    final Random skip_rng = sample ? RandomUtils.getRNG((0x8734093502429734L+_seed+offset)*(_iteration+0x9823423497823423L)) : null;
+    final long chunkSeed = (0x8734093502429734L + _seed + offset) * (_iteration + 0x9823423497823423L);
+    final Random skip_rng = sample ? RandomUtils.getRNG(chunkSeed) : null;
+    int[] shufIdx = skip_rng == null ? null : new int[nrows];
+    if (skip_rng != null) {
+      for (int i = 0; i < nrows; ++i) shufIdx[i] = i;
+      ArrayUtils.shuffleArray(shufIdx, skip_rng);
+    }
 
+    final int miniBatchSize = getMiniBatchSize();
     long num_processed_rows = 0;
+    int miniBatchCounter = 0;
     for(int rep = 0; rep < repeats; ++rep) {
       for(int row_idx = 0; row_idx < nrows; ++row_idx){
         int r = sample ? -1 : 0;
@@ -137,11 +155,11 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
           if (r<0) r=-r-1;
           assert(r == 0 || weight_map[r] > weight_map[r-1]);
         } else if (r == -1){
-          do {
-            r = skip_rng.nextInt(nrows); //random sampling (with replacement)
-          }
+          r = shufIdx[row_idx];
           // if we have weights, and we did the %2 skipping above, then we need to find an alternate row with non-zero weight
-          while (obs_weights && ((r == 0 && weight_map[0] == 0) || (r > 0 && weight_map[r] == weight_map[r-1])));
+          while (obs_weights && ((r == 0 && weight_map[r] == 0) || (r > 0 && weight_map[r] == weight_map[r-1]))) {
+            r = skip_rng.nextInt(nrows); //random sampling with replacement
+          }
         } else {
           assert(!obs_weights);
           r = row_idx; //linear scan - slightly faster
@@ -152,16 +170,48 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         if(!row.bad) {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           long seed = offset + rep * nrows + r;
+          miniBatchCounter++;
           if (outputs != null && outputs.length > 0)
             processRow(seed++, row, outputs);
           else
             processRow(seed++, row);
         }
         num_processed_rows++;
+        if (miniBatchCounter > 0 && miniBatchCounter % miniBatchSize == 0) {
+          applyMiniBatchUpdate(miniBatchCounter);
+          miniBatchCounter = 0;
+        }
       }
     }
+    if (miniBatchCounter>0)
+      applyMiniBatchUpdate(miniBatchCounter); //finish up the last piece
+
     assert(fraction != 1 || num_processed_rows == repeats * nrows);
     chunkDone(num_processed_rows);
+  }
+
+  public static class ExtractDenseRow extends MRTask<ExtractDenseRow> {
+    final private DataInfo _di; //INPUT
+    final private long _gid; //INPUT
+    public DataInfo.Row _row; //OUTPUT
+    public ExtractDenseRow(DataInfo di, long globalRowId) { _di = di;  _gid = globalRowId; }
+
+    @Override
+    public void map(Chunk[] cs) {
+      // fill up _row with the data of row with global id _gid
+      if (cs[0].start() <= _gid && cs[0].start()+cs[0].len() > _gid) {
+        _row = _di.newDenseRow();
+        _di.extractDenseRow(cs, (int)(_gid-cs[0].start()), _row);
+      }
+    }
+
+    @Override
+    public void reduce(ExtractDenseRow mrt) {
+      if (mrt._row != null) {
+        assert(this._row == null); //only one thread actually filled the output _row
+        _row = mrt._row;
+      }
+    }
   }
 
 }

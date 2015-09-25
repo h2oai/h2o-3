@@ -4,8 +4,6 @@ import hex.Distribution;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningParameters;
 import water.api.API;
-import water.api.FrameV3.ColSpecifierV3;
-import water.api.KeyV3.ModelKeyV3;
 import water.api.ModelParametersSchema;
 
 public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
@@ -18,7 +16,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 				"training_frame",
 				"validation_frame",
         "nfolds",
-        "keep_cross_validation_splits",
         "keep_cross_validation_predictions",
         "fold_assignment",
         "fold_column",
@@ -86,6 +83,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_categorical_features",
         "reproducible",
         "export_weights_and_biases",
+//        "mini_batch_size",
 //        "elastic_averaging",
 //        "elastic_averaging_moving_rate",
 //        "elastic_averaging_regularization"
@@ -96,7 +94,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
      */
-    @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).", level = API.Level.secondary, direction = API.Direction.INOUT)
+    @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).", level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
     public boolean balance_classes;
 
     /**
@@ -104,37 +102,29 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Only when balance_classes is enabled.
      * If not specified, they will be automatically computed to obtain class balance during training.
      */
-    @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
+    @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public float[] class_sampling_factors;
 
     /**
      * When classes are balanced, limit the resulting dataset size to the
      * specified multiple of the original dataset size.
      */
-    @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires balance_classes.", /* dmin=1e-3, */ level = API.Level.expert, direction = API.Direction.INOUT)
+    @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires balance_classes.", /* dmin=1e-3, */ level = API.Level.expert, direction = API.Direction.INOUT, gridable = true)
     public float max_after_balance_size;
 
     /** For classification models, the maximum size (in terms of classes) of
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.  */
-    @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
+    @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
     public int max_confusion_matrix_size;
 
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public int max_hit_ratio_k;
 
     /////////////////////
-
-    /**
-     * A model key associated with a previously trained Deep Learning
-     * model. This option allows users to build a new model as a
-     * continuation of a previously generated model (e.g., by a grid search).
-     */
-    @API(help = "Model checkpoint to resume training with", level = API.Level.secondary, direction=API.Direction.INOUT)
-    public ModelKeyV3 checkpoint;
 
     /**
      * If enabled, store the best model under the destination key of this model at the end of training.
@@ -146,7 +136,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Auto-Encoder", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean autoencoder;
 
-    @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public boolean use_all_factor_levels;
 
     /*Neural Net Topology*/
@@ -160,7 +150,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      *      training row. This effectively trains exponentially many models at
      *      once, and can improve generalization.
      */
-    @API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT)
+    @API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Activation activation;
 
     /**
@@ -169,7 +159,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * layers will be produced, and the middle hidden layer will have 200
      * neurons.
      */
-    @API(help = "Hidden layer sizes (e.g. 100,100).", level = API.Level.critical, direction=API.Direction.INOUT)
+    @API(help = "Hidden layer sizes (e.g. 100,100).", level = API.Level.critical, direction=API.Direction.INOUT, gridable = true)
     public int[] hidden;
 
     /**
@@ -178,7 +168,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This value can be modified during checkpoint restarts and allows continuation
      * of selected models.
      */
-    @API(help = "How many times the dataset should be iterated (streamed), can be fractional", /* dmin = 1e-3, */ level = API.Level.critical, direction=API.Direction.INOUT)
+    @API(help = "How many times the dataset should be iterated (streamed), can be fractional", /* dmin = 1e-3, */ level = API.Level.critical, direction=API.Direction.INOUT, gridable = true)
     public double epochs;
 
     /**
@@ -196,10 +186,10 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * will be trained per iteration on N nodes, otherwise one epoch). Special value
      * of -2 turns on automatic mode (auto-tuning).
      */
-    @API(help = "Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic", /* lmin = -2, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic", /* lmin = -2, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public long train_samples_per_iteration;
 
-    @API(help = "Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning)", /* dmin = 1e-3, dmax=0.999, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning)", /* dmin = 1e-3, dmax=0.999, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double target_ratio_comm_to_comp;
 
     /**
@@ -212,7 +202,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * results. Note that deterministic sampling and initialization might
      * still lead to some weak sense of determinism in the model.
      */
-    @API(help = "Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public long seed;
 
     /*Adaptive Learning Rate*/
@@ -235,7 +225,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * surface with small learning rates, the model can converge far
      * slower than necessary.
      */
-    @API(help = "Adaptive learning rate", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Adaptive learning rate", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public boolean adaptive_rate;
 
     /**
@@ -244,7 +234,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Typical values are between 0.9 and 0.999.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-    @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", /* dmin = 0.01, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", /* dmin = 0.01, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double rho;
 
     /**
@@ -254,7 +244,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Typical values are between 1e-10 and 1e-4.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-    @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", /* dmin = 1e-15, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", /* dmin = 1e-15, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double epsilon;
 
     /*Learning Rate*/
@@ -272,7 +262,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * why the momentum is best ramped up slowly.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Learning rate (higher => less stable, lower => slower convergence)", /* dmin = 1e-10, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Learning rate (higher => less stable, lower => slower convergence)", /* dmin = 1e-10, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double rate;
 
     /**
@@ -282,7 +272,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * (e.g., 1e-6 means that it takes 1e6 training samples to halve the learning rate).
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Learning rate annealing: rate / (1 + rate_annealing * samples)", /* dmin = 0, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Learning rate annealing: rate / (1 + rate_annealing * samples)", /* dmin = 0, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double rate_annealing;
 
     /**
@@ -293,7 +283,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * and the learning rate for the weights connecting the second and third hidden layer will be 0.0025, etc.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Learning rate decay factor between layers (N-th layer: rate*alpha^(N-1))", /* dmin = 0, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Learning rate decay factor between layers (N-th layer: rate*alpha^(N-1))", /* dmin = 0, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double rate_decay;
 
     /*Momentum*/
@@ -301,7 +291,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * The momentum_start parameter controls the amount of momentum at the beginning of training.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Initial momentum at the beginning of training (try 0.5)", /* dmin = 0, dmax = 0.9999999999, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Initial momentum at the beginning of training (try 0.5)", /* dmin = 0, dmax = 0.9999999999, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double momentum_start;
 
     /**
@@ -318,7 +308,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * The momentum used for training will remain the same for training beyond reaching that point.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Final momentum after the ramp is over (try 0.99)", /* dmin = 0, dmax = 0.9999999999, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Final momentum after the ramp is over (try 0.99)", /* dmin = 0, dmax = 0.9999999999, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double momentum_stable;
 
     /**
@@ -328,7 +318,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * minimizes the residuals in fewer iterations of the descent.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Use Nesterov accelerated gradient (recommended)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Use Nesterov accelerated gradient (recommended)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean nesterov_accelerated_gradient;
 
     /*Regularization*/
@@ -336,14 +326,14 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * A fraction of the features for each training row to be omitted from training in order
      * to improve generalization (dimension sampling).
      */
-    @API(help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2)", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double input_dropout_ratio;
 
     /**
      * A fraction of the inputs for each hidden layer to be omitted from training in order
      * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
      */
-    @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double[] hidden_dropout_ratios;
 
     /**
@@ -351,16 +341,16 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * has the net effect of dropping some weights (setting them to zero) from a model
      * to reduce complexity and avoid overfitting.
      */
-    @API(help = "L1 regularization (can add stability and improve generalization, causes many weights to become 0)", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "L1 regularization (can add stability and improve generalization, causes many weights to become 0)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double l1;
 
     /**
-     *  A regularization method that constrdains the sum of the squared
+     *  A regularization method that constrains the sum of the squared
      * weights. This method introduces bias into parameter estimates, but
      * frequently produces substantial gains in modeling as estimate variance is
      * reduced.
      */
-    @API(help = "L2 regularization (can add stability and improve generalization, causes many weights to be small", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "L2 regularization (can add stability and improve generalization, causes many weights to be small", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double l2;
 
     /**
@@ -368,7 +358,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * any one neuron. This tuning parameter is especially useful for unbound
      * activation functions such as Maxout or Rectifier.
      */
-    @API(help = "Constraint for squared sum of incoming weights per unit (e.g. for Rectifier)", /* dmin = 1e-10, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Constraint for squared sum of incoming weights per unit (e.g. for Rectifier)", /* dmin = 1e-10, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public float max_w2;
 
     /*Initialization*/
@@ -379,7 +369,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * interval. The "normal" option draws weights from the standard normal
      * distribution with a mean of 0 and given standard deviation.
      */
-    @API(help = "Initial Weight Distribution", values = { "UniformAdaptive", "Uniform", "Normal" }, level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Initial Weight Distribution", values = { "UniformAdaptive", "Uniform", "Normal" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.InitialWeightDistribution initial_weight_distribution;
 
     /**
@@ -387,7 +377,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * For Uniform, the values are drawn uniformly from -initial_weight_scale...initial_weight_scale.
      * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
      */
-    @API(help = "Uniform: -value...value, Normal: stddev)", /* dmin = 0, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Uniform: -value...value, Normal: stddev)", /* dmin = 0, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double initial_weight_scale;
 
     /**
@@ -401,10 +391,10 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Loss loss;
 
-    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, level = API.Level.secondary)
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, level = API.Level.secondary, gridable = true)
     public Distribution.Family distribution;
 
     @API(help = "Tweedie Power", level = API.Level.secondary)
@@ -415,14 +405,14 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * The minimum time (in seconds) to elapse between model scoring. The actual
      * interval is determined by the number of training samples per iteration and the scoring duty cycle.
      */
-    @API(help = "Shortest time interval (in secs) between model scoring", /* dmin = 0, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Shortest time interval (in secs) between model scoring", /* dmin = 0, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double score_interval;
 
     /**
      * The number of training dataset points to be used for scoring. Will be
      * randomly sampled. Use 0 for selecting the entire training dataset.
      */
-    @API(help = "Number of training set samples for scoring (0 for all)", /* lmin = 0, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Number of training set samples for scoring (0 for all)", /* lmin = 0, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public long score_training_samples;
 
     /**
@@ -431,14 +421,14 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * validation sampling" is set to stratify). Use 0 for selecting the entire
      * training dataset.
      */
-    @API(help = "Number of validation set samples for scoring (0 for all)", /* lmin = 0, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Number of validation set samples for scoring (0 for all)", /* lmin = 0, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public long score_validation_samples;
 
     /**
      * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
      * and on diagnostics such as computation of feature importances (i.e., not on training).
      */
-    @API(help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double score_duty_cycle;
 
     /**
@@ -446,7 +436,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * training data scoring dataset. When the error is at or below this threshold,
      * training stops.
      */
-    @API(help = "Stopping criterion for classification error fraction on training data (-1 to disable)", /* dmin=-1, dmax=1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Stopping criterion for classification error fraction on training data (-1 to disable)", /* dmin=-1, dmax=1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double classification_stop;
 
     /**
@@ -454,19 +444,19 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * data scoring dataset. When the error is at or below this threshold, training
      * stops.
      */
-    @API(help = "Stopping criterion for regression error (MSE) on training data (-1 to disable)", /* dmin=-1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Stopping criterion for regression error (MSE) on training data (-1 to disable)", /* dmin=-1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double regression_stop;
 
     /**
      * Enable quiet mode for less output to standard output.
      */
-    @API(help = "Enable quiet mode for less output to standard output", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Enable quiet mode for less output to standard output", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean quiet_mode;
 
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
      */
-    @API(help = "Method used to sample validation dataset for scoring", values = { "Uniform", "Stratified" }, level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Method used to sample validation dataset for scoring", values = { "Uniform", "Stratified" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.ClassSamplingMethod score_validation_sampling;
 
     /*Misc*/
@@ -482,26 +472,26 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * The implemented method (by Gedeon) considers the weights connecting the
      * input features to the first two hidden layers.
      */
-    @API(help = "Compute variable importances for input features (Gedeon method) - can be slow for large networks", direction=API.Direction.INOUT)
+    @API(help = "Compute variable importances for input features (Gedeon method) - can be slow for large networks", direction=API.Direction.INOUT, gridable = true)
     public boolean variable_importances;
 
     /**
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
      */
-    @API(help = "Enable fast mode (minor approximation in back-propagation)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Enable fast mode (minor approximation in back-propagation)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean fast_mode;
 
     /**
      * Increase training speed on small datasets by splitting it into many chunks
      * to allow utilization of all cores.
      */
-    @API(help = "Force extra load balancing to increase training speed for small datasets (to keep all cores busy)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Force extra load balancing to increase training speed for small datasets (to keep all cores busy)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean force_load_balance;
 
     /**
      * Replicate the entire training dataset onto every node for faster training on small datasets.
      */
-    @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public boolean replicate_training_data;
 
     /**
@@ -509,7 +499,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * checkpoint resumes after training on multiple nodes for fast initial
      * convergence.
      */
-    @API(help = "Run on a single node for fine-tuning of model parameters", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Run on a single node for fine-tuning of model parameters", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean single_node_mode;
 
     /**
@@ -519,32 +509,35 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
      * times the dataset size or larger).
      */
-    @API(help = "Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean shuffle_training_data;
 
-    @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
-    @API(help = "Sparse data handling (Experimental).", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Sparse data handling (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean sparse;
 
-    @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental).", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean col_major;
 
-    @API(help = "Average activation for sparse auto-encoder (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Average activation for sparse auto-encoder (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double average_activation;
 
-    @API(help = "Sparsity regularization (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Sparsity regularization (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double sparsity_beta;
 
-    @API(help = "Max. number of categorical features, enforced via hashing (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Max. number of categorical features, enforced via hashing (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public int max_categorical_features;
 
-    @API(help = "Force reproducibility on small data (will be slow - only uses 1 thread)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Force reproducibility on small data (will be slow - only uses 1 thread)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean reproducible;
 
     @API(help = "Whether to export Neural Network weights and biases to H2O Frames", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean export_weights_and_biases;
+
+//    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public int mini_batch_size;
 
 //    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public boolean elastic_averaging;

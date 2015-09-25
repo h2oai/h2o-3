@@ -18,9 +18,9 @@ library(testthat)
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
-data.hex <- h2o.importFile(conn, "maprfs:/datasets/WU_100KRows3KCols.csv")
+data.hex <- h2o.importFile("maprfs:/datasets/WU_100KRows3KCols.csv")
 
 #print(summary(data.hex))
 

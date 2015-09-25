@@ -1,17 +1,17 @@
 import sys, os
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def bernoulliGBM(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+def bernoulliGBM():
+  
+  
 
   #Log.info("Importing prostate.csv data...\n")
-  prostate_train = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate_train.csv"))
+  prostate_train = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate_train.csv"))
 
   #Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
@@ -41,7 +41,7 @@ def bernoulliGBM(ip,port):
   gbm_sci.fit(trainDataFeatures,trainDataResponse)
 
   #Log.info("Importing prostate_test.csv data...\n")
-  prostate_test = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate_test.csv"))
+  prostate_test = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate_test.csv"))
 
   #Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate_test["CAPSULE"] = prostate_test["CAPSULE"].asfactor()
@@ -64,4 +64,4 @@ def bernoulliGBM(ip,port):
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, bernoulliGBM)
+  tests.run_test(sys.argv, bernoulliGBM)

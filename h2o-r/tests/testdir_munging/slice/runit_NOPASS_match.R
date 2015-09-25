@@ -4,9 +4,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.match <- function(conn) {
+test.match <- function() {
 
-  hex <- as.h2o(conn, iris)
+  hex <- as.h2o(iris)
 
   #Log.info("Printing the head of the iris data frame.")
   print(hex)

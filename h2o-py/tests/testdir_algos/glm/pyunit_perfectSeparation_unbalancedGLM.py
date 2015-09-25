@@ -1,13 +1,13 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def perfectSeparation_unbalanced(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def perfectSeparation_unbalanced():
+    
+    
 
     print("Read in synthetic unbalanced dataset")
-    data = h2o.import_frame(h2o.locate("smalldata/synthetic_perfect_separation/unbalanced.csv"))
+    data = h2o.import_file(h2o.locate("smalldata/synthetic_perfect_separation/unbalanced.csv"))
 
     print("Fit model on dataset.")
     model = h2o.glm(x=data[["x1", "x2"]], y=data["y"], family="binomial", lambda_search=True, alpha=[0.5], Lambda=[0])
@@ -19,4 +19,4 @@ def perfectSeparation_unbalanced(ip,port):
         assert c < 50, "coefficient is too large"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, perfectSeparation_unbalanced)
+    tests.run_test(sys.argv, perfectSeparation_unbalanced)

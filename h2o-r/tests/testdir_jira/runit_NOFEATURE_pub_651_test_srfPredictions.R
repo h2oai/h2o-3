@@ -5,19 +5,18 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
 source('../h2o-runit.R')
 
-test.pub.651 <- function(conn) {
+test.pub.651 <- function() {
   print("Parsing the adult income dataset")
-  adlt_income<-h2o.importFile(conn, normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
+  adlt_income<-h2o.importFile(normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
   myX = 1:14
   myY = 15
 
-  print("Building SpeedRF model")
-  my.srf  = h2o.randomForest(x=myX,y=myY,training_frame=adlt_income,ntrees=50,
-                             oobee=F,validation=adlt_income)
-  print(paste(" The SpeedRF ran with this seed: ",my.srf@model$params$seed, sep = ''))
+  print("Building RF model")
+  my.srf  = h2o.randomForest(x=myX,y=myY,training_frame=adlt_income,ntrees=50, validation_frame=adlt_income)
+  print(paste(" The RF ran with this seed: ",my.srf@model$params$seed, sep = ''))
   print(my.srf)
 
-  mse_from_model = my.srf@model$mse
+  mse_from_model = h2o.mse(my.srf)
   print(paste("mean squared error from model page", mse_from_model, sep = ''))
 
   pred = h2o.predict(my.srf,adlt_income)

@@ -6,14 +6,14 @@
 
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import numpy as np
 
-def sdev(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+def sdev():
+  
+  
 
-  iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+  iris_h2o = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
   iris_np = np.genfromtxt(h2o.locate("smalldata/iris/iris_wheader.csv"),
                           delimiter=',',
                           skip_header=1,
@@ -24,17 +24,7 @@ def sdev(ip,port):
     sd_h2o = iris_h2o[i].sd()
     assert abs(sd_np[i] - sd_h2o) < 1e-10, "expected standard deviations to be the same"
 
-  try:
-    iris_h2o[4].sd()
-    assert False, "expected an error. column is categorical."
-  except EnvironmentError:
-    assert True
-
-  try:
-    iris_h2o[0:2].sd()
-    assert False, "expected an error. more than one column."
-  except EnvironmentError:
-    assert True
+  iris_h2o[0:2].sd()
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, sdev)
+  tests.run_test(sys.argv, sdev)

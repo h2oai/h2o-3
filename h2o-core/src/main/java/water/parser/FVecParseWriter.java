@@ -151,7 +151,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;
           _nvs[colIdx].addEnum(id);
         } else { // maxed out enum map
-          throw new H2OParseException("Exceeded enumeration limit.  Consider reparsing this column as a string.");
+          throw new H2OParseException("Exceeded enumeration limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
         }
       }
     }
@@ -176,4 +176,5 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public void setColumnNames(String [] names){}
   @Override public final void rollbackLine() {}
   @Override public void invalidLine(String err) { newLine(); }
+  @Override public void setIsAllASCII(int colIdx, boolean b) {_nvs[colIdx]._isAllASCII = b;}
 }

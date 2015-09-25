@@ -1,14 +1,14 @@
 package water;
 
-import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
+
+import java.util.Arrays;
+
+import hex.ModelBuilder;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.Log;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
+import water.util.StringUtils;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -114,6 +114,8 @@ public class Job<T extends Keyed> extends Keyed {
    *  people like 'em. */
   public final Key<T> dest() { return _dest; }
 
+  public final Key<Job> jobKey() { return _key; }
+
   /** User description */
   public String _description;
   /** Job start_time using Sys.CTM */
@@ -164,7 +166,7 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  protected Job(Key<T> jobKey, Key<T> dest, String desc) {
+  private Job(Key<T> jobKey, Key<T> dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
@@ -185,12 +187,13 @@ public class Job<T extends Keyed> extends Keyed {
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
    *  @param work Units of work to be completed
-   *  @return this job in {@link JobState#RUNNING} state
+   *  @param restartTimer
+   * @return this job in {@link JobState#RUNNING} state
    *
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
+  protected Job<T> start(final H2OCountedCompleter fjtask, long work, boolean restartTimer) {
     if (work >= 0)
       DKV.put(_progressKey = createProgressKey(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
@@ -210,12 +213,13 @@ public class Job<T extends Keyed> extends Keyed {
           if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
             System.err.println("barrier onExCompletion for "+fjtask);
             ex.printStackTrace();
+            Job.this.failed(ex);
           }
           return true;
         }
       };
     fjtask.setCompleter(_barrier);
-    _start_time = System.currentTimeMillis();
+    if (restartTimer) _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
     // Save the full state of the job
     DKV.put(_key, this);
@@ -249,16 +253,37 @@ public class Job<T extends Keyed> extends Keyed {
    * @see DKV
    */
   public T get() {
-    assert _fjtask != null : "Cannot block on missing F/J task";
-    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    block();
     assert !isRunning() : "Job state should not be running, but it is " + _state;
     return _dest.get();
   }
 
+  /**
+   * Blocks for job completion, but do not return anything as the destination object might not yet be finished
+   */
+  public void block() {
+    assert _fjtask != null : "Cannot block on missing F/J task";
+    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+  }
+
   /** Marks job as finished and records job end time. */
   public void done() {
-    changeJobState(null, JobState.DONE);
+    done(false);
   }
+
+  /**
+   * Conditionally mark the job as finished and record job end time
+   * @param force If set to false, then ask canBeDone() whether to mark the job as finished
+   */
+  protected void done(boolean force) {
+    if (force || canBeDone()) changeJobState(null, JobState.DONE);
+  }
+
+  /**
+   * Allow ModelBuilders to override this to conditionally mark the job as finished
+   * @return whether or not the job should be marked as finished in done() or done(false)
+   */
+  protected boolean canBeDone() { return true; }
 
   /** Signal cancellation of this job.
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
@@ -268,10 +293,7 @@ public class Job<T extends Keyed> extends Keyed {
   /** Signal exceptional cancellation of this job.
    *  @param ex exception causing the termination of job. */
   public void failed(Throwable ex) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    ex.printStackTrace(pw);
-    String stackTrace = sw.toString();
+    String stackTrace = StringUtils.toString(ex);
     changeJobState("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
     //if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
   }

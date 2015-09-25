@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/flow_examples/seeds_dataset.txt\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/flow_examples/seeds_dataset.txt\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/flow_examples/seeds_dataset.txt\"]\n  destination_frame: \"seeds_dataset2.hex\"\n  parse_type: \"CSV\"\n  separator: 9\n  number_columns: 8\n  single_quotes: false\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"seeds_dataset2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"seeds_dataset2.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"seeds_dataset2.hex\", [0.25], [\"seeds_dataset2_test.hex_0.250\",\"seeds_dataset2_train.hex_0.750\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"glm\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-7fc1da4c-0511-4053-a274-b08e1622d46e\",\"training_frame\":\"seeds_dataset2_train.hex_0.750\",\"validation_frame\":\"seeds_dataset2_test.hex_0.250\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"response_column\":\"C8\",\"family\":\"gaussian\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":false,\"standardize\":false,\"non_negative\":false,\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"max_active_predictors\":-1}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"glm-7fc1da4c-0511-4053-a274-b08e1622d46e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-7fc1da4c-0511-4053-a274-b08e1622d46e\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"glm-7fc1da4c-0511-4053-a274-b08e1622d46e\", frame: \"seeds_dataset2_test.hex_0.250\", predictions_frame: \"prediction-36395476-f4fd-4659-936c-aca6f73cf7ba\""
+    }
+  ]
+}

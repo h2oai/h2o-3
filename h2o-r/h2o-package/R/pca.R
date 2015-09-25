@@ -5,7 +5,7 @@
 #' to calculate the singular value decomposition of the Gram matrix.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OFrame} object containing the
+#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
@@ -36,9 +36,9 @@
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @examples
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
 #' @export
 h2o.prcomp <- function(training_frame, x, k,
@@ -53,40 +53,27 @@ h2o.prcomp <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
 
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(training_frame)
-  if( delete ) {
-    temp_key <- training_frame@frame_id
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
-  }
-
+  .eval.frame(training_frame)
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
-  if(!missing(x))
-    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
-  if(!missing(k))
-    parms$k <- as.numeric(k)    # TODO: Want default to min(n,p) where n = nrow, p = ncol of adapted training_frame
-  if(!missing(model_id))
-    parms$model_id <- model_id
-  if(!missing(max_iterations))
-    parms$max_iterations <- max_iterations
-  if(!missing(transform))
-    parms$transform <- transform
-  if(!missing(pca_method))
-    parms$pca_method <- pca_method
-  if(!missing(seed))
-    parms$seed <- seed
-  if(!missing(use_all_factor_levels))
-    parms$use_all_factor_levels <- use_all_factor_levels
+  if(!missing(x))                     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+  if(!missing(k))                     parms$k <- as.numeric(k)    # TODO: Want default to min(n,p) where n = nrow, p = ncol of adapted training_frame
+  if(!missing(model_id))              parms$model_id <- model_id
+  if(!missing(max_iterations))        parms$max_iterations <- max_iterations
+  if(!missing(transform))             parms$transform <- transform
+  if(!missing(pca_method))            parms$pca_method <- pca_method
+  if(!missing(seed))                  parms$seed <- seed
+  if(!missing(use_all_factor_levels)) parms$use_all_factor_levels <- use_all_factor_levels
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'pca', parms)
+  .h2o.modelJob('pca', parms, do_future=FALSE)
 }

@@ -1,11 +1,11 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 import string
 
-def nb_baddata(ip, port):
-    h2o.init(ip, port)
+def nb_baddata():
+    
 
     rawdata = [[random.gauss(0,1) for c in range(10)] for r in range(100)]
 
@@ -48,4 +48,4 @@ def nb_baddata(ip, port):
                                                            "".format(len(model._model_json['output']['pcond']))
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, nb_baddata)
+    tests.run_test(sys.argv, nb_baddata)

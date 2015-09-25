@@ -1,13 +1,11 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 
-def levels_nlevels_setlevel_setLevels_test(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def levels_nlevels_setlevel_setLevels_test():
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # frame (default)
     levels = iris.levels()
@@ -21,7 +19,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     # vec
-    iris[4] = iris[4].setLevel(level='Iris-setosa')
+    iris[4] = iris[4].set_level(level='Iris-setosa')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
     assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
@@ -35,7 +33,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
         "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
-    iris[4] = iris[4].setLevel(level='Iris-versicolor')
+    iris[4] = iris[4].set_level(level='Iris-versicolor')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
     assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
@@ -49,8 +47,8 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     ################### reimport, set new domains, rerun tests ###################################
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
-    iris[4] = iris[4].setLevels(levels=["a", "b", "c"])
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris[4] = iris[4].set_levels(levels=["a", "b", "c"])
 
     # frame (default)
     levels = iris.levels()
@@ -64,7 +62,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     # vec
-    iris[4] = iris[4].setLevel(level='a')
+    iris[4] = iris[4].set_level(level='a')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
     assert set(['a', 'b', 'c']) == set(levels), \
@@ -78,7 +76,7 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
         "Expected levels to be {0}, but got {1}".format(set(['a', 'b', 'c']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
-    iris[4] = iris[4].setLevel(level='b')
+    iris[4] = iris[4].set_level(level='b')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
     assert set(['a', 'b', 'c']) == set(levels), \
@@ -92,8 +90,8 @@ def levels_nlevels_setlevel_setLevels_test(ip,port):
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     one_column_frame = iris[4]
-    one_column_frame = one_column_frame.setLevel(level='c')
+    one_column_frame = one_column_frame.set_level(level='c')
     assert one_column_frame[0,0] == 'c'
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)
+    tests.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)

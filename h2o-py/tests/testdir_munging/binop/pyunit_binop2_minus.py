@@ -1,19 +1,19 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def binop_minus(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def binop_minus():
+    
+    
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
-    rows, cols = iris.dim()
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
+    rows, cols = iris.dim
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
     res = 2 - iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [-209.9, -82.6, -6.9, 97.8]):
         assert abs((x - y)) < 1e-1,  "expected same values"
@@ -25,16 +25,23 @@ def binop_minus(ip,port):
 
     ###################################################################
 
-    # LHS: scaler, RHS: H2OFrame
-    res = 1.2 - iris[2]
-    res2 = res[21,:] - iris
-    res_rows, res_cols = res2.dim()
-    assert res_rows == rows and res_cols == cols, "dimension mismatch"
+    # LHS: 1x1 H2OFrame, RHS: H2OFrame
+    try:
+      res = 1.2 - iris[2]
+      res2 = res[21,:] - iris
+      print res2.dim
+      assert False, " Expected Frame dimension mismatch error"
+    except Exception:
+      pass
 
-    # LHS: scaler, RHS: H2OVec
-    res = 1.2 - iris[2]
-    res2 = res[21,:] - iris[1]
-    res2.show()
+    # LHS: 1x1, RHS: nx1 column
+    try:
+      res = 1.2 - iris[2]
+      res2 = res[21,:] - iris[1]
+      res2.show()
+      assert False, "Expected Frame dimension mismatch error"
+    except Exception:
+      pass
 
     # LHS: scaler, RHS: scaler
     res = 1.1 - iris[2]
@@ -56,20 +63,24 @@ def binop_minus(ip,port):
     #except EnvironmentError:
     #    pass
 
-    # LHS: H2OVec, RHS: scaler
-    res = 1.2 - iris[2]
-    res2 = iris[1] - res[21,:]
-    res2.show()
+    # LHS: nx1, RHS: 1x1
+    try:
+      res = 1.2 - iris[2]
+      res2 = iris[1] - res[21,:]
+      res2.show()
+      assert False, "Expected Frame dimension mismatch error"
+    except Exception:
+      pass
 
     ###################################################################
 
     # LHS: H2OFrame, RHS: H2OFrame
     res = iris - iris
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] - iris[1:3]
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -87,14 +98,18 @@ def binop_minus(ip,port):
     #except EnvironmentError:
     #    pass
 
-    # LHS: H2OFrame, RHS: scaler
-    res = 1.2 - iris[2]
-    res2 = iris - res[21,:]
-    res2.show()
+    # LHS: H2OFrame, RHS: 1x1
+    try:
+      res = 1.2 - iris[2]
+      res2 = iris - res[21,:]
+      res2.show()
+      assert False, "Expected Frame dimension mismatch error"
+    except Exception:
+      pass
 
     # LHS: H2OFrame, RHS: scaler
     res = iris - 2
-    res_rows, res_cols = res.dim()
+    res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [209.9, 82.6, 6.9, -97.8]):
         assert abs(x - y) < 1e-1,  "expected same values"
@@ -102,4 +117,4 @@ def binop_minus(ip,port):
 ###################################################################
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, binop_minus)
+    tests.run_test(sys.argv, binop_minus)

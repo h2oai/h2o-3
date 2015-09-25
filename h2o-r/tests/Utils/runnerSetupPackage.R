@@ -12,16 +12,17 @@ function(p) {
 }
 
 # what packages did the h2o_master_DEV_test need?
-packages <- c("R.utils", "R.oo", "R.methodsS3", "RCurl", "rjson", "statmod", "testthat", "bitops", "tools", "LiblineaR",
+packages <- c("R.utils", "R.oo", "R.methodsS3", "RCurl", "jsonlite", "statmod", "testthat", "bitops", "tools", "LiblineaR",
               "gdata", "caTools", "ROCR", "digest", "penalized", "rgl", "randomForest", "expm", "Matrix", "glmnet",
-              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust", "e1071", "ade4")
+              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust", "e1071", "ade4", "bit64")
 
 invisible(lapply(packages, usePackage))
 
 library(R.utils)
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
-if(Sys.getenv()["USER"] == "jenkins") {
+user <- Sys.getenv()["USER"]
+if( !is.na(user) && user == "jenkins") {
   print("JENKINS R_LIBS_USER PATH SET TO: ")
   print( Sys.getenv()["R_LIBS_USER"] )
   print("R .libPaths(): ")

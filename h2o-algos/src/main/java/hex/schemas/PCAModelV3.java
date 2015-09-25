@@ -12,7 +12,7 @@ public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAPa
     @API(help = "Principal components matrix")
     public TwoDimTableBase eigenvectors;
 
-    @API(help = "GLRM final value of L2 loss function")
+    @API(help = "Final value of GLRM squared loss function")
     public double objective;
   }
 

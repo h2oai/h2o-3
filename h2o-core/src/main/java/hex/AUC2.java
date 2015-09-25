@@ -50,7 +50,7 @@ public class AUC2 extends Iced {
         final double recl = tpr   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return 1.0-(fn+fp)/(tp+fn+tn+fp); } },
+    accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return (tn+tp)/(tp+fn+tn+fp); } },
     precision(false) { @Override double exec( double tp, double fp, double fn, double tn ) { return tp/(tp+fp); } },
     absolute_MCC(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         double mcc = (tp*tn - fp*fn);
@@ -118,9 +118,10 @@ public class AUC2 extends Iced {
    *  large nBins can be very slow. */
   AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
 
-  public AUC2( AUCBuilder bldr ) { 
+  public AUC2( AUCBuilder bldr ) {
     // Copy result arrays into base object, shrinking to match actual bins
     _nBins = bldr._n;
+    assert _nBins >= 1 : "Must have >= 1 bins for AUC calculation, but got " + _nBins;
     _ths = Arrays.copyOf(bldr._ths,_nBins);
     _tps = Arrays.copyOf(bldr._tps,_nBins);
     _fps = Arrays.copyOf(bldr._fps,_nBins);
@@ -390,8 +391,10 @@ public class AUC2 extends Iced {
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
     // Horrible data replication into array of structs, to sort.  
     Pair[] ps = new Pair[(int)vprob.length()];
+    Vec.Reader rprob = vprob.new Reader();
+    Vec.Reader racts = vacts.new Reader();
     for( int i=0; i<ps.length; i++ )
-      ps[i] = new Pair(vprob.at(i),(byte)vacts.at8(i));
+      ps[i] = new Pair(rprob.at(i),(byte)racts.at8(i));
     return perfectAUC(ps);
   }
   public static double perfectAUC( double ds[], double[] acts ) {

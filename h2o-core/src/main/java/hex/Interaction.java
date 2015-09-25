@@ -45,7 +45,7 @@ public class Interaction extends Job<Frame> {
         }
       }
       CreateInteractions in = new CreateInteractions(this, this._key);
-      return start(in, in.work()).get();
+      return start(in, in.work(), true).get();
     } catch( Throwable t ) {
       throw t;
     } finally {

@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.poison.golden <- function(H2Oserver) {
+test.poison.golden <- function() {
   Log.info("Importing poison.csv data...") 
   poisonR <- read.csv(locate("smalldata/pca_test/poison.csv"), header = TRUE)
-  poisonH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/poison.csv"), destination_frame = "poisonH2O")
+  poisonH2O <- h2o.uploadFile(locate("smalldata/pca_test/poison.csv"), destination_frame = "poisonH2O")
   
   k_test <- sort(sample(1:8,3))
   for(k in k_test) {

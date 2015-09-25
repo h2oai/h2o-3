@@ -1,17 +1,17 @@
 import sys, os
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def ecologyGBM(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def ecologyGBM():
+    
+    
 
     #Log.info("Importing ecology_model.csv data...\n")
-    ecology_train = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
+    ecology_train = h2o.import_file(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
     #Log.info("Summary of the ecology data from h2o: \n")
     #ecology.summary()
 
@@ -65,7 +65,7 @@ def ecologyGBM(ip,port):
 
     # Evaluate the trained models on test data
     # Load the test data (h2o)
-    ecology_test = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
+    ecology_test = h2o.import_file(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
 
     # Load the test data (scikit)
     testData = np.genfromtxt(h2o.locate("smalldata/gbm_test/ecology_eval.csv"),
@@ -93,5 +93,5 @@ def ecologyGBM(ip,port):
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, ecologyGBM)
+    tests.run_test(sys.argv, ecologyGBM)
 

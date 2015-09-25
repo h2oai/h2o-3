@@ -10,6 +10,7 @@ import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import water.util.MathUtils;
 
 import java.util.Arrays;
 
@@ -53,29 +54,16 @@ public class GBMTest extends TestUtil {
 
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
-      double sq_err = new CompErr().doAll(job.response(),fr2.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(job.response(),fr2.vecs()[0])._sum;
       double mse = sq_err/fr2.numRows();
-      assertEquals(79152.26,mse,0.1);
-      assertEquals(79152.26,gbm._output._scored_train[1]._mse,0.1);
-      assertEquals(79152.26,gbm._output._scored_train[1]._residual_deviance,0.1);
+      assertEquals(79152.12337641386,mse,0.1);
+      assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
+      assertEquals(79152.12337641386,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
       if( gbm != null ) gbm.delete();
     }
-  }
-
-  private static class CompErr extends MRTask<CompErr> {
-    double _sum;
-    @Override public void map( Chunk resp, Chunk pred ) {
-      double sum = 0;
-      for( int i=0; i<resp._len; i++ ) {
-        double err = resp.atd(i)-pred.atd(i);
-        sum += err*err;
-      }
-      _sum = sum;
-    }
-    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
   }
 
   @Test public void testBasicGBM() {
@@ -318,7 +306,8 @@ public class GBMTest extends TestUtil {
       Frame res = gbm.score(v);
 
       int[] ps = new int[(int)v.numRows()];
-      for( int i=0; i<ps.length; i++ ) ps[i] = (int)res.vecs()[0].at8(i);
+      Vec.Reader vr = res.vecs()[0].new Reader();
+      for( int i=0; i<ps.length; i++ ) ps[i] = (int)vr.at8(i);
       // Expected predictions are X,X,Y,Y,X,Y,Z,X,Y
       // Never predicts W, the extra class in the test set.
       // Badly predicts Z because 1 tree does not pick up that feature#2 can also
@@ -365,7 +354,7 @@ public class GBMTest extends TestUtil {
       parms._distribution = Distribution.Family.multinomial;
       gbm = new GBM(parms);
       gbm.trainModel();
-      try { Thread.sleep(50); } catch( Exception ignore ) { }
+      try { Thread.sleep(100); } catch( Exception ignore ) { }
 
       try {
         Log.info("Trying illegal frame delete.");
@@ -526,7 +515,7 @@ public class GBMTest extends TestUtil {
       GBMModel gbm = job.trainModel().get();
 
       Frame pred = gbm.score(vfr);
-      double sq_err = new CompErr().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
       double mse = sq_err/pred.numRows();
       assertEquals(3.0199, mse, 1e-15); //same results
       job.remove();
@@ -643,7 +632,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21926955145068244, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -702,7 +691,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21925349482557605, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21926955145068244, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1339,9 +1328,9 @@ public class GBMTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
-      assertEquals(0.7262076707473135, mm.auc()._auc, 1e-4); // 1 node
+      assertEquals(0.7264331810371721, mm.auc()._auc, 1e-4); // 1 node
       assertEquals(0.22686348162897116, mm.mse(), 1e-4);
-      assertEquals(0.09026116418495023, mm.r2(), 1e-4);
+      assertEquals(0.09039195554728074, mm.r2(), 1e-4);
       assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
 
       job.remove();
@@ -1369,24 +1358,31 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       try {
         tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        vfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
           Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toEnum())._key);
         }
         DKV.put(tfr);
+        DKV.put(vfr);
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
         parms._train = tfr._key;
         parms._response_column = "Cost";
         parms._seed = 0xdecaf;
         parms._distribution = dist;
         parms._min_rows = 1;
-        parms._ntrees = 3;
+        parms._ntrees = 30;
+//        parms._offset_column = "logInsured"; //POJO scoring not supported for offsets
         parms._learn_rate = 1e-3f;
 
         // Build a first model; all remaining models should be equal
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();
+
+        Frame res = gbm.score(vfr);
+        Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
 
         ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
 
@@ -1397,6 +1393,53 @@ public class GBMTest extends TestUtil {
         if (gbm != null) gbm.delete();
         Scope.exit();
       }
+    }
+  }
+
+  @Ignore
+  @Test
+  public void testStochasticGBM() {
+    Frame tfr = null, vfr = null;
+    GBMModel gbm = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+      parms._col_sample_rate = 0.5f;
+      parms._sample_rate = 0.5f;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
+      assertEquals(0.7264331810371721, mm.auc()._auc, 1e-4); // 1 node
+      assertEquals(0.22686348162897116, mm.mse(), 1e-4);
+      assertEquals(0.09039195554728074, mm.r2(), 1e-4);
+      assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
   }
 }

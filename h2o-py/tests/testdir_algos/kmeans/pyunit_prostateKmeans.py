@@ -1,16 +1,16 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn.cluster import KMeans
 
-def prostateKmeans(ip,port):
+def prostateKmeans():
   # Connect to a pre-existing cluster
-  h2o.init(ip,port)  # connect to localhost:54321
+    # connect to localhost:54321
 
   #Log.info("Importing prostate.csv data...\n")
-  prostate_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   #prostate.summary()
 
   prostate_sci = np.loadtxt(h2o.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
@@ -27,4 +27,4 @@ def prostateKmeans(ip,port):
     print prostate_km_sci.cluster_centers_
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, prostateKmeans)
+  tests.run_test(sys.argv, prostateKmeans)

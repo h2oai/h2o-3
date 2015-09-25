@@ -1,14 +1,24 @@
 package water.api;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import hex.Model;
-import water.*;
+import water.AutoBuffer;
+import water.DKV;
+import water.H2O;
+import water.Key;
+import water.Value;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
-
-import java.lang.reflect.Field;
-import java.util.*;
 
 /**
  * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iterations for KMeans).
@@ -42,31 +52,28 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
   public FrameKeyV3 training_frame;
 
-  @API(help="Validation frame", direction=API.Direction.INOUT)
+  @API(help="Validation frame", direction=API.Direction.INOUT, gridable = true)
   public FrameKeyV3 validation_frame;
 
   @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
   public int nfolds;
 
-  @API(help="Keep cross-validation training/validation split frames", level = API.Level.expert, direction=API.Direction.INOUT)
-  public boolean keep_cross_validation_splits;
-
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 
-  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT, gridable = true)
   public FrameV3.ColSpecifierV3 response_column;
 
-  @API(help = "Column with observation weights", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
+  @API(help = "Column with observation weights", level = API.Level.secondary, is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT)
   public FrameV3.ColSpecifierV3 weights_column;
 
-  @API(help = "Offset column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
+  @API(help = "Offset column", level = API.Level.secondary, is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT)
   public FrameV3.ColSpecifierV3 offset_column;
 
-  @API(help = "Column with cross-validation fold index assignment per observation", is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT)
+  @API(help = "Column with cross-validation fold index assignment per observation", level = API.Level.secondary, is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT)
   public FrameV3.ColSpecifierV3 fold_column;
 
-  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"Random", "Modulo"}, level = API.Level.expert, direction=API.Direction.INOUT)
+  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"AUTO", "Random", "Modulo", "Stratified"}, level = API.Level.secondary, direction=API.Direction.INOUT)
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
@@ -77,6 +84,14 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
   @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT, level = API.Level.secondary)
   public boolean score_each_iteration;
+
+  /**
+   * A model key associated with a previously trained
+   * model. This option allows users to build a new model as a
+   * continuation of a previously generated model (e.g., by a grid search).
+   */
+  @API(help = "Model checkpoint to resume training with", level = API.Level.secondary, direction=API.Direction.INOUT)
+  public ModelKeyV3 checkpoint;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];

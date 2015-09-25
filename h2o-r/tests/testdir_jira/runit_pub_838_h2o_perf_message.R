@@ -8,9 +8,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
   print("Reading in original prostate data.")
-  prostate.hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex", header=TRUE)
+  prostate.hex <- h2o.importFile(locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex", header=TRUE)
 
   print("Run test/train split at 20/80.")
   prostate.hex$split <- ifelse(h2o.runif(prostate.hex)>0.8, yes=1, no=0)

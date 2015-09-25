@@ -46,22 +46,22 @@ RefineDateColumn <- function(train, dateCol, datePattern, dateTimeZone = "Etc/UT
   train$WeekDay <- refinedDateCols$WeekDay
   train$HourOfDay <- refinedDateCols$HourOfDay
   train$Weekend <- refinedDateCols$Weekend
-  train$Season <- refinedDateCols$Weekend
+  train$Season <- refinedDateCols$Season
   train
 }
 
-test.chicago.demo <- function(conn) {
+test.chicago.demo <- function() {
   weather_path <- locate_source("smalldata/chicago/chicagoAllWeather.csv")
   census_path <- locate_source("smalldata/chicago/chicagoCensus.csv")
   crimes_path <- locate_source("smalldata/chicago/chicagoCrimes10k.csv.zip")
   
   Log.info("Import and parse data...")
-  weather <- h2o.importFile(conn, path=weather_path, destination_frame="weather.hex")
-  crimes <- h2o.importFile(conn, path=crimes_path, destination_frame="crimes.hex")
-  # census <- h2o.importFile(conn, path=census_path, destination_frame="census.hex")
+  weather <- h2o.importFile(path=weather_path, destination_frame="weather.hex")
+  crimes <- h2o.importFile(path=crimes_path, destination_frame="crimes.hex")
+  # census <- h2o.importFile(path=census_path, destination_frame="census.hex")
   
   # TODO: Get rid of this once merging with string cols is supported. See PUBDEV-1188.
-  census_raw <- h2o.importFile(conn, census_path, parse = FALSE)
+  census_raw <- h2o.importFile(census_path, parse = FALSE)
   census_setup <- h2o.parseSetup(census_raw)
   census_setup$column_types[2] <- "Enum"   # Change community area name col from string to enum
   census <- h2o.parseRaw(census_raw, col.types = census_setup$column_types)
@@ -116,7 +116,7 @@ test.chicago.demo <- function(conn) {
                                 Ward = c(7, 14),
                                 Community.Area = c(46, 63),
                                 FBI.Code = c(18, 11))
-  crimeExamples <- as.h2o(crimeExamples.r, conn)
+  crimeExamples <- as.h2o(crimeExamples.r)
   names(crimeExamples) <- make.names(names(crimeExamples))
   crimeExamples <- RefineDateColumn(crimeExamples, which(colnames(crimeExamples) == "Date"), datePattern = "%m/%d/%Y %I:%M:%S %p")
   crimeExamples$Date <- NULL   # Remove redundant date columns
@@ -126,8 +126,8 @@ test.chicago.demo <- function(conn) {
   predDL <- predict(dlModel, crimeExamplesMerge)
   for(i in 1:nrow(crimeExamples)) {
     cat("\nCrime:\n"); print(crimeExamples[i,])
-    cat("\n\tProbability of arrest using GBM:", as.matrix(predGBM$true[i]))
-    cat("\n\tProbability of arrest using Deep Learning:", as.matrix(predDL$true[i]), "\n")
+    cat("\n\tProbability of arrest using GBM:", as.matrix(predGBM$true[i,]))
+    cat("\n\tProbability of arrest using Deep Learning:", as.matrix(predDL$true[i,]), "\n")
   }
   testEnd()
 }

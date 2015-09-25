@@ -3,7 +3,7 @@ Version: SUBST_PROJECT_VERSION
 Type: Package
 Title: R Interface for H2O
 Date: 2015-7-1
-Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
+Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the H2O.ai team
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
 Description: R scripting functionality for H2O, the open source
   math engine for big data that computes parallel distributed
@@ -20,24 +20,24 @@ Depends: R (>= 2.13.0),
          stats
 Imports: graphics,
          RCurl,
-         rjson,
+         jsonlite,
          tools,
          utils
 Suggests: devtools,
           roxygen2,
-          testthat
+          testthat,
+          ggplot2,
+          mlbench
 Collate:
+         'astfun.R'
          'classes.R'
          'connection.R'
          'constants.R'
+         'datasets.R'
          'logging.R'
          'communication.R'
          'kvstore.R'
-         'exec.R'
-         'ops.R'
          'frame.R'
-         'ast.R'
-         'astfun.R'
          'import.R'
          'parse.R'
          'export.R'
@@ -54,5 +54,6 @@ Collate:
          'naivebayes.R'
          'word2vec.R'
          'locate.R'
+         'grid.R'
          'shim.R'
          'zzz.R'

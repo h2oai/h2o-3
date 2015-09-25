@@ -30,6 +30,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     "C16",                      // UUID
     "CStr",                     // Strings
     "CXD",                      // Sparse doubles
+    "CUD",                      // Few Unique doubles
     "C8D",                      //leave this as last -> no compression
   };
   final transient static String[] chunkNames = new String[]{
@@ -50,6 +51,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
           "128-bit UUID",
           "String",
           "Sparse Reals",
+          "Unique Reals",
           "64-bit Reals",
   };
 
@@ -129,7 +131,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   @Override
   protected void postGlobal() {
     if (chunk_counts == null || chunk_byte_sizes == null || byte_size_per_node == null) return;
-    assert(total_row_count == _fr.numRows());
+    assert(total_row_count == _fr.numRows()): "total_row_count["+total_row_count+"] != _fr.numRows()["+_fr.numRows()+"]. ";
 
     // compute counts and sizes
     total_chunk_byte_size = 0;
@@ -206,7 +208,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     rowHeaders[row++] = "min";
     rowHeaders[row++] = "max";
     rowHeaders[row++] = "stddev";
-    rowHeaders[row++] = "total";
+    rowHeaders[row  ] = "total";
     final String[] colHeaders = new String[]{"Size", "Number of Rows", "Number of Chunks per Column", "Number of Chunks"};
     final String[] colTypes = new String[]{"string", "float", "float", "float"};
     final String[] colFormats = new String[]{"%s", "%f", "%f", "%f"};
@@ -244,7 +246,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     table.set(row, 0, display(total_chunk_byte_size));
     table.set(row, 1, total_row_count);
     table.set(row, 2, total_chunk_count_per_col);
-    table.set(row++, 3, _fr.numCols()*total_chunk_count_per_col);
+    table.set(row, 3, _fr.numCols()*total_chunk_count_per_col);
 
     return table;
   }

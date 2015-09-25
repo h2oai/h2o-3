@@ -14,16 +14,12 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
-import water.util.DocGen.HTML;
 import water.util.GAUtils;
 import water.util.Log;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -46,13 +42,14 @@ final public class H2O {
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
 
+
   /**
    * Print help about command line arguments.
    */
   public static void printHelp() {
     String defaultFlowDirMessage;
     if (DEFAULT_FLOW_DIR() == null) {
-      // If you start h2o on hadoop, you must set -flow_dir.
+      // If you start h2o on Hadoop, you must set -flow_dir.
       // H2O doesn't know how to guess a good one.
       // user.home doesn't make sense.
       defaultFlowDirMessage =
@@ -99,7 +96,11 @@ final public class H2O {
             "    -ice_root <fileSystemPath>\n" +
             "          The directory where H2O spills temporary data to disk.\n" +
             "\n" +
-            "    -flow_dir <server side directory or hdfs directory>\n" +
+            "    -log_dir <fileSystemPath>\n" +
+            "          The directory where H2O writes logs to disk.\n" +
+            "          (This usually has a good default that you need not change.)\n" +
+            "\n" +
+            "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
             defaultFlowDirMessage +
             "\n" +
@@ -145,7 +146,8 @@ final public class H2O {
   /**
    * A class containing all of the arguments for H2O.
    */
-  public static class OptArgs {
+  public static class
+    OptArgs {
     //-----------------------------------------------------------------------------------
     // Help and info
     //-----------------------------------------------------------------------------------
@@ -191,6 +193,9 @@ final public class H2O {
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
+    /** -log_dir=/path/to/dir; directory to save logs in */
+    public String log_dir;
+
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
 
@@ -203,16 +208,16 @@ final public class H2O {
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
-    /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
 
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
-    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for hadoop */
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
-    /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
+    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
     public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
@@ -232,6 +237,7 @@ final public class H2O {
 
     /** -beta, -experimental */
     public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
+    public boolean useUDP = false;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -372,6 +378,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.ice_root = args[i];
       }
+      else if (s.matches("log_dir")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.log_dir = args[i];
+      }
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
         ARGS.flow_dir = args[i];
@@ -421,8 +431,9 @@ final public class H2O {
       }
       else if (s.matches("experimental")) {
         ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
-      }
-      else {
+      } else if(s.matches("useUDP")) {
+          ARGS.useUDP = true;
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
@@ -449,7 +460,7 @@ final public class H2O {
   /**
    * Tell the embedding software that this H2O instance belongs to
    * a cloud of a certain size.
-   * This may be nonblocking.
+   * This may be non-blocking.
    *
    * @param ip IP address this H2O can be reached at.
    * @param port Port this H2O can be reached at (for REST API and browser).
@@ -459,6 +470,18 @@ final public class H2O {
     if (embeddedH2OConfig == null) { return; }
     embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
   }
+
+
+  public static void closeAll() {
+    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
+    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
+    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
+    if(!H2O.ARGS.useUDP)
+      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
+    PersistManager PM = H2O.getPM();
+    if( PM != null ) PM.getIce().cleanUp();
+  }
+
 
   /** Notify embedding software instance H2O wants to exit.  Shuts down a single Node.
    *  @param status H2O's requested process exit value.
@@ -474,7 +497,7 @@ final public class H2O {
 
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
-    UDPRebooted.T.shutdown.send(H2O.SELF);
+    (status==0 ? UDPRebooted.T.shutdown : UDPRebooted.T.error).send(H2O.SELF);
     H2O.exit(status);
   }
 
@@ -796,6 +819,44 @@ final public class H2O {
    */
   public static H2OFailException fail(String msg) { return H2O.fail(msg, null); }
 
+  /**
+   * Return an error message with an accompanying URL to help the user get more detailed information.
+   *
+   * @param number H2O tech note number.
+   * @param message Message to present to the user.
+   * @return A longer message including a URL.
+   */
+  public static String technote(int number, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n")
+            .append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number));
+
+    return sb.toString();
+  }
+
+  /**
+   * Return an error message with an accompanying list of URLs to help the user get more detailed information.
+   *
+   * @param numbers H2O tech note numbers.
+   * @param message Message to present to the user.
+   * @return A longer message including a list of URLs.
+   */
+  public static String technote(int[] numbers, String message) {
+    StringBuffer sb = new StringBuffer()
+            .append(message)
+            .append("\n")
+            .append("\n")
+            .append("For more information visit:\n");
+
+    for (int number : numbers) {
+      sb.append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number)).append("\n");
+    }
+
+    return sb.toString();
+  }
 
 
   // --------------------------------------------------------------------------
@@ -884,7 +945,7 @@ final public class H2O {
   static int getWrkThrPoolSize(int i) { return FJPS[i]==null ? -1 : FJPS[i].getPoolSize();             }
 
   // Submit to the correct priority queue
-  public static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+  public static <T extends H2OCountedCompleter> T submitTask( T task ) {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
@@ -913,8 +974,12 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
-    public H2OCountedCompleter(){}
-    protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+    public final byte _priority;
+    public H2OCountedCompleter( ) { this(false); }
+    public H2OCountedCompleter( boolean bumpPriority ) {
+      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    }
+    protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
      *  drain the high priority queue before doing any low priority work.
@@ -943,7 +1008,7 @@ final public class H2O {
       } catch( Throwable ex ) {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
-        if( h2o != null ) h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        if( h2o != null ) h2o.completeExceptionally(ex);
         else ex.printStackTrace();
       } finally {
         t._priority = pp;
@@ -955,6 +1020,7 @@ final public class H2O {
 
     /** Override to specify actual work to do */
     protected abstract void compute2();
+
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
@@ -967,7 +1033,7 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    protected byte priority() { return MIN_PRIORITY; }
+    protected byte priority() { return _priority; }
     @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
@@ -985,14 +1051,13 @@ final public class H2O {
     // The serialization flavor / delegate.  Lazily set on first use.
     private transient short _ice_id;
 
-    /** Find the serializatoin delegate for a subclass of this class */
+    /** Find the serialization delegate for a subclass of this class */
     protected Icer<T> icer() {
       int id = _ice_id;
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
     }
     @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(T)this); }
     @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(T)this); }
-    @Override final public HTML       writeHTML(HTML       ab) { return icer().writeHTML(ab,(T)this); }
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
@@ -1000,7 +1065,6 @@ final public class H2O {
     @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
-    @Override       public HTML writeHTML_impl( HTML ab ) { return ab; }
   }
 
 
@@ -1179,11 +1243,12 @@ final public class H2O {
     // Start the UDPReceiverThread, to listen for requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
-    new UDPReceiverThread().start();
+    if(H2O.ARGS.useUDP)
+      new UDPReceiverThread().start();
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
-    // down. Started soon, so we can start parsing multicast UDP packets
+    // down. Started soon, so we can start parsing multi-cast UDP packets
     new MultiReceiverThread().start();
 
     // Start the Persistent meta-data cleaner thread, which updates the K/V
@@ -1193,24 +1258,20 @@ final public class H2O {
     Cleaner.THE_CLEANER.start();
 
     // Start a UDP timeout worker thread. This guy only handles requests for
-    // which we have not recieved a timely response and probably need to
+    // which we have not received a timely response and probably need to
     // arrange for a re-send to cover a dropped UDP packet.
     new UDPTimeOutThread().start();
     new H2ONode.AckAckTimeOutThread().start();
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread().start();
+    new TCPReceiverThread(NetworkInit._tcpSocketBig).start();
     // Register the default Requests
     Object x = water.api.RequestServer.class;
   }
 
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
-  static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu, String summary ) {
-    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth,summary),base_url,label,menu);
-  }
 
   static public void registerGET( String url_pattern, Class hclass, String hmeth, String summary ) {
     registerGET(url_pattern, hclass, hmeth, null, summary);
@@ -1223,7 +1284,7 @@ final public class H2O {
 
   static public void registerPOST( String url_pattern, Class hclass, String hmeth, String summary ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.register(url_pattern,"POST",hclass,hmeth,summary);
+    RequestServer.register(url_pattern,"POST",hclass,hmeth,null,summary);
   }
 
   public static void registerResourceRoot(File f) {
@@ -1510,26 +1571,34 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA
+    // Register with GA or not
+    List<String> gaidList = JarHash.getResourcesList("gaid");
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out ) {
+            || ARGS.ga_opt_out
+            || gaidList.contains("CRAN")) {
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
       try {
         GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
         DefaultRequest defReq = GA.getDefaultRequest();
-        try {
-          String bakedGaId;
-          BufferedReader index = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream("gaid")));
-          while ((bakedGaId = index.readLine()) != null) {
-            if (!(bakedGaId.equals("index") || bakedGaId.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))) {
-              defReq.clientId(bakedGaId);
+        String gaid = null;
+        if (gaidList.size() > 0) {
+          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
+          for (String str : gaidList) {
+            if (str.matches("........-....-....-....-............")
+                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
+              gaid = str;
+              break;
             }
           }
-        } catch (Exception ignore) {}
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
+        }
+        if (gaid == null) { // No UUID, create one
+          gaid = defReq.clientId();
+          gaid = gaid.replaceFirst("........-","ANONYMOU-");
+        }
+        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
         Log.POST(11, t.toString());
@@ -1567,7 +1636,6 @@ final public class H2O {
     // Initialize NPS
     {
       String flow_dir;
-      URI flow_uri = null;
 
       if (ARGS.flow_dir != null) {
         flow_dir = ARGS.flow_dir;
@@ -1579,18 +1647,12 @@ final public class H2O {
       if (flow_dir != null) {
         flow_dir = flow_dir.replace("\\", "/");
         Log.info("Flow dir: '" + flow_dir + "'");
-
-        try {
-          flow_uri = new URI(flow_dir);
-        } catch (Exception e) {
-          throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
-        }
       }
       else {
         Log.info("Flow dir is undefined; saving flows not available");
       }
 
-      NPS = new NodePersistentStorage(flow_uri);
+      NPS = new NodePersistentStorage(flow_dir);
     }
 
     // Start network services, including heartbeats

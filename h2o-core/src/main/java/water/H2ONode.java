@@ -1,17 +1,20 @@
 package water;
 
+import water.RPC.RPCCall;
+import water.UDP.udp;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
-import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.UnsafeUtils;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
-import java.util.concurrent.DelayQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -211,6 +214,170 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   private int _socksAvail=_socks.length;
   // Count of concurrent TCP requests both incoming and outgoing
   static final AtomicInteger TCPS = new AtomicInteger(0);
+
+  private SocketChannel _rawChannel;
+
+  /**
+   * Wrapper around raw bytes representing a small message and its priority.
+   *
+   */
+  public static class H2OSmallMessage implements Comparable<H2OSmallMessage> {
+    private int _priority;
+    final private byte [] _data;
+
+    public H2OSmallMessage(byte[] data, int priority) {
+      _data = data;
+      _priority = priority;
+    }
+    @Override
+    public int compareTo(H2OSmallMessage o) {
+      return o._priority - _priority;
+    }
+
+    public void increasePriority() {++_priority;}
+
+    /**
+     * Make new H2OSmall message from this byte buffer.
+     * Extracts bytes between position and limit, adds 2B size in the beginning and 1B EOM marker at the end.*
+     *
+     * Currently size must be <= max small message size (Autobuffer.BBP_SML.size()).
+     *
+     * @param bb
+     * @param priority
+     * @return
+     */
+    public static H2OSmallMessage make(ByteBuffer bb, int priority) {
+      int sz = bb.limit();
+      assert sz == (0xFFFF & sz);
+      assert sz <= AutoBuffer.BBP_SML.size();
+      byte [] ary = MemoryManager.malloc1(sz+2+1);
+      ary[ary.length-1] = (byte)0xef; // eom marker
+      ary[0] = (byte)(sz & 0xFF);
+      ary[1] = (byte)((sz & 0xFF00) >> 8);
+      if(bb.hasArray())
+        System.arraycopy(bb.array(),0,ary,2,sz);
+      else  for(int i = 0; i < sz; ++i)
+          ary[i+2] = bb.get(i);
+      assert 0 < ary[2] && ary[2] < udp.UDPS.length; // valid ctrl byte
+      assert udp.UDPS[ary[2]]._udp != null:"missing udp " + ary[2];
+      assert (0xFF & ary[ary.length-1]) == 0xef;
+      assert (((0xFF & ary[0]) | ((0xFF & ary[1]) << 8)) + 3) == ary.length;
+      return new H2OSmallMessage(ary,priority);
+    }
+  }
+
+
+  private final PriorityBlockingQueue<H2OSmallMessage> _msgQ = new PriorityBlockingQueue<>();
+
+  /**
+   * Private thread serving (actually ships the bytes over) small msg Q.
+   * Buffers the small messages together and sends the bytes over via TCP channel.
+   */
+  private class UDP_TCP_SendThread extends Thread {
+    private final ByteBuffer _bb;
+
+    public UDP_TCP_SendThread(){
+      super("UDP-TCP-SEND-" + H2ONode.this);
+      _bb = AutoBuffer.BBP_BIG.make();
+    }
+
+    void sendBuffer(){
+      int sleep = 0;
+      _bb.flip();
+      int sz = _bb.limit();
+      int retries = 0;
+      while (true) {
+        _bb.position(0);
+        _bb.limit(sz);
+        try {
+          if (_rawChannel == null || !_rawChannel.isOpen() || !_rawChannel.isConnected()) { // open the channel
+            // Must make a fresh socket
+            SocketChannel sock = SocketChannel.open();
+            sock.socket().setReuseAddress(true);
+            sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
+            InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
+            boolean res = false;
+            try{
+              res = sock.connect(isa);
+            } catch(IOException ioe) {
+              if(!Paxos._cloudLocked && retries++ < 300) { // cloud not yet up => other node is most likely starting
+                try {Thread.sleep(100);} catch (InterruptedException e) {}
+                continue;
+              } else throw ioe;
+            }
+            boolean blocking = true;
+            sock.configureBlocking(blocking);
+            assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
+            _rawChannel = sock;
+            _rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+            ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+            bb.put((byte) 1);
+            bb.putChar((char) H2O.H2O_PORT);
+            bb.put((byte) 0xef);
+            bb.flip();
+            while (bb.hasRemaining())
+              _rawChannel.write(bb);
+          }
+          while (_bb.hasRemaining())
+            _rawChannel.write(_bb);
+          _bb.position(0);
+          _bb.limit(_bb.capacity());
+          return;
+        } catch(IOException ioe) {
+          if(!H2O.getShutdownRequested())
+            Log.err(ioe);
+          if(_rawChannel != null)
+            try {_rawChannel.close();} catch (Throwable t) {}
+          _rawChannel = null;
+          if(!H2O.getShutdownRequested())
+            Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
+          sleep = Math.min(5000,(sleep + 1) << 1);
+          try {Thread.sleep(sleep);} catch (InterruptedException e) {}
+        }
+      }
+    }
+
+    @Override public void run(){
+      try {
+        while (true) {
+          try {
+            H2OSmallMessage m = _msgQ.take();
+            while (m != null) {
+              if (m._data.length > _bb.capacity())
+                H2O.fail("Small message larger than the buffer");
+              if (_bb.remaining() < m._data.length)
+                sendBuffer();
+              _bb.put(m._data);
+              m = _msgQ.poll();
+            }
+            sendBuffer();
+          } catch (InterruptedException e) {
+          }
+        }
+      } catch(Throwable t) {
+        Log.err(t);
+        throw H2O.fail();
+      }
+    }
+  }
+
+  private UDP_TCP_SendThread _sendThread = null;
+
+  /**
+   * Send small message to this node.
+   * Passes the message on to a private msg q, prioritized by the message priority.
+   * MSG queue is served by sender thread, message are continuously extracted, buffered toghether and sent over TCP channel.
+   * @param msg
+   */
+  public void sendMessage(H2OSmallMessage msg) {
+    _msgQ.put(msg);
+    if(_sendThread == null) synchronized(this) {
+      if(_sendThread == null)
+        (_sendThread = new UDP_TCP_SendThread()).start();
+    }
+  }
+
+
   SocketChannel getTCPSocket() throws IOException {
     // Under lock, claim an existing open socket if possible
     synchronized(this) {
@@ -221,7 +388,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
       SocketChannel sock = _socks[--_socksAvail];
       if( sock != null ) {
         if( sock.isOpen() ) return sock; // Return existing socket!
-        // Else its an already-closed socket, lower open TCP count
+        // Else it's an already-closed socket, lower open TCP count
         assert TCPS.get() > 0;
         TCPS.decrementAndGet();
       }
@@ -232,6 +399,13 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     sock2.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
     boolean res = sock2.connect( _key );
     assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
+    ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+    bb.put((byte)2);
+    bb.putChar((char)H2O.H2O_PORT);
+    bb.put((byte)0xef);
+    bb.flip();
+    while(bb.hasRemaining())
+      sock2.write(bb);
     TCPS.incrementAndGet();     // Cluster-wide counting
     return sock2;
   }
@@ -331,10 +505,10 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // Recorded here, so if the client misses our ACK response we can resend the
   // same answer back.
   void record_task_answer( RPC.RPCCall rpcall ) {
-    assert rpcall._started == 0 || rpcall._dt.hasException();
+//    assert rpcall._started == 0 || rpcall._dt.hasException();
     rpcall._started = System.currentTimeMillis();
     rpcall._retry = RPC.RETRY_MS; // Start the timer on when to resend
-    AckAckTimeOutThread.PENDING.add(rpcall);
+//    AckAckTimeOutThread.PENDING.add(rpcall);
   }
   // Stop tracking a remote task, because we got an ACKACK.
   void remove_task_tracking( int task ) {
@@ -348,10 +522,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     DTask dt = rpc._dt;         // The existing DTask, if any
     if( dt != null && rpc.CAS_DT(dt,null) ) {
       assert rpc._computed : "Still not done #"+task+" "+dt.getClass()+" from "+rpc._client;
-      AckAckTimeOutThread.PENDING.remove(rpc);
       dt.onAckAck();            // One-time call on stop-tracking
     }
-
     // Roll-up as many done RPCs as we can, into the _removed_task_ids list
     while( true ) {
       int t = _removed_task_ids.get();   // Last already-removed ID
@@ -372,27 +544,43 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   static class AckAckTimeOutThread extends Thread {
     AckAckTimeOutThread() { super("ACKTimeout"); }
     // List of DTasks with results ready (and sent!), and awaiting an ACKACK.
-    static DelayQueue<RPC.RPCCall> PENDING = new DelayQueue<>();
     // Started by main() on a single thread, handle timing-out UDP packets
     @Override public void run() {
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
       while( true ) {
         RPC.RPCCall r;
-        try { r = PENDING.take(); }
-        // Interrupted while waiting for a packet?
-        // Blow it off and go wait again...
-        catch( InterruptedException e ) { continue; }
-        assert r._computed : "Found RPCCall not computed "+r._tsknum;
-        r._ackResendCnt++;
-        // RPC from somebody who dropped out of cloud?
-        if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
-            // Timedout client?
-            (r._client._heartbeat._client && r._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
-          r._client.remove_task_tracking(r._tsknum);
-        } else if( r._dt != null ) { // Not yet seen the ACKACK?
-          r.resend_ack();            // Resend ACK, hoping for ACKACK
-          PENDING.add(r);            // And queue up to send again
+        long currenTime = System.currentTimeMillis();
+        for(H2ONode h2o:H2O.CLOUD._memary) {
+          if(h2o != H2O.SELF) {
+            for(RPCCall rpc:h2o._work.values()) {
+              if((rpc._started + rpc._retry) < currenTime) {
+                // RPC from somebody who dropped out of cloud?
+                if( (!H2O.CLOUD.contains(rpc._client) && !rpc._client._heartbeat._client) ||
+                  // Timedout client?
+                  (rpc._client._heartbeat._client && rpc._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
+                  rpc._client.remove_task_tracking(rpc._tsknum);
+                } else  {
+                  if (rpc._computed) {
+                    if (rpc._computedAndReplied) {
+                      DTask dt = rpc._dt;
+                      if(dt != null) {
+                        if (++rpc._ackResendCnt % 5 == 0)
+                          Log.warn("Got " + rpc._ackResendCnt + " resends on ack for task # " + rpc._tsknum + ", class = " + dt.getClass().getSimpleName());
+                        rpc.resend_ack();
+                      }
+                    }
+                  } else if(rpc._nackResendCnt == 0) { // else send nack
+                    ++rpc._nackResendCnt;
+                    rpc.send_nack();
+                  }
+                }
+              }
+            }
+          }
         }
+        long timeElapsed = System.currentTimeMillis()-currenTime;
+        if(timeElapsed < 1000)
+          try {Thread.sleep(1000-timeElapsed);} catch (InterruptedException e) {}
       }
     }
   }
@@ -408,5 +596,4 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
   @Override public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
   @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
-  @Override public final HTML writeHTML_impl(HTML ab) { return ab.putStr("_key",_key.toString()); }
 }

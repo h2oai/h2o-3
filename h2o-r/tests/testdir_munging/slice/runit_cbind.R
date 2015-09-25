@@ -1,14 +1,11 @@
-##
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.h2o.cbind <- function(conn) {
+test.h2o.cbind <- function() {
   Log.info('test h2o.cbind')
 
-  hdf <- h2o.importFile(conn, locate('smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.importFile(conn, locate('smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(locate('smalldata/jira/v-11.csv'))
 
   ##### WORKS #####
   # h2o.cbind self to self
@@ -35,10 +32,8 @@ test.h2o.cbind <- function(conn) {
   # h2o.cbind unequal rows fails
   expect_that(head(h2o.cbind(hdf, otherhdf)), throws_error())
   
-  ##### BROKEN #####
   # h2o.cbind a df to a slice
-  # Note: Not working because hdf is VA and hdf[,1] is FV
-  # expect_that( dim(h2o.cbind(hdf, hdf[,1])), equals(c(12,5)) )
+  expect_that( dim(h2o.cbind(hdf, hdf[,1])), equals(c(12,5)) )
 
   testEnd()
 }

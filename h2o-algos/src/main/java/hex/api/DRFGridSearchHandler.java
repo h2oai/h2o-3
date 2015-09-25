@@ -1,19 +1,19 @@
 package hex.api;
 
-import hex.GridSearchHandler;
+import hex.grid.Grid;
+import hex.grid.ModelFactories;
+import hex.grid.ModelFactory;
 import hex.schemas.DRFGridSearchV99;
 import hex.schemas.DRFV3;
-import hex.tree.drf.DRFGrid;
 import hex.tree.drf.DRFModel;
-import water.fvec.Frame;
 
 /**
  * A specific handler for DRF grid search.
  */
-public class DRFGridSearchHandler extends GridSearchHandler<DRFGrid,
-        DRFGridSearchV99,
-                                                            DRFModel.DRFParameters,
-                                                            DRFV3.DRFParametersV3> {
+public class DRFGridSearchHandler extends GridSearchHandler<DRFGridSearchHandler.DRFGrid,
+    DRFGridSearchV99,
+    DRFModel.DRFParameters,
+    DRFV3.DRFParametersV3> {
 
   /* This is kind of trick, since our REST framework was not able to
      recognize overloaded function do train. Hence, we use delegation here.
@@ -23,7 +23,15 @@ public class DRFGridSearchHandler extends GridSearchHandler<DRFGrid,
   }
 
   @Override
-  protected DRFGrid createGrid(Frame f) {
-    return DRFGrid.get(f);
+  protected ModelFactory<DRFModel.DRFParameters> getModelFactory() {
+    return ModelFactories.DRF_MODEL_FACTORY;
+  }
+
+  @Deprecated
+  public static class DRFGrid extends Grid<DRFModel.DRFParameters> {
+
+    public DRFGrid() {
+      super(null, null, null, null, null);
+    }
   }
 }

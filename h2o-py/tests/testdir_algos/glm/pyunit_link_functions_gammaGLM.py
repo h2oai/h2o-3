@@ -1,16 +1,16 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import pandas as pd
 import zipfile
 import statsmodels.api as sm
 
-def link_functions_gamma(ip,port):
-	# Connect to h2o
-	h2o.init(ip,port)
+def link_functions_gamma():
+	
+	
 
 	print("Read in prostate data.")
-	h2o_data = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))
+	h2o_data = h2o.import_file(path=h2o.locate("smalldata/prostate/prostate_complete.csv.zip"))
 	h2o_data.head()
 
 	sm_data = pd.read_csv(zipfile.ZipFile(h2o.locate("smalldata/prostate/prostate_complete.csv.zip")).
@@ -44,6 +44,6 @@ def link_functions_gamma(ip,port):
 	assert h2o_deviance_log - sm_deviance_log < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 if __name__ == "__main__":
-	h2o.run_test(sys.argv, link_functions_gamma)
+	tests.run_test(sys.argv, link_functions_gamma)
 
 

@@ -1,9 +1,9 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def nb_iris(ip, port):
-    h2o.init(ip, port)
+def nb_iris():
+    
 
     print "Importing iris_wheader.csv data...\n"
     iris = h2o.upload_file(h2o.locate("smalldata/iris/iris_wheader.csv"))
@@ -16,4 +16,4 @@ def nb_iris(ip, port):
         iris_nbayes.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, nb_iris)
+    tests.run_test(sys.argv, nb_iris)

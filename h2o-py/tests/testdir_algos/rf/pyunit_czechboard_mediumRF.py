@@ -1,14 +1,14 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def czechboardRF(ip,port):
+def czechboardRF():
 
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     # Training set has checkerboard pattern
-    board = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/czechboard_300x300.csv"))
+    board = h2o.import_file(path=h2o.locate("smalldata/gbm_test/czechboard_300x300.csv"))
     board["C3"] = board["C3"].asfactor()
     board.summary()
 
@@ -17,4 +17,4 @@ def czechboardRF(ip,port):
     model.show()
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, czechboardRF)
+  tests.run_test(sys.argv, czechboardRF)

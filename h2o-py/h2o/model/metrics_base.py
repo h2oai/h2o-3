@@ -10,12 +10,17 @@ class MetricsBase(object):
 
   The methods here are available acorss different model categories, and so appear here.
   """
-  def __init__(self, metric_json,on_train,on_valid,on_xval,algo):
+  def __init__(self, metric_json,on=None,algo=""):
     self._metric_json = metric_json
-    self._on_train = on_train   # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
-    self._on_valid = on_valid
-    self._on_xval = on_xval
+    self._on_train = False   # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+    self._on_valid = False
+    self._on_xval =  False
     self._algo = algo
+    if on=="training_metrics": self._on_train=True
+    elif on=="validation_metrics": self._on_valid=True
+    elif on=="cross_validation_metrics": self._on_xval=True
+    elif on is None: pass
+    else: raise ValueError("on expected to be train,valid,or xval. Got: " +str(on))
 
   def __repr__(self):
     self.show()
@@ -154,13 +159,13 @@ class H2ORegressionModelMetrics(MetricsBase):
 
   It is possible to retrieve the R^2 (1 - MSE/variance) and MSE
   """
-  def __init__(self,metric_json,on_train=False,on_valid=False,on_xval=False,algo=""):
-    super(H2ORegressionModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
+  def __init__(self,metric_json,on=None,algo=""):
+    super(H2ORegressionModelMetrics, self).__init__(metric_json, on, algo)
 
 
 class H2OClusteringModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
-    super(H2OClusteringModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
+  def __init__(self, metric_json, on=None, algo=""):
+    super(H2OClusteringModelMetrics, self).__init__(metric_json, on, algo)
 
   def tot_withinss(self):
     """
@@ -187,8 +192,8 @@ class H2OClusteringModelMetrics(MetricsBase):
     return None
 
 class H2OMultinomialModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
-    super(H2OMultinomialModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
+  def __init__(self, metric_json, on=None, algo=""):
+    super(H2OMultinomialModelMetrics, self).__init__(metric_json, on, algo)
 
   def confusion_matrix(self):
     """
@@ -210,7 +215,7 @@ class H2OBinomialModelMetrics(MetricsBase):
   To input the different criteria, use the static variable `criteria`
   """
 
-  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
+  def __init__(self, metric_json, on=None, algo=""):
     """
       Create a new Binomial Metrics object (essentially a wrapper around some json)
 
@@ -221,7 +226,7 @@ class H2OBinomialModelMetrics(MetricsBase):
       :param algo: The algorithm the metrics are based off of (e.g. deeplearning, gbm, etc.)
       :return: A new H2OBinomialModelMetrics object.
       """
-    super(H2OBinomialModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
+    super(H2OBinomialModelMetrics, self).__init__(metric_json, on, algo)
 
   def F1(self, thresholds=None):
     """
@@ -380,10 +385,8 @@ class H2OBinomialModelMetrics(MetricsBase):
     # TODO: add more types (i.e. cutoffs)
     if type not in ["roc"]: raise ValueError("type {0} is not supported".format(type))
     if type == "roc":
-      fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
-      tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
-      x_axis = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
-      y_axis = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
+      x_axis = self.fprs
+      y_axis = self.tprs
       plt.xlabel('False Positive Rate (FPR)')
       plt.ylabel('True Positive Rate (TPR)')
       plt.title('ROC Curve')
@@ -391,6 +394,30 @@ class H2OBinomialModelMetrics(MetricsBase):
       plt.plot(x_axis, y_axis, 'b--')
       plt.axis([0, 1, 0, 1])
       if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
+
+  @property
+  def fprs(self):
+    """
+    Return all false positive rates for all threshold values.
+
+    :return: a list of false positive rates.
+    """
+
+    fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
+    fprs = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
+    return fprs
+
+  @property
+  def tprs(self):
+    """
+    Return all true positive rates for all threshold values.
+
+    :return: a list of true positive rates.
+    """
+    tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
+    tprs = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
+    return tprs
+
 
   def confusion_matrix(self, metrics=None, thresholds=None):
     """
@@ -485,9 +512,9 @@ class H2OBinomialModelMetrics(MetricsBase):
     raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
-    super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
+  def __init__(self, metric_json, on=None, algo=""):
+    super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on, algo)
 
 class H2ODimReductionModelMetrics(MetricsBase):
-  def __init__(self, metric_json, on_train=False, on_valid=False, on_xval=False, algo=""):
-    super(H2ODimReductionModelMetrics, self).__init__(metric_json, on_train, on_valid, on_xval, algo)
+  def __init__(self, metric_json, on=None, algo=""):
+    super(H2ODimReductionModelMetrics, self).__init__(metric_json, on, algo)

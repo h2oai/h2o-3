@@ -10,37 +10,53 @@ from . import H2OConnection
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
     self._id = dest_key
-
-    # setup training metrics
-    if "training_metrics" in model_json["output"]:
-      tm = model_json["output"]["training_metrics"]
-      tm = metrics_class(tm,True,False,False,model_json["algo"])
-      model_json["output"]["training_metrics"] = tm
-
-    # setup validation metrics
-    if "validation_metrics" in model_json["output"]:
-      vm = model_json["output"]["validation_metrics"]
-      if vm is None:
-        model_json["output"]["validation_metrics"] = None
-      else:
-        vm = metrics_class(vm,False,True,False,model_json["algo"])
-        model_json["output"]["validation_metrics"] = vm
-    else:
-      model_json["output"]["validation_metrics"] = None
-
-    # setup cross validation metrics
-    if "cross_validation_metrics" in model_json["output"]:
-      cvm = model_json["output"]["cross_validation_metrics"]
-      if cvm is None:
-        model_json["output"]["cross_validation_metrics"] = None
-      else:
-        cvm = metrics_class(cvm,False,False,True,model_json["algo"])
-        model_json["output"]["cross_validation_metrics"] = cvm
-    else:
-      model_json["output"]["cross_validation_metrics"] = None
-
     self._model_json = model_json
     self._metrics_class = metrics_class
+    self._is_xvalidated=False
+    self._xval_keys=None
+
+    if dest_key is not None and model_json is not None and metrics_class is not None:
+      # build Metric objects out of each metrics
+      for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
+        if metric in model_json["output"]:
+          if  model_json["output"][metric] is not None:
+            if metric=="cross_validation_metrics":
+              self._is_xvalidated=True
+            model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
+
+      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+
+      # build a useful dict of the params
+      self._params={}
+      for p in self._model_json["parameters"]: self._params[p["label"]]=p
+
+  @property
+  def id(self):
+    """
+    :return: Retrieve this model's identifier.
+    """
+    return self._id
+
+  @property
+  def params(self):
+    """
+    Get the parameters and the actual/default values only.
+
+    :return: A dictionary of parameters used to build this model.
+    """
+    params = {}
+    for p in self._params:
+      params[p] = {"default":self._params[p]["default_value"], "actual":self._params[p]["actual_value"]}
+    return params
+
+  @property
+  def full_parameters(self):
+    """
+    Get the full specification of all parameters.
+
+    :return: a dictionary of parameters used to build this model.
+    """
+    return self._params
 
   def __repr__(self):
     self.show()
@@ -53,10 +69,41 @@ class ModelBase(object):
     :param test_data: Data to be predicted on.
     :return: A new H2OFrame filled with predictions.
     """
-    if not test_data: raise ValueError("Must specify test data")
+    if not isinstance(test_data, H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id)
-    prediction_frame_id = j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    return h2o.get_frame(prediction_frame_id)
+    # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
+    return h2o.get_frame(j["predictions_frame"]["name"])
+
+  def is_cross_validated(self):
+    """
+    :return:  True if the model was cross-validated.
+    """
+    return self._is_xvalidated
+
+  def xval_keys(self):
+    """
+    :return: The model keys for the cross-validated model.
+    """
+    return self._xval_keys
+
+  def get_xval_models(self,key=None):
+    """
+    Return a Model object.
+
+    :param key: If None, return all cross-validated models; otherwise return the model that key points to.
+    :return: A model or list of models.
+    """
+    return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
+
+  @property
+  def xvals(self):
+    """
+    Return a list of the cross-validated models.
+
+    :return: A list of models
+    """
+    return self.get_xval_models()
 
   def deepfeatures(self, test_data, layer):
     """
@@ -66,6 +113,7 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
+    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id, deep_features_hidden_layer=layer)
     return h2o.get_frame(j["predictions_frame"]["name"])
 
@@ -103,18 +151,14 @@ class ModelBase(object):
     :return: An object of class H2OModelMetrics.
     """
     if test_data is None:
-      if not train and not valid:
-        train = True  # default to train
-
-      if train:
-        return self._model_json["output"]["training_metrics"]
-
-      if valid:
-        return self._model_json["output"]["validation_metrics"]
+      if not train and not valid: train = True  # default to train
+      if train: return self._model_json["output"]["training_metrics"]
+      if valid: return self._model_json["output"]["validation_metrics"]
 
     else:  # cases dealing with test_data not None
       if not isinstance(test_data, H2OFrame):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
+      test_data._eager()
       res = H2OConnection.post_json("ModelMetrics/models/" + self._id + "/frames/" + test_data._id)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
@@ -131,7 +175,13 @@ class ModelBase(object):
     :return: the score history (H2OTwoDimTable)
     """
     model = self._model_json["output"]
-    if 'scoring_history' in model.keys() and model["scoring_history"] != None: return model["scoring_history"]
+    if 'scoring_history' in model.keys() and model["scoring_history"] != None:
+      s = model["scoring_history"]
+      if h2o.can_use_pandas():
+        import pandas
+        pandas.options.display.max_rows = 20
+        return pandas.DataFrame(s.cell_values,columns=s.col_header)
+      return model["scoring_history"]
     else: print "No score history for this model"
 
 
@@ -196,15 +246,9 @@ class ModelBase(object):
     :return: Return the residual deviance, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].residual_deviance()
-    else:
-      return self._model_json["output"]["validation_metrics"].residual_deviance()
+    if not train and not valid: train = True
+    if train and valid:  train = True
+    return self._model_json["output"]["training_metrics"].residual_deviance() if train else self._model_json["output"]["validation_metrics"].residual_deviance()
 
   def residual_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
@@ -215,15 +259,9 @@ class ModelBase(object):
     :return: Return the residual dof, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
-    else:
-      return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
+    if not train and not valid: train = True
+    if train and valid:         train = True
+    return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom() if train else self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
 
   def null_deviance(self,train=False,valid=False,xval=False):
     """
@@ -234,15 +272,9 @@ class ModelBase(object):
     :return: Return the null deviance, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].null_deviance()
-    else:
-      return self._model_json["output"]["validation_metrics"].null_deviance()
+    if not train and not valid: train = True
+    if train and valid:         train = True
+    return self._model_json["output"]["training_metrics"].null_deviance() if train else self._model_json["output"]["validation_metrics"].null_deviance()
 
   def null_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
@@ -253,15 +285,9 @@ class ModelBase(object):
     :return: Return the null dof, or None if it is not present.
     """
     if xval: raise ValueError("Cross-validation metrics are not available.")
-    if not train and not valid:
-      train = True
-    if train and valid:
-      train = True
-
-    if train:
-      return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
-    else:
-      return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
+    if not train and not valid: train = True
+    if train and valid:         train = True
+    return self._model_json["output"]["training_metrics"].null_degrees_of_freedom() if train else self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
 
   def pprint_coef(self):
     """
@@ -437,3 +463,15 @@ class ModelBase(object):
   @staticmethod
   def _has(dictionary, key):
     return key in dictionary and dictionary[key] is not None
+
+  @staticmethod
+  def _check_targets(y_actual, y_predicted):
+    """
+    Check that y_actual and y_predicted have the same length.
+
+    :param y_actual: An H2OFrame
+    :param y_predicted: An H2OFrame
+    :return: None
+    """
+    if len(y_actual) != len(y_predicted):
+      raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))

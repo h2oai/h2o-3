@@ -1,6 +1,6 @@
 #' Build a Big Data Random Forest Model
 #'
-#' Builds a Random Forest Model on an \linkS4class{H2OFrame}
+#' Builds a Random Forest Model on an Frame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
 #'        to use in building the GBM model.
@@ -8,10 +8,12 @@
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
 #'        or a categorical variable).
-#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the
+#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param validation_frame An Frame object containing the variables in the model.
+#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
@@ -26,11 +28,10 @@
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
-#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
-#'        than 1.0)
+#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling) - Note: only
 #'        reproducible when running single threaded
 #' @param offset_column Specify the offset column.
@@ -38,7 +39,7 @@
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
@@ -47,6 +48,7 @@
 h2o.randomForest <- function( x, y, training_frame,
                              model_id,
                              validation_frame,
+                             checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
                              build_tree_one_node = FALSE,
@@ -63,30 +65,29 @@ h2o.randomForest <- function( x, y, training_frame,
                              weights_column = NULL,
                              nfolds = 0,
                              fold_column = NULL,
-                             fold_assignment = c("Random","Modulo"),
+                             fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
   do_future <- FALSE
   if (length(list(...)) > 0) {
-#    browser()
     dots <- list(...) #.model.ellipses( list(...))
     if( !is.null(dots$future) ) do_future <- TRUE
   }
 
 
-  # Training_frame and validation_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame and validation_frame may be a key or an Frame object
+  if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid Frame or key")
              })
   if (!missing(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                   stop("argument \"validation_frame\" must be a valid Frame or key")
                  })
   }
 
@@ -94,15 +95,17 @@ h2o.randomForest <- function( x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) )  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) ) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) ) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if(!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if(!missing(mtries))
     parms$mtries <- mtries
   if(!missing(sample_rate))
@@ -135,6 +138,5 @@ h2o.randomForest <- function( x, y, training_frame,
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
-  if( do_future ) .h2o.startModelJob(training_frame@conn, 'drf', parms)
-  else            .h2o.createModel(training_frame@conn, 'drf', parms)
+  .h2o.modelJob('drf', parms, do_future)
 }

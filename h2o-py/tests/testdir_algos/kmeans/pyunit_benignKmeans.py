@@ -1,18 +1,18 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Imputer
 
-def benignKmeans(ip,port):
+def benignKmeans():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)  # connect to localhost:54321
+      # connect to localhost:54321
 
 
     #  Log.info("Importing benign.csv data...\n")
-    benign_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     #benign_h2o.summary()
 
     benign_sci = np.genfromtxt(h2o.locate("smalldata/logreg/benign.csv"), delimiter=",")
@@ -32,4 +32,4 @@ def benignKmeans(ip,port):
         print benign_sci_km.cluster_centers_
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, benignKmeans)
+  tests.run_test(sys.argv, benignKmeans)

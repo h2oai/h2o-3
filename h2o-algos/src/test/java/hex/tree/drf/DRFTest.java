@@ -41,8 +41,8 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(25, 0, 0),
-                    ard(0, 17, 1),
-                    ard(2, 1, 15)),
+                    ard(0, 16, 2),
+                    ard(0, 1, 17)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -62,8 +62,8 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(41, 0, 0),
-                    ard(1, 39, 2),
-                    ard(1, 3, 41)),
+                    ard(0, 39, 3),
+                    ard(0, 3, 42)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -83,10 +83,10 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(0, 0, 0, 0, 0),
-                    ard(3, 65, 0, 1, 0),
+                    ard(0, 60, 0, 9, 0),
                     ard(0, 1, 0, 0, 0),
-                    ard(0, 0, 1, 30, 0),
-                    ard(0, 0, 0, 1, 39)),
+                    ard(0, 0, 0, 31, 0),
+                    ard(0, 0, 0, 0, 40)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -104,11 +104,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(3, 0, 0, 0, 0),
-                    ard(2, 177, 1, 4, 0),
+            ard(ard(0, 3, 0, 0, 0),
+                    ard(0, 171, 2, 11, 0),
                     ard(0, 1, 1, 0, 0),
-                    ard(0, 2, 2, 69, 1),
-                    ard(0, 0, 0, 3, 87)),
+                    ard(0, 2, 2, 68, 2),
+                    ard(0, 0, 0, 0, 90)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -516,7 +516,7 @@ public class DRFTest extends TestUtil {
   }
 
   // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
-  @Test public void testReprodubilityAirline() {
+  @Test public void testReproducibilityAirline() {
     Frame tfr=null;
     final int N = 1;
     double[] mses = new double[N];
@@ -576,7 +576,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20934191392060025, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2148575516521361, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -654,6 +654,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -692,6 +693,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -730,6 +732,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 2; //in terms of weighted rows
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -806,6 +809,7 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
+      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -1153,6 +1157,47 @@ public class DRFTest extends TestUtil {
       if (drf1 != null) drf1.delete();
       if (drf2 != null) drf2.delete();
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMTrys() {
+    Frame tfr = null;
+    Vec old = null;
+    DRFModel drf1 = null;
+
+    for (int i=1; i<=6; ++i) {
+      Scope.enter();
+      try {
+        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr.remove("name").remove(); // Remove unique id
+        tfr.remove("economy").remove();
+        old = tfr.remove("economy_20mpg");
+        tfr.add("economy_20mpg", old.toEnum()); // response to last column
+        DKV.put(tfr);
+
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "economy_20mpg";
+        parms._min_rows = 2;
+        parms._ntrees = 5;
+        parms._max_depth = 5;
+        parms._nfolds = 3;
+        parms._mtries = i;
+
+        DRF job1 = new DRF(parms);
+        drf1 = job1.trainModel().get();
+
+        ModelMetricsBinomial mm1 = (ModelMetricsBinomial) drf1._output._cross_validation_metrics;
+        Assert.assertTrue(mm1._auc != null);
+
+        job1.remove();
+      } finally {
+        if (tfr != null) tfr.remove();
+        if (old != null) old.remove();
+        if (drf1 != null) drf1.delete();
+        Scope.exit();
+      }
     }
   }
 }

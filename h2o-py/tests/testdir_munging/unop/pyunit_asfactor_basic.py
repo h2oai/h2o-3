@@ -1,13 +1,13 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def asfactor_basic(ip,port):
-  # Connect to h2o
-  h2o.init(ip,port)
+def asfactor_basic():
+  
+  
 
   #Log.info("Printing out the head of the cars datasets")
-  h2oframe =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars.csv"))
+  h2oframe =  h2o.import_file(path=h2o.locate("smalldata/junit/cars.csv"))
   h2oframe.show()
 
   h2oframe['cylinders'].show()
@@ -29,4 +29,4 @@ def asfactor_basic(ip,port):
   assert bar, "expected the bar H2OVec to be a factor"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, asfactor_basic)
+  tests.run_test(sys.argv, asfactor_basic)

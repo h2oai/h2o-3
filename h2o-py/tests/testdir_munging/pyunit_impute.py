@@ -1,13 +1,13 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
-def impute(ip,port):
+def impute():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
-    prostate.dim()
+    prostate.dim
 
     #print "Summary of the data in iris_missing.csv"
     #print "Each column has 50 missing observations (at random)"
@@ -43,4 +43,4 @@ def impute(ip,port):
     prostate.impute("VOL", method = "median")
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, impute)
+    tests.run_test(sys.argv, impute)

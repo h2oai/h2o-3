@@ -88,7 +88,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override public void map( Chunk[] chks ) {
-    final Chunk wrks = chks[_ncols+2];
+    final Chunk wrks = chks[_ncols+2]; //fitting target (same as response for DRF, residual for GBM)
     final Chunk nids = chks[_ncols+3];
     final Chunk weight = chks.length >= _ncols+5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
 
@@ -111,7 +111,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
     // Merge histograms
-    if( sbh._hcs == _hcs ) return; // Local histograms all shared; free to merge
+    if( sbh._hcs == _hcs )
+      return; // Local histograms all shared; free to merge
     // Distributed histograms need a little work
     for( int i=0; i<_hcs.length; i++ ) {
       DHistogram hs1[] = _hcs[i], hs2[] = sbh._hcs[i];
@@ -164,26 +165,33 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];                     // Get Node to decide from
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
+        double w = weight.atd(row);
+        if (w == 0) continue;
         assert !Double.isNaN(wrks.atd(row)); // Already marked as sampled-away
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
         for( int col : sCols ) { // For tracked cols
-          double w = weight.atd(row);
-          if (w == 0) continue;
           nhs[col].incr((float) chks[col].atd(row), wrks.atd(row), w); // Histogram row/col
         }
       }
     }
   }
 
-  // All rows, all cols, accumulate histograms.  This is the hot hot inner
-  // loop of GBM, so we do some non-standard optimizations.  The rows in this
-  // chunk are spread out amongst a modest set of NodeIDs/splits.  Normally
-  // we would visit the rows in row-order, but this visits the NIDs in random
-  // order.  The hot-part of this code updates the histograms racily (via
-  // atomic updates) - once-per-row.  This optimized version updates the
-  // histograms once-per-NID, but requires pre-sorting the rows by NID.
+  /**
+   * All rows, all cols, accumulate histograms.  This is the hot hot inner
+   * loop of GBM, so we do some non-standard optimizations.  The rows in this
+   * chunk are spread out amongst a modest set of NodeIDs/splits.  Normally
+   * we would visit the rows in row-order, but this visits the NIDs in random
+   * order.  The hot-part of this code updates the histograms racily (via
+   * atomic updates) - once-per-row.  This optimized version updates the
+   * histograms once-per-NID, but requires pre-sorting the rows by NID.
+   *
+   * @param chks predictors, actual response (ignored)
+   * @param wrks predicted response
+   * @param weight observation weights
+   * @param nnids node ids
+   */
   private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
@@ -214,7 +222,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       Chunk chk = chks[c];
       // For All NIDs
       for( int n=0; n<hcs.length; n++ ) {
-        final DRealHistogram rh = ((DRealHistogram)hcs[n][c]);
+        final DHistogram rh = ((DHistogram)hcs[n][c]);
         if( rh==null ) continue; // Ignore untracked columns in this split
         final int lo = n==0 ? 0 : nh[n-1];
         final int hi = nh[n];
@@ -240,7 +248,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data < min ) min = col_data;
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
-          double resp = wrks.atd(row);
+          double resp = wrks.atd(row); // fitting target (residual)
           bins[b] += w;                // Bump count in bin
           sums[b] += w*resp;
           ssqs[b] += w*resp*resp;

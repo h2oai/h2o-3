@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.Random;
@@ -58,7 +59,7 @@ public class KMeansRandomTest extends TestUtil {
                   for (int j = 0; j < parms._k; j++)
                     Assert.assertTrue(m._output._size[j] != 0);
 
-                  Assert.assertTrue(m._output._iterations <= max_iter+1);    // Matches R's kmeans behavior, e.g. max_iter = 1, then iters = 2
+                  Assert.assertTrue(m._output._iterations <= max_iter);
                   for (double d : m._output._withinss) Assert.assertFalse(Double.isNaN(d));
                   Assert.assertFalse(Double.isNaN(m._output._tot_withinss));
                   for (long o : m._output._size) Assert.assertTrue(o > 0); //have at least one point per centroid
@@ -66,8 +67,9 @@ public class KMeansRandomTest extends TestUtil {
 
                   // make prediction (cluster assignment)
                   score = m.score(frame);
+                  Vec.Reader vr = score.anyVec().new Reader();
                   for (long j = 0; j < score.numRows(); ++j)
-                    Assert.assertTrue(score.anyVec().at8(j) >= 0 && score.anyVec().at8(j) < centers);
+                    Assert.assertTrue(vr.at8(j) >= 0 && vr.at8(j) < centers);
 
                   Log.info("Parameters combination " + count + ": PASS");
                   testcount++;

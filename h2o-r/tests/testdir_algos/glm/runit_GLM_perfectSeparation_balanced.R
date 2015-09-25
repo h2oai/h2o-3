@@ -10,10 +10,10 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 
-test <- function(conn) {
+test <- function() {
 
     print("Read in synthetic balanced dataset")
-        data.b.hex <- h2o.uploadFile(conn, locate("smalldata/synthetic_perfect_separation/balanced.csv"), destination_frame="data.b.hex")
+        data.b.hex <- h2o.uploadFile(locate("smalldata/synthetic_perfect_separation/balanced.csv"), destination_frame="data.b.hex")
 
     print("Fit model on dataset.")
         model.balanced <- h2o.glm(x=c("x1", "x2"), y="y", data.b.hex, family="binomial", lambda_search=TRUE, alpha=0, nfolds=0, lambda=1e-8)

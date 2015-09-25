@@ -1,14 +1,14 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 import random
 
-def lambda_search(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def lambda_search():
+    
+    
 
     #Log.info("Importing prostate.csv data...\n")
-    prostate = h2o.import_frame(h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(h2o.locate("smalldata/logreg/prostate.csv"))
     #prostate.summary()
 
     # GLM without lambda search, lambda is single user-provided value
@@ -37,4 +37,4 @@ def lambda_search(ip,port):
     assert best_model.model() == prostate_search.model(), "expected models to be equal"
   
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, lambda_search)
+    tests.run_test(sys.argv, lambda_search)

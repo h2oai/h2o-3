@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def shuffling_large(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def shuffling_large():
+    
+    
 
     print("Reading in Arcene training data for binomial modeling.")
     train_data = h2o.upload_file(path=h2o.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))
@@ -40,4 +40,4 @@ def shuffling_large(ip,port):
             assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, shuffling_large)
+    tests.run_test(sys.argv, shuffling_large)

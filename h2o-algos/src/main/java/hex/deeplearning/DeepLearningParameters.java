@@ -3,7 +3,8 @@ package hex.deeplearning;
 import hex.Distribution;
 import hex.Model;
 import water.H2O;
-import water.Key;
+import static water.H2O.technote;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -20,13 +21,6 @@ public class DeepLearningParameters extends Model.Parameters {
   public double missingColumnsType() {
     return _sparse ? 0 : Double.NaN;
   }
-
-  /**
-   * A model key associated with a previously trained Deep Learning
-   * model. This option allows users to build a new model as a
-   * continuation of a previously generated model.
-   */
-  public Key _checkpoint;
 
   /**
    * If enabled, store the best model under the destination key of this model at the end of training.
@@ -225,7 +219,7 @@ public class DeepLearningParameters extends Model.Parameters {
   public double _l1 = 0.0;
 
   /**
-   * A regularization method that constrdains the sum of the squared
+   * A regularization method that constrains the sum of the squared
    * weights. This method introduces bias into parameter estimates, but
    * frequently produces substantial gains in modeling as estimate variance is
    * reduced.
@@ -235,7 +229,7 @@ public class DeepLearningParameters extends Model.Parameters {
   /**
    * A maximum on the sum of the squared incoming weights into
    * any one neuron. This tuning parameter is especially useful for unbound
-   * activation functions such as Maxout or Rectifier.
+   * activation functions such as Rectifier.
    */
   public float _max_w2 = Float.POSITIVE_INFINITY;
 
@@ -360,7 +354,7 @@ public class DeepLearningParameters extends Model.Parameters {
   /**
    * Enable shuffling of training data (on each node). This option is
    * recommended if training data is replicated on N nodes, and the number of training samples per iteration
-   * is close to N times the dataset size, where all nodes train will (almost) all
+   * is close to N times the dataset size, where all nodes train with (almost) all
    * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
    * times the dataset size or larger).
    */
@@ -391,6 +385,10 @@ public class DeepLearningParameters extends Model.Parameters {
   public boolean _elastic_averaging = false;
   public double _elastic_averaging_moving_rate = 0.9;
   public double _elastic_averaging_regularization = 1e-3;
+
+  // stochastic gradient descent: mini-batch size = 1
+  // batch gradient descent: mini-batch size = # training rows
+  public int _mini_batch_size = 1;
 
   public enum MissingValuesHandling {
     Skip, MeanImputation
@@ -431,6 +429,12 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
     for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
+    if (_mini_batch_size < 1)
+      dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
+    if (_mini_batch_size > 1)
+      dl.error("_mini_batch_size", "Mini-batch size > 1 is not yet supported.");
+    if (!_diagnostics)
+      dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
 
     if (!_autoencoder) {
       if (_valid == null)
@@ -508,7 +512,7 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_autoencoder && _loss == Loss.CrossEntropy)
         dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
       if (!classification && _loss == Loss.CrossEntropy)
-        dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
+        dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
     }
     if (!classification && _loss == Loss.CrossEntropy)
       dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
@@ -520,7 +524,7 @@ public class DeepLearningParameters extends Model.Parameters {
         case tweedie:
         case gamma:
         case poisson:
-          dl.error("_distribution", _distribution  + " distribution is not allowed for classification.");
+          dl.error("_distribution", technote(2, _distribution  + " distribution is not allowed for classification."));
           break;
         case AUTO:
         case bernoulli:
@@ -533,7 +537,7 @@ public class DeepLearningParameters extends Model.Parameters {
       switch(_distribution) {
         case multinomial:
         case bernoulli:
-          dl.error("_distribution", _distribution  + " distribution is not allowed for regression.");
+          dl.error("_distribution", technote(2, _distribution  + " distribution is not allowed for regression."));
           break;
         case tweedie:
         case gamma:
@@ -572,16 +576,19 @@ public class DeepLearningParameters extends Model.Parameters {
       }
     }
     if (!_autoencoder && _sparsity_beta != 0)
-      dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
+      dl.error("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
     if (classification && dl.hasOffsetCol())
-      dl.info("_offset_column", "Offset is only supported for regression.");
+      dl.error("_offset_column", "Offset is only supported for regression.");
 
     // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
     if (_autoencoder && _activation == Activation.Maxout)
       dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
     if (_max_categorical_features < 1)
       dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
-
+    if (_sparse)
+      dl.error("_sparse", "Deprecated: Sparse data handling not supported anymore - not faster.");
+    if (_col_major)
+      dl.error("_col_major", "Deprecated: Column major data handling not supported anymore - not faster.");
     if (!_sparse && _col_major) {
       dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
     }
@@ -651,7 +658,8 @@ public class DeepLearningParameters extends Model.Parameters {
             "_export_weights_and_biases",
             "_elastic_averaging",
             "_elastic_averaging_moving_rate",
-            "_elastic_averaging_regularization"
+            "_elastic_averaging_regularization",
+            "_mini_batch_size"
     };
 
     // the following parameters must not be modified when restarting from a checkpoint
@@ -676,7 +684,6 @@ public class DeepLearningParameters extends Model.Parameters {
             "_nesterov_accelerated_gradient",
             "_ignore_const_cols",
             "_max_categorical_features",
-            "_keep_cross_validation_splits",
             "_nfolds",
             "_distribution",
             "_tweedie_power"
@@ -706,28 +713,28 @@ public class DeepLearningParameters extends Model.Parameters {
         throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
       if ((newP._valid == null) != (oldP._valid == null)
               || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
-        throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
+        throw new H2OIllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
       }
       if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
-        throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+        throw new H2OIllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
       }
       if (!Arrays.equals(newP._hidden, oldP._hidden)) {
-        throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
+        throw new H2OIllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
       }
       if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
-        throw new IllegalArgumentException("Predictor columns must be the same as for the checkpointed model. Check ignored columns.");
+        throw new H2OIllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
       }
 
       //compare the user-given parameters before and after and check that they are not changed
-      for (Field fBefore : oldP.getClass().getDeclaredFields()) {
+      for (Field fBefore : oldP.getClass().getFields()) {
         if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
-          for (Field fAfter : newP.getClass().getDeclaredFields()) {
+          for (Field fAfter : newP.getClass().getFields()) {
             if (fBefore.equals(fAfter)) {
               try {
                 if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
                   if (fBefore.get(oldP) == null && fAfter.get(newP) == null)
                     continue; //if both parameters are null, we don't need to do anything
-                  throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
+                  throw new H2OIllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
                 }
               } catch (IllegalAccessException e) {
                 e.printStackTrace();
@@ -805,19 +812,24 @@ public class DeepLearningParameters extends Model.Parameters {
       }
       if (fromParms._adaptive_rate) {
         Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
         toParms._rate = 0;
         toParms._rate_decay = 0;
         toParms._rate_annealing = 0;
         toParms._momentum_start = 0;
         toParms._momentum_ramp = 0;
         toParms._momentum_stable = 0;
-        toParms._nesterov_accelerated_gradient = false;
       } else {
         Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
                 + "rho, epsilon.");
         toParms._rho = 0;
         toParms._epsilon = 0;
+      }
+      if (fromParms._activation == Activation.Rectifier || fromParms._activation == Activation.RectifierWithDropout) {
+        if (fromParms._max_w2 == Float.POSITIVE_INFINITY) {
+          Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
+          toParms._max_w2 = 1e3f;
+        }
       }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
@@ -852,7 +864,7 @@ public class DeepLearningParameters extends Model.Parameters {
       }
 
       if (fromParms._loss == Loss.Automatic) {
-        switch (fromParms._distribution) {
+        switch (toParms._distribution) {
           case gaussian:
             toParms._loss = Loss.MeanSquare;
             break;

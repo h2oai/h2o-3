@@ -8,11 +8,13 @@ Prerequisites:
 
   For windows users, please grab a .whl from http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
 
-This module depends on *requests* and *tabulate* modules, both of which are available on pypi:
+This module depends on *requests*, *tabulate*, and *scikit-learn* modules, all of which are available on pypi:
 
     $ pip install requests
 
     $ pip install tabulate
+
+    $ pip install scikit-learn
 
 The H2O Python Module
 =====================

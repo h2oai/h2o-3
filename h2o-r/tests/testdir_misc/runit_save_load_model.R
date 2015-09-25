@@ -6,21 +6,21 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.save_load_dlmodel <- function(conn) {
+test.save_load_dlmodel <- function() {
   temp_dir = tempdir()
 
   # Test saving and loading of Deep Learning model with validation dataset
   Log.info("Importing prostate_train.csv and prostate_test.csv...")
-  prostate.train = h2o.uploadFile(conn, locate("smalldata/logreg/prostate_train.csv"), "prostate.train")
-  prostate.test = h2o.uploadFile(conn, locate("smalldata/logreg/prostate_test.csv"), "prostate.test")
+  prostate.train = h2o.uploadFile(locate("smalldata/logreg/prostate_train.csv"), "prostate.train")
+  prostate.test = h2o.uploadFile(locate("smalldata/logreg/prostate_test.csv"), "prostate.test")
 
   Log.info("Build Deep Learning model and save to disk")
   prostate.dl = h2o.deeplearning(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.train, validation_frame = prostate.test)
   print(prostate.dl)
-  prostate.dl.path = h2o.saveModel(object = prostate.dl, dir = temp_dir, force = TRUE)
+  prostate.dl.path = h2o.saveModel(object = prostate.dl, path=temp_dir, force = TRUE)
 
   Log.info(paste("Load Deep Learning model saved at", prostate.dl.path))
-  prostate.dl2 = h2o.loadModel(conn, prostate.dl.path)
+  prostate.dl2 = h2o.loadModel(prostate.dl.path)
 
   expect_equal(class(prostate.dl), class(prostate.dl2))
   expect_equal(prostate.dl@allparameters, prostate.dl2@allparameters)

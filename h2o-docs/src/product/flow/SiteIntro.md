@@ -2,12 +2,18 @@
 
 Welcome to the H2O documentation site! Depending on your area of interest, select a learning path from the links above. 
 
-We're glad you're interested in learning more about H2O - if you have any questions, please email them to [support@h2o.ai](mailto:support@h2o.ai) or post them on our Google groups website, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. 
+We're glad you're interested in learning more about H2O - if you have any questions, please email them to our Google Group,  [h2ostream](mailto:h2ostream@googlegroups.com) or post them on our Google groups forum, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. This is a public forum, so your question will be visible to other users. 
 
 
 **Note**: To join our Google group on <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>, you need a Google account (such as Gmail or Google+). On the <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a> page, click the **Join group** button, then click the **New Topic** button to post a new message. You don't need to request or leave a message to join - you should be added to the group automatically. 
 
-We welcome your feedback! Please let us know if you have any questions or comments about this site by emailing us at <a href="mailto:support@h2o.ai?subject=Website Feedback">support@h2o.ai</a>. 
+We welcome your feedback! Please let us know if you have any questions or comments about H2O clicking the chat balloon button in the lower-right corner in Flow (H2O's web UI). 
+
+  ![Chat Button](images/ChatButton.png)
+
+Type your question in the entry field that appears at the bottom of the sidebar and you will be connected with an H2O expert who will respond to your query in real time. 
+
+  ![Chat Sidebar](images/ChatSidebar.png)
 
 ---
 
@@ -81,10 +87,14 @@ If you're considering using H2O in an enterprise environment, you'll be happy to
  
 - The following video provides step-by-step instructions on how to start H2O on Hadoop: 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/B1ax_k_sSoY?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/B1ax_k_sSoY?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
+
 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS, as well as how to run H2O on an EC2 cluster.  
+
+
+- Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Hadoop) to view instructions on how to set up H2O using Hadoop. 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevHadoop.md" target="_blank">Running H2O on Hadoop</a>: This document describes how to run H2O on Hadoop. 
 
@@ -160,14 +170,19 @@ The following video provides step-by-step instructions on how to start H2O using
 
 Pythonistas will be glad to know that H2O now provides support for this popular programming language. Python users can also use H2O with IPython notebooks. For more information, refer to the following links. 
 
-The following video provides step-by-step instructions on how to start H2O using Python: 
+- Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Python) to view instructions on how to use H2O with Python. 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/K8J3dPBEz1s?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
+- The following video provides step-by-step instructions on how to start H2O using Python: 
+
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/K8J3dPBEz1s?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst" target="_blank">Python readme</a>: This document describes how to setup and install the prerequisites for using Python with H2O. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-py/docs/index.html" target="_blank">Python docs</a>: This document represents the definitive guide to using Python with H2O. 
+
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md" target="_blank">Python Parity</a>: This document is is a list of Python capabilities that were previously available only through the H2O R interface but are now available in H2O using the Python interface. 
 
 ---
 
@@ -178,9 +193,14 @@ Don't worry, R users - we still provide R support in the latest version of H2O, 
 
 We have provided the following helpful resources to assist R users in upgrading to the latest version, including a document that outlines the differences between versions and a tool that reviews scripts for deprecated or renamed parameters. 
 
-The following video provides step-by-step instructions on how to start H2O in R:
+Currently, the only version of R that is known to be incompatible with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using that version, we recommend upgrading the R version before using H2O. 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
+
+- Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R) to view instructions for using H2O with R. 
+
+- The following video provides step-by-step instructions on how to start H2O in R:
+
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
 
 
 
@@ -201,6 +221,8 @@ REST APIs are generated immediately out of the code, allowing users to implement
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#schema-reference" target="_blank">REST API Schema Reference</a>: This document represents the definitive guide to the H2O REST API schemas. 
 
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/api/REST/h2o_3_rest_api_overview.md" target="_blank">H2O 3 REST API Overview</a>: This document provides an overview of how APIs are used in H2O, including versioning, URLs, HTTP verbs, status codes, formats, schemas, and examples. 
+
 ---
 
 <a name="Java"></a>
@@ -211,6 +233,8 @@ For Java developers, the following resources will help you create your own custo
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-core/javadoc/index.html" target="_blank">H2O Core Java Developer Documentation</a>: The definitive Java API guide for the core components of H2O. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-algos/javadoc/index.html" target="_blank">H2O Algos Java Developer Documentation</a>: The definitive Java API guide for the algorithms used by H2O. 
+
+- <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html" target="_blank">h2o-genmodel (POJO) Javadoc</a>: Provides a step-by-step guide to creating and implementing POJOs in a Java application. 
 
 ###SDK Information
 
@@ -245,6 +269,8 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
 
 - <a href="https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start" target="_blank">Developer Documentation</a>: Detailed instructions on how to build and launch H2O, including how to clone the repository, how to pull from the repository, and how to install required dependencies. 
+
+- Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Maven) to view instructions on how to use H2O with Maven. 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/build.gradle" target="_blank">Maven install</a>: This page provides information on how to build a version of H2O that generates the correct IDE files.
  

@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
 
-def deep_learning_metrics_test(ip, port):
-    h2o.init(ip, port)               # connect to existing cluster
+def deep_learning_metrics_test():
+                   # connect to existing cluster
 
-    df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     df.drop("ID")                              # remove ID
     df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical
@@ -39,4 +39,4 @@ def deep_learning_metrics_test(ip, port):
 
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, deep_learning_metrics_test)
+  tests.run_test(sys.argv, deep_learning_metrics_test)

@@ -1,48 +1,52 @@
-"""
-This module provides all of the top level calls for models and various data transform methods.
-By simply
-"""
-
+import warnings
+warnings.simplefilter('always', DeprecationWarning)
 import os
+import itertools
+import functools
 import os.path
 import re
 import urllib
 import urllib2
-import json
 import imp
-import random
 import tabulate
 from connection import H2OConnection
 from job import H2OJob
 from expr import ExprNode
-from frame import H2OFrame, _py_tmp_key
+from frame import H2OFrame, _py_tmp_key, _is_list_of_lists
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
 
 
-def import_file(path):
+def lazy_import(path):
   """
   Import a single file or collection of files.
 
-  :param path: A path to a data file (remote or local).
-  :return: A new H2OFrame
-  """
-  paths = [path] if isinstance(path,str) else path
-  return [ _import1(fname) for fname in paths ]
+  Parameters
+  ----------
+  path : str
+    A path to a data file (remote or local).
 
-def _import1(path):
+ :return: A new H2OFrame
+  """
+  return [_import(p)[0] for p in path] if isinstance(path,(list,tuple)) else _import(path)
+
+def _import(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
-  if j['fails']:
-    raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
-  return j['destination_frames'][0]
+  if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
+  return j['destination_frames']
 
 def upload_file(path, destination_frame=""):
   """
-  Upload a dataset at the path given from the local machine to the H2O cluster.
+Upload a dataset at the path given from the local machine to the H2O cluster.
 
-  :param path: A path specifying the location of the data to upload.
-  :param destination_frame: The name of the H2O Frame in the H2O Cluster.
-  :return: A new H2OFrame
+Parameters
+----------
+  path : str
+    A path specifying the location of the data to upload.
+  destination_frame : H2OFrame
+    The name of the H2O Frame in the H2O Cluster. 
+
+ :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
@@ -50,36 +54,94 @@ def upload_file(path, destination_frame=""):
   return H2OFrame(raw_id=destination_frame)
 
 
-def import_frame(path=None):
+def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
   """
   Import a frame from a file (remote or local machine). If you run H2O on Hadoop, you can access to HDFS
 
-  :param path: A path specifying the location of the data to import.
+  Parameters
+  ----------
+  path : str
+    A path specifying the location of the data to import.
+  destination_frame :
+    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse :
+    (Optional) A logical value indicating whether the file should be parsed after import.
+  header :
+   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
   :return: A new H2OFrame
   """
-  return H2OFrame(file_path=path)
+  if not parse:
+      return lazy_import(path)
 
+  return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
 
-def parse_setup(raw_frames):
+def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
-  :param raw_frames: A collection of imported file frames
+
+  Parameters
+  ----------
+
+  raw_frames : H2OFrame
+    A collection of imported file frames
+  destination_frame :
+    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse :
+    (Optional) A logical value indicating whether the file should be parsed after import.
+  header :
+    (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
   :return: A ParseSetup "object"
   """
 
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+
+  if destination_frame: j["destination_frame"] = destination_frame
+  if not isinstance(header, tuple):
+      if header not in (-1, 0, 1):
+          raise ValueError("header should be -1, 0, or 1")
+      j["check_header"] = header
+  if separator:
+      if not isinstance(separator, basestring) or len(separator) != 1:
+          raise ValueError("separator should be a single character string")
+      j["separator"] = separator
+  if column_names: j["column_names"] = column_names
+  if column_types: j["column_types"] = column_types
+  if na_strings: j["na_strings"] = na_strings
+
   return j
 
 
 def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
-  
-  :param setup: The result of calling parse_setup.
-  :param h2o_name: The name of the H2O Frame on the back end.
-  :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
-  :return: A new parsed object
+
+  Parameters
+  ----------
+  setup : dict 
+    The result of calling parse_setup.
+  h2o_name : H2OFrame
+    The name of the H2O Frame on the back end.
+  first_line_is_header : int
+    -1 means data, 0 means guess, 1 means header.
+
+:return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
   p = { 'destination_frame' : h2o_name,
@@ -92,8 +154,15 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'delete_on_done' : True,
         'blocking' : False,
         }
+
+  if setup["destination_frame"]:
+    setup["destination_frame"] = _quoted(setup["destination_frame"])
+
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]
+
+  if isinstance(setup["separator"], basestring):
+    setup["separator"] = ord(setup["separator"])
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -104,7 +173,10 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p["column_types"] = None
 
   if setup["na_strings"]:
-    setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
+    if _is_list_of_lists(setup["na_strings"]): setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
+    else:
+      setup["na_strings"] = [_quoted(na) for na in setup["na_strings"]] # quote the strings
+      setup["na_strings"] = '\"' + str(list(itertools.repeat(setup["na_strings"], len(setup["column_types"])))) + '\"'
     p["na_strings"] = None
 
 
@@ -120,42 +192,62 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
-def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
+def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   """
-  Used in conjunction with import_file and parse_setup in order to make alterations before parsing.
+  Used in conjunction with lazy_import and parse_setup in order to make alterations before
+  parsing.
 
-  :param setup: Result of h2o.parse_setup
-  :param id: An optional id for the frame.
-  :param first_line_is_header: -1,0,1 if the first line is to be used as the header
-  :return: An H2OFrame object
+  Parameters
+  ----------
+
+  setup : dict
+    Result of h2o.parse_setup
+  id : str
+    An optional id for the frame.
+  first_line_is_header : int
+    -1,0,1 if the first line is to be used as the header
+
+ :return: An H2OFrame object
   """
   id = setup["destination_frame"]
   fr = H2OFrame()
   parsed = parse(setup, id, first_line_is_header)
-  fr._nrows = parsed['rows']
-  fr._col_names = parsed['column_names']
-  fr._ncols = len(fr._col_names)
   fr._computed = True
   fr._id = id
+  fr._keep = True
+  fr._nrows = int(H2OFrame(expr=ExprNode("nrow", fr))._scalar())  #parsed['rows']
+  fr._ncols = parsed["number_columns"]
+  fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
-def _quoted(key):
+def _quoted(key, replace=True):
   if key == None: return "\"\""
+  #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
+  key = key.replace("%", ".")
+  key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
-  key = key if is_quoted  else "\"" + key + "\""
+  key = key if is_quoted  else '"' + key + '"'
   return key
 
 def assign(data,id):
-  rapids(ExprNode(",", ExprNode("gput", id, data), ExprNode("removeframe", data))._eager())
+  if data._computed:
+    rapids(data._id,id)
   data._id = id
+  data._keep=True  # named things are always safe
   return data
 
 def which(condition):
   """
-  :param condition: A conditional statement.
+
+  Parameters
+  ----------
+
+  condition : H2OFrame
+    A conditional statement.
+
   :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
   """
-  return H2OFrame(expr=ExprNode("h2o.which",condition,False))._frame()
+  return H2OFrame(expr=ExprNode("h2o.which",condition))._frame()
 
 def ifelse(test,yes,no):
   """
@@ -163,10 +255,17 @@ def ifelse(test,yes,no):
   Based on the booleans in the test vector, the output has the values of the yes and no
   vectors interleaved (or merged together).
 
-  :param test: A "test" H2OFrame
-  :param yes:  A "yes" H2OFrame
-  :param no:   A "no"  H2OFrame
-  :return: An H2OFrame
+  Parameters
+  ----------
+
+  test : H2OFrame
+    A "test" H2OFrame
+  yes : H2OFrame
+    A "yes" H2OFrame
+  no : H2OFrame
+    A "no" H2OFrame
+
+ :return: An H2OFrame
   """
   return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
 
@@ -174,7 +273,12 @@ def get_future_model(future_model):
   """
   Waits for the future model to finish building, and then returns the model.
 
-  :param future_model: an H2OModelFuture object
+  Parameters
+  ----------
+
+  future_model : H2OModelFuture
+    an H2OModelFuture object
+  
   :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
   """
   return h2o_model_builder._resolve_model(future_model)
@@ -183,11 +287,18 @@ def get_model(model_id):
   """
   Return the specified model
 
-  :param model_id: The model identification in h2o
+  Parameters
+  ----------
+
+  model_id : str
+    The model identification in h2o
+
+  :return: H2OModel 
+
   """
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
   model_type = model_json["output"]["model_category"]
-  if model_type=="Binomial":      return H2OBinomialModel(model_id, model_json)
+  if   model_type=="Binomial":    return H2OBinomialModel(model_id, model_json)
   elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
   elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
   elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
@@ -203,172 +314,6 @@ def get_frame(frame_id):
   """
   return H2OFrame.get_frame(frame_id)
 
-"""
-Here are some testing utilities for running the pyunit tests in conjunction with run.py.
-
-run.py issues an ip and port as a string:  "<ip>:<port>".
-The expected value of sys_args[1] is "<ip>:<port>"
-"""
-
-
-"""
-All tests MUST have the following structure:
-
-import sys
-sys.path.insert(1, "..")  # may vary depending on this test's position relative to h2o-py
-import h2o
-
-
-def my_test(ip=None, port=None):
-  ...test filling...
-
-if __name__ == "__main__":
-  h2o.run_test(sys.argv, my_test)
-
-So each test must have an ip and port
-"""
-
-
-
-
-# TODO/FIXME: need to create an internal testing framework for python ... internal IP addresses should NOT be published as part of package!
-# HDFS helpers
-def get_h2o_internal_hdfs_name_node():
-  return "172.16.2.176"
-
-def is_running_internal_to_h2o():
-  url = "http://{0}:50070".format(get_h2o_internal_hdfs_name_node())
-  try:
-    urllib2.urlopen(urllib2.Request(url))
-    internal = True
-  except:
-    internal = False
-  return internal
-
-def check_models(model1, model2, use_cross_validation=False, op='e'):
-  """
-  Check that the given models are equivalent
-  :param model1:
-  :param model2:
-  :param use_cross_validation: boolean. if True, use validation metrics to determine model equality. Otherwise, use
-  training metrics.
-  :param op: comparison operator to use. 'e':==, 'g':>, 'ge':>=
-  :return: None. Throw meaningful error messages if the check fails
-  """
-  # 1. Check model types
-  model1_type = type(model1)
-  model2_type = type(model2)
-  assert model1_type == model2_type, "The model types differ. The first model is of type {0} and the second " \
-                                     "models is of type {1}.".format(model1_type, model2_type)
-
-  # 2. Check model metrics
-  if isinstance(model1,H2OBinomialModel): #   2a. Binomial
-    # F1
-    f1_1 = model1.F1(xval=use_cross_validation)
-    f1_2 = model2.F1(xval=use_cross_validation)
-    if op == 'e': assert f1_1[0][1] == f1_2[0][1], "The first model has an F1 of {0} and the second model has an F1 of " \
-                                       "{1}. Expected the first to be == to the second.".format(f1_1[0][1], f1_2[0][1])
-    elif op == 'g': assert f1_1[0][1] > f1_2[0][1], "The first model has an F1 of {0} and the second model has an F1 of " \
-                                        "{1}. Expected the first to be > than the second.".format(f1_1[0][1], f1_2[0][1])
-    elif op == 'ge': assert f1_1[0][1] >= f1_2[0][1], "The first model has an F1 of {0} and the second model has an F1 of " \
-                                          "{1}. Expected the first to be >= than the second.".format(f1_1[0][1], f1_2[0][1])
-  elif isinstance(model1,H2ORegressionModel): #   2b. Regression
-    # MSE
-    mse1 = model1.mse(xval=use_cross_validation)
-    mse2 = model2.mse(xval=use_cross_validation)
-    if op == 'e': assert mse1 == mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
-                                       "{1}. Expected the first to be == to the second.".format(mse1, mse2)
-    elif op == 'g': assert mse1 > mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
-                                        "{1}. Expected the first to be > than the second.".format(mse1, mse2)
-    elif op == 'ge': assert mse1 >= mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
-                                          "{1}. Expected the first to be >= than the second.".format(mse1, mse2)
-  elif isinstance(model1,H2OMultinomialModel): #   2c. Multinomial
-    # hit-ratio
-    pass
-  elif isinstance(model1,H2OClusteringModel): #   2d. Clustering
-    # totss
-    totss1 = model1.totss(xval=use_cross_validation)
-    totss2 = model2.totss(xval=use_cross_validation)
-    if op == 'e': assert totss1 == totss2, "The first model has an TOTSS of {0} and the second model has an " \
-                                           "TOTSS of {1}. Expected the first to be == to the second.".format(totss1,
-                                                                                                             totss2)
-    elif op == 'g': assert totss1 > totss2, "The first model has an TOTSS of {0} and the second model has an " \
-                                            "TOTSS of {1}. Expected the first to be > than the second.".format(totss1,
-                                                                                                               totss2)
-    elif op == 'ge': assert totss1 >= totss2, "The first model has an TOTSS of {0} and the second model has an " \
-                                              "TOTSS of {1}. Expected the first to be >= than the second." \
-                                              "".format(totss1, totss2)
-
-def check_dims_values(python_obj, h2o_frame, rows, cols):
-  """
-  Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
-  conforms to the rules specified in the h2o frame documentation.
-
-  :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
-  :param h2o_frame: an H2OFrame
-  :param rows: number of rows
-  :param cols: number of columns
-  :return: None
-  """
-  h2o_rows, h2o_cols = h2o_frame.dim()
-  assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
-                                                "".format(h2o_rows, rows, h2o_cols, cols)
-  if isinstance(python_obj, (list, tuple)):
-    for r in range(rows):
-      for c in range(cols):
-        pval = python_obj[r][c] if rows > 1 else python_obj[c]
-        hval = h2o_frame[r,c]
-        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
-                             "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
-  elif isinstance(python_obj, dict):
-    for r in range(rows):
-      for k in python_obj.keys():
-        pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
-        hval = h2o_frame[r,k]
-        assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
-                             "{1}, but h2o got {2} and python got {3}.".format(r, k, hval, pval)
-
-def np_comparison_check(h2o_data, np_data, num_elements):
-  """
-  Check values achieved by h2o against values achieved by numpy
-
-  :param h2o_data: an H2OFrame or H2OVec
-  :param np_data: a numpy array
-  :param num_elements: number of elements to compare
-  :return: None
-  """
-  # Check for numpy
-  try:
-    imp.find_module('numpy')
-  except ImportError:
-    assert False, "failed comparison check because unable to import numpy"
-
-  import numpy as np
-  rows, cols = h2o_data.dim()
-  for i in range(num_elements):
-    r = random.randint(0,rows-1)
-    c = random.randint(0,cols-1)
-    h2o_val = h2o_data[r,c] if isinstance(h2o_data,H2OFrame) else h2o_data[r]
-    np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
-    if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
-    assert np.absolute(h2o_val - np_val) < 1e-6, \
-      "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
-
-def run_test(sys_args, test_to_run):
-  # import pkg_resources
-  # ver = pkg_resources.get_distribution("h2o").version
-  # print "H2O PYTHON PACKAGE VERSION: " + str(ver)
-  ip, port = sys_args[2].split(":")
-  init(ip,port)
-  log_and_echo("------------------------------------------------------------")
-  log_and_echo("")
-  log_and_echo("STARTING TEST: "+str(ou()))
-  log_and_echo("")
-  log_and_echo("------------------------------------------------------------")
-  num_keys = store_size()
-  test_to_run(ip, port)
-  if keys_leaked(num_keys): print "Leaked Keys!"
-
 def ou():
   """
   Where is my baguette!?
@@ -377,6 +322,23 @@ def ou():
   """
   from inspect import stack
   return stack()[2][1]
+
+def no_progress():
+  """
+  Disable the progress bar from flushing to stdout. The completed progress bar is printed
+  when a job is complete so as to demarcate a log file.
+
+  :return: None
+  """
+  H2OJob.__PROGRESS_BAR__ = False
+
+def show_progress():
+  """
+  Enable the progress bar. (Progress bar is enabled by default).
+
+  :return: None
+  """
+  H2OJob.__PROGRESS_BAR__ = True
 
 def log_and_echo(message):
   """
@@ -387,47 +349,27 @@ def log_and_echo(message):
 
   Sends a message to H2O for logging. Generally used for debugging purposes.
 
-  :param message: A character string with the message to write to the log.
+  Parameters
+  ----------
+
+  message : str
+    A character string with the message to write to the log.
+
   :return: None
   """
   if message is None: message = ""
   H2OConnection.post_json("LogAndEcho", message=message)
 
-def ipy_notebook_exec(path,save_and_norun=False):
-  notebook = json.load(open(path))
-  program = ''
-  for block in ipy_blocks(notebook):
-    for line in ipy_lines(block):
-      if "h2o.init" not in line:
-        program += line if '\n' in line else line + '\n'
-  if save_and_norun:
-    with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
-      f.write(program)
-  else:
-    d={}
-    exec program in d  # safe, but horrible (exec is horrible)
-
-def ipy_blocks(notebook):
-  if 'worksheets' in notebook.keys():
-    return notebook['worksheets'][0]['cells']  # just take the first worksheet
-  elif 'cells' in notebook.keys():
-    return notebook['cells']
-  else:
-    raise NotImplementedError, "ipython notebook cell/block json format not handled"
-
-def ipy_lines(block):
-  if 'source' in block.keys():
-    return block['source']
-  elif 'input' in block.keys():
-    return block['input']
-  else:
-    raise NotImplementedError, "ipython notebook source/line json format not handled"
-
 def remove(object):
   """
   Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
 
-  :param object: The object pointing to the object to be removed.
+  Parameters
+  ----------
+
+  object : H2OFrame or str
+    The object pointing to the object to be removed.
+
   :return: None
   """
   if object is None:
@@ -449,7 +391,12 @@ def removeFrameShallow(key):
   Do a shallow DKV remove of the frame (does not remove any internal Vecs).
   This is a "soft" delete. Just removes the top level pointer, but all big data remains!
 
-  :param key: A Frame Key to be removed
+  Parameters
+  ----------
+
+  key : str
+    A Frame Key to be removed
+
   :return: None
   """
   rapids("(removeframe '"+key+"')")
@@ -459,15 +406,15 @@ def rapids(expr, id=None):
   """
   Fire off a Rapids expression.
 
-  :param expr: The rapids expression (ascii string).
+  Parameters
+  ----------
+
+  expr : str
+    The rapids expression (ascii string).
+
   :return: The JSON response of the Rapids execution
   """
-  if isinstance(expr, list): expr = ExprNode._collapse_sb(expr)
-  expr = "(= !{} {})".format(id,expr) if id is not None else expr
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
-  if result['error'] is not None:
-    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
-  return result
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99) if id is None else H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id, _rest_version=99)
 
 def ls():
   """
@@ -475,14 +422,19 @@ def ls():
 
   :return: Returns a list of keys in the current H2O instance
   """
-  return H2OFrame(expr=ExprNode("ls"))._frame().as_data_frame()
+  return H2OFrame(expr=ExprNode("ls")).as_data_frame()
 
 
 def frame(frame_id, exclude=""):
   """
   Retrieve metadata for a id that points to a Frame.
 
-  :param frame_id: A pointer to a Frame  in H2O.
+  Parameters
+  ----------
+
+  frame_id : str
+    A pointer to a Frame in H2O.
+
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id+exclude))
@@ -495,50 +447,72 @@ def frames():
   """
   return H2OConnection.get_json("Frames")
 
-def download_pojo(model,path=""):
+def download_pojo(model,path="", get_jar=True):
   """
   Download the POJO for this model to the directory specified by path (no trailing slash!).
   If path is "", then dump to screen.
 
-  :param model: Retrieve this model's scoring POJO.
-  :param path:  An absolute path to the directory where POJO should be saved.
+  Parameters
+  ----------
+
+  model : H2OModel
+    Retrieve this model's scoring POJO.
+  path : str
+    An absolute path to the directory where POJO should be saved.
+  get_jar : bool
+    Retreive the h2o genmodel jar also. 
+
   :return: None
   """
   java = H2OConnection.get( "Models.java/"+model._id )
   file_path = path + "/" + model._id + ".java"
   if path == "": print java.text
   else:
-    with open(file_path, 'w') as f:
+    with open(file_path, 'wb') as f:
       f.write(java.text)
-
+  if get_jar and path!="":
+    url = H2OConnection.make_url("h2o-genmodel.jar")
+    filename = path + "/" + "h2o-genmodel.jar"
+    response = urllib2.urlopen(url)
+    with open(filename, "wb") as f:
+      f.write(response.read())
 
 def download_csv(data, filename):
   """
   Download an H2O data set to a CSV file on the local disk.
-  Warning: Files located on the H2O server may be very large! Make
-  sure you have enough hard drive space to accommodate the entire file.
 
-  :param data: an H2OFrame object to be downloaded.
-  :param filename:A string indicating the name that the CSV file should be
-  should be saved to.
+  Warning: Files located on the H2O server may be very large! Make sure you have enough hard drive space to accommodate the entire file.
+
+  Parameters
+  ----------
+
+  data : H2OFrame
+    An H2OFrame object to be downloaded.
+  filename : str
+    A string indicating the name that the CSV file should be should be saved to.
+
   :return: None
   """
+  data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
   url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
-  with open(filename, 'w') as f:
-    response = urllib2.urlopen(url)
-    f.write(response.read())
-    f.close()
-
+  with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 def download_all_logs(dirname=".",filename=None):
   """
   Download H2O Log Files to Disk
-  :param dirname: (Optional) A character string indicating the directory that the log file should be saved in.
-  :param filename: (Optional) A string indicating the name that the CSV file should be
+
+  Parameters
+  ----------
+
+  dirname : str
+    (Optional) A character string indicating the directory that the log file should be saved in.
+  filename : str
+    (Optional) A string indicating the name that the CSV file should be
+
   :return: path of logs written (as a string)
   """
-  url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + '/Logs/download'
+  url = 'http://{}:{}/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
   response = urllib2.urlopen(url)
 
   if not os.path.exists(dirname): os.mkdir(dirname)
@@ -549,48 +523,46 @@ def download_all_logs(dirname=".",filename=None):
         break
   path = os.path.join(dirname,filename)
 
-  with open(path, 'w') as f:
-    response = urllib2.urlopen(url)
-    f.write(response.read())
-    f.close()
-
   print "Writing H2O logs to " + path
+  with open(path, 'w') as f: f.write(urllib2.urlopen(url).read())
   return path
 
-def save_model(model, dir="", name="", filename="", force=False):
+def save_model(model, path="", force=False):
   """
   Save an H2O Model Object to Disk.
-  In the case of existing files force = TRUE will overwrite the file. Otherwise, the operation will fail.
-  :param dir: string indicating the directory the model will be written to.
-  :param name: string name of the file.
-  :param filename: full path to the file.
-  :param force: logical, indicates how to deal with files that already exist
-  :return: the path of the model (string)
-  """
-  if not isinstance(dir, str): raise ValueError("`dir` must be a character string")
-  if dir == "": dir = os.getcwd()
-  if not isinstance(name, str): raise ValueError("`name` must be a character string")
-  if name == "": name = model._model_json['model_id']['name']
-  if not isinstance(filename, str): raise ValueError("`filename` must be a character string")
-  if not isinstance(force, bool): raise ValueError("`force` must be True or False")
-  path = filename if filename != "" else os.path.join(dir, name)
 
-  kwargs = dict([("dir",path), ("force",int(force)), ("_rest_version", 99)])
-  H2OConnection.get("Models.bin/"+model._model_json['model_id']['name'], **kwargs)
-  return path
+  Parameters
+  ----------
+
+  model :  H2OModel
+    The model object to save. 
+  path : str
+    A path to save the model at (hdfs, s3, local)
+  force : bool
+    Overwrite destination directory in case it exists or throw exception if set to false.
+
+  :return: the path of the saved model (string)
+  """
+  path=os.path.join(os.getcwd() if path=="" else path,model._id)
+  return H2OConnection.get_json("Models.bin/"+model._id,dir=path,force=force,_rest_version=99)["dir"]
 
 def load_model(path):
   """
   Load a saved H2O model from disk.
-  :param path: The full path of the H2O Model to be imported. For example, if the `dir` argument in h2o.saveModel was
-  set to "/Users/UserName/Desktop" then the `path` argument in h2o.loadModel should be set to something like
-  "/Users/UserName/Desktop/K-meansModel__a7cebf318ca5827185e209edf47c4052"
+  Example:
+      >>> path = h2o.save_model(my_model,dir=my_path)
+      >>> h2o.load_model(path)                         # use the result of save_model
+
+
+  Parameters
+  ----------
+  path : str
+    The full path of the H2O Model to be imported.
+
   :return: the model
   """
-  if not isinstance(path, str): raise ValueError("`path` must be a non-empty character string")
-  kwargs = dict([("dir",path), ("_rest_version", 99)])
-  res = H2OConnection.post("Models.bin/", **kwargs)
-  return get_model(res.json()['models'][0]['model_id']['name'])
+  res = H2OConnection.post_json("Models.bin/",dir=path,_rest_version=99)
+  return get_model(res['models'][0]['model_id']['name'])
 
 def cluster_status():
   """
@@ -627,15 +599,29 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   """
   Initiate an H2O connection to the specified ip and port.
 
-  :param ip: An IP address, default is "localhost"
-  :param port: A port, default is 54321
-  :param size: THe expected number of h2o instances (ignored if start_h2o is True)
-  :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
-  :param enable_assertions: If start_h2o, pass `-ea` as a VM option.s
-  :param license: If not None, is a path to a license file.
-  :param max_mem_size_GB: Maximum heap size (jvm option Xmx) in gigabytes.
-  :param min_mem_size_GB: Minimum heap size (jvm option Xms) in gigabytes.
-  :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
+  Parameters
+  ----------
+
+  ip : str
+    A string representing the hostname or IP address of the server where H2O is running.
+  port : int
+    A port, default is 54321
+  size : int
+    THe expected number of h2o instances (ignored if start_h2o is True)
+  start_h2o : bool
+    A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
+  enable_assertions : bool
+    If start_h2o, pass `-ea` as a VM option.s
+  license : str
+    If not None, is a path to a license file.
+  max_mem_size_GB : int
+    Maximum heap size (jvm option Xmx) in gigabytes.
+  min_mem_size_GB : int
+    Minimum heap size (jvm option Xms) in gigabytes.
+  ice_root : str
+    A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
+
+  
   :return: None
   """
   H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check)
@@ -646,13 +632,21 @@ def export_file(frame,path,force=False):
   """
   Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
 
-  :param frame: The Frame to save to disk.
-  :param path: The path to the save point on disk.
-  :param force: Overwrite any preexisting file with the same path
-  :return: None
-  """
-  H2OJob(H2OConnection.post_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
+  Parameters
+  ----------
 
+  frame : H2OFrame
+    The Frame to save to disk.
+  path : str
+    The path to the save point on disk.
+  force : bool
+    Overwrite any preexisting file with the same path
+
+  :return: None
+
+  """
+  frame._eager()
+  H2OJob(H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 def cluster_info():
   """
@@ -667,131 +661,776 @@ def shutdown(conn=None, prompt=True):
   Shut down the specified instance. All data will be lost.
   This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O instance.
 
-  :param conn: An H2OConnection object containing the IP address and port of the server running H2O.
-  :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
+  Parameters
+  ----------
+
+  conn : H2OConnection
+    An H2OConnection object containing the IP address and port of the server running H2O.
+  prompt : bool
+    A logical value indicating whether to prompt the user before shutting down the H2O server.
+
   :return: None
   """
   if conn == None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
-def deeplearning(x,y=None,validation_x=None,validation_y=None,**kwargs):
+def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=None,model_id=None,
+                 overwrite_with_best_model=None,validation_frame=None,checkpoint=None,autoencoder=None,
+                 use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
+                 seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
+                 momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
+                 input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
+                 initial_weight_scale=None,loss=None,distribution=None,tweedie_power=None,score_interval=None,score_training_samples=None,
+                 score_validation_samples=None,score_duty_cycle=None,classification_stop=None,regression_stop=None,quiet_mode=None,
+                 max_confusion_matrix_size=None,max_hit_ratio_k=None,balance_classes=None,class_sampling_factors=None,
+                 max_after_balance_size=None,score_validation_sampling=None,diagnostics=None,variable_importances=None,
+                 fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
+                 shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
+                 max_categorical_features=None,reproducible=None,export_weights_and_biases=None,offset_column=None,weights_column=None,
+                 nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None):
   """
-  Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
+  Build a supervised Deep Learning model
+  Performs Deep Learning neural networks on an H2OFrame
 
-  :return: Return a new classifier or regression model.
+ Parameters
+ ----------
+
+  x : H2OFrame
+    An H2OFrame containing the predictors in the model.
+  y : H2OFrame
+    An H2OFrame of the response variable in the model.
+  training_frame : H2OFrame
+    (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+  model_id : str
+    (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+  overwrite_with_best_model : bool
+    Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
+  validation_frame : H2OFrame
+    (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the 
+    training data when nfolds = 0
+  checkpoint : H2ODeepLearningModel
+    "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+  autoencoder : bool
+    Enable auto-encoder for model building.
+  use_all_factor_levels : bool
+    Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable 
+    importances and auto-enabled for autoencoder.
+  activation : str
+    A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
+  hidden : list
+    Hidden layer sizes (e.g. c(100,100))
+  epochs : float
+    How many times the dataset should be iterated (streamed), can be fractional
+  train_samples_per_iteration : int
+    Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data); 
+    or -2 auto-tuning (default)
+  seed : int
+    Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+  adaptive_rate : bool
+    Logical. Adaptive learning rate (ADAELTA)
+  rho : float
+    Adaptive learning rate time decay factor (similarity to prior updates)
+  epsilon : float
+    Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
+  rate : float
+    Learning rate (higher => less stable, lower => slower convergence)
+  rate_annealing : float
+    Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
+  rate_decay : float
+    Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
+  momentum_start : float
+    Initial momentum at the beginning of training (try 0.5)
+  momentum_ramp : float
+    Number of training samples for which momentum increases
+  momentum_stable : float
+    Final momentum after the amp is over (try 0.99)
+  nesterov_accelerated_gradient : bool
+    Logical. Use Nesterov accelerated gradient (recommended)
+  input_dropout_ratio : float
+    A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
+  hidden_dropout_ratios : float
+    Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
+  l1 : float
+    L1 regularization (can add stability and improve generalization, causes many weights to become 0)
+  l2 : float
+    L2 regularization (can add stability and improve generalization, causes many weights to be small)
+  max_w2 : float
+    Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
+  initial_weight_distribution : str
+    Can be "Uniform", "UniformAdaptive", or "Normal"
+  initial_weight_scale : str
+    Uniform: -value ... value, Normal: stddev
+  loss : str
+    Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute" (experimental) or "Huber" (experimental)
+  distribution : str
+     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", 
+     "huber" or "gaussian"
+  tweedie_power : float
+    Tweedie power (only for Tweedie distribution, must be between 1 and 2)
+  score_interval : int
+    Shortest time interval (in secs) between model scoring
+  score_training_samples : int
+    Number of training set samples for scoring (0 for all)
+  score_validation_samples : int
+    Number of validation set samples for scoring (0 for all)
+  score_duty_cycle : float
+    Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring)
+  classification_stop : float
+    Stopping criterion for classification error fraction on training data (-1 to disable)
+  regression_stop : float
+    Stopping criterion for regression error (MSE) on training data (-1 to disable)
+  quiet_mode : bool
+    Enable quiet mode for less output to standard output
+  max_confusion_matrix_size : int
+    Max. size (number of classes) for confusion matrices to be shown
+  max_hit_ratio_k : float
+    Max number (top K) of predictions to use for hit ratio computation(for multi-class only, 0 to disable)
+  balance_classes : bool
+    Balance training data class counts via over/under-sampling (for imbalanced data)
+  class_sampling_factors : list
+    Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to 
+    obtain class balance during training. Requires balance_classes.
+  max_after_balance_size : float
+    Maximum relative size of the training data after balancing class counts (can be less than 1.0)
+  score_validation_sampling : 
+    Method used to sample validation dataset for scoring
+  diagnostics : bool
+    Enable diagnostics for hidden layers  
+  variable_importances : bool
+    Compute variable importances for input features (Gedeon method) - can be slow for large networks)
+  fast_mode : bool
+    Enable fast mode (minor approximations in back-propagation)
+  ignore_const_cols : bool
+    Ignore constant columns (no information can be gained anyway)
+  force_load_balance : bool
+    Force extra load balancing to increase training speed for small datasets (to keep all cores busy)
+  replicate_training_data : bool
+    Replicate the entire training dataset onto every node for faster training
+  single_node_mode : bool
+    Run on a single node for fine-tuning of model parameters
+  shuffle_training_data : bool
+    Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes
+  sparse : bool
+    Sparse data handling (Experimental)
+  col_major : bool
+    Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental)
+  average_activation : float
+    Average activation for sparse auto-encoder (Experimental)
+  sparsity_beta : bool
+    Sparsity regularization (Experimental)
+  max_categorical_features : int
+    Max. number of categorical features, enforced via hashing Experimental)
+  reproducible : bool
+    Force reproducibility on small data (will be slow - only uses 1 thread)
+  export_weights_and_biases : bool
+    Whether to export Neural Network weights and biases to H2O Frames"
+  offset_column : H2OFrame
+    Specify the offset column.
+  weights_column : H2OFrame
+    Specify the weights column.
+  nfolds : int
+    (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  fold_column : H2OFrame
+    (Optional) Column with cross-validation fold index assignment per observation
+  fold_assignment : str
+    Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+  keep_cross_validation_predictions : bool
+    Whether to keep the predictions of the cross-validation models
+
+
+ :return: Return a new classifier or regression model.
   """
-  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["y","training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="deeplearning"
+  return h2o_model_builder.supervised(parms)
 
-
-def autoencoder(x,**kwargs):
+def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=None,checkpoint=None,
+                use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
+                seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
+                momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
+                input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
+                initial_weight_scale=None,loss=None,distribution=None,tweedie_power=None,score_interval=None,score_training_samples=None,
+                score_duty_cycle=None,classification_stop=None,regression_stop=None,quiet_mode=None,
+                max_confusion_matrix_size=None,max_hit_ratio_k=None,balance_classes=None,class_sampling_factors=None,
+                max_after_balance_size=None,diagnostics=None,variable_importances=None,
+                fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
+                shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
+                max_categorical_features=None,reproducible=None,export_weights_and_biases=None):
   """
-  Build an Autoencoder
+  Build unsupervised auto encoder using H2O Deeplearning
 
-  :param x: Columns with which to build an autoencoder
-  :param kwargs: Additional arguments to pass to the autoencoder.
-  :return: A new autoencoder model
+  Parameters
+  ----------
+    x : H2OFrame
+      An H2OFrame containing the predictors in the model.
+    training_frame : H2OFrame
+      (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+    model_id : str
+      (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+    overwrite_with_best_model : bool
+      Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
+    checkpoint : H2ODeepLearningModel
+      "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+    use_all_factor_levels : bool
+      Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). 
+      Useful for variable importances and auto-enabled for autoencoder.
+    activation : str
+      A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
+    hidden : list
+      Hidden layer sizes (e.g. c(100,100))
+    epochs : float
+      How many times the dataset should be iterated (streamed), can be fractional
+    train_samples_per_iteration : int
+      Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data 
+      (e.g., replicated training data); or -2 auto-tuning (default)
+    seed : int
+      Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+    adaptive_rate : bool   
+      Logical. Adaptive learning rate (ADAELTA)
+    rho : float
+      Adaptive learning rate time decay factor (similarity to prior updates)
+    epsilon : float
+      Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
+    rate : float
+      Learning rate (higher => less stable, lower => slower convergence)
+    rate_annealing : float
+      Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
+    rate_decay : float
+      Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
+    momentum_start : float
+      Initial momentum at the beginning of training (try 0.5)
+    momentum_ramp : int
+      Number of training samples for which momentum increases
+    momentum_stable : float
+      Final momentum after the amp is over (try 0.99)
+    nesterov_accelerated_gradient : bool
+      Logical. Use Nesterov accelerated gradient (recommended)
+    input_dropout_ratio : float   
+      A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling). 
+    hidden_dropout_ratios : float
+      Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
+    l1 : float
+      L1 regularization (can add stability and improve generalization, causes many weights to become 0)
+    l2:  float
+      L2 regularization (can add stability and improve generalization, causes many weights to be small)
+    max_w2 : float
+      Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
+    initial_weight_distribution : str
+      Can be "Uniform", "UniformAdaptive", or "Normal"
+    initial_weight_scale : str
+      Uniform: -value ... value, Normal: stddev
+    loss : str
+      Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute" (experimental) or "Huber" (experimental)
+    distribution : str
+      A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", 
+      "tweedie", "laplace", "huber" or "gaussian"
+    tweedie_power : float
+      Tweedie power (only for Tweedie distribution, must be between 1 and 2)
+    score_interval : int
+      Shortest time interval (in secs) between model scoring
+    score_training_samples : int
+      Number of training set samples for scoring (0 for all)
+    score_duty_cycle : float
+      Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring)
+    classification_stop : float
+      Stopping criterion for classification error fraction on training data (-1 to disable)
+    regression_stop : float
+      Stopping criterion for regression error (MSE) on training data (-1 to disable)
+    quiet_mode : bool
+      Enable quiet mode for less output to standard output
+    max_confusion_matrix_size : int
+      Max. size (number of classes) for confusion matrices to be shown
+    max_hit_ratio_k : float
+      Max number (top K) of predictions to use for hit ratio computation(for multi-class only, 0 to disable)
+    balance_classes : bool
+      Balance training data class counts via over/under-sampling (for imbalanced data)
+    class_sampling_factors : list
+      Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain 
+      class balance during training. Requires balance_classes.
+    max_after_balance_size : float
+      Maximum relative size of the training data after balancing class counts (can be less than 1.0)      
+    diagnostics : bool
+      Enable diagnostics for hidden layers
+    variable_importances : bool
+      Compute variable importances for input features (Gedeon method) - can be slow for large networks)
+    fast_mode : bool
+      Enable fast mode (minor approximations in back-propagation)
+    ignore_const_cols : bool
+      Ignore constant columns (no information can be gained anyway)
+    force_load_balance : bool
+      Force extra load balancing to increase training speed for small datasets (to keep all cores busy)
+    replicate_training_data : bool
+      Replicate the entire training dataset onto every node for faster training
+    single_node_mode : bool
+      Run on a single node for fine-tuning of model parameters
+    shuffle_training_data : bool
+      Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes
+    sparse : bool
+      Sparse data handling (Experimental)  
+    col_major : bool
+      Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental)
+    average_activation : float 
+      Average activation for sparse auto-encoder (Experimental)
+    sparsity_beta : float
+      Sparsity regularization (Experimental)
+    max_categorical_features : int
+      Max. number of categorical features, enforced via hashing Experimental)
+    reproducible : bool
+      Force reproducibility on small data (will be slow - only uses 1 thread)
+    export_weights_and_biases : bool
+      Whether to export Neural Network weights and biases to H2O Frames"
+
+  :return: H2OAutoEncoderModel
+ 
+ 
+  
   """
-  return h2o_model_builder.unsupervised_model_build(x,None,"autoencoder",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="deeplearning"
+  parms["autoencoder"]=True
+  return h2o_model_builder.unsupervised(parms)
 
 
-def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
+def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
+        distribution=None,tweedie_power=None,ntrees=None,max_depth=None,min_rows=None,
+        learn_rate=None,nbins=None,nbins_cats=None,validation_frame=None,
+        balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
+        nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
+        score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None):
   """
-  Build a Gradient Boosted Method model (kwargs are the same arguments that you can find in FLOW)
+  Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
+  The default distribution function will guess the model type based on the response column typerun properly the
+  response column must be an numeric for "gaussian" or an enum for "bernoulli" or "multinomial".
+
+  Parameters
+  ----------
+
+  x : H2OFrame
+    An H2OFrame containing the predictors in the model.
+  y : H2OFrame
+    An H2OFrame of the response variable in the model.
+  training_frame : H2OFrame
+    (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+  model_id : str
+    (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+  distribution : str
+     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+  tweedie_power : float
+    Tweedie power (only for Tweedie distribution, must be between 1 and 2)
+  ntrees : int
+    A non-negative integer that determines the number of trees to grow.
+  max_depth : int
+    Maximum depth to grow the tree.
+  min_rows : int
+    Minimum number of rows to assign to terminal nodes.
+  learn_rate : float
+    An integer from 0.0 to 1.0
+  nbins : int
+    For numerical columns (real/int), build a histogram of this many bins, then split at the best point
+  nbins_cats : int
+    For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+  validation_frame : H2OFrame
+    An H2OFrame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when nfolds = 0
+  balance_classes : bool
+    logical, indicates whether or not to balance training data class counts via over/under-sampling (for imbalanced data)
+  max_after_balance_size : float
+    Maximum relative size of the training data after balancing class counts (can be less than 1.0). Ignored if balance_classes is False, which is the default behavior.
+  seed : int
+    Seed for random numbers (affects sampling when balance_classes=T)
+  build_tree_one_node : bool
+    Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+  nfolds : int
+    (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  fold_column : H2OFrame
+    (Optional) Column with cross-validation fold index assignment per observation
+  fold_assignment : str
+    Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+  keep_cross_validation_predictions : bool
+    Whether to keep the predictions of the cross-validation models
+  score_each_iteration : bool
+    Attempts to score each tree.
+  offset_column : H2OFrame
+    Specify the offset column.
+  weights_column : H2OFrame
+    Specify the weights column.
 
   :return: A new classifier or regression model.
   """
-  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="gbm"
+  return h2o_model_builder.supervised(parms)
 
 
-def glm(x,y,validation_x=None,validation_y=None,**kwargs):
+def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,validation_frame=None,
+        max_iterations=None,beta_epsilon=None,solver=None,standardize=None,family=None,link=None,
+        tweedie_variance_power=None,tweedie_link_power=None,alpha=None,prior=None,lambda_search=None,
+        nlambdas=None,lambda_min_ratio=None,beta_constraints=None,offset_column=None,weights_column=None,
+        nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
+        intercept=None, Lambda=None, max_active_predictors=None, do_future=None, checkpoint=None):
   """
-  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW)
+  Build a Generalized Linear Model
+  Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
+  distribution.
 
-  :return: A new regression or binomial classifier.
+  Parameters
+  ----------
+
+  x : H2OFrame
+    An H2OFrame containing the predictors in the model.
+  y : H2OFrame
+    An H2OFrame of the response variable in the model.
+  training_frame : H2OFrame
+    (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+  model_id : str
+    (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+  validation_frame : H2OFrame
+    An H2OFrame object containing the variables in the model.
+  max_iterations : int
+    A non-negative integer specifying the maximum number of iterations.
+  beta_epsilon : int
+     A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations. 
+     Defines the convergence criterion for h2o.glm.
+  solver : str
+    A character string specifying the solver used: IRLSM (supports more features), L_BFGS (scales better for datasets with many columns)
+  standardize : bool
+    A logical value indicating whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to training the models.
+  family : str
+    A character string specifying the distribution of the model:  gaussian, binomial, poisson, gamma, tweedie.
+  link : str
+    A character string specifying the link function. The default is the canonical link for the family.
+
+
+  The supported links for each of the family specifications are:\n
+          "gaussian": "identity", "log", "inverse"\n
+          "binomial": "logit", "log"
+          "poisson": "log", "identity"
+          "gamma": "inverse", "log", "identity"
+          "tweedie": "tweedie"
+
+  tweedie_variance_power : int
+     numeric specifying the power for the variance function when family = "tweedie".
+  tweedie_link_power : int
+    A numeric specifying the power for the link function when family = "tweedie".
+  alpha : float
+    A numeric in [0, 1] specifying the elastic-net mixing parameter.
+
+  The elastic-net penalty is defined to be:
+  eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
+  making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
+
+  Lambda : float
+    A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in the objective function. 
+    When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear models are fit.
+  prior : float
+    (Optional) A numeric specifying the prior probability of class 1 in the response when family = "binomial". The default prior is the observational frequency of class 1.
+  lambda_search : bool
+    A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given lambda is interpreted as lambda minself.
+  nlambdas : int
+    The number of lambda values to use when lambda_search = TRUE.
+  lambda_min_ratio : float
+    Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the the number of 
+    variables then lambda_min_ratio = 0.0001; if the number of observations is less than the number of variables then lambda_min_ratio = 0.01.
+  beta_constraints : H2OFrame
+    A data.frame or H2OParsedData object with the columns ["names", "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor 
+    in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower and upper bounds of beta, and "beta_given" is some supplied starting
+    values for the
+  offset_column : H2OFrame
+    Specify the offset column.
+  weights_column : H2OFrame
+    Specify the weights column.
+  nfolds : int
+    (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  fold_column : H2OFrame
+    (Optional) Column with cross-validation fold index assignment per observation
+  fold_assignment : str
+    Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+  keep_cross_validation_predictions : bool
+    Whether to keep the predictions of the cross-validation models
+  intercept : bool
+    Logical, include constant term (intercept) in the model
+  max_active_predictors : int
+    (Optional) Convergence criteria for number of predictors when using L1 penalty.
+
+   
+  
+  Returns: A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand (if
+  it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a H2ORegressionModel is
+  returned). The default print-out of the models is shown, but further GLM-specifc information can be queried out of
+  the object.
+  Upon completion of the GLM, the resulting object has coefficients, normalized coefficients, residual/null deviance,
+  aic, and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion
+  matrices.
   """
-  kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
-  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
+  parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  if "alpha" in parms and not isinstance(parms["alpha"], (list,tuple)): parms["alpha"] = [parms["alpha"]]
+  parms["algo"]="glm"
+  return h2o_model_builder.supervised(parms)
 
 def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW).
+  Build a Generalized Linear Model
   Note: this function is the same as glm(), but it doesn't block on model-build. Instead, it returns and H2OModelFuture
   object immediately. The model can be retrieved from the H2OModelFuture object with get_future_model().
 
   :return: H2OModelFuture
   """
-
   kwargs["do_future"] = True
   return glm(x,y,validation_x,validation_y,**kwargs)
 
-def kmeans(x,validation_x=None,**kwargs):
+def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
+           nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
+           user_points=None,ignored_columns=None,score_each_iteration=None,keep_cross_validation_predictions=None,
+           ignore_const_cols=None,checkpoint=None):
   """
-  Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
+  Performs k-means clustering on an H2O dataset.
 
-  :return: A new clustering model
+  Parameters
+  ----------
+    x : H2OFrame
+       The data columns on which k-means operates.\n
+    k : int
+      The number of clusters. Must be between 1 and 1e7 inclusive. k may be omitted if the user specifies the
+      initial centers in the init parameter. If k is not omitted, in this case, then it should be equal to the number of
+      user-specified centers.
+    model_id : str
+      (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+    max_iterations : int
+      The maximum number of iterations allowed. Must be between 0 and 1e6 inclusive.
+    standardize : bool
+      Indicates whether the data should be standardized before running k-means.
+    init : str
+      A character string that selects the initial set of k cluster centers. Possible values are "Random": for
+      random initialization, "PlusPlus": for k-means plus initialization, or "Furthest": for initialization at the furthest
+      point from each successive center. Additionally, the user may specify a the initial centers as a matrix, data.frame,
+      H2OFrame, or list of vectors. For matrices, data.frames, and H2OFrames, each row of the respective structure is an
+      initial center. For lists of vectors, each vector is an initial center.
+    seed : int
+      (Optional) Random seed used to initialize the cluster centroids.
+    nfolds : int
+      (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+    fold_column : H2OFrame
+      (Optional) Column with cross-validation fold index assignment per observation
+    fold_assignment : str
+      Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+
+  :return: An instance of H2OClusteringModel.
   """
-  return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="kmeans"
+  return h2o_model_builder.unsupervised(parms)
 
 
-def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
+def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
+                  build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_cats=None,
+                  binomial_double_trees=None,validation_frame=None,balance_classes=None,max_after_balance_size=None,
+                  seed=None,offset_column=None,weights_column=None,nfolds=None,fold_column=None,fold_assignment=None,
+                  keep_cross_validation_predictions=None,checkpoint=None):
   """
-  Build a Random Forest Model (kwargs are the same arguments that you can find in FLOW)
+  Build a Big Data Random Forest Model
+  Builds a Random Forest Model on an H2OFrame
+
+
+  Parameters
+  ----------
+
+  x : H2OFrame
+    An H2OFrame containing the predictors in the model.
+  y : H2OFrame
+    An H2OFrame of the response variable in the model.
+  training_frame : H2OFrame
+    (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+  model_id : str
+    (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+  mtries : int
+    Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification, and p/3 for regression, 
+    where p is the number of predictors.
+  sample_rate : float
+    Sample rate, from 0 to 1.0.
+  build_tree_one_node : bool
+    Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+  ntrees : int
+    A nonnegative integer that determines the number of trees to grow.
+  max_depth : int
+    Maximum depth to grow the tree.
+  min_rows : int
+    Minimum number of rows to assign to teminal nodes.
+  nbins : int
+    For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+  nbins_cats : int
+    For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+  binomial_double_trees : bool
+    or binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
+  validation_frame : H2OFrame
+     An H2OFrame object containing the variables in the model.
+  balance_classes : bool
+    logical, indicates whether or not to balance training data class counts via over/under-sampling (for imbalanced data)
+  max_after_balance_size : float
+    Maximum relative size of the training data after balancing class counts (can be less than 1.0). Ignored if balance_classes is False, which is the default behavior.
+  seed : int
+    Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+  offset_column : H2OFrame
+    Specify the offset column.
+  weights_column : H2OFrame
+    Specify the weights column.
+  nfolds : int
+    (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  fold_column : H2OFrame
+    (Optional) Column with cross-validation fold index assignment per observation
+  fold_assignment : str
+    Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+  keep_cross_validation_predictions : bool
+    Whether to keep the predictions of the cross-validation models
 
   :return: A new classifier or regression model.
   """
-  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="drf"
+  return h2o_model_builder.supervised(parms)
 
 
-def prcomp(x,validation_x=None,**kwargs):
+def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
+           training_frame=None,validation_frame=None,pca_method=None):
   """
-  Principal components analysis of a H2O dataset using the power method
-  to calculate the singular value decomposition of the Gram matrix.
+  Principal components analysis of a H2O dataset.
 
-  :param k: The number of principal components to be computed. This must be between 1 and min(ncol(training_frame),
-  nrow(training_frame)) inclusive.
-  :param model_id: (Optional) The unique hex key assigned to the resulting model. Automatically generated if none
-  is provided.
-  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
-  1e6 inclusive.
-  :param transform: A character string that indicates how the training data should be transformed before running PCA.
-  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
-  for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
-  for demeaning and dividing each column by its range (max - min).
-  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
-  method iteration.
-  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included
-  in each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of
-  every categorical variable will be dropped. Defaults to FALSE.
+  Parameters
+  ----------
+
+  k : int
+    The number of principal components to be computed. This must be between 1 and min(ncol(training_frame), nrow(training_frame)) inclusive.
+  model_id : str
+    (Optional) The unique hex key assigned to the resulting model. Automatically generated if none is provided.
+  max_iterations : int
+    The maximum number of iterations to run each power iteration loop. Must be between 1 and 1e6 inclusive.
+  transform : str
+    A character string that indicates how the training data should be transformed before running PCA.
+    Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE":
+    for dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
+    for demeaning and dividing each column by its range (max - min).
+  seed : int
+    (Optional) Random seed used to initialize the right singular vectors at the beginning of each power method iteration.
+  use_all_factor_levels : bool
+    (Optional) A logical value indicating whether all factor levels should be included in each categorical column expansion. 
+    If FALSE, the indicator column corresponding to the first factor level of every categorical variable will be dropped. Defaults to FALSE.
+  pca_method : str
+    A character string that indicates how PCA should be calculated.
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
+    "Power": computation of the SVD using the power iteration method, "GLRM": fit a generalized low rank model with an l2 loss function 
+    (no regularization) and solve for the SVD using local matrix algebra.
+
   :return: a new dim reduction model
   """
-  return h2o_model_builder.unsupervised_model_build(x,validation_x,"pca",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="pca"
+  return h2o_model_builder.unsupervised(parms)
 
-
-def svd(x,validation_x=None,**kwargs):
+def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
+        use_all_factor_levels=None,svd_method=None):
   """
-  Singular value decomposition of a H2O dataset using the power method.
+  Singular value decomposition of a H2O dataset.
 
-  :param nv: The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame),
-  nrow(training_frame)) inclusive.
-  :param max_iterations: The maximum number of iterations to run each power iteration loop. Must be between 1 and
-  1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
-  and 1e6 inclusive.
-  :param transform: A character string that indicates how the training data should be transformed before running PCA.
-  Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
-  dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE": for
-  demeaning and dividing each column by its range (max - min).
-  :param seed: (Optional) Random seed used to initialize the right singular vectors at the beginning of each power
-  method iteration.
-  :param use_all_factor_levels: (Optional) A logical value indicating whether all factor levels should be included in
-  each categorical column expansion. If FALSE, the indicator column corresponding to the first factor level of every
-  categorical variable will be dropped. Defaults to TRUE.
+  Parameters
+  ----------
+
+  nv : int
+    The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame), snrow(training_frame)) inclusive. 
+  max_iterations : int
+    The maximum number of iterations to run each power iteration loop. Must be between 1 and
+    1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
+    and 1e6 inclusive.   
+  transform : str
+    A character string that indicates how the training data should be transformed before running SVD.
+    Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
+    dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE": for
+    demeaning and dividing each column by its range (max - min).
+  seed : int
+    (Optional) Random seed used to initialize the right singular vectors at the beginning of each power method iteration.
+  use_all_factor_levels : bool
+    (Optional) A logical value indicating whether all factor levels should be included in each categorical column expansion. 
+    If FALSE, the indicator column corresponding to the first factor level of every categorical variable will be dropped. Defaults to TRUE.
+  svd_method : str
+    A character string that indicates how SVD should be calculated.
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
+    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
+  
+ 
   :return: a new dim reduction model
   """
-  kwargs['_rest_version'] = 99
-  return h2o_model_builder.unsupervised_model_build(x,validation_x,"svd",kwargs)
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="svd"
+  parms['_rest_version']=99
+  return h2o_model_builder.unsupervised(parms)
 
+def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
+         ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
+         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,user_points=None,recover_svd=None):
+  """
+  Builds a generalized low rank model of a H2O dataset.
+  
+  Parameters
+  ----------
+  
+  k : int
+    The rank of the resulting decomposition. This must be between 1 and the number of columns in the training frame inclusive.
+  max_iterations : int
+    The maximum number of iterations to run the optimization loop. Each iteration consists of an update of the X matrix, followed by an 
+    update of the Y matrix.
+  transform : str
+    A character string that indicates how the training data should be transformed before running GLRM.
+    Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
+    dividing by the standard deviation of each column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE": for
+    demeaning and dividing each column by its range (max - min).
+  seed : int
+    (Optional) Random seed used to initialize the X and Y matrices.
+  ignore_const_cols : bool
+    (Optional) A logical value indicating whether to ignore constant columns in the training frame. A column is constant if all of its
+    non-missing values are the same value.
+  loss : str
+    A character string indicating the default loss function for numeric columns. Possible values are "Quadratic" (default), "L1", "Huber", 
+    "Poisson", "Hinge", and "Logistic".
+  multi_loss : str
+    A character string indicating the default loss function for enum columns. Possible values are "Categorical" and "Ordinal".
+  loss_by_col : str
+    (Optional) A list of strings indicating the loss function for specific columns by corresponding index in loss_by_col_idx. 
+    Will override loss for numeric columns and multi_loss for enum columns.
+  loss_by_col_idx : str
+    (Optional) A list of column indices to which the corresponding loss functions in loss_by_col are assigned. Must be zero indexed.
+  regularization_x : str
+    A character string indicating the regularization function for the X matrix. Possible values are "None" (default), "Quadratic", 
+    "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", and "Simplex".
+  regularization_y : str
+    A character string indicating the regularization function for the Y matrix. Possible values are "None" (default), "Quadratic", 
+    "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", and "Simplex".
+  gamma_x : float
+    The weight on the X matrix regularization term.
+  gamma_y : float
+    The weight on the Y matrix regularization term.
+  init_step_size : float
+    Initial step size. Divided by number of columns in the training frame when calculating the proximal gradient update. The algorithm 
+    begins at init_step_size and decreases the step size at each iteration until a termination condition is reached.
+  min_step_size : float
+    Minimum step size upon which the algorithm is terminated.
+  init : str
+    A character string indicating how to select the initial Y matrix. 
+    Possible values are "Random": for initialization to a random array from the standard normal distribution, "PlusPlus": for initialization 
+    using the clusters from k-means++ initialization, or "SVD": for initialization using the first k (approximate) right singular vectors. 
+    Additionally, the user may specify the initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
+  recover_svd : bool
+    A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized 
+    low rank decomposition.
+  
+  
+  :return: a new dim reduction model
+  """
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="glrm"
+  parms['_rest_version']=99
+  return h2o_model_builder.unsupervised(parms)
 
-def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
+def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
+                laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
+                balance_classes=None,max_after_balance_size=None, nfolds=None,fold_column=None,fold_assignment=None,
+                keep_cross_validation_predictions=None,checkpoint=None):
   """
   The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
   Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.
@@ -799,15 +1438,39 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,**kwargs):
   skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability
   calculation during prediction.
 
-  :param laplace: A positive number controlling Laplace smoothing. The default zero disables smoothing.
-  :param threshold: The minimum standard deviation to use for observations without enough data. Must be at least 1e-10.
-  :param eps: A threshold cutoff to deal with numeric instability, must be positive.
-  :param compute_metrics: A logical value indicating whether model metrics should be computed. Set to FALSE to reduce
-  the runtime of the algorithm.
+  Parameters
+  ----------
+
+  laplace : int
+    A positive number controlling Laplace smoothing. The default zero disables smoothing.
+  threshold : float
+    The minimum standard deviation to use for observations without enough data. Must be at least 1e-10.
+  eps : float
+    A threshold cutoff to deal with numeric instability, must be positive.
+  compute_metrics : bool
+    A logical value indicating whether model metrics should be computed. Set to FALSE to reduce the runtime of the algorithm.
+  training_frame : H2OFrame
+    Training Frame
+  validation_frame : H2OFrame
+    Validation Frame
+  offset_column : H2OFrame
+    Specify the offset column.
+  weights_column : H2OFrame
+    Specify the weights column.
+  nfolds : int
+    (Optional) Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+  fold_column : H2OFrame
+    (Optional) Column with cross-validation fold index assignment per observation
+  fold_assignment : str
+    Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+  keep_cross_validation_predictions :  bool
+    Whether to keep the predictions of the cross-validation models
+  
   :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
   """
-  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"naivebayes",kwargs)
-
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms["algo"]="naivebayes"
+  return h2o_model_builder.supervised(parms)
 
 def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,
                  categorical_fraction = 0.2, factors = 100, integer_fraction = 0.2, integer_range = 100,
@@ -817,25 +1480,43 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
   Data Frame Creation in H2O.
   Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
 
-  :param id: A string indicating the destination key. If empty, this will be auto-generated by H2O.
-  :param rows: The number of rows of data to generate.
-  :param cols: The number of columns of data to generate. Excludes the response column if has_response == True}.
-  :param randomize: A logical value indicating whether data values should be randomly generated. This must be TRUE if
-  either categorical_fraction or integer_fraction is non-zero.
-  :param value: If randomize == FALSE, then all real-valued entries will be set to this value.
-  :param real_range: The range of randomly generated real values.
-  :param categorical_fraction:  The fraction of total columns that are categorical.
-  :param factors: The number of (unique) factor levels in each categorical column.
-  :param integer_fraction: The fraction of total columns that are integer-valued.
-  :param integer_range: The range of randomly generated integer values.
-  :param binary_fraction: The fraction of total columns that are binary-valued.
-  :param binary_ones_fraction: The fraction of values in a binary column that are set to 1.
-  :param missing_fraction: The fraction of total entries in the data frame that are set to NA.
-  :param response_factors: If has_response == TRUE, then this is the number of factor levels in the response column.
-  :param has_response: A logical value indicating whether an additional response column should be pre-pended to the
-  final H2O data frame. If set to TRUE, the total number of columns will be cols+1.
-  :param seed: A seed used to generate random values when randomize = TRUE.
-  :return: the H2OFrame that was created
+  Parameters
+  ----------
+  id : str
+    A string indicating the destination key. If empty, this will be auto-generated by H2O.
+  rows : int
+    The number of rows of data to generate.
+  cols : int
+    The number of columns of data to generate. Excludes the response column if has_response == True.
+  randomize : bool
+    A logical value indicating whether data values should be randomly generated. This must be TRUE if either categorical_fraction or integer_fraction is non-zero.
+  value : int
+    If randomize == FALSE, then all real-valued entries will be set to this value.
+  real_range : float
+    The range of randomly generated real values.
+  categorical_fraction : float
+    The fraction of total columns that are categorical.
+  factors : int
+    The number of (unique) factor levels in each categorical column.
+  integer_fraction : float
+    The fraction of total columns that are integer-valued.
+  integer_range : list
+    The range of randomly generated integer values.
+  binary_fraction : float
+    The fraction of total columns that are binary-valued.
+  binary_ones_fraction : float
+    The fraction of values in a binary column that are set to 1.
+  missing_fraction : float
+    The fraction of total entries in the data frame that are set to NA.
+  response_factors : int
+    If has_response == TRUE, then this is the number of factor levels in the response column.
+  has_response : bool
+    A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number 
+    of columns will be cols+1.
+  seed : int
+    A seed used to generate random values when randomize = TRUE.
+
+ :return: the H2OFrame that was created
   """
   parms = {"dest": _py_tmp_key() if id is None else id,
            "rows": rows,
@@ -864,18 +1545,26 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
   Creates a frame in H2O with n-th order interaction features between categorical columns, as specified by
   the user.
 
-  :param data: the H2OFrame that holds the target categorical columns.
-  :param factors: factors Factor columns (either indices or column names).
-  :param pairwise: Whether to create pairwise interactions between factors (otherwise create one
-  higher-order interaction). Only applicable if there are 3 or more factors.
-  :param max_factors: Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all
-  factor will be made)
-  :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
-  :param destination_frame: A string indicating the destination key. If empty, this will be auto-generated by H2O.
+  Parameters
+  ----------
+
+  data : H2OFrame
+    the H2OFrame that holds the target categorical columns.
+  factors : list
+    factors Factor columns (either indices or column names).
+  pairwise : bool
+    Whether to create pairwise interactions between factors (otherwise create one higher-order interaction). Only applicable if there are 3 or more factors.
+  max_factors : int
+    Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all factor will be made)
+  min_occurrence : int 
+    Min. occurrence threshold for factor levels in pair-wise interaction terms
+  destination_frame : str
+    A string indicating the destination key. If empty, this will be auto-generated by H2O.
+
   :return: H2OFrame
   """
   data._eager()
-  factors = [data.names()[n] if isinstance(n,int) else n for n in factors]
+  factors = [data.names[n] if isinstance(n,int) else n for n in factors]
   parms = {"dest": _py_tmp_key() if destination_frame is None else destination_frame,
            "source_frame": data._id,
            "factor_columns": [_quoted(f) for f in factors],
@@ -898,7 +1587,11 @@ def locate(path):
   This is handy when hunting for data files to be passed into h2o and used by import file.
   Note: This function is for unit testing purposes only.
 
-  :param path: Path to search for
+  Parameters
+  ----------
+  path : str
+    Path to search for
+  
   :return: Absolute path if it is found.  None otherwise.
   """
 
@@ -943,8 +1636,14 @@ def as_list(data, use_pandas=True):
   Otherwise, a list-of-lists populated by character data will be returned (so the types of data will
   all be str).
 
-  :param data: An H2O data object.
-  :param use_pandas: Try to use pandas for reading in the data.
+  Parameters
+  ----------
+
+  data : H2OFrame
+    An H2O data object.
+  use_pandas : bool
+    Try to use pandas for reading in the data.
+
   :return: List of list (Rows x Columns).
   """
   return H2OFrame.as_data_frame(data, use_pandas)
@@ -954,10 +1653,14 @@ def set_timezone(tz):
   """
   Set the Time Zone on the H2O Cloud
 
-  :param tz: The desired timezone.
+  Parameters
+  ----------
+  tz : str
+    The desired timezone.
+
   :return: None
   """
-  rapids(ExprNode("setTimeZone", tz)._eager())
+  rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
 
 def get_timezone():
   """
@@ -975,6 +1678,27 @@ def list_timezones():
   """
   return H2OFrame(expr=ExprNode("listTimeZones"))._frame()
 
+
+def turn_off_ref_cnts():
+  """
+  Reference counting on H2OFrame's allows for eager deletion of H2OFrames that go out of
+  scope. If multiple threads are spawned, however, and data is to live beyond the use of
+  the thread (e.g. when launching multiple jobs via Parallel in scikit-learn), then there
+  may be referers outside of the current context. Use this to prevent deletion of H2OFrame
+  instances.
+
+  :return: None
+  """
+  H2OFrame.COUNTING=False
+
+def turn_on_ref_cnts():
+  """
+  See the note in turn_off_ref_cnts
+
+  :return: None
+  """
+  H2OFrame.del_dropped()
+  H2OFrame.COUNTING=True
 
 class H2ODisplay:
   """
@@ -1057,3 +1781,34 @@ def can_use_pandas():
     return True
   except ImportError:
     return False
+
+
+#  ALL DEPRECATED METHODS BELOW #
+
+def h2o_deprecated(newfun=None):
+  def o(fun):
+    if newfun is not None: m = "{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__)
+    else:                  m = "{} is deprecated.".format(fun.__name__)
+    @functools.wraps(fun)
+    def i(*args, **kwargs):
+      print
+      print
+      warnings.warn(m, category=DeprecationWarning, stacklevel=2)
+      return fun(*args, **kwargs)
+    return i
+  return o
+
+@h2o_deprecated(import_file)
+def import_frame(path=None):
+  """
+  Deprecated for import_file.
+
+  Parameters
+  ----------
+  path : str
+    A path specifiying the location of the data to import.
+
+  :return: A new H2OFrame
+  """
+  warnings.warn("deprecated: Use import_file", DeprecationWarning)
+  return import_file(path)

@@ -4,14 +4,14 @@ import water.AutoBuffer;
 import water.Futures;
 import water.H2O;
 import water.MemoryManager;
-import water.parser.ParseTime;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.ValueString;
+import water.util.IcedDouble;
+import water.util.IcedInt;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
@@ -65,6 +65,7 @@ public class NewChunk extends Chunk {
   public int _timCnt = 0;
   protected static final int MIN_SPARSE_RATIO = 32;
   private int _sparseRatio = MIN_SPARSE_RATIO;
+  public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
 
@@ -715,7 +716,7 @@ public class NewChunk extends Chunk {
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, sparseLen());
     if( mode==AppendableVec.STRING )
-      return new CStrChunk(_sslen, _ss, sparseLen(), _len, _is);
+      return new CStrChunk(_sslen, _ss, sparseLen(), _len, _is, _isAllASCII);
     boolean rerun=false;
     if(mode == AppendableVec.ENUM){
       for( int i=0; i< sparseLen(); i++ )
@@ -956,10 +957,10 @@ public class NewChunk extends Chunk {
           break;
         case 4:
           int ival = (int)lval;
-          UnsafeUtils.set4(buf, off+ridsz, ival);
+          UnsafeUtils.set4(buf, off + ridsz, ival);
           break;
         case 8:
-          UnsafeUtils.set8(buf, off+ridsz, lval);
+          UnsafeUtils.set8(buf, off + ridsz, lval);
           break;
         default:
           throw H2O.fail();
@@ -1018,8 +1019,8 @@ public class NewChunk extends Chunk {
       switch( log ) {
       case 0:          bs [i    +off] = (byte)le ; break;
       case 1: UnsafeUtils.set2(bs,(i<<1)+off,  (short)le); break;
-      case 2: UnsafeUtils.set4(bs,(i<<2)+off,    (int)le); break;
-      case 3: UnsafeUtils.set8(bs,(i<<3)+off,         le); break;
+      case 2: UnsafeUtils.set4(bs, (i << 2) + off, (int) le); break;
+      case 3: UnsafeUtils.set8(bs, (i << 3) + off, le); break;
       default: throw H2O.fail();
       }
     }
@@ -1029,18 +1030,32 @@ public class NewChunk extends Chunk {
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
+    HashMap<Long,Byte> hs = new HashMap<>(CUDChunk.MAX_UNIQUES);
+    Byte dummy = 0;
     final byte [] bs = MemoryManager.malloc1(_len *8,true);
     int j = 0;
+    boolean fitsInUnique = true;
     for(int i = 0; i < _len; ++i){
       double d = 0;
       if(_id == null || _id.length == 0 || (j < _id.length && _id[j] == i)) {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
+      if (fitsInUnique) {
+        if (hs.size() < CUDChunk.MAX_UNIQUES) //still got space
+          hs.put(new Long(Double.doubleToLongBits(d)),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
+        else if (hs.size() == CUDChunk.MAX_UNIQUES) //full, but might not need more space because of repeats
+          fitsInUnique = hs.containsKey(Double.doubleToLongBits(d));
+        else //full - no longer try to fit into CUDChunk
+          fitsInUnique = false;
+      }
       UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == sparseLen() :"j = " + j + ", _len = " + sparseLen();
-    return new C8DChunk(bs);
+    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < 0.8 * bs.length)
+      return new CUDChunk(bs, hs, len());
+    else
+      return new C8DChunk(bs);
   }
 
   // Compute a compressed UUID buffer

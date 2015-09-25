@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def grid_airlinesGBM(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def grid_airlinesGBM():
+    
+    
 
-    air =  h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
+    air =  h2o.import_file(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
     #air.summary()
     myX = ["DayofMonth", "DayOfWeek"]
     air_grid = h2o.gbm(y=air["IsDepDelayed"], x=air[myX],
@@ -17,4 +17,4 @@ def grid_airlinesGBM(ip,port):
     air_grid.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, grid_airlinesGBM)
+    tests.run_test(sys.argv, grid_airlinesGBM)

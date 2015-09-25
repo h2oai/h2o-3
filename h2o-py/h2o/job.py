@@ -6,12 +6,14 @@ A job can be polled for completion and reports the progress so far if it is stil
 from connection import H2OConnection
 import time
 import sys
+import h2o
 
 
-class H2OJob(object):
+class H2OJob:
   """
   A class representing an H2O Job.
   """
+  __PROGRESS_BAR__ = True  # display & update progress bar while polling
   def __init__(self, jobs, job_type):
     if "jobs" in jobs:  job = jobs["jobs"][0]
     elif "job" in jobs: job = jobs["job"]
@@ -31,7 +33,7 @@ class H2OJob(object):
   def poll(self):
     sleep = 0.1
     running = True
-    print  # create a new line for distinguished progress bar
+    if H2OJob.__PROGRESS_BAR__: print  # create a new line for distinguished progress bar
     while running:
       self._update_progress()
       time.sleep(sleep)
@@ -39,7 +41,7 @@ class H2OJob(object):
       self._refresh_job_view()
       running = self._is_running()
     self._update_progress()
-    print
+    if H2OJob.__PROGRESS_BAR__: print
 
     # check if failed... and politely print relevant message
     if self.status == "CANCELLED":
@@ -62,7 +64,9 @@ class H2OJob(object):
     progress = min(self.progress, 1)
     if progress == 1:
       self._100_percent = True
-    p = int(self._progress_bar_width * progress)
-    sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
-                     ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))
-    sys.stdout.flush()
+
+    if H2OJob.__PROGRESS_BAR__:  # or self._100_percent:
+      p = int(self._progress_bar_width * progress)
+      sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
+                       ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))
+      sys.stdout.flush()

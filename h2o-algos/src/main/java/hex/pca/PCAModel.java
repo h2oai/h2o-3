@@ -1,13 +1,17 @@
 package hex.pca;
 
-import hex.*;
+import hex.DataInfo;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
 import water.DKV;
 import water.Key;
 import water.MRTask;
+import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.JCodeGen;
-import water.util.SB;
+import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
@@ -20,6 +24,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public long _seed = System.nanoTime(); // RNG seed
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
     public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
+    public boolean _impute_missing = false;   // Should missing numeric values be imputed with the column mean?
 
     public enum Method {
       GramSVD, Power, GLRM
@@ -27,7 +32,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   public static class PCAOutput extends Model.Output {
-    // GLRM final value of L2 loss function
+    // GLRM final value of loss function
     public double _objective;
 
     // Principal components (eigenvectors)
@@ -62,9 +67,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
-
-    // Frame key for right singular vectors from SVD
-    public Key<Frame> _loading_key;
 
     public PCAOutput(PCA b) { super(b); }
 
@@ -139,17 +141,8 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     return preds;
   }
 
-  @Override
-  public Frame score(Frame fr, String destination_key) {
-    Frame adaptFr = new Frame(fr);
-    adaptTestForTrain(adaptFr, true, false);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Score
-    cleanup_adapt( adaptFr, fr );
-    return output;
-  }
-
-  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
-    sb = super.toJavaInit(sb, fileContextSB);
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb = super.toJavaInit(sb, fileCtx);
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+_parms._k+"; }").nl();
@@ -164,13 +157,16 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     return sb;
   }
 
-  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
-    SB model = new SB();
+  @Override protected void toJavaPredictBody(SBPrintStream bodySb,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     final int cats = _output._ncats;
     final int nums = _output._nnums;
     bodySb.i().p("final int nstart = CATOFFS[CATOFFS.length-1];").nl();
     bodySb.i().p("for(int i = 0; i < ").p(_parms._k).p("; i++) {").nl();
+
     // Categorical columns
     bodySb.i(1).p("for(int j = 0; j < ").p(cats).p("; j++) {").nl();
     bodySb.i(2).p("double d = data[PERMUTE[j]];").nl();
@@ -186,6 +182,5 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     bodySb.i(2).p("preds[i] += (data[PERMUTE[j" + (cats > 0 ? "+" + cats : "") + "]]-NORMSUB[j])*NORMMUL[j]*EIGVECS[j" + (cats > 0 ? "+ nstart" : "") +"][i];").nl();
     bodySb.i(1).p("}").nl();
     bodySb.i().p("}").nl();
-    fileCtxSb.p(model);
   }
 }

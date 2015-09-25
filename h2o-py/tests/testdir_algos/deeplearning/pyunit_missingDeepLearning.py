@@ -2,11 +2,11 @@
 # splits)
 import sys
 sys.path.insert(1,"../../../")
-import h2o
+import h2o, tests
 
-def missing(ip,port):
+def missing():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     missing_ratios = [0, 0.1, 0.25, 0.5, 0.75, 0.99]
     errors = [0, 0, 0, 0, 0, 0]
@@ -26,7 +26,7 @@ def missing(ip,port):
         # add missing values to the data section of the file (leave the response alone)
         if missing_ratios[i] > 0:
             resp = data[23]
-            pred = data[:,range(23)+range(24,data.ncol())]
+            pred = data[:,range(23)+range(24,data.ncol)]
             data_missing = pred.insert_missing_values(fraction=missing_ratios[i])
             data_fin = data_missing.cbind(resp)
         else:
@@ -49,4 +49,4 @@ def missing(ip,port):
     assert sum(errors) < 2.2, "Sum of classification errors is too large!"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, missing)
+    tests.run_test(sys.argv, missing)

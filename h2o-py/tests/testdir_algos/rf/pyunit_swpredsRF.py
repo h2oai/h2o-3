@@ -1,17 +1,17 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def swpredsRF(ip,port):
+def swpredsRF():
     # Training set has two predictor columns
     # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
     # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
 
-    # Connect to h2o
-    h2o.init(ip,port)
+    
+    
 
     #Log.info("Importing swpreds_1000x3.csv data...\n")
-    swpreds = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
+    swpreds = h2o.import_file(path=h2o.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
     swpreds["y"] = swpreds["y"].asfactor()
 
     #Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
@@ -32,4 +32,4 @@ def swpredsRF(ip,port):
     print(perf2.auc())
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, swpredsRF)
+  tests.run_test(sys.argv, swpredsRF)

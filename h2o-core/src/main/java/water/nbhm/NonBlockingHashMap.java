@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * with better scaling properties and generally lower costs to mutate the Map.
  * It provides identical correctness properties as ConcurrentHashMap.  All
  * operations are non-blocking and multi-thread safe, including all update
- * operations.  {@link NonBlockingHashMap} scales substatially better than
+ * operations.  {@link NonBlockingHashMap} scales substantially better than
  * {@link java.util.concurrent.ConcurrentHashMap} for high update rates, even with a
  * large concurrency factor.  Scaling is linear up to 768 CPUs on a 768-CPU
  * Azul box, even with 100% updates or 100% reads or any fraction in-between.
  * Linear scaling up to all cpus has been observed on a 32-way Sun US2 box,
- * 32-way Sun Niagra box, 8-way Intel box and a 4-way Power box.
+ * 32-way Sun Niagara box, 8-way Intel box and a 4-way Power box.
  *
  * This class obeys the same functional specification as {@link
  * java.util.Hashtable}, and includes versions of methods corresponding to
@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * <em>not</em> throw {@link ConcurrentModificationException}.  However,
  * iterators are designed to be used by only one thread at a time.
  *
- * <p> Very full tables, or tables with high reprobe rates may trigger an
+ * <p> Very full tables, or tables with high re-probe rates may trigger an
  * internal resize operation to move into a larger table.  Resizing is not
  * terribly expensive, but it is not free either; during resize operations
  * table throughput may drop somewhat.  All threads that visit the table
@@ -247,7 +247,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // can trigger a table resize.  Several places must have exact agreement on
   // what the reprobe_limit is, so we share it here.
   private static final int reprobe_limit( int len ) {
-    return REPROBE_LIMIT + (len>>2);
+    return REPROBE_LIMIT + (len>>8);
   }
 
   // --- NonBlockingHashMap --------------------------------------------------
@@ -490,7 +490,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
        // Do the match the hard way - with the users' key being the loop-
        // invariant "this" pointer.  I could have flipped the order of
        // operands (since equals is commutative), but I'm making mega-morphic
-       // v-calls in a reprobing loop and nailing down the 'this' argument
+       // v-calls in a re-probing loop and nailing down the 'this' argument
        // gives both the JIT and the hardware a chance to prefetch the call target.
        key.equals(K));          // Finally do the hard match
   }
@@ -532,7 +532,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
       // We need a volatile-read here to preserve happens-before semantics on
       // newly inserted Keys.  If the Key body was written just before inserting
-      // into the table a Key-compare here might read the uninitalized Key body.
+      // into the table a Key-compare here might read the uninitialized Key body.
       // Annoyingly this means we have to volatile-read before EACH key compare.
       // .
       // We also need a volatile-read between reading a newly inserted Value
@@ -591,7 +591,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
       // We need a volatile-read here to preserve happens-before semantics on
       // newly inserted Keys.  If the Key body was written just before inserting
-      // into the table a Key-compare here might read the uninitalized Key body.
+      // into the table a Key-compare here might read the uninitialized Key body.
       // Annoyingly this means we have to volatile-read before EACH key compare.
       // .
       // We also need a volatile-read between reading a newly inserted Value
@@ -683,7 +683,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
       // We need a volatile-read here to preserve happens-before semantics on
       // newly inserted Keys.  If the Key body was written just before inserting
-      // into the table a Key-compare here might read the uninitalized Key body.
+      // into the table a Key-compare here might read the uninitialized Key body.
       // Annoyingly this means we have to volatile-read before EACH key compare.
       newkvs = chm._newkvs;     // VOLATILE READ before key compare
 
@@ -908,8 +908,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
       long tm = System.currentTimeMillis();
       long q=0;
       if( newsz <= oldlen && // New table would shrink or hold steady?
-          tm <= topmap._last_resize_milli+10000 && // Recent resize (less than 1 sec ago)
-          (q=_slots.estimate_get()) >= (sz<<1) ) // 1/2 of keys are dead?
+          (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 1 sec ago)
+           (q=_slots.estimate_get()) >= (sz<<1)) )  // 1/2 of keys are dead?
         newsz = oldlen<<1;      // Double the existing size
 
       // Do not shrink, ever
@@ -926,9 +926,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
       while( !_resizerUpdater.compareAndSet(this,r,r+1) )
         r = _resizers;
       // Size calculation: 2 words (K+V) per table entry, plus a handful.  We
-      // guess at 32-bit pointers; 64-bit pointers screws up the size calc by
+      // guess at 64-bit pointers; 32-bit pointers screws up the size calc by
       // 2x but does not screw up the heuristic very much.
-      int megs = ((((1<<log2)<<1)+4)<<3/*word to bytes*/)>>20/*megs*/;
+      int megs = ((((1<<log2)<<1)+8)<<3/*word to bytes*/)>>20/*megs*/;
       if( r >= 2 && megs > 0 ) { // Already 2 guys trying; wait and see
         newkvs = _newkvs;        // Between dorking around, another thread did it
         if( newkvs != null )     // See if resize is already in progress
@@ -938,7 +938,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         //synchronized( this ) { wait(8*megs); }         // Timeout - we always wakeup
         // For now, sleep a tad and see if the 2 guys already trying to make
         // the table actually get around to making it happen.
-        try { Thread.sleep(8*megs); } catch( Exception e ) { }
+        try { Thread.sleep(megs); } catch( Exception e ) { }
       }
       // Last check, since the 'new' below is expensive and there is a chance
       // that another thread slipped in a new thread while we ran the heuristic.
@@ -1123,7 +1123,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         if( CAS_val(oldkvs,idx,oldval,box) ) { // CAS down a box'd version of oldval
           // If we made the Value slot hold a TOMBPRIME, then we both
           // prevented further updates here but also the (absent)
-          // oldval is vaccuously available in the new table.  We
+          // oldval is vacuously available in the new table.  We
           // return with true here: any thread looking for a value for
           // this key can correctly go straight to the new table and
           // skip looking in the old table.

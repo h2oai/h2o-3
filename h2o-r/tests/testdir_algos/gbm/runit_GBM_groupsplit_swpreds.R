@@ -1,13 +1,13 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM.SWpreds <- function(conn) {
+test.GBM.SWpreds <- function() {
   # Training set has two predictor columns
   # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
   
   Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/swpreds_1000x3.csv"), destination_frame = "swpreds.hex")
+  swpreds.hex <- h2o.uploadFile(locate("smalldata/gbm_test/swpreds_1000x3.csv"), destination_frame = "swpreds.hex")
   swpreds.hex[,3] <- as.factor(swpreds.hex[,3])
   Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
   print(summary(swpreds.hex))

@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.km.iter_max <- function(conn) {
+test.km.iter_max <- function() {
   Log.info("Importing ozone.csv data...\n")
-  ozone.hex <- h2o.uploadFile(conn, locate("smalldata/glm_test/ozone.csv"))
+  ozone.hex <- h2o.uploadFile( locate("smalldata/glm_test/ozone.csv"))
   print(summary(ozone.hex))
   miters <- 5
   ncent <- 10
@@ -22,7 +22,7 @@ test.km.iter_max <- function(conn) {
   Log.info("Check cluster centers have converged")
   fitall2 <- h2o.kmeans(ozone.hex, init = getCenters(fitall), max_iter = 1)
   avg_change <- sum((getCenters(fitall) - getCenters(fitall2))^2)/ncent
-  expect_true(avg_change < 1e-6 || getIterations(fitall) > miters)
+  expect_true(avg_change < 1e-6 || getIterations(fitall) == miters)  # Either converged or hit max_iterations limit
   testEnd()
 }
 

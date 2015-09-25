@@ -29,6 +29,8 @@ class CsvParser extends Parser {
     boolean firstChunk = true;  // Have not rolled into the 2nd chunk
     byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
     int state;
+    boolean isNa = false;
+    boolean isAllASCII = true;
     // If handed a skipping offset, then it points just past the prior partial line.
     if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
     else {
@@ -100,6 +102,8 @@ MAIN_LOOP:
           }
           if (!isEOL(c) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
             str.addChar();
+            if ((c & 0x80) == 128) //value beyond std ASCII
+              isAllASCII = false;
             break;
           }
           // fallthrough to STRING_END
@@ -113,17 +117,25 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
-                  && _setup._na_strings.length < colIdx
+                  && _setup._na_strings.length > colIdx
                   && _setup._na_strings[colIdx] != null) {
             for (String s : _setup._na_strings[colIdx]) {
               if (str.equals(s)) {
-                dout.addInvalidCol(colIdx);
+                isNa = true;
                 break;
               }
             }
-          } else
+          }
+          if (!isNa) {
             dout.addStrCol(colIdx, str);
+            if (!isAllASCII)
+              dout.setIsAllASCII(colIdx, isAllASCII);
+          } else {
+            dout.addInvalidCol(colIdx);
+            isNa = false;
+          }
           str.set(null, 0, 0);
+          isAllASCII = true;
           ++colIdx;
           state = SEPARATOR_OR_EOL;
           // fallthrough to SEPARATOR_OR_EOL

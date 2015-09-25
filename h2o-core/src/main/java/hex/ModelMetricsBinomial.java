@@ -23,6 +23,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return (ModelMetricsBinomial) mm;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
+    sb.append(" logloss: " + (float)_logloss + "\n");
+    if (cm() != null) sb.append(" CM: " + cm().toASCII());
+    return sb.toString();
+  }
+
   public double logloss() { return _logloss; }
   @Override public AUC2 auc() { return _auc; }
   @Override public ConfusionMatrix cm() {
@@ -86,6 +96,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       }
     }
     public String toString(){
+      if(_wcount == 0) return "empty, no rows";
       return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
     }
   }

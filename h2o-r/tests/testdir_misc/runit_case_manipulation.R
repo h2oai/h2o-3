@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.string.case.manipulation <- function(conn) {
+test.string.case.manipulation <- function() {
   Log.info("Importing letters...")
   hex <- as.h2o(letters)
   print(hex)

@@ -42,11 +42,6 @@ Now, parse the imported data:
 0. If the data uses a separator, select it from the drop-down **Separator** list. 
 0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
-0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
-
-  >**NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
-
-
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  
 
   ![Parsing Data](../images/GBM_Parse.png)

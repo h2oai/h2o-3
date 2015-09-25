@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def offset_poisson(ip,port):
+def offset_poisson():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
-    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 
@@ -33,4 +33,4 @@ def offset_poisson(ip,port):
         format(398.0608, predictions.max())
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, offset_poisson)
+    tests.run_test(sys.argv, offset_poisson)

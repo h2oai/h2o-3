@@ -24,9 +24,9 @@ library(h2o)
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
-iris.hex <- h2o.importFile(conn, "maprfs:/datasets/iris/iris.csv")
+iris.hex <- h2o.importFile("maprfs:/datasets/iris/iris.csv", header = T)
 
 print(summary(iris.hex))
 
@@ -37,8 +37,10 @@ myY = 5
 iris.gbm <- h2o.gbm(myX, myY, training_frame = iris.hex, distribution = 'multinomial')
 print(iris.gbm)
 
+myZ = 1
+
 # GLM Model
-iris.glm <- h2o.glm(myX, myY, training_frame = iris.hex, family = "gaussian")
+iris.glm <- h2o.glm(myX, myZ, training_frame = iris.hex, family = "gaussian")
 print(iris.glm)
 
 

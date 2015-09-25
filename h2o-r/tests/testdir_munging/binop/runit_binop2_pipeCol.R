@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.binop2.pipe <- function(conn) {
- hex <- as.h2o(conn, iris)
+test.binop2.pipe <- function() {
+ hex <- as.h2o(iris)
 
   Log.info("Selecting a column")
   #col <- sample(colnames[colTypes != "enum"], 1)

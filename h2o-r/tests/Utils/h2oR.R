@@ -195,17 +195,16 @@ withWarnings <- function(expr) {
 doTest<-
 function(testDesc, test) {
     Log.info("======================== Begin Test ===========================\n")
-    conn <<- new("H2OConnection", ip=myIP, port=myPort)
-    conn@mutable$session_id <- .init.session_id(conn)
-    assign("conn", conn, globalenv())
-    tryCatch(test_that(testDesc, withWarnings(test(conn))), warning = function(w) WARN(w), error =function(e) FAIL(e))
+    conn <- h2o.getConnection()
+    conn@mutable$session_id <- .init.session_id()
+    tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
     if (!PASSS) FAIL("Did not reach the end of test. Check Rsandbox/errors.log for warnings and errors.")
     PASS()
 }
 
 installDepPkgs <- function(optional = FALSE) {
   myPackages = rownames(installed.packages())
-  myReqPkgs = c("RCurl", "rjson", "tools", "statmod")
+  myReqPkgs = c("RCurl", "jsonlite", "tools", "statmod")
   
   # For plotting clusters in h2o.kmeans demo
   if(optional)
@@ -235,6 +234,10 @@ function(ipPort) {
 
   Log.info("Check that H2O R package matches version on server\n")
   installDepPkgs()
+  #library(h2o)
+  h2o.init(ip            = ipPort[[1]], 
+           port          = ipPort[[2]], 
+           startH2O      = FALSE)
 }
 
 checkNLoadPackages<-

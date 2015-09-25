@@ -1,19 +1,31 @@
 package water.persist;
 
-import java.io.*;
+import com.google.common.io.ByteStreams;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.util.concurrent.Callable;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.io.ByteStreams;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-
-import water.*;
-
+import water.Futures;
+import water.H2O;
+import water.Key;
+import water.MemoryManager;
+import water.Value;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
@@ -226,7 +238,7 @@ public final class PersistHdfs extends Persist {
       try {
         long start_ns = System.nanoTime(); // Blocking i/o call timing - without counting repeats
         c.call();
-        TimeLine.record_IOclose(start_ns, start_io_ms, read ? 1 : 0, size, Value.HDFS);
+//        TimeLine.record_IOclose(start_ns, start_io_ms, read ? 1 : 0, size, Value.HDFS);
         break;
         // Explicitly ignore the following exceptions but
         // fail on the rest IOExceptions
@@ -279,8 +291,7 @@ public final class PersistHdfs extends Persist {
         Path pfs = file.getPath();
         if( file.isDir() ) {
           addFolder(fs, pfs, keys, failed);
-        } else {
-          long size = file.getLen();
+        } else if (file.getLen() > 0){
           Key k = null;
           keys.add((k = HDFSFileVec.make(file.getPath().toString(), file.getLen(), futures)).toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");
@@ -460,7 +471,12 @@ public final class PersistHdfs extends Persist {
     URI uri = p.toUri();
     try {
       FileSystem fs = FileSystem.get(uri, CONF);
-      return fs.mkdirs(p);
+      // Be consistent with Java API and File#mkdirs
+      if (fs.exists(p)) {
+        return false;
+      } else {
+        return fs.mkdirs(p);
+      }
     }
     catch (IOException e) {
       throw new HDFSIOException(path, CONF.toString(), e);

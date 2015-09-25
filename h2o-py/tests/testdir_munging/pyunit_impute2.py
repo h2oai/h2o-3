@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
-def impute2(ip,port):
+def impute2():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     methods = ["mean","median","mode"]
@@ -16,11 +16,11 @@ def impute2(ip,port):
             for combine_method in combine_methods:
               prostate.impute("DPROS", method = method, combine_method = combine_method, inplace = inpl)
 
-    air = h2o.upload_file(h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
-    for inpl in inplace:
-        for method in methods:
-            for combine_method in combine_methods:
-              air.impute( "TailNum", method = method, combine_method = combine_method, inplace = inpl)
+#    air = h2o.upload_file(h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
+#    for inpl in inplace:
+#        for method in methods:
+#            for combine_method in combine_methods:
+#              air.impute( "TailNum", method = method, combine_method = combine_method, inplace = inpl)
 
     data = [[None, 2,    3,    1,    'a',  1,    9],
             [1,    None, 4,    2,    'a',  1,    9],
@@ -79,4 +79,4 @@ def impute2(ip,port):
     assert imputed2 == 9.5, "Wrong value imputed. Expected imputed value of 9.5, but got {0}".format(imputed2)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, impute2)
+    tests.run_test(sys.argv, impute2)

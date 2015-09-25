@@ -124,11 +124,34 @@ There aren't specific "best practices," as it depends on your data and the colum
 
 **What is your implementation of Deep Learning based on?**
 
-Our Deep Learning algorithm is based on the feedforward neural net. For more information, refer to our Data Science documentation or [Wikipedia](https://en.wikipedia.org/wiki/Feedforward_neural_network). 
+ Our Deep Learning algorithm is based on the feedforward neural net. For more information, refer to our Data Science documentation or [Wikipedia](https://en.wikipedia.org/wiki/Feedforward_neural_network). 
+
 ---
 
-<!---
-#commenting out as still in dev but wanted to save for later
+**How is deviance computed for a Deep Learning regression model?**
+
+For a Deep Learning regression model, deviance is computed as follows: 
+
+Loss = MeanSquare -> MSE==Deviance
+For Absolute/Laplace or Huber -> MSE != Deviance. 
+
+---
+
+**For my 0-tree GBM multinomial model, I got a different score depending on whether or not validation was enabled, even though my dataset was the same - why is that?**
+
+Different results may be generated because of the way H2O computes the initial MSE. 
+
+
+---
+
+**How does your Deep Learning Autoencoder work? Is it deep or shallow?**
+
+H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer.  The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers.  We have some example test scripts [here](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/), and even some that show [how stacked auto-encoders can be implemented in R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R). 
+
+
+
+
+---
 
 **Are there any H2O examples using text for classification?**
 
@@ -140,7 +163,8 @@ https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/mlconf_201
 b) Use Word2Vec Skip-gram model + GBM for classifying job titles 
 https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.scala 
 
--->
+---
+
 
 ##Building H2O
 
@@ -256,6 +280,38 @@ The data must be formatted as a sorted list of unique integers, the column indic
 
 ---
 
+
+**What date and time formats does H2O support?**
+
+H2O is set to auto-detect two major date/time formats. Because many date time formats are ambiguous (e.g. 01/02/03), general date time detection is not used.  
+
+The first format is for dates formatted as yyyy-MM-dd. Year is a four-digit number, the month is a two-digit number ranging from 1 to 12, and the day is a two-digit value ranging from 1 to 31. This format can also be followed by a space and then a time (specified below). 
+
+The second date format is for dates formatted as dd-MMM-yy. Here the day must be one or two digits with a value ranging from 1 to 31. The month must be either a three-letter abbreviation or the full month name but is not case sensitive. The year must be either two or four digits. In agreement with [POSIX](https://en.wikipedia.org/wiki/POSIX) standards, two-digit dates >= 69 are assumed to be in the 20th century (e.g. 1969) and the rest are part of the 21st century. This date format can be followed by either a space or colon character and then a time. The '-' between the values is optional. 
+
+Times are specified as HH:mm:ss. HH is a two-digit hour and must be a value between 0-23 (for 24-hour time) or 1-12 (for a twelve-hour clock). mm is a two-digit minute value and must be a value between 0-59. ss is a two-digit second value and must be a value between 0-59. This format can be followed with either milliseconds, nanoseconds, and/or the cycle (i.e. AM/PM). If milliseconds are included, the format is HH:mm:ss:SSS. If nanoseconds are included, the format is HH:mm:ss:SSSnnnnnn. H2O only stores fractions of a second up to the millisecond, so accuracy may be lost. Nanosecond parsing is only included for convenience. Finally, a valid time can end with a space character and then either "AM" or "PM". For this format, the hours must range from 1 to 12. Within the time, the ':' character can be replaced with a '.' character.
+
+---
+
+**How does H2O handle name collisions/conflicts in the dataset?**
+
+If there is a name conflict (for example, column 48 isn't named, but C48 already exists), then the column name in concatenated to itself until a unique name is created. So for the previously cited example, H2O will try renaming the column to C48C48, then C48C48C48, and so on until an unused name is generated. 
+
+---
+
+**What types of data columns does H2O support?**
+
+Currently, H2O supports: 
+
+- float (any IEEE double)
+- integer (up to 64bit, but compressed according to actual range)
+- factor (same as integer, but with a String mapping, often handled differently in the algorithms)
+- time (same as 64bit integer, but with a time-since-Unix-epoch interpretation)
+- UUID (128bit integer, no math allowed)
+- String
+
+---
+
 ##General
 
 **How do I score using an exported JSON model?**
@@ -271,9 +327,42 @@ Since JSON is just a representation format, it cannot be directly executed, so a
 
 ---
 
+**How do I score using an exported POJO?**
+
+The generated POJO can be used indepedently of a H2O cluster. First use `curl` to send the h2o-genmodel.jar file and the java code for model to the server. The following is an example; the ip address and model names will need to be changed. 
+
+```
+mkdir tmpdir
+cd tmpdir
+curl http://127.0.0.1:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+curl http://127.0.0.1:54321/3/Models.java/gbm_model > gbm_model.java
+```
+
+To score a simple .CSV file, download the [PredictCSV.java](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java) file and compile it with the POJO. Make a subdirectory for the compilation (this is useful if you have multiple models to score on).
+
+```
+wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java
+mkdir gbm_model_dir
+javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
+``` 
+
+Specify the following:
+- the classpath using `-cp` 
+- the model name (or class) using `--model` 
+- the csv file you want to score using `--input` 
+- the location for the predictions using `--output`. 
+ 
+You must match the table column names to the order specified in the POJO. The output file will be in a .hex format, which is a lossless text representation of floating point numbers. Both R and Java will be able to read the hex strings as numerics.
+
+```
+java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
+```
+
+---
+
 **How do I predict using multiple response variables?**
 
-Currently, H2O does not support multiple response variables. To predict different response variables, build multiple modes. 
+Currently, H2O does not support multiple response variables. To predict different response variables, build multiple models. 
 
 ---
 
@@ -403,10 +492,46 @@ This error message means that there is a space (or other unsupported character) 
 
 ---
 
+**How does `importFiles()` work in H2O?**
+
+`importFiles()` gets the basic information for the file and then returns a key representing that file. This key is used during parsing to read in the file and to save space so that the file isn't loaded every time; instead, it is loaded into H2O then referenced using the key. For files hosted online, H2O verifies the destination is valid, creates a vec that loads the file when necessary, and returns a key.
+
+
+---
+
+**Does H2O support GPUs?**
+
+Currently, we do not support this capability. If you are interested in contributing your efforts to support this feature to our open-source code database, please contact us at [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com). 
+
+
+---
+
+**How can I continue working on a model in H2O after restarting?**
+
+There are a number of ways you can save your model in H2O: 
+
+- In the web UI, click the **Flow** menu then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right. 
+- In the web UI, click the **Flow** menu then click **Download this Flow...**. Your flow is saved to the location you specify in the pop-up **Save As** window that appears. 
+- (For DRF, GBM, and DL models only): Use model checkpointing to resume training a model. Copy the `model_id` number from a built model and paste it into the *checkpoint* field in the `buildModel` cell. 
+
+
+---
+
+**How can I find out more about H2O's real-time, nano-fast scoring engine?** 
+
+H2O's scoring engine uses a Plain Old Java Object (POJO). The POJO code runs quickly but is single-threaded.  It is intended for embedding into lightweight real-time environments.
+
+All the work is done by the call to the appropriate predict method.  There is no involvement from H2O in this case.
+
+To compare multiple models simultaneously, use the POJO to call the models using multiple threads. For more information on using POJOs, refer to the [POJO Quick Start Guide](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-docs/index.html#POJO%20Quick%20Start) and [POJO Java Documentation](http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-genmodel/javadoc/index.html)
+
+In-H2O scoring is triggered on an existing H2O cluster, typically using a REST API call. H2O evaluates the predictions in a parallel and distributed fashion for this case.  The predictions are stored into a new Frame and can be written out using `h2o.exportFile()`, for example.
+
+---
+
 ##Hadoop
 
-<!---
->commenting out as in progress per Michal
+
 **Why did I get an error in R when I tried to save my model to my home directory in Hadoop?**
 
 To save the model in HDFS, prepend the save directory with `hdfs://`:
@@ -423,7 +548,6 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 ```
 
 ---
--->
 
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
@@ -465,7 +589,6 @@ Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test
 
 When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
 
-
 ---
 
 ##Java
@@ -501,6 +624,43 @@ This script connects to the server, gets all the metadata for the REST API schem
 
 
 ---
+
+**I keep getting a message that I need to install Java. I have the latest version of Java installed, but I am still getting this message. What should I do?**
+
+This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 
+
+If you are running OS X 10.7 or earlier, enter the following in Terminal: 
+`export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home`
+
+If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal: 
+
+```
+cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>setenv.JAVA_HOME</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>setenv</string>
+    <string>JAVA_HOME</string>
+    <string>/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceIPC</key>
+  <false/>
+</dict>
+</plist>
+EOF
+```
+
+
+---
+
 
 ##Python
 
@@ -608,6 +768,14 @@ fr.describe()
 
 ##R
 
+**Which versions of R are compatible with H2O?**
+
+Currently, the only version of R that is known to not work well with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using this version, we recommend upgrading the R version before using H2O. 
+
+
+
+---
+
 **How can I install the H2O R package if I am having permissions problems?**
 
 This issue typically occurs for Linux users when the R software was installed by a root user. For more information, refer to the following [link](https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html). 
@@ -670,7 +838,7 @@ if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statm
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
 if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
 if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
 if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
 if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 ```
@@ -749,6 +917,127 @@ library(h2o)
 localH2O = h2o.init(ip="sri.h2o.ai", port=54321, startH2O = F, strict_version_check=T)
 data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID",conn = localH2O)
 ``` 
+---
+
+**How do I remove rows containing NAs in an H2OFrame?**
+
+To remove NAs from rows:
+
+```
+  a   b    c    d    e
+1 0   NA   NA   NA   NA
+2 0   2    2    2    2
+3 0   NA   NA   NA   NA
+4 0   NA   NA   1    2
+5 0   NA   NA   NA   NA
+6 0   1    2    3    2
+```
+
+Removing rows 1, 3, 4, 5 to get:
+
+```
+  a   b    c    d    e
+2 0   2    2    2    2
+6 0   1    2    3    2
+```
+
+Use `na.omit(myFrame)`, where `myFrame` represents the name of the frame you are editing. 
+
+---
+
+**I installed H2O in R using OS X and updated all the dependencies, but the following error message displayed: `Error in .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, Unexpected CURL error: Empty reply from server` - what should I do?**
+
+
+This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 
+
+If you are running OS X 10.7 or earlier, enter the following in Terminal: 
+`export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home`
+
+If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal: 
+
+```
+cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>setenv.JAVA_HOME</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>setenv</string>
+    <string>JAVA_HOME</string>
+    <string>/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceIPC</key>
+  <false/>
+</dict>
+</plist>
+EOF
+```
+
+---
+
+<!---
+
+in progress - commenting out until complete
+
+**How do I extract the variable importance from the output in R?**
+
+Launch R, then enter the following: 
+
+```
+library(h2o)
+h <- h2o.init()
+as.h2o(iris)
+as.h2o(testing)
+m <- h2o.gbm(x=1:4, y=5, data=hex, importance=T)
+
+m@model$varimp
+             Relative importance Scaled.Values Percent.Influence
+Petal.Width          7.216290000  1.0000000000       51.22833426
+Petal.Length         6.851120500  0.9493965043       48.63600147
+Sepal.Length         0.013625654  0.0018881799        0.09672831
+Sepal.Width          0.005484723  0.0007600474        0.03893596
+```
+
+The variable importances are returned as an R data frame and you can extract the names and values of the data frame as follows:
+
+```
+is.data.frame(m@model$varimp)
+# [1] TRUE
+
+names(m@model$varimp)
+# [1] "Relative importance" "Scaled.Values"       "Percent.Influence"  
+
+rownames(m@model$varimp)
+# [1] "Petal.Width"  "Petal.Length" "Sepal.Length" "Sepal.Width"
+
+m@model$varimp$"Relative importance"
+# [1] 7.216290000 6.851120500 0.013625654 0.005484723
+```
+
+-->
+
+
+---
+
+**How does the `col.names` argument work in `group_by`?**
+
+You need to add the `col.names` inside the `gb.control` list. Refer to the following example:
+
+```
+newframe <- h2o.group_by(dd, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
+    sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+newframe$avg_email_event_click_ct2 = newframe$total_email_event_click_ct / newframe$count
+```
+
+
+
+---
 
 ##Sparkling Water
 
@@ -909,6 +1198,12 @@ import org.apache.spark.h2o._
 val h2oContext = new H2OContext(sc)
 ```
 After setting up `H2OContext`, try to run Sparkling Water again. 
+
+---
+
+
+
+
 
 ---
 

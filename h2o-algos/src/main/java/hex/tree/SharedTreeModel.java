@@ -1,18 +1,37 @@
 package hex.tree;
 
-import hex.*;
-import water.*;
-import water.util.*;
-
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import hex.Distribution;
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
+import hex.ModelMetricsMultinomial;
+import hex.ModelMetricsRegression;
+import hex.ScoreKeeper;
+import hex.VarImp;
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Key;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.JCodeSB;
+import water.util.ArrayUtils;
+import water.util.JCodeGen;
+import water.util.PojoUtils;
+import water.util.RandomUtils;
+import water.util.SB;
+import water.util.SBPrintStream;
+import water.util.TwoDimTable;
+
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
-    /** Maximal number of supported levels in response. */
-    static final int MAX_SUPPORTED_LEVELS = 1000;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -28,15 +47,48 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
 
-    // TRUE: Continue extending an existing checkpointed model
-    // FALSE: Overwrite any prior model
-    public boolean _checkpoint;
-
-    public int _nbins_top_level = 1<<10; //hardcoded minimum top-level number of bins for real-valued columns (not currently user-facing)
+    public int _nbins_top_level = 1<<10; //hardcoded maximum top-level number of bins for real-valued columns
 
     public boolean _build_tree_one_node = false;
+
     public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
+
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
+
+    public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
+
+    /** Fields which can NOT be modified if checkpoint is specified.
+     * FIXME: should be defined in Schema API annotation
+     */
+    private static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = new String[] { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
+
+    protected String[] getCheckpointNonModifiableFields() {
+      return CHECKPOINT_NON_MODIFIABLE_FIELDS;
+    }
+
+    /** This method will take actual parameters and validate them with parameters of
+     * requested checkpoint. In case of problem, it throws an API exception.
+     *
+     * @param checkpointParameters checkpoint parameters
+     */
+    public void validateWithCheckpoint(SharedTreeParameters checkpointParameters) {
+      for (Field fAfter : this.getClass().getFields()) {
+        // only look at non-modifiable fields
+        if (ArrayUtils.contains(getCheckpointNonModifiableFields(),fAfter.getName())) {
+          for (Field fBefore : checkpointParameters.getClass().getFields()) {
+            if (fBefore.equals(fAfter)) {
+              try {
+                if (!PojoUtils.equals(this, fAfter, checkpointParameters, checkpointParameters.getClass().getField(fAfter.getName()))) {
+                  throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " cannot be modified if checkpoint is specified!");
+                }
+              } catch (NoSuchFieldException e) {
+                throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " is not supported by checkpoint!");
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -164,46 +216,66 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
   }
   protected boolean binomialOpt() { return true; }
-  @Override protected SB toJavaInit(SB sb, SB fileContext) {
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
     return sb;
   }
-  @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
+  @Override protected void toJavaPredictBody(SBPrintStream body,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();
     body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
-    String mname = JCodeGen.toJavaId(_key.toString());
+    final String mname = JCodeGen.toJavaId(_key.toString());
 
     // One forest-per-GBM-tree, with a real-tree-per-class
-    for( int t=0; t < _output._treeKeys.length; t++ ) {
+    for (int t=0; t < _output._treeKeys.length; t++) {
+      // Generate score method for given tree
       toJavaForestName(body.i(),mname,t).p(".score0(fdata,preds);").nl();
-      file.nl();
-      toJavaForestName(file.ip("class "),mname,t).p(" {").nl().ii(1);
-      file.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-      for( int c=0; c<nclass; c++ )
-        if( !binomialOpt() || !(c==1 && nclass==2) ) // Binomial optimization
-          toJavaTreeName(file.ip("preds[").p(nclass==1?0:c+1).p("] += "),mname,t,c).p(".score0(fdata);").nl();
-      file.di(1).ip("}").nl(); // end of function
-      file.di(1).ip("}").nl(); // end of forest class
 
-      // Generate the pre-tree classes afterwards
-      for( int c=0; c<nclass; c++ ) {
-        if( !binomialOpt() || !(c==1 && nclass==2) ) { // Binomial optimization
-          toJavaTreeName(file.ip("class "),mname,t,c).p(" {").nl().ii(1);
-          CompressedTree ct = _output.ctree(t,c);
-          new TreeJCodeGen(this,ct, file).generate();
-          file.di(1).ip("}").nl(); // close the class
+      final int treeIdx = t;
+
+      fileCtx.add(new CodeGenerator() {
+        @Override
+        public void generate(JCodeSB out) {
+          // Generate a class implementing a tree
+          out.nl();
+          toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
+          out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
+          for( int c=0; c<nclass; c++ )
+            if( !binomialOpt() || !(c==1 && nclass==2) ) // Binomial optimization
+              toJavaTreeName(out.ip("preds[").p(nclass==1?0:c+1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
+          out.di(1).ip("}").nl(); // end of function
+          out.di(1).ip("}").nl(); // end of forest class
+
+          // Generate the pre-tree classes afterwards
+          for (int c = 0; c < nclass; c++) {
+            if( !binomialOpt() || !(c==1 && nclass==2) ) { // Binomial optimization
+              String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
+              CompressedTree ct = _output.ctree(treeIdx, c);
+              SB sb = new SB();
+              new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
+              out.p(sb);
+            }
+          }
         }
-      }
+      });
     }
-    toJavaUnifyPreds(body,file);
+
+    toJavaUnifyPreds(body);
   }
-  abstract protected void toJavaUnifyPreds( SB body, SB file );
-  protected SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
-  protected SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
+  abstract protected void toJavaUnifyPreds( SBPrintStream body);
+
+  protected <T extends JCodeSB> T toJavaTreeName(final T sb, String mname, int t, int c ) {
+    return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
+  }
+  protected <T extends JCodeSB> T toJavaForestName(final T sb, String mname, int t ) {
+    return (T) sb.p(mname).p("_Forest_").p(t);
+  }
 
   @Override
   public List<Key> getPublishedKeys() {

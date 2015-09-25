@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
 def refine_date_col(data, col, pattern):
   data[col]         = data[col].as_date(pattern)
@@ -18,9 +18,9 @@ def refine_date_col(data, col, pattern):
   data["Season"]  = data["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
 
 
-def date_munge(ip,port):
+def date_munge():
   crimes_path = h2o.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
-  crimes = h2o.import_frame(path=crimes_path)
+  crimes = h2o.import_file(path=crimes_path)
   crimes.describe()
 
   refine_date_col(crimes, "Date", "%m/%d/%Y %I:%M:%S %p")
@@ -28,4 +28,4 @@ def date_munge(ip,port):
   crimes.describe()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, date_munge)
+  tests.run_test(sys.argv, date_munge)

@@ -329,6 +329,14 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  objects). */
   final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
+
+  public double[] toDoubleArray(double[] res){
+    if (res==null) res = new double[_len];
+    for(int i = 0; i < _len; ++i)
+      res[i] = atd(i);
+    return res;
+  }
+
   /** Set the element as missing, using absolute row numbers.
    *
    *  <p>As with all the {@code set} calls, if the value written does not fit
@@ -360,6 +368,24 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
   public boolean hasFloat(){return true;}
+
+  /** Replace all rows with this new chunk */
+  public void replaceAll( Chunk replacement ) {
+    assert _len == replacement._len;
+    _vec.preWriting();          // One-shot writing-init
+    _chk2 = replacement;
+    assert _chk2._chk2 == null; // Replacement has NOT been written into
+  }
+
+  public Chunk deepCopy() {
+    Chunk c2 = (Chunk)clone();
+    c2._vec=null;
+    c2._start=-1;
+    c2._cidx=-1;
+    c2._mem = _mem.clone();
+    return c2;
+  }
+
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
@@ -472,7 +498,6 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
-    if( _vec._cache == this ) _vec._cache = null;
     return fs;
   }
 
@@ -553,11 +578,11 @@ public abstract class Chunk extends Iced implements Cloneable {
     return s;
   }
 
-
-
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
-  abstract public AutoBuffer write_impl( AutoBuffer ab );
+  public AutoBuffer write_impl(AutoBuffer bb) {
+    return bb.putA1(_mem, _mem.length);
+  }
 
   /** Custom deserializers, implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already.  Init _start to -1, so we know we have
@@ -599,8 +624,8 @@ public abstract class Chunk extends Iced implements Cloneable {
 //  }
 
   /** Used by the parser to help report various internal bugs.  Not intended for public use. */
-  public final void reportBrokenEnum( int i, int j, long l, int[][] emap, int levels ) {
-    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
+  public final void reportBrokenEnum( int i, int j, long l, int[] emap, int levels ) {
+    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap.length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
     int k = 0;
     for(; k < Math.min(5,_len); ++k)
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");

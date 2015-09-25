@@ -1,19 +1,19 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
 import random
 import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
 
-def emptyclusKmeans(ip,port):
+def emptyclusKmeans():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)  # connect to localhost:54321
+      # connect to localhost:54321
 
     #Log.info("Importing ozone.csv data...\n")
     ozone_sci = np.loadtxt(h2o.locate("smalldata/glm_test/ozone.csv"), delimiter=',', skiprows=1)
-    ozone_h2o = h2o.import_frame(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+    ozone_h2o = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
 
     ncent = 10
     nempty = random.randint(1,ncent/2)
@@ -51,4 +51,4 @@ def emptyclusKmeans(ip,port):
     print km_h2o.centers()
 
 if __name__ == "__main__":
-   h2o.run_test(sys.argv, emptyclusKmeans)
+   tests.run_test(sys.argv, emptyclusKmeans)

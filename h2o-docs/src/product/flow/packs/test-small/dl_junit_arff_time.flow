@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "cells": [
+  
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/junit/arff/time.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/junit/arff/time.arff\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/junit/arff/time.arff\"]\n  destination_frame: \"time.hex\"\n  parse_type: \"ARFF\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sku\",\"category\",\"query\",\"click_time\",\"query_time\"]\n  column_types: [\"Numeric\",\"Enum\",\"Enum\",\"Time\",\"Time\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"time.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist splitFrame, \"time.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"time.hex\", [0.2], [\"time_test\",\"time_train\"]"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"deeplearning\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-29274558-e7ff-45db-8540-47b457491586\",\"training_frame\":\"time_train\",\"validation_frame\":\"time_test\",\"ignore_const_cols\":true,\"response_column\":\"query_time\",\"activation\":\"Tanh\",\"hidden\":[50,50],\"epochs\":\"0.1\",\"variable_importances\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"l2\":0,\"loss\":\"Automatic\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"autoencoder\":false,\"overwrite_with_best_model\":true,\"target_ratio_comm_to_comp\":0.02,\"seed\":3697148781161825000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"regression_stop\":0.000001,\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"deeplearning-29274558-e7ff-45db-8540-47b457491586\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-29274558-e7ff-45db-8540-47b457491586\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"deeplearning-29274558-e7ff-45db-8540-47b457491586\", frame: \"time_test\", predictions_frame: \"prediction-10f17eb1-f7de-41ca-bf1e-1997295cc66c\""
+    }
+  ]
+}

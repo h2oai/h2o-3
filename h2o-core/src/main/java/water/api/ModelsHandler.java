@@ -1,15 +1,33 @@
 package water.api;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import hex.Model;
-import water.*;
+import water.DKV;
+import water.Futures;
+import water.Iced;
+import water.Key;
+import water.KeySnapshot;
+import water.Value;
 import water.api.FramesHandler.Frames;
-import water.exceptions.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
 import water.serial.ObjectTreeBinarySerializer;
 import water.util.FileUtils;
-
-import java.io.IOException;
-import java.util.*;
+import water.util.JCodeGen;
 
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
   /** Class which contains the internal representation of the models list and params. */
@@ -116,9 +134,9 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelsV3 fetchPreview(int version, ModelsV3 s) {
+  public StreamingSchema fetchPreview(int version, ModelsV3 s) {
     s.preview = true;
-    return fetch(version, s);
+    return fetchJavaCode(version, s);
   }
 
   /** Return a single model. */
@@ -146,6 +164,13 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     }
 
     return s;
+  }
+
+  public StreamingSchema fetchJavaCode(int version, ModelsV3 s) {
+    final Model model = getFromDKV("key", s.model_id.key());
+    final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".java";
+    // Return stream writer for given model
+    return new StreamingSchema(model.new JavaModelStreamWriter(s.preview), filename);
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */
@@ -198,9 +223,11 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     List<Key> keysToExport = new LinkedList<>();
     keysToExport.add(model._key);
     keysToExport.addAll(model.getPublishedKeys());
-
     try {
-      new ObjectTreeBinarySerializer().save(keysToExport, FileUtils.getURI(mexport.dir));
+      URI targetUri = FileUtils.getURI(mexport.dir);
+      new ObjectTreeBinarySerializer(mexport.force).save(keysToExport, targetUri);
+      // Send back
+      mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
       throw new H2OIllegalArgumentException("dir", "exportModel", e);
     }

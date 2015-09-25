@@ -10,7 +10,10 @@ import getpass
 import re
 import subprocess
 import ConfigParser
+import requests
+from requests import exceptions
 
+__H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
 def is_python_test_file(file_name):
     """
@@ -48,6 +51,14 @@ def is_python_file(file_name):
 
     return False
 
+def is_ipython_notebook(file_name):
+    """
+    Return True if file_name matches a regexp for a ipython notebook.  False otherwise.
+    """
+    if re.match("^.*\.ipynb$", file_name):
+        return True
+
+    return False
 
 def is_javascript_test_file(file_name):
     """
@@ -536,7 +547,7 @@ class Test:
         """
         return -9999999
 
-    def __init__(self, test_dir, test_short_dir, test_name, output_dir):
+    def __init__(self, test_dir, test_short_dir, test_name, output_dir, ipynb_runner_dir):
         """
         Create a Test.
 
@@ -544,6 +555,7 @@ class Test:
         @param test_short_dir: Path from h2o/R/tests to the test directory.
         @param test_name: Test filename with the directory removed.
         @param output_dir: The directory where we can create an output file for this process.
+        @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
         @return: The test object.
         """
         self.test_dir = test_dir
@@ -551,6 +563,7 @@ class Test:
         self.test_name = test_name
         self.output_dir = output_dir
         self.output_file_name = ""
+        self.notebook_runner = os.path.join(ipynb_runner_dir, "notebook_runner.py")
 
         self.cancelled = False
         self.terminated = False
@@ -586,6 +599,13 @@ class Test:
                    self.test_name,
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
+        elif (is_ipython_notebook(self.test_name)):
+            cmd = ["python",
+                   self.notebook_runner,
+                   "--usecloud",
+                   self.ip + ":" + str(self.port),
+                   "--ipynb",
+                   self.test_name]
         elif (is_runit_test_file(self.test_name)):
             cmd = ["R",
                    "-f",
@@ -780,7 +800,7 @@ class TestRunner:
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
-                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir):
+                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir, ipynb_runner_dir):
         """
         Create a runner.
 
@@ -801,9 +821,11 @@ class TestRunner:
         @param path_to_whl: NA
         @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
         @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
+        @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
+        self.ipynb_runner_dir = ipynb_runner_dir
 
         self.use_cloud = use_cloud
         self.use_cloud2 = use_cloud2
@@ -826,6 +848,7 @@ class TestRunner:
         self.start_seconds = time.time()
         self.terminated = False
         self.clouds = []
+        self.bad_clouds = []
         self.tests = []
         self.tests_not_started = []
         self.tests_running = []
@@ -934,10 +957,27 @@ class TestRunner:
             if (root.endswith("Util")):
                 continue
 
-            for f in files:
+            # http://stackoverflow.com/questions/18282370/os-walk-iterates-in-what-order
+            # os.walk() yields in each step what it will do in the next steps. 
+            # You can in each step influence the order of the next steps by sorting the 
+            # lists the way you want them. Quoting the 2.7 manual:
+
+            # When topdown is True, the caller can modify the dirnames list in-place 
+            # (perhaps using del or slice assignment), and walk() will only recurse into the 
+            # subdirectories whose names remain in dirnames; this can be used to prune the search, 
+            # impose a specific order of visiting
+
+            # So sorting the dirNames will influence the order in which they will be visited:
+            # do an inplace sort of dirs. Could do an inplace sort of files too, but sorted() is fine next.
+            dirs.sort()
+
+            # always do same order, for determinism when run on different machines
+            for f in sorted(files):
                 # Figure out if the current file under consideration is a test.
                 is_test = False
                 if (is_python_test_file(f)):
+                    is_test = True
+                if (is_ipython_notebook(f)):
                     is_test = True
                 if (is_runit_test_file(f)):
                     is_test = True
@@ -1012,7 +1052,7 @@ class TestRunner:
 
         test_short_dir = self._calc_test_short_dir(test_path)
 
-        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir)
+        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.ipynb_runner_dir)
         self.tests.append(test)
         self.tests_not_started.append(test)
 
@@ -1086,6 +1126,7 @@ class TestRunner:
                 sys.exit(1)
 
             cmd = ["R",
+                   "--vanilla",  # to isolate from .Rprofile effects; e.g. http://stackoverflow.com/a/32492718/403310
                    "--quiet",
                    "-f",
                    runner_setup_package_r]
@@ -1166,7 +1207,8 @@ class TestRunner:
             self._report_test_result(completed_test, nopass)
             ip_of_completed_test = completed_test.get_ip()
             port_of_completed_test = completed_test.get_port()
-            self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
+            if self._h2o_exists_and_healthy(ip_of_completed_test, port_of_completed_test):
+                self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
 
         # Wait for remaining running tests to complete.
         while (len(self.tests_running) > 0):
@@ -1176,6 +1218,13 @@ class TestRunner:
             if (self.terminated):
                 return
             self._report_test_result(completed_test, nopass)
+
+    def check_clouds(self):
+        """
+        for all clouds, check if connection to h2o exists, and that h2o is healthy.
+        """
+        time.sleep(5)
+        for c in self.clouds: self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
 
     def stop_clouds(self):
         """
@@ -1267,7 +1316,8 @@ class TestRunner:
             self._log("True fail list:          " + ", ".join(true_fail_list))
         if (len(terminated_list) > 0):
             self._log("Terminated list:         " + ", ".join(terminated_list))
-        self._log("")
+        if (len(self.bad_clouds) > 0):
+            self._log("Bad cloud list:          " + ", ".join(["{0}:{1}".format(bc[0], bc[1]) for bc in self.bad_clouds]))
 
     def terminate(self):
         """
@@ -1387,15 +1437,15 @@ class TestRunner:
 
     def _wait_for_one_test_to_complete(self):
         while (True):
-            for test in self.tests_running:
-                if (self.terminated):
-                    return None
-                if (test.is_completed()):
-                    self.tests_running.remove(test)
-                    return test
-            if (self.terminated):
-                return
-            time.sleep(1)
+            if len(self.tests_running) > 0:
+                for test in self.tests_running:
+                    if (test.is_completed()):
+                        self.tests_running.remove(test)
+                        return test
+                time.sleep(1)
+            else:
+                self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
+                sys.exit(1)
 
     def _report_test_result(self, test, nopass):
         port = test.get_port()
@@ -1489,6 +1539,36 @@ class TestRunner:
         #     s += str(t)
         return s
 
+    def _h2o_exists_and_healthy(self, ip, port):
+        """
+        check if connection to h2o exists, and that h2o is healthy.
+        """
+        global __H2O_REST_API_VERSION__
+        h2o_okay = False
+        try:
+            http = requests.get("http://{}:{}/{}/{}".format(ip,port,__H2O_REST_API_VERSION__,"Cloud?skip_ticks=true"))
+            h2o_okay = http.json()['cloud_healthy']
+        except exceptions.ConnectionError: pass
+        if not h2o_okay: self._remove_cloud(ip, port)
+        return h2o_okay
+
+    def _remove_cloud(self, ip, port):
+        """
+        add the ip, port to TestRunner's bad cloud list. remove the bad cloud from the TestRunner's cloud list.
+        terminate TestRunner if no good clouds remain.
+        """
+        if not [ip, str(port)] in self.bad_clouds: self.bad_clouds.append([ip, str(port)])
+        cidx = 0
+        found_cloud = False
+        for cloud in self.clouds:
+            if cloud.get_ip() == ip and cloud.get_port() == str(port):
+                found_cloud = True
+                break
+            cidx = cidx + 1
+        if found_cloud: self.clouds.pop(cidx)
+        if len(self.clouds) == 0:
+            self._log('NO GOOD CLOUDS REMAINING...')
+            self.terminate()
 
 # --------------------------------------------------------------------
 # Main program
@@ -1883,6 +1963,9 @@ def main(argv):
 
     g_script_name = os.path.basename(argv[0])
 
+    # Calculate the ipynb_runner_dir
+    ipynb_runner_dir = os.path.dirname(os.path.realpath(argv[0]))
+
     # Calculate test_root_dir.
     test_root_dir = os.path.realpath(os.getcwd())
 
@@ -1928,7 +2011,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir)
+                          testreport_dir, ipynb_runner_dir)
 
     # Build test list.
     if (g_test_to_run is not None):
@@ -1959,6 +2042,7 @@ def main(argv):
         g_runner.start_clouds()
         g_runner.run_tests(g_nopass)
     finally:
+        g_runner.check_clouds()
         g_runner.stop_clouds()
         g_runner.report_summary(g_nopass)
 

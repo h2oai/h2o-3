@@ -2,6 +2,7 @@ package hex;
 
 import water.H2O;
 import water.Iced;
+import water.util.Log;
 
 /**
  * Distribution functions to be used by ML Algos
@@ -35,24 +36,30 @@ public class Distribution extends Iced {
     assert(tweediePower >1 && tweediePower <2);
     this.tweediePower = tweediePower;
   }
+  static public double MIN_LOG = -19;
+  static public double MAX = 1e19;
 
   public final Family distribution;
   public final double tweediePower; //tweedie power
 
   // helper - sanitized exponential function
   public static double exp(double x) {
-    return Math.max(1e-19, Math.min(1e19, Math.exp(x)));
+    double val = Math.min(MAX, Math.exp(x));
+//    if (val == MAX) Log.warn("Exp overflow: exp(" + x + ") truncated to " + MAX);
+    return val;
   }
 
   // helper - sanitized log function
   public static double log(double x) {
     x = Math.max(0,x);
-    return x == 0 ? -19 : Math.max(-19, Math.min(19, Math.log(x)));
+    double val = x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
+//    if (val == MIN_LOG) Log.warn("Log underflow: log(" + x + ") truncated to " + MIN_LOG);
+    return val;
   }
 
   // helper - string version of sanititized exp(x)
   public static String expString(String x) {
-    return "Math.max(1e-19, Math.min(1e19, Math.exp(" + x + ")))";
+    return "Math.min(" + MAX + ", Math.exp(" + x + "))";
   }
 
    /**
@@ -70,12 +77,12 @@ public class Distribution extends Iced {
         return w * (y - f) * (y - f);
       case huber:
         if (Math.abs(y-f) < 1) {
-          return w * (y-f) * (y-f);
+          return w * (y - f) * (y - f);
         } else {
-          return w * 2 * Math.abs(y-f) - 1;
+          return 2 * w * Math.abs(y-f) - 1;
         }
       case laplace:
-        return w*Math.abs(y-f);
+        return 2 * w * Math.abs(y-f);
       case bernoulli:
         return -2 * w * (y * f - log(1 + exp(f)));
       case poisson:
@@ -112,10 +119,10 @@ public class Distribution extends Iced {
         if (Math.abs(y-f) < 1) {
           return y - f;
         } else {
-          return f - 1 >= y ? -2 : 2;
+          return f - 1 >= y ? -1 : 1;
         }
       case laplace:
-        return f > y ? -1f : 1f;
+        return f > y ? -1 : 1;
       default:
         throw H2O.unimpl();
     }

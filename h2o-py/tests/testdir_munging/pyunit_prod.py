@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import numpy as np
 import random
 
-def test_prod(ip,port):
+def test_prod():
 
     data = [[random.uniform(1,10)] for c in range(10)]
     h2o_data = h2o.H2OFrame(python_obj=data)
@@ -17,4 +17,4 @@ def test_prod(ip,port):
                                             "equal quantile values between h2o and numpy".format(h2o_prod,np_prod)
     h2o.remove(h2o_data)
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, test_prod)
+    tests.run_test(sys.argv, test_prod)

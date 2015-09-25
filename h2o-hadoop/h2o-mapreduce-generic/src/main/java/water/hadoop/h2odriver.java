@@ -31,31 +31,46 @@ import java.lang.reflect.Method;
  */
 @SuppressWarnings("deprecation")
 public class h2odriver extends Configured implements Tool {
+  static {
+    String javaVersionString = System.getProperty("java.version");
+    Pattern p = Pattern.compile("1\\.([0-9]*)(.*)");
+    Matcher m = p.matcher(javaVersionString);
+    boolean b = m.matches();
+    if (! b) {
+      System.out.println("Could not parse java version: " + javaVersionString);
+      System.exit(1);
+    }
+    javaMajorVersion = Integer.parseInt(m.group(1));
+  }
+
   final static int DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS = 120;
   final static int CLOUD_FORMATION_SETTLE_DOWN_SECONDS = 2;
   final static int DEFAULT_EXTRA_MEM_PERCENT = 10;
 
   // Options that are parsed by the main thread before other threads are created.
+  static final int javaMajorVersion;
   static String jobtrackerName = null;
   static int numNodes = -1;
   static String outputPath = null;
   static String mapperXmx = null;
   static int extraMemPercent = -1;            // Between 0 and 10, typically.  Cannot be negative.
+  static String mapperPermSize = null;
   static String driverCallbackIp = null;
   static int driverCallbackPort = 0;          // By default, let the system pick the port.
   static String network = null;
   static boolean disown = false;
   static String clusterReadyFileName = null;
-  static String hadoopJobID = "";
+  static String hadoopJobId = "";
+  static String applicationId = "";
   static int cloudFormationTimeoutSeconds = DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS;
   static int nthreads = -1;
   static int basePort = -1;
   static boolean beta = false;
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
-  static boolean enableVerboseGC = false;
-  static boolean enablePrintGCDetails = false;
-  static boolean enablePrintGCTimeStamps = false;
+  static boolean enableVerboseGC = true;
+  static boolean enablePrintGCDetails = true;
+  static boolean enablePrintGCTimeStamps = true;
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -65,6 +80,7 @@ public class h2odriver extends Configured implements Tool {
   static int debugPort = 5005;    // 5005 is the default from IDEA
   static String flowDir = null;
   static ArrayList<String> extraArguments = new ArrayList<String>();
+  static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
   static String jksPass = null;
   static boolean hashLogin = false;
@@ -103,7 +119,7 @@ public class h2odriver extends Configured implements Tool {
     return scheme + "://" + clusterIp + ":" + clusterPort;
   }
 
-  public boolean usingYarn() {
+  public static boolean usingYarn() {
     Class clazz = null;
     try {
       clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
@@ -111,6 +127,24 @@ public class h2odriver extends Configured implements Tool {
     catch (Exception ignore) {}
 
     return (clazz != null);
+  }
+
+  public static void maybePrintYarnLogsMessage(boolean printExtraNewlines) {
+    if (usingYarn()) {
+      if (printExtraNewlines) {
+        System.out.println();
+      }
+
+      System.out.println("For YARN users, logs command is 'yarn logs -applicationId " + applicationId + "'");
+
+      if (printExtraNewlines) {
+        System.out.println();
+      }
+    }
+  }
+
+  public static void maybePrintYarnLogsMessage() {
+    maybePrintYarnLogsMessage(true);
   }
 
   public static class H2ORecordReader extends RecordReader<Text, Text> {
@@ -157,6 +191,31 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
+  public static void killJobAndWait(Job job) {
+    boolean killed = false;
+
+    try {
+      System.out.println("Attempting to clean up hadoop job...");
+      job.killJob();
+      for (int i = 0; i < 5; i++) {
+        if (job.isComplete()) {
+          System.out.println("Killed.");
+          killed = true;
+          break;
+        }
+
+        Thread.sleep(1000);
+      }
+    }
+    catch (Exception ignore) {
+    }
+    finally {
+      if (! killed) {
+        System.out.println("Kill attempt failed, please clean up job manually.");
+      }
+    }
+  }
+
   /**
    * Handle Ctrl-C and other catchable shutdown events.
    * If we successfully catch one, then try to kill the hadoop job if
@@ -178,28 +237,16 @@ public class h2odriver extends Configured implements Tool {
       }
       _complete = true;
 
-      boolean killed = false;
-
       try {
-        System.out.println("Attempting to clean up hadoop job...");
-        job.killJob();
-        for (int i = 0; i < 5; i++) {
-          if (job.isComplete()) {
-            System.out.println("Killed.");
-            killed = true;
-            break;
-          }
-
-          Thread.sleep(1000);
+        if (job.isComplete()) {
+          return;
         }
       }
       catch (Exception ignore) {
       }
-      finally {
-        if (! killed) {
-          System.out.println("Kill attempt failed, please clean up job manually.");
-        }
-      }
+
+      killJobAndWait(job);
+      maybePrintYarnLogsMessage();
     }
   }
 
@@ -213,7 +260,7 @@ public class h2odriver extends Configured implements Tool {
     private void createClusterReadyFile(String ip, int port) throws Exception {
       String fileName = clusterReadyFileName + ".tmp";
       String text1 = ip + ":" + port + "\n";
-      String text2 = hadoopJobID + "\n";
+      String text2 = hadoopJobId + "\n";
       try {
         File file = new File(fileName);
         BufferedWriter output = new BufferedWriter(new FileWriter(file));
@@ -501,23 +548,87 @@ public class h2odriver extends Configured implements Tool {
   /**
    * Read a file into a string.
    * @param fileName File to read.
-   * @return String contents of file.
+   * @return Byte contents of file.
    */
-  static private String readFile(String fileName) throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(fileName));
+  static private byte[] readBinaryFile(String fileName) throws IOException {
+    ByteArrayOutputStream ous = null;
+    InputStream ios = null;
     try {
-      StringBuilder sb = new StringBuilder();
-      String line = br.readLine();
-
-      while (line != null) {
-        sb.append(line);
-        sb.append("\n");
-        line = br.readLine();
+      byte[] buffer = new byte[4096];
+      ous = new ByteArrayOutputStream();
+      ios = new FileInputStream(new File(fileName));
+      int read;
+      while ((read = ios.read(buffer)) != -1) {
+        ous.write(buffer, 0, read);
       }
-      return sb.toString();
-    } finally {
-      br.close();
     }
+    finally {
+      try {
+        if (ous != null)
+          ous.close();
+      }
+      catch (IOException ignore) {}
+
+      try {
+        if (ios != null)
+          ios.close();
+      }
+      catch (IOException ignore) {}
+    }
+    return ous.toByteArray();
+  }
+
+  static public void writeBinaryFile(String fileName, byte[] byteArr) throws IOException {
+    FileOutputStream out = new FileOutputStream(fileName);
+    for (byte b : byteArr) {
+      out.write(b);
+    }
+    out.close();
+  }
+
+  /**
+   * Array of bytes to brute-force convert into a hexadecimal string.
+   * The length of the returned string is byteArr.length * 2.
+   *
+   * @param byteArr byte array to convert
+   * @return hexadecimal string
+   */
+  static private String convertByteArrToString(byte[] byteArr) {
+    StringBuilder sb = new StringBuilder();
+    for (byte b : byteArr) {
+      int i = b;
+      i = i & 0xff;
+      sb.append(String.format("%02x", i));
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Hexadecimal string to brute-force convert into an array of bytes.
+   * The length of the string must be even.
+   * The length of the string is 2x the length of the byte array.
+   *
+   * @param s Hexadecimal string
+   * @return byte array
+   */
+  static public byte[] convertStringToByteArr(String s) {
+    if ((s.length() % 2) != 0) {
+      throw new RuntimeException("String length must be even (was " + s.length() + ")");
+    }
+
+    ArrayList<Byte> byteArrayList = new ArrayList<Byte>();
+    for (int i = 0; i < s.length(); i = i + 2) {
+      String s2 = s.substring(i, i + 2);
+      Integer i2 = Integer.parseInt(s2, 16);
+      Byte b2 = (byte)(i2 & 0xff);
+      byteArrayList.add(b2);
+    }
+
+    byte[] byteArr = new byte[byteArrayList.size()];
+    for (int i = 0; i < byteArr.length; i++) {
+      byteArr[i] = byteArrayList.get(i);
+    }
+    return byteArr;
   }
 
   /**
@@ -559,6 +670,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-extramempercent")) {
         i++; if (i >= args.length) { usage(); }
         extraMemPercent = Integer.parseInt(args[i]);
+      }
+      else if (s.equals("-mapperPermSize")) {
+        i++; if (i >= args.length) { usage(); }
+        mapperPermSize = args[i];
       }
       else if (s.equals("-driverif")) {
         i++; if (i >= args.length) { usage(); }
@@ -642,6 +757,11 @@ public class h2odriver extends Configured implements Tool {
         enablePrintGCDetails = true;
         enablePrintGCTimeStamps = true;
       }
+      else if (s.equals("-nogc")) {
+        enableVerboseGC = false;
+        enablePrintGCDetails = false;
+        enablePrintGCTimeStamps = false;
+      }
       else if (s.equals("-flow_dir")) {
         i++; if (i >= args.length) { usage(); }
         flowDir = args[i];
@@ -649,6 +769,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-J")) {
         i++; if (i >= args.length) { usage(); }
         extraArguments.add(args[i]);
+      }
+      else if (s.equals("-JJ")) {
+        i++; if (i >= args.length) { usage(); }
+        extraJvmArguments.add(args[i]);
       }
       else if (s.equals("-jks")) {
         i++; if (i >= args.length) { usage(); }
@@ -695,6 +819,12 @@ public class h2odriver extends Configured implements Tool {
     // Check for sane arguments.
     if (! mapperXmx.matches("[1-9][0-9]*[mgMG]")) {
       error("-mapperXmx invalid (try something like -mapperXmx 4g)");
+    }
+
+    if (mapperPermSize != null) {
+      if (!mapperPermSize.matches("[1-9][0-9]*[mgMG]")) {
+        error("-mapperPermSize invalid (try something like -mapperPermSize 512m)");
+      }
     }
 
     if (extraMemPercent < 0) {
@@ -777,7 +907,7 @@ public class h2odriver extends Configured implements Tool {
     while (true) {
       if (clusterFailedToComeUp) {
         System.out.println("ERROR: At least one node failed to come up during cluster formation");
-        job.killJob();
+        killJobAndWait(job);
         return 4;
       }
 
@@ -801,7 +931,7 @@ public class h2odriver extends Configured implements Tool {
             System.out.println("NOTE: You may want to specify the -network option, which lets you specify the network interface the mappers bind to.");
             System.out.println("NOTE: Typical usage is:  -network a.b.c.d/24");
           }
-          job.killJob();
+          killJobAndWait(job);
           return CLUSTER_ERROR_TIMEOUT;
         }
       }
@@ -851,6 +981,16 @@ public class h2odriver extends Configured implements Tool {
       e.printStackTrace();
     }
 
+    try {
+      if (! job.isComplete()) {
+        System.out.println("ERROR: Job not complete after cleanUpDriverResources()");
+      }
+    }
+    catch (Exception e) {
+      System.out.println("ERROR: " + (e.getMessage() != null ? e.getMessage() : "(null)"));
+      e.printStackTrace();
+    }
+
     // At this point, resources are released.
     // The hadoop job has completed (job.isComplete() is true),
     // so the cluster memory and cpus are freed.
@@ -892,7 +1032,8 @@ public class h2odriver extends Configured implements Tool {
   private void addMapperConf(Configuration conf, String name, String value, String payloadFileName) {
     String payload = "";
     try {
-      payload = readFile(payloadFileName);
+      byte[] byteArr = readBinaryFile(payloadFileName);
+      payload = convertByteArrToString(byteArr);
     }
     catch (Exception e) {
       StringBuilder sb = new StringBuilder();
@@ -912,6 +1053,16 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private int run2(String[] args) throws Exception {
+    // Arguments that get their default value set based on runtime info.
+    // -----------------------------------------------------------------
+
+    // PermSize
+    // Java 7 and below need a larger PermSize for H2O.
+    // Java 8 no longer has PermSize, but rather MetaSpace, which does not need to be set at all.
+    if (javaMajorVersion <= 7) {
+      mapperPermSize = "256m";
+    }
+
     // Parse arguments.
     // ----------------
     parseArgs (args);
@@ -966,19 +1117,26 @@ public class h2odriver extends Configured implements Tool {
       conf.set("mapreduce.map.memory.mb", mapreduceMapMemoryMb);
 
       // MRv1 standard options, but also required for YARN.
-      String mapChildJavaOpts =
-              "-Xms" + mapperXmx
-              + " -Xmx" + mapperXmx
-              + (enableExceptions ? " -ea" : "")
-              + (enableVerboseGC ? " -verbose:gc" : "")
-              + (enablePrintGCDetails ? " -XX:+PrintGCDetails" : "")
-              + (enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : "")
-              + (enableVerboseClass ? " -verbose:class" : "")
-              + (enablePrintCompilation ? " -XX:+PrintCompilation" : "")
-              + (enableExcludeMethods ? " -XX:CompileCommand=exclude,water/fvec/NewChunk.append2slowd" : "")
-              + (enableLog4jDefaultInitOverride ? " -Dlog4j.defaultInitOverride=true" : "")
-              + (enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : "")
+      StringBuilder sb = new StringBuilder()
+              .append("-Xms").append(mapperXmx)
+              .append(" -Xmx").append(mapperXmx)
+              .append(((mapperPermSize != null) && (mapperPermSize.length() > 0)) ? (" -XX:PermSize=" + mapperPermSize) : "")
+              .append((enableExceptions ? " -ea" : ""))
+              .append((enableVerboseGC ? " -verbose:gc" : ""))
+              .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
+              .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
+              .append((enableVerboseClass ? " -verbose:class" : ""))
+              .append((enablePrintCompilation ? " -XX:+PrintCompilation" : ""))
+              .append((enableExcludeMethods ? " -XX:CompileCommand=exclude,water/fvec/NewChunk.append2slowd" : ""))
+              .append((enableLog4jDefaultInitOverride ? " -Dlog4j.defaultInitOverride=true" : ""))
+              .append((enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : ""))
               ;
+      for (String s : extraJvmArguments) {
+        sb.append(" ").append(s);
+      }
+
+      String mapChildJavaOpts = sb.toString();
+
       conf.set("mapreduce.map.java.opts", mapChildJavaOpts);
       if (! usingYarn()) {
         conf.set("mapred.child.java.opts", mapChildJavaOpts);
@@ -1086,9 +1244,9 @@ public class h2odriver extends Configured implements Tool {
     job.submit();
     System.out.println("Job name '" + jobtrackerName + "' submitted");
     System.out.println("JobTracker job ID is '" + job.getJobID() + "'");
-    hadoopJobID = job.getJobID().toString();
-    String applicationID = hadoopJobID.replace("job_", "application_");
-    System.out.println("For YARN users, logs command is 'yarn logs -applicationId " + applicationID + "'");
+    hadoopJobId = job.getJobID().toString();
+    applicationId = hadoopJobId.replace("job_", "application_");
+    maybePrintYarnLogsMessage(false);
 
     // Register ctrl-c handler to try to clean up job when possible.
     ctrlc = new CtrlCHandler();
@@ -1096,8 +1254,7 @@ public class h2odriver extends Configured implements Tool {
 
     System.out.printf("Waiting for H2O cluster to come up...\n");
     int rv = waitForClusterToComeUp();
-    if ((rv == CLUSTER_ERROR_TIMEOUT)
-        ||
+    if ((rv == CLUSTER_ERROR_TIMEOUT) ||
         (rv == CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY)) {
       // Try to print YARN diagnostics.
       try {
@@ -1117,7 +1274,7 @@ public class h2odriver extends Configured implements Tool {
           if (queueName == null) {
             queueName = "default";
           }
-          method.invoke(null, applicationID, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get());
+          method.invoke(null, applicationId, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get());
         }
 
         return rv;
@@ -1131,11 +1288,6 @@ public class h2odriver extends Configured implements Tool {
       }
 
       System.out.println("ERROR: H2O cluster failed to come up");
-
-      if (job.isComplete()) {
-        ctrlc.setComplete();
-      }
-
       return rv;
     }
     else if (rv != 0) {
@@ -1145,7 +1297,6 @@ public class h2odriver extends Configured implements Tool {
 
     if (job.isComplete()) {
       System.out.println("ERROR: H2O cluster failed to come up");
-      ctrlc.setComplete();
       return 2;
     }
 
@@ -1209,13 +1360,30 @@ public class h2odriver extends Configured implements Tool {
     return rv;
   }
 
+  private static void quickTest() throws Exception {
+    byte[] byteArr = readBinaryFile("/Users/tomk/h2o.jks");
+    String payload = convertByteArrToString(byteArr);
+    byte[] byteArr2 = convertStringToByteArr(payload);
+
+    assert (byteArr.length == byteArr2.length);
+    for (int i = 0; i < byteArr.length; i++) {
+      assert byteArr[i] == byteArr2[i];
+    }
+
+    writeBinaryFile("/Users/tomk/test.jks", byteArr2);
+    System.exit(0);
+  }
+
   /**
    * Main entry point
    * @param args Full program args, including those that go to ToolRunner.
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
+    // quickTest();
+
     int exitCode = ToolRunner.run(new h2odriver(), args);
+    maybePrintYarnLogsMessage();
     System.exit(exitCode);
   }
 }

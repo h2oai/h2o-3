@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
-def spaces_in_column_names(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def spaces_in_column_names():
+    
+    
 
     train_data = h2o.upload_file(path=h2o.locate("smalldata/jira/spaces_in_column_names.csv"))
     train_data.show()
@@ -14,4 +14,4 @@ def spaces_in_column_names(ip,port):
     gbm.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, spaces_in_column_names)
+    tests.run_test(sys.argv, spaces_in_column_names)

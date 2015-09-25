@@ -18,7 +18,7 @@ public class AutoSerialTest extends Iced {
   Key _key;
 
   static AutoBuffer _ab = new AutoBuffer(new byte[1000]);
-  static AutoBuffer abw() { return _ab.clearForWriting(); }
+  static AutoBuffer abw() { return _ab.clearForWriting(0); }
   static AutoBuffer abr() { return _ab. flipForReading(); }
 
 
@@ -268,4 +268,54 @@ public class AutoSerialTest extends Iced {
     Assert.assertTrue(((IcedSerTest)_aaa[0][0][0]).x == Math.PI);
     _aaa = null;
   }
+
+  /* =======================
+     Enum array serialization
+    ======================== */
+  enum TestEnum {
+    A, B, C;
+  }
+
+  TestEnum[] _ea;
+
+  /** Test for PUBDEV-1914 */
+  @Test
+  public void testArrayOfEnums() {
+    _ea = new TestEnum[] { TestEnum.B, null, TestEnum.A, TestEnum.B, TestEnum.C};
+    this.write(abw());
+    _ea = null;
+    this.read(abr());
+    Assert.assertTrue(_ea.length == 5);
+    Assert.assertTrue(Arrays.deepEquals(_ea, new TestEnum[] { TestEnum.B, null, TestEnum.A, TestEnum.B, TestEnum.C}));
+    _ea = null;
+  }
+
+  /* =======================
+     Generic type array serialization
+    ======================== */
+
+  abstract static class P extends Iced { }
+  static class P1 extends P {}
+  static class PA<T extends P> extends Iced<PA> {
+    public PA(T[] ps) {
+      _ps = ps;
+    }
+    final T[] _ps;
+  }
+
+  PA<P1> _gcs;
+
+  // Right now we do not support serialization of generic arrays since
+  // the weaver forgets type annotation.
+  @Ignore("PUBDEV-1863")
+  public void testGenericArray() {
+    _gcs = new PA(new P1[] { new P1(), null, new P1() });
+    this.write(abw());
+    _gcs = null;
+    this.read(abr());
+    Assert.assertEquals("Size of array has to match", _gcs._ps.length, 3);
+    Assert.assertArrayEquals("Content of array has to match", _gcs._ps, new P1[]{new P1(), null, new P1() });
+    _gcs = null;
+  }
+
 }

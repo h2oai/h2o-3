@@ -1,9 +1,13 @@
 package water.util;
 
-import water.Key;
-
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+
+import water.Key;
 
 /**
  * File utilities.
@@ -36,16 +40,10 @@ public class FileUtils {
   }
 
   public static URI getURI(String path) {
-    File[] roots = File.listRoots();
-    if (path.startsWith("./")) { // It is relative path
-      return new File(path).toURI();
-    } else {
-      for (File root : roots) { // It is local absolute path
-        if (path.startsWith(root.getAbsolutePath())) {
-          return new File(path).toURI();
-        }
-      }
+    if (path.contains(":/")) { // Seems like
       return URI.create(path);
+    } else {
+      return new File(path).toURI();
     }
   }
 

@@ -3,6 +3,7 @@ package hex;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public final double _mean_residual_deviance;
@@ -21,6 +22,13 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     return (ModelMetricsRegression) mm;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(super.toString());
+    sb.append(" mean residual deviance: " + (float)_mean_residual_deviance + "\n");
+    return sb.toString();
+  }
 
   public static class MetricBuilderRegression<T extends MetricBuilderRegression<T>> extends MetricBuilderSupervised<T> {
     double _sumdeviance;

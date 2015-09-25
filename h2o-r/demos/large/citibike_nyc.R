@@ -1,5 +1,5 @@
 ## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd("~/Downloads/")
 
 # Explore a typical Data Science workflow with H2O and R
 #
@@ -70,8 +70,8 @@ h2o.hist(bpd$mean_age)
 split_fit_predict <- function(data) {
   r <- h2o.runif(data$day)
   train <- data[r < 0.6,]
-  test  <- data[(0.6 >= r) & (r < 0.9),]
-  hold  <- data[0.9 >= r,]
+  test  <- data[(r >= 0.6) & (r < 0.9),]
+  hold  <- data[r >= 0.9,]
   print(paste("Training data has", ncol(train), "columns and", nrow(train), "rows, test has",
               nrow(test), "rows, holdout has", nrow(hold)))
   

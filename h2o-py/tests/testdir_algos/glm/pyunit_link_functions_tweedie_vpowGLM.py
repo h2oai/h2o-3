@@ -1,15 +1,15 @@
 import sys
 sys.path.insert(1, "../../../")
-import h2o
+import h2o, tests
 
-def link_functions_tweedie_vpow(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def link_functions_tweedie_vpow():
+    
+    
 
     # Load example data from HDtweedie, y = aggregate claim loss
     hdf = h2o.upload_file(h2o.locate("smalldata/glm_test/auto.csv"))
     y = "y"
-    x = list(set(hdf.names()) - set(["y"]))
+    x = list(set(hdf.names) - set(["y"]))
 
     print "Testing for family: TWEEDIE"
     print "Create models with canonical link: TWEEDIE"
@@ -35,5 +35,5 @@ def link_functions_tweedie_vpow(ip,port):
                                                                    "{1}".format(h2ofit.null_deviance(), r_null[ridx])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, link_functions_tweedie_vpow)
+    tests.run_test(sys.argv, link_functions_tweedie_vpow)
 

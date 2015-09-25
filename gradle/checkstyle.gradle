@@ -1,0 +1,9 @@
+apply plugin: 'checkstyle'
+
+checkstyle {
+  configFile = new File(rootDir, "gradle/config/checkstyle/google_checks.xml")
+  ignoreFailures = true
+  showViolations = true
+  //toolVersion = "6.8.1"
+  toolVersion = "6.7"
+}

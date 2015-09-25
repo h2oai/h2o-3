@@ -1,11 +1,11 @@
 import sys, os
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 import random
 
-def download_all_logs(ip,port):
-    # Connect to h2o
-    h2o.init(ip,port)
+def download_all_logs():
+    
+    
 
     # default
     log_location = h2o.download_all_logs()
@@ -28,4 +28,4 @@ def download_all_logs(ip,port):
     os.remove(log_location)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, download_all_logs)
+    tests.run_test(sys.argv, download_all_logs)

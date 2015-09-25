@@ -32,8 +32,8 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
 
   public ModelBuilderSchema schema() { return new ExampleV3(); }
 
-  @Override public Example trainModelImpl(long work) {
-    return (Example)start(new ExampleDriver(), work);
+  @Override protected Example trainModelImpl(long work, boolean restartTimer) {
+    return (Example)start(new ExampleDriver(), work, restartTimer);
   }
 
   @Override
@@ -57,6 +57,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
   // ----------------------
   private class ExampleDriver extends H2OCountedCompleter<ExampleDriver> {
 
+    protected ExampleDriver() { super(true); } // bump priority of drivers
     @Override protected void compute2() {
       ExampleModel model = null;
       try {
@@ -95,6 +96,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Example.this);
         Scope.exit(model._key);

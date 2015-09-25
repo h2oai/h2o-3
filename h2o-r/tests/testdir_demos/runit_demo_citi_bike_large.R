@@ -20,7 +20,7 @@ locate_source <- function(s) {
     myPath <- locate(s)
 }
 
-test.citibike.demo <- function(conn) {
+test.citibike.demo <- function() {
 # Pick either the big or the small demo.
 # Big data is 10M rows
 small_test <-  locate_source("bigdata/laptop/citibike-nyc/2013-08.csv")
@@ -84,8 +84,8 @@ summary(bpd)
 split_fit_predict <- function(data) {
   r <- h2o.runif(data$day)
   train <- data[r < 0.6,]
-  test  <- data[(0.6 >= r) & (r < 0.9),]
-  hold  <- data[0.9 >= r,]
+  test  <- data[(r >= 0.6) & (r < 0.9),]
+  hold  <- data[r >= 0.9,]
   print(paste("Training data has", ncol(train), "columns and", nrow(train), "rows, test has",
               nrow(test), "rows, holdout has", nrow(hold)))
   
@@ -115,25 +115,27 @@ split_fit_predict <- function(data) {
                  y = myY,
                  training_frame    = train,
                  validation_frame  = test,
-                 lambda            = 1e-5,
                  family            = "poisson")
 
   # 4- Score on holdout set & report
   train_r2_gbm <- h2o.r2(gbm)
   test_r2_gbm  <- h2o.r2(gbm, valid = TRUE)
-  hold_r2_gbm  <- h2o.r2(gbm, newdata = hold)
+  perf_hold_gbm <- h2o.performance(gbm, data = hold)
+  hold_r2_gbm  <- h2o.r2(perf_hold_gbm)
   print(paste0("GBM R2 TRAIN = ", train_r2_gbm, ", R2 TEST = ", test_r2_gbm, ", R2 HOLDOUT = ",
                hold_r2_gbm))
 
   train_r2_drf <- h2o.r2(drf)
   test_r2_drf  <- h2o.r2(drf, valid = TRUE)
-  hold_r2_drf  <- h2o.r2(drf, newdata = hold)
+  perf_hold_drf <- h2o.performance(drf, data = hold)
+  hold_r2_drf  <- h2o.r2(perf_hold_drf)
   print(paste0("DRF R2 TRAIN = ", train_r2_drf, ", R2 TEST = ", test_r2_drf, ", R2 HOLDOUT = ",
                hold_r2_drf))
 
   train_r2_glm <- h2o.r2(glm)
   test_r2_glm  <- h2o.r2(glm, valid = TRUE)
-  hold_r2_glm  <- h2o.r2(glm, newdata = hold)
+  perf_hold_glm <- h2o.performance(glm, data = hold)
+  hold_r2_glm  <- h2o.r2(perf_hold_glm)
   print(paste0("GLM R2 TRAIN = ", train_r2_glm, ", R2 TEST = ", test_r2_glm, ", R2 HOLDOUT = ",
                hold_r2_glm))
 }

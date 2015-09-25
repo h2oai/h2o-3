@@ -26,8 +26,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   public ModelBuilderSchema schema() { return new GrepV3(); }
 
-  @Override public Grep trainModelImpl(long work) {
-    return (Grep)start(new GrepDriver(), work);
+  @Override protected Grep trainModelImpl(long work, boolean restartTimer) {
+    return (Grep)start(new GrepDriver(), work, restartTimer);
   }
 
   @Override
@@ -66,6 +66,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   // ----------------------
   private class GrepDriver extends H2OCountedCompleter<GrepDriver> {
+    protected GrepDriver() { super(true); } // bump driver priority
 
     @Override protected void compute2() {
       GrepModel model = null;
@@ -102,6 +103,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Grep.this);
         Scope.exit(model == null ? null : model._key);

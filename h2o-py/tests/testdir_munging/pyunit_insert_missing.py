@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o
+import h2o, tests
 
-def insert_missing(ip,port):
+def insert_missing():
     # Connect to a pre-existing cluster
-    h2o.init(ip,port)
+    
 
     data = [[1, 2, 3, 1, 'a', 1, 9],
             [1, 6, 4, 2, 'a', 1, 9],
@@ -15,13 +15,13 @@ def insert_missing(ip,port):
     h2o_data = h2o.H2OFrame(python_obj=data)
 
     h2o_data.insert_missing_values(fraction = 0.0)
-    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol())])
+    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])
     assert num_nas == 0, "Expected no missing values inserted, but got {0}".format(num_nas)
 
     h2o_data.insert_missing_values(fraction = 1.0)
-    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol())])
-    assert num_nas == h2o_data.nrow()*h2o_data.ncol(), "Expected all missing values inserted, but got {0}".format(num_nas)
+    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])
+    assert num_nas == h2o_data.nrow*h2o_data.ncol, "Expected all missing values inserted, but got {0}".format(num_nas)
 
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, insert_missing)
+    tests.run_test(sys.argv, insert_missing)

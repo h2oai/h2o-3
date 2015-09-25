@@ -30,9 +30,10 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   public ModelBuilderSchema schema() { return new Word2VecV3(); }
 
   /** Start the KMeans training Job on an F/J thread.
-   * @param work*/
-  @Override public Job<Word2VecModel> trainModelImpl(long work) {
-    return start(new Word2VecDriver(), work);
+   * @param work
+   * @param restartTimer*/
+  @Override protected Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
+    return start(new Word2VecDriver(), work, restartTimer);
   }
 
   @Override
@@ -63,6 +64,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   }
 
   private class Word2VecDriver extends H2O.H2OCountedCompleter<Word2VecDriver> {
+    protected Word2VecDriver() { super(true); } // bump driver priority
     @Override
     protected void compute2() {
       Word2VecModel model = null;
@@ -107,6 +109,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
           throw t;
         }
       } finally {
+        updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Word2Vec.this);
       }

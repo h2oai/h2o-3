@@ -1,25 +1,25 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.gte.frame <- function(conn) {
- hex <- as.h2o(conn, iris)
+test.eq.frame <- function() {
+  hex <- as.h2o( iris)
  
   Log.info("Expectation is a frame of booleans")
   
   Log.info("Try hex == 'setosa' : ")
-  hexGTEFive <- hex == "setosa"
-  print(head(hexGTEFive))
+  hexEQFive <- hex == "setosa"
+  print(head(hexEQFive))
   
   Log.info("Don't expect commutativity, but expect operation to work when operands switched: 'setosa' == hex ")
-  fiveGTEHex <- "setosa" == hex
-  print(head(fiveGTEHex))
+  fiveEQHex <- "setosa" == hex
+  print(head(fiveEQHex))
   
   Log.info("Try >= the frame by itself: hex == hex")
-  hexGTEHex <- hex == hex
-  print(hexGTEHex)
+  hexEQHex <- hex == hex
+  print(hexEQHex)
 
   testEnd()
 }
 
-doTest("EXEC2 TEST: BINOP2 test of '>=' on frames", test.gte.frame)
+doTest("EXEC2 TEST: BINOP2 test of '==' on frames", test.eq.frame)
 
