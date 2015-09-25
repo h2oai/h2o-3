@@ -201,7 +201,7 @@ public class RequestServer extends NanoHTTPD {
              "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
     // Register resource also with .java suffix since we do not want to break API
     // FIXME: remove in new REST API version
-    register("/3/Models.java/(?<model_id>.*)"                 ,"GET"   ,ModelsHandler.class, "fetchJavaCode", null,
+    register("/3/Models.java/(?<model_id>.*?)(\\.java)?"      ,"GET"   ,ModelsHandler.class, "fetchJavaCode", null,
              "Return the stream containing model implementation in Java code.");
 
     // Model serialization - import/export calls
