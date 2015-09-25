@@ -51,6 +51,7 @@
       }
     }
     .set(x,"data",data)
+    .set(x,"types",lapply(res$columns, function(c) c$type))
     .set(x,"nrow",res$rows)
   }
   attr(x,"data")
@@ -58,8 +59,9 @@
 
 #` Flush any cached data
 .flush.data <- function(x) {
-  rm("data",envir=x);
-  rm("nrow",envir=x);
+  rm("data",envir=x)
+  rm("types",envir=x)
+  rm("nrow",envir=x)
   x
 }
 
