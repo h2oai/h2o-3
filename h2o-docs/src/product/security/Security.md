@@ -338,11 +338,19 @@ A realm.properties configuration file must be provided by the user.
 Example **realm.properties**:
 
 ```
+# See https://wiki.eclipse.org/Jetty/Howto/Secure_Passwords
+#     java -cp h2o.jar org.eclipse.jetty.util.security.Password
 username1: password1
-username2: password2
+username2: MD5:6cb75f652a9b52798eb6cf2201057c73
 ```
 
-See the [Jetty 8 HashLoginService documentation](http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService) for more information.
+Generate secure passwords using the Jetty secure password generation tool:
+
+```
+java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
+```
+
+See the [Jetty 8 HashLoginService documentation](http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService) and [Jetty 8 Secure Password HOWTO](http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords) for more information.
 
 ##### Standalone H2O EE
 
