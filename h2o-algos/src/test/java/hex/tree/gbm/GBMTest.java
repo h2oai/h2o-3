@@ -781,6 +781,8 @@ public class GBMTest extends TestUtil {
       double t_auc2 = tmm._auc._auc;
       double v_auc2 = vmm._auc._auc;
       System.out.println("train_AUC2= "+t_auc2+" , validation_AUC2= "+v_auc2);
+      t_pred.remove();
+      v_pred.remove();
 
       // Compute the perfect AUC
       double t_auc3 = AUC2.perfectAUC(t_pred.vecs()[2], tfr.vec("V55"));
@@ -1389,6 +1391,7 @@ public class GBMTest extends TestUtil {
 
         Frame res = gbm.score(vfr);
         Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
+        res.remove();
 
         ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
 
@@ -1410,7 +1413,7 @@ public class GBMTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      tfr = parse_test_file("./smalldata/junit/cars.head10.csv");
       for (String s : new String[]{
               "name",
       }) {
