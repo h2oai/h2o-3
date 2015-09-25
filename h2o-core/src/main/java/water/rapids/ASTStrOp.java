@@ -358,10 +358,10 @@ class ASTStrLength extends ASTPrim {
   private Vec lengthStringCol(Vec vec) {
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
+        if( chk instanceof C0DChunk ) { // All NAs
+          for( int i =0; i < chk._len; i++)
             newChk.addNA();
-        else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+        } else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiLength(newChk);
         } else { //UTF requires Java string methods for accuracy
           ValueString vs= new ValueString();
