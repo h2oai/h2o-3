@@ -29,7 +29,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _period = 1;                       // Length of the period when _loss = Periodic
     public Loss[] _loss_by_col;                // Override default loss function for specific columns
     public int[] _loss_by_col_idx;
-    public boolean _offset;     // Include offset term in loss function? (Appends indicator column to end of X and constant row to bottom of Y)
+    public boolean _offset = false;  // Include offset term in loss function? (Appends indicator column to end of X and constant row to bottom of Y)
+    public boolean _scale = false;   // Scale loss function by generalized column variance?
 
     // Regularization functions
     public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
@@ -256,7 +257,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             else if(u[i] == 0) zeros++;
             else return Double.POSITIVE_INFINITY;
           }
-          return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
+          return ones == 1 && zeros == end-1 ? 0 : Double.POSITIVE_INFINITY;
         case Simplex:
           double sum = 0;
           for(int i = 0; i < end; i++) {
@@ -344,8 +345,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Simplex:
           // Proximal gradient algorithm by Chen and Ye in http://arxiv.org/pdf/1101.6081v2.pdf
           // 1) Sort input vector u in ascending order: u[1] <= ... <= u[n]
-          if(_offset) throw H2O.unimpl();   // TODO: Clone u and skip last element when offset
-          int n = u.length;
+          int n = u.length - (_offset ? 1 : 0);
           int[] idxs = new int[n];
           for(int i = 0; i < n; i++) idxs[i] = i;
           ArrayUtils.sort(idxs, u);
@@ -368,21 +368,65 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           }
 
           // 4) Return max(u - t*, 0) as projection of u onto simplex
-          double[] x = new double[u.length];
-          for(int i = 0; i < u.length; i++)
-            x[i] = Math.max(u[i] - t, 0);
-          return x;
+          for(int i = 0; i < n; i++)
+            v[i] = Math.max(u[i] - t, 0);
+          return v;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }
     }
 
-    // Clone array and set last entry to specified value
-    private static double[] set_last(double[] u, double last) {
-      if(u == null) return null;
-      double[] v = u.clone();
-      v[v.length-1] = last;
-      return v;
+    // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
+    public final double[] offset(Frame fr, Loss[] losses) {
+      double[] mu = new double[fr.numCols()];
+      for(int i = 0; i < fr.numCols(); i++)
+        mu[i] = offset(fr.vec(i), losses[i]);
+      return mu;
+    }
+    public final double offset(Vec v, Loss loss) {
+      switch(loss) {
+        case Quadratic:
+          return v.mean();
+        case Poisson:
+          return Math.log(v.mean());
+        case Absolute:  // Column median
+        case Huber:
+        case Periodic:
+        case Logistic:
+        case Hinge:
+        case Categorical:
+        case Ordinal:
+          throw H2O.unimpl("Generalized column mean not available for loss function " + loss);
+        default:
+          throw new RuntimeException("Unknown loss function " + loss);
+      }
+    }
+
+    // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
+    // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
+    public final double[] scale(Frame fr, Loss[] losses) {
+      double[] sigma2 = new double[fr.numCols()];
+      for(int i = 0; i < fr.numCols(); i++)
+        sigma2[i] = scale(fr.vec(i), losses[i]);
+      return sigma2;
+    }
+    // TODO: Do this in MRTask with pre-computed offsets and call to loss/mloss functions
+    public final double scale(Vec v, Loss loss) {
+      switch(loss) {
+        case Quadratic:
+          return 1.0 / v.sigma() * v.sigma();
+        case Absolute:  // Sum of absolute values of deviations from median
+        case Huber:
+        case Poisson:
+        case Periodic:
+        case Logistic:
+        case Hinge:
+        case Categorical:
+        case Ordinal:
+          throw H2O.unimpl("Generalized column variance not available for loss function " + loss);
+        default:
+          throw new RuntimeException("Unknown loss function " + loss);
+      }
     }
 
     // Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization.
@@ -431,6 +475,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         default:
           throw new RuntimeException("Unknown regularization function " + _regularization_y);
       }
+    }
+
+    // Clone array and set last entry to specified value
+    private static double[] set_last(double[] u, double last) {
+      if(u == null) return null;
+      double[] v = u.clone();
+      v[v.length-1] = last;
+      return v;
     }
 
     // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for real numeric values
@@ -500,6 +552,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Frame key of X matrix
     public Key<Frame> _loading_key;
+    public int _ncolX;    // Number of columns in X (equal to k if no offset, k+1 otherwise)
 
     // Number of categorical and numeric columns
     public int _ncats;
@@ -514,7 +567,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Standardization arrays for numeric data columns
     public double[] _normSub;   // Mean of each numeric column
     public double[] _normMul;   // One over standard deviation of each numeric column
-    public int _ncolX;    // Number of columns in X (equal to k if no offset, k+1 otherwise)
+    public double[] _lossScale;   // One over generalized variance of each column
 
     // Permutation array mapping adapted to original training col indices
     public int[] _permutation;  // _permutation[i] = j means col i in _adaptedFrame maps to col j of _train
