@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
@@ -391,7 +391,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if as_pandas:
       import pandas
       pandas.options.display.max_rows=20
-      print fr
+      if h2o.H2ODisplay._in_ipy():
+        from IPython.display import display
+        display(fr)
+      else:
+        print fr
     else:
       h2o.H2ODisplay(fr,names)
 
@@ -1338,6 +1342,14 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: A factor column.
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
+
+  # def apply(self, margin=2, fun_def=None):
+  #   if margin not in [1,2]:
+  #     raise ValueError("margin must be either 1 (rows) or 2 (cols).")
+  #   if isinstance(fun_def, type(lambda:0)) and fun_def.__name__ == (lambda:0).__name__: # have lambda
+  #     print "moo"
+  #     pass
+
 
 
   # flow-coding result methods
