@@ -307,7 +307,7 @@ h2o.getModel <- function(model_id, conn = h2o.getConnection(), linkToGC = FALSE)
 #' @export
 h2o.download_pojo <- function(model, path="", conn=h2o.getConnection()) {
   model_id <- model@model_id
-  java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", model_id, ".java"), raw=TRUE)
+  java <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
   file.path <- paste0(path, "/", model_id, ".java")
   if( path == "" ) cat(java)
   else write(java, file=file.path)
