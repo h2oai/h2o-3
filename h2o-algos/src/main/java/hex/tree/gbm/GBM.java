@@ -77,7 +77,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // expected.  However, all the minority classes have large guesses in the
     // wrong direction, and it takes a long time (lotsa trees) to correct that
     // - so your CM sucks for a long time.
-    double mean = 0;
     if (expensive) {
       if (error_count() > 0) {
         GBM.this.updateValidationMessages();
@@ -96,8 +95,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
-      // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
-      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
     }
 
     switch( _parms._distribution) {
@@ -134,13 +131,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   // ----------------------
   private class GBMDriver extends Driver {
-
-    @Override protected void buildModel() {
+    @Override protected boolean doOOBScoring() { return false; }
+    @Override protected void initializeModelSpecifics() {
       _mtry = Math.max(1, (int)(_parms._col_sample_rate * _ncols));
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
-      // Append number of trees participating in on-the-fly scoring
-      _train.add("OUT_BAG_TREES", _response.makeZero());
 
+      // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
+      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
       if (hasOffsetCol() && _parms._distribution == Distribution.Family.bernoulli) {
         _initialPrediction = getInitialValueBernoulliOffset(_train);
       }
@@ -156,51 +153,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
       }
-
-      // How many trees was in already in provided checkpointed model
-      int ntreesFromCheckpoint = _parms.hasCheckpoint() ?
-          ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees : 0;
-      // Reconstruct the working tree state from the checkpoint
-      if( _parms.hasCheckpoint() ) {
-        Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, numSpecialCols(),                    _model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
-        new OOBScorer(         _ncols, _nclass, numSpecialCols(),_parms._sample_rate,_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
-        Log.info("Reconstructing oob stats from checkpointed model took " + t);
-      }
-
-      Random rand = createRNG(_parms._seed);
-      // To be deterministic get random numbers for previous trees and
-      // put random generator to the same state
-      for (int i = 0; i < ntreesFromCheckpoint; i++) rand.nextLong();
-
-      final boolean oob = false; // GBM: always score on all training rows, even though they aren't necessarily all used for training
-      // Loop over the K trees
-      for( int tid=0; tid< _ntrees; tid++) {
-        // During first iteration model contains 0 trees, then 1-tree, ...
-        // No need to score a checkpoint with no extra trees added
-        if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping ) {
-            doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
-            return;             // Stop when approaching round-off error
-          }
-        }
-
-        // Compute predictions and resulting residuals for trees built so far
-        // ESL2, page 387, Steps 2a, 2b
-        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node);
-
-        // Build more trees, based on residuals above
-        // ESL2, page 387, Step 2b ii, iii, iv
-        Timer kb_timer = new Timer();
-
-        buildNextKTrees(rand);
-        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
-        GBM.this.update(1);
-        if( !isRunning() ) return; // If canceled during building, do not bulkscore
-      }
-      // Final scoring (skip if job was cancelled)
-      doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
     }
 
     /**
@@ -390,9 +342,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
-    // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
-//    private void buildNextKTrees() {
-    private void buildNextKTrees(Random rand) {
+    // the prior trees.
+    @Override protected void buildNextKTrees() {
+      // Compute predictions and resulting residuals for trees built so far
+      // ESL2, page 387, Steps 2a, 2b
+//      Log.info("3 before ComputePredAndRes\n", _train);
+      new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns
+
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -400,12 +356,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Define a "working set" of leaf splits, from here to tree._len
       int[] leafs = new int[_nclass];
 
+//      Log.info("4 before growTrees\n", _train);
       // ----
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      growTrees(ktrees, leafs, rand);
+      growTrees(ktrees, leafs, _rand);
 
+//      Log.info("5 before fitBestConstants\n", _train);
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
