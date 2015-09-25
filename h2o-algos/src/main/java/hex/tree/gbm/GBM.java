@@ -173,7 +173,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // put random generator to the same state
       for (int i = 0; i < ntreesFromCheckpoint; i++) rand.nextLong();
 
-      final boolean oob = _parms._sample_rate < 1;
+      final boolean oob = false; // GBM: always score on all training rows, even though they aren't necessarily all used for training
       // Loop over the K trees
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
@@ -481,7 +481,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             DecidedNode dn = tree.decided(nid);
             if (dn._split._col == -1) { // No decision here, no row should have this NID now
               if (nid == 0)               // Handle the trivial non-splitting tree
-                new GBMLeafNode(tree, -1, 0);
+                new LeafNode(tree, -1, 0);
               continue;
             }
             for (int i = 0; i < dn._nids.length; i++) {
@@ -490,7 +490,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode) tree.node(cnid))._split.col() == -1))
-                dn._nids[i] = new GBMLeafNode(tree, nid).nid(); // Mark a leaf here
+                dn._nids[i] = new LeafNode(tree, nid).nid(); // Mark a leaf here
             }
           }
         }
@@ -641,16 +641,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this,mse_train,mse_valid));
     }
 
-  }
-
-  // ---
-  static class GBMLeafNode extends LeafNode {
-    GBMLeafNode( DTree tree, int pid ) { super(tree,pid); }
-    GBMLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
-    // Insert just the predictions: a single byte/short if we are predicting a
-    // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
-    @Override protected int size() { return 4; }
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

@@ -262,7 +262,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             DecidedNode dn = tree.decided(nid);
             if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
-                LeafNode ln = new DRFLeafNode(tree, -1, 0);
+                LeafNode ln = new LeafNode(tree, -1, 0);
                 ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
               }
               continue;
@@ -273,7 +273,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
-                LeafNode ln = new DRFLeafNode(tree,nid);
+                LeafNode ln = new LeafNode(tree,nid);
                 ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
               }
@@ -364,16 +364,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       return new DRFModel(modelKey,parms,new DRFModel.DRFOutput(DRF.this,mse_train,mse_valid));
     }
 
-  }
-
-  // ---
-  static class DRFLeafNode extends LeafNode {
-    DRFLeafNode( DTree tree, int pid ) { super(tree,pid); }
-    DRFLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
-    // Insert just the predictions: a single byte/short if we are predicting a
-    // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
-    @Override protected int size() { return 4; }
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
