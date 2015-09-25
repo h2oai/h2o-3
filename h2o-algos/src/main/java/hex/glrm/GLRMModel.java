@@ -502,6 +502,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
+    // TODO: Combine single-dimensional and multi-dimensional offsets into single 2-D array?
     public final double[][] moffset(DataInfo dinfo, Loss[] losses) {
       if(dinfo._cats == 0) return new double[0][];
       double[][] mu = new double[dinfo._cats][];
@@ -576,7 +577,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
       @Override protected void postGlobal() {
         for(int i = 0; i < _scale.length; i++)
-          _scale[i] /= _count[i]-1;
+          // _scale[i] /= _count[i]-1;
+          _scale[i] = _scale[i] != 0 ? (_count[i]-1) / _scale[i] : 1.0;   // Need reciprocal since dividing by generalized variance
       }
     }
   }
@@ -621,7 +623,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Standardization arrays for numeric data columns
     public double[] _normSub;   // Mean of each numeric column
     public double[] _normMul;   // One over standard deviation of each numeric column
-    public double[] _lossScale;   // One over generalized variance of each column
 
     // Permutation array mapping adapted to original training col indices
     public int[] _permutation;  // _permutation[i] = j means col i in _adaptedFrame maps to col j of _train
@@ -631,6 +632,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Loss function for every column in adapted training frame
     public GLRMParameters.Loss[] _lossFunc;
+    public double[] _lossOffset;  // Generalized mean of each column
+    public double[] _lossScale;   // One over generalized variance of each column
 
     // Training time
     public long[/*iterations*/] _training_time_ms = new long[0];

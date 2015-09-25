@@ -214,16 +214,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
     }
 
-    // TODO: Need to implement scaling for other loss functions
-    if(_parms._scale) {
-      for (int i = 0; i < _lossFunc.length; i++) {
-        if(_lossFunc[i] != GLRMParameters.Loss.Quadratic) {
-          error("_scale", "Currently, scaling with generalized column variance only available with quadratic loss");
-          break;
-        }
-      }
-    }
-
     _ncolX = _parms._k + (_parms._offset ? 1 : 0);
     _ncolA = _train.numCols();
   }
@@ -259,22 +249,22 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // More efficient implementation assuming sdata cols aligned with adaptedFrame
-  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) { return expandCats(sdata, dinfo, false); }
-  public static double[][] expandCats(double[][] sdata, DataInfo dinfo, boolean appendRow) {
-    if(sdata == null || (dinfo._cats == 0 && !appendRow)) return sdata;
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) { return expandCats(sdata, dinfo, null); }
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo, double[] offset) {
+    if(sdata == null || (dinfo._cats == 0 && null == offset)) return sdata;
     assert sdata[0].length == dinfo._adaptedFrame.numCols();
 
     // Column count for expanded matrix
     int catsexp = dinfo._catOffsets[dinfo._catOffsets.length-1];
-    double[][] cexp = new double[sdata.length + (appendRow ? 1:0)][catsexp + dinfo._nums];
+    double[][] cexp = new double[sdata.length + (null != offset ? 1:0)][catsexp + dinfo._nums];
 
     for(int i = 0; i < sdata.length; i++)
       LinearAlgebraUtils.expandRow(sdata[i], dinfo, cexp[i], false);
 
-    if(appendRow) {   // Initialize offset for numeric cols to column mean
+    if(null != offset) {   // Initialize offset for numeric cols
       int exp_cnt = dinfo.numStart();
       for(int col = dinfo._cats; col < dinfo._adaptedFrame.numCols(); col++) {
-        cexp[sdata.length][exp_cnt] = dinfo._adaptedFrame.vec(col).mean();
+        cexp[sdata.length][exp_cnt] = offset[col];
         exp_cnt++;
       }
     }
@@ -286,7 +276,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     protected GLRMDriver() { super(true); } // bump driver priority
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt) {
+    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt, double[] offset) {
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
@@ -303,9 +293,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Permute cluster columns to align with dinfo and expand out categoricals
           centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-          centers_exp = expandCats(centers, tinfo, _parms._offset);    // To include offset, append additional row to bottom of Y
+          centers_exp = expandCats(centers, tinfo, offset);    // To include offset, append additional row to bottom of Y
         } else
-          centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
+          centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);   // TODO: Set last row to offset values
 
         if (null != _parms._user_x) {   // Set X = user-specified initial points
           Frame tmp = new Frame(dfrm);
@@ -335,7 +325,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
-        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
+        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);   // TODO: Set last row to offset values
         InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
         xtsk.doAll(dfrm);
 
@@ -595,6 +585,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           model._output._lossFunc[i] = _lossFunc[tinfo._permutation[i]];
 
         // Calculate one over generalized column variance for appropriate scaling
+        if(_parms._offset) model._output._lossOffset = _parms.offset(tinfo, _lossFunc);
         if(_parms._scale)
           model._output._lossScale = _parms.scale(tinfo, _lossFunc);
         else {
@@ -622,7 +613,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Use closed form solution for X if quadratic loss and regularization
         update(1, "Initializing X and Y matrices");   // One unit of work
-        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
+        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt, model._output._lossOffset);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
