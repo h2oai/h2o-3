@@ -95,8 +95,8 @@ public class ASTMerge extends ASTPrim {
 
 
     // All of the walked set, and no dup handling on the right - which means no
-    // need to replicated rows of the walked dataset.  Simple 1-pass over the
-    // walked set adding in columns from the right.
+    // need to replicate rows of the walked dataset.  Simple 1-pass over the
+    // walked set adding in columns (or NAs) from the right.
     if( allLeft && !(allRite && ms._dup) ) {
       // The lifetime of the distributed dataset is independent of the original
       // dataset, so it needs to be a deep copy.
@@ -111,8 +111,8 @@ public class ASTMerge extends ASTPrim {
       return new ValFrame(walked.add(res));
     }
 
-    // Can be partial on the left, but won't nessecarily do all of the right.
-    // Dups on right are OK (left will be replicated as needed).
+    // Can be full or partial on the left, but won't nessecarily do all of the
+    // right.  Dups on right are OK (left will be replicated or dropped as needed).
     if( !allRite ) {
       String[] names = Arrays.copyOf(walked.names(),walked.numCols() + hashed.numCols()-ncols);
       System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);

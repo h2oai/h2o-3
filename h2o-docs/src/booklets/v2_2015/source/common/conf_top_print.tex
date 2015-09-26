@@ -21,7 +21,8 @@
 \titleformat{\section}{\normalfont\bfseries}{\thesection}{1em}{}
 \titlespacing*{\section}{0pt}{*2}{0pt}
 \titlespacing*{\subsection}{0pt}{*2}{0pt}
-\usepackage[square, sort, comma, numbers]{natbib} %%uses titles for cited references
+\usepackage[square,authoryear,sort&compress]{natbib}
+%[square, sort, comma, numbers]{natbib} %%uses titles for cited references
 \usepackage[fit]{truncate}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
@@ -36,4 +37,5 @@
 \xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 
 \usepackage{setspace}
 \usepackage{adjustbox} 
-
+\usepackage[all,defaultlines]{nowidow} %prevent widows/orphans
+\usepackage{bibentry}
