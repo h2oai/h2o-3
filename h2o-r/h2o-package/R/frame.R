@@ -1730,7 +1730,10 @@ as.data.frame.Frame <- function(x, ...) {
   # Substitute NAs for blank cells rather than skipping
   df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
   close(tcon)
-  # FIXME now convert all date columns to POSIXct
+  # Convert all date columns to POSIXct
+  dates <- attr(x, "types") %in% "time"
+  if (length(dates) > 0) # why do some frames come in with no attributes but many columns?
+    for (i in 1:length(dates)) { if (dates[[i]]) class(df[[i]]) = "POSIXct" }
   df
 }
 
