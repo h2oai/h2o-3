@@ -1224,7 +1224,10 @@ class TestRunner:
         for all clouds, check if connection to h2o exists, and that h2o is healthy.
         """
         time.sleep(5)
-        for c in self.clouds: self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
+	print("Checking cloud health...")
+        for c in self.clouds:
+            self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
+            print("Node {} healthy.").format(c)
 
     def stop_clouds(self):
         """
