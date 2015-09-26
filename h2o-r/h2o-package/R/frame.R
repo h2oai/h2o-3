@@ -38,6 +38,16 @@
 is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
+#' Get back-end distributed key/value store id from a Frame.
+#'
+#' @param x A Frame
+#' @return The id
+#' @export
+h2o.getId <- function(x) {
+  chk.Frame(x)
+  attr(x, "id")
+}
+
 .h2o.gc <- function() {
   gc()
 }
