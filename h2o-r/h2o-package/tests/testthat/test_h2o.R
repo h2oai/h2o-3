@@ -74,7 +74,7 @@ test_that("doSafeGET works", {
   tryCatch(.h2o.doSafeGET(conn = h, urlSuffix = "DoesNotExist"),
            error = function(x) { ttFailed <<- TRUE })
   expect_equal(ttFailed, TRUE)
-  h2o.shutdown(h, prompt = FALSE)
+  h2o.shutdown(prompt = FALSE)
 })
 
 test_that("doSafePOST works", {
@@ -92,18 +92,18 @@ test_that("doSafePOST works", {
   expect_equal(rv$curlError, FALSE)
   expect_equal(rv$httpStatusCode, 200)
   expect_equal(nchar(rv$payload) >= 100, TRUE)
-  h2o.shutdown(h, prompt = FALSE)
+  h2o.shutdown(prompt = FALSE)
 })
 
 doUploadFileTests <- function(h) {
   irisPath <- system.file("extdata", "iris.csv", package="h2o")
-  df = h2o.uploadFile(h, irisPath)
+  df = h2o.uploadFile(irisPath)
   expect_equal(nrow(df), 150)
   expect_equal(ncol(df), 5)
 
   ttFailed = FALSE
   tryCatch({
-    invisible(h2o.uploadFile(h, "/file/does/not/exist.csv"))
+    invisible(h2o.uploadFile("/file/does/not/exist.csv"))
   }, warning = function(x) {
     ttFailed <<- TRUE
   }, error = function(x) {
@@ -118,7 +118,7 @@ test_that("H2O can start", {
 
   h = h2o.init()
   doUploadFileTests(h)
-  h2o.shutdown(h, prompt = FALSE)
+  h2o.shutdown(prompt = FALSE)
 })
 
 test_that("Report that all tests finished running", {
