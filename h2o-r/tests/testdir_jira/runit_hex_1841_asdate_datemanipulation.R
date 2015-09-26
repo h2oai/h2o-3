@@ -121,6 +121,9 @@ datetest <- function(){
   
   
   Log.info('Test 2')
+  origTZ = h2o.getTimezone()
+  #test 1
+  h2o.setTimezone("America/Los_Angeles")
   print(h2o.getTimezone())
   ## Col 1-10 test all different parse options, rows test some corner cases
   ## Rows 1,2 test 1969/2068 inference
@@ -152,6 +155,7 @@ datetest <- function(){
     expect_that(lmillis[,1], equals(ldf[[i]]))
   }
   
+  h2o.setTimezone(origTZ)
   print(h2o.getTimezone())
   testEnd()
 }
