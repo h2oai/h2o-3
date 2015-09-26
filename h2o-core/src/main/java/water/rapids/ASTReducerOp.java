@@ -9,7 +9,7 @@ import water.util.ArrayUtils;
 /** Subclasses take a Frame and produces a scalar.  NAs -> NAs */
 abstract class ASTReducerOp extends ASTPrim {
   @Override int nargs() { return -1; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // NOTE: no *initial* value needed for the reduction.  Instead, the
     // reduction op is used between pairs of actual values, and never against
     // the empty list.  NaN is returned if there are *no* values in the
@@ -68,14 +68,14 @@ abstract class ASTRollupOp extends ASTReducerOp {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   abstract double rup( Vec vec );
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val arg1 = asts[1].exec(env);
     if( arg1.isRow() ) {        // Row-wise operation
       double[] ds = arg1.getRow();
       double d = ds[0];
       for( int i=1; i<ds.length; i++ )
         d = op(d,ds[i]);
-      return new ValNum(d);
+      return new ValRow(new double[]{d}, null);
     }
 
     // Normal column-wise operation

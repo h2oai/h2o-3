@@ -1,5 +1,6 @@
 import h2o
 import math
+import astfun
 
 
 class ExprNode:
@@ -25,7 +26,7 @@ class ExprNode:
 
   @staticmethod
   def _arg_to_expr(arg):
-    if isinstance(arg, (ExprNode, h2o.H2OFrame)): return arg
+    if isinstance(arg, (ExprNode, h2o.H2OFrame, astfun.ASTId)): return arg
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, basestring):             return '"'+arg+'"'
