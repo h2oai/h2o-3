@@ -3,7 +3,7 @@ package water.rapids;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -122,7 +122,7 @@ class ASTFlatten extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()==1 && fr.numRows()==1 ) {
       if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
-      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new ValueString(),0).toString());
+      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new BufferedString(),0).toString());
       return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
     }
     return new ValFrame(fr); // did not flatten

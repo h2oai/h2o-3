@@ -591,7 +591,7 @@ class XlsParser extends Parser {
         _currow++;              // Next row internally
         // Forward collected row to _dout.  
         for( int i=0; i<_ds.length; i++ ) {
-          if( _labels[i] != null ) { _dout.addStrCol(i,new ValueString(_labels[i])); _labels[i] = null; }
+          if( _labels[i] != null ) { _dout.addStrCol(i,new BufferedString(_labels[i])); _labels[i] = null; }
           else { _dout.addNumCol(i,_ds[i]); _ds[i] = Double.NaN; }
         }
         _dout.newLine();        // And advance dout a line

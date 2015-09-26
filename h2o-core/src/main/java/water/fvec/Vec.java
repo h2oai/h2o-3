@@ -2,8 +2,8 @@ package water.fvec;
 
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
+import water.parser.BufferedString;
 import water.parser.Categorical;
-import water.parser.ValueString;
 import water.util.*;
 
 import java.util.Arrays;
@@ -43,7 +43,7 @@ import java.util.concurrent.Future;
  *   <tr><td>  {@code long}     </td><td>{@link #at8}  </td><td>   throws   </td><td></td>
  *   <tr><td>  {@code long}     </td><td>{@link #at16l}</td><td>   throws   </td><td>Low  half of 128-bit UUID</td>
  *   <tr><td>  {@code long}     </td><td>{@link #at16h}</td><td>   throws   </td><td>High half of 128-bit UUID</td>
- *   <tr><td>{@link ValueString}</td><td>{@link #atStr}</td><td>{@code null}</td><td>Updates ValueString in-place and returns it for flow-coding</td>
+ *   <tr><td>{@link BufferedString}</td><td>{@link #atStr}</td><td>{@code null}</td><td>Updates BufferedString in-place and returns it for flow-coding</td>
  *   <tr><td>  {@code boolean}  </td><td>{@link #isNA} </td><td>{@code true}</td><td></td>
  *   <tr><td>        </td><td>{@link #set(long,double)}</td><td>{@code NaN} </td><td></td>
  *   <tr><td>        </td><td>{@link #set(long,float)} </td><td>{@code NaN} </td><td>Limited precision takes less memory</td>
@@ -368,7 +368,7 @@ public class Vec extends Keyed<Vec> {
 
   /** A new vector which is a copy of {@code this} one.
    *  @return a copy of the vector.  */
-  public Vec makeCopy(String[] domain){ return makeCopy(domain,_type); }
+  public Vec makeCopy(String[] domain){ return makeCopy(domain, _type); }
 
   public Vec makeCopy(String[] domain, byte type) {
     Vec v = doCopy();
@@ -412,7 +412,7 @@ public class Vec extends Keyed<Vec> {
     for(double d:vals)
       nc.addNum(d);
     nc.close(fs);
-    DKV.put(v._key,v,fs);
+    DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
   }
@@ -857,13 +857,13 @@ public class Vec extends Keyed<Vec> {
    *  @return {@code i}th element as a UUID high half, or throw if missing */
   public final long  at16h( long i ) { return chunkForRow(i).at16h_abs(i); }
 
-  /** Fetch element the slow way, as a {@link ValueString} or null if missing.
+  /** Fetch element the slow way, as a {@link BufferedString} or null if missing.
    *  Throws if the value is not a String.  ValueStrings are String-like
    *  objects than can be reused in-place, which is much more efficient than
    *  constructing Strings.
-   *  @return {@code i}th element as {@link ValueString} or null if missing, or
+   *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr_abs(vstr, i); }
+  public final BufferedString atStr( BufferedString vstr, long i ) { return chunkForRow(i).atStr_abs(vstr, i); }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -1074,7 +1074,7 @@ public class Vec extends Keyed<Vec> {
 
   /** Create a new Vec (as opposed to wrapping it) that is the Numeric'd version of the original.
    *  The original Vec is not mutated.  */
-  public Vec toNumeric() { return makeCopy(null,T_NUM); }
+  public Vec toNumeric() { return makeCopy(null, T_NUM); }
 
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
@@ -1155,7 +1155,7 @@ public class Vec extends Keyed<Vec> {
     Enum2StrChkTask(String[] domain) { _domain=domain; }
     @Override public void map(Chunk c, NewChunk nc) {
       for(int i=0;i<c._len;++i)
-        nc.addStr(new ValueString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));
+        nc.addStr(new BufferedString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));
     }
   }
 

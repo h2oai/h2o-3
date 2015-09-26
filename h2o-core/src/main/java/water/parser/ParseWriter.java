@@ -17,7 +17,7 @@ interface ParseWriter extends Freezable {
   // An an invalid / missing entry
   void addInvalidCol(int colIdx);
   // Add a String column
-  void addStrCol( int colIdx, ValueString str );
+  void addStrCol( int colIdx, BufferedString str );
   // Final rolling back of partial line
   void rollbackLine();
   void invalidLine(String err);

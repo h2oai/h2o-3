@@ -121,7 +121,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   }
   @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_ENUM || _ctypes[colIdx] == Vec.T_STR);}
 
-  @Override public void addStrCol(int colIdx, ValueString str) {
+  @Override public void addStrCol(int colIdx, BufferedString str) {
     if(colIdx < _nvs.length){
       if(_ctypes[colIdx] == Vec.T_NUM){ // support enforced types
         addInvalidCol(colIdx);

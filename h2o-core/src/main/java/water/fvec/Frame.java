@@ -3,7 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -1056,7 +1056,7 @@ public class Frame extends Lockable<Frame> {
         break;
       case Vec.T_STR :
         coltypes[i] = "string"; 
-        ValueString vstr = new ValueString();
+        BufferedString vstr = new BufferedString();
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_ENUM:
@@ -1130,7 +1130,7 @@ public class Frame extends Lockable<Frame> {
               else nc.addNum(oc.at8(j), 0);
           } else if (oc._vec.isString()) {
             for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(new ValueString(), j));
+              nc.addStr(oc.atStr(new BufferedString(), j));
           } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
               nc.addNum(oc.atd(j));
@@ -1198,7 +1198,7 @@ public class Frame extends Lockable<Frame> {
             Chunk chk = chks[j];
             if( chk.isNA(i) )                   nchks[j].addNA();
             else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            else if( chk instanceof CStrChunk)  nchks[j].addStr((chk.atStr(new BufferedString(), i)));
             else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
             else                                nchks[j].addNum(chk.at8(i),0);
           }
@@ -1306,7 +1306,7 @@ public class Frame extends Lockable<Frame> {
           if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
           else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
           else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
+          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new BufferedString(), _row)).append('"');
           else {
             double d = vs[i].at(_row);
             // R 3.1 unfortunately changed the behavior of read.csv().

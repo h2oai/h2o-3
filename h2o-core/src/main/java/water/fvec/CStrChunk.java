@@ -2,7 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.util.UnsafeUtils;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 public class CStrChunk extends Chunk {
   static final int NA = -1;
@@ -43,7 +43,7 @@ public class CStrChunk extends Chunk {
 
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public ValueString atStr_impl(ValueString vstr, int idx) {
+  @Override public BufferedString atStr_impl(BufferedString vstr, int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
     if( off == NA ) return null;
     int len = 0;

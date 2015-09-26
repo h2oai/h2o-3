@@ -164,7 +164,7 @@ public final class ParseSetup extends Iced {
   }
 
   static boolean allStrings(String [] line){
-    ValueString str = new ValueString();
+    BufferedString str = new BufferedString();
     for( String s : line ) {
       try {
         Double.parseDouble(s);

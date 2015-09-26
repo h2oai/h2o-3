@@ -4,10 +4,7 @@ import water.AutoBuffer;
 import water.Futures;
 import water.H2O;
 import water.MemoryManager;
-import water.nbhm.NonBlockingHashMap;
-import water.parser.ValueString;
-import water.util.IcedDouble;
-import water.util.IcedInt;
+import water.parser.BufferedString;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -117,7 +114,7 @@ public class NewChunk extends Chunk {
 
   public void set_vec(Vec vec) { _vec = vec; }
 
-  public NewChunk convertEnum2Str(ValueString[] emap) {
+  public NewChunk convertEnum2Str(BufferedString[] emap) {
     NewChunk strChunk = new NewChunk(_vec, _cidx);
     int j = 0, l = _len;
     for( int i = 0; i < l; ++i ) {
@@ -152,8 +149,8 @@ public class NewChunk extends Chunk {
           // Find next not-NA value (_is[idx] != -1)
           while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
           int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]-sidx : _sslen - sidx;
-          // null-ValueString represents NA value
-          ValueString vstr = sidx == -1 ? null : new ValueString().set(_ss, sidx, slen);
+          // null-BufferedString represents NA value
+          BufferedString vstr = sidx == -1 ? null : new BufferedString().set(_ss, sidx, slen);
           c.addStr(vstr);
         } else
           c.addNum(_ds[_lId]);
@@ -297,7 +294,7 @@ public class NewChunk extends Chunk {
     _ss[_sslen++] = (byte)0; // for trailing 0;
   }
 
-  private void append_ss(ValueString str) {
+  private void append_ss(BufferedString str) {
     int strlen = str.length();
     int off = str.getOffset();
     byte b[] = str.getBuffer();
@@ -314,7 +311,7 @@ public class NewChunk extends Chunk {
   }
 
   // Append a String, stored in _ss & _is
-  public void addStr(ValueString str) {
+  public void addStr(BufferedString str) {
     if(_id == null || str != null) {
       if(_is == null || sparseLen() >= _is.length) {
         append2slowstr();
@@ -338,12 +335,12 @@ public class NewChunk extends Chunk {
 
   public void addStr(Chunk c, long row) {
     if( c.isNA_abs(row) ) addNA();
-    else addStr(c.atStr_abs(new ValueString(), row));
+    else addStr(c.atStr_abs(new BufferedString(), row));
   }
 
   public void addStr(Chunk c, int row) {
     if( c.isNA(row) ) addNA();
-    else addStr(c.atStr(new ValueString(), row));
+    else addStr(c.atStr(new BufferedString(), row));
   }
 
   // Append a UUID, stored in _ls & _ds
@@ -1217,7 +1214,7 @@ public class NewChunk extends Chunk {
     }
     return isNA2(i);
   }
-  @Override public ValueString atStr_impl( ValueString vstr, int i ) {
+  @Override public BufferedString atStr_impl( BufferedString vstr, int i ) {
     if( sparseLen() != _len ) {
       int idx = Arrays.binarySearch(_id,0,sparseLen(),i);
       if(idx >= 0) i = idx;

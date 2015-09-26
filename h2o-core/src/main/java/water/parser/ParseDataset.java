@@ -324,11 +324,11 @@ public final class ParseDataset extends Job<Frame> {
           if (parseCatMaps[colIdx].size() != 0) {
             _nodeOrdMaps[catColIdx] = MemoryManager.malloc4(parseCatMaps[colIdx].maxId() + 1);
             Arrays.fill(_nodeOrdMaps[catColIdx], -1);
-            //Bulk String->ValueString conversion is slightly faster, but consumes memory
-            final ValueString[] unifiedDomain = ValueString.toValueString(_fr.vec(colIdx).domain());
+            //Bulk String->BufferedString conversion is slightly faster, but consumes memory
+            final BufferedString[] unifiedDomain = BufferedString.toValueString(_fr.vec(colIdx).domain());
             //final String[] unifiedDomain = _fr.vec(colIdx).domain();
             for (int i = 0; i < unifiedDomain.length; i++) {
-              //final ValueString cat = new ValueString(unifiedDomain[i]);
+              //final BufferedString cat = new BufferedString(unifiedDomain[i]);
               if (parseCatMaps[colIdx].containsKey(unifiedDomain[i])) {
                 _nodeOrdMaps[catColIdx][parseCatMaps[colIdx].getTokenId(unifiedDomain[i])] = i;
               }
@@ -404,7 +404,7 @@ public final class ParseDataset extends Job<Frame> {
     public void setupLocal() {
       if (!MultiFileParseTask._enums.containsKey(_k)) return;
       _packedDomains = new byte[_catColIdxs.length][];
-      final ValueString[][] _perColDomains = new ValueString[_catColIdxs.length][];
+      final BufferedString[][] _perColDomains = new BufferedString[_catColIdxs.length][];
       final Categorical[] _colCats = MultiFileParseTask._enums.get(_k);
       int i = 0;
       for (int col : _catColIdxs) {
@@ -434,8 +434,8 @@ public final class ParseDataset extends Job<Frame> {
               final int tLen = UnsafeUtils.get4(thisDom, 0), oLen = UnsafeUtils.get4(otherDom, 0);
               int tDomLen = UnsafeUtils.get4(thisDom, 4);
               int oDomLen = UnsafeUtils.get4(otherDom, 4);
-              ValueString tCat = new ValueString(thisDom, 8, tDomLen);
-              ValueString oCat = new ValueString(otherDom, 8, oDomLen);
+              BufferedString tCat = new BufferedString(thisDom, 8, tDomLen);
+              BufferedString oCat = new BufferedString(otherDom, 8, oDomLen);
               int ti = 0, oi = 0, tbi = 8, obi = 8, mbi = 4, mergeLen = 0;
               byte[] mergedDom = new byte[thisDom.length + otherDom.length];
               // merge
@@ -495,14 +495,14 @@ public final class ParseDataset extends Job<Frame> {
       }
     }
 
-    private byte[] packDomain(ValueString[] domain) {
+    private byte[] packDomain(BufferedString[] domain) {
       int totStrLen =0;
-      for(ValueString dom : domain)
+      for(BufferedString dom : domain)
         totStrLen += dom.length();
       final byte[] packedDom = MemoryManager.malloc1(4 + (domain.length << 2) + totStrLen, false);
       UnsafeUtils.set4(packedDom, 0, domain.length); //Store domain size
       int i = 4;
-      for(ValueString dom : domain) {
+      for(BufferedString dom : domain) {
         UnsafeUtils.set4(packedDom, i, dom.length()); //Store str len
         i += 4;
         byte[] buf = dom.getBuffer();

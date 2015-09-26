@@ -97,7 +97,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         _data[_nlines][colIdx] = "NA";
     }
   }
-  @Override public void addStrCol(int colIdx, ValueString str) {
+  @Override public void addStrCol(int colIdx, BufferedString str) {
     if(colIdx < _ncols) {
       // Check for time
       if (ParseTime.isTime(str)) {

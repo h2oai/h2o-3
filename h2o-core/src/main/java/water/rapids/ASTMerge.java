@@ -2,7 +2,7 @@ package water.rapids;
 
 import water.*;
 import water.fvec.*;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.IcedHashMap;
 import java.util.Arrays;
 
@@ -233,7 +233,7 @@ public class ASTMerge extends ASTPrim {
       else if( c.hasFloat() )           nc.addNum(c.atd(row));
       else                              nc.addNum(c.at8(row),0);
     }
-    protected static void addElem(NewChunk nc, Vec v, long absRow, ValueString vstr) {
+    protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString vstr) {
       switch( v.get_type() ) {
       case Vec.T_NUM : nc.addNum(v.at(absRow)); break;
       case Vec.T_ENUM:
@@ -258,7 +258,7 @@ public class ASTMerge extends ASTPrim {
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
       assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
-      water.parser.ValueString vstr = new water.parser.ValueString(); // Recycled value string
+      BufferedString vstr = new BufferedString(); // Recycled value string
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
         Row hashed = rows.getk(row.fill(chks,null,i));
@@ -288,10 +288,10 @@ public class ASTMerge extends ASTPrim {
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
       assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
-      water.parser.ValueString vstr = new water.parser.ValueString(); // Recycled value string
+      BufferedString vstr = new BufferedString(); // Recycled value string
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
-        Row hashed = rows.getk(row.fill(chks,null,i));
+        Row hashed = rows.getk(row.fill(chks, null, i));
         if( hashed == null ) {    // no rows, fill in chks, and pad NAs as needed...
           if( _allLeft ) {        // pad NAs to the right...
             int c=0;
@@ -304,7 +304,7 @@ public class ASTMerge extends ASTPrim {
         }
       }
     }
-    void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, ValueString vstr) {
+    void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, BufferedString vstr) {
       int c=0;
       for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
       for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - (chks.length + _ncols)],absRow,vstr);

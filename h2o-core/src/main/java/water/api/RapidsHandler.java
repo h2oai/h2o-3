@@ -35,7 +35,7 @@ class RapidsHandler extends Handler {
         //  double d=Double.NaN;
         //  if( fr.numCols() == 1 && fr.numRows() == 1 ) {
         //    if (fr.anyVec().isNumeric())     d = fr.anyVec().at(0);
-        //    else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new ValueString(), 0).toString();
+        //    else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new BufferedString(), 0).toString();
         //    else if( fr.anyVec().isEnum() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
         //    fr.delete();
         //    return s!=null ? new RapidsStringV3(s) : new RapidsScalarV3(d);

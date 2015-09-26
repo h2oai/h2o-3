@@ -6,7 +6,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import java.util.Arrays;
@@ -67,7 +67,7 @@ abstract class ASTBinOp extends ASTPrim {
 
   /** Override to express a basic math primitive */
   abstract double op( double l, double r );
-  double str_op( ValueString l, ValueString r ) { throw H2O.fail(); }
+  double str_op( BufferedString l, BufferedString r ) { throw H2O.fail(); }
 
   /** Auto-widen the scalar to every element of the frame */
   private ValFrame scalar_op_frame( final double d, Frame fr ) {
@@ -116,14 +116,14 @@ abstract class ASTBinOp extends ASTPrim {
   private ValFrame frame_op_scalar( Frame fr, final String str ) {
     Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
-          ValueString vstr = new ValueString();
+          BufferedString vstr = new BufferedString();
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             Vec vec = chk.vec();
             // String Vectors: apply str_op as ValueStrings to all elements
             if( vec.isString() ) {
-              final ValueString conStr = new ValueString(str);
+              final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(chk.atStr(vstr,i),conStr));
             } else if( vec.isEnum() ) {
@@ -153,14 +153,14 @@ abstract class ASTBinOp extends ASTPrim {
   private ValFrame scalar_op_frame( final String str, Frame fr ) {
     Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
-          ValueString vstr = new ValueString();
+          BufferedString vstr = new BufferedString();
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             Vec vec = chk.vec();
             // String Vectors: apply str_op as ValueStrings to all elements
             if( vec.isString() ) {
-              final ValueString conStr = new ValueString(str);
+              final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(conStr,chk.atStr(vstr,i)));
             } else if( vec.isEnum() ) {
@@ -276,7 +276,7 @@ class ASTLE   extends ASTBinOp { public String str() { return "<="; } double op(
 class ASTLT   extends ASTBinOp { public String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
 
 class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
-  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); } 
+  double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); }
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
@@ -295,7 +295,7 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
 }
 
 class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
-  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } 
+  double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); }
   @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
 }
 

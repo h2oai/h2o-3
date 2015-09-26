@@ -21,7 +21,7 @@ class CsvParser extends Parser {
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
-    ValueString str = new ValueString();
+    BufferedString str = new BufferedString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
     int offset  = din.getChunkDataStart(cidx); // General cursor into the giant array of bytes
@@ -641,7 +641,7 @@ MAIN_LOOP:
           if (NumberUtils.isNumber(data[0][0])) {
             ctypes[0] = Vec.T_NUM;
           } else { // non-numeric
-            ValueString str = new ValueString(data[0][0]);
+            BufferedString str = new BufferedString(data[0][0]);
             if (ParseTime.isTime(str))
               ctypes[0] = Vec.T_TIME;
             else if (ParseUUID.isUUID(str))

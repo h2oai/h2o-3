@@ -6,7 +6,7 @@ import water.api.KeyV3.FrameKeyV3;
 import water.api.KeyV3.VecKeyV3;
 import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.*;
 
 /**
@@ -177,7 +177,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
         data = null;
       } else if ( vec.isString() ) {
         string_data = new String[len];
-        ValueString vstr = new ValueString();
+        BufferedString vstr = new BufferedString();
         for (int i = 0; i < len; i++)
           string_data[i] = vec.isNA(off + i) ? null : vec.atStr(vstr,off + i).toString();
         data = null;

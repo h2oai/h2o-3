@@ -671,7 +671,7 @@ public class ParserTestARFF extends TestUtil {
     Assert.assertTrue(fr.anyVec().isString());
     Assert.assertFalse(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isInt());
-    ValueString vs = new ValueString();
+    BufferedString vs = new BufferedString();
     Assert.assertTrue(fr.anyVec().atStr(vs, 3).toString().equals("4"));
     Assert.assertTrue(fr.anyVec().atStr(vs, 4).toString().equals("5234234234"));
     Assert.assertTrue(fr.anyVec().atStr(vs, 5).toString().equals("6"));
@@ -779,7 +779,7 @@ public class ParserTestARFF extends TestUtil {
     Assert.assertTrue(fr.anyVec().isString());
     Assert.assertFalse(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isInt());
-    ValueString vs = new ValueString();
+    BufferedString vs = new BufferedString();
     Assert.assertTrue(fr.anyVec().atStr(vs, 0).toString().equals("0"));
     Assert.assertTrue(fr.anyVec().atStr(vs, 1).toString().equals("1.324e-13"));
     Assert.assertTrue(fr.anyVec().atStr(vs, 2).toString().equals("-2"));

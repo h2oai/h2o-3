@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 /**
  * Methods to access frame internals.
@@ -29,7 +29,7 @@ public class FrameTestUtil {
 
   public static NewChunk createNC(String fname, String[] data, int cidx, int len) {
     NewChunk[] nchunks = Frame.createNewChunks(fname, cidx);
-    ValueString vs = new ValueString();
+    BufferedString vs = new BufferedString();
     for (int i=0; i<len; i++) {
       nchunks[0].addStr(data[i] != null ? vs.setTo(data[i]) : null);
     }
@@ -69,7 +69,7 @@ public class FrameTestUtil {
 
   public static void assertValues(Vec v, String[] expValues) {
     Assert.assertEquals("Number of rows", expValues.length, v.length());
-    ValueString vs = new ValueString();
+    BufferedString vs = new BufferedString();
     for (int i = 0; i < v.length(); i++) {
       if (v.isNA(i)) Assert.assertEquals("NAs should match", null, expValues[i]);
       else Assert.assertEquals("Values should match", expValues[i], v.atStr(vs, i).toString());
@@ -78,7 +78,7 @@ public class FrameTestUtil {
 
   public static String[] collectS(Vec v) {
     String[] res = new String[(int) v.length()];
-    ValueString vs = new ValueString();
+    BufferedString vs = new BufferedString();
       for (int i = 0; i < v.length(); i++)
         res[i] = v.isNA(i) ? null : v.atStr(vs, i).toString();
     return res;

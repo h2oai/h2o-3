@@ -8,9 +8,9 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.parser.ValueString;
 import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
@@ -323,7 +323,7 @@ public class TestUtil extends Iced {
             }
           } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
             if (!(c0.isNA(rows) && c1.isNA(rows))) {
-              ValueString v0 = new ValueString(), v1 = new ValueString();
+              BufferedString v0 = new BufferedString(), v1 = new BufferedString();
               c0.atStr(v0, rows); c1.atStr(v1, rows);
               if (v0.compareTo(v1) != 0) {
                 _unequal = true;

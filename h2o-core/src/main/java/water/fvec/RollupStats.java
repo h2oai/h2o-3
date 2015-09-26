@@ -8,7 +8,7 @@ import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Categorical;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -77,7 +77,7 @@ class RollupStats extends Iced {
     Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
-    ValueString vs = new ValueString();
+    BufferedString vs = new BufferedString();
     if (isString) _isInt = false;
     // Checksum support
     long checksum = 0;

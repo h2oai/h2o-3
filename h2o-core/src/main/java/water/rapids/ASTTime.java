@@ -10,7 +10,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.ParseTime;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 import java.util.Set;
 
@@ -133,7 +133,7 @@ class ASTasDate extends ASTPrim {
       @Override public void map( Chunk c, NewChunk nc ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
         String date;
-        ValueString vStr = new ValueString();
+        BufferedString vStr = new BufferedString();
         for( int i=0; i<c._len; ++i ) {
           if( !c.isNA(i) ) {
             if( isStr ) date = c.atStr(vStr, i).toString();
