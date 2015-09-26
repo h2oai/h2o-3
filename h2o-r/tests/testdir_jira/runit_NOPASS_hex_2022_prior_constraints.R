@@ -121,10 +121,10 @@ test.Priors.BetaConstraints <- function() {
     Log.info("Check gradient of beta constraints with priors or beta given...")
     threshold = 1E-1
     print(as.numeric(gradient1$beta_given)[-23])
-    all(as.numeric(gradient1$beta_given)[-23] < threshold)
+    expect_true(all(as.numeric(gradient1$beta_given)[-23] < threshold))
 
     Log.info("Check gradient of beta constraints without priors or beta given...")
-    all(as.numeric(gradient2$beta_given)[-23] < threshold)
+    expect_false(all(as.numeric(gradient2$beta_given)[-23] < threshold))
     print(as.numeric(gradient2$beta_given)[-23])
     testEnd()
   }
