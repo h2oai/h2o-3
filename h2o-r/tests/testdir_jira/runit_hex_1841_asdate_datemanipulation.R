@@ -33,6 +33,7 @@ print_diff <- function(r, h2o) {
 #
 datetest <- function(){
   Log.info('Test 1')
+  print(h2o.getTimezone())
   Log.info('uploading date testing dataset')
   # Data file is 10 columns of dates, each column in a different format
   hdf <- h2o.importFile(normalizePath(locate('smalldata/jira/v-11.csv')))
@@ -120,6 +121,7 @@ datetest <- function(){
   
   
   Log.info('Test 2')
+  print(h2o.getTimezone())
   ## Col 1-10 test all different parse options, rows test some corner cases
   ## Rows 1,2 test 1969/2068 inference
   formats = c("%c %z", "%a %d %m %y %H:%M:%S %z", "%A %m %d %Y %k", "%b %d %C %y %I %p", "%e %B, %Y %l %p", "%h-%e, %y %r", "%D %H_%M", "%F %H", "%H:%M %j %Y", "%d_%m_%y %T", "%d%m%y %R")
@@ -150,6 +152,7 @@ datetest <- function(){
     expect_that(lmillis[,1], equals(ldf[[i]]))
   }
   
+  print(h2o.getTimezone())
   testEnd()
 }
 
