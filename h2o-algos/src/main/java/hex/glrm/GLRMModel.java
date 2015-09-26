@@ -29,7 +29,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _period = 1;                       // Length of the period when _loss = Periodic
     public Loss[] _loss_by_col;                // Override default loss function for specific columns
     public int[] _loss_by_col_idx;
-    public boolean _offset = false;  // Include offset term in loss function? (Appends indicator column to end of X and constant row to bottom of Y)
+    public boolean _offset = false;  // Include offset term in loss function?
     public boolean _scale = false;   // Scale loss function by generalized column variance?
 
     // Regularization functions
@@ -108,9 +108,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // L(u,a): Loss function
-    public final double loss(double u, double a) {
-      return loss(u, a, _loss, _period);
-    }
+    public final double loss(double u, double a) { return loss(u, a, _loss, _period); }
     public static double loss(double u, double a, Loss loss, int period) {
       assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
       switch(loss) {
@@ -137,9 +135,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \grad_u L(u,a): Gradient of loss function with respect to u
-    public final double lgrad(double u, double a) {
-      return lgrad(u, a, _loss);
-    }
+    public final double lgrad(double u, double a) { return lgrad(u, a, _loss); }
     public final double lgrad(double u, double a, Loss loss) {
       assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
       switch(loss) {
@@ -166,22 +162,22 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // L(u,a): Multidimensional loss function
-    public final double mloss(double[] u, int a) {
-      return mloss(u, a, _multi_loss);
-    }
-    public static double mloss(double[] u, int a, Loss multi_loss) {
+    public final double mloss(double[] u, int a) { return mloss(u, a, _multi_loss, null); }
+    public static double mloss(double[] u, int a, Loss multi_loss) { return mloss(u, a, multi_loss, null); }
+    public static double mloss(double[] u, int a, Loss multi_loss, double[] offset) {
       assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
       if(a < 0 || a > u.length-1)
         throw new IllegalArgumentException("Index must be between 0 and " + String.valueOf(u.length-1));
 
       double sum = 0;
+      if(null == offset) offset = new double[u.length];
       switch(multi_loss) {
         case Categorical:
-          for (int i = 0; i < u.length; i++) sum += Math.max(1 + u[i], 0);
-          sum += Math.max(1 - u[a], 0) - Math.max(1 + u[a], 0);
+          for (int i = 0; i < u.length; i++) sum += Math.max(1 + u[i] + offset[i], 0);
+          sum += Math.max(1 - u[a] - offset[a], 0) - Math.max(1 + u[a] + offset[a], 0);
           return sum;
         case Ordinal:
-          for (int i = 0; i < u.length-1; i++) sum += Math.max(a>i ? 1-u[i]:1, 0);
+          for (int i = 0; i < u.length-1; i++) sum += Math.max(a>i ? 1-u[i]-offset[i]:1, 0);
           return sum;
         default:
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
@@ -189,22 +185,22 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \grad_u L(u,a): Gradient of multidimensional loss function with respect to u
-    public final double[] mlgrad(double[] u, int a) {
-      return mlgrad(u, a, _multi_loss);
-    }
-    public static double[] mlgrad(double[] u, int a, Loss multi_loss) {
+    public final double[] mlgrad(double[] u, int a) { return mlgrad(u, a, _multi_loss, null); }
+    public static double[] mlgrad(double[] u, int a, Loss multi_loss) { return mlgrad(u, a, multi_loss, null); }
+    public static double[] mlgrad(double[] u, int a, Loss multi_loss, double[] offset) {
       assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
       if(a < 0 || a > u.length-1)
         throw new IllegalArgumentException("Index must be between 0 and " + String.valueOf(u.length-1));
 
       double[] grad = new double[u.length];
+      if(null == offset) offset = new double[u.length];
       switch(multi_loss) {
         case Categorical:
-          for (int i = 0; i < u.length; i++) grad[i] = (1+u[i] > 0) ? 1:0;
-          grad[a] = (1-u[a] > 0) ? -1:0;
+          for (int i = 0; i < u.length; i++) grad[i] = (1+u[i]+offset[i] > 0) ? 1:0;
+          grad[a] = (1-u[a]-offset[a] > 0) ? -1:0;
           return grad;
         case Ordinal:
-          for (int i = 0; i < u.length-1; i++) grad[i] = (a>i && 1-u[i] > 0) ? -1:0;
+          for (int i = 0; i < u.length-1; i++) grad[i] = (a>i && 1-u[i]-offset[i] > 0) ? -1:0;
           return grad;
         default:
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
@@ -212,55 +208,50 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // r_i(x_i), r_j(y_j): Regularization function for single row x_i or column y_j
-    public final double regularize_x(double[] u) {
-      if(_offset && (u == null || !MathUtils.equalsWithinOneSmallUlp(u[u.length-1], 1)))
-        return Double.POSITIVE_INFINITY;
-      return regularize(u, _regularization_x);
-    }
+    public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
     public final double regularize(double[] u, Regularizer regularization) {
       if(u == null) return 0;
-      int end = u.length - (_offset ? 1 : 0);
       double ureg = 0;
 
       switch(regularization) {
         case None:
           return 0;
         case Quadratic:
-          for(int i = 0; i < end; i++)
+          for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
           return ureg;
         case L2:
-          for(int i = 0; i < end; i++)
+          for(int i = 0; i < u.length; i++)
             ureg += u[i] * u[i];
           return Math.sqrt(ureg);
         case L1:
-          for(int i = 0; i < end; i++)
+          for(int i = 0; i < u.length; i++)
             ureg += Math.abs(u[i]);
           return ureg;
         case NonNegative:
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
           }
           return 0;
         case OneSparse:
           int card = 0;
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else if(u[i] > 0) card++;
           }
           return card == 1 ? 0 : Double.POSITIVE_INFINITY;
         case UnitOneSparse:
           int ones = 0, zeros = 0;
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] == 1) ones++;
             else if(u[i] == 0) zeros++;
             else return Double.POSITIVE_INFINITY;
           }
-          return ones == 1 && zeros == end-1 ? 0 : Double.POSITIVE_INFINITY;
+          return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
         case Simplex:
           double sum = 0;
-          for(int i = 0; i < end; i++) {
+          for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
             else sum += u[i];
           }
@@ -272,14 +263,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // \sum_i r_i(x_i), \sum_j r_j(y_j): Sum of regularization function for all entries of X or Y
     public final double regularize_x(double[][] u) {
-      if(_offset && u == null) return Double.POSITIVE_INFINITY;
       if(_regularization_x == Regularizer.None) return 0;
 
       double ureg = 0;
       int last = u[0].length;
       for(int i = 0; i < u.length; i++) {
-        if(_offset && !MathUtils.equalsWithinOneSmallUlp(u[i][last-1], 1))
-          return Double.POSITIVE_INFINITY;
         ureg += regularize(u[i], _regularization_x);
         if(Double.isInfinite(ureg)) return ureg;
       }
@@ -297,55 +285,46 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u
-    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) {
-      double[] v = rproxgrad(u, alpha, _gamma_x, _regularization_x, rand);
-      if(_offset) v[v.length - 1] = 1;    // Last column of X should be all ones
-      return v;
-    }
-    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) {
-      double[] v = rproxgrad(u, alpha, _gamma_y, _regularization_y, rand);
-      if(_offset) v[v.length - 1] = u[u.length - 1];    // Last row of Y is unpenalized
-      return v;
-    }
+    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_x, _regularization_x, rand); }
+    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) { return rproxgrad(u, alpha, _gamma_y, _regularization_y, rand); }
     public final double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
       if(u == null || alpha == 0 || gamma == 0) return u;
-      int last = u.length - (_offset ? 1 : 0);
       double[] v = new double[u.length];
 
       switch(regularization) {
         case None:
-          return (_offset ? u.clone() : u);
+          return u;
         case Quadratic:
-          for(int i = 0; i < last; i++)
+          for(int i = 0; i < u.length; i++)
             v[i] = u[i]/(1+2*alpha*gamma);
           return v;
         case L2:
           // Proof uses Moreau decomposition; see section 6.5.1 of Parikh and Boyd https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf
-          double weight = 1 - alpha*gamma/ArrayUtils.l2norm(u,_offset);
+          double weight = 1 - alpha*gamma/ArrayUtils.l2norm(u);
           if(weight < 0) return v;   // Zero vector
-          for(int i = 0; i < last; i++)
+          for(int i = 0; i < u.length; i++)
             v[i] = weight * u[i];
           return v;
         case L1:
-          for(int i = 0; i < last; i++)
+          for(int i = 0; i < u.length; i++)
             v[i] = Math.max(u[i]-alpha*gamma,0) + Math.min(u[i]+alpha*gamma,0);
           return v;
         case NonNegative:
-          for(int i = 0; i < last; i++)
+          for(int i = 0; i < u.length; i++)
             v[i] = Math.max(u[i],0);
           return v;
         case OneSparse:
-          int idx = ArrayUtils.maxIndex(u, rand, _offset);
+          int idx = ArrayUtils.maxIndex(u, rand);
           v[idx] = u[idx] > 0 ? u[idx] : 1e-6;
           return v;
         case UnitOneSparse:
-          idx = ArrayUtils.maxIndex(u, rand, _offset);
+          idx = ArrayUtils.maxIndex(u, rand);
           v[idx] = 1;
           return v;
         case Simplex:
           // Proximal gradient algorithm by Chen and Ye in http://arxiv.org/pdf/1101.6081v2.pdf
           // 1) Sort input vector u in ascending order: u[1] <= ... <= u[n]
-          int n = u.length - (_offset ? 1 : 0);
+          int n = u.length;
           int[] idxs = new int[n];
           for(int i = 0; i < n; i++) idxs[i] = i;
           ArrayUtils.sort(idxs, u);
@@ -386,7 +365,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Quadratic:
         case L2:
         case L1:
-          return _offset ? set_last(u, 1) : u;
+          return u;
         // Proximal operator of indicator function for a set C is (Euclidean) projection onto C
         case NonNegative:
         case OneSparse:
@@ -394,7 +373,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           return rproxgrad_x(u, 1, rand);
         case Simplex:
           double reg = regularize(u, _regularization_x);   // Check if inside simplex before projecting since algo is complicated
-          if (reg == 0) return _offset ? set_last(u, 1) : u;
+          if (reg == 0) return u;
           return rproxgrad_x(u, 1, rand);
         default:
           throw new RuntimeException("Unknown regularization function " + _regularization_x);
@@ -424,18 +403,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // Clone array and set last entry to specified value
-    private static double[] set_last(double[] u, double last) {
-      if(u == null) return null;
-      double[] v = u.clone();
-      v[v.length-1] = last;
-      return v;
-    }
-
     // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for real numeric values
-    public final double impute(double u) {
-      return impute(u, _loss);
-    }
+    public final double impute(double u) { return impute(u, _loss); }
     public static double impute(double u, Loss loss) {
       assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
       switch(loss) {
@@ -456,17 +425,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for categorical values {0,1,2,...}
     // TODO: Is there a faster way to find the loss minimizer?
-    public final int mimpute(double[] u) {
-      return mimpute(u, _multi_loss);
-    }
-    public static int mimpute(double[] u, Loss multi_loss) {
+    public final int mimpute(double[] u) { return mimpute(u, _multi_loss, null); }
+    public static int mimpute(double[] u, Loss multi_loss) { return mimpute(u, multi_loss, null); }
+    public static int mimpute(double[] u, Loss multi_loss, double[] offset) {
       assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
+
+      if(null == offset) offset = new double[u.length];
       switch(multi_loss) {
         case Categorical:
         case Ordinal:
           double[] cand = new double[u.length];
           for (int a = 0; a < cand.length; a++)
-            cand[a] = mloss(u, a, multi_loss);
+            cand[a] = mloss(u, a, multi_loss, offset);
           return ArrayUtils.minIndex(cand);
         default:
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
@@ -474,11 +444,17 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
-    public final double[] offset(DataInfo dinfo, Loss[] losses) {
-      if(dinfo._nums == 0) return new double[0];
-      double[] mu = new double[dinfo._nums];
-      for(int i = dinfo._cats; i < dinfo._adaptedFrame.numCols(); i++)
-        mu[i] = offset(dinfo._adaptedFrame.vec(i), losses[i]);
+    public final double[][] offset(DataInfo dinfo, Loss[] losses) {
+      Frame fr = dinfo._adaptedFrame;
+      double[][] mu = new double[fr.numCols()][];
+
+      // Categorical columns
+      for(int i = 0; i < dinfo._cats; i++)
+        mu[i] = moffset(fr.vec(i), losses[i]);
+
+      // Numeric columns
+      for(int i = dinfo._cats; i < fr.numCols(); i++)
+        mu[i] = new double[] { offset(fr.vec(i), losses[i]) };
       return mu;
     }
     public final double offset(Vec v, Loss loss) {
@@ -501,15 +477,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           throw new RuntimeException("Unknown loss function " + loss);
       }
     }
-
-    // TODO: Combine single-dimensional and multi-dimensional offsets into single 2-D array?
-    public final double[][] moffset(DataInfo dinfo, Loss[] losses) {
-      if(dinfo._cats == 0) return new double[0][];
-      double[][] mu = new double[dinfo._cats][];
-      for(int i = 0; i < dinfo._cats; i++)
-        mu[i] = moffset(dinfo._adaptedFrame.vec(i), losses[i]);
-      return mu;
-    }
     public final double[] moffset(Vec v, Loss multi_loss) {
       switch(multi_loss) {
         case Categorical:
@@ -523,30 +490,26 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
     // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
     public final double[] scale(DataInfo dinfo, Loss[] losses) {
-      double[] offsetNum = offset(dinfo, losses);
-      double[][] offsetCat = moffset(dinfo, losses);
+      double[][] offset = offset(dinfo, losses);
 
-      LossScaleTsk lscale = new LossScaleTsk(dinfo._cats, losses, _period, offsetNum, offsetCat);
-      lscale.doAll(dinfo._adaptedFrame);
-      return lscale._scale;
+      LossScaleCalc lstsk = new LossScaleCalc(dinfo._cats, losses, _period, offset);
+      lstsk.doAll(dinfo._adaptedFrame);
+      return lstsk._scale;
     }
-
-    private static class LossScaleTsk extends MRTask<LossScaleTsk> {
+    private static class LossScaleCalc extends MRTask<LossScaleCalc> {
       final int _ncats;
       final Loss[] _lossFunc;
       final int _period;
-      final double[] _offsetNum;
-      final double[][] _offsetCat;
+      final double[][] _offset;
 
       long[] _count;
       double[] _scale;
 
-      LossScaleTsk(int ncats, Loss[] lossFunc, int period, double[] offsetNum, double[][] offsetCat) {
+      LossScaleCalc(int ncats, Loss[] lossFunc, int period, double[][] offset) {
         _ncats = ncats;
         _lossFunc = lossFunc;
         _period = period;
-        _offsetNum = offsetNum;
-        _offsetCat = offsetCat;
+        _offset = offset;
       }
 
       @Override public void map(Chunk[] cs) {
@@ -557,20 +520,20 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           for(int col = 0; col < _ncats; col++) {
             double a = cs[col].atd(row);
             if(Double.isNaN(a)) continue;
-            _scale[col] += mloss(_offsetCat[col], (int)a, _lossFunc[col]);
+            _scale[col] += mloss(_offset[col], (int)a, _lossFunc[col]);
             _count[col]++;
           }
 
           for(int col = _ncats; col < cs.length; col++) {
             double a = cs[col].atd(row);
             if(Double.isNaN(a)) continue;
-            _scale[col] += loss(_offsetNum[col-_ncats], a, _lossFunc[col], _period);
+            _scale[col] += loss(_offset[col][0], a, _lossFunc[col], _period);
             _count[col]++;
           }
         }
       }
 
-      @Override public void reduce(LossScaleTsk other) {
+      @Override public void reduce(LossScaleCalc other) {
         ArrayUtils.add(_scale, other._scale);
         ArrayUtils.add(_count, other._count);
       }
@@ -608,7 +571,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Frame key of X matrix
     public Key<Frame> _loading_key;
-    public int _ncolX;    // Number of columns in X (equal to k if no offset, k+1 otherwise)
+    public int _ncolX;    // Number of columns in X (k)
 
     // Number of categorical and numeric columns
     public int _ncats;
@@ -632,7 +595,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Loss function for every column in adapted training frame
     public GLRMParameters.Loss[] _lossFunc;
-    public double[] _lossOffset;  // Generalized mean of each column
+    public double[][] _lossOffset;  // Generalized mean of each column (multi-dimensional for categoricals)
     public double[] _lossScale;   // One over generalized variance of each column
 
     // Training time
@@ -729,19 +692,24 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       return preds;
     }
 
+    // TODO: Add parameter to select imputation including offset (if include offset, impute original train, else impute de-meaned train)
     private double[] impute_data(double[] tmp, double[] preds) {
       assert preds.length == _output._nnums + _output._ncats;
 
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {
         double[] xyblock = _output._archetypes_raw.lmulCatBlock(tmp,d);
-        preds[_output._permutation[d]] = _parms.mimpute(xyblock, _output._lossFunc[d]);
+        if(_parms._offset)
+          preds[_output._permutation[d]] = _parms.mimpute(xyblock, _output._lossFunc[d], _output._lossOffset[d]);
+        else
+          preds[_output._permutation[d]] = _parms.mimpute(xyblock, _output._lossFunc[d]);
       }
 
       // Numeric columns
       for (int d = _output._ncats; d < preds.length; d++) {
         int ds = d - _output._ncats;
         double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
+        if(_parms._offset) xy += _output._lossOffset[d][0];
         preds[_output._permutation[d]] = _parms.impute(xy, _output._lossFunc[d]);
       }
       return preds;

@@ -214,7 +214,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
     }
 
-    _ncolX = _parms._k + (_parms._offset ? 1 : 0);
+    _ncolX = _parms._k;
     _ncolA = _train.numCols();
   }
 
@@ -249,25 +249,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // More efficient implementation assuming sdata cols aligned with adaptedFrame
-  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) { return expandCats(sdata, dinfo, null); }
-  public static double[][] expandCats(double[][] sdata, DataInfo dinfo, double[] offset) {
-    if(sdata == null || (dinfo._cats == 0 && null == offset)) return sdata;
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) {
+    if(sdata == null) return sdata;
     assert sdata[0].length == dinfo._adaptedFrame.numCols();
 
     // Column count for expanded matrix
     int catsexp = dinfo._catOffsets[dinfo._catOffsets.length-1];
-    double[][] cexp = new double[sdata.length + (null != offset ? 1:0)][catsexp + dinfo._nums];
+    double[][] cexp = new double[sdata.length][catsexp + dinfo._nums];
 
     for(int i = 0; i < sdata.length; i++)
       LinearAlgebraUtils.expandRow(sdata[i], dinfo, cexp[i], false);
-
-    if(null != offset) {   // Initialize offset for numeric cols
-      int exp_cnt = dinfo.numStart();
-      for(int col = dinfo._cats; col < dinfo._adaptedFrame.numCols(); col++) {
-        cexp[sdata.length][exp_cnt] = offset[col];
-        exp_cnt++;
-      }
-    }
     return cexp;
   }
 
@@ -276,7 +267,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     protected GLRMDriver() { super(true); } // bump driver priority
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt, double[] offset) {
+    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt) {
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
@@ -293,9 +284,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // Permute cluster columns to align with dinfo and expand out categoricals
           centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-          centers_exp = expandCats(centers, tinfo, offset);    // To include offset, append additional row to bottom of Y
+          centers_exp = expandCats(centers, tinfo);
         } else
-          centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);   // TODO: Set last row to offset values
+          centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
 
         if (null != _parms._user_x) {   // Set X = user-specified initial points
           Frame tmp = new Frame(dfrm);
@@ -310,10 +301,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
                   cs[_ncolA + i].set(row, x);
                   cs[_ncolA + _ncolX + i].set(row, x);
                 }
-                if(_parms._offset) {    // Last column of X is 1's when offset included
-                  cs[_ncolA + _ncolX - 1].set(row, 1);
-                  cs[_ncolA + 2*_ncolX - 1].set(row, 1);
-                }
               }
             }
           }.doAll(tmp);
@@ -325,7 +312,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
-        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);   // TODO: Set last row to offset values
+        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
         InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
         xtsk.doAll(dfrm);
 
@@ -510,7 +497,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Recover singular values and eigenvectors of XY
     public void recoverSVD(GLRMModel model, DataInfo xinfo) {
-      if(_parms._offset) throw H2O.unimpl();    // TODO: This breaks when offset X col and Y row included
       // NOTE: Gram computes X'X/n where n = nrow(A) = number of rows in training set
       GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
       Cholesky xxchol = regularizedCholesky(xgram._gram);
@@ -585,7 +571,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           model._output._lossFunc[i] = _lossFunc[tinfo._permutation[i]];
 
         // Calculate one over generalized column variance for appropriate scaling
-        if(_parms._offset) model._output._lossOffset = _parms.offset(tinfo, _lossFunc);
+        model._output._lossOffset = _parms._offset ? _parms.offset(tinfo, _lossFunc) : new double[_ncolA][];
         if(_parms._scale)
           model._output._lossScale = _parms.scale(tinfo, _lossFunc);
         else {
@@ -613,7 +599,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Use closed form solution for X if quadratic loss and regularization
         update(1, "Initializing X and Y matrices");   // One unit of work
-        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt, model._output._lossOffset);
+        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
@@ -621,7 +607,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Compute initial objective function
         update(1, "Computing initial objective function");   // One unit of work
         boolean regX = _parms._regularization_x != GLRMParameters.Regularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
-        ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossScale, model._output._lossFunc, weightId, regX);
+        ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossOffset, model._output._lossScale, model._output._lossFunc, weightId, regX);
         objtsk.doAll(dinfo._adaptedFrame);
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt._archetypes);
         model._output._archetypes_raw = yt;
@@ -637,16 +623,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // TODO: Should step be divided by number of original or expanded (with 0/1 categorical) cols?
           // 1) Update X matrix given fixed Y
-          UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossScale, model._output._lossFunc, weightId);
+          UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossOffset, model._output._lossScale, model._output._lossFunc, weightId);
           xtsk.doAll(dinfo._adaptedFrame);
           
           // 2) Update Y matrix given fixed X
-          UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossScale, model._output._lossFunc, weightId);
+          UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossOffset, model._output._lossScale, model._output._lossFunc, weightId);
           double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
           Archetypes ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
 
           // 3) Compute average change in objective function
-          objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossScale, model._output._lossFunc, weightId);
+          objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossOffset, model._output._lossScale, model._output._lossFunc, weightId);
           objtsk.doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * ytsk._yreg;
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
@@ -1055,6 +1041,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncats;         // Number of categorical cols in training frame
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final double[][] _lossOffset;
     final double[] _lossScale;
     final int _weightId;
 
@@ -1062,7 +1049,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double _loss;    // Loss evaluated on A - XY using new X (and current Y)
     double _xreg;    // Regularization evaluated on new X
 
-    UpdateX(GLRMParameters parms, Archetypes yt, double alpha, boolean update, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId) {
+    UpdateX(GLRMParameters parms, Archetypes yt, double alpha, boolean update, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[][] lossOffset, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId) {
       assert yt != null && yt.rank() == ncolX;
       _parms = parms;
       _yt = yt;
@@ -1078,6 +1065,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _weightId = weightId;
       _normSub = normSub;
       _normMul = normMul;
+      _lossOffset = lossOffset;
       _lossScale = lossScale;
     }
 
@@ -1117,7 +1105,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
 
           // Gradient wrt x_i is matrix product \grad L_{i,j}(x_i * Y_j, A_{i,j}) * Y_j'
-          double[] weight = _parms.mlgrad(xy, (int) a[j], _lossFunc[j]);
+          double[] weight = _parms.mlgrad(xy, (int) a[j], _lossFunc[j], _lossOffset[j]);
           double[][] ysub = _yt.getCatBlock(j);
           for(int k = 0; k < _ncolX; k++) {
             for(int c = 0; c < weight.length; c++)
@@ -1137,6 +1125,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xold(cs,k,_ncolA).atd(row) * _yt.getNum(js, k);
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
+          if(_parms._offset) xy += _lossOffset[j][0];
           double weight = cweight * _lossScale[j] * _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j]);
           for(int k = 0; k < _ncolX; k++)
             grad[k] += weight * _yt.getNum(js, k);
@@ -1161,7 +1150,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for(int j = 0; j < _ncats; j++) {
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double[] xy = ArrayUtils.multVecArr(xnew, _yt.getCatBlock(j));
-          _loss += _lossScale[j] * _parms.mloss(xy, (int) a[j], _lossFunc[j]);
+          _loss += _lossScale[j] * _parms.mloss(xy, (int) a[j], _lossFunc[j], _lossOffset[j]);
         }
 
         // Numeric columns
@@ -1169,6 +1158,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           int js = j - _ncats;
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double xy = _yt.lmulNumCol(xnew, js);
+          if(_parms._offset) xy += _lossOffset[j][0];
           _loss += _lossScale[j] * _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j], _parms._period);
         }
         _loss *= cweight;
@@ -1192,6 +1182,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncats;         // Number of categorical cols in training frame
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final double[][] _lossOffset;
     final double[] _lossScale;
     final int _weightId;
 
@@ -1199,7 +1190,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double[][] _ytnew;  // New Y matrix
     double _yreg;       // Regularization evaluated on new Y
 
-    UpdateY(GLRMParameters parms, Archetypes yt, double alpha, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId) {
+    UpdateY(GLRMParameters parms, Archetypes yt, double alpha, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[][] lossOffset, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId) {
       assert yt != null && yt.rank() == ncolX;
       _parms = parms;
       _lossFunc = lossFunc;
@@ -1216,6 +1207,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _weightId = weightId;
       _normSub = normSub;
       _normMul = normMul;
+      _lossOffset = lossOffset;
       _lossScale = lossScale;
     }
 
@@ -1243,7 +1235,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
 
           // Gradient for level p is x_i weighted by \grad_p L_{i,j}(x_i * Y_j, A_{i,j})
-          double[] weight = _parms.mlgrad(xy, (int)a, _lossFunc[j]);
+          double[] weight = _parms.mlgrad(xy, (int)a, _lossFunc[j], _lossOffset[j]);
           for(int level = 0; level < xy.length; level++) {
             for(int k = 0; k < _ncolX; k++)
               _ytnew[_ytold.getCatCidx(j, level)][k] += cweight * _lossScale[j] * weight[level] * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
@@ -1271,6 +1263,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold.getNum(js,k);
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
+          if(_parms._offset) xy += _lossOffset[j][0];
           double weight = cweight * _lossScale[j] * _parms.lgrad(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j]);
           for(int k = 0; k < _ncolX; k++)
             _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
@@ -1312,6 +1305,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     final int _ncats;         // Number of categorical cols in training frame
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final double[][] _lossOffset;
     final double[] _lossScale;
     final int _weightId;
     final boolean _regX;      // Should I calculate regularization of (old) X matrix?
@@ -1320,10 +1314,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double _loss;       // Loss evaluated on A - XY using new X (and current Y)
     double _xold_reg;   // Regularization evaluated on old X
 
-    ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId) {
-      this(parms, yt, ncolA, ncolX, ncats, normSub, normMul, lossScale, lossFunc, weightId, false);
+    ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[][] lossOffset, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId) {
+      this(parms, yt, ncolA, ncolX, ncats, normSub, normMul, lossOffset, lossScale, lossFunc, weightId, false);
     }
-    ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId, boolean regX) {
+    ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[][] lossOffset, double[] lossScale, GLRMParameters.Loss[] lossFunc, int weightId, boolean regX) {
       assert yt != null && yt.rank() == ncolX;
       assert ncats <= ncolA;
       _parms = parms;
@@ -1337,6 +1331,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _weightId = weightId;
       _normSub = normSub;
       _normMul = normMul;
+      _lossOffset = lossOffset;
       _lossScale = lossScale;
     }
 
@@ -1363,7 +1358,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
               xy[level] += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt.getCat(j, level, k);
             }
           }
-          _loss += _lossScale[j] * _parms.mloss(xy, (int)a, _lossFunc[j]);
+          _loss += _lossScale[j] * _parms.mloss(xy, (int)a, _lossFunc[j], _lossOffset[j]);    // TODO: Incorporate multi-dimensional offset xy + offset
         }
 
         // Numeric columns
@@ -1376,6 +1371,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           int js = j - _ncats;
           for(int k = 0; k < _ncolX; k++)
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _yt.getNum(js, k);
+          if(_parms._offset) xy += _lossOffset[j][0];
           _loss += _lossScale[j] * _parms.loss(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j], _parms._period);
         }
         _loss *= cweight;
@@ -1458,7 +1454,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // _chol.solve(xrow);
         Matrix tmp = _chol.solve(new Matrix(new double[][] {xrow}).transpose());
         xrow = tmp.getColumnPackedCopy();
-        if(_parms._offset) xrow[xrow.length-1] = 1;   // Last column of X is indicator (all ones)
 
         // 3) Save row of solved values into X (and copy W = X)
         int i = 0;
