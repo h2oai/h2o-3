@@ -20,7 +20,7 @@ class ASTStrSplit extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String split = asts[2].exec(env).getStr();
-    if (fr.numCols() != 1) throw new IllegalArgumentException("strsplit requires a single column.");
+    if (fr.numCols() != 1) throw new IllegalArgumentException("strsplit() requires a single column.");
     final String[]   old_domains = fr.anyVec().domain();
     final String[][] new_domains = newDomains(old_domains, split);
 
@@ -84,6 +84,14 @@ class ASTStrSplit extends ASTPrim {
   }
 }
 
+/**
+ * Accepts a frame with a single string column, and a substring to look for in the target.
+ * Returns a new integer column containing the countMatches result for each string in the
+ * target column.
+ *
+ * countMatches - Counts how many times the substring appears in the larger string.
+ * If either the target string or substring are empty (""), 0 is returned.
+ */
 class ASTCountMatches extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "pattern"}; }
   @Override int nargs() { return 1+2; } // (countmatches x pattern)
@@ -95,11 +103,12 @@ class ASTCountMatches extends ASTPrim {
       : new String[]{asts[2].exec(env).getStr()};
 
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("countmatches only takes a single column of data. " +
+      throw new IllegalArgumentException("countmatches() only takes a single column of data. " +
                                          "Got " + fr.numCols() + " columns.");
     Vec vec = fr.anyVec();  assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("countmatches requires a string column.  Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    Frame fr2 = new MRTask() {
+    if ( !vec.isString() ) throw new IllegalArgumentException("countmatches() requires a string" +
+        "column.  Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
+    Frame res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk) {
         if ( chk instanceof C0DChunk ) // all NAs
           for( int i = 0; i < chk.len(); i++)
@@ -118,19 +127,18 @@ class ASTCountMatches extends ASTPrim {
         }
       }
     }.doAll(1, vec).outputFrame();
-    return new ValFrame(fr2);
-  }
-
-  int[] countMatches(String[] domain, String[] pattern) {
-    int[] res = new int[domain.length];
-    for (int i=0; i < domain.length; i++)
-      for (String aPattern : pattern)
-        res[i] += StringUtils.countMatches(domain[i], aPattern);
-    return res;
+    assert res != null;
+    return new ValFrame(res);
   }
 }
 
-// mutating call
+/**
+ * Accepts a frame with a single string column.
+ * Returns a new string column containing the results of the toLower method on each string in the
+ * target column.
+ *
+ * toLower - Converts all of the characters in this String to lower case.
+ */
 class ASTToLower extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(tolower x)
@@ -138,17 +146,18 @@ class ASTToLower extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("tolower only takes a single column of data. " +
+      throw new IllegalArgumentException("tolower() only takes a single column of data. " +
                                          "Got " + fr.numCols() + " columns.");
-    Vec res = null;
+    Frame res = null;
     Vec vec = fr.anyVec();  assert vec != null;
     if (vec.isString()) res = toLowerStringCol(vec);
-    else throw new IllegalArgumentException("tolower requires a string column. "
+    else throw new IllegalArgumentException("tolower() requires a string column. "
         + "Received " + fr.anyVec().get_type_str() + ". Please convert column to strings first.");
-    return new ValFrame(new Frame(res));
+    assert res != null;
+    return new ValFrame(res);
   }
-  private Vec toLowerStringCol(Vec vec) {
-    Vec res = new MRTask() {
+  private Frame toLowerStringCol(Vec vec) {
+    Frame f = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk) {
         if (chk instanceof C0DChunk) // all NAs
           for (int i = 0; i < chk.len(); i++)
@@ -165,12 +174,18 @@ class ASTToLower extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
-
-    return res;
+    }.doAll(1, vec).outputFrame();
+    return f;
   }
 }
 
+/**
+ * Accepts a frame with a single string column.
+ * Returns a new string column containing the results of the toUpper method on each string in the
+ * target column.
+ *
+ * toUpper - Converts all of the characters in this String to upper case.
+ */
 class ASTToUpper extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(toupper x)
@@ -178,17 +193,18 @@ class ASTToUpper extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("toupper only takes a single column of data. " +
+      throw new IllegalArgumentException("toupper() only takes a single column of data. " +
                                          "Got "+ fr.numCols()+" columns.");
-    Vec res = null;
+    Frame res = null;
     Vec vec = fr.anyVec();   assert vec != null;
     if (vec.isString()) res = toUpperStringCol(vec);
-    else throw new IllegalArgumentException("toupper requires a string column. "
+    else throw new IllegalArgumentException("toupper() requires a string column. "
         + "Received " + fr.anyVec().get_type_str() + ". Please convert column to strings first.");
-    return new ValFrame(new Frame(res));
+    assert res != null;
+    return new ValFrame(res);
   }
-  private Vec toUpperStringCol(Vec vec) {
-    Vec res = new MRTask() {
+  private Frame toUpperStringCol(Vec vec) {
+    Frame f = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
           for (int i = 0; i < chk.len(); i++)
@@ -200,22 +216,30 @@ class ASTToUpper extends ASTPrim {
           for(int i =0; i < chk._len; i++) {
             if (chk.isNA(i))
               newChk.addNA();
-            else
+            else // Locale.ENGLISH to give the correct results for local insensitive strings
               newChk.addStr(new ValueString(chk.atStr(vs, i).toString().toUpperCase(Locale.ENGLISH)));
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
-
-    return res;
+    }.doAll(1, vec).outputFrame();
+    return f;
   }
 }
 
+/**
+ * Accepts a frame with a single string column, a regex pattern string, a replacement substring,
+ * and a boolean to indicate whether to ignore the case of the target string.
+ * Returns a new string column containing the results of the replaceFirst method on each string
+ * in the target column.
+ *
+ * replaceAll - Replaces the first substring of this string that matches the given regular
+ * expression with the given replacement.
+ */
 class ASTReplaceFirst extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
-  @Override public String str() { return "sub"; }
+  @Override public String str() { return "replacefirst"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     final String _pattern     = asts[1].exec(env).getStr();
     final String _replacement = asts[2].exec(env).getStr();
@@ -223,11 +247,11 @@ class ASTReplaceFirst extends ASTPrim {
     final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
 
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("replacefirst works on a single column at a time." +
+      throw new IllegalArgumentException("replacefirst() works on a single column at a time." +
           "Got "+ fr.numCols()+" columns.");
-    Vec res = null;
+    Frame res = null;
     Vec vec = fr.anyVec();   assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("replacefirst requires a string column."
+    if ( !vec.isString() ) throw new IllegalArgumentException("replacefirst() requires a string column."
         +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
     else {
       res = new MRTask() {
@@ -252,17 +276,27 @@ class ASTReplaceFirst extends ASTPrim {
             }
           }
         }
-      }.doAll(1, vec).outputFrame().anyVec();
+      }.doAll(1, vec).outputFrame();
     }
-    return new ValFrame(new Frame(res));
+    assert res != null;
+    return new ValFrame(res);
   }
 }
 
+/**
+ * Accepts a frame with a single string column, a regex pattern string, a replacement substring,
+ * and a boolean to indicate whether to ignore the case of the target string.
+ * Returns a new string column containing the results of the replaceAll method on each string
+ * in the target column.
+ *
+ * replaceAll - Replaces each substring of this string that matches the given regular expression
+ * with the given replacement.
+ */
 class ASTReplaceAll extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
-  @Override public String str() { return "gsub"; }
+  @Override public String str() { return "replaceall"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     final String _pattern     = asts[1].exec(env).getStr();
     final String _replacement = asts[2].exec(env).getStr();
@@ -270,11 +304,11 @@ class ASTReplaceAll extends ASTPrim {
     final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
 
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("replaceall works on a single column at a time." +
+      throw new IllegalArgumentException("replaceall() works on a single column at a time." +
                                          "Got "+ fr.numCols()+" columns.");
-    Vec res = null;
+    Frame res = null;
     Vec vec = fr.anyVec();   assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("replaceall requires a string column."
+    if ( !vec.isString() ) throw new IllegalArgumentException("replaceall() requires a string column."
         +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
     else {
       res = new MRTask() {
@@ -299,31 +333,39 @@ class ASTReplaceAll extends ASTPrim {
             }
           }
         }
-      }.doAll(1, vec).outputFrame().anyVec();
+      }.doAll(1, vec).outputFrame();
     }
-    return new ValFrame(new Frame(res));
+    assert res != null;
+    return new ValFrame(res);
   }
 }
 
+/**
+ * Accepts a frame with a single string column.
+ * Returns a new string column containing the trimmed versions of the strings in the target column.
+ * Trimming removes all characters of value 0x20 or lower at the beginning and end of the
+ * target string. Thus this only trims one of the 17 characters UTF considers as a space.
+ */
 class ASTTrim extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (trim x)
   @Override public String str() { return "trim"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec res = null;
+    Frame res = null;
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("trim only works on a single column at a time." +
+      throw new IllegalArgumentException("trim() only works on a single column at a time." +
                                          "Got "+ fr.numCols()+" columns.");
     Vec vec = fr.anyVec();   assert vec != null;
     if ( vec.isString() ) res = trimStringCol(vec);
-    else throw new IllegalArgumentException("trim requires a string column. "
+    else throw new IllegalArgumentException("trim() requires a string column. "
         +"Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    return new ValFrame(new Frame(res));
+    assert res != null;
+    return new ValFrame(res);
   }
 
-  private Vec trimStringCol(Vec vec) {
-    Vec res = new MRTask() {
+  private Frame trimStringCol(Vec vec) {
+    Frame f = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
           for (int i = 0; i < chk.len(); i++)
@@ -332,31 +374,35 @@ class ASTTrim extends ASTPrim {
         // so UTF-8 safe methods are not needed here.
         else ((CStrChunk)chk).asciiTrim(newChk);
       }
-    }.doAll(1, vec).outputFrame().anyVec();
-
-    return res;
+    }.doAll(1, vec).outputFrame();
+    return f;
   }
 }
 
+/**
+ * Accepts a frame with a single string column.
+ * Returns a new integer column containing the character count for each string in the target column.
+ */
 class ASTStrLength extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override public String str() { return "length"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec res = null;
+    Frame res = null;
     if (fr.numCols() != 1)
-      throw new IllegalArgumentException("length only works on a single column at a time." +
+      throw new IllegalArgumentException("length() only works on a single column at a time." +
                                          "Got "+ fr.numCols()+" columns.");
     Vec vec = fr.anyVec();   assert vec != null;
     if ( vec.isString() ) res = lengthStringCol(vec);
-    else throw new IllegalArgumentException("length requires a string column. "
+    else throw new IllegalArgumentException("length() requires a string column. "
         +"Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    return new ValFrame(new Frame(res));
+    assert res != null;
+    return new ValFrame(res);
   }
 
-  private Vec lengthStringCol(Vec vec) {
-    Vec res = new MRTask() {
+  private Frame lengthStringCol(Vec vec) {
+    Frame f = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if( chk instanceof C0DChunk ) { // All NAs
           for( int i =0; i < chk._len; i++)
@@ -371,8 +417,7 @@ class ASTStrLength extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
-
-    return res;
+    }.doAll(1, vec).outputFrame();
+    return f;
   }
 }
