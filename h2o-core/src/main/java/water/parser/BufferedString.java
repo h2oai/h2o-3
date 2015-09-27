@@ -13,7 +13,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    BufferedString(byte[] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
    BufferedString(byte[] buf) { this(buf,0,buf.length); }
    public BufferedString(String from) { this(from.getBytes(Charsets.UTF_8)); }
-   // Cloning constructing used during collecting unique enums
+   // Cloning constructing used during collecting unique categoricals
    BufferedString(BufferedString from) { this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len)); }
    // Used to make a temp recycling BufferedString in hot loops
    public BufferedString() { }

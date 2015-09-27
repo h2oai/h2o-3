@@ -1,6 +1,5 @@
 package hex.tree.drf;
 
-import static org.testng.Assert.*;
 import org.testng.annotations.*;
 
 import water.*;
@@ -59,7 +58,7 @@ public class DRFBasic extends TestNGUtil {
         try {
             Scope.enter();
 
-            // convert appropriate columns to enum
+            // convert appropriate columns to categorical
             if(dataset.equals("airquality.csv") && binomial.equals("x")) {
                 File airquality = find_test_file_static("smalldata/glm_test/airquality.csv");
                 assert airquality.exists();
@@ -68,7 +67,7 @@ public class DRFBasic extends TestNGUtil {
                 _airquality = ParseDataset.parse(airqualityKey, nfs_airquality._key);
 
                 for (int i : new int[]{4, 5}) {
-                    _airquality.vecs()[i] = _airquality.vecs()[i].toEnum();
+                    _airquality.vecs()[i] = _airquality.vecs()[i].toCategorical();
                 }
 
                 DRFModel.DRFParameters parms = new DRFModel.DRFParameters();

@@ -58,7 +58,7 @@ import water.parser.BufferedString;
  *  held as milliseconds since the Unix Epoch.  UUIDs are held as 128-bit
  *  integers (a pair of Java longs).  Strings are compressed in various obvious
  *  ways.  Sparse data is held... sparsely; e.g. loading data in SVMLight
- *  format will not "blow up" the in-memory representation.  Factors or Enums
+ *  format will not "blow up" the in-memory representation. Categoricals/factors
  *  are held as small integers, with a shared String lookup table on the side.
  *
  *  <p>Chunks support the notion of <em>missing</em> data.  Missing float and
@@ -72,7 +72,7 @@ import water.parser.BufferedString;
  *  </pre>
  * 
  *  <p>The same holds true for the other non-real types (timestamps, UUIDs,
- *  Strings, or enums); they must be checked for missing before being used.
+ *  Strings, or categoricals); they must be checked for missing before being used.
  *
  *  <p><b>Performance Concerns</b>
  *
@@ -624,8 +624,8 @@ public abstract class Chunk extends Iced implements Cloneable {
 //  }
 
   /** Used by the parser to help report various internal bugs.  Not intended for public use. */
-  public final void reportBrokenEnum( int i, int j, long l, int[] emap, int levels ) {
-    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap.length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
+  public final void reportBrokenCategorical(int i, int j, long l, int[] cmap, int levels) {
+    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + cmap.length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
     int k = 0;
     for(; k < Math.min(5,_len); ++k)
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");

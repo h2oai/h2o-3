@@ -20,12 +20,12 @@ import java.util.Arrays;
 public class AppendableVec extends Vec {
 
   public long _tmp_espc[];
-  public static final byte NA     = 1;
-  public static final byte ENUM   = 2;
-  public static final byte NUMBER = 3;
-  public static final byte TIME   = 4;
-  public static final byte UUID   = 5;
-  public static final byte STRING = 6;
+  public static final byte NA          = 1;
+  public static final byte CATEGORICAL = 2;
+  public static final byte NUMBER      = 3;
+  public static final byte TIME        = 4;
+  public static final byte UUID        = 5;
+  public static final byte STRING      = 6;
 
   private byte[] _chunkTypes;
 
@@ -46,7 +46,7 @@ public class AppendableVec extends Vec {
   }
 
   long _naCnt;
-  long _enumCnt;
+  long _catCnt;
   long _strCnt;
   long _timCnt;
   long _totalCnt;
@@ -76,7 +76,7 @@ public class AppendableVec extends Vec {
     _tmp_espc[cidx] = chk._len;
     _chunkTypes[cidx] = chk.type();
     _naCnt += chk.naCnt();
-    _enumCnt += chk.enumCnt();
+    _catCnt += chk.catCnt();
     _strCnt += chk.strCnt();
     _timCnt += chk._timCnt;
     _totalCnt += chk._len;
@@ -106,15 +106,15 @@ public class AppendableVec extends Vec {
     System.arraycopy(av._chunkTypes, 0, _chunkTypes, av._chunkOff, av._tmp_espc.length); // intentionally espc length which is guaranteed to be correct length, types may be longer!
     _strCnt += av._strCnt;
     _naCnt += av._naCnt;
-    _enumCnt += av._enumCnt;
+    _catCnt += av._catCnt;
     _timCnt += av._timCnt;
     _totalCnt += av._totalCnt;
   }
 
-  // We declare column to be string/enum if it has more enums than numbers
-  public boolean shouldBeEnum() {
-    long numCnt = _totalCnt - _strCnt - _naCnt - _enumCnt;
-    return _enumCnt > numCnt;
+  // We declare column to be string/categorical if it has more categoricals than numbers
+  public boolean shouldBeCategorical() {
+    long numCnt = _totalCnt - _strCnt - _naCnt - _catCnt;
+    return _catCnt > numCnt;
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.
@@ -139,7 +139,7 @@ public class AppendableVec extends Vec {
     for( int i =0 ; i < t1.length; ++i)
       _chunkTypes[i] |= t1[i];
     _naCnt += nv._naCnt;
-    _enumCnt += nv._enumCnt;
+    _catCnt += nv._catCnt;
     _strCnt += nv._strCnt;
     _timCnt += nv._timCnt;
     _totalCnt += nv._totalCnt;
@@ -162,17 +162,17 @@ public class AppendableVec extends Vec {
     for( int i = 0; i < nchunk; ++i )
       ctypes[_chunkTypes[i]]++;
 
-    // Odd case: new enum columns are usually made as new numeric columns,
+    // Odd case: new categorical columns are usually made as new numeric columns,
     // with a domain pasted on afterwards.  All chunks look like
-    // numbers.... but they are all valid enum numbers.
-    boolean genEnumCol = false;
-    if( ctypes[ENUM]==0 && ctypes[TIME] == 0 && ctypes[UUID] == 0 && ctypes[STRING] == 0 ) genEnumCol = true;
-    // Make sure enums are consistent.  If we have a domain, and it is
-    // dominating assume ENUM type.
-    if( domain() != null && (genEnumCol || ctypes[ENUM]>ctypes[NUMBER]) ) {
-      ctypes[ENUM] += ctypes[NUMBER]; ctypes[NUMBER]=0;
-      ctypes[ENUM] += ctypes[NA]; ctypes[NA] = 0;        // All NA case
-      if (nchunk == 0) ctypes[ENUM]++;                   // No rows in vec
+    // numbers.... but they are all valid categorical numbers.
+    boolean genCatCol = false;
+    if( ctypes[CATEGORICAL]==0 && ctypes[TIME] == 0 && ctypes[UUID] == 0 && ctypes[STRING] == 0 ) genCatCol = true;
+    // Make sure categoricals are consistent.  If we have a domain, and it is
+    // dominating assume CATEGORICAL type.
+    if( domain() != null && (genCatCol || ctypes[CATEGORICAL]>ctypes[NUMBER]) ) {
+      ctypes[CATEGORICAL] += ctypes[NUMBER]; ctypes[NUMBER]=0;
+      ctypes[CATEGORICAL] += ctypes[NA]; ctypes[NA] = 0;        // All NA case
+      if (nchunk == 0) ctypes[CATEGORICAL]++;                   // No rows in vec
     }
 
     // Find the dominant non-NA Chunk type.
@@ -181,19 +181,19 @@ public class AppendableVec extends Vec {
       if( i != NA && ctypes[i] > ctypes[idx] )
         idx = i;
 
-    if( idx!=ENUM ) setDomain(null);
+    if( idx!=CATEGORICAL ) setDomain(null);
 
     // Make Chunks other than the dominant type fail out to NAs.  This includes
-    // converting numeric chunks to NAs in Enum columns - we cannot reverse
-    // print the numbers to get the original text for the Enum back.
+    // converting numeric chunks to NAs in categorical columns - we cannot reverse
+    // print the numbers to get the original text for the categorical back.
     for(int i = 0; i < nchunk; ++i)
       if(_chunkTypes[i] != idx && 
-         !(idx==ENUM && _chunkTypes[i]==NUMBER && genEnumCol)) // Odd case: numeric chunks being forced/treated as a boolean enum
+         !(idx==CATEGORICAL && _chunkTypes[i]==NUMBER && genCatCol)) // Odd case: numeric chunks being forced/treated as a boolean categorical
         DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int) _tmp_espc[i]),fs);
 
     byte type;
     switch( idx ) {
-    case ENUM  : type = T_ENUM; break;
+    case CATEGORICAL  : type = T_CAT; break;
     case NUMBER: type = T_NUM ; break;
     case TIME  : type = T_TIME; break;
     case UUID  : type = T_UUID; break;

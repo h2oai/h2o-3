@@ -3,7 +3,7 @@ package water.parser;
 import water.Freezable;
 
 /** Interface for writing results of parsing, accumulating numbers and
- *  strings (enums) or handling invalid lines & parse errors.  */
+ *  strings or handling invalid lines & parse errors.  */
 interface ParseWriter extends Freezable {
   void setColumnNames(String [] names);
   // Register a newLine from the parser

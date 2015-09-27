@@ -2,7 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
-import hex.tree.drf.DRF;
+
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -536,7 +536,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   //FIXME: Use weights
   double initial_MSE( Vec train, Vec test ) {
-    if( train.isEnum() ) {
+    if( train.isCategorical() ) {
       // Guess the class of the most populous class; call the fraction of those
       // Q.  Then Q of them are "mostly correct" - error is (1-Q) per element.
       // The remaining 1-Q elements are "mostly wrong", error is Q (our guess,

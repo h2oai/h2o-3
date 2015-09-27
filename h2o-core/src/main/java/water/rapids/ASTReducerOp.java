@@ -337,7 +337,7 @@ class ASTProd extends ASTPrim {
   public String str(){ return "prod";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    for(Vec v : fr.vecs()) if (v.isCategorical() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
     double prod=new RedProd().doAll(fr)._d;
     return new ValNum(prod);
   }
@@ -366,7 +366,7 @@ class ASTProdNA extends ASTPrim {
   public String str(){ return "prod.na";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    for(Vec v : fr.vecs()) if (v.isCategorical() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
     double prod=new RedProd().doAll(fr)._d;
     return new ValNum(prod);
   }

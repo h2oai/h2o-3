@@ -107,10 +107,10 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     @API(help="datatype: {enum, string, int, real, time, uuid}", direction=API.Direction.OUTPUT)
     public String type;
 
-    @API(help="domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
+    @API(help="domain; not-null for categorical columns only", direction=API.Direction.OUTPUT)
     public String[] domain;
 
-    @API(help="cardinality of this column's domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
+    @API(help="cardinality of this column's domain; not-null for categorical columns only", direction=API.Direction.OUTPUT)
     public int domain_cardinality;
 
     @API(help="data", direction=API.Direction.OUTPUT)
@@ -161,9 +161,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
         percentiles = histogram_bins ==null ? null : vec.pctiles();
       }
 
-      type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
+      type  = vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
-      if (vec.isEnum()) {
+      if (vec.isCategorical()) {
         domain_cardinality = domain.length;
       } else {
         domain_cardinality = 0;

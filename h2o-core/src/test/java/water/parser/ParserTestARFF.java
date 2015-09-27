@@ -36,27 +36,27 @@ public class ParserTestARFF extends TestUtil {
         if (exp[j] == Vec.T_TIME) { //Time
           Assert.assertTrue(vec.isTime());
 //          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?
-          Assert.assertFalse(vec.isEnum());
+          Assert.assertFalse(vec.isCategorical());
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == Vec.T_ENUM) { //Categorical
-          Assert.assertTrue(vec.isEnum());
-//          Assert.assertFalse(vec.isInt()); //FIXME enum is encoded as integer, but should isInt() be true?
+        } else if (exp[j] == Vec.T_CAT) { //Categorical
+          Assert.assertTrue(vec.isCategorical());
+//          Assert.assertFalse(vec.isInt()); //FIXME categorical is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isTime());
           Assert.assertFalse(vec.isUUID());
         } else if (exp[j] == Vec.T_STR) { //String
           Assert.assertTrue(vec.isString());
           Assert.assertFalse(vec.isInt());
-          Assert.assertFalse(vec.isEnum());
+          Assert.assertFalse(vec.isCategorical());
           Assert.assertFalse(vec.isTime());
           Assert.assertFalse(vec.isUUID());
         } else if (exp[j] == Vec.T_NUM) { //Numeric (can be Int or not)
-          Assert.assertTrue(!vec.isEnum() && !vec.isString() && !vec.isUUID() && !vec.isTime());
+          Assert.assertTrue(!vec.isCategorical() && !vec.isString() && !vec.isUUID() && !vec.isTime());
         } else if (exp[j] == Vec.T_UUID) { //UUID
           Assert.assertTrue(vec.isUUID());
 //          Assert.assertFalse(vec.isInt()); //FIXME uuid is encoded as integer, but should isInt() be true?
-          Assert.assertFalse(vec.isEnum());
+          Assert.assertFalse(vec.isCategorical());
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isTime());
         } else throw H2O.unimpl();
@@ -187,7 +187,7 @@ public class ParserTestARFF extends TestUtil {
     testColNames(dataset, exp_names, len, "\r\n");
   }
 
-  // force numbers to be enums //PUBDEV-17
+  // force numbers to be categoricals //PUBDEV-17
   @Test public void testType1() {
     String[] data = new String[] {
             "@RELATION myfactorcol",
@@ -204,7 +204,7 @@ public class ParserTestARFF extends TestUtil {
             "10",
     };
     byte[] exp_types = new byte[]{
-            Vec.T_ENUM
+            Vec.T_CAT
     };
     String[] exp_names = new String[]{
             "class"
@@ -219,7 +219,7 @@ public class ParserTestARFF extends TestUtil {
     testColNames(dataset, exp_names, len, "\r\n");
   }
 
-  // force numbers to be enums
+  // force numbers to be categoricals
   @Test public void testType2() {
     String[] data = new String[] {
             "@RELATION type",
@@ -232,7 +232,7 @@ public class ParserTestARFF extends TestUtil {
             "-2",
     };
     byte[] exp_types = new byte[]{
-            Vec.T_ENUM
+            Vec.T_CAT
     };
     String[] exp_names = new String[]{
             "enum"
@@ -247,7 +247,7 @@ public class ParserTestARFF extends TestUtil {
     testColNames(dataset, exp_names, len, "\r\n");
   }
 
-  // force numbers to be enums
+  // force numbers to be categoricals
   @Test public void testType3() {
     String[] data = new String[] {
             "@RELATION type",
@@ -260,7 +260,7 @@ public class ParserTestARFF extends TestUtil {
             "-2",
     };
     byte[] exp_types = new byte[]{
-            Vec.T_ENUM
+            Vec.T_CAT
     };
     String[] exp_names = new String[]{
             "enum"
@@ -324,9 +324,9 @@ public class ParserTestARFF extends TestUtil {
     };
     byte[] exp_types = new byte[]{
             Vec.T_TIME,
-            Vec.T_ENUM,
+            Vec.T_CAT,
             Vec.T_NUM,
-            Vec.T_ENUM
+            Vec.T_CAT
     };
     String[] exp_names = new String[]{
             "date",
@@ -345,14 +345,14 @@ public class ParserTestARFF extends TestUtil {
     testColNames(dataset, exp_names, len, "\r\n");
   }
 
-  // mixed ARFF file with numbers as enums
+  // mixed ARFF file with numbers as categoricals
   @Test public void testMixed2() {
     String[] data = new String[]{
             "@RELATION mixed",
             "",
             "@ATTRIBUTE date,yeah'!    DATE",
             "@ATTRIBUTE 0   {dog,cat,mouse}",
-            "@ATTRIBUTE numeric!#$%!                       {3,4,5,6,7}", //force numbers to be enums!
+            "@ATTRIBUTE numeric!#$%!                       {3,4,5,6,7}", //force numbers to be categoricals!
             "@ATTRIBUTE response {Y,N}",
             "",
             "@DATA",
@@ -364,9 +364,9 @@ public class ParserTestARFF extends TestUtil {
     };
     byte[] exp_types = new byte[]{
             Vec.T_TIME,
-            Vec.T_ENUM,
-            Vec.T_ENUM,
-            Vec.T_ENUM
+            Vec.T_CAT,
+            Vec.T_CAT,
+            Vec.T_CAT
     };
     String[] exp_names = new String[]{
             "date,yeah'!",
@@ -467,7 +467,7 @@ public class ParserTestARFF extends TestUtil {
   }
 
 
-  // Mixed UUID, numeric, enum and time (no Strings)
+  // Mixed UUID, numeric, categorical and time (no Strings)
   @Test public void testMix() {
     Frame k1 = null, k2 = null;
     try {
@@ -644,7 +644,7 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertTrue(fr.anyVec().isEnum());
+    Assert.assertTrue(fr.anyVec().isCategorical());
     Assert.assertFalse(fr.anyVec().isString());
     Assert.assertTrue(fr.anyVec().cardinality() == 6);
     fr.delete();
@@ -669,7 +669,7 @@ public class ParserTestARFF extends TestUtil {
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isString());
-    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isCategorical());
     Assert.assertFalse(fr.anyVec().isInt());
     BufferedString vs = new BufferedString();
     Assert.assertTrue(fr.anyVec().atStr(vs, 3).toString().equals("4"));
@@ -696,7 +696,7 @@ public class ParserTestARFF extends TestUtil {
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isUUID());
-    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isCategorical());
     Assert.assertFalse(fr.anyVec().isString());
     Assert.assertTrue(!fr.anyVec().isNA(0));
     Assert.assertTrue(!fr.anyVec().isNA(1));
@@ -719,7 +719,7 @@ public class ParserTestARFF extends TestUtil {
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isCategorical());
     Assert.assertFalse(fr.anyVec().isInt());
     Assert.assertFalse(fr.anyVec().isUUID());
 
@@ -748,7 +748,7 @@ public class ParserTestARFF extends TestUtil {
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertTrue(fr.anyVec().isEnum());
+    Assert.assertTrue(fr.anyVec().isCategorical());
     Assert.assertFalse(fr.anyVec().isUUID());
 
     Assert.assertTrue(fr.anyVec().at(0) == 1);
@@ -777,7 +777,7 @@ public class ParserTestARFF extends TestUtil {
     Key[] k = new Key[]{k1, k2, k3};
     Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isString());
-    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isCategorical());
     Assert.assertFalse(fr.anyVec().isInt());
     BufferedString vs = new BufferedString();
     Assert.assertTrue(fr.anyVec().atStr(vs, 0).toString().equals("0"));

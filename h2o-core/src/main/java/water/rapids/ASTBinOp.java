@@ -81,7 +81,7 @@ abstract class ASTBinOp extends ASTPrim {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
-    return cleanEnum( fr, res ); // Cleanup enum misuse
+    return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
   /** Auto-widen the scalar to every element of the frame */
@@ -96,18 +96,18 @@ abstract class ASTBinOp extends ASTPrim {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
-    return cleanEnum( fr, res ); // Cleanup enum misuse
+    return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
-  // Ops do not make sense on Enums, except EQ/NE; flip such ops to NAs
-  private ValFrame cleanEnum( Frame oldfr, Frame newfr ) {
-    final boolean enumOK = enumOK();
+  // Ops do not make sense on categoricals, except EQ/NE; flip such ops to NAs
+  private ValFrame cleanCategorical(Frame oldfr, Frame newfr) {
+    final boolean categoricalOK = categoricalOK();
     final Vec oldvecs[] = oldfr.vecs();
     final Vec newvecs[] = newfr.vecs();
     for( int i=0; i<oldvecs.length; i++ )
       if( !oldvecs[i].isNumeric() && // Must be numeric OR
           !oldvecs[i].isTime() &&    // time OR
-          !(oldvecs[i].isEnum() && enumOK) ) // Enum and enums are OK (op is EQ/NE)
+          !(oldvecs[i].isCategorical() && categoricalOK) ) // categorical are OK (op is EQ/NE)
         newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(newfr);
   }
@@ -126,15 +126,15 @@ abstract class ASTBinOp extends ASTPrim {
               final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(chk.atStr(vstr,i),conStr));
-            } else if( vec.isEnum() ) {
-              // Enum Vectors: convert string to domain value; apply op (not
+            } else if( vec.isCategorical() ) {
+              // categorical Vectors: convert string to domain value; apply op (not
               // str_op).  Not sure what the "right" behavior here is, can
-              // easily argue that should instead apply str_op to the Enum
+              // easily argue that should instead apply str_op to the categorical
               // string domain value - except that this whole operation only
               // makes sense for EQ/NE, and is much faster when just comparing
               // doubles vs comparing strings.  Note that if the string is not
-              // part of the Enum domain, the find op returns -1 which is never
-              // equal to any Enum dense integer (which are always 0+).
+              // part of the categorical domain, the find op returns -1 which is never
+              // equal to any categorical dense integer (which are always 0+).
               final double d = (double)ArrayUtils.find(vec.domain(),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
@@ -163,10 +163,10 @@ abstract class ASTBinOp extends ASTPrim {
               final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(conStr,chk.atStr(vstr,i)));
-            } else if( vec.isEnum() ) {
-              // Enum Vectors: convert string to domain value; apply op (not
+            } else if( vec.isCategorical() ) {
+              // categorical Vectors: convert string to domain value; apply op (not
               // str_op).  Not sure what the "right" behavior here is, can
-              // easily argue that should instead apply str_op to the Enum
+              // easily argue that should instead apply str_op to the categorical
               // string domain value - except that this whole operation only
               // makes sense for EQ/NE, and is much faster when just comparing
               // doubles vs comparing strings.
@@ -227,7 +227,7 @@ abstract class ASTBinOp extends ASTPrim {
   }
   
   // Make sense to run this OP on an enm?
-  boolean enumOK() { return false; }
+  boolean categoricalOK() { return false; }
 }
 
 // ----------------------------------------------------------------------------
@@ -291,12 +291,12 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
         }
       }.doAll(fr.numCols(),fr).outputFrame());
   }
-  @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
+  @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
 class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
   double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); }
-  @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
+  @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
 // ----------------------------------------------------------------------------

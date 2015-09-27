@@ -205,7 +205,7 @@ public class Frame extends Lockable<Frame> {
     if(_vecs == null) return 0;
     int cols = 0;
     for(int i = 0; i < _vecs.length; i++) {
-      if(_vecs[i].isEnum() && _vecs[i].domain() != null)
+      if(_vecs[i].isCategorical() && _vecs[i].domain() != null)
         cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
       else cols++;
     }
@@ -382,8 +382,8 @@ public class Frame extends Lockable<Frame> {
     return s;
   }
 
-  /** All the domains for enum columns; null for non-enum columns.  
-   *  @return the domains for enum columns */
+  /** All the domains for categorical columns; null for non-categorical columns.
+   *  @return the domains for categorical columns */
   public String[][] domains() {
     Vec[] vecs = vecs();
     String ds[][] = new String[vecs.length][];
@@ -392,8 +392,8 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
-  /** Number of categorical levels for enum columns; -1 for non-enum columns.
-   * @return the number of levels for enum columns */
+  /** Number of categorical levels for categorical columns; -1 for non-categorical columns.
+   * @return the number of levels for categorical columns */
   public int[] cardinality() {
     Vec[] vecs = vecs();
     int[] card = new int[vecs.length];
@@ -410,13 +410,13 @@ public class Frame extends Lockable<Frame> {
     return vecs;
   }
 
-  /** Majority class for enum columns; -1 for non-enum columns.
-   * @return the majority class for enum columns */
+  /** Majority class for categorical columns; -1 for non-categorical columns.
+   * @return the majority class for categorical columns */
   public int[] modes() {
     Vec[] vecs = bulkRollups();
     int[] modes = new int[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
-      modes[i] = vecs[i].isEnum() ? vecs[i].mode() : -1;
+      modes[i] = vecs[i].isCategorical() ? vecs[i].mode() : -1;
     }
     return modes;
   }
@@ -1059,7 +1059,7 @@ public class Frame extends Lockable<Frame> {
         BufferedString vstr = new BufferedString();
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
-      case Vec.T_ENUM:
+      case Vec.T_CAT:
         coltypes[i] = "string"; 
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
@@ -1303,7 +1303,7 @@ public class Frame extends Lockable<Frame> {
       for( int i = 0; i < vs.length; i++ ) {
         if(i > 0) sb.append(',');
         if(!vs[i].isNA(_row)) {
-          if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
+          if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
           else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
           else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
           else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new BufferedString(), _row)).append('"');

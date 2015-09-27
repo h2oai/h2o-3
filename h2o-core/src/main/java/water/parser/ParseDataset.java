@@ -213,19 +213,19 @@ public final class ParseDataset extends Job<Frame> {
     setup._column_names = getColumnNames(avs.length, setup._column_names);
 
     Frame fr = null;
-    // Calculate enum domain
-    // Filter down to columns with some enums
+    // Calculate categorical domain
+    // Filter down to columns with some categoricals
     int n = 0;
     int[] ecols2 = new int[avs.length];
     for( int i = 0; i < ecols2.length; ++i )
-      if( avs[i].shouldBeEnum()  )
+      if( avs[i].shouldBeCategorical()  )
         ecols2[n++] = i;
     final int[] ecols = Arrays.copyOf(ecols2, n);
-    // If we have any, go gather unified enum domains
+    // If we have any, go gather unified categorical domains
     if( n > 0 ) {
       job.update(0, "Collecting categorical domains across nodes.");
       {
-        GatherCategoricalDomainsTask gcdt = new GatherCategoricalDomainsTask(mfpt._eKey, ecols).doAllNodes();
+        GatherCategoricalDomainsTask gcdt = new GatherCategoricalDomainsTask(mfpt._cKey, ecols).doAllNodes();
         //Test domains for excessive length.
         List<String> offendingColNames = new ArrayList<>();
         for (int i = 0; i < ecols.length; i++) {
@@ -241,29 +241,29 @@ public final class ParseDataset extends Job<Frame> {
       job.update(0, "Compressing data.");
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
       fr.update(job._key);
-      // Update enums to the globally agreed numbering
+      // Update categoricals to the globally agreed numbering
       Vec[] evecs = new Vec[ecols.length];
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
 
       job.update(0, "Unifying categoricals across nodes.");
       {
-        // new CreateParse2GlobalCategoricalMaps(mfpt._eKey).doAll(evecs);
+        // new CreateParse2GlobalCategoricalMaps(mfpt._cKey).doAll(evecs);
         // Using Dtask since it starts and returns faster than an MRTask
         CreateParse2GlobalCategoricalMaps[] fcdt = new CreateParse2GlobalCategoricalMaps[H2O.CLOUD.size()];
         RPC[] rpcs = new RPC[H2O.CLOUD.size()];
         for (int i = 0; i < fcdt.length; i++){
           H2ONode[] nodes = H2O.CLOUD.members();
-          fcdt[i] = new CreateParse2GlobalCategoricalMaps(mfpt._eKey, fr._key, ecols.length);
+          fcdt[i] = new CreateParse2GlobalCategoricalMaps(mfpt._cKey, fr._key, ecols.length);
           rpcs[i] = new RPC<>(nodes[i], fcdt[i]).call();
         }
         for (RPC rpc : rpcs)
           rpc.get();
 
-        new UpdateCategoricalChunksTask(mfpt._eKey, mfpt._chunk2ParseNodeMap).doAll(evecs);
-        MultiFileParseTask._enums.remove(mfpt._eKey);
+        new UpdateCategoricalChunksTask(mfpt._cKey, mfpt._chunk2ParseNodeMap).doAll(evecs);
+        MultiFileParseTask._categoricals.remove(mfpt._cKey);
       }
       Log.trace("Done unifying categoricals across nodes.");
-    } else {                    // No enums case
+    } else {                    // No categoricals case
       job.update(0,"Compressing data.");
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
       Log.trace("Done closing all Vecs.");
@@ -311,11 +311,11 @@ public final class ParseDataset extends Job<Frame> {
     @Override public void compute2() {
       Frame _fr = DKV.getGet(_frKey);
       // get the node local category->ordinal maps for each column from initial parse pass
-      if( !MultiFileParseTask._enums.containsKey(_parseCatMapsKey) ) {
+      if( !MultiFileParseTask._categoricals.containsKey(_parseCatMapsKey) ) {
         tryComplete();
         return;
       }
-        final Categorical[] parseCatMaps = MultiFileParseTask._enums.get(_parseCatMapsKey);
+        final Categorical[] parseCatMaps = MultiFileParseTask._categoricals.get(_parseCatMapsKey);
         int[][] _nodeOrdMaps = new int[_eColCnt][];
 
         // create old_ordinal->new_ordinal map for each cat column
@@ -337,14 +337,14 @@ public final class ParseDataset extends Job<Frame> {
           }
         }
 
-        // Store the local->global ordinal maps in DKV by node parse enum key and node index
+        // Store the local->global ordinal maps in DKV by node parse categorical key and node index
         DKV.put(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + H2O.SELF.index()), new CategoricalUpdateMap(_nodeOrdMaps));
       tryComplete();
     }
   }
 
   // --------------------------------------------------------------------------
-  /** Task to update enum (categorical) values to match the global numbering scheme.
+  /** Task to update categorical (categorical) values to match the global numbering scheme.
    *  Performs update in place so that values originally numbered using
    *  node-local unordered numbering will be numbered using global numbering.
    *  @author tomasnykodym
@@ -372,13 +372,13 @@ public final class ParseDataset extends Job<Frame> {
             if( chk.isNA(j) )continue;
             final int old = (int) chk.at8(j);
             if (old < 0 || old >= _parse2GlobalCatMaps[i].length)
-              chk.reportBrokenEnum(i, j, old, _parse2GlobalCatMaps[i], _fr.vec(i).domain().length);
+              chk.reportBrokenCategorical(i, j, old, _parse2GlobalCatMaps[i], _fr.vec(i).domain().length);
             if(_parse2GlobalCatMaps[i][old] < 0)
               throw new H2OParseException("Error in unifying categorical values. This is typically "
                   +"caused by unrecognized characters in the data.\n The problem categorical value "
                   +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
                   +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
-              //throw new H2OParseException(H2O.SELF.toString() + ": missing enum at col:" + i + ", row: " + (chk.start() + j) + ", val = " + old + ", chunk=" + chk.getClass().getSimpleName() + ".", map = " + Arrays.toString(_parse2GlobalCatMaps[i]));
+              //throw new H2OParseException(H2O.SELF.toString() + ": missing categorical at col:" + i + ", row: " + (chk.start() + j) + ", val = " + old + ", chunk=" + chk.getClass().getSimpleName() + ".", map = " + Arrays.toString(_parse2GlobalCatMaps[i]));
             chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
         }
@@ -402,10 +402,10 @@ public final class ParseDataset extends Job<Frame> {
 
     @Override
     public void setupLocal() {
-      if (!MultiFileParseTask._enums.containsKey(_k)) return;
+      if (!MultiFileParseTask._categoricals.containsKey(_k)) return;
       _packedDomains = new byte[_catColIdxs.length][];
       final BufferedString[][] _perColDomains = new BufferedString[_catColIdxs.length][];
-      final Categorical[] _colCats = MultiFileParseTask._enums.get(_k);
+      final Categorical[] _colCats = MultiFileParseTask._categoricals.get(_k);
       int i = 0;
       for (int col : _catColIdxs) {
         _colCats[col].convertToUTF8(col + 1);
@@ -582,10 +582,10 @@ public final class ParseDataset extends Job<Frame> {
     private final VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
-    // Enum lists for each concurrent parse.
-    private static NonBlockingHashMap<Key, Categorical[]> _enums = new NonBlockingHashMap<>();
+    // categorical lists for each concurrent parse.
+    private static NonBlockingHashMap<Key, Categorical[]> _categoricals = new NonBlockingHashMap<>();
     // The Key used to sort out *this* parse's Categorical[]
-    private final Key _eKey = Key.make();
+    private final Key _cKey = Key.make();
     // Eagerly delete Big Data
     private final boolean _deleteOnDone;
     // Mapping from Chunk# to node index holding the initial category mappings.
@@ -667,17 +667,17 @@ public final class ParseDataset extends Job<Frame> {
       _dout = new FVecParseWriter[_keys.length];
     }
 
-    // Fetch out the node-local Categorical[] using _eKey and _enums hashtable
-    private static Categorical[] enums(Key eKey, int ncols) {
-      Categorical[] enums = _enums.get(eKey);
-      if( enums != null ) return enums;
-      enums = new Categorical[ncols];
-      for( int i = 0; i < enums.length; ++i ) enums[i] = new Categorical();
-      _enums.putIfAbsent(eKey, enums);
-      return _enums.get(eKey); // Re-get incase lost insertion race
+    // Fetch out the node-local Categorical[] using _cKey and _categoricals hashtable
+    private static Categorical[] categoricals(Key cKey, int ncols) {
+      Categorical[] categoricals = _categoricals.get(cKey);
+      if( categoricals != null ) return categoricals;
+      categoricals = new Categorical[ncols];
+      for( int i = 0; i < categoricals.length; ++i ) categoricals[i] = new Categorical();
+      _categoricals.putIfAbsent(cKey, categoricals);
+      return _categoricals.get(cKey); // Re-get incase lost insertion race
     }
 
-    // Flag all chunk enums as being on local (self)
+    // Flag all chunk categoricals as being on local (self)
     private void chunksAreLocal( Vec vec, int chunkStartIdx, Key key ) {
       for(int i = 0; i < vec.nChunks(); ++i)
         _chunk2ParseNodeMap[chunkStartIdx + i] = H2O.SELF.index();
@@ -699,7 +699,7 @@ public final class ParseDataset extends Job<Frame> {
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._parse_type == ParserType.SVMLight
         ?new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs)
-        :new FVecParseWriter(_vg, chunkOff, enums(_eKey,localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
+        :new FVecParseWriter(_vg, chunkOff, categoricals(_cKey, localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
     }
 
     // Called once per file
@@ -810,7 +810,7 @@ public final class ParseDataset extends Job<Frame> {
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
       private final VectorGroup _vg;
       private FVecParseWriter _dout;
-      private final Key _eKey;  // Parse-local-Enums key
+      private final Key _cKey;  // Parse-local-categoricals key
       private final Key _jobKey;
       private transient final MultiFileParseTask _outerMFPT;
       private transient final Key _srckey; // Source/text file to delete on done
@@ -825,7 +825,7 @@ public final class ParseDataset extends Job<Frame> {
         _vecIdStart = vecIdstart;
         _startChunkIdx = startChunkIdx;
         _outerMFPT = mfpt;
-        _eKey = mfpt._eKey;
+        _cKey = mfpt._cKey;
         _jobKey = mfpt._jobKey;
         _srckey = srckey;
         _nchunks = nchunks;
@@ -847,9 +847,9 @@ public final class ParseDataset extends Job<Frame> {
         switch(_setup._parse_type) {
           case ARFF:
           case CSV:
-            Categorical [] enums = enums(_eKey,_setup._number_columns);
+            Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
             p = new CsvParser(_setup, _jobKey);
-            dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), enums, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of enums
+            dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
           break;
         case SVMLight:
           p = new SVMLightParser(_setup, _jobKey);
@@ -940,7 +940,7 @@ public final class ParseDataset extends Job<Frame> {
 
     for( int i = 0; i < vecArr.length; i++ ) {
       Vec v = vecArr[i];
-      boolean isCategorical = v.isEnum();
+      boolean isCategorical = v.isCategorical();
       boolean isConstant = v.isConst();
       String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
       String typeStr;
@@ -948,11 +948,11 @@ public final class ParseDataset extends Job<Frame> {
       String maxStr;
 
       switch( v.get_type() ) {
-        case Vec.T_BAD:   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
+        case Vec.T_BAD :   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
-        case Vec.T_ENUM:  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
+        case Vec.T_CAT :  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
         case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
         default: throw H2O.unimpl();
       }

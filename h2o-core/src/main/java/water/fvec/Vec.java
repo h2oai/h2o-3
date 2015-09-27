@@ -61,9 +61,9 @@ import java.util.concurrent.Future;
  *
  *  <p>Vecs have a loosely enforced <em>type</em>: one of numeric, {@link UUID}
  *  or {@link String}.  Numeric types are further broken down into integral
- *  ({@code long}) and real ({@code double}) types.  The {@code enum} type is
+ *  ({@code long}) and real ({@code double}) types.  The {@code categorical} type is
  *  an integral type, with a String mapping side-array.  Most of the math
- *  algorithms will treat enums as small dense integers, and most enum
+ *  algorithms will treat categoricals as small dense integers, and most categorical
  *  printouts will use the String mapping.  Time is another special integral
  *  type: it is represented as milliseconds since the unix epoch, and is mostly
  *  treated as an integral type when doing math but it has special time-based
@@ -162,27 +162,27 @@ public class Vec extends Keyed<Vec> {
   final public long[] _espc;
 
   private String [] _domain;
-  /** Returns the enum toString mapping array, or null if not an Categorical column.
+  /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
-   *  @return the enum / factor / categorical mapping array, or null if not a Categorical column */
+   *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
   public final String[] domain() { return _domain; }
-  /** Returns the {@code i}th factor for this enum column.
+  /** Returns the {@code i}th factor for this categorical column.
    *  @return The {@code i}th factor */
   public final String factor( long i ) { return _domain[(int)i]; }
-  /** Set the Categorical/factor/categorical names.  No range-checking on the actual
+  /** Set the categorical/factor names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  public final void setDomain(String[] domain) { _domain = domain; if( domain != null ) _type = T_ENUM; }
-  /** Returns cardinality for enum domain or -1 for other types. */
-  public final int cardinality() { return isEnum() ? _domain.length : -1; }
+  public final void setDomain(String[] domain) { _domain = domain; if( domain != null ) _type = T_CAT; }
+  /** Returns cardinality for categorical domain or -1 for other types. */
+  public final int cardinality() { return isCategorical() ? _domain.length : -1; }
 
   // Vec internal type
   public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
   public static final byte T_UUID =  1; // UUID
   public static final byte T_STR  =  2; // String
-  public static final byte T_NUM  =  3; // Numeric, but not enum or time
-  public static final byte T_ENUM =  4; // Integer, with a enum/factor String mapping
+  public static final byte T_NUM  =  3; // Numeric, but not categorical or time
+  public static final byte T_CAT  =  4; // Integer, with a categorical/factor String mapping
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
   byte _type;                   // Vec Type
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
@@ -190,12 +190,12 @@ public class Vec extends Keyed<Vec> {
   public static final boolean DO_HISTOGRAMS = true;
   final private Key _rollupStatsKey;
 
-  /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
+  /** True if this is an categorical column.  All categorical columns are also {@link #isInt}, but
    *  not vice-versa.
-   *  @return true if this is an Categorical column.  */
-  public final boolean isEnum() { 
-    assert (_type==T_ENUM && _domain!=null) || (_type!=T_ENUM && _domain==null); 
-    return _type==T_ENUM; 
+   *  @return true if this is an categorical column.  */
+  public final boolean isCategorical() {
+    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null);
+    return _type==T_CAT;
   }
 
   public final double sparseRatio() {
@@ -207,8 +207,8 @@ public class Vec extends Keyed<Vec> {
   /** True if this is a String column.  
    *  @return true if this is a String column.  */
   public final boolean isString (){ return _type==T_STR; }
-  /** True if this is a numeric column, excluding enum and time types.
-   *  @return true if this is a numeric column, excluding enum and time types  */
+  /** True if this is a numeric column, excluding categorical and time types.
+   *  @return true if this is a numeric column, excluding categorical and time types  */
   public final boolean isNumeric(){ return _type==T_NUM; }
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -216,26 +216,29 @@ public class Vec extends Keyed<Vec> {
   public final boolean isTime   (){ return _type==T_TIME; }
 //  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
   /** Time formatting string.
-   *  @return Time formatting string */
+   *  @return Time formatting string
+   */
 //  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
 
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
-   *  {@code espc} array). */
+   *  {@code espc} array).
+   */
   public Vec( Key<Vec> key, long espc[]) { this(key, espc, null, T_NUM); }
 
-  /** Build a numeric-type or enum-type Vec; the caller understands Chunk
-   *  layout (via the {@code espc} array); enum Vecs need to pass the
-   *  domain. */
-  Vec( Key<Vec> key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_ENUM)); }
+  /** Build a numeric-type or categorical-type Vec; the caller understands Chunk
+   *  layout (via the {@code espc} array); categorical Vecs need to pass the
+   *  domain.
+   */
+  Vec( Key<Vec> key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_CAT)); }
 
   /** Main default constructor; the caller understands Chunk layout (via the
-   *  {@code espc} array), plus enum/factor the {@code domain} (or null for
-   *  non-enums), and the Vec type. */
+   *  {@code espc} array), plus categorical/factor the {@code domain} (or null for
+   *  non-categoricals), and the Vec type. */
   public Vec( Key<Vec> key, long espc[], String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
-    assert domain==null || type==T_ENUM;
+    assert domain==null || type==T_CAT;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
     setMeta(type,domain);
     _type = type;
@@ -288,7 +291,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   private void setMeta( byte type, String[] domain) {
-    assert (type==T_ENUM && domain!=null) || (type!=T_ENUM && domain==null);
+    assert (type==T_CAT && domain!=null) || (type!=T_CAT && domain==null);
     _domain = domain;
     _type = type;
   }
@@ -357,9 +360,9 @@ public class Vec extends Keyed<Vec> {
   public Vec makeZero() { return makeCon(0, null, group(), _espc); }
 
   /** A new vector with the same size and data layout as the current one, and
-   *  initialized to zero, with the given enum domain.
+   *  initialized to zero, with the given categorical domain.
    *  @return A new vector with the same size and data layout as the current
-   *  one, and initialized to zero, with the given enum domain. */
+   *  one, and initialized to zero, with the given categorical domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
   /** A new vector which is a copy of {@code this} one.
@@ -593,7 +596,7 @@ public class Vec extends Keyed<Vec> {
   /** Vecs's mode
    * @return Vec's mode */
   public int mode() {
-    if (!isEnum()) throw H2O.unimpl();
+    if (!isCategorical()) throw H2O.unimpl();
     long[] bins = bins();
     return ArrayUtils.maxIndex(bins);
   }
@@ -612,7 +615,7 @@ public class Vec extends Keyed<Vec> {
   /** <b>isInt</b> is a property of numeric Vecs and not a type; this
    *  property can be changed by assigning non-integer values into the Vec (or
    *  restored by overwriting non-integer values with integers).  This is a
-   *  strong type for {@link #isEnum} and {@link #isTime} Vecs.
+   *  strong type for {@link #isCategorical} and {@link #isTime} Vecs.
    *  @return true if the Vec is all integers */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
@@ -1042,33 +1045,33 @@ public class Vec extends Keyed<Vec> {
     return avec;
   }
 
-  /** Transform this vector to enum.  If the vector is integer vector then its
+  /** Transform this vector to categorical.  If the vector is integer vector then its
    *  domain is collected and transformed to corresponding strings.  If the
-   *  vector is enum an identity transformation vector is returned.
-   *  Transformation is done by a {@link EnumWrappedVec} which provides a mapping
+   *  vector is categorical an identity transformation vector is returned.
+   *  Transformation is done by a {@link CategoricalWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
-   *  @return A new Categorical Vec  */
-//  public EnumWrappedVec toEnum() {
-//    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
-//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+   *  @return A new categorical Vec  */
+//  public CategoricalWrappedVec toCategorical() {
+//    if( isCategorical() ) return adaptTo(domain()); // Use existing domain directly
+//    if( !isInt() ) throw new IllegalArgumentException("Categorical conversion only works on integer columns");
 //    int min = (int) min(), max = (int) max();
 //    // try to do the fast domain collection
 //    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-//    if( domain.length > Categorical.MAX_ENUM_SIZE )
-//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
+//    if( domain.length > Categorical.MAX_CATEGORICAL_SIZE )
+//      throw new IllegalArgumentException("Column domain is too large to be represented as an categorical: " + domain.length + " > " + Categorical.MAX_CATEGORICAL_SIZE);
 //    return adaptTo(ArrayUtils.toString(domain));
 //  }
 
-  /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
+  /** Create a new Vec (as opposed to wrapping it) that is the categorical'ified version of the original.
    *  The original Vec is not mutated.  */
-  public Vec toEnum() {
-    if( isEnum() ) return makeCopy(domain());
-    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+  public Vec toCategorical() {
+    if( isCategorical() ) return makeCopy(domain());
+    if( !isInt() ) throw new IllegalArgumentException("Categorical conversion only works on integer columns");
     int min = (int) min(), max = (int) max();
     // try to do the fast domain collection
     long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
+      throw new IllegalArgumentException("Column domain is too large to be represented as an categorical: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
     return copyOver(dom);
   }
 
@@ -1093,14 +1096,14 @@ public class Vec extends Keyed<Vec> {
         else {
           long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
           if( num < 0 )
-            throw new IllegalArgumentException("Could not find the enum value!");
+            throw new IllegalArgumentException("Could not find the categorical value!");
           nc.addNum(num);
         }
       }
     }
   }
 
-  /** Transform an Enum Vec to a Int Vec. If the domain of the Vec is stringified ints, then
+  /** Transform an categorical Vec to a Int Vec. If the domain of the Vec is stringified ints, then
    * it will use those ints. Otherwise, it will use the raw domain mapping.
    * If the domain is stringified ints, then all of the domain must be able to be parsed as
    * an int. If it cannot be parsed as such, a NumberFormatException will be caught and
@@ -1110,7 +1113,7 @@ public class Vec extends Keyed<Vec> {
    */
   public Vec toInt() {
     if( isInt() && _domain==null ) return copyOver(null);
-    if( !isEnum() ) throw new IllegalArgumentException("toInt conversion only works on Enum and Int vecs");
+    if( !isCategorical() ) throw new IllegalArgumentException("toInt conversion only works on categorical and Int vecs");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
     Vec newVec = copyOver(null);
@@ -1132,27 +1135,27 @@ public class Vec extends Keyed<Vec> {
     return newVec;
   }
 
-  /** Make a Vec adapting this Enum vector to the 'to' Enum Vec.  The adapted
-   *  EnumWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
+  /** Make a Vec adapting this cal vector to the 'to' categorical Vec.  The adapted
+   *  CategoricalWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
    *  domain (or just past it, if 'this' has elements not appearing in the 'to'
    *  domain). */
-  public EnumWrappedVec adaptTo( String[] domain ) {
-    return new EnumWrappedVec(group().addVec(),_espc,domain,this._key);
+  public CategoricalWrappedVec adaptTo( String[] domain ) {
+    return new CategoricalWrappedVec(group().addVec(),_espc,domain,this._key);
   }
 
   /** Transform this vector to strings.  If the
-   *  vector is enum an identity transformation vector is returned.
+   *  vector is categorical an identity transformation vector is returned.
    *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new String Vec  */
   public Vec toStringVec() {
-    if( !isEnum() ) throw new IllegalArgumentException("String conversion only works on enum columns");
-    return new Enum2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
+    if( !isCategorical() ) throw new IllegalArgumentException("String conversion only works on categorical columns");
+    return new Categorical2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
   }
 
-  private class Enum2StrChkTask extends MRTask<Enum2StrChkTask> {
+  private class Categorical2StrChkTask extends MRTask<Categorical2StrChkTask> {
     final String[] _domain;
-    Enum2StrChkTask(String[] domain) { _domain=domain; }
+    Categorical2StrChkTask(String[] domain) { _domain=domain; }
     @Override public void map(Chunk c, NewChunk nc) {
       for(int i=0;i<c._len;++i)
         nc.addStr(new BufferedString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));

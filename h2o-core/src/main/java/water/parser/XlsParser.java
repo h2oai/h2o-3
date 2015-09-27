@@ -576,13 +576,13 @@ class XlsParser extends Parser {
     int doRow(int row) {
       // Once we're done with row 0, look at the collection of Strings on this
       // row.  If all columns have a String, declare it a label row.  Else,
-      // inject the partial Strings as Enums.
+      // inject the partial Strings as categoricals.
       if( row > _currow && _currow == 0 ) {      // Moving off of row 0
         boolean header=true;
         for( String s : _labels ) header &= (s!=null); // All strings?
         if( header ) {          // It's a header row
           _dout.setColumnNames(_labels.clone());
-          Arrays.fill(_labels,null); // Dont reuse them labels as enums
+          Arrays.fill(_labels,null); // Dont reuse them labels as categoricals
           _currow=1;                 // Done with this row
         }
       }

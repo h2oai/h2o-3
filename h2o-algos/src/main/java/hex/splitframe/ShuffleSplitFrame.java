@@ -46,7 +46,7 @@ public class ShuffleSplitFrame {
               case Vec.T_STR : ncs[x + j].addStr(cs[j], i); break;
               case Vec.T_UUID: ncs[x + j].addUUID(cs[j], i); break;
               case Vec.T_NUM : /* fallthrough */
-              case Vec.T_ENUM:
+              case Vec.T_CAT :
               case Vec.T_TIME:
                 ncs[x + j].addNum(cs[j].atd(i));
                 break;

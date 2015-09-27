@@ -9,7 +9,7 @@ import water.util.PrettyPrint;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Class for tracking categorical (enum) columns.
+/** Class for tracking categorical (factor) columns.
  *
  *  Basically a wrapper around non blocking hash map.
  *  In the first pass, we just collect set of unique strings per column
@@ -29,13 +29,13 @@ public final class Categorical extends Iced {
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   volatile NonBlockingHashMap<BufferedString, Integer> _map;
-  boolean maxEnumExceeded = false;
+  boolean maxDomainExceeded = false;
 
   Categorical() { _map = new NonBlockingHashMap<>(); }
 
   /** Add key to this map (treated as hash set in this case). */
   int addKey(BufferedString str) {
-    // _map is shared and be cast to null (if enum is killed) -> grab local copy
+    // _map is shared and be cast to null (if categorical is killed) -> grab local copy
     NonBlockingHashMap<BufferedString, Integer> m = _map;
     if( m == null ) return Integer.MAX_VALUE;     // Nuked already
     Integer res = m.get(str);
@@ -44,7 +44,7 @@ public final class Categorical extends Iced {
     int newVal = _id.incrementAndGet();
     res = m.putIfAbsent(new BufferedString(str), newVal);
     if( res != null ) return res;
-    if( m.size() > MAX_CATEGORICAL_COUNT) maxEnumExceeded = true;
+    if( m.size() > MAX_CATEGORICAL_COUNT) maxDomainExceeded = true;
     return newVal;
   }
   final boolean containsKey(BufferedString key){ return _map.containsKey(key); }
@@ -56,7 +56,7 @@ public final class Categorical extends Iced {
   
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
   int size() { return _map.size(); }
-  boolean isMapFull() { return maxEnumExceeded; }
+  boolean isMapFull() { return maxDomainExceeded; }
 
   BufferedString[] getColumnDomain() {
     return  _map.keySet().toArray(new BufferedString[_map.size()]);

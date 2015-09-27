@@ -44,7 +44,7 @@ public class ASTMerge extends ASTPrim {
           throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
         if( lv.isString() )
-          throw new IllegalArgumentException("Cannot merge Strings; flip toEnum first");
+          throw new IllegalArgumentException("Cannot merge Strings; flip toCategorical first");
         if( lv.isNumeric() && !lv.isInt())  
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
         ncols++;
@@ -70,14 +70,14 @@ public class ASTMerge extends ASTPrim {
     Frame hashed = walkLeft ? r : l;
     if( !walkLeft ) { boolean tmp = allLeft;  allLeft = allRite;  allRite = tmp; }
 
-    // Build enum mappings, to rapidly convert enums from the distributed set
+    // Build categorical mappings, to rapidly convert categoricals from the distributed set
     // to the hashed & replicated set.
     int[][]   id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
-      if( lv.isEnum() ) {
-        EnumWrappedVec ewv = new EnumWrappedVec(lv.domain(),hashed.vecs()[i].domain());
-        int[] ids = ewv.enum_map();
+      if( lv.isCategorical() ) {
+        CategoricalWrappedVec ewv = new CategoricalWrappedVec(lv.domain(),hashed.vecs()[i].domain());
+        int[] ids = ewv.getDomainMap();
         DKV.remove(ewv._key);
         // Build an Identity map for the hashed set
         id_maps[i] = new int[ids.length];
@@ -133,7 +133,7 @@ public class ASTMerge extends ASTPrim {
     long[] _dups;         // dup rows stored here (includes _row); updated atomically.
     int _dupIdx;          // pointer into _dups array; updated atomically
     Row( int ncols ) { _keys = new long[ncols]; }
-    Row fill( final Chunk[] chks, final int[][] enum_maps, final int row ) {
+    Row fill( final Chunk[] chks, final int[][] cat_maps, final int row ) {
       // Precompute hash: columns are integer only (checked before we started
       // here).  NAs count as a zero for hashing.
       long l,hash = 0;
@@ -141,7 +141,7 @@ public class ASTMerge extends ASTPrim {
         if( chks[i].isNA(row) ) l = 0;
         else {
           l = chks[i].at8(row);
-          hash += (enum_maps == null || enum_maps[i]==null) ? l : enum_maps[i][(int)l];
+          hash += (cat_maps == null || cat_maps[i]==null) ? l : cat_maps[i][(int)l];
         }
         _keys[i] = l;
       }
@@ -236,7 +236,7 @@ public class ASTMerge extends ASTPrim {
     protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString vstr) {
       switch( v.get_type() ) {
       case Vec.T_NUM : nc.addNum(v.at(absRow)); break;
-      case Vec.T_ENUM:
+      case Vec.T_CAT :
       case Vec.T_TIME: if( v.isNA(absRow) ) nc.addNA(); else nc.addNum(v.at8(absRow)); break;
       case Vec.T_STR : nc.addStr(v.atStr(vstr, absRow)); break;
       default: throw H2O.unimpl();

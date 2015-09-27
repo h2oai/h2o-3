@@ -6,7 +6,7 @@ import water.DKV;
 import water.parser.BufferedString;
 
 /** A vector transforming values of given vector according to given domain
- *  mapping - currently only used to transform Enum columns but in theory would
+ *  mapping - currently only used to transform categorical columns but in theory would
  *  work for any dense-packed Int column.  Expected usage is to map from a new
  *  dataset to the domain-mapping expected by a model (which will match the
  *  dataset it was trained on).
@@ -20,7 +20,7 @@ import water.parser.BufferedString;
  *  need to be checked for).
  */
 public class StrWrappedVec extends WrappedVec {
-  /** Main constructor: convert from enum to string */
+  /** Main constructor: convert from categorical to string */
   public StrWrappedVec(Key key, long[] espc, Key masterVecKey) {
     super(key, espc, masterVecKey);
     _type = T_STR;

@@ -128,7 +128,7 @@ public final class ParseSetup extends Iced {
         case "uuid": types[i] = Vec.T_UUID; break;
         case "string": types[i] = Vec.T_STR; break;
         case "numeric": types[i] = Vec.T_NUM; break;
-        case "enum": types[i] = Vec.T_ENUM; break;
+        case "enum": types[i] = Vec.T_CAT; break;
         case "time": types[i] = Vec.T_TIME; break;
         default: types[i] = Vec.T_BAD;
           throw new H2OIllegalArgumentException("Provided column type "+ strs[i] + " is unknown. ",

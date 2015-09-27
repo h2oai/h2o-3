@@ -116,7 +116,7 @@ class ASTasDate extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec vec = fr.vecs()[0];
-    if( fr.vecs().length != 1 || !(vec.isEnum() || vec.isString()))
+    if( fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))
       throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 
     final String format = asts[2].exec(env).getStr();

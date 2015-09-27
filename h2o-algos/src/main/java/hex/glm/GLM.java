@@ -209,7 +209,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for(int i = 1; i < sortedDom.length; ++i)
             if(sortedDom[i-1].equals(sortedDom[i]))
               throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + sortedDom[i-1] +"'!");
-        } else if (v.isEnum()) {
+        } else if (v.isCategorical()) {
           dom = v.domain();
           map = FrameUtils.asInts(v);
           // check for dups
@@ -220,7 +220,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + dom[sortedMap[i-1]] +"'!");
         } else
           throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
-        // for now only enums allowed here
+        // for now only categoricals allowed here
         String[] names = ArrayUtils.append(_dinfo.coefNames(), "Intercept");
         if (!Arrays.deepEquals(dom, names)) { // need mapping
           HashMap<String, Integer> m = new HashMap<String, Integer>();
@@ -1121,7 +1121,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               Frame fr3 = new Frame(fr2);
               fr3.add("xjm1", _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1 ) ); // add last variable updated in cycle to the frame
               GLMCoordinateDescentTaskSeqNaive iupdate ;
-              if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1).isEnum()) { // only categorical vars
+              if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1).isCategorical()) { // only categorical vars
                 cat_num = 2;
                 iupdate = new GLMCoordinateDescentTaskSeqNaive( false, true, cat_num , new double [] {betaold[betaold.length-1]},
                         Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ),
@@ -1294,7 +1294,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //                Vec currentVec = i == _dinfo._adaptedFrame.numCols()-1?_taskInfo._iVec:_dinfo._adaptedFrame.vec(i);
 //                xOldSub = xNewSub;
 //                xOldMul = xNewMul;
-//                boolean isCategorical = currentVec.isEnum();
+//                boolean isCategorical = currentVec.isCategorical();
 //                int to;
 //                if (isCategorical) {
 //                  xNewSub = 0;

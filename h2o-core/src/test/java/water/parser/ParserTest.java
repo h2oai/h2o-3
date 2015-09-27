@@ -237,14 +237,14 @@ public class ParserTest extends TestUtil {
     Assert.assertTrue(fr3.vecs()[0].isUUID());
     fr3.delete();
 
-    String[] enumDataset = new String[]{"Foo-bar"};
-    Key k4 = makeByteVec(enumDataset);
+    String[] categoricalDataset = new String[]{"Foo-bar"};
+    Key k4 = makeByteVec(categoricalDataset);
     Key r4 = Key.make();
     ParseDataset.parse(r4, k4);
     Frame fr4 = DKV.get(r4).get();
     Assert.assertTrue(fr4.numCols()  == 1);
     Assert.assertTrue(fr4.numRows()  == 1);
-    Assert.assertTrue(fr4.vecs()[0].isEnum());
+    Assert.assertTrue(fr4.vecs()[0].isCategorical());
     String[] dom = fr4.vecs()[0].domain();
     Assert.assertTrue(dom.length == 1);
     Assert.assertEquals("Foo-bar", dom[0]);
@@ -393,7 +393,7 @@ public class ParserTest extends TestUtil {
     fr.delete();
   }
 
-  // TODO Update, originally tested enum to string conversion
+  // TODO Update, originally tested categorical to string conversion
   // TODO now just tests missing values among strings
 @Test public void testStrings() {
     Frame fr = null;
@@ -415,8 +415,8 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(vecs[5].isString());
       Assert.assertTrue(vecs[6].isString());
 
-      //checks column counts - expects MAX_ENUM == 65000
-      //Categorical registration is racy so actual enum limit can exceed MAX by a few values
+      //checks column counts - expects MAX_CATEGORICAL_COUNT == 65000
+      //Categorical registration is racy so actual categorical limit can exceed MAX by a few values
       Assert.assertTrue(65003 <= vecs[0].nzCnt()); //ColV2 A lacks starting values
       Assert.assertTrue(65002 <= vecs[1].nzCnt()); //ColV2 B has random missing values & dble quotes
       Assert.assertTrue(65005 <= vecs[2].nzCnt()); //ColV2 C has all values & single quotes
@@ -684,7 +684,7 @@ public class ParserTest extends TestUtil {
     testParsed(r1,pows10_exp);
   }
 
-  // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an enum column
+  // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an categorical column
   @Test @Ignore public void testBinaryWithNA() {
     String[] data = new String[] {
             "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",

@@ -85,7 +85,7 @@ class ASTAssign extends ASTPrim {
           }
         }
       }.doAll(new Frame().add(dst).add(src));
-      // Now update all the header info; enums & types
+      // Now update all the header info; categoricals & types
       Futures fs = new Futures();
       for( int col=0; col<dvecs.length; col++ )
         dvecs[col].copyMeta(svecs[col],fs);
