@@ -9,6 +9,7 @@ import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
 import java.util.*;
+import com.google.common.base.Charsets;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
@@ -283,14 +284,16 @@ public class NewChunk extends Chunk {
   }
 
   private void append_ss(String str) {
-    if (_ss == null) {
-      _ss = MemoryManager.malloc1((str.length()+1) * 4);
-    }
-    while (_ss.length < (_sslen + str.length() + 1)) {
+    byte[] bytes = str.getBytes(Charsets.UTF_8);
+
+    // Allocate memory if necessary
+    if (_ss == null)
+      _ss = MemoryManager.malloc1((bytes.length+1) * 4);
+    while (_ss.length < (_sslen + bytes.length+1))
       _ss = MemoryManager.arrayCopyOf(_ss,_ss.length << 1);
-    }
-    for (byte b : str.getBytes())
-      _ss[_sslen++] = b;
+
+    // Copy bytes to _ss
+    for (byte b : bytes) _ss[_sslen++] = b;
     _ss[_sslen++] = (byte)0; // for trailing 0;
   }
 
@@ -310,8 +313,8 @@ public class NewChunk extends Chunk {
     _ss[_sslen++] = (byte)0; // for trailing 0;
   }
 
-  // Append a String, stored in _ss & _is
-  public void addStr(BufferedString str) {
+  // Append a string, store in _ss & _is
+  public void addStr(Object str) {
     if(_id == null || str != null) {
       if(_is == null || sparseLen() >= _is.length) {
         append2slowstr();
@@ -323,7 +326,10 @@ public class NewChunk extends Chunk {
         if(_id != null)_id[sparseLen()] = _len;
         _is[sparseLen()] = _sslen;
         set_sparseLen(sparseLen() + 1);
-        append_ss(str);
+        if (str instanceof BufferedString)
+          append_ss((BufferedString) str);
+        else // this spares some callers from an unneeded conversion to BufferedString first
+          append_ss((String) str);
       } else if (_id == null) {
         _is[sparseLen()] = CStrChunk.NA;
         set_sparseLen(sparseLen() + 1);

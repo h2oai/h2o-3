@@ -1157,9 +1157,8 @@ public class Vec extends Keyed<Vec> {
     final String[] _domain;
     Categorical2StrChkTask(String[] domain) { _domain=domain; }
     @Override public void map(Chunk c, NewChunk nc) {
-      BufferedString tmpStr = new BufferedString();
       for(int i=0;i<c._len;++i)
-        nc.addStr(tmpStr.setTo(_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]));
+        nc.addStr(_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]);
     }
   }
 

@@ -29,9 +29,8 @@ public class FrameTestUtil {
 
   public static NewChunk createNC(String fname, String[] data, int cidx, int len) {
     NewChunk[] nchunks = Frame.createNewChunks(fname, cidx);
-    BufferedString tmpStr = new BufferedString();
     for (int i=0; i<len; i++) {
-      nchunks[0].addStr(data[i] != null ? tmpStr.setTo(data[i]) : null);
+      nchunks[0].addStr(data[i] != null ? data[i] : null);
     }
     Frame.closeNewChunks(nchunks);
     return nchunks[0];
