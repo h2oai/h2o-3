@@ -29,9 +29,9 @@ public class FrameTestUtil {
 
   public static NewChunk createNC(String fname, String[] data, int cidx, int len) {
     NewChunk[] nchunks = Frame.createNewChunks(fname, cidx);
-    BufferedString vs = new BufferedString();
+    BufferedString tmpStr = new BufferedString();
     for (int i=0; i<len; i++) {
-      nchunks[0].addStr(data[i] != null ? vs.setTo(data[i]) : null);
+      nchunks[0].addStr(data[i] != null ? tmpStr.setTo(data[i]) : null);
     }
     Frame.closeNewChunks(nchunks);
     return nchunks[0];
@@ -69,18 +69,18 @@ public class FrameTestUtil {
 
   public static void assertValues(Vec v, String[] expValues) {
     Assert.assertEquals("Number of rows", expValues.length, v.length());
-    BufferedString vs = new BufferedString();
+    BufferedString tmpStr = new BufferedString();
     for (int i = 0; i < v.length(); i++) {
       if (v.isNA(i)) Assert.assertEquals("NAs should match", null, expValues[i]);
-      else Assert.assertEquals("Values should match", expValues[i], v.atStr(vs, i).toString());
+      else Assert.assertEquals("Values should match", expValues[i], v.atStr(tmpStr, i).toString());
     }
   }
 
   public static String[] collectS(Vec v) {
     String[] res = new String[(int) v.length()];
-    BufferedString vs = new BufferedString();
+    BufferedString tmpStr = new BufferedString();
       for (int i = 0; i < v.length(); i++)
-        res[i] = v.isNA(i) ? null : v.atStr(vs, i).toString();
+        res[i] = v.isNA(i) ? null : v.atStr(tmpStr, i).toString();
     return res;
   }
 }

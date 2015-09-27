@@ -426,12 +426,12 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(65003 <= vecs[6].nzCnt()); //ColV2 G missing final values
 
       //spot check value parsing
-      BufferedString vs = new BufferedString();
-      Assert.assertEquals("A2", vecs[0].atStr(vs, 2).toString());
-      Assert.assertEquals("B7", vecs[1].atStr(vs, 7).toString());
-      Assert.assertEquals("'C65001'", vecs[2].atStr(vs, 65001).toString());
-      Assert.assertEquals("E65004", vecs[4].atStr(vs, 65004).toString());
-      Assert.assertNull(vecs[6].atStr(vs, 65004));
+      BufferedString str = new BufferedString();
+      Assert.assertEquals("A2", vecs[0].atStr(str, 2).toString());
+      Assert.assertEquals("B7", vecs[1].atStr(str, 7).toString());
+      Assert.assertEquals("'C65001'", vecs[2].atStr(str, 65001).toString());
+      Assert.assertEquals("E65004", vecs[4].atStr(str, 65004).toString());
+      Assert.assertNull(vecs[6].atStr(str, 65004));
 
       fr.delete();
     } finally {

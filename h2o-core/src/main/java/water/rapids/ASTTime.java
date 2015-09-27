@@ -133,10 +133,10 @@ class ASTasDate extends ASTPrim {
       @Override public void map( Chunk c, NewChunk nc ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
         String date;
-        BufferedString vStr = new BufferedString();
+        BufferedString tmpStr = new BufferedString();
         for( int i=0; i<c._len; ++i ) {
           if( !c.isNA(i) ) {
-            if( isStr ) date = c.atStr(vStr, i).toString();
+            if( isStr ) date = c.atStr(tmpStr, i).toString();
             else        date = dom[(int)c.at8(i)];
             nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
           } else nc.addNA();

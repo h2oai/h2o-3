@@ -1056,8 +1056,8 @@ public class Frame extends Lockable<Frame> {
         break;
       case Vec.T_STR :
         coltypes[i] = "string"; 
-        BufferedString vstr = new BufferedString();
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        BufferedString tmpStr = new BufferedString();
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
         coltypes[i] = "string"; 
@@ -1119,7 +1119,8 @@ public class Frame extends Lockable<Frame> {
           }
         }
         // Process this next set of rows
-        // For all cols in the new set
+        // For all cols in the new set;
+        BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < _cols.length; i++) {
           Chunk oc = chks[_cols[i]];
           NewChunk nc = nchks[i];
@@ -1130,7 +1131,7 @@ public class Frame extends Lockable<Frame> {
               else nc.addNum(oc.at8(j), 0);
           } else if (oc._vec.isString()) {
             for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(new BufferedString(), j));
+              nc.addStr(oc.atStr(tmpStr, j));
           } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
               nc.addNum(oc.atd(j));
@@ -1192,13 +1193,14 @@ public class Frame extends Lockable<Frame> {
   private static class DeepSelect extends MRTask<DeepSelect> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
+      BufferedString tmpStr = new BufferedString();
       for(int i = 0; i < pred._len; ++i) {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
             if( chk.isNA(i) )                   nchks[j].addNA();
             else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchks[j].addStr((chk.atStr(new BufferedString(), i)));
+            else if( chk instanceof CStrChunk)  nchks[j].addStr((chk.atStr(tmpStr, i)));
             else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
             else                                nchks[j].addNum(chk.at8(i),0);
           }
@@ -1300,13 +1302,14 @@ public class Frame extends Lockable<Frame> {
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
+      BufferedString tmpStr = new BufferedString();
       for( int i = 0; i < vs.length; i++ ) {
         if(i > 0) sb.append(',');
         if(!vs[i].isNA(_row)) {
           if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
           else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
           else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new BufferedString(), _row)).append('"');
+          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(tmpStr, _row)).append('"');
           else {
             double d = vs[i].at(_row);
             // R 3.1 unfortunately changed the behavior of read.csv().

@@ -126,12 +126,12 @@ public class WordCountTask extends MRTask<WordCountTask> {
     len = ab.get4();
     byte[] buf = new byte[len];
     while ((len = ab.get2()) != 65535) { // Read until end-of-map marker
-      BufferedStringCount vsc1 = new BufferedStringCount();
+      BufferedStringCount bsc1 = new BufferedStringCount();
       System.arraycopy(ab.getA1(len), 0, buf, off, len);
-      vsc1.set(buf, off, len, ab.get8());
+      bsc1.set(buf, off, len, ab.get8());
       off += len;
-      BufferedStringCount vsc2 = VOCABHM.putIfAbsent(vsc1, vsc1);
-      if (vsc2 != null) vsc2.inc(vsc1._cnt); // Inc count on added word
+      BufferedStringCount bsc2 = VOCABHM.putIfAbsent(bsc1, bsc1);
+      if (bsc2 != null) bsc2.inc(bsc1._cnt); // Inc count on added word
     }
     return this;
   }
@@ -158,9 +158,9 @@ public class WordCountTask extends MRTask<WordCountTask> {
   }
 
   private void filterMin() {
-    for (BufferedStringCount vs : _vocabHM.values())
-      if (vs._cnt < _minFreq)
-        _vocabHM.remove(vs);
+    for (BufferedStringCount str : _vocabHM.values())
+      if (str._cnt < _minFreq)
+        _vocabHM.remove(str);
   }
 
   private void buildFrame() {
@@ -175,9 +175,9 @@ public class WordCountTask extends MRTask<WordCountTask> {
     NewChunk cntNC = new NewChunk(cntAV, 0);
 
     //fill in values
-    for (BufferedStringCount vwc : _vocabArray) {
-      wordNC.addStr(vwc);
-      cntNC.addNum(vwc._cnt, 0);
+    for (BufferedStringCount str : _vocabArray) {
+      wordNC.addStr(str);
+      cntNC.addNum(str._cnt, 0);
     }
 
     //finalize vectors

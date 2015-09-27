@@ -861,12 +861,12 @@ public class Vec extends Keyed<Vec> {
   public final long  at16h( long i ) { return chunkForRow(i).at16h_abs(i); }
 
   /** Fetch element the slow way, as a {@link BufferedString} or null if missing.
-   *  Throws if the value is not a String.  ValueStrings are String-like
+   *  Throws if the value is not a String.  BufferedStrings are String-like
    *  objects than can be reused in-place, which is much more efficient than
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString vstr, long i ) { return chunkForRow(i).atStr_abs(vstr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -1157,8 +1157,9 @@ public class Vec extends Keyed<Vec> {
     final String[] _domain;
     Categorical2StrChkTask(String[] domain) { _domain=domain; }
     @Override public void map(Chunk c, NewChunk nc) {
+      BufferedString tmpStr = new BufferedString();
       for(int i=0;i<c._len;++i)
-        nc.addStr(new BufferedString( _domain == null? ""+c.at8(i):_domain[(int)c.at8(i)]));
+        nc.addStr(tmpStr.setTo(_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]));
     }
   }
 

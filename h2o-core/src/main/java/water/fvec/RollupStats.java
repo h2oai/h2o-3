@@ -77,7 +77,7 @@ class RollupStats extends Iced {
     Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
-    BufferedString vs = new BufferedString();
+    BufferedString tmpStr = new BufferedString();
     if (isString) _isInt = false;
     // Checksum support
     long checksum = 0;
@@ -141,7 +141,7 @@ class RollupStats extends Iced {
         if( c.isNA(i) ) _naCnt++;
         else {
           _nzCnt++;
-          l = c.atStr(vs, i).hashCode();
+          l = c.atStr(tmpStr, i).hashCode();
         }
         if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
           checksum ^= (17 * (start+i)) ^ 23*l;

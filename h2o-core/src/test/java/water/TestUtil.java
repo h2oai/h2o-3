@@ -323,9 +323,9 @@ public class TestUtil extends Iced {
             }
           } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
             if (!(c0.isNA(rows) && c1.isNA(rows))) {
-              BufferedString v0 = new BufferedString(), v1 = new BufferedString();
-              c0.atStr(v0, rows); c1.atStr(v1, rows);
-              if (v0.compareTo(v1) != 0) {
+              BufferedString s0 = new BufferedString(), s1 = new BufferedString();
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              if (s0.compareTo(s1) != 0) {
                 _unequal = true;
                 return;
               }

@@ -121,7 +121,7 @@ abstract class ASTBinOp extends ASTPrim {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             Vec vec = chk.vec();
-            // String Vectors: apply str_op as ValueStrings to all elements
+            // String Vectors: apply str_op as BufferedStrings to all elements
             if( vec.isString() ) {
               final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
@@ -158,7 +158,7 @@ abstract class ASTBinOp extends ASTPrim {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             Vec vec = chk.vec();
-            // String Vectors: apply str_op as ValueStrings to all elements
+            // String Vectors: apply str_op as BufferedStrings to all elements
             if( vec.isString() ) {
               final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )

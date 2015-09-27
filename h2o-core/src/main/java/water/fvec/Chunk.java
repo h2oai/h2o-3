@@ -240,9 +240,9 @@ public abstract class Chunk extends Iced implements Cloneable {
    *
    *  <p>Slightly slower than {@link #atStr} since it range-checks within a chunk.
    *  @return String value using absolute row numbers, or null if missing. */
-  final BufferedString atStr_abs(BufferedString vstr, long i) {
+  final BufferedString atStr_abs(BufferedString bStr, long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return atStr(vstr, (int) x);
+    if( 0 <= x && x < _len) return atStr(bStr, (int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
@@ -275,7 +275,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   /** String value using chunk-relative row numbers, or null if missing.
    *
    *  @return String value or null if missing. */
-  public final BufferedString atStr(BufferedString vstr, int i) { return _chk2 == null ? atStr_impl(vstr, i) : _chk2.atStr_impl(vstr, i); }
+  public final BufferedString atStr(BufferedString bStr, int i) { return _chk2 == null ? atStr_impl(bStr, i) : _chk2.atStr_impl(bStr, i); }
 
 
   /** Write a {@code long} using absolute row numbers.  There is no way to
@@ -513,7 +513,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean isNA_impl(int idx);
   long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
   long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  BufferedString atStr_impl(BufferedString vstr, int idx) { throw new IllegalArgumentException("Not a String"); }
+  BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
   
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */

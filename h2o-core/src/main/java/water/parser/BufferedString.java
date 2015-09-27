@@ -78,15 +78,15 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return sb.toString();
   }
 
-  public static String[] toString( BufferedString vs[] ) {
-    if( vs==null ) return null;
-    String[] ss = new String[vs.length];
-    for( int i=0; i<vs.length; i++ )
-      ss[i] = vs[i].toString();
+  public static String[] toString(BufferedString bStr[]) {
+    if( bStr==null ) return null;
+    String[] ss = new String[bStr.length];
+    for( int i=0; i<bStr.length; i++ )
+      ss[i] = bStr[i].toString();
     return ss;
   }
 
-  public static BufferedString[] toValueString(String[] strings) {
+  public static BufferedString[] toBufferedString(String[] strings) {
     if (strings == null) return null;
     BufferedString[] res = new BufferedString[strings.length];
     for (int i = 0; i < strings.length; i++) {

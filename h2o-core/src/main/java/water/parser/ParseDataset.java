@@ -325,7 +325,7 @@ public final class ParseDataset extends Job<Frame> {
             _nodeOrdMaps[catColIdx] = MemoryManager.malloc4(parseCatMaps[colIdx].maxId() + 1);
             Arrays.fill(_nodeOrdMaps[catColIdx], -1);
             //Bulk String->BufferedString conversion is slightly faster, but consumes memory
-            final BufferedString[] unifiedDomain = BufferedString.toValueString(_fr.vec(colIdx).domain());
+            final BufferedString[] unifiedDomain = BufferedString.toBufferedString(_fr.vec(colIdx).domain());
             //final String[] unifiedDomain = _fr.vec(colIdx).domain();
             for (int i = 0; i < unifiedDomain.length; i++) {
               //final BufferedString cat = new BufferedString(unifiedDomain[i]);

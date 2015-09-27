@@ -233,12 +233,12 @@ public class ASTMerge extends ASTPrim {
       else if( c.hasFloat() )           nc.addNum(c.atd(row));
       else                              nc.addNum(c.at8(row),0);
     }
-    protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString vstr) {
+    protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString bStr) {
       switch( v.get_type() ) {
       case Vec.T_NUM : nc.addNum(v.at(absRow)); break;
       case Vec.T_CAT :
       case Vec.T_TIME: if( v.isNA(absRow) ) nc.addNA(); else nc.addNum(v.at8(absRow)); break;
-      case Vec.T_STR : nc.addStr(v.atStr(vstr, absRow)); break;
+      case Vec.T_STR : nc.addStr(v.atStr(bStr, absRow)); break;
       default: throw H2O.unimpl();
       }
     }
@@ -258,7 +258,7 @@ public class ASTMerge extends ASTPrim {
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
       assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
-      BufferedString vstr = new BufferedString(); // Recycled value string
+      BufferedString bStr = new BufferedString(); // Recycled BufferedString
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
         Row hashed = rows.getk(row.fill(chks,null,i));
@@ -268,7 +268,7 @@ public class ASTMerge extends ASTPrim {
           // Copy fields from matching hashed set into walked set
           final long absrow = hashed._row;
           for( int c = 0; c < nchks.length; c++ )
-            addElem(nchks[c], vecs[_ncols+c],absrow,vstr);
+            addElem(nchks[c], vecs[_ncols+c],absrow,bStr);
         }
       }
     }
@@ -288,7 +288,7 @@ public class ASTMerge extends ASTPrim {
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
       assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
-      BufferedString vstr = new BufferedString(); // Recycled value string
+      BufferedString bStr = new BufferedString(); // Recycled BufferedString
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
         Row hashed = rows.getk(row.fill(chks, null, i));
@@ -299,15 +299,15 @@ public class ASTMerge extends ASTPrim {
             for(; c<nchks.length;++c) nchks[c].addNA();
           } // else no hashed and no _allLeft... skip (row is dropped)
         } else {
-          if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,vecs,i,  absrow   ,vstr);
-          else                                                      addRow(nchks,chks,vecs,i,hashed._row,vstr);
+          if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,vecs,i,  absrow   ,bStr);
+          else                                                      addRow(nchks,chks,vecs,i,hashed._row,bStr);
         }
       }
     }
-    void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, BufferedString vstr) {
+    void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, BufferedString bStr) {
       int c=0;
       for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
-      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - (chks.length + _ncols)],absRow,vstr);
+      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - (chks.length + _ncols)],absRow,bStr);
     }
   }
 }

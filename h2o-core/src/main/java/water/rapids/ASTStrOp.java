@@ -114,13 +114,13 @@ class ASTCountMatches extends ASTPrim {
           for( int i = 0; i < chk.len(); i++)
             newChk.addNA();
         else {
-          BufferedString vs = new BufferedString();
+          BufferedString tmpStr = new BufferedString();
           for( int i = 0; i < chk._len; ++i ) {
             if( chk.isNA(i) ) newChk.addNA();
             else {
               int cnt = 0;
               for (String aPattern : pattern)
-                cnt += StringUtils.countMatches(chk.atStr(vs, i).toString(), aPattern);
+                cnt += StringUtils.countMatches(chk.atStr(tmpStr, i).toString(), aPattern);
               newChk.addNum(cnt, 0);
             }
           }
@@ -165,12 +165,13 @@ class ASTToLower extends ASTPrim {
         else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiToLower(newChk);
         } else { //UTF requires Java string methods for accuracy
-          BufferedString vs= new BufferedString();
+          BufferedString tmpStr1 = new BufferedString();
+          BufferedString tmpStr2 = new BufferedString();
           for(int i =0; i < chk._len; i++) {
             if (chk.isNA(i))
               newChk.addNA();
             else
-              newChk.addStr(new BufferedString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH)));
+              newChk.addStr(tmpStr2.setTo(chk.atStr(tmpStr1, i).toString().toLowerCase(Locale.ENGLISH)));
           }
         }
       }
@@ -212,12 +213,13 @@ class ASTToUpper extends ASTPrim {
         else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiToUpper(newChk);
         } else { //UTF requires Java string methods for accuracy
-          BufferedString vs= new BufferedString();
+          BufferedString tmpStr1 = new BufferedString();
+          BufferedString tmpStr2 = new BufferedString();
           for(int i =0; i < chk._len; i++) {
             if (chk.isNA(i))
               newChk.addNA();
             else // Locale.ENGLISH to give the correct results for local insensitive strings
-              newChk.addStr(new BufferedString(chk.atStr(vs, i).toString().toUpperCase(Locale.ENGLISH)));
+              newChk.addStr(tmpStr2.setTo(chk.atStr(tmpStr1, i).toString().toUpperCase(Locale.ENGLISH)));
           }
         }
       }
@@ -263,15 +265,16 @@ class ASTReplaceFirst extends ASTPrim {
 //        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
 //          ((CStrChunk) chk).asciiReplaceFirst(newChk);
 //        } else { //UTF requires Java string methods for accuracy
-            BufferedString vs = new BufferedString();
+            BufferedString tmpStr1 = new BufferedString();
+            BufferedString tmpStr2 = new BufferedString();
             for (int i = 0; i < chk._len; i++) {
               if (chk.isNA(i))
                 newChk.addNA();
               else {
                 if (_ignoreCase)
-                  newChk.addStr(new BufferedString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(_pattern, _replacement)));
+                  newChk.addStr(tmpStr2.setTo(chk.atStr(tmpStr1, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(_pattern, _replacement)));
                 else
-                  newChk.addStr(new BufferedString(chk.atStr(vs, i).toString().replaceFirst(_pattern, _replacement)));
+                  newChk.addStr(tmpStr2.setTo(chk.atStr(tmpStr1, i).toString().replaceFirst(_pattern, _replacement)));
               }
             }
           }
@@ -320,15 +323,16 @@ class ASTReplaceAll extends ASTPrim {
 //        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
 //          ((CStrChunk) chk).asciiReplaceAll(newChk);
 //        } else { //UTF requires Java string methods for accuracy
-            BufferedString vs = new BufferedString();
+            BufferedString tmpStr1 = new BufferedString();
+            BufferedString tmpStr2 = new BufferedString();
             for (int i = 0; i < chk._len; i++) {
               if (chk.isNA(i))
                 newChk.addNA();
               else {
                 if (_ignoreCase)
-                  newChk.addStr(new BufferedString(chk.atStr(vs, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(_pattern, _replacement)));
+                  newChk.addStr(tmpStr2.setTo(chk.atStr(tmpStr1, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(_pattern, _replacement)));
                 else
-                  newChk.addStr(new BufferedString(chk.atStr(vs, i).toString().replaceAll(_pattern, _replacement)));
+                  newChk.addStr(tmpStr2.setTo(chk.atStr(tmpStr1, i).toString().replaceAll(_pattern, _replacement)));
               }
             }
           }
@@ -410,10 +414,10 @@ class ASTStrLength extends ASTPrim {
         } else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
           ((CStrChunk) chk).asciiLength(newChk);
         } else { //UTF requires Java string methods for accuracy
-          BufferedString vs= new BufferedString();
+          BufferedString tmpStr = new BufferedString();
           for(int i =0; i < chk._len; i++){
             if (chk.isNA(i))  newChk.addNA();
-            else              newChk.addNum(chk.atStr(vs, i).toString().length(), 0);
+            else              newChk.addNum(chk.atStr(tmpStr, i).toString().length(), 0);
           }
         }
       }

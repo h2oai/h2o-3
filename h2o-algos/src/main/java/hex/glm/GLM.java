@@ -198,9 +198,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (v.isString()) {
           dom = new String[(int) v.length()];
           map = new int[dom.length];
-          BufferedString vs = new BufferedString();
+          BufferedString tmpStr = new BufferedString();
           for (int i = 0; i < dom.length; ++i) {
-            dom[i] = v.atStr(vs, i).toString();
+            dom[i] = v.atStr(tmpStr, i).toString();
             map[i] = i;
           }
           // check for dups

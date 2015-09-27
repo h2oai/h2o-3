@@ -29,9 +29,9 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc.isNA(0));
       if (l==1) Assert.assertTrue(cc.isNA_abs(0));
-      BufferedString vs = new BufferedString();
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr(vs, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr_abs(vs, l + i));
+      BufferedString tmpStr = new BufferedString();
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr(tmpStr, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
@@ -41,8 +41,8 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
       if (l==1) Assert.assertTrue(cc2.isNA_abs(0));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(vs, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(vs, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(tmpStr, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(cc2.isNA(vals.length + l));
       Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
@@ -51,8 +51,8 @@ public class CStrChunkTest extends TestUtil {
 
       if (l==1) Assert.assertTrue(nc.isNA(0));
       if (l==1) Assert.assertTrue(nc.isNA_abs(0));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr(vs, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr_abs(vs, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr(tmpStr, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(nc.isNA(vals.length + l));
       Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
@@ -61,8 +61,8 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
       if (l==1) Assert.assertTrue(cc2.isNA_abs(0));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(vs, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(vs, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(tmpStr, l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(cc2.isNA(vals.length + l));
       Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 

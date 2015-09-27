@@ -43,12 +43,12 @@ public class CStrChunk extends Chunk {
 
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public BufferedString atStr_impl(BufferedString vstr, int idx) {
+  @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
     if( off == NA ) return null;
     int len = 0;
     while( _mem[_valstart+off+len] != 0 ) len++;
-    return vstr.set(_mem,_valstart+off,len);
+    return bStr.set(_mem,_valstart+off,len);
   }
 
   @Override public boolean isSparse() { return false; }

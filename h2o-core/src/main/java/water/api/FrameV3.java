@@ -177,9 +177,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
         data = null;
       } else if ( vec.isString() ) {
         string_data = new String[len];
-        BufferedString vstr = new BufferedString();
+        BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : vec.atStr(vstr,off + i).toString();
+          string_data[i] = vec.isNA(off + i) ? null : vec.atStr(tmpStr,off + i).toString();
         data = null;
       } else {
         data = MemoryManager.malloc8d(len);

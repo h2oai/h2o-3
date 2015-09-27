@@ -150,8 +150,8 @@ public class NewChunk extends Chunk {
           while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
           int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]-sidx : _sslen - sidx;
           // null-BufferedString represents NA value
-          BufferedString vstr = sidx == -1 ? null : new BufferedString().set(_ss, sidx, slen);
-          c.addStr(vstr);
+          BufferedString bStr = sidx == -1 ? null : new BufferedString().set(_ss, sidx, slen);
+          c.addStr(bStr);
         } else
           c.addNum(_ds[_lId]);
       }
@@ -1214,7 +1214,7 @@ public class NewChunk extends Chunk {
     }
     return isNA2(i);
   }
-  @Override public BufferedString atStr_impl( BufferedString vstr, int i ) {
+  @Override public BufferedString atStr_impl( BufferedString bStr, int i ) {
     if( sparseLen() != _len ) {
       int idx = Arrays.binarySearch(_id,0,sparseLen(),i);
       if(idx >= 0) i = idx;
@@ -1225,7 +1225,7 @@ public class NewChunk extends Chunk {
 
     int len = 0;
     while( _ss[_is[i] + len] != 0 ) len++;
-    return vstr.set(_ss, _is[i], len);
+    return bStr.set(_ss, _is[i], len);
   }
   @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }

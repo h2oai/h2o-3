@@ -65,20 +65,20 @@ public final class Categorical extends Iced {
   public static final int MAX_EXAMPLES = 10;
   public void convertToUTF8(int col){
     int hexConvCnt = 0;
-    BufferedString[] vs = _map.keySet().toArray(new BufferedString[_map.size()]);
+    BufferedString[] bStrs = _map.keySet().toArray(new BufferedString[_map.size()]);
     StringBuilder hexSB = new StringBuilder();
-    for (int i =0; i < vs.length; i++) {
-      String s = vs[i].toString();
-      if (!vs[i].equals(s)) {
+    for (int i =0; i < bStrs.length; i++) {
+      String s = bStrs[i].toString();
+      if (!bStrs[i].equals(s)) {
         if (s.contains("\uFFFD")) { // make weird chars into hex
-          s = vs[i].bytesToString();
+          s = bStrs[i].bytesToString();
           if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");
           if (hexConvCnt == MAX_EXAMPLES) hexSB.append("...");
         }
-        int val = _map.get(vs[i]);
-        _map.remove(vs[i]);
-        vs[i] = new BufferedString(s);
-        _map.put(vs[i], val);
+        int val = _map.get(bStrs[i]);
+        _map.remove(bStrs[i]);
+        bStrs[i] = new BufferedString(s);
+        _map.put(bStrs[i], val);
       }
     }
     if (hexConvCnt > 0) Log.info("Found categoricals with non-UTF-8 characters in the "
