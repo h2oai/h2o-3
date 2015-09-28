@@ -79,7 +79,7 @@ test_weights_by_row_duplication <- function() {
   #expect_equal(mse1, mse2)  #1.49 - 1.46 == 0.0291
   
   
-  testEnd()
+  
 }
 
 

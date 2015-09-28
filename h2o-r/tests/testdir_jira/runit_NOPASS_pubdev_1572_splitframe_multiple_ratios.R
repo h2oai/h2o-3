@@ -29,7 +29,7 @@ test.splitFrame.multiple.ratios <- function() {
   expect_equal(small_3, 3*small_1)
   expect_equal(small_2, 2*small_1)
 
-  testEnd()
+  
 }
 
 doTest("Using Splitframe on Multiple Ratios", test.splitFrame.multiple.ratios)

@@ -14,7 +14,7 @@ source('../h2o-runit.R')
 running_inside_h2o = is.running.internal.to.h2o()
 
 if (running_inside_h2o) {
-    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+    hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
     hdfs_cross_file = "/datasets/runit/BigCross.data"
 } else {
     stop("Not running on H2O internal network. No access to HDFS.")
@@ -50,7 +50,7 @@ check.kmeans_converge <- function() {
   avg_change <- sum((getCenters(cross1.km) - getCenters(cross2.km))^2)/ncent
   expect_true(avg_change < 1e-6 || getIterations(cross1.km) > miters)
 
-  testEnd()
+  
 }
 
 doTest("K-means convergence", check.kmeans_converge)

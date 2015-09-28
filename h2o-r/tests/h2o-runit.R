@@ -1,29 +1,70 @@
-#'
-#' h2o-R Unit Test Utilities
-#'
-
-#'
-#' Setup
-#'
 #' Do not echo any loading of this file
 .origEchoValue <- getOption("echo")
 options(echo=FALSE)
-local({r <- getOption("repos"); r["CRAN"] <- "http://cran.us.r-project.org"; options(repos = r)})
-if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
-if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
-tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Oops. Couldn't install `rgl` package...") })
-if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
-if (!"AUC" %in% rownames(installed.packages())) install.packages("AUC")
-if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
-if (!"HDtweedie" %in% rownames(installed.packages())) install.packages("HDtweedie")
-library(R.utils)
 
-PROJECT.ROOT <- "h2o-3"
-SUBPROJECT.ROOT <- "h2o-r"
+#'#####################################################
+#'
+#'
+#' h2o runit setup procedure and testing infrastructure
+#'
+#'
+#'#####################################################
 
 #'
+#'
+#' ----------------- Global variables -----------------
+#'
+#'
+H2O.IP                      <- NULL
+H2O.PORT                    <- NULL
+SEED                        <- NULL
+PROJECT.ROOT                <- "h2o-3"
+H2O.INTERNAL.HDFS.NAME.NODE <- "172.16.2.176"
+
+#'
+#'
+#' ----------------- Main setup procedure -----------------
+#'
+#'
+h2oRunitSetup <-
+function() {
+    # source h2o-r/h2o-package/R
+    root.path <- locate("h2o-package/R/", "h2o-r")
+    src(root.path)   # overrides package load
+
+    # source h2o-r/tests/Utils
+    utils.path <- locate("tests/Utils/", "h2o-r")
+    src.utils(utils.path)
+
+    ipPort <- getArgs(commandArgs(trailingOnly = TRUE)) # provided by --args ip:port
+    H2O.IP   <<- ipPort[[1]]
+    H2O.PORT <<- ipPort[[2]]
+
+    Log.info("Load default packages. Additional required packages must be loaded explicitly.\n")
+    default.packages()
+
+    Log.info(paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT,"\n"))
+    h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE)
+
+    setupRandomSeed()
+    Log.info(paste0("[SEED] : ",SEED))
+
+    sandbox()
+
+    h2o.logAndEcho("------------------------------------------------------------")
+    h2o.logAndEcho("")
+    h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+    h2o.logAndEcho("")
+    h2o.logAndEcho("------------------------------------------------------------")
+}
+
+#'
+#'
+#' ----------------- Testing infrastructure -----------------
+#'
+#'
+
 #' Locate a file given the pattern <bucket>/<path/to/file>
-#'
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 locate<-
 function(pathStub, root.parent = NULL) {
@@ -37,11 +78,9 @@ function(pathStub, root.parent = NULL) {
   else return(bucket.abspath)
 }
 
-#'
 #' Clean a path up: change \ -> /; remove starting './'; split
 clean<-
 function(p) {
-
   if (.Platform$file.sep == "/") {
     p <- gsub("[\\]", .Platform$file.sep, p)
     p <- unlist(strsplit(p, .Platform$file.sep))
@@ -49,11 +88,9 @@ function(p) {
     p <- gsub("/", "\\\\", p)  # is this right?
     p <- unlist(strsplit(p, "\\\\"))
   }
-
   p
 }
 
-#'
 #' Compute a path distance.
 #'
 #' We are looking for a directory `root`. Recursively ascend the directory structure until the root is found.
@@ -65,7 +102,6 @@ function(p) {
 #' @return: Return the absolute path to the root.
 path.compute<-
 function(cur.dir, root, root.parent = NULL) {
-
   parent.dir  <- dirname(cur.dir)
   parent.name <- basename(parent.dir)
 
@@ -86,7 +122,6 @@ function(cur.dir, root, root.parent = NULL) {
       if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }
-
   # root.parent is not null
   } else {
 
@@ -94,10 +129,12 @@ function(cur.dir, root, root.parent = NULL) {
     if (basename(cur.dir) == root && parent.name == root.parent) return(normalizePath(cur.dir))
 
     # next check if root is in cur.dir somewhere (if so, then cur.dir is the parent!)
-    if (root %in% dir(cur.dir) && root.parent == basename(cur.dir)) return(normalizePath(paste(cur.dir, .Platform$file.sep, root, sep = "")))
+    if (root %in% dir(cur.dir) && root.parent == basename(cur.dir)) {
+      return(normalizePath(paste(cur.dir, .Platform$file.sep, root, sep = ""))) }
 
     # the root is the parent
-    if (parent.name == root && basename(dirname(parent.dir)) == root.parent) return(path.compute(parent.dir, root, root.parent)) #return(normalizePath(paste(parent.dir, "/", root, sep = "")))
+    if (parent.name == root && basename(dirname(parent.dir)) == root.parent) {
+      return(path.compute(parent.dir, root, root.parent)) }
 
     # fail if reach h2o-dev
     if (parent.name == PROJECT.ROOT) stop("Reached the root h2o-dev. Didn't find the bucket with the root.parent")
@@ -105,71 +142,43 @@ function(cur.dir, root, root.parent = NULL) {
   return(path.compute(parent.dir, root, root.parent))
 }
 
-#'
-#' Source the /h2o-package/R/ directory
-#'
+#' Source the files in h2o-r/h2o-package/R/
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R", "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R", "/grid.R")
-  require(jsonlite); require(RCurl)
+  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/frame.R",
+              "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/glrm.R",
+              "/kmeans.R", "/deeplearning.R", "/randomforest.R", "/naivebayes.R", "/pca.R", "/svd.R", "/locate.R",
+              "/grid.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 
-#'
-#' Source the tests/Utils/ directory.
-#'
+#' Source the utilities in h2o-r/tests/Utils/
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/glrmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R", "/gridR.R")
+  to_src <- c("/utilsR.R", "/pcaR.R", "/deeplearningR.R", "/glmR.R", "/glrmR.R", "/gbmR.R", "/kmeansR.R",
+              "/naivebayesR.R", "/gridR.R", "/shared_javapredict.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 
-#'
-#' HDFS helpers
-#'
-H2O_INTERNAL_HDFS_NAME_NODE <- "172.16.2.176"
-
-is.running.internal.to.h2o <- function() {
-    url <- sprintf("http://%s:50070", H2O_INTERNAL_HDFS_NAME_NODE);
-    internal <- url.exists(url, timeout = 5)
-    return(internal)
+#' Load a handful of packages automatically. Runit tests that require additional packages must be loaded explicitly
+default.packages <-
+function() {
+  to_require <- c("jsonlite", "RCurl", "RUnit", "R.utils", "testthat", "ade4", "glmnet", "gbm", "ROCR", "e1071",
+                  "tools", "statmod", "fpc", "cluster")
+  if (Sys.info()['sysname'] == "Windows") {
+    options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))) }
+  invisible(lapply(to_require,function(x){require(x,character.only=TRUE,quietly=TRUE,warn.conflicts=FALSE)}))
 }
 
-# ----------------------------------------------------------------------
-
-root.path  <- locate("h2o-package/R/", "h2o-r")
-utils.path <- locate("tests/Utils/", "h2o-r")
-src(root.path)   # uncomment to source R code directly  (overrides package load)
-src.utils(utils.path)
-
-
-#The master seed is set by the runnerSetup.R script.
-#It serves as a way to reproduce all of the tests
-master_seed_dir <- locate("tests", "h2o-r")
-ms <- paste(master_seed_dir, .Platform$file.sep, "master_seed", sep = "")
-seed <- NULL
-if (file.exists(ms))  {
-    MASTER_SEED <<- TRUE
-    seed <- read.table(ms)[[1]]
-}
-setupRandomSeed(seed, suppress = FALSE)
-sandbox()
-h2o.logIt("[SEED] :", SEED, "Command")
-
-h2o.removeAll()  # wipe at the beginning of every test
-
-h2o.logAndEcho("------------------------------------------------------------")
-h2o.logAndEcho("")
-h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
-h2o.logAndEcho("")
-h2o.logAndEcho("------------------------------------------------------------")
-
-# Set up some directories.
-if (exists("TEST_ROOT_DIR")) {
-  H2O_JAR_DIR = sprintf("%s/../../target", TEST_ROOT_DIR)
+setupRandomSeed<-
+function() {
+    maxInt <- .Machine$integer.max
+    SEED <<- sample(maxInt, 1)
+    set.seed(SEED)
 }
 
-# Clean up any temporary variables to avoid polluting the user's workspace.
+h2oRunitSetup()
+
 options(echo=.origEchoValue)
 options(scipen=999)
 rm(list=c(".origEchoValue"))

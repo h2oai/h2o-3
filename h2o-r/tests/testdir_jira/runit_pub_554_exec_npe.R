@@ -8,7 +8,7 @@ test.ifce<- function() {
   ifelse(1, r.hex, (r.hex + 1))[1,1]
   r.hex[2+4,-4] + 5
 
-  testEnd()
+  
 }
 
 doTest("test ifce", test.ifce)

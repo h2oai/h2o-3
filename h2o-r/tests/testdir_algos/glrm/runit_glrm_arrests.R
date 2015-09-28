@@ -17,7 +17,7 @@ test.glrm.arrests <- function() {
   # Log.info("Compare Singular Values between R and H2O\n")
   # expect_equal(fitH2O@model$singular_vals, fitR$d, tolerance = 1e-4)
   
-  testEnd()
+  
 }
 
 doTest("GLRM Golden Test: USArrests with Centering", test.glrm.arrests)

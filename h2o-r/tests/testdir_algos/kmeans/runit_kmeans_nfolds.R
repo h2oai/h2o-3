@@ -16,7 +16,7 @@ test.km.benign <- function() {
     print(benign.km.h2o)
   }
 
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Benign Data with 3-fold CV", test.km.benign)

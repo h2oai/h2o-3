@@ -103,7 +103,7 @@ test.exec2.demo <- function() {
   prostate.glm.lin <- h2o.glm(y = 10, x = c("AGE", "RACE", "VOL", "GLEASON"), training_frame = prostate.hex, family = "binomial")
   print(prostate.glm.lin)
 
-  testEnd()
+  
 }
 
 doTest("Test out H2OExec2Demo.R", test.exec2.demo)

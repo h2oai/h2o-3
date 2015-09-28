@@ -22,7 +22,7 @@ test <- function() {
     print(sprintf("nrow(x): %d", nrow(x)))
 	expect_that(nrow(Nhex), equals(nrow(x)))
       
-    testEnd()
+    
 }
 
 doTest("Test data frame", test)

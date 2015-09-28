@@ -47,7 +47,7 @@ test.h2o.nfold_GLM <- function() {
   perf@model$confusion
   if (max(abs(cm[1:9] - perf@model$confusion[1:9])) != 0) stop("cm is wrong")
 
-  testEnd()
+  
 }
 
 doTest("Test H2O N-Fold CV for GLM", test.h2o.nfold_GLM)

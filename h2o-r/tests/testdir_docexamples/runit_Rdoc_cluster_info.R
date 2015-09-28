@@ -6,7 +6,7 @@ test.rdocclusterinfo.golden <- function() {
 
 h2o.clusterInfo()
 
-testEnd()
+
 }
 
 doTest("R Doc Cluster Info", test.rdocclusterinfo.golden)

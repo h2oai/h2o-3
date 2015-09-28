@@ -50,7 +50,7 @@ test.glrm.loss_by_col <- function() {
   
   Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", "), "and loss_by_col_idx =", paste(loss_idx_all, collapse = ", ")))
   h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all, loss_by_col_idx = loss_idx_all)
-  testEnd()
+  
 }
 
 doTest("GLRM Test: Set loss function by column", test.glrm.loss_by_col)

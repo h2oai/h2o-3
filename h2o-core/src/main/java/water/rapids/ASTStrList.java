@@ -83,7 +83,7 @@ class ASTAsFactor extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.factor requires a single column");
     Vec v0 = fr.anyVec();
-    if( !v0.isEnum() ) v0 = v0.toEnum();
+    if( !v0.isCategorical() ) v0 = v0.toCategorical();
     return new ValFrame(new Frame(fr._names, new Vec[]{v0}));
   }
 }
@@ -99,7 +99,7 @@ class ASTCharacter extends ASTPrim {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
     Vec v0 = ary.anyVec();
-    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toEnum() creates a new vec --> must be cleaned up!
+    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toCategorical() creates a new vec --> must be cleaned up!
     Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
     return new ValFrame(fr);
   }
@@ -114,10 +114,10 @@ class ASTIsFactor extends ASTPrim {
   public String str() { return "is.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isEnum() ? "TRUE" : "FALSE");
+    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isCategorical() ? "TRUE" : "FALSE");
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = fr.vec(i).isEnum() ? 1 : 0;
+      ds[i] = fr.vec(i).isCategorical() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
     vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.factor"}, new Vec[]{vec}));
@@ -173,7 +173,7 @@ class ASTAnyFactor extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String res = "FALSE";
     for (int i = 0; i < fr.vecs().length; ++i)
-      if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
+      if (fr.vecs()[i].isCategorical()) { res = "TRUE"; break; }
     return new ValStr(res);
   }
 }
@@ -191,7 +191,7 @@ class ASTAsNumeric extends ASTPrim {
     Vec vv;
     for(int c=0;c<nvecs.length;++c) {
       vv = fr.vec(c);
-      nvecs[c] = ( vv.isInt() || vv.isEnum() ) ? vv.toInt() : vv.makeCopy();
+      nvecs[c] = ( vv.isInt() || vv.isCategorical() ) ? vv.toInt() : vv.makeCopy();
     }
     return new ValFrame(new Frame(fr._names, nvecs));
   }

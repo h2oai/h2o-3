@@ -41,7 +41,7 @@ test.glrm.arrests_miss <- function() {
                          validmm$numerr, misserr)
   }
   print(model_stats)
-  testEnd()
+  
 }
 
 doTest("GLRM Test: USArrests Data with Missing Entries Inserted", test.glrm.arrests_miss)

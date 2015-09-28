@@ -7,7 +7,7 @@ test <- function() {
 
   print(jsonlite::fromJSON(json_file))
  
-  testEnd()
+  
 }
 
 doTest("testing JSON parse", test)

@@ -14,7 +14,7 @@ source('../h2o-runit.R')
 running_inside_h2o = is.running.internal.to.h2o()
 
 if (running_inside_h2o) {
-  hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+  hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
   hdfs_cross_file = "/datasets/runit/BigCross.data"
 } else {
   stop("Not running on H2O internal network. No access to HDFS.")
@@ -41,7 +41,7 @@ check.hdfs_glrm <- function() {
   h2o.rm(cross.glrm@model$loading_key$name)   # Remove loading matrix to free memory
 
 
-  testEnd()
+  
 }
 
 doTest("GLRM test", check.hdfs_glrm)

@@ -17,7 +17,7 @@ test.string.case.manipulation <- function() {
   expect_equal(upper.r, toupper(letters))
   expect_equal(lower.r, letters)
 
-  testEnd()
+  
 }
 
 doTest("Testing toupper and tolower.", test.string.case.manipulation)

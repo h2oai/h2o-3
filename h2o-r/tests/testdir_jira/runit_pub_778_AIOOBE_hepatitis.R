@@ -21,7 +21,7 @@ test.colapply <- function() {
   m <- h2o.randomForest(x = c("C9", "C12", "C13", "C15", "C16", "C18"), y = "C1", training_frame = hep, ntrees = 10, max_depth = 100)
 
   print(m)  
-  testEnd()
+  
 }
 
 doTest("PUB-169 Test: Apply scale over columns", test.colapply)

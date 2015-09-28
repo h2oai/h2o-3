@@ -16,6 +16,6 @@ Log.info("Performing compound task ( ( hex[,c(1)] <= 278.961631061 ))  on datase
          filterHex <- hex[( ( hex[,c(1)] <= 278.961631061 )) , c(1,2,8,6)]
     Log.info("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[( ( hex[,c(1)] <= 278.961631061 )) , c(3,5,4,7)]
-testEnd()
+
 }
 doTest("compoundFilterTest_ on data prostate_7 unit= ['', '<=']", complexFilterTest_prostate_7_35)

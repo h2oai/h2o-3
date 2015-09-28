@@ -18,7 +18,7 @@ test.nbayes.prostate <- function() {
   Log.info("Predict on training data")
   prostate.pred <- predict(prostate.nb, prostate.hex)
   print(head(prostate.pred))
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Test: Prostate without Laplace Smoothing", test.nbayes.prostate)

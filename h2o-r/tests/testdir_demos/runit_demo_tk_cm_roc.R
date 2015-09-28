@@ -100,7 +100,7 @@ check.demo_cm_roc <- function() {
       air.glm <- h2o.glm(x = myX, y = myY, training_frame = df, family = "binomial", nfolds = 10, alpha = 0.25, lambda = 0.001)
       air.glm@model$confusion
   }
-  testEnd()
+  
 }
 
 doTest("Airlines CM and ROC", check.demo_cm_roc)

@@ -18,7 +18,7 @@ test.GBM.nfolds <- function() {
 
 
 
-  testEnd()
+  
 }
 
 doTest("GBM Cross-Validation Test: Prostate", test.GBM.nfolds)

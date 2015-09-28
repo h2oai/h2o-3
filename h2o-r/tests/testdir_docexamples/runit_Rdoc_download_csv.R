@@ -10,7 +10,7 @@ h2o.downloadCSV(iris.hex, myFile)
 file.info(myFile)
 file.remove(myFile)
 
-testEnd()
+
 }
 
 doTest("R Doc Download CSV", test.rdoc_download_csv.golden)

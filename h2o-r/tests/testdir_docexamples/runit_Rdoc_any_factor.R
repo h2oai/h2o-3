@@ -7,7 +7,7 @@ test.anyFactor <- function() {
  iris.hex <- h2o.uploadFile( path = irisPath)
  h2o.anyFactor(iris.hex)
 
-testEnd()
+
 }
 
 doTest("R Doc h2o.anyFactor", test.anyFactor)

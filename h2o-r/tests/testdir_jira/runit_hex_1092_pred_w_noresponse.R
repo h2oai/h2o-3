@@ -15,7 +15,7 @@ test.predict.withoutresponse <- function(h) {
 	gg= h2o.gbm(x=1:4,y = 5,training_frame=train) 
 	pr = h2o.predict(object=gg,newdata=test) 
   	
-  	testEnd()
+  	
 }
 
 doTest("Test predicts on data without response for multiclass", test.predict.withoutresponse)

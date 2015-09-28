@@ -35,7 +35,7 @@ check.gbm.grid <- function() {
   cat("\n\n Grid search results:")
   print(gg)
 
-  testEnd()
+  
 }
 
 doTest("GBM Grid Search: iteration over parameters", check.gbm.grid)

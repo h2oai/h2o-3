@@ -103,7 +103,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       model._output._categorical_column_count=0;
       _isCats = new String[vecs.length][];
       for( int v=0; v<vecs.length; v++ ) {
-        _isCats[v] = vecs[v].isEnum() ? new String[0] : null;
+        _isCats[v] = vecs[v].isCategorical() ? new String[0] : null;
         if (_isCats[v] != null) model._output._categorical_column_count++;
       }
       
@@ -808,7 +808,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    * Takes mean if NaN, standardize if requested.
    */
   private static double data(double d, int i, double[] means, double[] mults, int[] modes) {
-    if(modes[i] == -1) {    // Mode = -1 for non-enum cols
+    if(modes[i] == -1) {    // Mode = -1 for non-categorical cols
       if( Double.isNaN(d) )
         d = means[i];
       if( mults != null ) {

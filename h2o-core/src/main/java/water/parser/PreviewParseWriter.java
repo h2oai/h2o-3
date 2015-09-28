@@ -97,7 +97,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         _data[_nlines][colIdx] = "NA";
     }
   }
-  @Override public void addStrCol(int colIdx, ValueString str) {
+  @Override public void addStrCol(int colIdx, BufferedString str) {
     if(colIdx < _ncols) {
       // Check for time
       if (ParseTime.isTime(str)) {
@@ -111,7 +111,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         return;
       }
 
-      //Add string to domains list for later determining string, NA, or enum
+      //Add string to domains list for later determining string, NA, or categorical
       ++_nstrings[colIdx];
       _domains[colIdx].put(str.toString(),"");
 
@@ -141,18 +141,18 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       // is it clearly numeric?
       if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
               && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
-              && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among enums, ignore
+              && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among categoricals, ignore
         types[i] = Vec.T_NUM;
         continue;
       }
 
-      // All same string, but not obvious NA, declare enum
+      // All same string, but not obvious NA, declare categorical
       if (_domains[i].size() == 1
               && !_domains[i].containsKey("NA")
               && !_domains[i].containsKey("na")
               && !_domains[i].containsKey("Na")
               &&  _nstrings[i] >= nonemptyLines) {
-        types[i] = Vec.T_ENUM;
+        types[i] = Vec.T_CAT;
         continue;
       }
 
@@ -188,18 +188,18 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         continue;
       }
 
-      // Enum or string?
-      // Enum with 0s for NAs
+      // categorical or string?
+      // categorical with 0s for NAs
       if(_nzeros[i] > 0
               && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
               && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
-        types[i] = Vec.T_ENUM;
+        types[i] = Vec.T_CAT;
         continue;
       }
-      // Enum mixed with numbers
+      // categorical mixed with numbers
       if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
               && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
-        types[i] = Vec.T_ENUM;
+        types[i] = Vec.T_CAT;
         continue;
       }
 
@@ -210,12 +210,12 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   }
 
   public String[][] guessNAStrings(byte[] types) {
-    //For now just catch 0's as NA in Enums
+    //For now just catch 0's as NA in categoricals
     String[][] naStrings = new String[_ncols][];
     boolean empty = true;
     for (int i = 0; i < _ncols; ++i) {
       int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line (based on 4M boundary)
-      if (types[i] == Vec.T_ENUM
+      if (types[i] == Vec.T_CAT
               && _nzeros[i] > 0
               && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
               && (_domains[i].size() <= 0.95 * _nstrings[i])) { // not all unique strings

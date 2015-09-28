@@ -80,7 +80,7 @@ check.demo_steam <- function() {
                     )
   cat(message)
 
-  testEnd()
+  
 }
 
 doTest("Data preparation using steam", check.demo_steam)

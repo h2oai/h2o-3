@@ -78,7 +78,7 @@ test.movielens.demo <- function(conn) {
   Log.info("Impute new user's missing ratings from XY decomposition")
   pred_new <- predict(fitH2O_new, ratings_new)
   print(pred_new)
-  testEnd()
+  
 }
 
 doTest("Test out MovieLens User Ratings Demo", test.movielens.demo)

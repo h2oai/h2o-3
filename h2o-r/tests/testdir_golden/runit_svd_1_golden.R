@@ -29,7 +29,7 @@ test.svd.golden <- function() {
   isFlipped2 <- checkSignedCols(uH2O.df, fitR$u, tolerance = 5e-5)
   expect_equal(isFlipped1, isFlipped2)
   
-  testEnd()
+  
 }
 
 doTest("SVD Golden Test: USArrests", test.svd.golden)

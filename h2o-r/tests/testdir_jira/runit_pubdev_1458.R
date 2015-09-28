@@ -16,7 +16,7 @@ test.pubdev.1458 <- function() {
   Log.info(paste("H2O PCA with k =", nvec, ", transform = 'STANDARDIZE'", sep = ""))
   fitH2O <- h2o.prcomp(train.hex, k = nvec, transform = "STANDARDIZE", max_iterations = 5000)
   checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1458: PCA handling of Missing Values", test.pubdev.1458)

@@ -67,7 +67,7 @@ public interface IGeneratedModel {
     /**
      * Returns domain values for i-th column.
      * @param i index of column
-     * @return domain for given enum column or null if columns contains numeric value
+     * @return domain for given categorical column or null if columns contains numeric value
      */
     public String[] getDomainValues(int i);
 
@@ -77,9 +77,9 @@ public interface IGeneratedModel {
     /** Returns index of column with give name or -1 if column is not found. */
     public int getColIdx(String name);
 
-    /** Maps given column's enum to integer used by this model.
+    /** Maps given column's categorical to integer used by this model.
      * Returns -1 if mapping is not found. */
-    public int mapEnum(int colIdx, String enumValue);
+    public int mapEnum(int colIdx, String categoricalValue);
 
     /**
      * Returns the expected size of preds array which is passed to {@link #predict(double[], float[])} function.

@@ -29,7 +29,7 @@
 #'        every row in the training dataset that contains at least one NA will be skipped completely.
 #'        If the test dataset has missing values, then those predictors are omitted in the probability
 #'        calculation during prediction.
-#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels, 
+#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
 #' \dontrun{
@@ -79,5 +79,5 @@ h2o.naiveBayes <- function(x, y, training_frame,
   parms$eps_prob <- eps
 
   # Error check and build model
-  .h2o.modelJob('naivebayes', parms, do_future=FALSE)
+  .h2o.modelJob('naivebayes', parms)
 }

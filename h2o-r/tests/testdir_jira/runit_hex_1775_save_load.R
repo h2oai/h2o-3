@@ -19,9 +19,9 @@ test.hex_1775 <- function() {
   Log.info("Build GBM model")
   prostate.gbm = h2o.gbm(y = 2, x = 3:9, training_frame = prostate.hex, nfolds = 5, distribution = "multinomial")
   Log.info("Build Speedy Random Forest Model")
-  iris.speedrf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10, depth = 20, type = "fast")
+  iris.speedrf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10)
   Log.info("Build BigData Random Forest Model")
-  iris.rf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10, depth = 20, nfolds = 5, type = "BigData")
+  iris.rf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10, nfolds = 5)
   Log.info("Build Naive Bayes Model")
   iris.nb = h2o.naiveBayes(y = 5, x = 1:4, training_frame = iris.hex)
   Log.info("Build Deep Learning model")
@@ -107,7 +107,7 @@ test.hex_1775 <- function() {
   expect_equal(nrow(speedrf.pred), 150)
   expect_equal(speedrf.pred, speedrf.pred2)
 
-  testEnd()
+  
 }
 
 doTest("HEX-1775 Test: Save and Load GLM Model", test.hex_1775)

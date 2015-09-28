@@ -8,7 +8,7 @@ import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Categorical;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -42,7 +42,7 @@ class RollupStats extends Iced {
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
-  private static final int MAX_SIZE = 1000; // Standard bin count; enums can have more bins
+  private static final int MAX_SIZE = 1000; // Standard bin count; categoricals can have more bins
   // the choice of MAX_SIZE being a power of 10 (rather than 1024) just aligns-to-the-grid of the common input of fixed decimal
   // precision numbers. It is still an estimate and makes no difference mathematically. It just gives tidier output in some
   // simple cases without penalty.
@@ -77,7 +77,7 @@ class RollupStats extends Iced {
     Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
-    ValueString vs = new ValueString();
+    BufferedString tmpStr = new BufferedString();
     if (isString) _isInt = false;
     // Checksum support
     long checksum = 0;
@@ -141,7 +141,7 @@ class RollupStats extends Iced {
         if( c.isNA(i) ) _naCnt++;
         else {
           _nzCnt++;
-          l = c.atStr(vs, i).hashCode();
+          l = c.atStr(tmpStr, i).hashCode();
         }
         if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
           checksum ^= (17 * (start+i)) ^ 23*l;
@@ -251,7 +251,7 @@ class RollupStats extends Iced {
         }
       }
       // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
-      if( _fr.anyVec().isEnum() && _fr.anyVec().domain().length > 2 )
+      if( _fr.anyVec().isCategorical() && _fr.anyVec().domain().length > 2 )
         _rs._mean = _rs._sigma = Double.NaN;
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
@@ -441,11 +441,11 @@ class RollupStats extends Iced {
         return;
       }
       // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
-      // - unless the count gets too high; allow a very high count for enums.
+      // - unless the count gets too high; allow a very high count for categoricals.
       int nbins=MAX_SIZE;
       if( rs._isInt && span < Integer.MAX_VALUE ) {
         nbins = (int)span+1;      // 1 bin per int
-        int lim = vec.isEnum() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
+        int lim = vec.isCategorical() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels
       }
       addToPendingCount(1);

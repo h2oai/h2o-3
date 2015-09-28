@@ -13,7 +13,7 @@ test.head_empty_frame <- function() {
   head(b.h2o[,1]) 
   head(b.h2o[1,]) 
   
-  testEnd()
+  
 }
 
 doTest("Test frame add.", test.head_empty_frame)

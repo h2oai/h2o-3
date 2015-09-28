@@ -41,7 +41,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins = 20; // Numerical (real/int) cols: Build a histogram of this many bins, then split at the best point
 
-    public int _nbins_cats = 1024; // Categorical (enum) cols: Build a histogram of this many bins, then split at the best point
+    public int _nbins_cats = 1024; // Categorical (factor) cols: Build a histogram of this many bins, then split at the best point
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 

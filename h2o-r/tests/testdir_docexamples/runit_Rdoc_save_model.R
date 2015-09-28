@@ -6,7 +6,7 @@ test.rdoc_save_model.golden <- function() {
   #prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
   prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", alpha = 0.5)
   h2o.saveModel(object = prostate.glm, path = tempdir(), force = TRUE)
-  testEnd()
+  
 }
 
 doTest("R Doc Save Model", test.rdoc_save_model.golden)

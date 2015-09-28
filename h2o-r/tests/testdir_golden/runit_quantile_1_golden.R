@@ -61,7 +61,7 @@ test.quantile.golden <- function() {
                    as.vector(quantile(vec.hex, probs=probs)))
   }
 
-  testEnd()
+  
 }
 
 doTest("Quantile Test: Golden Quantile Test", test.quantile.golden)

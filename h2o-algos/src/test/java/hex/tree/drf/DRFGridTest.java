@@ -44,7 +44,7 @@ public class DRFGridTest extends TestUtil {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("cylinders");
-      fr.add("cylinders", old.toEnum()); // response to last column
+      fr.add("cylinders", old.toCategorical()); // response to last column
       DKV.put(fr);
 
       // Setup hyperparameter search space

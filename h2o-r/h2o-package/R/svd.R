@@ -50,14 +50,14 @@ h2o.svd <- function(training_frame, x, nv,
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
-  
+
   # Training_frame may be a key or an Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  
+
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
@@ -75,7 +75,7 @@ h2o.svd <- function(training_frame, x, nv,
     parms$seed <- seed
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
-  
+
   # Error check and build model
-  .h2o.modelJob('svd', parms, do_future=FALSE, h2oRestApiVersion=99)
+  .h2o.modelJob('svd', parms, h2oRestApiVersion=99)
 }

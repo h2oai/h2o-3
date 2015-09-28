@@ -55,7 +55,7 @@ test.cm.valid <- function() {
   Log.info("Negative testcases...")
   expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE, newdata = pros.test))
   expect_error(h2o.confusionMatrix(iris.glm, thresholds = 0.5))
-  testEnd()
+  
 }
 
 doTest("Testing h2o.confusionMatrix on a model with validation frame", test.cm.valid)

@@ -8,9 +8,9 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.parser.ValueString;
 import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
@@ -170,7 +170,7 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(int...rows) { return vec(null, rows); }
-  /** A Categorical/Factor Vec from an array of ints - with enum/domain mapping
+  /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
@@ -323,9 +323,9 @@ public class TestUtil extends Iced {
             }
           } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
             if (!(c0.isNA(rows) && c1.isNA(rows))) {
-              ValueString v0 = new ValueString(), v1 = new ValueString();
-              c0.atStr(v0, rows); c1.atStr(v1, rows);
-              if (v0.compareTo(v1) != 0) {
+              BufferedString s0 = new BufferedString(), s1 = new BufferedString();
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              if (s0.compareTo(s1) != 0) {
                 _unequal = true;
                 return;
               }

@@ -803,7 +803,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(isSupervised()) {
 
       if(_response != null) {
-        _nclass = _response.isEnum() ? _response.cardinality() : 1;
+        _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
           error("_response","Response cannot be constant.");
       }
@@ -866,7 +866,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Build the validation set to be compatible with the training set.
-    // Toss out extra columns, complain about missing ones, remap enums
+    // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());

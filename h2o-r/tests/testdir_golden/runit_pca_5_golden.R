@@ -33,7 +33,7 @@ test.poison.golden <- function() {
     fitH2O <- h2o.prcomp(poisonH2O, k = k, transform = 'STANDARDIZE', max_iterations = 2000)
     checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   }
-  testEnd()
+  
 }
 
 doTest("PCA Golden Test: Poison with Variable K", test.poison.golden)

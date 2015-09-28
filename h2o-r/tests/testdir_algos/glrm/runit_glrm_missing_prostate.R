@@ -44,7 +44,7 @@ test.glrm.prostate_miss <- function() {
                          trainmm$caterr, validmm$caterr, miss_numerr, miss_caterr)
   }
   print(model_stats)
-  testEnd()
+  
 }
 
 doTest("GLRM Test: Prostate Data with Missing Values Inserted", test.glrm.prostate_miss)

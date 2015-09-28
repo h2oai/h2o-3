@@ -25,7 +25,7 @@ test.summary <- function() {
   expect_true(grepl("NA", virginica_summary[2,"Species"]))
   expect_true(grepl("NA", virginica_summary[3,"Species"]))
 
-  testEnd()
+  
 }
 
 doTest("Summary on frame with constant enum columns", test.summary)

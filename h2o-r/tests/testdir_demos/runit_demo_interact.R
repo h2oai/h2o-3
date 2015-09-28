@@ -77,7 +77,7 @@ check.demo_interact <- function() {
 
   print( h2o.ls() )
 
-  testEnd()
+  
 }
 
 doTest("x-prod interaction terms between two categorical vectors", check.demo_interact)

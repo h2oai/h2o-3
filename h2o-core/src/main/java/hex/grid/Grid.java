@@ -117,7 +117,7 @@ public class Grid<MP extends Model.Parameters>
    * Ask the Grid for a suggested next hyperparameter value, given an existing Model as a starting
    * point and the complete set of hyperparameter limits. Returning a NaN signals there is no next
    * suggestion, which is reasonable if the obvious "next" value does not exist (e.g. exhausted all
-   * possibilities of an enum).  It is OK if a Model for the suggested value already exists; this
+   * possibilities of an categorical).  It is OK if a Model for the suggested value already exists; this
    * will be checked before building any model.
    *
    * @param h           The h-th hyperparameter
