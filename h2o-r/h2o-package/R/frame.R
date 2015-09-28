@@ -38,6 +38,16 @@
 is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
+#' Get back-end distributed key/value store id from a Frame.
+#'
+#' @param x A Frame
+#' @return The id
+#' @export
+h2o.getId <- function(x) {
+  chk.Frame(x)
+  attr(x, "id")
+}
+
 .h2o.gc <- function() {
   gc()
 }
@@ -1720,7 +1730,10 @@ as.data.frame.Frame <- function(x, ...) {
   # Substitute NAs for blank cells rather than skipping
   df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
   close(tcon)
-  # FIXME now convert all date columns to POSIXct
+  # Convert all date columns to POSIXct
+  dates <- attr(x, "types") %in% "time"
+  if (length(dates) > 0) # why do some frames come in with no attributes but many columns?
+    for (i in 1:length(dates)) { if (dates[[i]]) class(df[[i]]) = "POSIXct" }
   df
 }
 
@@ -2381,16 +2394,12 @@ h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 #'
 #' To Lower
 #'
-#' Mutates the input!
-#'
 #' @param x A Frame object whose strings should be lower'd
 #' @export
 h2o.tolower <- function(x) .newExpr("tolower", x)
 
 #'
 #' To Upper
-#'
-#' Mutates the input!
 #'
 #' @param x A Frame object whose strings should be upper'd
 #' @export
@@ -2399,26 +2408,28 @@ h2o.toupper <- function(x) .newExpr("toupper", x)
 #'
 #' String Substitute
 #'
-#' Mutates the input. Changes the first occurence of pattern with replacement.
+#' Creates a copy of the target column in which each string has the first occurence of
+#' the regex pattern replaced with the replacement substring.
 #'
 #' @param pattern The pattern to replace.
 #' @param replacement The replacement pattern.
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("sub", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", .quote(pattern), .quote(replacement),x,ignore.case)
 
 #'
 #' String Global Substitute
 #'
-#' Mutates the input. Changes the all occurences of pattern with replacement.
+#' Creates a copy of the target column in which each string has all occurence of
+#' the regex pattern replaced with the replacement substring.
 #'
 #' @param pattern The pattern to replace.
 #' @param replacement The replacement pattern.
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("gsub", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", .quote(pattern), .quote(replacement),x,ignore.case)
 
 #'
 #' Trim Space
@@ -2426,3 +2437,10 @@ h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("gsub", .
 #' @param x The column whose strings should be trimmed.
 #' @export
 h2o.trim <- function(x) .newExpr("trim", x)
+
+#'
+#' String length
+#'
+#' @param x The column whose string lengths will be returned.
+#' @export
+h2o.nchar <- function(x) .newExpr("length", x)

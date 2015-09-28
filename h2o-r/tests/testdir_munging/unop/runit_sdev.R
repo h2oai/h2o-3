@@ -21,7 +21,7 @@ test.sdev <- function() {
     expect_equal(iris_Rsd, iris_H2Osd)
   }
   
-  testEnd()
+  
 }
 
 doTest("Test out the sd() functionality", test.sdev)

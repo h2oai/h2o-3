@@ -21,7 +21,7 @@ test <- function() {
   vals <- c("NEW SETOSA ENUM", "NEW VIRG ENUM", "NEW VERSI ENUM")
   expect_equal(h2o.levels(hex$Species), vals)
 
-  testEnd()
+  
 }
 
 doTest("Many Keys Test: Removing", test)

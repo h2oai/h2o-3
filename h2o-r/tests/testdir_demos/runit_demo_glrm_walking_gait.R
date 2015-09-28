@@ -71,7 +71,7 @@ test.walking_gait.demo <- function(conn) {
   lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])
   matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = 1:2)
   legend("topright", legend = c("Original", "Imputed"), col = 1:2, pch = 1)
-  testEnd()
+  
 }
 
 doTest("Test out Walking Gait Demo", test.walking_gait.demo)

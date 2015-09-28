@@ -14,7 +14,7 @@ source('../h2o-runit.R')
 running_inside_h2o = is.running.internal.to.h2o()
 
 if (running_inside_h2o) {
-    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+    hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
     hdfs_file = "/datasets/airlines_all.csv"
 } else {
     stop("Not running on H2O internal network.  No access to HDFS.")
@@ -40,7 +40,7 @@ check.kmeans_airlines <- function() {
   airlines.km <- h2o.kmeans(training_frame = airlines.hex, x = myX, k = 7, init = "Furthest", max_iterations = 10, standardize = TRUE)
   airlines.km
 
-  testEnd()
+  
 }
 
 doTest("K-means on Airlines dataset", check.kmeans_airlines)

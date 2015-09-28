@@ -115,9 +115,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
-                    max_active_predictors = -1,
-                    ...
-                    )
+                    max_active_predictors = -1)
 {
   if (!is.null(beta_constraints)) {
       if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
@@ -126,9 +124,6 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
         beta_constraints <- as.h2o(beta_constraints)
       }
   }
-  #Handle ellipses
-  if (length(list(...)) > 0)
-    dots <- .model.ellipses( list(...))
 
   if (!is.Frame(training_frame))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -178,7 +173,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
     .eval.frame(beta_constraints)
     parms$beta_constraints <- beta_constraints
   }
-  m <- .h2o.modelJob('glm', parms, do_future=FALSE)
+  m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m

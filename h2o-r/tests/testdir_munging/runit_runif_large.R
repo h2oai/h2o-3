@@ -11,7 +11,7 @@ test.runif <- function() {
     print(paste0("This demonstrates that seeding runif on identical frames with different chunk distributions ",
                  "provides different results. upload_file: ", mean(r_u), ", import_frame: ", mean(r_i)))
 
-    testEnd()
+    
 }
 
 doTest("Test runif", test.runif)

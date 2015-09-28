@@ -83,7 +83,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   public void init(boolean expensive) {
     super.init(expensive);
     if (_response != null) {
-      if (!_response.isEnum()) error("_response", "Response must be a categorical column");
+      if (!_response.isCategorical()) error("_response", "Response must be a categorical column");
       else if (_response.isConst()) error("_response", "Response must have at least two unique categorical levels");
     }
     if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0");

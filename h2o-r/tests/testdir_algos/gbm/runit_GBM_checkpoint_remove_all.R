@@ -16,7 +16,7 @@ checkpoint.remove.all <- function() {
   iris = h2o.importFile(locate("smalldata/iris/iris.csv"))
   m2 = h2o.gbm(x=1:4, y=5, training_frame=iris, ntrees=200, checkpoint=restored@model_id)
 
-  testEnd()
+  
 }
 
 doTest("GBM checkpoint with remove all", checkpoint.remove.all)

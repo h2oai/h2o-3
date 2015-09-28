@@ -7,7 +7,7 @@ test.rdocsd.golden <- function() {
     prostate.hex <- h2o.uploadFile(path = prosPath)
     sd(prostate.hex$AGE)
 
-testEnd()
+
 }
 
 doTest("R Doc SD", test.rdocsd.golden)

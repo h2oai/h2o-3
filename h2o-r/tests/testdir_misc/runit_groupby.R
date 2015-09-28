@@ -28,7 +28,7 @@ test <- function(conn) {
 #   df.hex[, "AGE"] <- as.factor(df.hex[, "AGE"])
 #   groupby <- h2o.group_by(data = df.hex, by = "RACE",  order.by = "RACE",
 #                            nrow("ID"), sum("VOL"), mean("GLEASON"), median("DPROS"), mode("AGE"))  
-  testEnd()
+  
 }
 
 doTest("Testing different methods for groupby:", test)

@@ -12,7 +12,7 @@ test.additional.parameters <- function() {
     expect_true(all(colnames(fhex) == c.names))
     expect_true(all(sapply(1:ncol(fhex), function (c) is.factor(fhex[,c]))))
 
-    testEnd()
+    
 }
 
 doTest("Additional parameters", test.additional.parameters)

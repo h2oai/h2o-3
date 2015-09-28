@@ -15,7 +15,7 @@ test.hanging.offset <- function() {
 
   myglm <- h2o.glm(x = 3:9, y = 2, training_frame = pros.hex, family = "binomial", offset = "PSA")
 
-  testEnd()
+  
 }
 
 doTest("Testing GLM Offsets that Hang", test.hanging.offset)

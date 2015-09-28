@@ -37,7 +37,7 @@ test.pub.651 <- function() {
   print(paste("mean squared error as calculated from prediction file probabilities:  ", mse_calculatedfrom_predFile, sep = ' '))
   print("Expect the above two to be equal")
   expect_true( abs(mse_from_model - mse_calculatedfrom_predFile) < 1e-5 )
-  testEnd()
+  
 }
 
 doTest("PUB-651: Test Predictions on SRF", test.pub.651)

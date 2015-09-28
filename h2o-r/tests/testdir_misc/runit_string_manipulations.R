@@ -27,7 +27,7 @@ test.string.manipulation <- function() {
   #print(splits)
   #expect_equal(ncol(splits), 5)
 
-  testEnd()
+  
 }
 
 doTest("Testing Various String Manipulations", test.string.manipulation)

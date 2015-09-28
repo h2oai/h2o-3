@@ -23,7 +23,7 @@ test.h2o.prcomp <- function() {
   australia.pca2 = h2o.prcomp(australia.hex, k = 4, transform = "STANDARDIZE")
   print(australia.pca2)
   
-  testEnd()
+  
 }
 
 doTest("Test out the h2o.prcomp R demo", test.h2o.prcomp)

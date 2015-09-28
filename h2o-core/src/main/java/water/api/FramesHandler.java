@@ -25,7 +25,7 @@ import java.util.*;
  * <p> columnSummary(): Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.
  * <p>
  * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain
- * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an Enum.
+ * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an categorical.
  * <p>
  * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)
  * <p> column(): Return the specified column from a Frame.

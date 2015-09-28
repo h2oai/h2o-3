@@ -64,7 +64,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     if (!_parms.stop_column.isInt())
       error("stop_column", "stop time must be of type integer");
 
-    if (!_parms.event_column.isInt() && !_parms.event_column.isEnum())
+    if (!_parms.event_column.isInt() && !_parms.event_column.isCategorical())
       error("event_column", "event must be of type integer or factor");
 
     if (Double.isNaN(_parms.lre_min) || _parms.lre_min <= 0)

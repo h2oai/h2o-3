@@ -68,7 +68,7 @@ test.kmsplit.golden <- function() {
   # default tolerance is close to 1.5e-8. but should be comparing integers
   expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Golden Kmeans - Ozone Test/Train Split without Standardization", test.kmsplit.golden)

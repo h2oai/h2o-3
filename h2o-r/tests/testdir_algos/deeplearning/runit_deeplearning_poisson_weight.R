@@ -32,7 +32,7 @@ test <- function() {
 	expect_equal(0.8789, min(ph[,1]), tolerance=1e-1 )
 	expect_equal(1.216, max(ph[,1]), tolerance=1e-1 )
 		
-	testEnd()
+	
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for poisson distribution", test)
 

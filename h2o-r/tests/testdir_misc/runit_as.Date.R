@@ -13,7 +13,7 @@ test.headers <- function() {
   diff2     <- as.numeric(as.matrix(data.hex[4,2] - data.hex[3,2])/(1000*60*60*24))
   checkEqualsNumeric(diff1, diff2)
 
-  testEnd()
+  
 }
 
 doTest("Import a dataset with a header H2OParsedData Object", test.headers)

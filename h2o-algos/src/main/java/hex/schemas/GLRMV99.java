@@ -39,7 +39,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 				"recover_svd"
 		};
 
-    @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
+    @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
 
     @API(help = "Rank of matrix approximation", required = true, gridable = true)
@@ -48,7 +48,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Numeric loss function", values = { "Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic" }) // TODO: pull out of enum class
     public GLRMParameters.Loss loss;
 
-    @API(help = "Enum loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of enum class
+    @API(help = "Categorical loss function", values = { "Categorical", "Ordinal" }) // TODO: pull out of categorical class
     public GLRMParameters.Loss multi_loss;
 
     @API(help = "Loss function by column (override)", values = { "Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic", "Categorical", "Ordinal" })
@@ -60,10 +60,10 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "Length of period (only used with periodic loss function)", gridable = true)
     public int period;
 
-    @API(help = "Regularization function for X matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
+    @API(help = "Regularization function for X matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of categorical class
     public GLRMParameters.Regularizer regularization_x;
 
-    @API(help = "Regularization function for Y matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of enum class
+    @API(help = "Regularization function for Y matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }) // TODO: pull out of categorical class
     public GLRMParameters.Regularizer regularization_y;
 
     @API(help = "Regularization weight on X matrix", gridable = true)
@@ -84,7 +84,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     @API(help = "RNG seed for initialization")
     public long seed;
 
-    @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }) // TODO: pull out of enum class
+    @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }) // TODO: pull out of categorical class
     public GLRM.Initialization init;
 
     @API(help = "Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" })   // TODO: pull out of enum class

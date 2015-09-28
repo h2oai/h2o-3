@@ -6,34 +6,34 @@
 #           curl, javac, java must be installed.
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
-
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../h2o-runit.R")
 
+test.drf.javapredict.cars.rand <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+    # Story:
+    # The objective of the test is to verify java code generation
+    # for big models containing huge amount of trees.
+    # This case verify multi-classifiers.
+    training_file <- test_file <- locate("smalldata/junit/cars_nice_header.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-# Story:
-# The objective of the test is to verify java code generation
-# for big models containing huge amount of trees.
-# This case verify multi-classifiers.
+    params                 <- list()
+    params$ntrees          <- sample( 100, 1)
+    params$max_depth       <- sample( 10, 1)
+    params$min_rows        <- sample(  20, 1)
+    params$balance_classes <- sample( c(T,F), 1)
+    params$x               <- c("name","economy", "displacement","power","weight","acceleration","year")
+    params$y               <- "cylinders"
+    params$training_frame  <- training_frame
+    params$seed            <- 42
 
-ntree    <- sample( 100, 1)
-depth    <- sample( 100, 1)
-nodesize <- sample(  20, 1)
-balance_classes <- sample( c(T,F), 1)
+    doJavapredictTest("randomForest",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+}
 
-train <- locate("smalldata/junit/cars_nice_header.csv")
-test <- locate("smalldata/junit/cars_nice_header.csv")
-
-x = c("name","economy", "displacement","power","weight","acceleration","year")
-y = "cylinders"
-
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_RF.R')
+doTest("RF test", test.drf.javapredict.cars.rand)

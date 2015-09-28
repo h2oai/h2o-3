@@ -12,7 +12,7 @@ PSA.outliers <- h2o.assign(PSA.outliers, "PSA.outliers")
 head(prostate.hex)
 head(PSA.outliers)
 
-testEnd()
+
 }
 
 doTest("R Doc h2o.assign", test.h2o.assign.golden)

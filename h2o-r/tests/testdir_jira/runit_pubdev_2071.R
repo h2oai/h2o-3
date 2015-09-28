@@ -17,8 +17,6 @@ expect_equal(res, TRUE)
 
 detach()
 
-testEnd()
-
 }
 
 doTest("PUBDEV-2071 H2O does not parse long numbers correctly", test.pubdev_2071)

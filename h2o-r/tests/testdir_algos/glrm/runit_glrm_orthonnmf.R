@@ -63,7 +63,7 @@ test.glrm.orthonnmf <- function() {
   expect_equivalent(as.matrix(pred), fitXY)   # Imputation for numerics with L2 loss is just XY product
   expect_equal(fitH2O@model$training_metrics@metrics$numerr, fitH2O@model$objective)
   expect_equal(fitH2O@model$training_metrics@metrics$caterr, 0)
-  testEnd()
+  
 }
 
 doTest("GLRM Test: Orthogonal Non-negative Matrix Factorization", test.glrm.orthonnmf)

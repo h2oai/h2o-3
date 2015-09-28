@@ -27,7 +27,7 @@ test.summary.numeric <- function() {
   # quantiles accurate to 1 part in 1000 only.
   checkSummary(summary(tail(arrests.hex)), summary_2, tolerance = 2e-3)
 
-  testEnd()
+  
 }
 
 doTest("Summary Tests", test.summary.numeric)

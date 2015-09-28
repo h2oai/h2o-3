@@ -47,7 +47,7 @@ test.grid.empty.hyper.parameter.space <- function(conn) {
   print(g)
   expect_equal(length(g@model_ids),1)
 
-  testEnd()
+  
 }
 
 doTest("All grid algos with empty hyper parameter space", test.grid.empty.hyper.parameter.space)

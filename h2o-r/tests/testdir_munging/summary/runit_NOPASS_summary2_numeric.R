@@ -27,7 +27,7 @@ test.summary2.numeric <- function() {
   print(summary_)
 
   checkSummary(H2Osum, wonky.Rsum) 
-  testEnd()
+  
 }
 
 doTest("Summary Tests", test.summary2.numeric)

@@ -32,7 +32,7 @@ test.rh2o_logging <- function() {
   expect_false(file.exists(cmd_path))
   expect_false(file.exists(err_path))
 
-  testEnd()
+  
 }
 
 doTest("Logging Tests: h2o.startLogging, h2o.stopLogging", test.rh2o_logging)

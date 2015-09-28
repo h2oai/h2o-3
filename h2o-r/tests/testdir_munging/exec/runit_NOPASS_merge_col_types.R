@@ -12,7 +12,7 @@ check.merge_col_types <- function() {
 
   expect_error(h2o.merge(l.hex, r.hex, T))
 
-  testEnd()
+  
 }
 
 doTest("Matching Column Names Must Have Same Data Types", check.merge_col_types)

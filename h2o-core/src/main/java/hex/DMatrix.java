@@ -1,6 +1,5 @@
 package hex;
 
-import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.FJWThr;
 import water.H2O.H2OCallback;
@@ -64,7 +63,7 @@ public class DMatrix  {
     if(src.numRows() != tgt.numCols() || src.numCols() != tgt.numRows())
       throw new IllegalArgumentException("dimension do not match!");
     for(Vec v:src.vecs()) {
-      if (v.isEnum())
+      if (v.isCategorical())
         throw new IllegalArgumentException("transpose can only be applied to all-numeric frames (representing a matrix)");
       if(v.length() > 1000000)
         throw new IllegalArgumentException("too many rows, transpose only works for frames with < 1M rows.");

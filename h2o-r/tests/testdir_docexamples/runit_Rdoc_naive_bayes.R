@@ -7,7 +7,7 @@ test.rdoc_naive_bayes.golden <- function() {
   votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
   h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
   
-  testEnd()
+  
 }
 
 doTest("R Doc Naive Bayes", test.rdoc_naive_bayes.golden)

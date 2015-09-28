@@ -37,7 +37,7 @@ test.minus <- function() {
   Log.info("fiveMinusSliced - slicedMinusFive: ")
   print(head(hexMinusHex))
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: '-'", test.minus)

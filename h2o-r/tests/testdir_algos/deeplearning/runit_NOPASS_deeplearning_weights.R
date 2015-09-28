@@ -69,7 +69,7 @@ test_weights_by_row_duplication <- function() {
                hh2@model$validation_metrics@metrics$logloss,
                tolerance = 1e-6)
   
-  testEnd()
+  
 }
 
 

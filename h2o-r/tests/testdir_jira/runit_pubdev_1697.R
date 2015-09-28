@@ -7,7 +7,7 @@ test.pubdev.1697 <- function() {
   gbm = h2o.gbm(y="economy_20mpg", x=c("displacement","power","weight","acceleration","year"), training_frame=cars,
                 nfolds=nrow(cars), distribution="bernoulli", fold_assignment="Modulo")
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1697: Cross Validation: Job not found", test.pubdev.1697)

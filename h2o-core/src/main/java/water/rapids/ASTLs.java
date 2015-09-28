@@ -29,7 +29,7 @@ class ASTLs extends ASTPrim {
     NewChunk keys = new NewChunk(av,0);
     int r = 0;
     for( Key key : KeySnapshot.globalSnapshot().keys()) {
-      keys.addEnum(r++);
+      keys.addCategorical(r++);
       domain.add(key.toString());
     }
     String[] key_domain = domain.toArray(new String[domain.size()]);

@@ -46,7 +46,7 @@ check.deeplearning.gridlayers <- function() {
   cat("\n\n Defined hidden parameters for grid search:")
   print(hidden_opts)
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Grid Search: Hidden Layers", check.deeplearning.gridlayers)

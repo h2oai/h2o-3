@@ -15,7 +15,7 @@ test <- function() {
   print("Error with splice UUID to both predictions :: '+' operator")
   assertError(air.uuid <- h2o.assign((airline.test.hex + uuid.hex), key="air.uuid"))
   
-  testEnd()
+  
 }
 
 doTest("Testing '+' expression for h2o data objects", test)

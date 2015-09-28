@@ -40,7 +40,7 @@ check.demo_prep_airlines <- function() {
   air.gbm
 
 
-  testEnd()
+  
 }
 
 doTest("Airline demo preparation", check.demo_prep_airlines)

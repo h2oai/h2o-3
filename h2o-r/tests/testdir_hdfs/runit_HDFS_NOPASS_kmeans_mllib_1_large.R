@@ -71,7 +71,7 @@ check.kmeans_mllib <- function() {
     expect_equal(wcsse.h2o, wcsse.mllib)
   }
 
-  testEnd()
+  
 }
 
 doTest("K-means comparison", check.kmeans_mllib)

@@ -90,7 +90,7 @@ check.deeplearning.grid.cars.negative <- function() {
     expect_error(cars_deeplearning_grid <- h2o.grid("deeplearning", grid_id="deeplearning_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Grid Search using bad parameters", check.deeplearning.grid.cars.negative)

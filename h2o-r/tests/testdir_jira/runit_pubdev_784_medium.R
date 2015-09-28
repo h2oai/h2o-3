@@ -17,7 +17,7 @@ test <- function() {
   dim(train)
   dim(test)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-784", test)

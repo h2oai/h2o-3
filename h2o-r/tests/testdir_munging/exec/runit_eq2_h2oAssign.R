@@ -35,7 +35,7 @@ function() {
     Log.info("Check that the dimension of this subsetted iris.hex is 50x4")
     print(dim(iris.hex))
     expect_that(dim(iris.hex), equals(c(50,4)))
-    testEnd()
+    
 }
 
 doTest("Test h2o.assign(data,id)", test.eq2.h2o.assign)

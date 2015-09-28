@@ -48,16 +48,16 @@ public class DeepLearningProstateTest extends TestUtil {
       try {
         for (int resp : responses[i]) {
           boolean classification = !(i == 0 && resp == 2);
-          if (classification && !frame.vec(resp).isEnum()) {
+          if (classification && !frame.vec(resp).isCategorical()) {
             DKV.remove(frame._key);
             String respname = frame.name(resp);
-            Vec r = frame.vec(respname).toEnum();
+            Vec r = frame.vec(respname).toCategorical();
             frame.remove(respname).remove();
             frame.add(respname, r);
             DKV.put(frame);
 
             DKV.remove(vframe._key);
-            Vec vr = vframe.vec(respname).toEnum();
+            Vec vr = vframe.vec(respname).toCategorical();
             vframe.remove(respname).remove();
             vframe.add(respname, vr);
             DKV.put(vframe);

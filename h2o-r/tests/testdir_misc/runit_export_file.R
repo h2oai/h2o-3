@@ -30,7 +30,7 @@ test.export.file <- function() {
   print(head(H.pred))
   expect_identical(R.pred, H.pred)
 
-  testEnd()
+  
 }
 
 doTest("Testing Exporting Files", test.export.file)

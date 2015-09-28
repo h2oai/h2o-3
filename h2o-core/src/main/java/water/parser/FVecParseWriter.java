@@ -15,7 +15,7 @@ import water.fvec.Vec;
 public class FVecParseWriter extends Iced implements StreamParseWriter {
   protected transient NewChunk[] _nvs;
   protected AppendableVec[]_vecs;
-  protected final Categorical [] _enums;
+  protected final Categorical [] _categoricals;
   protected transient byte[] _ctypes;
   long _nLines;
   int _nCols;
@@ -28,14 +28,14 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
 
   public int nChunks(){return _nChunks;}
 
-  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] enums, byte[] ctypes, int chunkSize, AppendableVec[] avs){
+  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
     if (ctypes != null) _ctypes = ctypes;
     else _ctypes = new byte[avs.length];
     _vecs = avs;
     _nvs = new NewChunk[avs.length];
     for(int i = 0; i < avs.length; ++i)
       _nvs[i] = _vecs[i].chunkForChunkIdx(cidx);
-    _enums = enums;
+    _categoricals = categoricals;
     _nCols = avs.length;
     _cidx = cidx;
     _vg = vg;
@@ -76,7 +76,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return this;
   }
   @Override public FVecParseWriter nextChunk(){
-    return  new FVecParseWriter(_vg, _cidx+1, _enums, _ctypes, _chunkSize, _vecs);
+    return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs);
   }
 
   /* never called
@@ -119,9 +119,9 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public final void addInvalidCol(int colIdx) {
     if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
   }
-  @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_ENUM || _ctypes[colIdx] == Vec.T_STR);}
+  @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_CAT || _ctypes[colIdx] == Vec.T_STR);}
 
-  @Override public void addStrCol(int colIdx, ValueString str) {
+  @Override public void addStrCol(int colIdx, BufferedString str) {
     if(colIdx < _nvs.length){
       if(_ctypes[colIdx] == Vec.T_NUM){ // support enforced types
         addInvalidCol(colIdx);
@@ -145,13 +145,13 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(uuid[0], uuid[1]);
       } else if( _ctypes[colIdx] == Vec.T_STR ) {
         _nvs[_col = colIdx].addStr(str);
-      } else { // Enums
-        if(!_enums[colIdx].isMapFull()) {
-          int id = _enums[_col = colIdx].addKey(str);
-          if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;
-          _nvs[colIdx].addEnum(id);
-        } else { // maxed out enum map
-          throw new H2OParseException("Exceeded enumeration limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
+      } else { // categoricals
+        if(!_categoricals[colIdx].isMapFull()) {
+          int id = _categoricals[_col = colIdx].addKey(str);
+          if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_CAT;
+          _nvs[colIdx].addCategorical(id);
+        } else { // maxed out categorical map
+          throw new H2OParseException("Exceeded categorical limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
         }
       }
     }

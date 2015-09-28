@@ -30,7 +30,7 @@ test.pubdev.1692 <- function() {
   Log.info(paste("Final Objective:", fitH2O_scale@model$objective))
   expect_true(fitH2O_scale@model$objective <= 100200)
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1692: GLRM final objective too large", test.pubdev.1692)

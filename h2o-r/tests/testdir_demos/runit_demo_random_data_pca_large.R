@@ -99,7 +99,7 @@ check.demo_random_pca <- function() {
   #plot3d(cf3d.dat$cols,cf3d.dat$rows,cf3d.dat$value,type='h',lwd=3,xlab="col",ylab="row",zlab="",)
   #text3d(cf3d.dat$cols,cf3d.dat$rows,cf3d.dat$value,texts=sprintf("%.2f",cf3d.dat$value))
 
-  testEnd()
+  
 }
 
 doTest("20 iterations of PCA using random data", check.demo_random_pca)

@@ -12,7 +12,7 @@ test.rdocanomaly.golden <- function() {
     prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
     head(prostate.anon.per.feature)
 
-    testEnd()
+    
 }
 
 doTest("R Doc Anomaly", test.rdocanomaly.golden)

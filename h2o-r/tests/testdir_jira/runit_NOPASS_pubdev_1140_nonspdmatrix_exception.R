@@ -12,7 +12,7 @@ test.glm.nonspdmatrix.exception <- function()
   my.glm1 <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, family = "gamma", prior = 0.5, lambda_search = TRUE)
   my.glm3 <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, family = "poisson", prior = 0.5, lambda_search = TRUE)
 
-  testEnd()
+  
 }
 
 doTest("Testing GLM NonSPDMatrix Exception", test.glm.nonspdmatrix.exception)

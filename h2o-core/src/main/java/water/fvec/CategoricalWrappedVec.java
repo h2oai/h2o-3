@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 /** A vector transforming values of given vector according to given domain
- *  mapping - currently only used to transform Enum columns but in theory would
+ *  mapping - currently only used to transform categorical columns but in theory would
  *  work for any dense-packed Int column.  Expected usage is to map from a new
  *  dataset to the domain-mapping expected by a model (which will match the
  *  dataset it was trained on).
@@ -22,31 +22,31 @@ import java.util.HashMap;
  *  range-checked (note that returning some flag for NA, say -1, would also
  *  need to be checked for).
  */
-public class EnumWrappedVec extends WrappedVec {
+public class CategoricalWrappedVec extends WrappedVec {
   /** List of values from underlying vector which this vector map to a new
    *  value in the union domain.  */
   int[] _map;
   int _p=0;
 
-  /** Main constructor: convert from one enum to another */
-  public EnumWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
+  /** Main constructor: convert from one categorical to another */
+  public CategoricalWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
     super(key, espc, masterVecKey);
     computeMap(masterVec().domain(),toDomain,masterVec().isBad());
     DKV.put(this);
   }
 
   /** Constructor just to generate the map and domain; used in tests or when
-   *  mixing enum columns */
-  public EnumWrappedVec(String[] from, String[] to) {
+   *  mixing categorical columns */
+  public CategoricalWrappedVec(String[] from, String[] to) {
     super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
     computeMap(from,to,false);
     DKV.put(this);
   }
 
-  public int[] enum_map() { return _map; }
+  public int[] getDomainMap() { return _map; }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
-    return new EnumWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
+    return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -106,7 +106,7 @@ public class EnumWrappedVec extends WrappedVec {
     }
 
     // The desired result Vec does not have a domain, hence is a numeric
-    // column.  For classification of numbers, we did an original toEnum
+    // column.  For classification of numbers, we did an original toCategorical
     // wrapping the numeric values up as Strings for the classes.  Unwind that,
     // converting numeric strings back to their original numbers.
     _map = new int[from.length];
@@ -137,12 +137,12 @@ public class EnumWrappedVec extends WrappedVec {
   }
 
 
-  public static class EnumWrappedChunk extends Chunk {
+  public static class CategoricalWrappedChunk extends Chunk {
     public final Chunk _c;             // Test-set map
     final transient int[] _map;
     final transient int   _p;
 
-    EnumWrappedChunk(Chunk c, EnumWrappedVec vec) {
+    CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
       _c  = c; set_len(_c._len);
       _start = _c._start; _vec = vec; _cidx = _c._cidx;
       _map = vec._map; _p = vec._p;

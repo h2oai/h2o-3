@@ -15,7 +15,7 @@ rmVecs <- function() {
   if(ncol(prostate.hex) != 7) stop('there should be only 7 columns')
   if(TRUE %in% (names(prostate.hex) != newcols)) stop('incorrect columns removed')
 
-  testEnd()
+  
 }
 
 doTest("Run removeVecs on prostate : ", rmVecs)

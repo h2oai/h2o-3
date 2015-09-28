@@ -185,7 +185,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for(int i = 0; i < _lossFunc.length; i++)
-          _lossFunc[i] = _train.vec(i).isEnum() ? _parms._multi_loss : _parms._loss;
+          _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
 
         for(int i = 0; i < _parms._loss_by_col.length; i++) {
           // Check that specified column loss is in allowable set for column type
@@ -194,7 +194,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             error("_loss_by_col_idx", "Column index " + cidx + " must be in [0," + _train.numCols() + ")");
           else if (_train.vec(cidx).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + cidx);
-          else if (_train.vec(cidx).isEnum() && !_parms._loss_by_col[i].isForCategorical())
+          else if (_train.vec(cidx).isCategorical() && !_parms._loss_by_col[i].isForCategorical())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + cidx);
           else if (!_train.vec(cidx).isBinary() && _parms._loss_by_col[i].isForBinary())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to non-binary column " + cidx);
@@ -210,7 +210,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Set default loss function for each column
         _lossFunc = new GLRMParameters.Loss[_train.numCols()];
         for (int i = 0; i < _lossFunc.length; i++)
-          _lossFunc[i] = _train.vec(i).isEnum() ? _parms._multi_loss : _parms._loss;
+          _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
       }
     }
 

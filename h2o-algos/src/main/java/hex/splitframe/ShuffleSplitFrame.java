@@ -3,7 +3,6 @@ package hex.splitframe;
 import java.util.Random;
 import water.*;
 import water.fvec.*;
-import water.parser.ValueString;
 
 /** Frame splitter function to divide given frame into multiple partitions
  *  based on given ratios.
@@ -36,8 +35,6 @@ public class ShuffleSplitFrame {
           int x=0;              // Pick the NewChunk split
           for( ; x<ratios.length-1; x++ ) if( r<ratios[x] ) break;
           x *= ncols;
-          // Helper string holder
-          ValueString vstr = new ValueString();
           // Copy row to correct set of NewChunks
           for( int j=0; j<ncols; j++ ) {
             byte colType = cs[j].vec().get_type();
@@ -46,7 +43,7 @@ public class ShuffleSplitFrame {
               case Vec.T_STR : ncs[x + j].addStr(cs[j], i); break;
               case Vec.T_UUID: ncs[x + j].addUUID(cs[j], i); break;
               case Vec.T_NUM : /* fallthrough */
-              case Vec.T_ENUM:
+              case Vec.T_CAT :
               case Vec.T_TIME:
                 ncs[x + j].addNum(cs[j].atd(i));
                 break;

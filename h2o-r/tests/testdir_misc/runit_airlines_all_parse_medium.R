@@ -11,7 +11,7 @@ test <- function() {
 	hex = h2o.importFile("/home/0xdiag/datasets/airlines/2008.csv", "hex")
   print(hex)
       
-    testEnd()
+    
 }
 
 doTest("Parse 2008 airlines dataset from NAS", test)

@@ -180,11 +180,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              nfolds = 0,
                              fold_column = NULL,
                              fold_assignment = c("AUTO","Random","Modulo"),
-                             keep_cross_validation_predictions = FALSE,
-                             ...)
+                             keep_cross_validation_predictions = FALSE)
 {
-  # Pass over ellipse parameters and deprecated parameters
-  dots <- .model.ellipses(list(...))
 
   # Training_frame and validation_frame may be a key or an Frame object
   if (!is.Frame(training_frame))
@@ -338,7 +335,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
-  .h2o.modelJob('deeplearning', parms, do_future=FALSE)
+  .h2o.modelJob('deeplearning', parms)
 }
 
 #' Anomaly Detection via H2O Deep Learning Model

@@ -120,7 +120,7 @@ test.GBM.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
-  testEnd()
+  
 }
 
 doTest("Checking GBM in Random Attack For Loops", test.GBM.rand_attk_forloop)

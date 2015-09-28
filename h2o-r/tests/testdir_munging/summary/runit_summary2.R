@@ -11,7 +11,7 @@ test.summary2 <- function() {
 
   Log.info("Summary from R's iris data: ")
   summary(iris)
-  testEnd()
+  
 }
 
 doTest("Summary2 Test", test.summary2)

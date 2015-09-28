@@ -50,7 +50,7 @@ test.round_prec <- function() {
     Log.info("Check signif(B, 3) matches R")
     S2_s <- as.data.frame(signif(B, 3))
     expect_true(all(S2_s == s2_s))
-    testEnd()
+    
 }
 
 doTest("Test trunc, round and signif", test.round_prec)

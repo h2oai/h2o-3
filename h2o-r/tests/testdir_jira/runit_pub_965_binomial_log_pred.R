@@ -35,7 +35,7 @@ test.linkFunctions <- function() {
 	one <- prediction.h2o.binomial.log[prediction.h2o.binomial.log$"p0">1,]
 	expect_equal(nrow(zero)+nrow(one), 0) # There should be no predictions with strength less than 0 or greater than 1
 
-testEnd()
+
 }
 
 doTest("Testing GLM on prostate dataset with BINOMIAL family and log link", test.linkFunctions)

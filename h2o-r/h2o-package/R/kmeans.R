@@ -23,10 +23,10 @@
 #'        centers. Possible values are "Random": for random initialization,
 #'        "PlusPlus": for k-means plus initialization, or "Furthest": for
 #'        initialization at the furthest point from each successive center.
-#'        Additionally, the user may specify a the initial centers as a matrix, 
-#'        data.frame, Frame, or list of vectors. For matrices, 
+#'        Additionally, the user may specify a the initial centers as a matrix,
+#'        data.frame, Frame, or list of vectors. For matrices,
 #'        data.frames, and Frames, each row of the respective structure
-#'        is an initial center. For lists of vectors, each vector is an 
+#'        is an initial center. For lists of vectors, each vector is an
 #'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -111,5 +111,5 @@ h2o.kmeans <- function(training_frame, x, k,
   }
 
   # Error check and build model
-  .h2o.modelJob('kmeans', parms, do_future=FALSE)
+  .h2o.modelJob('kmeans', parms)
 }
