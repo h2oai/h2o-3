@@ -728,6 +728,12 @@ class Test:
         """
         return (self.returncode == 0)
 
+    def get_skipped(self):
+        """
+        @return: True if the test skipped, False otherwise.
+        """
+        return (self.returncode == 42)
+
     def get_nopass(self, nopass):
         """
         Some tests are known not to fail and even if they don't pass we don't want
@@ -1227,6 +1233,8 @@ class TestRunner:
         @return: none
         """
         passed = 0
+        skipped = 0
+        skipped_list = []
         nopass_but_tolerate = 0
         nofeature_but_tolerate = 0
         failed = 0
@@ -1238,6 +1246,9 @@ class TestRunner:
         for test in self.tests:
             if (test.get_passed()):
                 passed += 1
+            elif (test.get_skipped()):
+                skipped += 1
+                skipped_list += [test.test_name]
             else:
                 if (test.get_h2o_internal()):
                     h2o_internal_failed += 1
@@ -1274,17 +1285,21 @@ class TestRunner:
         self._log("")
         self._log("----------------------------------------------------------------------")
         self._log("")
-        self._log("Total tests:             " + str(total))
-        self._log("Passed:                  " + str(passed))
-        self._log("Did not pass:            " + str(failed))
-        self._log("Did not complete:        " + str(notrun))
-        self._log("H2O INTERNAL tests:      " + str(self.h2o_internal_counter))
-        self._log("H2O INTERNAL failures:   " + str(h2o_internal_failed))
-        self._log("Tolerated NOPASS:        " + str(nopass_but_tolerate))
-        self._log("Tolerated NOFEATURE:     " + str(nofeature_but_tolerate))
-        self._log("NOPASS tests skipped:    " + str(self.nopass_counter))
-        self._log("NOFEATURE tests skipped: " + str(self.nofeature_counter))
+        self._log("Total tests:               " + str(total))
+        self._log("Passed:                    " + str(passed))
+        self._log("Did not pass:              " + str(failed))
+        self._log("Did not complete:          " + str(notrun))
+        if (skipped > 0):
+            self._log("SKIPPED tests:             " + str(skipped))
+        self._log("H2O INTERNAL tests:        " + str(self.h2o_internal_counter))
+        self._log("H2O INTERNAL failures:     " + str(h2o_internal_failed))
+        #self._log("Tolerated NOPASS:         " + str(nopass_but_tolerate))
+        #self._log("Tolerated NOFEATURE:      " + str(nofeature_but_tolerate))
+        self._log("NOPASS tests (not run):    " + str(self.nopass_counter))
+        self._log("NOFEATURE tests (not run): " + str(self.nofeature_counter))
         self._log("")
+        if (skipped > 0):
+            self._log("SKIPPED list:          " + ", ".join([t for t in skipped_list]))
         self._log("Total time:              %.2f sec" % delta_seconds)
         if (run > 0):
             self._log("Time/completed test:     %.2f sec" % (delta_seconds / run))
@@ -1462,6 +1477,11 @@ class TestRunner:
         test_name = test.get_test_name()
         if (test.get_passed()):
             s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
+            self._log(s)
+            if self.produce_unit_reports:
+                self._report_xunit_result("r_suite", test_name, duration, False)
+        elif (test.get_skipped()):
+            s = "SKIP      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
             if self.produce_unit_reports:
                 self._report_xunit_result("r_suite", test_name, duration, False)
