@@ -968,6 +968,7 @@ h2o.weights <- function(object, matrix_id=1, ...){
     warning( paste0("No weights for ", class(o)) )
     return(NULL)
   }
+  h2o.getFrame(sh$name)
 }
 
 #'
@@ -987,6 +988,7 @@ h2o.biases <- function(object, vector_id=1, ...){
     warning( paste0("No biases for ", class(o)) )
     return(NULL)
   }
+  h2o.getFrame(sh$name)
 }
 
 #'
