@@ -30,7 +30,7 @@ test <- function() {
 		model.gamma.specified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma", link="inverse")
 		stopifnot(model.gamma.unspecified@model$coefficients_table[1,]==model.gamma.specified@model$coefficients_table[1,])
 
-    testEnd()
+    
 }
 
 doTest("Testing glm picks correct link when unspecified: default canonical link for family", test)

@@ -36,7 +36,7 @@ test.h2o.gbm <- function() {
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex, distribution = "multinomial")
   print(iris.gbm)
 
-  testEnd()
+  
 }
 
 doTest("Test out the h2o.gbm R demo", test.h2o.gbm)

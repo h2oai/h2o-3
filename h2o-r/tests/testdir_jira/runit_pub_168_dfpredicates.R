@@ -52,7 +52,7 @@ factorfilter <- function(){
   expect_that( df.3[1,3], equals(5 ))
   expect_that( df.3[1,4], equals(6 ))
 
-  testEnd()
+  
 }
 
 if(F){

@@ -55,7 +55,7 @@ check.merge_comparison <- function() {
   row.names(dflt.sorted) <- 1:6
   expect_equal(full.sorted, full.r)
 
-  testEnd()
+  
 }
 
 doTest("Verifying h2o.merge With R's Impelementation", check.merge_comparison)

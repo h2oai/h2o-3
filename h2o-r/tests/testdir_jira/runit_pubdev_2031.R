@@ -17,7 +17,7 @@ test.pubdev.2031 <- function(conn){
   h2o.gbm(x=x, y=y, training_frame=cars.train, distribution=distribution, ntrees=ntrees, max_depth=max_depth,
           min_rows=min_rows)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-2031", test.pubdev.2031)

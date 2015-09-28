@@ -68,7 +68,7 @@ test.slice.div <- function() {
     expect_true( res < 1E-4 || C == nrow(A))
   }
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: /", test.slice.div)

@@ -14,7 +14,7 @@ test.GBM <- function() {
   model <- h2o.gbm(training_frame = train.hex, y = y, x = x,
                    distribution = "multinomial", ntrees = 5)
 
-  testEnd()
+  
 }
 
 doTest("GBM Test: KDD cup 98, test 01", test.GBM)

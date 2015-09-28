@@ -49,7 +49,7 @@ test.DRF.smallcat <- function() {
   # pred <- ifelse(drfmodel.r.pred == "0", 0, 1)
   # R.auc = gbm.roc.area(actual, pred)
   # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$AUC))
-  testEnd()
+  
 }
 
 doTest("DRF Test: Classification with 26 categorical level predictor", test.DRF.smallcat)

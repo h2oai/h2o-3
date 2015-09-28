@@ -12,7 +12,7 @@ test.headers <- function() {
     expect_true(nrow(fhex_header_true) == nrow(fhex_header_false) - 1)
     expect_true(nrow(fhex_header_unspecified) == nrow(fhex_header_false) || nrow(fhex_header_unspecified) == nrow(fhex_header_true))
 
-    testEnd()
+    
 }
 
 doTest("Header options", test.headers)

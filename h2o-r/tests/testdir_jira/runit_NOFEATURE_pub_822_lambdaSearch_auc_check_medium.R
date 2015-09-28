@@ -49,7 +49,7 @@ for(i in 1:100){
 }
 
 
-  testEnd()
+  
 }
 
 doTest("Test pub 822", test.pub.822)

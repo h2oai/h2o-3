@@ -28,7 +28,7 @@ expect_equal(1, dim(remote)[1])
 expect_equal(1, dim(remote)[2])
 
 
-testEnd()
+
 
 }
 

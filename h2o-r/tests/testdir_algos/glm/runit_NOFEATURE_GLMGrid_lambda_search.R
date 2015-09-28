@@ -44,7 +44,7 @@ test.GLMGrid.lambda.search <- function() {
 
   expect_equal(params.bestlambda$lambda_best, params.best$lambda_best)
   expect_true(length(params.best$lambda_all) <= 20)
-  testEnd()
+  
 }
 
 doTest("GLM Grid Lambda Search Test: Prostate", test.GLMGrid.lambda.search)

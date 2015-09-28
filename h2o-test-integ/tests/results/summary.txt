@@ -1,0 +1,26 @@
+
+Setting up R H2O package...
+
+Starting 1 tests on 1 clouds with 1 total H2O worker nodes...
+
+     FAIL 40000    1s runit_hexdev_442.R                                           /Users/ece/0xdata/h2o-dev/h2o-test-integ/tests/results/hdfs-bigdata_runit_hexdev_442.R.out.txt  
+
+----------------------------------------------------------------------
+
+SUMMARY OF RESULTS
+
+----------------------------------------------------------------------
+
+Total tests:             1
+Passed:                  0
+Did not pass:            1
+Did not complete:        0
+Tolerated NOPASS:        0
+Tolerated NOFEATURE:     0
+NOPASS tests skipped:    0
+NOFEATURE tests skipped: 0
+
+Total time:              24.88 sec
+Time/completed test:     24.88 sec
+
+True fail list:          runit_hexdev_442.R

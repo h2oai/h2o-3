@@ -14,7 +14,7 @@ test.pub.501 <- function() {
   
   Log.info("Predict on covtype.20k.data using GBM model")
     expect_error(predict(object = tru.gbms, newdata = train))
-  testEnd()
+  
 }
 
 doTest("Test PUBDEV-501: No error when predicting on test data with all different cols from train", test.pub.501)

@@ -16,7 +16,7 @@ test.DRF.Czechboard <- function() {
                                      training_frame = board.hex, ntrees = 50,
                                      max_depth = 20, min_rows = 500)
   print(drfmodel)
-  testEnd()
+  
 }
 
 doTest("DRF Test: Classification with Checkerboard Group Split", test.DRF.Czechboard)

@@ -33,7 +33,7 @@ test.pubdev_1704 <- function() {
     #m <- h2o.glm(x=1:4,y=5,training_frame=df,nfolds=5, fold_assignment="Random")
     #print(m)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1704", test.pubdev_1704)

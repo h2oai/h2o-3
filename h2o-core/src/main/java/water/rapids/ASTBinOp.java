@@ -56,8 +56,11 @@ abstract class ASTBinOp extends ASTPrim {
     case Val.ROW:
       double dslf[] = left.getRow();
       switch( rite.type() ) {
-      case Val.NUM:  throw H2O.unimpl();
-      case Val.ROW:  return row_op_row(dslf,rite.getRow());
+      case Val.NUM:
+        double[] right = new double[dslf.length];
+        Arrays.fill(right, rite.getNum());
+        return row_op_row(dslf,right,left.getNames());
+      case Val.ROW:  return row_op_row(dslf,rite.getRow(),rite.getNames());
       default: throw H2O.fail();
       }
 
@@ -212,11 +215,11 @@ abstract class ASTBinOp extends ASTPrim {
       }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame(lf._names,null));
   }
 
-  private ValRow row_op_row( double[] lf, double[] rt ) {
+  private ValRow row_op_row( double[] lf, double[] rt, String[] names ) {
     double[] res = new double[lf.length];
     for( int i=0; i<lf.length; i++ )
       res[i] = op(lf[i],rt[i]);
-    return new ValRow(res);
+    return new ValRow(res,names);
   }
 
   private ValFrame vec_op_frame( Vec vec, Frame fr ) {
@@ -334,7 +337,7 @@ class ASTLOr extends ASTBinOp {
     return prim_apply(left,rite);
   }
   // Weird R semantics, zero trumps NA
-  double op( double l, double r ) { return or_op(l,r); }
+  double op( double l, double r ) { return or_op(l, r); }
   static double or_op( double l, double r ) {   
     return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0); 
   } 
@@ -370,6 +373,8 @@ class ASTIfElse extends ASTPrim {
     }
 
     // Frame test.  Frame result.
+    if( val.type() == Val.ROW)
+      return row_ifelse((ValRow)val,asts[2].exec(env), asts[3].exec(env));
     Frame tst = val.getFrame();
 
     // If all zero's, return false and never execute true.
@@ -422,6 +427,21 @@ class ASTIfElse extends ASTPrim {
       xfr.add(fr);
     }
     return val;
+  }
+
+  ValRow row_ifelse(ValRow tst, Val yes, Val no) {
+    if( !yes.isRow() || !no.isRow() ) throw H2O.unimpl();
+    double[] test = tst.getRow();
+    double[] True = yes.getRow();
+    double[] False = no.getRow();
+    double[] ds = new double[test.length];
+    String[] ns = new String[test.length];
+    for(int i=0;i<test.length;++i) {
+      ns[i] = "C"+(i+1);
+      if( Double.isNaN(test[i])) ds[i] = Double.NaN;
+      else                       ds[i] = test[i]==0 ? False[i] : True[i];
+    }
+    return new ValRow(ds,ns);
   }
 }
 

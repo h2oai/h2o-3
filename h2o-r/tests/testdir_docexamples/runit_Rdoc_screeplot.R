@@ -7,7 +7,7 @@ test.rdoc_screeplot.golden <- function() {
   australia.pca <- h2o.prcomp(training_frame = australia.hex, k = 4, transform = "STANDARDIZE")
   screeplot(australia.pca)
 
-  testEnd()
+  
 }
 
 doTest("R Doc screeplot", test.rdoc_screeplot.golden)

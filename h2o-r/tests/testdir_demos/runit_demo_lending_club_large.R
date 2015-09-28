@@ -198,7 +198,7 @@ test.lendingclub.demo <- function() {
   diff <- - sum_loss$sum_earned[1] - sum_loss$sum_earned[2]
   print(paste0("Total immediate gain the implementation of the model would've had on completed approved loans : $",printMoney(diff),""))
   
-  testEnd()
+  
 }
 
 doTest("Test out Lending Club Demo", test.lendingclub.demo)

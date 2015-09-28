@@ -264,7 +264,7 @@ class ASTFrame extends AST {
 /** A Row.  Execution is just to return the constant. */
 class ASTRow extends AST {
   final ValRow _row;
-  ASTRow(double[] ds) { _row = new ValRow(ds); }
+  ASTRow(double[] ds, String[] names) { _row = new ValRow(ds,names); }
   @Override public String str() { return _row.toString(); }
   @Override public ValRow exec(Env env) { return _row; }
   @Override int nargs() { return 1; }

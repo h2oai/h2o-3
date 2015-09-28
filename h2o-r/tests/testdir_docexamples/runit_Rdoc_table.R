@@ -15,7 +15,7 @@ h2o.table(prostate.hex[,3])
 head(h2o.table(prostate.hex[,c(3,4)]))
 h2o.table(prostate.hex[,c(3,4)])
 
-testEnd()
+
 }
 
 doTest("R Doc Table", test.rdoc_table.golden)

@@ -24,7 +24,7 @@ glm2Benign <- function() {
   Log.info("================================================================")
 
   expect_that(preds, equals(colnames(bhexFV)[X]))
-  testEnd()
+  
 }
 
 doTest("GLM: Benign Data", glm2Benign)

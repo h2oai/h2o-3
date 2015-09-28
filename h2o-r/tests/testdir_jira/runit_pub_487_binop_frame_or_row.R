@@ -41,7 +41,7 @@ test.frame_add <- function() {
     res4 <- a.h2o == b.h2o
       
   
-    testEnd()
+    
 }
 
 doTest("Test frame add.", test.frame_add)

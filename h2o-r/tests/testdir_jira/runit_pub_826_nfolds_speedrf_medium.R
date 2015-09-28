@@ -27,7 +27,7 @@ test.pub.826 <- function() {
   m <- h2o.randomForest(x = c(FlightDate, ScheduledTimes, FlightInfo), y = Delayed, training_frame = flights, nfold = 3)
 
   show(m)
-  testEnd()
+  
 }
 
 doTest("PUB-826: nfold cross validation doesn't work correctly", test.pub.826)

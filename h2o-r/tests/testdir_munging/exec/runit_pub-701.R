@@ -22,7 +22,7 @@ test.null_tofrom <- function() {
     b.h2o <- a.h2o$"3" # doesn't exist
     expect_that(is.null(b.h2o), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test null_tofrom.", test.null_tofrom)

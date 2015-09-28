@@ -32,6 +32,6 @@ simpleFilterTest_prostate_9_12 <- function() {
          filterHex <- hex[hex[,c(7)] <= 0.978904532523, c(7)]
         Log.info("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c(7)] <= 0.978904532523, c(1,3,2,5,4,7,6,8)]
-testEnd()
+
 }
 doTest("simpleFilterTest_ on data prostate_9 unit= <=", simpleFilterTest_prostate_9_12)

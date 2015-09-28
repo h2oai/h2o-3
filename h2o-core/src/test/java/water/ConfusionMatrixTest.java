@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import static water.util.FrameUtils.parseFrame;
 
@@ -157,8 +158,8 @@ public class ConfusionMatrixTest extends TestUtil {
   @Test public void testBadModelPrect() {
 
     simpleCMTest(
-            frame("v1", vec(ar("A","B","C"), ari(0,0,1,1,2) )),
-            frame("v1", vec(ar("A","B","C"), ari(1,1,2,2,2) )),
+            ArrayUtils.frame("v1", vec(ar("A", "B", "C"), ari(0, 0, 1, 1, 2))),
+            ArrayUtils.frame("v1", vec(ar("A", "B", "C"), ari(1, 1, 2, 2, 2))),
             ar("A","B","C"),
             ar("A","B","C"),
             ar("A","B","C"),
@@ -172,8 +173,8 @@ public class ConfusionMatrixTest extends TestUtil {
 
   @Test public void testBadModelPrect2() {
     simpleCMTest(
-            frame("v1", vec(ar("-1", "0", "1"), ari(0, 0, 1, 1, 2))),
-            frame("v1", vec(ar("0", "1"), ari(0, 0, 1, 1, 1))),
+            ArrayUtils.frame("v1", vec(ar("-1", "0", "1"), ari(0, 0, 1, 1, 2))),
+            ArrayUtils.frame("v1", vec(ar("0", "1"), ari(0, 0, 1, 1, 1))),
             ar("-1", "0", "1"),
             ar("0", "1"),
             ar("-1", "0", "1"),

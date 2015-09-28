@@ -87,6 +87,6 @@ test.GBM.bernoulli.SyntheticData <- function() {
                       " R_auc:", R_auc, sep=''),quote=F)
                       expect_that(H2O_auc >= (R_auc-.01), is_true()) # Compare H2O and R auc's; here tolerance is 0.01
     }
-    testEnd()
+    
 }
 doTest("GBM Grid Test: Synthetic dataset with Bernoulli distribution H2O vs R", test.GBM.bernoulli.SyntheticData)

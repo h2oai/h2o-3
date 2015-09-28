@@ -9,7 +9,7 @@ test.pubdev.1950.rapids <- function(conn){
   valid <- cars[r <= 0.2,]
   h2o.getFrame(valid@frame_id)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1950", test.pubdev.1950.rapids)

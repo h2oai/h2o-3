@@ -10,7 +10,7 @@ new_col <- vector(mode="numeric", dim(prostate.hex)[1])
 
 expect_error(h2o.cbind(prostate.hex, new_col))
 
-testEnd()
+
 
 }
 

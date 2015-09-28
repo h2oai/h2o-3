@@ -30,7 +30,7 @@ test.pub_542_kmeans_mismatched_size <- function() {
   pred_km.std.r <- apply(iris.sub.std, 1, closest, getCentersStd(km))
   expect_equal(as.numeric(pred_km.df[,1]+1), as.numeric(pred_km.std.r))
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-542: K-means cluster sizes differ from labels generated during prediction", test.pub_542_kmeans_mismatched_size)

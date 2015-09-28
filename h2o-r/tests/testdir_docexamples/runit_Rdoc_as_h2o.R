@@ -15,7 +15,7 @@ Log.info("Print class of iris.h2o")
 Log.info(paste("iris.h2o  :" ,class))
 
 
-testEnd()
+
 }
 
 doTest("R Doc as h2o", test.rdocash2o.golden)

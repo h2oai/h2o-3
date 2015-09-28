@@ -16,7 +16,7 @@ dash_filename_test <- function(){
 
   res <- as.data.frame(h2o.table(df.h$l>0))
 
-  testEnd()
+  
 }
 
 if(F){

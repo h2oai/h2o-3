@@ -154,10 +154,9 @@ datetest <- function(){
     print_diff(lmillis[,1], ldf[[i]])
     expect_that(lmillis[,1], equals(ldf[[i]]))
   }
-  
+
   h2o.setTimezone(origTZ)
   print(h2o.getTimezone())
-  testEnd()
 }
 
 

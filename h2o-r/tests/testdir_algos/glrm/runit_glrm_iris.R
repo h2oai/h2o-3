@@ -15,7 +15,7 @@ test.glrm.iris <- function() {
     checkGLRMPredErr(fitH2O, irisH2O, tolerance = 1e-5)
     h2o.rm(fitH2O@model$loading_key$name)   # Remove loading matrix to free memory
   }
-  testEnd()
+  
 }
 
 doTest("GLRM Test: Iris with Various Transformations", test.glrm.iris)

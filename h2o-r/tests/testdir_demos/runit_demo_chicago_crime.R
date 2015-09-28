@@ -129,7 +129,7 @@ test.chicago.demo <- function() {
     cat("\n\tProbability of arrest using GBM:", as.matrix(predGBM$true[i,]))
     cat("\n\tProbability of arrest using Deep Learning:", as.matrix(predDL$true[i,]), "\n")
   }
-  testEnd()
+  
 }
 
 doTest("Test out Chicago Crime Demo", test.chicago.demo)

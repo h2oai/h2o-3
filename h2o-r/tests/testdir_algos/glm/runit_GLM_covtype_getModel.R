@@ -50,7 +50,7 @@ test.GLM.covtype <- function() {
   print(covtype.h2o1)
 
   
-  testEnd()
+  
 }
 
 doTest("Test GLM on covtype(20k) dataset", test.GLM.covtype)

@@ -26,7 +26,7 @@ h2o.ddply(covtype.hex, c(2), ncol)
 h2o.ddply(covtype.hex, c(2), length)
 h2o.ddply(covtype.hex, c(2), function(x) { is.factor(x[,1]) })
 
-testEnd()
+
 
 }
 

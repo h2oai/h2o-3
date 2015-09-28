@@ -15,7 +15,7 @@ test.betaConstraints.illegalBounds <- function(){
   Log.info("Run a Linear Regression with CAPSULE ~ . with illegal bounds beta->[100,0] in H2O...")
   expect_error(h2o.glm(x = myX, y = "CAPSULE", training_frame = prostate_h2o, family = "gaussian", alpha = 0, solver="L_BFGS", beta_constraints = betaConstraints))
 
-  testEnd()
+  
 }
 
 doTest("GLM Test: Beta Constraints Illegal Bounds", test.betaConstraints.illegalBounds)

@@ -14,7 +14,7 @@ test.pubdev.1652 <- function() {
   fitH2O <- h2o.prcomp(training_frame = air.hex, x = x_cols, k = 1, transform = "STANDARDIZE", pca_method = "GramSVD", max_iterations = 1000, use_all_factor_levels = FALSE, seed = seed)
   print(fitH2O@model)
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1652: PCA Core Dump", test.pubdev.1652)

@@ -22,7 +22,7 @@ test.likelihood.infinity <- function() {
 
   myglm <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, family = 'gaussian', link = 'log', beta_constraints = bc)
 
-  testEnd()
+  
 }
 
 doTest("Likelihood Is Infinity and Fails in Comparison", test.likelihood.infinity)

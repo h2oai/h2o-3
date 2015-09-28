@@ -46,7 +46,7 @@ test.nonexistent_rhs_col <- function() {
     # expect_that(all(b == b.h2o.R), equals(T))
     # This doesn't work in R
 
-    testEnd()
+    
 }
 
 doTest("Test nonexistent rhs col.", test.nonexistent_rhs_col)

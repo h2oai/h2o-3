@@ -51,7 +51,7 @@ test.tableau <- function() {
   coeff <- sapply(.arg1, function(factor) tableau_catFormat( glmModelTemp, 'Origin' , factor) )
   if(!(length(coeff)>0)) stop("There are no coefficients filter back out!")
   
-  testEnd()
+  
 }
 
 doTest("Test out the script used in tableau worksheet", test.tableau)

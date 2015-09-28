@@ -128,7 +128,7 @@ h2o2<- ridgeObjective(ridgeH2Obeta,X=Xvars.sc, y=Yvar, lambda=10)
     expect_equal(h2o2, ridge2, tolerance = 0.1)
     
     
-    testEnd()
+    
 }
 
 doTest("GLM Test: GLM2 - RidgeObjective", test.glm2RidgeObjective.golden)

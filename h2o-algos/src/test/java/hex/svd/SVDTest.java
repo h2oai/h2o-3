@@ -43,6 +43,7 @@ public class SVDTest extends TestUtil {
       parms._only_v = false;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.GramSVD;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -63,6 +64,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -85,6 +88,7 @@ public class SVDTest extends TestUtil {
       parms._only_v = true;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.Power;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -102,7 +106,11 @@ public class SVDTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -125,6 +133,7 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.Power;
       parms._only_v = false;
       parms._keep_u = false;
+      parms._save_v_frame = false;
 
       try {
         job = new SVD(parms);
@@ -147,7 +156,11 @@ public class SVDTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -180,6 +193,7 @@ public class SVDTest extends TestUtil {
         parms._svd_method = SVDParameters.Method.Power;
         parms._max_iterations = 1000;
         parms._seed = seed;
+        parms._save_v_frame = false;
 
         SVD job = new SVD(parms);
         try {
@@ -200,6 +214,8 @@ public class SVDTest extends TestUtil {
         if (model != null) {
           if(model._parms._keep_u)
             model._output._u_key.get().delete();
+          if (model._parms._save_v_frame)
+            model._output._v_key.get().delete();
           model.delete();
         }
       }
@@ -224,6 +240,7 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._svd_method = SVDParameters.Method.Randomized;
       parms._max_iterations = 4;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -246,6 +263,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -273,6 +292,7 @@ public class SVDTest extends TestUtil {
       parms._keep_u = true;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.GramSVD;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -293,6 +313,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if(model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -318,6 +340,7 @@ public class SVDTest extends TestUtil {
       parms._use_all_factor_levels = true;
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.Power;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -340,6 +363,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -370,6 +395,7 @@ public class SVDTest extends TestUtil {
       parms._nv = 4;
       parms._max_iterations = 1000;
       parms._svd_method = SVDParameters.Method.Power;
+      parms._save_v_frame = false;
 
       try {
         job = new SVD(parms);
@@ -392,6 +418,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -419,6 +447,7 @@ public class SVDTest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._svd_method = SVDParameters.Method.Randomized;
       parms._max_iterations = 7;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -441,6 +470,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -462,6 +493,7 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.Randomized;
       parms._impute_missing = true;
       parms._max_iterations = 20;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -483,6 +515,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }
@@ -511,6 +545,7 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.Randomized;
       parms._impute_missing = true;
       parms._max_iterations = 20;
+      parms._save_v_frame = false;
 
       SVD job = new SVD(parms);
       try {
@@ -531,6 +566,8 @@ public class SVDTest extends TestUtil {
       if (model != null) {
         if (model._parms._keep_u)
           model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
         model.delete();
       }
     }

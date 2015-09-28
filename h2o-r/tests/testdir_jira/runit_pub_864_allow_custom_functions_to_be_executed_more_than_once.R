@@ -20,7 +20,7 @@ fun = function(x) { mean( x[,2]) }
 h2o.ddply(covtype.hex, c(2), fun)
 h2o.ddply(covtype.hex, c(2), fun)
 
-testEnd()
+
 
 }
 

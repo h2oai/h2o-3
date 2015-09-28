@@ -34,7 +34,7 @@ test.as.factor.basic <- function() {
 
 
   #expect_true(is.factor(hex[,"cylinders"])[1])
-  testEnd()
+  
 }
 
 doTest("Test the as.factor unary operator", test.as.factor.basic)

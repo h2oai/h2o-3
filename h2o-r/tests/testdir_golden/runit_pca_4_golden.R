@@ -28,7 +28,7 @@ test.australia.golden <- function() {
     fitH2O <- h2o.prcomp(australiaH2O, k = k, transform = 'STANDARDIZE', max_iterations = 2000)
     checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   }
-  testEnd()
+  
 }
 
 doTest("PCA Golden Test: AustraliaCoast with Variable K", test.australia.golden)

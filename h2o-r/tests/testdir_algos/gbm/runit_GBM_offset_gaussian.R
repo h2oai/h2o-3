@@ -24,6 +24,6 @@ test <- function(h) {
 	expect_equal(mean(pr), mean(ph[,1]),tolerance=1e-5 )
 	expect_equal(min(pr), min(ph[,1]) ,tolerance=1e-3)
 	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-3)
-	testEnd()
+	
 }
 doTest("GBM offset Test: GBM w/ offset insurance data", test)

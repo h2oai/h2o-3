@@ -24,7 +24,7 @@ test.uuid <- function() {
   df2.train <- df2[df2$CC == 1,]
   df2.test  <- df2[df2$CC == 0,]
 
-  testEnd()
+  
 }
 
 doTest("HEX-1789 Test: UUID", test.uuid)

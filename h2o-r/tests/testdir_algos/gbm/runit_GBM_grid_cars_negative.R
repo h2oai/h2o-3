@@ -82,7 +82,7 @@ check.gbm.grid.cars.negative <- function() {
     expect_error(cars_gbm_grid <- h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
-  testEnd()
+  
 }
 
 doTest("GBM Grid Search using bad parameters", check.gbm.grid.cars.negative)

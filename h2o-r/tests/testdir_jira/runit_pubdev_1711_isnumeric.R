@@ -6,7 +6,7 @@ test.pubdev.is.numeric <- function(h) {
     expect_true(is.numeric(iris_h2o[,1]))
     expect_true(is.numeric(as.numeric(iris_h2o[,1])))
 
-  	testEnd()
+  	
 }
 
 doTest("Test pubdev-1711", test.pubdev.is.numeric )

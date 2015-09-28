@@ -18,7 +18,7 @@ test.eq.frame <- function() {
   hexEQHex <- hex == hex
   print(hexEQHex)
 
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '==' on frames", test.eq.frame)

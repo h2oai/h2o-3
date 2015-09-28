@@ -14,7 +14,7 @@ locate_source <- function(s) {
 }
 
 test.walking_gait.demo <- function(conn) {
-  Log.info("Import and parse subject01_walk1.csv data...")
+  Log.info("Import and parse walking gait data...")
   gait.hex <- h2o.importFile(locate("smalldata/glrm_test/subject01_walk1.csv"), destination_frame = "gait.hex")
   print(summary(gait.hex))
   
@@ -53,7 +53,7 @@ test.walking_gait.demo <- function(conn) {
   # matplot(time.df, cbind(lacro.df, lacro.pred.df), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = 1:2)
   # legend("topright", legend = c("Original", "Reconstructed"), col = 1:2, pch = 1)
   
-  Log.info("Importing walking gait dataset with missing values into H2O...")
+  Log.info("Import and parse walking gait data with missing values...")
   gait.miss <- h2o.importFile(locate("smalldata/glrm_test/subject01_walk1_miss15.csv"), destination_frame = "gait.miss")
   print(summary(gait.miss))
   
@@ -71,7 +71,7 @@ test.walking_gait.demo <- function(conn) {
   lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])
   matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = 1:2)
   legend("topright", legend = c("Original", "Imputed"), col = 1:2, pch = 1)
-  testEnd()
+  
 }
 
 doTest("Test out Walking Gait Demo", test.walking_gait.demo)

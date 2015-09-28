@@ -63,7 +63,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
   // Note: For small probabilities, product may end up zero due to underflow error. Can circumvent by taking logs.
   @Override protected double[] score0(double[] data, double[] preds) {
     double[] nums = new double[_output._levels.length];    // log(p(x,y)) for all levels of y
-    assert preds.length == (_output._levels.length + 1);   // Note: First column of preds is predicted response class
+    assert preds.length >= (_output._levels.length + 1);   // Note: First column of preds is predicted response class
 
     // Compute joint probability of predictors for every response class
     for(int rlevel = 0; rlevel < _output._levels.length; rlevel++) {

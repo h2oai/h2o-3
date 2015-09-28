@@ -18,7 +18,7 @@ test.gte.frame <- function() {
   hexGTEHex <- hex >= hex
   print(hexGTEHex)
 
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '>=' on frames", test.gte.frame)

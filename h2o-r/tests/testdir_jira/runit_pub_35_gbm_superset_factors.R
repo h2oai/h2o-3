@@ -45,7 +45,7 @@ pub35gbm <- function(){
   print(as.data.frame(df.h2))
   expect_that(is.na(preds[1,1]), equals(FALSE))
 
-  testEnd()
+  
 }
 
 doTest('pub-35-gbm_superset_factors', pub35gbm)
