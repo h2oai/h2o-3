@@ -92,13 +92,19 @@ def syncData(subdir) {
   }
 }
 
-def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
-
 task syncRPackages {
     group = "RPackages"
-    description = "Runs R script (h2o-r/package_verison_check.R), which installs R packages from " +
+    description = "Runs R script (h2o-r/scripts/package_verison_check_update.R), which installs R packages from " +
             "https://s3.amazonaws.com/h2o-r. The purpose of this task is to ensure that the local system's R packages" +
             "match those used by H2O's Jenkins jobs."
+    doLast {
+        doRSync();
+    }
+}
+
+def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
+
+def doRSync() {
     def h2oRDir = (new File("$rootDir")).getCanonicalPath() + File.separator + "h2o-r"
     def rPkgVerChk = h2oRDir + File.separator + "scripts" + File.separator + "package_version_check_update.R"
     exec {
