@@ -14,7 +14,7 @@ source('../h2o-runit.R')
 running_inside_h2o = is.running.internal.to.h2o()
 
 if (running_inside_h2o) {
-    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+    hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
     hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
     hdfs_iris_dir  = "/datasets/runit/iris_test_train"
 } else {
