@@ -175,7 +175,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // Check that specified column loss is in allowable set for column type
           if (_train.vec(i).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + i);
-          else if (_train.vec(i).isEnum() && !_parms._loss_by_col[i].isForCategorical())
+          else if (_train.vec(i).isCategorical() && !_parms._loss_by_col[i].isForCategorical())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + i);
           else if (!_train.vec(i).isBinary() && _parms._loss_by_col[i].isForBinary())
             error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to non-binary column " + i);
