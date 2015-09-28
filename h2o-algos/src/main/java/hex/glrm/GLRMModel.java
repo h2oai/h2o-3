@@ -692,17 +692,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       return preds;
     }
 
-    // TODO: Add parameter to select imputation including offset (if include offset, impute original train, else impute de-meaned train)
+    // TODO: Add parameter to select imputation including/excluding offset (include = impute original train, exclude = impute de-meaned train)
     private double[] impute_data(double[] tmp, double[] preds) {
       assert preds.length == _output._nnums + _output._ncats;
 
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {
         double[] xyblock = _output._archetypes_raw.lmulCatBlock(tmp,d);
-        if(_parms._offset)
-          preds[_output._permutation[d]] = _parms.mimpute(xyblock, _output._lossFunc[d], _output._lossOffset[d]);
-        else
-          preds[_output._permutation[d]] = _parms.mimpute(xyblock, _output._lossFunc[d]);
+        preds[_output._permutation[d]] = _parms.mimpute(xyblock, _parms._offset ? _output._lossFunc[d] : null);
       }
 
       // Numeric columns
