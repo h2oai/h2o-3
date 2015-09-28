@@ -15,8 +15,13 @@ class ASTColSlice extends ASTPrim {
   @Override int nargs() { return 1+2; } // (cols src [col_list])
   @Override
   public String str() { return "cols" ; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val v = stk.track(asts[1].exec(env));
+    if( v instanceof ValRow ) {
+      ValRow vv = (ValRow)v;
+      return vv.slice(asts[2].columns(vv._names));
+    }
+    Frame fr = v.getFrame();
     int[] cols = asts[2].columns(fr.names());
 
     Frame fr2 = new Frame();

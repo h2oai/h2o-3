@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
+import astfun
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
@@ -391,7 +392,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if as_pandas:
       import pandas
       pandas.options.display.max_rows=20
-      print fr
+      if h2o.H2ODisplay._in_ipy():
+        from IPython.display import display
+        display(fr)
+      else:
+        print fr
     else:
       h2o.H2ODisplay(fr,names)
 
@@ -1335,6 +1340,26 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: A factor column.
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
+
+  def apply(self, fun=None, axis=2):
+    """
+    Apply a lambda expression to an H2OFrame.
+
+    :param fun: A lambda expression to be applied per row or per column.
+    :param axis: If axis==2, then apply the lambda to columns, if 1 apply to rows.
+    :return: An H2OFrame
+    """
+    if axis not in [1,2]:
+      raise ValueError("margin must be either 1 (rows) or 2 (cols).")
+    if fun is None:
+      raise ValueError("No function to apply.")
+    if isinstance(fun, type(lambda:0)) and fun.__name__ == (lambda:0).__name__:  # have lambda
+      syntax_tree = ast.parse(inspect.getsource(fun))
+      Lambda = syntax_tree.body[0].value.args[0]
+      res = astfun._ast_deparse(Lambda)
+      return H2OFrame(expr=ExprNode("apply",self,axis,*res))
+    else:
+      raise ValueError("unimpl: not a lambda")
 
 
   # flow-coding result methods
