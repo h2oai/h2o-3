@@ -728,6 +728,12 @@ class Test:
         """
         return (self.returncode == 0)
 
+    def get_skipped(self):
+        """
+        @return: True if the test skipped, False otherwise.
+        """
+        return (self.returncode == 42)
+
     def get_nopass(self, nopass):
         """
         Some tests are known not to fail and even if they don't pass we don't want
@@ -747,6 +753,15 @@ class Test:
         """
         a = re.compile("NOFEATURE")
         return a.search(self.test_name) and not nopass
+
+    def get_h2o_internal(self):
+        """
+        Some tests are only run on h2o internal network.
+
+        @return: True if the test has been marked as INTERNAL, False otherwise.
+        """
+        a = re.compile("INTERNAL")
+        return a.search(self.test_name)
 
     def get_completed(self):
         """
@@ -861,6 +876,7 @@ class TestRunner:
             self._create_testreport_dir()
         self.nopass_counter = 0
         self.nofeature_counter = 0
+        self.h2o_internal_counter = 0
         self.path_to_tar = path_to_tar
         self.path_to_whl = path_to_whl
         self.r_pkg_ver_chk = r_pkg_ver_chk
@@ -945,7 +961,7 @@ class TestRunner:
             print("")
             sys.exit(1)
 
-    def build_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass):
+    def build_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass, nointernal):
         """
         Recursively find the list of tests to run and store them in the object.
         Fills in self.tests and self.tests_not_started.
@@ -993,6 +1009,7 @@ class TestRunner:
                 is_xlarge = False
                 is_nopass = False
                 is_nofeature = False
+                is_h2o_internal = False
 
                 if "xlarge" in f:
                     is_xlarge = True
@@ -1007,6 +1024,8 @@ class TestRunner:
                     is_nopass = True
                 if "NOFEATURE" in f:
                     is_nofeature = True
+                if "INTERNAL" in f:
+                    is_h2o_internal = True
 
                 if is_small and not run_small:
                     continue
@@ -1034,6 +1053,10 @@ class TestRunner:
                     if (test_group.lower() not in test_short_dir) and test_group.lower() not in f:
                         continue
 
+                if is_h2o_internal:
+                    # count all applicable INTERNAL tests
+                    if nointernal: continue
+                    self.h2o_internal_counter += 1
                 self.add_test(os.path.join(root, f))
 
     def add_test(self, test_path):
@@ -1210,17 +1233,26 @@ class TestRunner:
         @return: none
         """
         passed = 0
+        skipped = 0
+        skipped_list = []
         nopass_but_tolerate = 0
         nofeature_but_tolerate = 0
         failed = 0
         notrun = 0
         total = 0
+        h2o_internal_failed = 0
         true_fail_list = []
         terminated_list = []
         for test in self.tests:
             if (test.get_passed()):
                 passed += 1
+            elif (test.get_skipped()):
+                skipped += 1
+                skipped_list += [test.test_name]
             else:
+                if (test.get_h2o_internal()):
+                    h2o_internal_failed += 1
+
                 if (test.get_nopass(nopass)):
                     nopass_but_tolerate += 1
 
@@ -1253,15 +1285,21 @@ class TestRunner:
         self._log("")
         self._log("----------------------------------------------------------------------")
         self._log("")
-        self._log("Total tests:             " + str(total))
-        self._log("Passed:                  " + str(passed))
-        self._log("Did not pass:            " + str(failed))
-        self._log("Did not complete:        " + str(notrun))
-        self._log("Tolerated NOPASS:        " + str(nopass_but_tolerate))
-        self._log("Tolerated NOFEATURE:     " + str(nofeature_but_tolerate))
-        self._log("NOPASS tests skipped:    " + str(self.nopass_counter))
-        self._log("NOFEATURE tests skipped: " + str(self.nofeature_counter))
+        self._log("Total tests:               " + str(total))
+        self._log("Passed:                    " + str(passed))
+        self._log("Did not pass:              " + str(failed))
+        self._log("Did not complete:          " + str(notrun))
+        if (skipped > 0):
+            self._log("SKIPPED tests:             " + str(skipped))
+        self._log("H2O INTERNAL tests:        " + str(self.h2o_internal_counter))
+        self._log("H2O INTERNAL failures:     " + str(h2o_internal_failed))
+        #self._log("Tolerated NOPASS:         " + str(nopass_but_tolerate))
+        #self._log("Tolerated NOFEATURE:      " + str(nofeature_but_tolerate))
+        self._log("NOPASS tests (not run):    " + str(self.nopass_counter))
+        self._log("NOFEATURE tests (not run): " + str(self.nofeature_counter))
         self._log("")
+        if (skipped > 0):
+            self._log("SKIPPED list:          " + ", ".join([t for t in skipped_list]))
         self._log("Total time:              %.2f sec" % delta_seconds)
         if (run > 0):
             self._log("Time/completed test:     %.2f sec" % (delta_seconds / run))
@@ -1442,6 +1480,11 @@ class TestRunner:
             self._log(s)
             if self.produce_unit_reports:
                 self._report_xunit_result("r_suite", test_name, duration, False)
+        elif (test.get_skipped()):
+            s = "SKIP      %d %4ds %-60s" % (port, duration, test_name)
+            self._log(s)
+            if self.produce_unit_reports:
+                self._report_xunit_result("r_suite", test_name, duration, False)
         else:
             s = "     FAIL %d %4ds %-60s %s  %s" % \
                 (port, duration, test.get_test_name(), test.get_output_dir_file_name(), test.get_seed_used())
@@ -1582,6 +1625,7 @@ g_use_port = None
 g_no_run = False
 g_jvm_xmx = "1g"
 g_nopass = False
+g_nointernal = False
 g_convenient = False
 g_path_to_h2o_jar = None
 g_path_to_tar = None
@@ -1670,6 +1714,8 @@ def usage():
     print("    --jvm.xmx        Configure size of launched JVM running H2O. E.g. '--jvm.xmx 3g'")
     print("")
     print("    --nopass         Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
+    print("")
+    print("    --nointernal     Don't run the INTERNAL tests.")
     print("")
     print("    --c              Start the JVMs in a convenient location.")
     print("")
@@ -1760,6 +1806,7 @@ def parse_args(argv):
     global g_no_run
     global g_jvm_xmx
     global g_nopass
+    global g_nointernal
     global g_convenient
     global g_path_to_h2o_jar
     global g_path_to_tar
@@ -1849,6 +1896,8 @@ def parse_args(argv):
             g_use_client = True
         elif (s == "--nopass"):
             g_nopass = True
+        elif (s == "--nointernal"):
+            g_nointernal = True
         elif s == "--c":
             g_convenient = True
         elif s == "--h2ojar":
@@ -1949,6 +1998,7 @@ def main(argv):
     global g_test_group
     global g_runner
     global g_nopass
+    global g_nointernal
     global g_path_to_tar
     global g_path_to_whl
 
@@ -2011,7 +2061,7 @@ def main(argv):
         g_runner.read_test_list_file(g_test_list_file)
     else:
         # Test group can be None or not.
-        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge,  g_nopass)
+        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge, g_nopass, g_nointernal)
 
     # If no run is specified, then do an early exit here.
     if (g_no_run):
