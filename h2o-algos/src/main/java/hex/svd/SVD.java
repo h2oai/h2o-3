@@ -94,6 +94,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     // if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
     if (_parms._u_name == null || _parms._u_name.length() == 0)
       _parms._u_name = "SVDUMatrix_" + Key.rand();
+    if (_parms._v_name == null || _parms._v_name.length() == 0)
+      _parms._v_name = "SVDVMatrix_" + Key.rand();
     if (_parms._max_iterations < 1)
       error("_max_iterations", "max_iterations must be at least 1");
 
@@ -499,6 +501,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
+
+        if (_parms._save_v_frame) {
+          model._output._v_key = Key.make(_parms._v_name);
+          ArrayUtils.frame(model._output._v_key, null, model._output._v);
+        }
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(self());
         done();

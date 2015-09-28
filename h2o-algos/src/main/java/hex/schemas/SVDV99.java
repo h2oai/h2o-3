@@ -30,7 +30,7 @@ public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV9
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
 
-    @API(help = "Method for computing SVD (Caution: Power and Probablistic are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" })   // TODO: pull out of categorical class
+    @API(help = "Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" })   // TODO: pull out of enum class
     public SVDParameters.Method svd_method;
 
     @API(help = "Number of right singular vectors")
