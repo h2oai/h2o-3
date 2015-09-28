@@ -1765,7 +1765,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' Plots training set (and validation set if available) scoring history for an H2O Model
 #'
 #' This method dispatches on the type of H2O model to select the correct
-#' scoring history.  The \code{timestep} and \code{metric} arguments are restricted to what is 
+#' scoring history.  The \code{timestep} and \code{metric} arguments are restricted to what is
 #' available in the scoring history for a particular type of model.
 #'
 #' @param x A fitted \linkS4class{H2OModel} object for which the scoring history plot is desired.
@@ -1781,20 +1781,20 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' library(h2o)
 #' library(mlbench)
 #' h2o.init()
-#' 
+#'
 #' df <- as.h2o(mlbench::mlbench.friedman1(10000,1))
 #' rng <- h2o.runif(df, seed=1234)
 #' train <- df[rng<0.8,]
 #' valid <- df[rng>=0.8,]
-#' 
-#' gbm <- h2o.gbm(x = 1:10, y = "y", training_frame = train, validation_frame = valid, 
+#'
+#' gbm <- h2o.gbm(x = 1:10, y = "y", training_frame = train, validation_frame = valid,
 #'   ntrees=500, learn_rate=0.01, score_each_iteration = TRUE)
 #' plot(gbm)
 #' plot(gbm, timestep = "duration", metric = "deviance")
 #' plot(gbm, timestep = "number_of_trees", metric = "deviance")
 #' plot(gbm, timestep = "number_of_trees", metric = "MSE")
-#' 
-#' }          
+#'
+#' }
 #' @export
 plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
   df <- as.data.frame(x@model$scoring_history)
@@ -1871,20 +1871,22 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       ylim <- range(c(df[,c(training_metric)]))
       graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
                      main = "Training Scoring History", col = "blue", ylim = ylim)
-      
+
     }
   }
 }
 
 #' @export
-plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
+plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc")) stop("type must be 'roc'")
   if(type == "roc") {
     xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
-    main <- paste(yaxis, "vs", xaxis)
-    if( x@on_train ) main <- paste(main, "(on train)")
-    else             main <- paste(main, "(on valid)")
+    if(missing(main)) {
+      main <- paste(yaxis, "vs", xaxis)
+      if( x@on_train ) main <- paste(main, "(on train)")
+      else             main <- paste(main, "(on valid)")
+    }
     graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
     graphics::abline(0, 1, lty = 2)
   }
