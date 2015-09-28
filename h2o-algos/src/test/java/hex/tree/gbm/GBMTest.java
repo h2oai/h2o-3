@@ -140,7 +140,7 @@ public class GBMTest extends TestUtil {
               int prep(Frame fr) {
                 fr.remove("ID").remove(); // Remove not-predictive ID
                 int ci = fr.find("RACE"); // Change RACE to categorical
-                Scope.track(fr.replace(ci,fr.vecs()[ci].toEnum())._key);
+                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategorical())._key);
                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
               }
             }, false, Distribution.Family.bernoulli);
@@ -156,8 +156,8 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
       if (family == Distribution.Family.bernoulli || family == Distribution.Family.multinomial) {
-        if (!fr.vecs()[idx].isEnum()) {
-          Scope.track(fr.replace(idx, fr.vecs()[idx].toEnum())._key);
+        if (!fr.vecs()[idx].isCategorical()) {
+          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategorical())._key);
         }
       }
       DKV.put(fr);             // Update frame after hacking it
@@ -216,7 +216,7 @@ public class GBMTest extends TestUtil {
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");    // Convert response to categorical
-      Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategorical())._key);
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -258,7 +258,7 @@ public class GBMTest extends TestUtil {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");
-      Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);   // Convert response 'Angaus' to categorical
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategorical())._key);   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -284,7 +284,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  // Adapt a trained model to a test dataset with different enums
+  // Adapt a trained model to a test dataset with different categoricals
   @Test public void testModelAdaptMultinomial() {
     GBM job = null;
     GBMModel gbm = null;
@@ -342,7 +342,7 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
-      Scope.track(fr.replace(ci, fr.vecs()[ci].toEnum())._key);   // Convert response 'Angaus' to categorical
+      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategorical())._key);   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -435,8 +435,8 @@ public class GBMTest extends TestUtil {
       vfr = inF2.subframe(cols);
       inF1.remove(cols).remove(); // Toss all the rest away
       inF2.remove(cols).remove();
-      tfr.replace(0, tfr.vec("DOB").toEnum());     // Convert 'DOB' to enum
-      vfr.replace(0, vfr.vec("DOB").toEnum());
+      tfr.replace(0, tfr.vec("DOB").toCategorical());     // Convert 'DOB' to categorical
+      vfr.replace(0, vfr.vec("DOB").toCategorical());
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -495,11 +495,11 @@ public class GBMTest extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
-      Scope.track(tfr.replace(784, tfr.vecs()[784].toEnum())._key);   // Convert response 'C785' to categorical
+      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategorical())._key);   // Convert response 'C785' to categorical
       DKV.put(tfr);
 
       vfr = parse_test_file("bigdata/laptop/mnist/test.csv.gz");
-      Scope.track(vfr.replace(784, vfr.vecs()[784].toEnum())._key);   // Convert response 'C785' to categorical
+      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategorical())._key);   // Convert response 'C785' to categorical
       DKV.put(vfr);
 
       // Same parms for all
@@ -545,7 +545,7 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
 //      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
@@ -594,7 +594,7 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
@@ -652,7 +652,7 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
@@ -703,7 +703,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      Scope.track(tfr.replace(1, tfr.vecs()[1].toEnum())._key);
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategorical())._key);
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -744,8 +744,8 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("./bigdata/covktr.csv");
       vfr = parse_test_file("./bigdata/covkts.csv");
       int idx = tfr.find("V55");
-      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toEnum())._key);
-      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toEnum())._key);
+      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategorical())._key);
+      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategorical())._key);
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -830,12 +830,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -875,12 +876,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -920,12 +922,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -965,12 +968,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -1009,12 +1013,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -1054,12 +1059,13 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      gbm.score(parms.train());
+      Frame pred = gbm.score(parms.train());
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
       assertEquals(_AUC, mm2.auc()._auc, 1e-8);
       assertEquals(_MSE, mm2.mse(), 1e-8);
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
+      pred.remove();
 
       job.remove();
     } finally {
@@ -1260,7 +1266,7 @@ public class GBMTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       tfr.remove("economy").remove();
       old = tfr.remove("economy_20mpg");
-      tfr.add("economy_20mpg", old.toEnum()); // response to last column
+      tfr.add("economy_20mpg", old.toCategorical()); // response to last column
       DKV.put(tfr);
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -1362,8 +1368,8 @@ public class GBMTest extends TestUtil {
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
-          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toEnum())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategorical())._key);
+          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toCategorical())._key);
         }
         DKV.put(tfr);
         DKV.put(vfr);
@@ -1404,35 +1410,29 @@ public class GBMTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
       for (String s : new String[]{
-              "DepTime", "ArrTime", "ActualElapsedTime",
-              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
-              "CancellationCode", "CarrierDelay", "WeatherDelay",
-              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+              "name",
       }) {
         tfr.remove(s).remove();
       }
       DKV.put(tfr);
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;
-      parms._response_column = "IsDepDelayed";
+      parms._response_column = "cylinders"; //regression
       parms._seed = 234;
       parms._min_rows = 2;
       parms._max_depth = 5;
       parms._ntrees = 5;
-      parms._col_sample_rate = 0.5f;
+      parms._col_sample_rate = 1f;
       parms._sample_rate = 0.5f;
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
-      ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
-      assertEquals(0.7264331810371721, mm.auc()._auc, 1e-4); // 1 node
-      assertEquals(0.22686348162897116, mm.mse(), 1e-4);
-      assertEquals(0.09039195554728074, mm.r2(), 1e-4);
-      assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
+      ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+      assertEquals(1.03088, mm.mse(), 1e-4);
 
       job.remove();
     } finally {

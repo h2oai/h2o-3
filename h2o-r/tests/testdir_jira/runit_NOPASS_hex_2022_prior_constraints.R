@@ -49,12 +49,14 @@ test.Priors.BetaConstraints <- function() {
     Log.info("Run a logistic regression with alpha = 0 and beta constraints ")
     train.df <- as.data.frame(data.train)
     test.df <- as.data.frame(data.test)
-    xMatrix <- as.matrix(train.df)
+    xMatrix <- data.matrix(train.df) # converts all values to numeric
+    xMatrix[,23] <- xMatrix[,23] - 1 # R factor levels start at 1, but we want to start at 0
 
     glm.r <- glmnet(x = xMatrix, alpha = alpha, standardize = T, y = train.df[,depVars], family = family_type,
                     lower.limits = -100000, upper.limits = 100000, intercept=FALSE)
 
-    xTestMatrix <- as.matrix(test.df)
+    xTestMatrix <- data.matrix(test.df)
+    xTestMatrix[,23] <- xTestMatrix[,23] - 1 # R factor levels start at 1, but we want to start at 0
     pred_test.r <- predict(glm.r, newx = xTestMatrix, type = "response")
     pred_train.r <- predict(glm.r, newx = xMatrix, type = "response")
 
@@ -106,7 +108,7 @@ test.Priors.BetaConstraints <- function() {
                         alpha = alpha, beta_constraint = beta_nointercept.hex)
     glm.h2o2 <- h2o.glm(x = indVars, y = depVars, training_frame = data.hex, family = family_type, standardize = F,
                         alpha = alpha, beta_constraint = beta_nointercept.hex[c("names","lower_bounds","upper_bounds")])
-    y <- as.matrix(train.df[,depVars])
+    y <- data.matrix(as.integer(train.df[,depVars]) -1) # start level count at 0
     x <- xMatrix
     beta1 <- glm.h2o1@model$coefficients_table$coefficients
     beta2 <- glm.h2o2@model$coefficients_table$coefficients
@@ -119,12 +121,11 @@ test.Priors.BetaConstraints <- function() {
     Log.info("Check gradient of beta constraints with priors or beta given...")
     threshold = 1E-1
     print(as.numeric(gradient1$beta_given)[-23])
-    all(as.numeric(gradient1$beta_given)[-23] < threshold)
+    expect_true(all(as.numeric(gradient1$beta_given)[-23] < threshold))
 
     Log.info("Check gradient of beta constraints without priors or beta given...")
-    all(as.numeric(gradient2$beta_given)[-23] < threshold)
-    print(as.numeric(gradient1$beta_given)[-23])
-    
+    expect_false(all(as.numeric(gradient2$beta_given)[-23] < threshold))
+    print(as.numeric(gradient2$beta_given)[-23])
   }
 }
 

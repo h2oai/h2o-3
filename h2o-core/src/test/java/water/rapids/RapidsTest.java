@@ -353,7 +353,7 @@ public class RapidsTest extends TestUtil {
       assert f != null && f.exists():" file not found: " + fname;
       NFSFileVec nfs = NFSFileVec.make(f);
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
-      ps.getColumnTypes()[1] = Vec.T_ENUM;
+      ps.getColumnTypes()[1] = Vec.T_CAT;
       census = ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
 
       census = exec_str("(colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"])", "census.hex");

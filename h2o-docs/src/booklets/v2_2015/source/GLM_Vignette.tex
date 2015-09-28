@@ -1,6 +1,7 @@
 % -*- mode: tex; fill-column: 115; -*-
 
 \input{common/conf_top.tex}
+%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 \defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
@@ -8,10 +9,11 @@
 \defcitealias{prox}{Proximal Algorithms by Boyd et. al}
 
 \input{common/conf_titles.tex}
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \begin{document}
 
-\input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
@@ -20,7 +22,6 @@
 \begin{center}
 \textsc{\Large\bf{Generalized Linear Modeling with H2O's R Package}}
 \\
-\bigskip
 \small
 
 \line(1,0){250}  %inserts  horizontal line 
@@ -37,7 +38,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Third Edition 
 
  
 \bigskip
@@ -68,10 +69,10 @@ by Nadine Hussami, Tom Kraljevic, \\ Jessica Lanford, Tomas Nykodym, \\ Ariel Ra
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Third Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -1160,55 +1161,39 @@ H2O supports binomial models only; any extra levels in the test response will ge
 %Non-negative: Restricts coefficients to be non-negative. Default is false.
 %parallelism: @Is this just a python thing?
 
-\input{common/further_info.tex}
 
 \newpage
 
-\begin{thebibliography}{9}
+\section{References}
+\bibliographystyle{plainnat}  %alphadin}
+\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
 
-\bibitem{glmnet} 
-Jerome Friedman, Trevor Hastie, and Rob Tibshirani.
-\textbf{Regularization Paths for Generalized Linear Models via Coordinate Descent}.
-April 29, 2009
+\bibentry{glmnet} 
 
-\bibitem{strong} 
-  Robert Tibshirani, Jacob Bien, Jerome Friedman, Trevor Hastie, Noah Simon, Jonathan Taylor, and Ryan J. Tibshirani. 
-  \textbf{Strong Rules for Discarding Predictors in Lasso-type Problems}.
-  J. R. Statist. Soc. B, vol. 74, 2012.
-\bibitem{elastic}
-Hui Zou and Trevor Hastie
-\textbf{Regularization and variable selection via the elastic net}. 
-J. R. Statist. Soc. B (2005) 67, Part 2, pp. 301-320
+\bibentry{strongrules}
 
-\bibitem{lasso}
-Robert Tibshirani.
-\textbf{Regression Shrinkage and Selection via the Lasso}
-Journal of the Royal Statistical Society. Series B (Methodological), Volume 58, Issue 1 (1996), 267-288
+\bibentry{elastic}
 
-\bibitem{admm}
-S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein.
-\textbf{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers}. 
-Foundations and Trends in Machine Learning, 3(1):1–122, 2011. (Original draft posted November 2010.)
+\bibentry{lasso}
 
-\bibitem{prox}
-N. Parikh and S. Boyd.\
-\textbf{Proximal Algorithms}.
-Foundations and Trends in Optimization, 1(3):123-231, 2014.
+\bibentry{admm}
 
-\bibitem{git}
-{\url{http://github.com/h2oai/h2o.git}}
+\bibentry{prox}
 
-\bibitem{docs}
-{\url{http://docs.h2o.ai}}
+\bibentry{h2osite}
 
-\bibitem{stream}
-{\url{https://groups.google.com/forum/#!forum/h2ostream}}
+\bibentry{h2odocs}
 
-\bibitem{h2o}
-{\url{http://h2o.ai}}
+\bibentry{h2ogithubrepo}
 
+\bibentry{h2odatasets}
 
-\end{thebibliography}
+\bibentry{h2ojira}
+
+\bibentry{stream}
+
+\bibentry{rdocs}
 
 \newpage
 

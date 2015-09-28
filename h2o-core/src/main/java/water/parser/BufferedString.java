@@ -5,20 +5,20 @@ import java.util.Arrays;
 import water.Iced;
 import java.util.Formatter;
 
-public class ValueString extends Iced implements Comparable<ValueString> {
+public class BufferedString extends Iced implements Comparable<BufferedString> {
    private byte [] _buf;
    private int _off;
    private int _len;
 
-   ValueString( byte [] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
-   ValueString( byte [] buf ) { this(buf,0,buf.length); }
-   public ValueString( String from ) { this(from.getBytes(Charsets.UTF_8)); }
-   // Cloning constructing used during collecting unique enums
-   ValueString( ValueString from ) { this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len)); }
-   // Used to make a temp recycling ValueString in hot loops
-   public ValueString() { }
+   BufferedString(byte[] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
+   BufferedString(byte[] buf) { this(buf,0,buf.length); }
+   public BufferedString(String from) { this(from.getBytes(Charsets.UTF_8)); }
+   // Cloning constructing used during collecting unique categoricals
+   BufferedString(BufferedString from) { this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len)); }
+   // Used to make a temp recycling BufferedString in hot loops
+   public BufferedString() { }
 
-   @Override public int compareTo( ValueString o ) {
+   @Override public int compareTo( BufferedString o ) {
      int len = Math.min(_len,o._len);
      for( int i=0; i<len; i++ ) {
        int x = (0xFF&_buf[_off+i]) - (0xFF&o._buf[o._off+i]);
@@ -49,8 +49,8 @@ public class ValueString extends Iced implements Comparable<ValueString> {
 
   // WARNING: LOSSY CONVERSION!!!
   // Converting to a String will truncate all bytes with high-order bits set,
-  // even if they are otherwise a valid member of the field/ValueString.
-  // Converting back to a ValueString will then make something with fewer
+  // even if they are otherwise a valid member of the field/BufferedString.
+  // Converting back to a BufferedString will then make something with fewer
   // characters than what you started with, and will fail all equals() tests.
   @Override
   public String toString() {
@@ -78,32 +78,32 @@ public class ValueString extends Iced implements Comparable<ValueString> {
     return sb.toString();
   }
 
-  public static String[] toString( ValueString vs[] ) {
-    if( vs==null ) return null;
-    String[] ss = new String[vs.length];
-    for( int i=0; i<vs.length; i++ )
-      ss[i] = vs[i].toString();
+  public static String[] toString(BufferedString bStr[]) {
+    if( bStr==null ) return null;
+    String[] ss = new String[bStr.length];
+    for( int i=0; i<bStr.length; i++ )
+      ss[i] = bStr[i].toString();
     return ss;
   }
 
-  public static ValueString[] toValueString(String[] strings) {
+  public static BufferedString[] toBufferedString(String[] strings) {
     if (strings == null) return null;
-    ValueString[] res = new ValueString[strings.length];
+    BufferedString[] res = new BufferedString[strings.length];
     for (int i = 0; i < strings.length; i++) {
-      res[i] = new ValueString();
+      res[i] = new BufferedString();
       res[i].setTo(strings[i]);
     }
     return res;
   }
 
-  public ValueString set(byte[] buf, int off, int len) {
+  public BufferedString set(byte[] buf, int off, int len) {
     _buf = buf;
     _off = off;
     _len = len;
     return this;                // Flow coding
   }
 
-  public ValueString setTo(String what) {
+  public BufferedString setTo(String what) {
     _buf = what.getBytes(Charsets.UTF_8);
     _off = 0;
     _len = _buf.length;
@@ -112,8 +112,8 @@ public class ValueString extends Iced implements Comparable<ValueString> {
   public void setOff(int off) { _off=off; }
 
   @Override public boolean equals(Object o){
-    if(o instanceof ValueString) {
-      ValueString str = (ValueString) o;
+    if(o instanceof BufferedString) {
+      BufferedString str = (BufferedString) o;
       if (str.length() != _len) return false;
       for (int i = 0; i < _len; ++i)
         if (getBuffer()[getOffset() + i] != str.getBuffer()[str.getOffset() + i]) return false;

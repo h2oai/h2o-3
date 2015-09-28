@@ -14,7 +14,7 @@ import water.fvec.NewChunk;
 import water.fvec.CStrChunk;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -38,9 +38,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  */
 
 public class WordCountTask extends MRTask<WordCountTask> {
-  private static NonBlockingHashMap<ValueStringCount, ValueStringCount> VOCABHM;
-  private NonBlockingHashMap<ValueStringCount, ValueStringCount> _vocabHM;
-  private transient ValueStringCount _vocabArray[];
+  private static NonBlockingHashMap<BufferedStringCount, BufferedStringCount> VOCABHM;
+  private NonBlockingHashMap<BufferedStringCount, BufferedStringCount> _vocabHM;
+  private transient BufferedStringCount _vocabArray[];
   private final int _minFreq;
   Key _wordCountKey = null;
 
@@ -65,13 +65,13 @@ public class WordCountTask extends MRTask<WordCountTask> {
     _vocabHM = VOCABHM;
 
     for (Chunk chk : cs) if (chk instanceof CStrChunk) {
-      ValueStringCount tmp = new ValueStringCount();
+      BufferedStringCount tmp = new BufferedStringCount();
       for (int row = 0; row < chk._len; row++) {
         chk.atStr(tmp, row);
-        ValueStringCount tmp2 = VOCABHM.get(tmp);
+        BufferedStringCount tmp2 = VOCABHM.get(tmp);
         if (tmp2 == null) {
           VOCABHM.put(tmp, tmp);
-          tmp = new ValueStringCount();
+          tmp = new BufferedStringCount();
         } else tmp2.inc();
       }
     } // silently ignores other column types
@@ -97,11 +97,11 @@ public class WordCountTask extends MRTask<WordCountTask> {
     if (_vocabHM == null) return ab.put1(1); // killed
 
     int strLen = 0;
-    for (ValueStringCount val : VOCABHM.values())
+    for (BufferedStringCount val : VOCABHM.values())
       strLen += val.length();
     ab.put1(0); // not killed
     ab.put4(strLen);  //length of string buffer
-    for (ValueStringCount val : VOCABHM.values())
+    for (BufferedStringCount val : VOCABHM.values())
       ab.put2((char) val.length()).putA1(val.getBuffer(), val.getOffset(), val.getOffset() + val.length()).put8(val._cnt);
     return ab.put2((char) 65535); // End of map marker
   }
@@ -126,12 +126,12 @@ public class WordCountTask extends MRTask<WordCountTask> {
     len = ab.get4();
     byte[] buf = new byte[len];
     while ((len = ab.get2()) != 65535) { // Read until end-of-map marker
-      ValueStringCount vsc1 = new ValueStringCount();
+      BufferedStringCount bsc1 = new BufferedStringCount();
       System.arraycopy(ab.getA1(len), 0, buf, off, len);
-      vsc1.set(buf, off, len, ab.get8());
+      bsc1.set(buf, off, len, ab.get8());
       off += len;
-      ValueStringCount vsc2 = VOCABHM.putIfAbsent(vsc1, vsc1);
-      if (vsc2 != null) vsc2.inc(vsc1._cnt); // Inc count on added word
+      BufferedStringCount bsc2 = VOCABHM.putIfAbsent(bsc1, bsc1);
+      if (bsc2 != null) bsc2.inc(bsc1._cnt); // Inc count on added word
     }
     return this;
   }
@@ -150,7 +150,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
   @Override
   public void postGlobal() {
     if (_minFreq > 1) filterMin();
-    _vocabArray = _vocabHM.values().toArray(new ValueStringCount[_vocabHM.size()]);
+    _vocabArray = _vocabHM.values().toArray(new BufferedStringCount[_vocabHM.size()]);
     Arrays.sort(_vocabArray);
     _vocabHM = null;
     VOCABHM = null;
@@ -158,9 +158,9 @@ public class WordCountTask extends MRTask<WordCountTask> {
   }
 
   private void filterMin() {
-    for (ValueStringCount vs : _vocabHM.values())
-      if (vs._cnt < _minFreq)
-        _vocabHM.remove(vs);
+    for (BufferedStringCount str : _vocabHM.values())
+      if (str._cnt < _minFreq)
+        _vocabHM.remove(str);
   }
 
   private void buildFrame() {
@@ -175,9 +175,9 @@ public class WordCountTask extends MRTask<WordCountTask> {
     NewChunk cntNC = new NewChunk(cntAV, 0);
 
     //fill in values
-    for (ValueStringCount vwc : _vocabArray) {
-      wordNC.addStr(vwc);
-      cntNC.addNum(vwc._cnt, 0);
+    for (BufferedStringCount str : _vocabArray) {
+      wordNC.addStr(str);
+      cntNC.addNum(str._cnt, 0);
     }
 
     //finalize vectors
@@ -194,16 +194,16 @@ public class WordCountTask extends MRTask<WordCountTask> {
   }
 
   /**
-   * Small extension to the ValueString class to add
+   * Small extension to the BufferedString class to add
    * an atomic counter for each word. Further, this
    * class sets the values to sort by frequency count
    * first, and then alphabetically second.  The sort
    * is a descending sort.
    */
-  protected static class ValueStringCount extends ValueString {
+  protected static class BufferedStringCount extends BufferedString {
     volatile long _cnt = 1;          // Atomically update
-    private static final AtomicLongFieldUpdater<ValueStringCount> _cntUpdater =
-            AtomicLongFieldUpdater.newUpdater(ValueStringCount.class, "_cnt");
+    private static final AtomicLongFieldUpdater<BufferedStringCount> _cntUpdater =
+            AtomicLongFieldUpdater.newUpdater(BufferedStringCount.class, "_cnt");
 
     public void inc(long d) {
       long r = _cnt;
@@ -215,7 +215,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
       while (!_cntUpdater.compareAndSet(this, r, r + 1)) r = _cnt;
     }
 
-    public ValueStringCount set(byte[] buf, int off, int len, long cnt) {
+    public BufferedStringCount set(byte[] buf, int off, int len, long cnt) {
       set(buf, off, len);
       long r = _cnt;
       while (!_cntUpdater.compareAndSet(this, r, cnt)) r = _cnt;
@@ -224,14 +224,14 @@ public class WordCountTask extends MRTask<WordCountTask> {
 
     //Put sort in descending order
     @Override
-    public int compareTo(ValueString that) {
+    public int compareTo(BufferedString that) {
       final int BEFORE = -1;
       final int EQUAL = 0;
       final int AFTER = 1;
 
       if (this == that) return EQUAL;
-      if (that instanceof ValueStringCount) {
-        long res = ((ValueStringCount) that)._cnt - this._cnt;
+      if (that instanceof BufferedStringCount) {
+        long res = ((BufferedStringCount) that)._cnt - this._cnt;
         if (res > 0) return AFTER;
         else if (res < 0) return BEFORE;
       }

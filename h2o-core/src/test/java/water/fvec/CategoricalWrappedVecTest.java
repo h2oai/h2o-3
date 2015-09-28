@@ -8,10 +8,9 @@ import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
-import java.util.Arrays;
 import java.util.Random;
 
-public class EnumWrappedVecTest extends TestUtil {
+public class CategoricalWrappedVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   // Need to move test files over
@@ -21,7 +20,7 @@ public class EnumWrappedVecTest extends TestUtil {
     try {
       v1 = parse_test_file("smalldata/junit/mixcat_train.csv");
       v2 = parse_test_file("smalldata/junit/mixcat_test.csv");
-      EnumWrappedVec vv = v2.vecs()[0].adaptTo(v1.vecs()[0].domain());
+      CategoricalWrappedVec vv = v2.vecs()[0].adaptTo(v1.vecs()[0].domain());
       Assert.assertArrayEquals("Mapping differs",new int[]{0,1,3},vv._map);
       Assert.assertArrayEquals("Mapping differs",new String[]{"A","B","C","D"},vv.domain());
       vv.remove();
@@ -32,7 +31,7 @@ public class EnumWrappedVecTest extends TestUtil {
     }
   }
 
-  /** Verifies that {@link EnumWrappedVec#computeMap(String[], String[])} returns
+  /** Verifies that {@link CategoricalWrappedVec#computeMap(String[], String[])} returns
    *  correct values. */
   @Test public void testModelMappingCall() {
     Scope.enter();
@@ -60,18 +59,18 @@ public class EnumWrappedVecTest extends TestUtil {
         toDomain[i] = new String(b);
       }
       long start = System.currentTimeMillis();
-      new EnumWrappedVec(fromDomain, toDomain);
+      new CategoricalWrappedVec(fromDomain, toDomain);
       long duration = System.currentTimeMillis() - start;
       if (N==9999)
         Log.info("Warming up.");
       else
-        Log.info("Time for enum unification of two maps with each " + N + " factors (only partially overlapping): " + PrettyPrint.msecs(duration, true));
+        Log.info("Time for categorical unification of two maps with each " + N + " factors (only partially overlapping): " + PrettyPrint.msecs(duration, true));
       Scope.exit();
     }
   }
 
   private static void testModelMapping(String[] modelDomain, String[] colDomain, int[] expectedMapping) {
-    int[] mapping = new EnumWrappedVec(colDomain, modelDomain)._map;
+    int[] mapping = new CategoricalWrappedVec(colDomain, modelDomain)._map;
     Assert.assertArrayEquals("Mapping differs",  expectedMapping, mapping);
   }
 }

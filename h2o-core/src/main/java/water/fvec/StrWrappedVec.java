@@ -3,10 +3,10 @@ package water.fvec;
 import water.AutoBuffer;
 import water.Key;
 import water.DKV;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 /** A vector transforming values of given vector according to given domain
- *  mapping - currently only used to transform Enum columns but in theory would
+ *  mapping - currently only used to transform categorical columns but in theory would
  *  work for any dense-packed Int column.  Expected usage is to map from a new
  *  dataset to the domain-mapping expected by a model (which will match the
  *  dataset it was trained on).
@@ -20,7 +20,7 @@ import water.parser.ValueString;
  *  need to be checked for).
  */
 public class StrWrappedVec extends WrappedVec {
-  /** Main constructor: convert from enum to string */
+  /** Main constructor: convert from categorical to string */
   public StrWrappedVec(Key key, long[] espc, Key masterVecKey) {
     super(key, espc, masterVecKey);
     _type = T_STR;
@@ -40,8 +40,8 @@ public class StrWrappedVec extends WrappedVec {
 
     @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
     @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-    @Override public ValueString atStr_impl(ValueString vstr, int idx) {
-      return isNA_impl(idx) ? null : vstr.setTo(((StrWrappedVec)_vec).masterVec().factor(_c.at8_impl(idx)));
+    @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
+      return isNA_impl(idx) ? null : bStr.setTo(((StrWrappedVec)_vec).masterVec().factor(_c.at8_impl(idx)));
     }
 
     @Override protected boolean isNA_impl(int idx) { return _c.isNA_impl(idx); }

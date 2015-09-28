@@ -1,6 +1,5 @@
 package hex.glm;
 
-import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsRegressionGLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -40,8 +39,8 @@ public class GLMBasicTestRegression extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(f);
     Key outputKey = Key.make("prostate_cat_train.hex");
     _canCarTrain = ParseDataset.parse(outputKey, nfs._key);
-    _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toEnum());
-    _canCarTrain.add("Class",(_class = _canCarTrain.remove("Class")).toEnum());
+    _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toCategorical());
+    _canCarTrain.add("Class",(_class = _canCarTrain.remove("Class")).toCategorical());
 
     DKV.put(_canCarTrain._key, _canCarTrain);
     f = find_test_file_static("smalldata/glm_test/earinf.txt");

@@ -1133,8 +1133,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def sub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively.
-    Of note, mutates the frame.
+    sub performs replacement of the first matches respectively.
 
     :param pattern:
     :param replacement:
@@ -1142,19 +1141,18 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("sub",pattern,replacement,self,ignore_case))
+    return H2OFrame(expr=ExprNode("replacefirst",pattern,replacement,self,ignore_case))
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively.
-    Of note, mutates the frame.
+    gsub performs replacement of all matches respectively.
 
     :param pattern:
     :param replacement:
     :param ignore_case:
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("gsub", pattern, replacement, self, ignore_case))
+    return H2OFrame(expr=ExprNode("replaceall", pattern, replacement, self, ignore_case))
 
   def interaction(self, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
     """
@@ -1175,7 +1173,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def toupper(self):
     """
     Translate characters from lower to upper case for a particular column
-    Of note, mutates the frame.
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("toupper", self))
@@ -1183,7 +1180,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def tolower(self):
     """
     Translate characters from upper to lower case for a particular column
-    Of note, mutates the frame.
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("tolower", self))

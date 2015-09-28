@@ -10,7 +10,7 @@
 #'        which k-means operates.
 #' @param k The rank of the resulting decomposition. This must be
 #'        between 1 and the number of columns in the training frame, inclusive.
-#' @param model_id (Optional) The unique id assigned to the resulting model. 
+#' @param model_id (Optional) The unique id assigned to the resulting model.
 #'        If none is given, an id will automatically be generated.
 #' @param validation_frame An Frame object containing the
 #'        variables in the model.
@@ -25,10 +25,10 @@
 #'        column, "DESCALE": for dividing by the standard deviation of each
 #'        column, "STANDARDIZE": for demeaning and descaling, and "NORMALIZE":
 #'        for demeaning and dividing each column by its range (max - min).
-#' @param loss A character string indicating the default loss function for numeric columns. 
+#' @param loss A character string indicating the default loss function for numeric columns.
 #'        Possible values are "Quadratic" (default), "L1", "Huber", "Poisson", "Hinge"
 #'        and "Logistic".
-#' @param multi_loss A character string indicating the default loss function for enum columns. 
+#' @param multi_loss A character string indicating the default loss function for enum columns.
 #'        Possible values are "Categorical" and "Ordinal".
 #' @param loss_by_col A vector of strings indicating the loss function for specific
 #'        columns by corresponding index in loss_by_col_idx. Will override loss for
@@ -51,11 +51,11 @@
 #'        init_step_size and decreases the step size at each iteration until a
 #'        termination condition is reached.
 #' @param min_step_size Minimum step size upon which the algorithm is terminated.
-#' @param init A character string indicating how to select the initial Y matrix. 
+#' @param init A character string indicating how to select the initial Y matrix.
 #'        Possible values are "Random": for initialization to a random array from the
 #'        standard normal distribution, "PlusPlus": for initialization using the clusters
-#'        from k-means++ initialization, or "SVD": for initialization using the 
-#'        first k right singular vectors. Additionally, the user may specify the 
+#'        from k-means++ initialization, or "SVD": for initialization using the
+#'        first k right singular vectors. Additionally, the user may specify the
 #'        initial Y as a matrix, data.frame, Frame, or list of vectors.
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
@@ -67,7 +67,7 @@
 #' h2o.init()
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex <- h2o.uploadFile(path = ausPath)
-#' h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1", 
+#' h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1",
 #'          gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' @export
 h2o.glrm <- function(training_frame, x, k, model_id,
@@ -93,25 +93,25 @@ h2o.glrm <- function(training_frame, x, k, model_id,
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
-  
+
   # Training_frame may be a key or an Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  
+
   ## -- Force evaluate temporary ASTs -- ##
   .eval.frame(training_frame)
-  
+
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
-  if(!missing(k)) 
+  if(!missing(k))
     parms$k <- as.numeric(k)
-  if(!missing(model_id)) 
+  if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
@@ -127,7 +127,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms$multi_loss <- multi_loss
   if(!(missing(loss_by_col) || is.null(loss_by_col)))
     parms$loss_by_col <- .collapse(loss_by_col)
-  if(!(missing(loss_by_col_idx) || is.null(loss_by_col_idx))) 
+  if(!(missing(loss_by_col_idx) || is.null(loss_by_col_idx)))
     parms$loss_by_col_idx <- .collapse(loss_by_col_idx)
   if(!missing(regularization_x))
     parms$regularization_x <- regularization_x
@@ -149,7 +149,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     parms$recover_svd <- recover_svd
   if(!missing(seed))
     parms$seed <- seed
-  
+
   # Check if init is an acceptable set of user-specified starting points
   if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {
     parms[["init"]] <- "User"
@@ -171,7 +171,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
   else{
     stop("Argument init must be set to Random, PlusPlus, SVD, or a valid set of user-defined starting points.")
   }
-  
+
   # Error check and build model
-  .h2o.modelJob('glrm', parms, do_future=FALSE, h2oRestApiVersion=99)
+  .h2o.modelJob('glrm', parms, h2oRestApiVersion=99)
 }

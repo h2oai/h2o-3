@@ -106,7 +106,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -167,7 +167,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -245,7 +245,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -344,7 +344,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toEnum())._key);
+        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toCategorical())._key);
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);

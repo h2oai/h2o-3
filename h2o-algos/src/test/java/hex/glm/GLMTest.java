@@ -22,10 +22,9 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
-import water.parser.ValueString;
 import water.util.ArrayUtils;
-import water.util.MathUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -548,11 +547,11 @@ public class GLMTest  extends TestUtil {
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
-      ValueString vs = new ValueString();
+      BufferedString tmpStr = new BufferedString();
       outer:
       for (int i = 0; i < names.length; ++i) {
         for (int j = 0; j < betaConstraints.numRows(); ++j) {
-          if (betaConstraints.vec("names").atStr(vs, j).toString().equals(names[i])) {
+          if (betaConstraints.vec("names").atStr(tmpStr, j).toString().equals(names[i])) {
             if (Math.abs(beta[i] - betaConstraints.vec("lower_bounds").at(j)) < 1e-4 || Math.abs(beta[i] - betaConstraints.vec("upper_bounds").at(j)) < 1e-4) {
               continue outer;
             }

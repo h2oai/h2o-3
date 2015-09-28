@@ -68,7 +68,8 @@ public class DTree extends Iced {
 
   // Return Node i
   public final Node node( int i ) {
-    if( i >= _len ) throw new ArrayIndexOutOfBoundsException(i);
+    if( i >= _len )
+      throw new ArrayIndexOutOfBoundsException(i);
     return _ns[i];
   }
   public final UndecidedNode undecided( int i ) { return (UndecidedNode)node(i); }
@@ -575,7 +576,7 @@ public class DTree extends Iced {
     }
   }
 
-  public static abstract class LeafNode extends Node {
+  public final static class LeafNode extends Node {
     public float _pred;
     public LeafNode( DTree tree, int pid ) { super(tree,pid); tree._leaves++; }
     public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); tree._leaves++; }
@@ -585,6 +586,10 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
+    // Insert just the predictions: a single byte/short if we are predicting a
+    // single class, or else the full distribution.
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
+    @Override protected int size() { return 4; }
     public final double pred() { return _pred; }
   }
 

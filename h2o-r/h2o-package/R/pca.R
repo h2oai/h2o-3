@@ -75,5 +75,5 @@ h2o.prcomp <- function(training_frame, x, k,
   if(!missing(use_all_factor_levels)) parms$use_all_factor_levels <- use_all_factor_levels
 
   # Error check and build model
-  .h2o.modelJob('pca', parms, do_future=FALSE)
+  .h2o.modelJob('pca', parms)
 }
