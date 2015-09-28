@@ -16,7 +16,6 @@ test.pubdev_1996 <- function() {
   Log.info("Predict on test data")
   pred <- predict(fitH2O, test)
   print(head(pred))
-  testEnd()
 }
 
 doTest("PUBDEV-1996: Naive Bayes prediction when test has different categoricals from train", test.pubdev_1996)
