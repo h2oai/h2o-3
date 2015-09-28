@@ -40,7 +40,7 @@ test.slice.star <- function() {
  
   Log.info("as.data.frame(fiveStarSliced) * as.data.frame(fiveStarSliced)")
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: *", test.slice.star)

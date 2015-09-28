@@ -65,7 +65,7 @@ check.hdfs_basic <- function() {
   }
   print ("Import worked")
 
-  testEnd()
+  
 }
 
 doTest("HDFS operations", check.hdfs_basic)

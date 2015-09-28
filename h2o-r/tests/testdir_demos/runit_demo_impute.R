@@ -57,8 +57,8 @@ check.demo_impute <- function() {
   hex <- cp(prostate.hex)
   h2o.impute(hex, "VOL", method = "median")
 
-  testEnd()
-  testEnd()
+  
+  
 }
 
 doTest("Imputation", check.demo_impute)

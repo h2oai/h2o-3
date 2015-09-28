@@ -14,7 +14,7 @@ test.rdocglm.golden <- function() {
     h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
              nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 
-    testEnd()
+    
 }
 
 doTest("R Doc GLM example", test.rdocglm.golden)

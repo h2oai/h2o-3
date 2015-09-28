@@ -23,7 +23,7 @@ test.km.benign <- function() {
     benign.km <- kmeans(benign.data, centers = i)
   }
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Benign Data", test.km.benign)

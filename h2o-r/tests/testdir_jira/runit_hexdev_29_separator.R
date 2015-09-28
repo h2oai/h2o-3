@@ -13,7 +13,7 @@ test.separator <- function() {
 
     expect_error(h2o.importFile(path, sep="--"))
 
-    testEnd()
+    
 }
 
 doTest("Separator", test.separator)

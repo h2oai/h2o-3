@@ -13,7 +13,7 @@ test <- function(h) {
 
     new_glm <- h2o.makeGLMModel(model, new_beta)
 
-    testEnd()
+    
 }
 
 doTest("GLM makeGLMModel", test)

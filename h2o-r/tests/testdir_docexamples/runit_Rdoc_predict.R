@@ -16,7 +16,7 @@ prost <- summary(prostate.fit)
 Log.info("Print output from as.data.frame call")
 Log.info(paste("H2O Summary Prostate  :" ,prost))
 
-testEnd()
+
 }
 
 doTest("R Doc Predict Example", test.rdocpredict.golden)

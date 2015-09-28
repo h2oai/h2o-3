@@ -8,7 +8,7 @@ test <- function() {
   ## Import data
   if (!file.exists("/mnt/0xcustomer-datasets/c27/data.csv")) {
     Log.info("h2o-only data")
-    testEnd()
+    
   } else {
     h2oData <- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
     betaConstraints <- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
@@ -46,7 +46,7 @@ test <- function() {
     names(c) <- gsub("lower_bounds", replacement = "lowerbounds", x = names(bc))
     checkException(run_glm(c), "Did not detect beta constraint column name typo.", silent = T)
 
-    testEnd()
+    
   }
 }
 

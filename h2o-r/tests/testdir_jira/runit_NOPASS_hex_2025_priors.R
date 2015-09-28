@@ -5,7 +5,7 @@ test <- function(){
   ## Import data
   if (!file.exists("/mnt/0xcustomer-datasets/c27/data.csv")) {
         Log.info("h2o-only data")
-        testEnd()
+        
   } else {
     h2oData <- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
     betaConstraints <- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
@@ -52,7 +52,7 @@ test <- function(){
     checkEqualsNumeric(coeff1, coeff2, tolerance = 0)
     checkEqualsNumeric(intercept2, intercept2adj, tolerance = 1E-10)
 
-    testEnd()
+    
   }
 }
 

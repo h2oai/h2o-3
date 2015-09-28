@@ -16,7 +16,7 @@ test.basic.colname.assignment <- function() {
   
   colnames(hex) <- hex_name
   expect_that(colnames(hex), equals(colnames(hex_name)))
-  testEnd()
+  
 }
 
 doTest("EQ2 Tests: colnames<-", test.basic.colname.assignment)

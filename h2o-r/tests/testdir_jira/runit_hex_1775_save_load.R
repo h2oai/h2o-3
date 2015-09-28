@@ -107,7 +107,7 @@ test.hex_1775 <- function() {
   expect_equal(nrow(speedrf.pred), 150)
   expect_equal(speedrf.pred, speedrf.pred2)
 
-  testEnd()
+  
 }
 
 doTest("HEX-1775 Test: Save and Load GLM Model", test.hex_1775)

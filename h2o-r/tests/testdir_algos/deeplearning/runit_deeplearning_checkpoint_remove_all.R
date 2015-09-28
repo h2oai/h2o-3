@@ -16,7 +16,7 @@ checkpoint.remove.all <- function() {
   iris = h2o.importFile(locate("smalldata/iris/iris.csv"))
   m2 = h2o.deeplearning(x=1:4, y=5, training_frame=iris, epochs=200, checkpoint=restored@model_id)
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning checkpoint with remove all", checkpoint.remove.all)

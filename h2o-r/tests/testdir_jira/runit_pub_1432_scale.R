@@ -14,7 +14,7 @@ test <- function() {
   print(frame)
   frame <- scale(foo[,1:4],center=F, scale=c(1,1,1,1))
   print(frame)
-  testEnd()
+  
 }
 
 doTest("testing scale", test)

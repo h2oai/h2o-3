@@ -30,7 +30,7 @@ function() {
   Log.info("Expect that the xval model has standardize set to FALSE as it is in the main model.")
   expect_equal(first_xval@parameters$standardize, FALSE)
   expect_equal(first_xval@parameters$standardize, main_model@parameters$standardize)
-  testEnd()
+  
 }
 
 

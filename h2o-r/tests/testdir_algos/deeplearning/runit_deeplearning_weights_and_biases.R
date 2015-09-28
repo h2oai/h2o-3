@@ -37,7 +37,7 @@ check.deeplearning_imbalanced <- function() {
   checkTrue(ncol(biases3) == 1, "wrong dimensionality!")
   checkTrue(nrow(biases3) == 7, "wrong dimensionality!")
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Weights/Biases Test", check.deeplearning_imbalanced)

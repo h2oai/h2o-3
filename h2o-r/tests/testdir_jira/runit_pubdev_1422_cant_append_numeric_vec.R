@@ -24,7 +24,7 @@ test.cant.assign.to.new.col <- function() {
   Log.info("Appending to cars..")
   cars.hex$weights <- as.h2o(weights.train)
 
-  testEnd()
+  
 }
 
 doTest("H2O/R is Failing to Append a Numeric Column", test.cant.assign.to.new.col)

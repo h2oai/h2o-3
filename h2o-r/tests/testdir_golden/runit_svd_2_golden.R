@@ -18,7 +18,7 @@ test.svdidentity.golden <- function() {
   for(i in 1:length(eigval))
     expect_equal(as.numeric(gram %*% eigvec[,i]), eigval[i] * eigvec[,i], tolerance = 1e-5)
   
-  testEnd()
+  
 }
 
 doTest("SVD Golden Eigenvector/Eigenvalue Identity Test: USArrests", test.svdidentity.golden)

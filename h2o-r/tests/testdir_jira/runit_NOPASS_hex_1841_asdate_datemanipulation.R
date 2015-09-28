@@ -150,7 +150,7 @@ datetest <- function(){
     expect_that(lmillis[,1], equals(ldf[[i]]))
   }
   
-  testEnd()
+  
 }
 
 

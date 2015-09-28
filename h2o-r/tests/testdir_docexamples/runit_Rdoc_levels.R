@@ -9,7 +9,7 @@ iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 levels(iris.hex[,5])
 
 
-testEnd()
+
 }
 
 doTest("R Doc levels", test.levels.golden)

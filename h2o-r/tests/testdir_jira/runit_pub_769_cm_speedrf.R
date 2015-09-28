@@ -27,7 +27,7 @@ test.pub.767 <- function() {
 
 
   expect_equal(sum(h2o.confusionMatrix(m)[3,1:2]), nrow(prostate))
-  testEnd()
+  
 }
 
 doTest("PUB-767: randomForest on discontinuous integer classes.", test.pub.767)

@@ -1,16 +1,19 @@
+doJavapredictTest <- function(model,TEST_ROOT_DIR,test_file,test_frame,params) {
+  conn <- h2o.getConnection()
+  myIP <- conn@ip
+  myPort <- conn@port
 
-doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...) {
   print("Uploading train data to H2O")
 
   print(paste("Creating", model, "model in H2O"))
   if (model == "glm") {
-    model <- h2o.glm(training_frame = training_frame, ...)
+    model <- do.call("h2o.glm",params)
     print(model)
   } else if (model == "gbm") {
-    model <- h2o.gbm(training_frame = training_frame, ...)
+    model <- do.call("h2o.gbm",params)
     print(model)
   } else if (model == "randomForest") {
-    model <- h2o.randomForest(training_frame = training_frame, ...)
+    model <- do.call("h2o.randomForest",params)
     print(model)
   } else {
     stop(paste("Unknown model type", model))
@@ -37,10 +40,10 @@ doJavapredictTest <- function(model, training_frame, test_file, test_frame, ...)
 
   print("Setting up for Java POJO")
   test_with_response <- read.csv(test_file, header=T)
-  test_without_response <- test_with_response[,x]
+  test_without_response <- test_with_response[,params$x]
   if(is.null(ncol(test_without_response))) {
     test_without_response <- data.frame(test_without_response)
-    colnames(test_without_response) <- x
+    colnames(test_without_response) <- params$x
   }
   write.csv(test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
   cmd <- sprintf("curl http://%s:%s/3/h2o-genmodel.jar > %s/h2o-genmodel.jar", myIP, myPort, tmpdir_name)

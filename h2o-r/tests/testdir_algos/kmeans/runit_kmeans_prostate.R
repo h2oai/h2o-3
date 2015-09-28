@@ -22,7 +22,7 @@ test.km.prostate <- function() {
     prostate.km <- kmeans(prostate.data[,3], centers = i)
   }
 
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Prostate Data", test.km.prostate)

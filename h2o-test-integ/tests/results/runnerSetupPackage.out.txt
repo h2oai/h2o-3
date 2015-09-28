@@ -1,0 +1,152 @@
+> #options(echo=F)
+> options(repos = "http://cran.cnr.berkeley.edu/")
+> 
+> usePackage<-
++ function(p) {
++   if (is.element(p, installed.packages()[,1])) {
++ 
++     update.packages(p, dep = TRUE)
++   } else {
++     install.packages(p, dep = TRUE)
++   }
++ }
+> 
+> # what packages did the h2o_master_DEV_test need?
+> packages <- c("R.utils", "R.oo", "R.methodsS3", "RCurl", "jsonlite", "statmod", "testthat", "bitops", "tools", "LiblineaR",
++               "gdata", "caTools", "ROCR", "digest", "penalized", "rgl", "randomForest", "expm", "Matrix", "glmnet",
++               "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust", "e1071", "ade4", "bit64")
+> 
+> invisible(lapply(packages, usePackage))
+> 
+> library(R.utils)
+Loading required package: R.oo
+Loading required package: R.methodsS3
+R.methodsS3 v1.7.0 (2015-02-19) successfully loaded. See ?R.methodsS3 for help.
+R.oo v1.19.0 (2015-02-27) successfully loaded. See ?R.oo for help.
+
+Attaching package: ‘R.oo’
+
+The following objects are masked from ‘package:methods’:
+
+    getClasses, getMethods
+
+The following objects are masked from ‘package:base’:
+
+    attach, detach, gc, load, save
+
+R.utils v2.1.0 (2015-05-27) successfully loaded. See ?R.utils for help.
+
+Attaching package: ‘R.utils’
+
+The following object is masked from ‘package:utils’:
+
+    timestamp
+
+The following objects are masked from ‘package:base’:
+
+    cat, commandArgs, getOption, inherits, isOpen, parse, warnings
+
+> setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+> 
+> user <- Sys.getenv()["USER"]
+> if( !is.na(user) && user == "jenkins") {
++   print("JENKINS R_LIBS_USER PATH SET TO: ")
++   print( Sys.getenv()["R_LIBS_USER"] )
++   print("R .libPaths(): ")
++   print( .libPaths() )
++ }
+> 
+> if( "h2o" %in% rownames(installed.packages()) ) {
++   lapply(.libPaths(), function(p) {
++     tryCatch(remove.packages("h2o", p), error=function(e) { paste0("No h2o package in libPath: ", p) })
++   })
++ }
+[[1]]
+NULL
+
+> failed <<- F
+> tryCatch(library(h2o), error = function(e) {failed <<- T})
+> if (! failed) {
++     stop("Failed to remove h2o library")
++ }
+> 
+> h2o_r_package_file <- NULL
+> 
+> args <- commandArgs(trailingOnly = TRUE)
+> 
+> if( length(args) == 1) {
++   print("")
++   print("Got args:")
++   print(args)
++   print("")
++   arr = strsplit(args, '\\.')[[1]]
++   lastidx = length(arr)
++   suffix = arr[lastidx]
++   if (suffix == "gz") {
++     h2o_r_package_file = args
++   }
++   if( is.null(h2o_r_package_file) )
++     stop("Could not find the h2o R package file!")
++   install.packages(h2o_r_package_file, repos = NULL, type = "source")
++ } else {
++ 
++   raw_dir_to_search = "../../R/src/contrib"
++ 
++   if (! file.exists(raw_dir_to_search)) {
++       stop("R build directory does not exist, you probably need to do a gradle build")
++   }
++   dir_to_search = normalizePath(raw_dir_to_search)
++   files = dir(dir_to_search, pattern="h2o.*.gz")
++   for (i in 1:length(files)) {
++       f = files[i]
++       arr = strsplit(f, '\\.')[[1]]
++       lastidx = length(arr)
++       suffix = arr[lastidx]
++       if (suffix == "gz") {
++           h2o_r_package_file = f
++           break
++       }
++   }
++   install.packages(paste(dir_to_search, h2o_r_package_file, sep="/"), repos = NULL, type = "source")
++ }
+* installing *source* package ‘h2o’ ...
+** R
+** demo
+** inst
+** preparing package for lazy loading
+Creating a generic function for ‘summary’ from package ‘base’ in package ‘h2o’
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded
+* DONE (h2o)
+> 
+> library(h2o)
+Loading required package: statmod
+
+----------------------------------------------------------------------
+
+Your next step is to start H2O:
+    > h2o.init()
+
+For H2O package documentation, ask for help:
+    > ??h2o
+
+After starting H2O, you can use the Web UI at http://localhost:54321
+For more information visit http://docs.h2o.ai
+
+----------------------------------------------------------------------
+
+
+Attaching package: ‘h2o’
+
+The following objects are masked from ‘package:stats’:
+
+    sd, var
+
+The following objects are masked from ‘package:base’:
+
+    %*%, %in%, apply, as.factor, as.numeric, colnames, colnames<-,
+    ifelse, is.factor, is.numeric, log, range, trunc
+
+> 

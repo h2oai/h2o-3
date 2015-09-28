@@ -8,7 +8,7 @@ australia.hex <- h2o.uploadFile(path = ausPath, destination_frame = "australia.h
 sum(australia.hex)
 sum(australia.hex[,1:4], australia.hex[,5:8], na.rm=FALSE)
 
-testEnd()
+
 }
 
 doTest("R Doc Sum", test.rdocsum.golden)

@@ -41,7 +41,7 @@ check.hdfs_glrm <- function() {
   h2o.rm(cross.glrm@model$loading_key$name)   # Remove loading matrix to free memory
 
 
-  testEnd()
+  
 }
 
 doTest("GLRM test", check.hdfs_glrm)

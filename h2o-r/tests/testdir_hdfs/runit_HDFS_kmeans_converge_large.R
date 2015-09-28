@@ -50,7 +50,7 @@ check.kmeans_converge <- function() {
   avg_change <- sum((getCenters(cross1.km) - getCenters(cross2.km))^2)/ncent
   expect_true(avg_change < 1e-6 || getIterations(cross1.km) > miters)
 
-  testEnd()
+  
 }
 
 doTest("K-means convergence", check.kmeans_converge)

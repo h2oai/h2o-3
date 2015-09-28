@@ -19,7 +19,7 @@ test.km.empty <- function() {
   expect_error(kmeans(ozoneScale, init = initCent, iter.max = 1000, algorithm = "Lloyd"))
   fitKM <- h2o.kmeans(ozoneH2O, init = initCent, standardize = TRUE)
   print(fitKM)
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Handle multiple empty clusters", test.km.empty)

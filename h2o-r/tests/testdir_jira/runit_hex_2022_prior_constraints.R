@@ -11,7 +11,7 @@ test.Priors.BetaConstraints <- function() {
   pathToFile <- "/mnt/0xcustomer-datasets/c27/data.csv"
   pathToConstraints <- "/mnt/0xcustomer-datasets/c27/constraints_indices.csv"
   if (!file.exists(pathToFile) || !file.exists(pathToConstraints)) {
-    testEnd()
+    
   } else {
     modelStack <- h2o.importFile(pathToFile)
     betaConstraints.hex <- h2o.importFile(pathToConstraints)
@@ -124,7 +124,7 @@ test.Priors.BetaConstraints <- function() {
     Log.info("Check gradient of beta constraints without priors or beta given...")
     all(as.numeric(gradient2$beta_given)[-23] < threshold)
     print(as.numeric(gradient1$beta_given)[-23])
-    testEnd()
+    
   }
 }
 

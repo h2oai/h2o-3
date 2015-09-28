@@ -32,7 +32,7 @@ test.cbind <- function() {
     df.train <- h2o.assign(df.hex[df.hex$index==1,],"df.train")
     df.test  <- h2o.assign(df.hex[df.hex$index==0,],"df.test" )
 
-    testEnd()
+    
 }
 
 doTest("Test cbind.", test.cbind)

@@ -39,7 +39,7 @@ check.deeplearning_MNIST <- function() {
   print(h2o.performance(dl_model, test_hex ))
   print(h2o.performance(dl_model, train_hex))
   
-  testEnd()
+  
 }
 
 doTest("Deep Learning MNIST", check.deeplearning_MNIST)

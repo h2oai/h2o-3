@@ -16,6 +16,6 @@ Log.info("Performing compound task ( ( hex[,c(\"MST\")] <= 2.04621771039 ))  on 
          filterHex <- hex[( ( hex[,c("MST")] <= 2.04621771039 )) , c("MST","AGMT","AGP1","DEG","WT","AGLP","OBS","STR")]
     Log.info("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[( ( hex[,c("MST")] <= 2.04621771039 )) , c("HIGD","FNDX","NLV","AGMN","CHK","LIV")]
-testEnd()
+
 }
 doTest("compoundFilterTest_ on data benign unit= ['', '<=']", complexFilterTest_benign_37)

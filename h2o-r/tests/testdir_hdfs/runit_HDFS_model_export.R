@@ -44,7 +44,7 @@ check.hdfs_model_export <- function(conn) {
 
   print ("Model imported")
 
-  testEnd()
+  
 }
 
 doTest("HDFS operations", check.hdfs_model_export)

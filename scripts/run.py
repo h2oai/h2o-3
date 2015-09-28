@@ -800,7 +800,8 @@ class TestRunner:
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
-                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports, testreport_dir, ipynb_runner_dir):
+                 failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
+                 testreport_dir, ipynb_runner_dir, r_pkg_ver_chk):
         """
         Create a runner.
 
@@ -822,6 +823,7 @@ class TestRunner:
         @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
         @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
         @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
+        @param r_pkg_ver_chk: check R packages/versions
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
@@ -861,6 +863,7 @@ class TestRunner:
         self.nofeature_counter = 0
         self.path_to_tar = path_to_tar
         self.path_to_whl = path_to_whl
+        self.r_pkg_ver_chk = r_pkg_ver_chk
 
         if (use_cloud):
             node_num = 0
@@ -1095,59 +1098,9 @@ class TestRunner:
         if (self.terminated):
             return
 
-        if (self._have_some_r_tests()):
-            self._log("")
-            self._log("Setting up R H2O package...")
-            out_file_name = os.path.join(self.output_dir, "runnerSetupPackage.out.txt")
-            out = open(out_file_name, "w")
+        if self._have_some_r_tests() and self.r_pkg_ver_chk == True: self._r_pkg_ver_chk()
 
-            runner_setup_package_r = None
-            if (True):
-                possible_utils_parent_dir = self.test_root_dir
-                while (True):
-                    possible_utils_dir = os.path.join(possible_utils_parent_dir,
-                                                      os.path.join("h2o-r",
-                                                                   os.path.join("tests", "Utils")))
-                    possible_runner_setup_package_r = os.path.join(possible_utils_dir, "runnerSetupPackage.R")
-                    if (os.path.exists(possible_runner_setup_package_r)):
-                        runner_setup_package_r = possible_runner_setup_package_r
-                        break
-
-                    next_possible_utils_parent_dir = os.path.dirname(possible_utils_parent_dir)
-                    if (next_possible_utils_parent_dir == possible_utils_parent_dir):
-                        break
-
-                    possible_utils_parent_dir = next_possible_utils_parent_dir
-
-            if (runner_setup_package_r is None):
-                print("")
-                print("ERROR: runnerSetupPackage.R not found.")
-                print("")
-                sys.exit(1)
-
-            cmd = ["R",
-                   "--vanilla",  # to isolate from .Rprofile effects; e.g. http://stackoverflow.com/a/32492718/403310
-                   "--quiet",
-                   "-f",
-                   runner_setup_package_r]
-            if self.path_to_tar is not None:
-                print "Using R TAR located at: " + self.path_to_tar
-                cmd += ["--args", self.path_to_tar]
-            child = subprocess.Popen(args=cmd,
-                                     stdout=out,
-                                     stderr=subprocess.STDOUT)
-            rv = child.wait()
-            if (self.terminated):
-                return
-            if (rv != 0):
-                print("")
-                print("ERROR: " + runner_setup_package_r + " failed.")
-                print("       (See " + out_file_name + ")")
-                print("")
-                sys.exit(1)
-            out.close()
-
-        elif self._have_some_py_tests() and self.path_to_whl is not None:
+        if self._have_some_py_tests() and self.path_to_whl is not None:
             # basically only do this if we have a whl to install
             self._log("")
             self._log("Setting up Python H2O package...")
@@ -1223,7 +1176,7 @@ class TestRunner:
         """
         for all clouds, check if connection to h2o exists, and that h2o is healthy.
         """
-        time.sleep(5)
+        time.sleep(3)
         for c in self.clouds: self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
 
     def stop_clouds(self):
@@ -1347,6 +1300,35 @@ class TestRunner:
     # --------------------------------------------------------------------
     # Private methods below this line.
     # --------------------------------------------------------------------
+    def _r_pkg_ver_chk(self):
+        """
+        Run R script that checks if the Jenkins-approve R packages and versions are present. Exit, if they are not
+        present or if the requirements file cannot be retrieved.
+        """
+
+        self._log("")
+        self._log("Conducting R package/version check...")
+        out_file_name = os.path.join(self.output_dir, "package_version_check_out.txt")
+        out = open(out_file_name, "w")
+
+        pkg_ver_chk_update_r = os.path.normpath(os.path.join(self.test_root_dir,"..","scripts",
+                                                             "package_version_check_update.R"))
+        cmd = ["R", "--vanilla", "-f", pkg_ver_chk_update_r, "--args", "check",]
+
+        child = subprocess.Popen(args=cmd, stdout=out)
+        rv = child.wait()
+        if (self.terminated):
+            return
+        if (rv == 1 or rv == 3):
+            self._log("")
+            self._log("ERROR: " + pkg_ver_chk_update_r + " failed.")
+            self._log("       See " + out_file_name)
+            sys.exit(1)
+        if (rv == 2):
+            self._log("")
+            self._log("WARNING: System version of R differs from Jenkins-approved version.")
+            self._log("         See " + out_file_name)
+        out.close()
 
     def _calc_test_short_dir(self, test_path):
         """
@@ -1604,6 +1586,7 @@ g_path_to_whl = None
 g_produce_unit_reports = True
 g_phantomjs_to = 3600
 g_phantomjs_packs = "examples"
+g_r_pkg_ver_chk = False
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1644,56 +1627,58 @@ def usage():
     print("    (Output dir is: " + g_output_dir + ")")
     print("    (Default number of clouds is: " + str(g_num_clouds) + ")")
     print("")
-    print("    --wipeall     Remove all prior test state before starting, particularly")
-    print("                  random seeds.")
-    print("                  (Removes master_seed file and all Rsandbox directories.")
-    print("                  Also wipes the output dir before starting.)")
+    print("    --wipeall        Remove all prior test state before starting, particularly")
+    print("                     random seeds.")
+    print("                     (Removes master_seed file and all Rsandbox directories.")
+    print("                     Also wipes the output dir before starting.)")
     print("")
-    print("    --wipe        Wipes the output dir before starting.  Keeps old random seeds.")
+    print("    --wipe           Wipes the output dir before starting.  Keeps old random seeds.")
     print("")
-    print("    --baseport    The first port at which H2O starts searching for free ports.")
+    print("    --baseport       The first port at which H2O starts searching for free ports.")
     print("")
-    print("    --numclouds   The number of clouds to start.")
-    print("                  Each test is randomly assigned to a cloud.")
+    print("    --numclouds      The number of clouds to start.")
+    print("                     Each test is randomly assigned to a cloud.")
     print("")
-    print("    --numnodes    The number of nodes in the cloud.")
-    print("                  When this is specified, numclouds must be 1.")
+    print("    --numnodes       The number of nodes in the cloud.")
+    print("                     When this is specified, numclouds must be 1.")
     print("")
-    print("    --test        If you only want to run one test, specify it like this.")
+    print("    --test           If you only want to run one test, specify it like this.")
     print("")
-    print("    --testlist    A file containing a list of tests to run (for example the")
-    print("                  'failed.txt' file from the output directory).")
+    print("    --testlist       A file containing a list of tests to run (for example the")
+    print("                     'failed.txt' file from the output directory).")
     print("")
-    print("    --testgroup   Test a group of tests by function:")
-    print("                  pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
+    print("    --testgroup      Test a group of tests by function:")
+    print("                     pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
     print("")
-    print("    --testsize    Sizes (and by extension length) of tests to run:")
-    print("                  s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big)")
-    print("                  (Default is to run all tests.)")
+    print("    --testsize       Sizes (and by extension length) of tests to run:")
+    print("                     s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big)")
+    print("                     (Default is to run all tests.)")
     print("")
-    print("    --usecloud    ip:port of cloud to send tests to instead of starting clouds.")
-    print("                  (When this is specified, numclouds is ignored.)")
+    print("    --usecloud       ip:port of cloud to send tests to instead of starting clouds.")
+    print("                     (When this is specified, numclouds is ignored.)")
     print("")
-    print("    --usecloud2   cloud.cfg: Use a set clouds defined in cloud.config to run tests on.")
-    print("                  (When this is specified, numclouds, numnodes, and usecloud are ignored.)")
+    print("    --usecloud2      cloud.cfg: Use a set clouds defined in cloud.config to run tests on.")
+    print("                     (When this is specified, numclouds, numnodes, and usecloud are ignored.)")
     print("")
-    print("    --client      Send REST API commands through client mode.")
+    print("    --client         Send REST API commands through client mode.")
     print("")
-    print("    --norun       Perform side effects like wipe, but don't actually run tests.")
+    print("    --norun          Perform side effects like wipe, but don't actually run tests.")
     print("")
-    print("    --jvm.xmx     Configure size of launched JVM running H2O. E.g. '--jvm.xmx 3g'")
+    print("    --jvm.xmx        Configure size of launched JVM running H2O. E.g. '--jvm.xmx 3g'")
     print("")
-    print("    --nopass      Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
+    print("    --nopass         Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
-    print("    --c           Start the JVMs in a convenient location.")
+    print("    --c              Start the JVMs in a convenient location.")
     print("")
-    print("    --h2ojar      Supply a path to the H2O jar file.")
+    print("    --h2ojar         Supply a path to the H2O jar file.")
     print("")
-    print("    --tar         Supply a path to the R TAR.")
+    print("    --tar            Supply a path to the R TAR.")
     print("")
-    print("    --pto         The phantomjs timeout in seconds. Default is 3600 (1hr).")
+    print("    --pto            The phantomjs timeout in seconds. Default is 3600 (1hr).")
     print("")
-    print("    --noxunit     Do not produce xUnit reports.")
+    print("    --noxunit        Do not produce xUnit reports.")
+    print("")
+    print("    --rPkgVerChk     Check that Jenkins-approved R packages/versions are present")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
@@ -1779,6 +1764,7 @@ def parse_args(argv):
     global g_produce_unit_reports
     global g_phantomjs_to
     global g_phantomjs_packs
+    global g_r_pkg_ver_chk
 
     i = 1
     while (i < len(argv)):
@@ -1888,6 +1874,8 @@ def parse_args(argv):
             g_produce_unit_reports = False
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
+        elif (s == "--rPkgVerChk"):
+            g_r_pkg_ver_chk = True
         else:
             unknown_arg(s)
 
@@ -2011,7 +1999,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, ipynb_runner_dir)
+                          testreport_dir, ipynb_runner_dir, g_r_pkg_ver_chk)
 
     # Build test list.
     if (g_test_to_run is not None):

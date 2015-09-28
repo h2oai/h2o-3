@@ -38,7 +38,7 @@ test.GLM.covtype <- function() {
   Log.info(cat("GLM (L1) took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o3)
 
-  testEnd()
+  
 }
 
 doTest("Test GLM on covtype(20k) dataset", test.GLM.covtype)

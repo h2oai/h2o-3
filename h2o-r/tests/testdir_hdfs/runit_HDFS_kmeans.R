@@ -59,7 +59,7 @@ check.kmeans <- function() {
   print(covtype.km)
 
 
-  testEnd()
+  
 }
 
 doTest("K-means", check.kmeans)

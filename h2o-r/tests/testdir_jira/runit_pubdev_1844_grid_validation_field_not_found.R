@@ -40,7 +40,7 @@ test.pubdev.1844.field.not.found <- function(conn) {
   Log.info("failed_raw_params...")
   Log.info(cars_gbm_grid@failed_raw_params)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1844", test.pubdev.1844.field.not.found)

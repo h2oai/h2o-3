@@ -29,7 +29,7 @@ test <- function(h) {
     Log.info(paste("H2O residual deviance: ", h2o.rd, ", and R residual deviance: ", r.rd))
     expect_equal(h2o.rd, r.rd, tolerance = 1e-4)
 
-	testEnd()
+	
 }
 
 doTest("GLM poisson offset comparision2: ", test)

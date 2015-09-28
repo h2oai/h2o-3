@@ -22,7 +22,7 @@ test.basic.slot.assignment <- function() {
   hex$sepal_len <- 90  # new column
   print(head(hex))
 
-  testEnd()
+  
 }
 
 doTest("EQ2 Tests: [<- and $<-", test.basic.slot.assignment)

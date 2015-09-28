@@ -22,7 +22,7 @@ test.lt.frame <- function() {
   # else hexLTHex <- hex < hex
   hexLTHex <- hex < hex
   
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '<' on frames", test.lt.frame)

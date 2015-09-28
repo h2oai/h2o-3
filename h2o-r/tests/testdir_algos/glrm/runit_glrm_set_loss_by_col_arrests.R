@@ -22,7 +22,7 @@ test.glrm.check_loss <- function() {
   expect_equal(sum(objVal), fitH2O@model$objective)
   
   checkGLRMPredErr(fitH2O, arrestsH2O, tolerance = 1e-6)
-  testEnd()
+  
 }
 
 doTest("GLRM Golden Test: USArrests with Loss set by Column", test.glrm.check_loss)

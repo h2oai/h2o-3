@@ -10,6 +10,6 @@ rfReg.vi.test<- function() {
     vi=match(rf@model$variable_importances[,1], colnames(data2.hex))
 
     expect_equal(vi[1:2], c(13,6))
-    testEnd()
+    
 }
 doTest("Variable Importance RF Test: Boston Housing Smalldata", rfReg.vi.test)

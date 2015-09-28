@@ -40,7 +40,7 @@ check.kmeans_airlines <- function() {
   airlines.km <- h2o.kmeans(training_frame = airlines.hex, x = myX, k = 7, init = "Furthest", max_iterations = 10, standardize = TRUE)
   airlines.km
 
-  testEnd()
+  
 }
 
 doTest("K-means on Airlines dataset", check.kmeans_airlines)

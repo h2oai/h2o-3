@@ -45,7 +45,7 @@ test.apply <- function() {
   zzz <- 2.5
   print(apply( hex, 2, function(x) { zzz }))
 
-  testEnd()
+  
 }
 
 # doesn't include issues with NAs! 

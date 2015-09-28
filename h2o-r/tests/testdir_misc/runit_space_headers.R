@@ -20,7 +20,7 @@ test.bad.headers <- function() {
    
   if(h2o.median != r.median) stop("Medians in R and H2O unequal!!")
 
-  testEnd()
+  
 }
 
 doTest("Run summary on dataset with spaces : ", test.bad.headers)

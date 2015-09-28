@@ -58,7 +58,7 @@ test.LR.betaConstraints <- function(){
 
   full_test <- sapply(c("binomial", "gaussian"), run_glm)
   print(full_test)
-  testEnd()
+  
 }
 
 doTest("GLM Test: LR w/ Beta Constraints", test.LR.betaConstraints)

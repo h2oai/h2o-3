@@ -47,7 +47,7 @@ test.pubdev.1829 <- function(conn){
   expect_equal(a@metrics$r2, b@metrics$r2)
   expect_equal(a@metrics$logloss, b@metrics$logloss)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1829", test.pubdev.1829)
