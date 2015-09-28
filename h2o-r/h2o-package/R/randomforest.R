@@ -45,9 +45,9 @@
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
-h2o.randomForest <- function( x, y, training_frame,
+h2o.randomForest <- function(x, y, training_frame,
                              model_id,
-                             validation_frame,
+                             validation_frame = NULL,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
@@ -83,7 +83,7 @@ h2o.randomForest <- function( x, y, training_frame,
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  if (!missing(validation_frame)) {
+  if (!is.null(validation_frame)) {
     if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {

@@ -12,17 +12,17 @@ h2o.ensemble <- function(x, y, training_frame,
   starttime <- Sys.time()
   runtime <- list()
   
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an H2O Frame object
+  if (!inherits(training_frame, "Frame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid H2O Frame or id")
              })
   if (!is.null(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (is.character(validation_frame))
       tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                error = function(err) {
-                 stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                 stop("argument \"validation_frame\" must be a valid H2O Frame or id")
                })
   }
   N <- dim(training_frame)[1L]  #Number of observations in training set
@@ -93,7 +93,7 @@ h2o.ensemble <- function(x, y, training_frame,
   
   # What type of metalearning function do we have?
   # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
-  # SuperLearner metalearners provide expanded functionality, but has a much bigger memory footprint
+  # SuperLearner metalearners provide additional metalearning algos, but has a much bigger memory footprint
   if (grepl("^SL.", metalearner)) {
     metalearner_type <- "SuperLearner"
   } else if (grepl("^h2o.", metalearner)){
@@ -193,12 +193,16 @@ h2o.ensemble <- function(x, y, training_frame,
     }
     cvpred_sparse <- do.call("h2o.cbind", predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
     cvpred_col <- apply(cvpred_sparse, 1, sum)
-    return(cvpred_col@frame_id)
+    #frame_id <- attr(cvpred_col, "id")
+    print(head(cvpred_col))
+    frame_id <- as.character(attributes(cvpred_col)$id)
+    print(frame_id)
+    print(l)
+    return(frame_id)
   } 
   cvpred_framelist <- sapply(1:L, function(l) h2o.getFrame(.compress_cvpred_into_1col(l, family)))
   Zhf <- do.call(h2o.cbind, cvpred_framelist)
   names(Zhf) <- learner
-
   return(list(Z = Zhf, basefits = basefits))
 }
 

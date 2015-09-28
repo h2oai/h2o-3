@@ -92,7 +92,8 @@
 #'                  lambda_search=TRUE)
 #' }
 #' @export
-h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
+h2o.glm <- function(x, y, training_frame, model_id, 
+                    validation_frame = NULL,
                     max_iterations = 50,
                     beta_epsilon = 0,
                     solver = c("IRLSM", "L_BFGS"),

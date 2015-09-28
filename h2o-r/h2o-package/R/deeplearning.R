@@ -118,7 +118,7 @@
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
-                             validation_frame,
+                             validation_frame = NULL,
                              checkpoint,
                              autoencoder = FALSE,
                              use_all_factor_levels = TRUE,
@@ -192,7 +192,7 @@ h2o.deeplearning <- function(x, y, training_frame,
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  if (!missing(validation_frame)) {
+  if (!is.null(validation_frame)) {
     if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
