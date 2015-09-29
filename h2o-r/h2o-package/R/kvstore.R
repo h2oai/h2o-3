@@ -138,7 +138,7 @@ h2o.rm <- function(ids) {
 #'
 #' Makes a copy of the data frame and gives it the desired the key.
 #'
-#' @param data An Frame object
+#' @param data An H2O Frame object
 #' @param key The hex key to be associated with the H2O parsed data object
 #'
 #' @export

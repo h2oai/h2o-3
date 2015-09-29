@@ -1,6 +1,6 @@
 #' Build a Big Data Random Forest Model
 #'
-#' Builds a Random Forest Model on an Frame
+#' Builds a Random Forest Model on an H2O Frame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
 #'        to use in building the GBM model.
@@ -8,11 +8,11 @@
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
 #'        or a categorical variable).
-#' @param training_frame An Frame object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param validation_frame An Frame object containing the variables in the model.
+#' @param validation_frame An H2O Frame object containing the variables in the model.  Default is NULL.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
@@ -47,9 +47,9 @@
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
-h2o.randomForest <- function( x, y, training_frame,
+h2o.randomForest <- function(x, y, training_frame,
                              model_id,
-                             validation_frame,
+                             validation_frame = NULL,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
@@ -71,13 +71,20 @@ h2o.randomForest <- function( x, y, training_frame,
                              fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE)
 {
-  # Training_frame and validation_frame may be a key or an Frame object
+  # Pass over ellipse parameters and deprecated parameters
+  do_future <- FALSE
+  if (length(list(...)) > 0) {
+    dots <- list(...) #.model.ellipses( list(...))
+    if( !is.null(dots$future) ) do_future <- TRUE
+  }
+
+  # Training_frame and validation_frame may be a key or a Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  if (!missing(validation_frame)) {
+  if (!is.null(validation_frame)) {
     if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
