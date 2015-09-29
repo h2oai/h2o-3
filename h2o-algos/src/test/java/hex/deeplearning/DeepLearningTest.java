@@ -876,7 +876,7 @@ public class DeepLearningTest extends TestUtil {
 
     for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
         DeepLearningParameters.Loss.Automatic,
-        DeepLearningParameters.Loss.MeanSquare,
+        DeepLearningParameters.Loss.Quadratic,
         DeepLearningParameters.Loss.Huber,
         DeepLearningParameters.Loss.Absolute,
     }) {
@@ -904,7 +904,7 @@ public class DeepLearningTest extends TestUtil {
 
         ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
 
-        if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.MeanSquare)
+        if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.Quadratic)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
           assertTrue(mm._mean_residual_deviance != mm._MSE);

@@ -43,7 +43,7 @@ public class DeepLearningIrisTest extends TestUtil {
         // Note: Initial weight distributions are copied, but what is tested is the stability behavior.
 
         Activation[] activations = {Activation.Tanh, Activation.Rectifier};
-        Loss[] losses = {Loss.MeanSquare, Loss.CrossEntropy};
+        Loss[] losses = {Loss.Quadratic, Loss.CrossEntropy};
         InitialWeightDistribution[] dists = {
                 InitialWeightDistribution.Normal,
                 InitialWeightDistribution.Uniform,
@@ -107,8 +107,8 @@ public class DeepLearningIrisTest extends TestUtil {
                               }
 
                               int limit = (int) (frame.numRows() * holdout_ratio);
-                              _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
-                              _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
+                              _train = ArrayUtils.frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
+                              _test  = ArrayUtils.frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
                               // Must have all output classes in training
                               // data (since that's what the reference
