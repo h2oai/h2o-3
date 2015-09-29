@@ -25,6 +25,8 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at least) this many bins at the root
+#'        level, then decrease by factor of two per level.
 #' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
@@ -56,6 +58,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              max_depth = 20,
                              min_rows = 1,
                              nbins = 20,
+                             nbins_top_level,
                              nbins_cats = 1024,
                              binomial_double_trees = FALSE,
                              balance_classes = FALSE,
@@ -113,6 +116,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$min_rows <- min_rows
   if(!missing(nbins))
     parms$nbins <- nbins
+  if(!missing(nbins_top_level))
+    parms$nbins_top_level <- nbins_top_level
   if(!missing(nbins_cats))
     parms$nbins_cats <- nbins_cats
   if(!missing(balance_classes))
