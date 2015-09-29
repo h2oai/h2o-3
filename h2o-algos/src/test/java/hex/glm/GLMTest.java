@@ -34,10 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   //------------------- simple tests on synthetic data------------------------------------
   @Test
@@ -1236,11 +1233,6 @@ public class GLMTest  extends TestUtil {
   }
 
 
-  @Test
-  public void testYmuTsk() {
-
-  }
-
   public static double residualDeviance(GLMModel m) {
     if (m._parms._family == Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
@@ -1391,6 +1383,7 @@ public class GLMTest  extends TestUtil {
       score = m.score(fr);
       ModelMetricsBinomialGLM mm = (ModelMetricsBinomialGLM)ModelMetrics.getFromDKV(m,fr);
       assertEquals(378.6,mm._resDev,1e-1); // null deviance differs as makeGLMModel does not take response mean / prior
+      mm.remove();
     } finally {
       if(fr != null) fr.delete();
       if(score != null) score.delete();
