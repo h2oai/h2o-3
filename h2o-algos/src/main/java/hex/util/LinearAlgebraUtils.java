@@ -5,14 +5,58 @@ import Jama.Matrix;
 import hex.DataInfo;
 import hex.FrameTask;
 import hex.gram.Gram;
+import hex.gram.Gram.Cholesky;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 public class LinearAlgebraUtils {
+
+  // Regularized Cholesky decomposition using H2O implementation
+  public static Cholesky regularizedCholesky(Gram gram, int max_attempts) {
+    int attempts = 0;
+    double addedL2 = 0;   // TODO: Should I report this to the user?
+    Cholesky chol = gram.cholesky(null);
+
+    while(!chol.isSPD() && attempts < max_attempts) {
+      if(addedL2 == 0) addedL2 = 1e-5;
+      else addedL2 *= 10;
+      ++attempts;
+      gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
+      Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
+      gram.cholesky(chol);
+    }
+    if(!chol.isSPD())
+      throw new Gram.NonSPDMatrixException();
+    return chol;
+  }
+  public static Cholesky regularizedCholesky(Gram gram) { return regularizedCholesky(gram, 10); }
+
+  // Regularized Cholesky decomposition using JAMA implementation
+  public static CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts, boolean throw_exception) {
+    int attempts = 0;
+    double addedL2 = 0;
+    Matrix gmat = new Matrix(gram);
+    CholeskyDecomposition chol = new CholeskyDecomposition(gmat);
+
+    while(!chol.isSPD() && attempts < max_attempts) {
+      if(addedL2 == 0) addedL2 = 1e-5;
+      else addedL2 *= 10;
+      ++attempts;
+
+      for(int i = 0; i < gram.length; i++) gmat.set(i,i,addedL2); // try to add L2 penalty to make the Gram SPD
+      Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Gram matrix");
+      chol = new CholeskyDecomposition(gmat);
+    }
+    if(!chol.isSPD() && throw_exception)
+      throw new Gram.NonSPDMatrixException();
+    return chol;
+  }
+  public static CholeskyDecomposition regularizedCholesky(double[][] gram) { return regularizedCholesky(gram, 10, true); }
 
   /*
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector

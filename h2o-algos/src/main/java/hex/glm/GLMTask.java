@@ -536,7 +536,7 @@ public abstract class GLMTask  {
 
 
   /**
-   * Tassk with simplified gradient computation for logistic regression (and least squares)
+   * Task with simplified gradient computation for logistic regression (and least squares)
    * Looks like
    */
   public static class LBFGS_LogisticGradientTask extends GLMGradientTask {

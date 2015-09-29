@@ -115,6 +115,18 @@ public class ArrayUtils {
   public static double l2norm(double[] x, double[] y) { return Math.sqrt(l2norm2(x,y)); }
   public static double l2norm(double[][] x, double[][] y) { return Math.sqrt(l2norm2(x,y)); }
 
+  // Squared Frobenius norm of a matrix (sum of squared entries)
+  public static double frobenius2(double[][] x) {
+    if(x == null) return 0;
+
+    double frob = 0;
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < x[0].length; j++)
+        frob += x[i][j] * x[i][j];
+    }
+    return frob;
+  }
+
   // Add arrays, element-by-element
   public static byte[] add(byte[] a, byte[] b) {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];

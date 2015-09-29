@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.*;
+import hex.glrm.GLRMInit.*;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
@@ -470,7 +471,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           double zeros = v.length() - v.naCnt() - ones;
           return ones > zeros ? 1 : 0;
         case Huber:
+          return v.mean();    // TODO: This isn't quite right - mean is not necessarily minimizer, but close enough
         case Periodic:
+          assert _period > 0 : "_period must be a positive integer";
+          PeriodOffset tsk = new PeriodOffset(_period).doAll(v);
+          return tsk._offset;
         case Logistic:
           throw H2O.unimpl("Generalized column mean not available for loss function " + loss);
         default:
@@ -479,8 +484,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
     public final double[] moffset(Vec v, Loss multi_loss) {
       switch(multi_loss) {
-        case Categorical:
         case Ordinal:
+        case Categorical:
           throw H2O.unimpl("Generalized column mean not available for multidimensional loss function " + multi_loss);
         default:
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
@@ -495,54 +500,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       LossScaleCalc lstsk = new LossScaleCalc(dinfo._cats, losses, _period, offset);
       lstsk.doAll(dinfo._adaptedFrame);
       return lstsk._scale;
-    }
-    private static class LossScaleCalc extends MRTask<LossScaleCalc> {
-      final int _ncats;
-      final Loss[] _lossFunc;
-      final int _period;
-      final double[][] _offset;
-
-      long[] _count;
-      double[] _scale;
-
-      LossScaleCalc(int ncats, Loss[] lossFunc, int period, double[][] offset) {
-        _ncats = ncats;
-        _lossFunc = lossFunc;
-        _period = period;
-        _offset = offset;
-      }
-
-      @Override public void map(Chunk[] cs) {
-        _scale = new double[cs.length];
-        _count = new long[cs.length];
-
-        for(int row = 0; row < cs[0]._len; row++) {
-          for(int col = 0; col < _ncats; col++) {
-            double a = cs[col].atd(row);
-            if(Double.isNaN(a)) continue;
-            _scale[col] += mloss(_offset[col], (int)a, _lossFunc[col]);
-            _count[col]++;
-          }
-
-          for(int col = _ncats; col < cs.length; col++) {
-            double a = cs[col].atd(row);
-            if(Double.isNaN(a)) continue;
-            _scale[col] += loss(_offset[col][0], a, _lossFunc[col], _period);
-            _count[col]++;
-          }
-        }
-      }
-
-      @Override public void reduce(LossScaleCalc other) {
-        ArrayUtils.add(_scale, other._scale);
-        ArrayUtils.add(_count, other._count);
-      }
-
-      @Override protected void postGlobal() {
-        for(int i = 0; i < _scale.length; i++)
-          // _scale[i] /= _count[i]-1;
-          _scale[i] = _scale[i] != 0 ? (_count[i]-1) / _scale[i] : 1.0;   // Need reciprocal since dividing by generalized variance
-      }
     }
   }
 
