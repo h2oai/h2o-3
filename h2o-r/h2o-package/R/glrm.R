@@ -4,7 +4,7 @@
 #' Generalized low rank decomposition of a H2O dataset.
 #'
 #'
-#' @param training_frame An Frame object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
