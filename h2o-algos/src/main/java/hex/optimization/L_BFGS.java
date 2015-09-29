@@ -235,7 +235,7 @@ public final class L_BFGS extends Iced {
    * The gradient is likely to be the most expensive part and key for good perfomance.
    *
    * @param gslvr  - user gradient function
-   * @params coefs - intial solution
+   * @params coefs - initial solution
    * @return Optimal solution (coefficients) + gradient info returned by the user gradient
    * function evaluated at the found optmimum.
    */

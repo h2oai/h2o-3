@@ -2,11 +2,16 @@ package hex.glrm;
 
 import Jama.CholeskyDecomposition;
 import Jama.Matrix;
+import hex.DataInfo;
 import hex.glrm.GLRM.Archetypes;
 import hex.glrm.GLRMModel.GLRMParameters;
+import hex.glrm.GLRMModel.GLRMParameters.Loss;
 import hex.kmeans.KMeansModel;
+import hex.optimization.L_BFGS;
+import hex.optimization.L_BFGS.*;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 
@@ -175,9 +180,133 @@ public abstract class GLRMInit {
     }
   }
 
+  static final class LossOffsetSolver extends GradientSolver {
+    final GLRMParameters _parms;
+    final Frame _train;   // Training frame with columns shuffled by DataInfo
+    final Loss _loss;
+    final int _period;
+
+    public LossOffsetSolver(GLRMParameters parms, Frame train, Loss loss, int period) {
+      _parms = parms;
+      _train = train;
+      _loss = loss;
+      _period = period;
+    }
+
+    @Override
+    public GradientInfo getGradient(double[] beta) {
+      LossGradCalc tsk = new LossGradCalc(_parms, _loss, _period, beta[0]).doAll(_train);
+
+      final double[] g = new double[1];
+      g[0] = tsk._lgrad;
+      return new GradientInfo(tsk._lsum, g);
+    }
+
+    @Override
+    public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
+      return new double[0];
+    }
+
+    // Compute \sum_{i,j} L(\mu, A_{i,j}) and its gradient at given \mu
+    private static final class LossGradCalc extends MRTask<LossGradCalc> {
+      final GLRMParameters _parms;
+      final Loss _loss;
+      final int _period;
+      final double _mu;
+
+      double _lsum;
+      double _lgrad;
+
+      LossGradCalc(GLRMParameters parms, Loss loss, int period, double mu) {
+        _parms = parms;
+        _loss = loss;
+        _period = period;
+        _mu = mu;
+      }
+
+      @Override public void map(Chunk cs) {
+        _lsum = 0;
+        _lgrad = 0;
+
+        for(int row = 0; row < cs._len; row++) {
+          double a = cs.atd(row);
+          if(Double.isNaN(a)) continue;
+          _lsum += _parms.loss(_mu, a, _loss, _period);
+          _lgrad += _parms.lgrad(_mu, a, _loss);
+        }
+      }
+
+      @Override public void reduce(LossGradCalc other) {
+        _lsum += other._lsum;
+        _lgrad += other._lgrad;
+      }
+    }
+  }
+
+  static final class MultiLossOffsetSolver extends GradientSolver {
+    final GLRMParameters _parms;
+    final Frame _train;   // Training frame with columns shuffled by DataInfo
+    final Loss _loss;
+    final int _period;
+
+    public MultiLossOffsetSolver(GLRMParameters parms, Frame train, Loss loss, int period) {
+      _parms = parms;
+      _train = train;
+      _loss = loss;
+      _period = period;
+    }
+
+    @Override
+    public GradientInfo getGradient(double[] beta) {
+      MultiLossGradCalc tsk = new MultiLossGradCalc(_parms, _loss, _period, beta).doAll(_train);
+      return new GradientInfo(tsk._lsum, tsk._lgrad);
+    }
+
+    @Override
+    public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
+      return new double[0];
+    }
+
+    // Compute \sum_{i,j} L(\mu, A_{i,j}) and its gradient at given \mu
+    private static final class MultiLossGradCalc extends MRTask<MultiLossGradCalc> {
+      final GLRMParameters _parms;
+      final Loss _loss;
+      final int _period;
+      final double[] _mu;
+
+      double _lsum;
+      double[] _lgrad;
+
+      MultiLossGradCalc(GLRMParameters parms, Loss loss, int period, double[] mu) {
+        _parms = parms;
+        _loss = loss;
+        _period = period;
+        _mu = mu;
+      }
+
+      @Override public void map(Chunk cs) {
+        _lsum = 0;
+        _lgrad = new double[_mu.length];
+
+        for(int row = 0; row < cs._len; row++) {
+          double a = cs.atd(row);
+          if(Double.isNaN(a)) continue;
+          _lsum += _parms.mloss(_mu, (int)a, _loss);
+          double[] grad = _parms.mlgrad(_mu, (int)a, _loss);
+          ArrayUtils.add(_lgrad, grad);
+        }
+      }
+
+      @Override public void reduce(MultiLossGradCalc other) {
+        _lsum += other._lsum;
+        ArrayUtils.add(_lgrad, other._lgrad);
+      }
+    }
+  }
+
   // M-estimator for generalized mean of periodic loss: 1-cos((a-u)*(2*PI)/T);
   // Bucy and Mallinckrodt, equation 5.2 in http://www.tandfonline.com/doi/pdf/10.1080/17442507308833101
-  static class PeriodOffset extends MRTask<PeriodOffset> {
+  static final class PeriodOffset extends MRTask<PeriodOffset> {
     final int _period;
     private double _num;
     private double _den;
