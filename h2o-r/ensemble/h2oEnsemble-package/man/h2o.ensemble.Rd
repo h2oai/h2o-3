@@ -4,7 +4,7 @@
 H2O Ensemble
 }
 \description{
-This function creates a "Super Learner" ensemble using the H2O base learning algorithms specified by the user.
+This function creates a "Super Learner" (stacking) ensemble using the H2O base learning algorithms specified by the user.
 }
 \usage{
 h2o.ensemble(x, y, training_frame,  
@@ -23,7 +23,7 @@ A vector containing the names of the predictors in the model.
 The name of the response variable in the model.
 }
   \item{training_frame}{
-An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+An H2O \code{\linkS4class{Frame}} object containing the variables in the model.
 }
   \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
@@ -32,7 +32,7 @@ A description of the error distribution and link function to be used in the mode
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 }
   \item{validation_frame}{
-(Optional) An \code{\linkS4class{H2OFrame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not functional.
+(Optional) An H2O \code{\linkS4class{Frame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not functional.
 }
   \item{learner}{
 A string or character vector naming the prediction algorithm(s) used to train the base models for the ensemble.  The functions must have the same format as the h2o wrapper functions.
@@ -87,7 +87,7 @@ A list of H2O models, each of which are trained using the \code{data} object.  T
 The predictive model which is learned by regressing \code{y} on \code{Z} (see description of \code{Z} below).  The type of model is specified using the \code{metalearner} argument.
 }
 \item{Z}{
-The Z matrix (the cross-validated predicted values for each base learner).  In the stacking ensemble literature, this is known as the "level-one" data and is the design matrix used to train the metalearner.
+An H2O Frame object.  The Z matrix (the cross-validated predicted values for each base learner).  In the stacking ensemble literature, this is known as the "level-one" data and is the design matrix used to train the metalearner.
 }
 \item{runtime}{
 A list of runtimes for various steps of the algorithm.  The list contains \code{cv}, \code{metalearning}, \code{baselearning} and \code{total} elements.  The \code{cv} element is the time it takes to create the \code{Z} matrix (see above).  The \code{metalearning} element is the training time for the metalearning step.  The \code{baselearning} element is a list of training times for each of the models in the ensemble.  The time to run the entire \code{h2o.ensemble} function is given in \code{total}.

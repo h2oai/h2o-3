@@ -6,14 +6,14 @@
 H2O Ensemble Package
 }
 \description{
-This package implements the super learner ensemble (stacking) algorithm using the H2O R interface to provide base learning algorithms. 
+This package implements the Super Learner ensemble (stacking) algorithm using the H2O R interface to provide base learning algorithms. 
 }
 \details{
 \tabular{ll}{
 Package: \tab h2oEnsemble\cr
 Type: \tab Package\cr
-Version: \tab 0.0.5\cr
-Date: \tab 2015-08-11\cr
+Version: \tab 0.0.6\cr
+Date: \tab 2015-09-28\cr
 License: \tab Apache License (== 2.0)\cr
 }
 }

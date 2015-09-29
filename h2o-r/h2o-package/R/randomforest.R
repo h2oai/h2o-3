@@ -1,6 +1,6 @@
 #' Build a Big Data Random Forest Model
 #'
-#' Builds a Random Forest Model on an Frame
+#' Builds a Random Forest Model on an H2O Frame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
 #'        to use in building the GBM model.
@@ -8,11 +8,11 @@
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
 #'        or a categorical variable).
-#' @param training_frame An Frame object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param validation_frame An Frame object containing the variables in the model.
+#' @param validation_frame An H2O Frame object containing the variables in the model.  Default is NULL.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
@@ -77,7 +77,7 @@ h2o.randomForest <- function(x, y, training_frame,
   }
 
 
-  # Training_frame and validation_frame may be a key or an Frame object
+  # Training_frame and validation_frame may be a key or a Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
