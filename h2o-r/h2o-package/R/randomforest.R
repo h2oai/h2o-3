@@ -71,13 +71,6 @@ h2o.randomForest <- function(x, y, training_frame,
                              fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE)
 {
-  # Pass over ellipse parameters and deprecated parameters
-  do_future <- FALSE
-  if (length(list(...)) > 0) {
-    dots <- list(...) #.model.ellipses( list(...))
-    if( !is.null(dots$future) ) do_future <- TRUE
-  }
-
   # Training_frame and validation_frame may be a key or a Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
