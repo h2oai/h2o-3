@@ -34,7 +34,7 @@ import water.fvec.Chunk;
       // OOB RNG for this tree
       Random rng = rngForTree(_trees[tidx], coobt.cidx());
       for (int row=0; row<coobt._len; row++) {
-        boolean sampleRow = rng.nextFloat() >= _rate || Double.isNaN(cys.atd(row));
+        boolean sampleRow = _oob ? rng.nextFloat() >= _rate || Double.isNaN(cys.atd(row)) : false;
         if( !_oob || sampleRow) {
           // Make a prediction
           for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row);
