@@ -47,6 +47,14 @@ public class Scope {
     return keep;
   }
 
+  /** Pop-scope (same as exit-scope) but return all keys that are tracked (and
+   *  would have been deleted). */
+  static public Key[] pop() {
+    Stack<HashSet<Key>> keys = _scope.get()._keys;
+    return keys.size() > 0 ? keys.pop().toArray(new Key[0]) : null;
+  }
+
+
   static public void track( Key k ) {
     if( k.user_allowed() || !k.isVec() ) return; // Not tracked
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup

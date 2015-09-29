@@ -536,7 +536,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   /**
    * @param names Training column names
-   *  @param weights  Name of column with observation weights, weights are NOT filled in if missing in test frame
+   * @param weights  Name of column with observation weights, weights are NOT filled in if missing in test frame
    * @param offset   Name of column with offset, if not null (i.e. trained with offset), offset MUST be present in test data as well, otherwise can not scorew and IAE is thrown.
    * @param fold
    * @param response Name of response column,  response is NOT filled in if missing in test frame
@@ -571,7 +571,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         throw new IllegalArgumentException("Test/Validation dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
-      if(vec == null && isWeights && computeMetrics) {
+      if(vec == null && isWeights && computeMetrics && expensive) {
         vec = test.anyVec().makeCon(1);
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
