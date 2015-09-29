@@ -54,7 +54,6 @@ h2o.ensemble <- function(x, y, training_frame,
     ylim <- NULL
   }
   
-  
   # Update control args by filling in missing list elements
   cvControl <- do.call(".cv_control", cvControl)
   V <- cvControl$V      #Number of CV folds
@@ -89,8 +88,7 @@ h2o.ensemble <- function(x, y, training_frame,
   if (is.numeric(seed)) set.seed(seed)  #If seed is specified, set seed prior to next step
   folds <- sample(rep(seq(V), ceiling(N/V)))[1:N]  # Cross-validation folds (stratified folds not yet supported)
   training_frame$fold_id <- as.h2o(folds)  # Add a fold_id column for each observation so we can subset by row later
-  #training_frame <- h2o.cbind(training_frame, as.h2o(folds))
-  
+
   # What type of metalearning function do we have?
   # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
   # SuperLearner metalearners provide additional metalearning algos, but has a much bigger memory footprint
@@ -191,19 +189,14 @@ h2o.ensemble <- function(x, y, training_frame,
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
-    cvpred_sparse <- do.call("h2o.cbind", predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+    cvpred_sparse <- h2o.cbind(predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
     cvpred_col <- apply(cvpred_sparse, 1, sum)
-    #frame_id <- attr(cvpred_col, "id")
-    print(head(cvpred_col))
-    frame_id <- as.character(attributes(cvpred_col)$id)
-    print(frame_id)
-    print(l)
-    return(frame_id)
+    return(cvpred_col)
   } 
-  cvpred_framelist <- sapply(1:L, function(l) h2o.getFrame(.compress_cvpred_into_1col(l, family)))
-  Zhf <- do.call(h2o.cbind, cvpred_framelist)
-  names(Zhf) <- learner
-  return(list(Z = Zhf, basefits = basefits))
+  cvpred_framelist <- sapply(1:L, function(l) .compress_cvpred_into_1col(l, family))
+  Z <- h2o.cbind(cvpred_framelist)
+  names(Z) <- learner
+  return(list(Z = Z, basefits = basefits))
 }
 
 
