@@ -252,7 +252,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 1;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
-      parms._max_iterations = 1000;
+      parms._max_iterations = 100;
       parms._min_step_size = 1e-8;
       parms._recover_svd = true;
 

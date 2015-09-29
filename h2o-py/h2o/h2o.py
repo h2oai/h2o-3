@@ -1426,7 +1426,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   min_step_size : float
     Minimum step size upon which the algorithm is terminated.
   init : str
-    A character string indicating how to select the initial Y matrix.
+    A character string indicating how to select the initial X and Y matrices.
     Possible values are "Random": for initialization to a random array from the standard normal distribution, "PlusPlus": for initialization
     using the clusters from k-means++ initialization, "SVD": for initialization using the first k (approximate) right singular vectors, and
     "User": user-specified initial X and Y frames (must set user_y and user_x arguments).
@@ -1434,6 +1434,10 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
     A character string that indicates how SVD should be calculated during initialization.
     Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
     "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
+  user_x : H2OFrame
+    (Optional) An H2OFrame object specifying the initial X matrix. Only used when init = "User".
+  user_y : 
+    (Optional) An H2OFrame object specifying the initial Y matrix. Only used when init = "User".
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
     low rank decomposition.
