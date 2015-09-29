@@ -917,7 +917,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 # dead, lest GC delete frames on last use... before the expression string is
 # shipped over the wire.  During the 2nd pass the internal DAG pointers are
 # wiped out, and allowed to go dead (hence can be nuked by GC).
-.eval.frame <- function(x) {
+.eval.frame <- function(x,skip_fetch=FALSE) {
   chk.Frame(x)
   if( !is.character( attr(x, "id")) ) {
     exec_str <- .eval.impl(x)
@@ -935,7 +935,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     }
     # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
-    .fetch.data(x,1) #trigger a cache update if needed
+    if(!skip_fetch) .fetch.data(x,1) #trigger a cache update if needed
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
     #.h2o.gc()
@@ -1681,7 +1681,7 @@ as.h2o <- function(x, destination_frame= "") {
 #' as.data.frame(prostate.hex)
 #' @export
 as.data.frame.Frame <- function(x, ...) {
-  .eval.frame(x)
+  .eval.frame(x,TRUE)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
