@@ -21,10 +21,10 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
-#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
-#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at least) this many bins at the root
+#' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
 #'        level, then decrease by factor of two per level.
-#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+#' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param validation_frame An H2O Frame object indicating the validation dataset used to contruct the
 #'        confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.

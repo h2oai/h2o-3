@@ -24,10 +24,10 @@
 #'        grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
-#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at least) this many bins at the root
+#' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
 #'        level, then decrease by factor of two per level.
-#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+#' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
 #' @param balance_classes logical, indicates whether or not to balance training
