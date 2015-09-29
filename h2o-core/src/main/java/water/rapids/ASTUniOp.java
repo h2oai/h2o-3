@@ -342,7 +342,6 @@ class ASTMatch extends ASTPrim {
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1 && !fr.anyVec().isCategorical()) throw new IllegalArgumentException("can only match on a single categorical column.");
-    Key tmp = Key.make();
     String[] _strsTable=null;
     double[] _dblsTable=null;
     if( asts[2] instanceof ASTNumList ) _dblsTable = ((ASTNumList)asts[2]).expand();
@@ -362,11 +361,11 @@ class ASTMatch extends ASTPrim {
         else
           for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
-    }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
+    }.doAll(1, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
-  private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0;}
-  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0;}
+  private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
+  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0; }
 
   private static int binarySearchDoublesUlp(double[] a, int from, int to, double key) {
     int lo = from;
