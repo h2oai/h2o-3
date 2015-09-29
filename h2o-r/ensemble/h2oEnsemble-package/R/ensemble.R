@@ -237,7 +237,7 @@ h2o.ensemble <- function(x, y, training_frame,
 
 
 # TO DO:check if this is working
-predict.h2o.ensemble <- function(object, newdata) {
+predict.h2o.ensemble <- function(object, newdata, ...) {
   
   L <- length(object$basefits)
   basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))

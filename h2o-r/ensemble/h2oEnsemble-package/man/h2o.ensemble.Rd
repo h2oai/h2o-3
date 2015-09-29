@@ -23,7 +23,7 @@ A vector containing the names of the predictors in the model.
 The name of the response variable in the model.
 }
   \item{training_frame}{
-An H2O \code{\linkS4class{Frame}} object containing the variables in the model.
+An H2O Frame object containing the variables in the model.
 }
   \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
@@ -32,7 +32,7 @@ A description of the error distribution and link function to be used in the mode
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 }
   \item{validation_frame}{
-(Optional) An H2O \code{\linkS4class{Frame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not functional.
+(Optional) An H2O Frame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not functional.
 }
   \item{learner}{
 A string or character vector naming the prediction algorithm(s) used to train the base models for the ensemble.  The functions must have the same format as the h2o wrapper functions.
@@ -104,7 +104,7 @@ van der Laan, M. J., Polley, E. C. and Hubbard, A. E. (2007) Super Learner, Stat
 \url{http://dx.doi.org/10.2202/1544-6115.1309}\cr
 \url{http://biostats.bepress.com/ucbbiostat/paper222}\cr
 \cr
-Breiman, L. (1996) Stacked Regressions, Machine Learning, 24:49–64.\cr
+Breiman, L. (1996) Stacked Regressions, Machine Learning, 24:49-64.\cr
 \url{http://dx.doi.org/10.1007/BF00117832}\cr
 \url{http://statistics.berkeley.edu/sites/default/files/tech-reports/367.pdf}
 }
