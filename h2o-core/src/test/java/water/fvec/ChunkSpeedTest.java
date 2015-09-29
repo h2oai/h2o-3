@@ -23,7 +23,7 @@ public class ChunkSpeedTest extends TestUtil {
 //        switch (j % 2) { //just do 1/2 byte chunks
         switch (j%3) { // do 3 chunk types
 //        switch (j%4) { // do 4 chunk types
-          case 0:
+
             raw[j][i] = i % 200; //C1NChunk - 1 byte integer
             break;
           case 1:

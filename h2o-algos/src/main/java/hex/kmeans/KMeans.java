@@ -80,13 +80,13 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6) error("_max_iterations", " max_iterations must be between 0 and 1e6");
     if( _train == null ) return;
     if( _parms._init == Initialization.User && _parms._user_points == null )
-      error("_user_points","Must specify initial cluster centers");
+      error("_user_y","Must specify initial cluster centers");
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       Frame user_points = _parms._user_points.get();
       if( user_points.numCols() != _train.numCols() - numSpecialCols()) {
-        error("_user_points","The user-specified points must have the same number of columns (" + (_train.numCols() - numSpecialCols()) + ") as the training observations");
+        error("_user_y","The user-specified points must have the same number of columns (" + (_train.numCols() - numSpecialCols()) + ") as the training observations");
       } else if( user_points.numRows() != _parms._k)
-        error("_user_points","The number of rows in the user-specified points is not equal to k = " + _parms._k);
+        error("_user_y","The number of rows in the user-specified points is not equal to k = " + _parms._k);
     }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
@@ -103,7 +103,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       model._output._categorical_column_count=0;
       _isCats = new String[vecs.length][];
       for( int v=0; v<vecs.length; v++ ) {
-        _isCats[v] = vecs[v].isEnum() ? new String[0] : null;
+        _isCats[v] = vecs[v].isCategorical() ? new String[0] : null;
         if (_isCats[v] != null) model._output._categorical_column_count++;
       }
       
@@ -808,7 +808,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    * Takes mean if NaN, standardize if requested.
    */
   private static double data(double d, int i, double[] means, double[] mults, int[] modes) {
-    if(modes[i] == -1) {    // Mode = -1 for non-enum cols
+    if(modes[i] == -1) {    // Mode = -1 for non-categorical cols
       if( Double.isNaN(d) )
         d = means[i];
       if( mults != null ) {

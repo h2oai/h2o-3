@@ -47,7 +47,7 @@
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Uniform: -value ... value, Normal: stddev
-#' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute"
+#' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute"
 #'        (experimental) or "Huber" (experimental)
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
@@ -144,7 +144,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              max_w2 = Inf,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
-                             loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),
+                             loss = c("Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),
                              distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber"),
                              tweedie_power = 1.5,
                              score_interval = 5,
@@ -180,11 +180,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              nfolds = 0,
                              fold_column = NULL,
                              fold_assignment = c("AUTO","Random","Modulo"),
-                             keep_cross_validation_predictions = FALSE,
-                             ...)
+                             keep_cross_validation_predictions = FALSE)
 {
-  # Pass over ellipse parameters and deprecated parameters
-  dots <- .model.ellipses(list(...))
 
   # Training_frame and validation_frame may be a key or an Frame object
   if (!is.Frame(training_frame))
@@ -266,8 +263,13 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$initial_weight_distribution <- initial_weight_distribution
   if(!missing(initial_weight_scale))
     parms$initial_weight_scale <- initial_weight_scale
-  if(!missing(loss))
-    parms$loss <- loss
+  if(!missing(loss)) {
+    if(loss == "MeanSquare") {
+      warn("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
+      parms$loss <- "Quadratic"
+    } else
+      parms$loss <- loss
+  }
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(tweedie_power))
@@ -333,7 +335,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
-  .h2o.modelJob('deeplearning', parms, do_future=FALSE)
+  .h2o.modelJob('deeplearning', parms)
 }
 
 #' Anomaly Detection via H2O Deep Learning Model

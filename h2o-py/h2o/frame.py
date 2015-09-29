@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
+import astfun
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
@@ -391,7 +392,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if as_pandas:
       import pandas
       pandas.options.display.max_rows=20
-      print fr
+      if h2o.H2ODisplay._in_ipy():
+        from IPython.display import display
+        display(fr)
+      else:
+        print fr
     else:
       h2o.H2ODisplay(fr,names)
 
@@ -710,6 +715,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
   def _find_idx(self,name):
+    self._eager()
     for i,v in enumerate(self._col_names):
       if name == v: return i
     raise ValueError("Name " + name + " not in Frame")
@@ -1133,8 +1139,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def sub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively.
-    Of note, mutates the frame.
+    sub performs replacement of the first matches respectively.
 
     :param pattern:
     :param replacement:
@@ -1142,19 +1147,18 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("sub",pattern,replacement,self,ignore_case))
+    return H2OFrame(expr=ExprNode("replacefirst",pattern,replacement,self,ignore_case))
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
-    sub and gsub perform replacement of the first and all matches respectively.
-    Of note, mutates the frame.
+    gsub performs replacement of all matches respectively.
 
     :param pattern:
     :param replacement:
     :param ignore_case:
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("gsub", pattern, replacement, self, ignore_case))
+    return H2OFrame(expr=ExprNode("replaceall", pattern, replacement, self, ignore_case))
 
   def interaction(self, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
     """
@@ -1175,7 +1179,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def toupper(self):
     """
     Translate characters from lower to upper case for a particular column
-    Of note, mutates the frame.
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("toupper", self))
@@ -1183,7 +1186,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def tolower(self):
     """
     Translate characters from upper to lower case for a particular column
-    Of note, mutates the frame.
     :return: H2OFrame
     """
     return H2OFrame(expr=ExprNode("tolower", self))
@@ -1338,6 +1340,26 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: A factor column.
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
+
+  def apply(self, fun=None, axis=2):
+    """
+    Apply a lambda expression to an H2OFrame.
+
+    :param fun: A lambda expression to be applied per row or per column.
+    :param axis: If axis==2, then apply the lambda to columns, if 1 apply to rows.
+    :return: An H2OFrame
+    """
+    if axis not in [1,2]:
+      raise ValueError("margin must be either 1 (rows) or 2 (cols).")
+    if fun is None:
+      raise ValueError("No function to apply.")
+    if isinstance(fun, type(lambda:0)) and fun.__name__ == (lambda:0).__name__:  # have lambda
+      syntax_tree = ast.parse(inspect.getsource(fun))
+      Lambda = syntax_tree.body[0].value.args[0]
+      res = astfun._ast_deparse(Lambda)
+      return H2OFrame(expr=ExprNode("apply",self,axis,*res))
+    else:
+      raise ValueError("unimpl: not a lambda")
 
 
   # flow-coding result methods

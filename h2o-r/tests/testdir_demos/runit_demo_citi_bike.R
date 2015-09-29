@@ -176,7 +176,7 @@ start <- Sys.time()
 split_fit_predict(bpd_with_weather)
 modelBuild <- Sys.time() - start
 print(paste("Took", round(modelBuild, digits = 2), units(modelBuild) ,"to build a gbm, a random forest, and a glm model, score and report r2 values."))
-testEnd()
+
 }
 
 doTest("Test out Citibike Demo", test.citibike.demo)

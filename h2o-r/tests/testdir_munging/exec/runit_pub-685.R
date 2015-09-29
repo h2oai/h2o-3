@@ -40,7 +40,7 @@ test.apply <- function() {
 
 
 
-    testEnd()
+    
 }
 
 doTest("Test for apply.", test.apply)

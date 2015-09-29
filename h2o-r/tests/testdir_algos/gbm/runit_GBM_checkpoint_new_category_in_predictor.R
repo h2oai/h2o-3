@@ -15,7 +15,7 @@ checkpoint.new.category.in.predictor <- function() {
   # this should fail until we figure out proper behavior
   expect_error(m3 <- h2o.gbm(x=c(1,2,3,5), y=4, training_frame=vir, ntrees=200, checkpoint=m1@model_id))
 
-  testEnd()
+  
 }
 
 doTest("GBM checkpoint with new categoricals", checkpoint.new.category.in.predictor )

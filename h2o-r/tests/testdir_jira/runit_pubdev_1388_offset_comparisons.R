@@ -63,7 +63,7 @@ test.offset.comparison <- function() {
                    expected.label = paste(fam, "R aic"), tolerance = 0.1)
   }
 
-  testEnd()
+  
 }
 
 doTest("Testing Offsets in GLM", test.offset.comparison)

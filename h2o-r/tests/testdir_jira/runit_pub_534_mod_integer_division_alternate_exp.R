@@ -13,7 +13,7 @@ test.ops<- function() {
   hex %% 3
   hex %/% 3.14
 
-  testEnd()
+  
 }
 
 doTest("test %/%, %%, **", test.ops)

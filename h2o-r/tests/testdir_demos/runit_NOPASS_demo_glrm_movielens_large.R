@@ -38,13 +38,13 @@ test.movielens.demo <- function(conn) {
   fitY <- fitH2O@model$archetypes
   print(head(fitY))
   
-  Log.info("Plot first archetype on a subset of movies")
-  feat_cols <- 1:50
-  movies <- readMultiChar(locate("smalldata/demos/movies.dat"), separators = "::")
-  plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights", col = "blue", pch = 19, lty = "solid")
-  text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,2], cex = 0.7, pos = 3)
-  plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights by Genre", col = "blue", pch = 19, lty = "solid")
-  text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,3], cex = 0.7, pos = 3)
+  # Log.info("Plot first archetype on a subset of movies")
+  # feat_cols <- 1:50
+  # movies <- readMultiChar(locate("smalldata/demos/movies.dat"), separators = "::")
+  # plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights", col = "blue", pch = 19, lty = "solid")
+  # text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,2], cex = 0.7, pos = 3)
+  # plot(1:length(feat_cols), fitY[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights by Genre", col = "blue", pch = 19, lty = "solid")
+  # text(1:length(feat_cols), fitY[1,feat_cols], labels = movies[feat_cols,3], cex = 0.7, pos = 3)
   
   Log.info("Embedding of users into movie archetypes (X):")
   fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
@@ -78,7 +78,7 @@ test.movielens.demo <- function(conn) {
   Log.info("Impute new user's missing ratings from XY decomposition")
   pred_new <- predict(fitH2O_new, ratings_new)
   print(pred_new)
-  testEnd()
+  
 }
 
 doTest("Test out MovieLens User Ratings Demo", test.movielens.demo)

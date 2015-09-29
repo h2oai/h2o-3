@@ -103,7 +103,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
       break;
     case multinomial:
-      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an enum response."));
+      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an categorical response."));
       break;
     case poisson:
       if (isClassifier()) error("_distribution", H2O.technote(2, "Poisson requires the response to be numeric."));

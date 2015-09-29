@@ -31,7 +31,7 @@ test.save_load_dlmodel <- function() {
   # FIXME there is no field valid in the model
   ## expect_equal(prostate.dl@valid, prostate.dl2@valid)
 
-  testEnd()
+  
 }
 
 doTest("R Save and Load Deep Learning Model", test.save_load_dlmodel)

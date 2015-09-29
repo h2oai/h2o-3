@@ -46,7 +46,7 @@ data.frame.type.test <- function() {
    expect_that(typeof(df.prostate.FV[,8]), equals("double"))
    expect_that(typeof(df.prostate.FV[,9]), equals("integer"))
 
-   testEnd()
+   
 }
 
 doTest("Type check data frame", data.frame.type.test)

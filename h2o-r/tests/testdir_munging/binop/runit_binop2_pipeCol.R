@@ -27,7 +27,7 @@ test.binop2.pipe <- function() {
   print(head(newHex))
   print(head(as.data.frame(sliced) | 5))
   
-  testEnd()
+  
 }
 
 doTest("Binop2 EQ2 Test: |", test.binop2.pipe)

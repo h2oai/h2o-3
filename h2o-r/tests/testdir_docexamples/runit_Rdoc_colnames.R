@@ -9,7 +9,7 @@ iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 summary(iris.hex)
 colnames(iris.hex)
 
-testEnd()
+
 }
 
 doTest("R Doc Col Names", test.rdoccolnames.golden)

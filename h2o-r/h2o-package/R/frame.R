@@ -2394,16 +2394,12 @@ h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 #'
 #' To Lower
 #'
-#' Mutates the input!
-#'
 #' @param x A Frame object whose strings should be lower'd
 #' @export
 h2o.tolower <- function(x) .newExpr("tolower", x)
 
 #'
 #' To Upper
-#'
-#' Mutates the input!
 #'
 #' @param x A Frame object whose strings should be upper'd
 #' @export
@@ -2412,26 +2408,28 @@ h2o.toupper <- function(x) .newExpr("toupper", x)
 #'
 #' String Substitute
 #'
-#' Mutates the input. Changes the first occurence of pattern with replacement.
+#' Creates a copy of the target column in which each string has the first occurence of
+#' the regex pattern replaced with the replacement substring.
 #'
 #' @param pattern The pattern to replace.
 #' @param replacement The replacement pattern.
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("sub", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", .quote(pattern), .quote(replacement),x,ignore.case)
 
 #'
 #' String Global Substitute
 #'
-#' Mutates the input. Changes the all occurences of pattern with replacement.
+#' Creates a copy of the target column in which each string has all occurence of
+#' the regex pattern replaced with the replacement substring.
 #'
 #' @param pattern The pattern to replace.
 #' @param replacement The replacement pattern.
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("gsub", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", .quote(pattern), .quote(replacement),x,ignore.case)
 
 #'
 #' Trim Space
@@ -2439,3 +2437,10 @@ h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("gsub", .
 #' @param x The column whose strings should be trimmed.
 #' @export
 h2o.trim <- function(x) .newExpr("trim", x)
+
+#'
+#' String length
+#'
+#' @param x The column whose string lengths will be returned.
+#' @export
+h2o.nchar <- function(x) .newExpr("length", x)

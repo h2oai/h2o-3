@@ -89,7 +89,7 @@ test.hex_1908 <- function() {
   expect_equal(glm.pred, glm_xval.pred)
   
   h2o.removeAll(conn)
-  testEnd()
+  
 }
 
 doTest("HEX-1908 Test: Save and Load All Models", test.hex_1908)

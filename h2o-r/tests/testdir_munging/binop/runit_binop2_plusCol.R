@@ -42,7 +42,7 @@ colPlus.numeric <- function() {
   print(head(hexPlusHex))
   expect_that(as.data.frame(hexPlusHex), equals(2*as.data.frame(fivePlusSliced)))
 
-  testEnd()
+  
 }
 
 doTest("Column Addition With Scaler", colPlus.numeric)

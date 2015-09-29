@@ -10,7 +10,7 @@ test.parse.false <- function() {
     expect_equal(nrow(fr), nrow(fhex))
     expect_equal(ncol(fr), ncol(fhex))
 
-    testEnd()
+    
 }
 
 doTest("Parse false", test.parse.false)

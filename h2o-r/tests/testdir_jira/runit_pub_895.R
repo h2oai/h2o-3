@@ -26,7 +26,7 @@ for(i in 1:length(colnames(spect_train))){
 #print(summary(spect_test))
 
    
-testEnd()
+
 }
 
 doTest("Test pub 895", test.pub.895)

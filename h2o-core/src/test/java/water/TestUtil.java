@@ -8,9 +8,9 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.parser.ValueString;
 import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
@@ -170,7 +170,7 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(int...rows) { return vec(null, rows); }
-  /** A Categorical/Factor Vec from an array of ints - with enum/domain mapping
+  /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
@@ -186,32 +186,6 @@ public class TestUtil extends Iced {
     fs.blockForPending();
     return vec;
   }
-
-  /** Create a new frame based on given row data.
-   *  @param key   Key for the frame
-   *  @param names names of frame columns
-   *  @param rows  data given in the form of rows
-   *  @return new frame which contains columns named according given names and including given data */
-  public static Frame frame(Key key, String[] names, double[]... rows) {
-    assert names == null || names.length == rows[0].length;
-    Futures fs = new Futures();
-    Vec[] vecs = new Vec[rows[0].length];
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
-    for( int c = 0; c < vecs.length; c++ ) {
-      AppendableVec vec = new AppendableVec(keys[c]);
-      NewChunk chunk = new NewChunk(vec, 0);
-      for (double[] row : rows) chunk.addNum(row[c]);
-      chunk.close(0, fs);
-      vecs[c] = vec.close(fs);
-    }
-    fs.blockForPending();
-    Frame fr = new Frame(key, names, vecs);
-    if( key != null ) DKV.put(key,fr);
-    return fr;
-  }
-  public static Frame frame(double[]... rows) { return frame(null, rows); }
-  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
-  public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
@@ -323,9 +297,9 @@ public class TestUtil extends Iced {
             }
           } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
             if (!(c0.isNA(rows) && c1.isNA(rows))) {
-              ValueString v0 = new ValueString(), v1 = new ValueString();
-              c0.atStr(v0, rows); c1.atStr(v1, rows);
-              if (v0.compareTo(v1) != 0) {
+              BufferedString s0 = new BufferedString(), s1 = new BufferedString();
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              if (s0.compareTo(s1) != 0) {
                 _unequal = true;
                 return;
               }

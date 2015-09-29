@@ -129,7 +129,7 @@ test_weights_by_row_duplication <- function() {
   ph2 <- as.data.frame(h2o.predict(object = hh2, newdata = val1))
   expect_equal(ph1, ph2)
 
-  testEnd()
+  
 }
 
 doTest("GLM weight Test: GLM w/ weights test by row duplication", test_weights_by_row_duplication)

@@ -1,11 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
-
-Log.info("Loading LiblineaR and ROCR packages\n")
-
-#if(!"LiblineaR" %in% rownames(installed.packages())) install.packages("LiblineaR")
-#if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
-
 library(LiblineaR)
 library(ROCR)
 
@@ -153,7 +147,7 @@ test.LiblineaR <- function() {
   models             <- L1logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
   #models2            <- L2logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
   compareCoefs(models[[1]], models[[2]])
-  testEnd()
+  
 }
 
 doTest("LiblineaR Test: Prostate", test.LiblineaR)

@@ -19,7 +19,7 @@ test.kmvanilla.golden <- function() {
   classH2O <- predict(fitH2O, ozoneH2O)
   expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)   # H2O indexes from 0, but R indexes from 1
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Golden Kmeans - Ozone without Standardization", test.kmvanilla.golden)

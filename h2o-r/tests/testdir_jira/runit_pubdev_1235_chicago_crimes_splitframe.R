@@ -8,7 +8,7 @@ test.pub_1235 <- function() {
   
   Log.info("Split frame with ratios = c(0.8,0.2)")
   crimesSplit <- h2o.splitFrame(crimes, ratios = c(0.8,0.2))
-  testEnd()
+  
 }
 
 doTest("PUB-1235: h2o.splitFrame causes AIOOBE", test.pub_1235)

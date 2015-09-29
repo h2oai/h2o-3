@@ -28,7 +28,7 @@ expect_equal(fitH2O@model$training_metrics@metrics$residual_degrees_of_freedom, 
 expect_equal(fitH2O@model$training_metrics@metrics$null_degrees_of_freedom, fitR$df.null, tolerance = 0.01)
 expect_equal(fitH2O@model$training_metrics@metrics$AIC, fitR$aic, tolerance = 0.01)
 
-testEnd()
+
 }
 
 doTest("GLM Test: Poisson Non Regularized", test.glm2Poissonregression.golden)

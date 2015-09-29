@@ -30,7 +30,7 @@ applytest <- function(){
 #  expect_that(all( df.3[,1] == c(2,4,6) ))
 #  expect_that(all( df.3[,2] == c(3,5,7) ))
 
-  testEnd()
+  
 }
 
 doTest('apply', applytest)

@@ -35,7 +35,7 @@ test.basic.minmax <- function() {
   expect_that(min(as.h2o( df)), equals(min(df)))
   expect_that(max(as.h2o( df)), equals(max(df)))
   
-  testEnd()
+  
 }
 
 doTest("EQ2 Tests: min and max", test.basic.minmax)

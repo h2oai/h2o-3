@@ -133,7 +133,7 @@ class ASTStratifiedSplit extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
     Vec y = fr.anyVec();
-    if( !(y.isEnum() || (y.isNumeric() && y.isInt())) )
+    if( !(y.isCategorical() || (y.isNumeric() && y.isInt())) )
       throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " + y.get_type_str());
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long)asts[3].exec(env).getNum();
@@ -196,7 +196,7 @@ class ASTNLevels extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {
       Vec v = fr.anyVec();
-      nlevels = v.isEnum()?v.domain().length:0;
+      nlevels = v.isCategorical()?v.domain().length:0;
       return new ValNum(nlevels);
     } else throw new IllegalArgumentException("nlevels applies to a single column. Got: " + fr.numCols());
   }
@@ -217,7 +217,7 @@ class ASTLevels extends ASTPrim {
     // compute the longest vec... that's the one with the most domain levels
     int max=0;
     for(int i=0;i<f.numCols();++i )
-      if( f.vec(i).isEnum() )
+      if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
     for( int i=0;i<f.numCols();++i ) {
@@ -280,7 +280,7 @@ class ASTSetDomain extends ASTPrim {
     String[] _domains = ((ASTStrList)asts[2])._strs;
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
     Vec v = f.anyVec();
-    if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
+    if( !v.isCategorical() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
     if( _domains!=null && _domains.length != v.domain().length) {
       // in this case we want to recollect the domain and check that number of levels matches _domains
       Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
@@ -293,7 +293,7 @@ class ASTSetDomain extends ASTPrim {
           for(int i=0;i<c._len;++i) {
             if( !c.isNA(i) ) {
               long num = Arrays.binarySearch(dom, c.at8(i));
-              if( num < 0 ) throw new IllegalArgumentException("Could not find the enum value!");
+              if( num < 0 ) throw new IllegalArgumentException("Could not find the categorical value!");
               c.set(i,num);
             }
           }
@@ -341,7 +341,7 @@ class ASTMatch extends ASTPrim {
   public String str() { return "match"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1 && !fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
+    if (fr.numCols() != 1 && !fr.anyVec().isCategorical()) throw new IllegalArgumentException("can only match on a single categorical column.");
     Key tmp = Key.make();
     String[] _strsTable=null;
     double[] _dblsTable=null;

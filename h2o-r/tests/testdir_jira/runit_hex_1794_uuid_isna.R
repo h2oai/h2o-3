@@ -27,7 +27,7 @@ test.uuid <- function() {
 
   expect_that(dim(df.nona)[1], is_less_than(dim(df)[1]))
 
-  testEnd()
+  
 }
 
 doTest("HEX-1789 Test: UUID", test.uuid)

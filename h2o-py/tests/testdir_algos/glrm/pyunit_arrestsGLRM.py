@@ -16,7 +16,7 @@ def glrm_arrests():
     initial_y_h2o.show()
 
     print "H2O GLRM on de-meaned data with quadratic loss:\n"
-    glrm_h2o = h2o.glrm(x=arrestsH2O, k=4, transform="DEMEAN", loss="Quadratic", gamma_x=0, gamma_y=0, init="User", user_points=initial_y_h2o, recover_svd=True)
+    glrm_h2o = h2o.glrm(x=arrestsH2O, k=4, transform="DEMEAN", loss="Quadratic", gamma_x=0, gamma_y=0, init="User", user_y=initial_y_h2o, recover_svd=True)
     glrm_h2o.show()
 
 if __name__ == "__main__":

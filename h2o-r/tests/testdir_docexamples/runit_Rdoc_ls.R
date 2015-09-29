@@ -8,7 +8,7 @@ prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 h2o.ls()
 
-testEnd()
+
 }
 
 doTest("R Doc ls", test.rdocls.golden)

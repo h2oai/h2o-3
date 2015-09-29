@@ -46,7 +46,7 @@ test.continuous.or.categorical <- function() {
   print(df.hex)
   print(summary(df.hex))
 
-  testEnd()
+  
 }
 
 doTest("Testing Conversions to Categorical and Continuous Values", test.continuous.or.categorical)

@@ -1,58 +1,181 @@
-genString<-
-function(i = NULL) {
-    res <- paste(sample(letters, 26, replace = TRUE), collapse = "", sep = "")
-    return(res)
+#'
+#'
+#' ----------------- Additional Runit Utilities -----------------
+#'
+#'
+
+read.zip<-
+function(zipfile, exdir,header=T) {
+  zipdir <- exdir
+  unzip(zipfile, exdir=zipdir)
+  files <- list.files(zipdir)
+  file <- paste(zipdir, files[1], sep="/")
+  read.csv(file,header=header)
 }
 
-setupRandomSeed<-
-function(seed = NULL, suppress = FALSE, userDefined=FALSE) {
-    test_name <- R.utils::commandArgs(asValues=TRUE)$"f"
-    possible_seed_path <- paste("./Rsandbox_", test_name, "/seed", sep = "")
-    if (userDefined) {
-        SEED <<- seed
-        set.seed(seed)
-        cat("\n\n\n", paste("[INFO]: Using user defined SEED: ", seed), "\n\n\n\n")
-        cat("\n\n\n [User-SEED] :", seed, "\n\n\n")
-        return(seed)
+sandbox<-
+function() {
+  test_name <- R.utils::commandArgs(asValues=TRUE)$"f"
+  if (is.null(test_name)) {
+      test_name <- paste(getwd(), "r_command_line", sep="/")
+  }
+  Rsandbox <- paste("./Rsandbox_", basename(test_name), sep = "")
+  dir.create(Rsandbox, showWarnings = FALSE)
+  commandsLog <- paste(Rsandbox, "/commands.log", sep = "")
+  errorsLog <- paste(Rsandbox, "/errors.log", sep = "")
+  if(file.exists(commandsLog)) file.remove(commandsLog)
+  if(file.exists(errorsLog)) file.remove(errorsLog)
+  h2o.startLogging(paste(Rsandbox, "/rest.log", sep = ""))
+}
+
+Log.info<-
+function(m) {
+  message <- paste("[INFO] : ",m,sep="")
+  logging(message)
+}
+
+Log.warn<-
+function(m) {
+  logging(paste("[WARN] : ",m,sep=""))
+  traceback()
+}
+
+Log.err<-
+function(m) {
+  logging(paste("[ERROR] : ",m,sep=""))
+  logging("[ERROR] : TEST FAILED")
+  traceback()
+}
+
+logging<-
+function(m) {
+  cat(sprintf("[%s] %s\n", Sys.time(),m))
+}
+
+PASS_BANNER<-
+function() {
+  cat("\n")
+  cat("########     ###     ######   ###### \n")
+  cat("##     ##   ## ##   ##    ## ##    ##\n")
+  cat("##     ##  ##   ##  ##       ##      \n")
+  cat("########  ##     ##  ######   ###### \n")
+  cat("##        #########       ##       ##\n")
+  cat("##        ##     ## ##    ## ##    ##\n")
+  cat("##        ##     ##  ######   ###### \n")
+  cat("\n")
+}
+
+FAIL_BANNER<-
+function() {
+  cat("\n")
+  cat("########    ###    #### ##       \n")
+  cat("##         ## ##    ##  ##       \n")
+  cat("##        ##   ##   ##  ##       \n")
+  cat("######   ##     ##  ##  ##       \n")
+  cat("##       #########  ##  ##       \n")
+  cat("##       ##     ##  ##  ##       \n")
+  cat("##       ##     ## #### ######## \n")
+  cat("\n")
+}
+
+PASS<-
+function() {
+  PASS_BANNER()
+  q("no",0,FALSE)
+}
+
+FAIL<-
+function(e) {
+  FAIL_BANNER()
+  Log.err(e)
+  q("no",1,FALSE) #exit with nonzero exit code
+}
+
+SKIP<-
+function() {
+  q("no",42,FALSE) #exit with nonzero exit code
+}
+
+WARN<-
+function(w) {
+  Log.warn(w)
+}
+
+#----------------------------------------------------------------------
+# Print out a message with clear whitespace.
+#
+# Parameters:  x -- Message to print out.
+#              n -- (optional) Step number.
+#
+# Returns:     none
+#----------------------------------------------------------------------
+heading <- function(x, n = -1) {
+  Log.info("")
+  Log.info("")
+  if (n < 0) {
+    Log.info(sprintf("STEP: %s", x))
+  } else {
+    Log.info(sprintf("STEP %2d: %s", n, x))
+  }
+  Log.info("")
+  Log.info("")
+}
+
+#----------------------------------------------------------------------
+# "Safe" system.  Error checks process exit status code.  stop() if it failed.
+#
+# Parameters:  x -- String of command to run (passed to system()).
+#
+# Returns:     none
+#----------------------------------------------------------------------
+safeSystem <- function(x) {
+  print(sprintf("+ CMD: %s", x))
+  res <- system(x)
+  print(res)
+  if (res != 0) {
+    msg <- sprintf("SYSTEM COMMAND FAILED (exit status %d)", res)
+    stop(msg)
+  }
+}
+
+getArgs<-
+function(args) {
+  fileName <- commandArgs()[grep('*\\.R',unlist(commandArgs()))]
+  if (length(args) > 1) {
+    m <- paste("Usage: R f ", paste(fileName, " --args H2OServer:Port",sep=""),sep="")
+    stop(m);
+  }
+
+  if (length(args) == 0) {
+    myIP   = "127.0.0.1"
+    myPort = 54321
+  } else {
+    argsplit = strsplit(args[1], ":")[[1]]
+    myIP     = argsplit[1]
+    myPort   = as.numeric(argsplit[2])
+  }
+  return(list(myIP,myPort));
+}
+
+withWarnings <- function(expr) {
+    myWarnings <- NULL
+    wHandler <- function(w) {
+        myWarnings <<- c(myWarnings, list(w))
+        invokeRestart("muffleWarning")
     }
-    if (file.exists(possible_seed_path)) {
-        fileseed <- read.table(possible_seed_path)[[1]]
-        cat("\n\n\n", paste("[INFO]: Reusing seed for this test from test's Rsandbox", fileseed), "\n\n\n\n")
-        SEED <<- fileseed
-        set.seed(fileseed)
-        return(fileseed)
-    }
-    if (MASTER_SEED) {
-        #SEED <<- seed
-        cat("\n\n\n", paste("[INFO]: Using master SEED to generate a new seed for this test: ", seed), "\n\n\n\n")
-        #.h2o.__logIt("[Master-SEED] :", seed, "Command")
-        cat("\n\n\n [Master-SEED] :", seed, "\n\n\n")
-        maxInt <- .Machine$integer.max
-        newseed <- sample(maxInt, 1)
-        cat("\n\n\n", paste("[INFO]: Using seed for this test ", newseed), "\n\n\n\n")
-        SEED <<- newseed
-        set.seed(newseed)
-        return(newseed)
-    }
-    if (!is.null(seed)) {
-        SEED <<- seed
-        set.seed(seed)
-        cat("\n\n\n", paste("[INFO]: Using user defined SEED: ", seed), "\n\n\n\n")
-        cat("\n\n\n [User-SEED] :", seed, "\n\n\n")
-        return(seed)
-    } else {
-        maxInt <- .Machine$integer.max
-        seed <- sample(maxInt, 1)
-        SEED <<- seed
-        if(!suppress) {
-          cat("\n\n\n", paste("[INFO]: Using SEED: ", seed), "\n\n\n\n")
-          #.h2o.__logIt("[SEED] :", seed, "Command")
-          cat("\n\n\n [SEED] : ", seed, "\n\n\n")
-        }
-        set.seed(seed)
-        return(seed)
-    }
-    Log.info(paste("USING SEED: ", SEED))
+    val <- withCallingHandlers(expr, warning = wHandler)
+    list(value = val, warnings = myWarnings)
+    for(w in myWarnings) WARN(w)
+}
+
+doTest<-
+function(testDesc, test) {
+    h2o.removeAll()
+    Log.info("======================== Begin Test ===========================\n")
+    conn <- h2o.getConnection()
+    conn@mutable$session_id <- .init.session_id()
+    tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
+    PASS()
 }
 
 cleanSummary <- function(mysum, alphabetical = FALSE) {
@@ -66,10 +189,10 @@ cleanSummary <- function(mysum, alphabetical = FALSE) {
         numMatch <- sum(unlist(strsplit(x, "")) == ":")
         # If only one colon, then it contains numeric data
         # WARNING: This assumes categorical levels don't contain colons
-        if(is.na(numMatch) || numMatch <= 1)
+        if(is.na(numMatch) || numMatch <= 1) {
           as.numeric(unlist(strsplit(x, ":"))[2])
-        # Otherwise, return a string for min/max/quantile
-        else {
+        } else {
+          # Otherwise, return a string for min/max/quantile
           tmp <- unlist(strsplit(as.character(x), ":"))[-1]
           paste(tmp, collapse = ":")
         }
@@ -148,4 +271,11 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
       df.clone <- df.clone[,!is_const]
   }
   genDummyCols(df.clone, use_all_factor_levels)
+}
+
+#' HDFS helper
+is.running.internal.to.h2o <- function() {
+    url <- sprintf("http://%s:50070", H2O.INTERNAL.HDFS.NAME.NODE);
+    internal <- url.exists(url, timeout = 5)
+    return(internal)
 }

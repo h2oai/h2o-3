@@ -43,7 +43,7 @@ public class DeepLearningIrisTest extends TestUtil {
         // Note: Initial weight distributions are copied, but what is tested is the stability behavior.
 
         Activation[] activations = {Activation.Tanh, Activation.Rectifier};
-        Loss[] losses = {Loss.MeanSquare, Loss.CrossEntropy};
+        Loss[] losses = {Loss.Quadratic, Loss.CrossEntropy};
         InitialWeightDistribution[] dists = {
                 InitialWeightDistribution.Normal,
                 InitialWeightDistribution.Uniform,
@@ -107,8 +107,8 @@ public class DeepLearningIrisTest extends TestUtil {
                               }
 
                               int limit = (int) (frame.numRows() * holdout_ratio);
-                              _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
-                              _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
+                              _train = ArrayUtils.frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
+                              _test  = ArrayUtils.frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
                               // Must have all output classes in training
                               // data (since that's what the reference
@@ -116,12 +116,12 @@ public class DeepLearningIrisTest extends TestUtil {
                               // of classes is not known unless we visit
                               // all the response data - force that now.
                               String respname = _train.lastVecName();
-                              Vec resp = _train.lastVec().toEnum();
+                              Vec resp = _train.lastVec().toCategorical();
                               _train.remove(respname).remove();
                               _train.add(respname, resp);
                               DKV.put(_train);
 
-                              Vec vresp = _test.lastVec().toEnum();
+                              Vec vresp = _test.lastVec().toCategorical();
                               _test.remove(respname).remove();
                               _test.add(respname, vresp);
                               DKV.put(_test);
@@ -135,7 +135,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             DeepLearningParameters p = new DeepLearningParameters();
                             p._train = _train._key;
                             p._response_column = _train.lastVecName();
-                            assert _train.lastVec().isEnum();
+                            assert _train.lastVec().isCategorical();
                             p._ignored_columns = null;
 
                             p._seed = seed;

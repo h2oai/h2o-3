@@ -24,7 +24,7 @@ test <- function() {
 	expect_less_than(hh@model$training_metrics@metrics$null_deviance, no_weight_hh@model$training_metrics@metrics$null_deviance)
 
 	print("test ends")
-	testEnd()
+	
 }
 
 

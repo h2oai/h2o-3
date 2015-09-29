@@ -32,7 +32,7 @@ test <- function() {
   } else {
     print("skipping test in client mode...")
   }
-  testEnd()
+  
 }
 
 doTest("Testing memory performance of Strong Rules", test)

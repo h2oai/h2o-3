@@ -26,7 +26,7 @@ test.km.iris <- function() {
     }
   }
 
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Iris Data (H2O vs. R)", test.km.iris)

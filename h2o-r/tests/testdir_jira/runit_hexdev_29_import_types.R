@@ -14,7 +14,7 @@ test.continuous.or.categorical <- function() {
   expect_true(is.factor(df.hex$h2))
   expect_true(is.factor(df.hex$h3))
 
-  testEnd()
+  
 }
 
 doTest("Veryfying R Can Declare Types on Import", test.continuous.or.categorical)

@@ -35,7 +35,7 @@ def _import(path):
   if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
   return j['destination_frames']
 
-def upload_file(path, destination_frame=""):
+def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
   """
 Upload a dataset at the path given from the local machine to the H2O cluster.
 
@@ -44,13 +44,23 @@ Parameters
   path : str
     A path specifying the location of the data to upload.
   destination_frame : H2OFrame
-    The name of the H2O Frame in the H2O Cluster. 
+    The name of the H2O Frame in the H2O Cluster.
+  header :
+   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values. 
 
  :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
-  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_frame=destination_frame)
+  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
   return H2OFrame(raw_id=destination_frame)
 
 
@@ -761,7 +771,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   initial_weight_scale : str
     Uniform: -value ... value, Normal: stddev
   loss : str
-    Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute" (experimental) or "Huber" (experimental)
+    Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute" (experimental) or "Huber" (experimental)
   distribution : str
      A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", 
      "huber" or "gaussian"
@@ -920,7 +930,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     initial_weight_scale : str
       Uniform: -value ... value, Normal: stddev
     loss : str
-      Loss function: "Automatic", "CrossEntropy" (for classification only), "MeanSquare", "Absolute" (experimental) or "Huber" (experimental)
+      Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute" (experimental) or "Huber" (experimental)
     distribution : str
       A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", 
       "tweedie", "laplace", "huber" or "gaussian"
@@ -1363,7 +1373,8 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
-         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,user_points=None,recover_svd=None):
+         regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
+         user_y=None,user_x=None,recover_svd=None):
   """
   Builds a generalized low rank model of a H2O dataset.
   
@@ -1386,7 +1397,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
     (Optional) A logical value indicating whether to ignore constant columns in the training frame. A column is constant if all of its
     non-missing values are the same value.
   loss : str
-    A character string indicating the default loss function for numeric columns. Possible values are "Quadratic" (default), "L1", "Huber", 
+    A character string indicating the default loss function for numeric columns. Possible values are "Quadratic" (default), "Absolute", "Huber",
     "Poisson", "Hinge", and "Logistic".
   multi_loss : str
     A character string indicating the default loss function for enum columns. Possible values are "Categorical" and "Ordinal".
@@ -1413,8 +1424,12 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   init : str
     A character string indicating how to select the initial Y matrix. 
     Possible values are "Random": for initialization to a random array from the standard normal distribution, "PlusPlus": for initialization 
-    using the clusters from k-means++ initialization, or "SVD": for initialization using the first k (approximate) right singular vectors. 
-    Additionally, the user may specify the initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
+    using the clusters from k-means++ initialization, "SVD": for initialization using the first k (approximate) right singular vectors, and 
+    "User": user-specified initial X and Y frames (must set user_y and user_x arguments).
+  svd_method : str
+    A character string that indicates how SVD should be calculated during initialization.
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
+    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized 
     low rank decomposition.

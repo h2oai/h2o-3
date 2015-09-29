@@ -144,7 +144,7 @@ class ASTTable extends ASTPrim {
         cnts[row] = al==null ? 0 : al.get();
       }
       Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
-      res.add(vx.isEnum() ? vx.domain()[col] : Double.toString(dcols[col]),vec);
+      res.add(vx.isCategorical() ? vx.domain()[col] : Double.toString(dcols[col]),vec);
     }
 
     return new ValFrame(res);
@@ -272,7 +272,7 @@ class ASTUnique extends ASTPrim {
     Vec v;
     if( fr.numCols()!=1 )
       throw new IllegalArgumentException("Unique applies to a single column only.");
-    if( fr.anyVec().isEnum() ) {
+    if( fr.anyVec().isCategorical() ) {
       v = Vec.makeSeq(0, (long)fr.anyVec().domain().length, true);
       v.setDomain(fr.anyVec().domain());
       DKV.put(v);

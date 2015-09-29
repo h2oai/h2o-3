@@ -89,7 +89,7 @@ check.deeplearning_anomaly <- function() {
   plotDigits(test_recon, test_rec_error, c(9976:10000))
   plotDigits(test_hex,   test_rec_error, c(9976:10000))
   
-  testEnd()
+  
 }
 
 doTest("Deep Learning Anomaly Detection MNIST", check.deeplearning_anomaly)

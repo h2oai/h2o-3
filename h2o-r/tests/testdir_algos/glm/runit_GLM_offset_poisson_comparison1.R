@@ -41,7 +41,7 @@ test <- function(h) {
     Log.info(paste("H2O null deviance (offsets): ", h2o.nd.w, ", and H2O null deviance (no offsets): ", h2o.nd.wo))
     expect_less_than(h2o.nd.w, h2o.nd.wo)
 
-	testEnd()
+	
 }
 
 doTest("GLM poisson offset comparision1: ", test)

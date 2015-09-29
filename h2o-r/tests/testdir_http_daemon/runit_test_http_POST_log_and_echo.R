@@ -38,7 +38,7 @@ check.log_and_echo <- function() {
       stop("Not 10000")
   }
 
-  testEnd()
+  
 }
 
 doTest("POST log and echo tests", check.log_and_echo)

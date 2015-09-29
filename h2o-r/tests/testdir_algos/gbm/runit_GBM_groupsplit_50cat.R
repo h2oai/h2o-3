@@ -31,7 +31,7 @@ test.GBM.groupsplit <- function() {
   test.perf <- h2o.performance(drfmodel.h2o, test.hex)
   test.cm <- h2o.confusionMatrix(test.perf)
   test.auc <- h2o.auc(test.perf)
-  testEnd()
+  
 }
 
 doTest("GBM Test: Classification with 50 categorical level predictor", test.GBM.groupsplit)

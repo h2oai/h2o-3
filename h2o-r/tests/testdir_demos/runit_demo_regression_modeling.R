@@ -85,7 +85,7 @@ test <- function() {
   		print(paste ("ntree=",trees, "  depth=", depth, "  MSE_on_Test_set=", round(MSE,2), sep=''))
 	}
 
-	testEnd()
+	
 }
 
 doTest("Regression modeling, Split data into test/train, do grid search on gbm and rf and predict on test set, print the mse's and model params ", test)

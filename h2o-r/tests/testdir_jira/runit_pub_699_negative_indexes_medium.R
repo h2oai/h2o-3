@@ -55,7 +55,7 @@ test.pub_699_negative_indexes <- function() {
 
   expect_equal(length(slice_range_across_chunks), nrow(covtype) - nrow(sliced_cov))
 
-testEnd()
+
 
 }
 

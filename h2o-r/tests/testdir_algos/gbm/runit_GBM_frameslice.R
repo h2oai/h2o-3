@@ -9,7 +9,7 @@ test.GBM.frameslice <- function() {
   pros.hex[,2] = as.factor(pros.hex[,2])
   pros.gbm <- h2o.gbm(x = 2:8, y = 1, training_frame = pros.hex[, 2:9], distribution = "bernoulli")
 
-  testEnd()
+  
 }
 
 doTest("GBM Test: Model building on sliced h2o frame", test.GBM.frameslice)

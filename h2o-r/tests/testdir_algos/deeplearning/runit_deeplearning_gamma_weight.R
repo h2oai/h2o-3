@@ -68,7 +68,7 @@ test <- function(h) {
 	expect_equal(0.02286, min(ph[,1]), tolerance=1e-1)
 	expect_equal(0.07271, max(ph[,1]), tolerance=1e-1)
 
-	testEnd()
+	
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for gamma distribution", test)
 

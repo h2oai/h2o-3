@@ -23,7 +23,7 @@ test.head_tail <- function() {
     expect_equivalent(as.data.frame(head(iris.hex, n = s)), head(iris.dat, n = s))
     expect_equivalent(as.data.frame(tail(iris.hex, n = s)), tail(iris.dat, n = s))
   }
-  testEnd()
+  
 }
 
 doTest("Test out head() and tail() functionality", test.head_tail)

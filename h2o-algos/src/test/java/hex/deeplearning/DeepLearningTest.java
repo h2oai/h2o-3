@@ -410,7 +410,7 @@ public class DeepLearningTest extends TestUtil {
           @Override
           int prep(Frame fr) {
             Vec resp = fr.remove("C2");
-            fr.add("C2", resp.toEnum());
+            fr.add("C2", resp.toCategorical());
             resp.remove();
             return fr.find("C3");
           }
@@ -434,7 +434,7 @@ public class DeepLearningTest extends TestUtil {
     Vec ret = null;
     if (classification) {
       ret = fr.remove(idx);
-      fr.add(rname,resp.toEnum());
+      fr.add(rname,resp.toCategorical());
     } else {
       fr.remove(idx);
       fr.add(rname,resp);
@@ -536,7 +536,7 @@ public class DeepLearningTest extends TestUtil {
     try {
       for (int i = 0; i < N; ++i) {
         frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
-        Vec resp = frTrain.lastVec().toEnum();
+        Vec resp = frTrain.lastVec().toCategorical();
         frTrain.remove(frTrain.vecs().length - 1).remove();
         frTrain.add("Response", resp);
         DKV.put(frTrain);
@@ -600,12 +600,12 @@ public class DeepLearningTest extends TestUtil {
     boolean covtype = true;
     if (covtype) {
       frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
-      Vec resp = frTrain.lastVec().toEnum();
+      Vec resp = frTrain.lastVec().toCategorical();
       frTrain.remove(frTrain.vecs().length - 1).remove();
       frTrain.add("Response", resp);
     } else {
       frTrain = parse_test_file("./bigdata/server/HIGGS.csv");
-      Vec resp = frTrain.vecs()[0].toEnum();
+      Vec resp = frTrain.vecs()[0].toCategorical();
       frTrain.remove(0).remove();
       frTrain.prepend("Response", resp);
     }
@@ -834,7 +834,7 @@ public class DeepLearningTest extends TestUtil {
       Scope.enter();
       try {
         frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
-        Vec resp = frTrain.lastVec().toEnum();
+        Vec resp = frTrain.lastVec().toCategorical();
         frTrain.remove(frTrain.vecs().length-1);
         frTrain.add("Response", resp);
         // Configure DL
@@ -876,7 +876,7 @@ public class DeepLearningTest extends TestUtil {
 
     for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
         DeepLearningParameters.Loss.Automatic,
-        DeepLearningParameters.Loss.MeanSquare,
+        DeepLearningParameters.Loss.Quadratic,
         DeepLearningParameters.Loss.Huber,
         DeepLearningParameters.Loss.Absolute,
     }) {
@@ -886,7 +886,7 @@ public class DeepLearningTest extends TestUtil {
         for (String s : new String[]{
             "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategorical())._key);
         }
         DKV.put(tfr);
         DeepLearningParameters parms = new DeepLearningParameters();
@@ -904,7 +904,7 @@ public class DeepLearningTest extends TestUtil {
 
         ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
 
-        if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.MeanSquare)
+        if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.Quadratic)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
           assertTrue(mm._mean_residual_deviance != mm._MSE);
@@ -939,7 +939,7 @@ public class DeepLearningTest extends TestUtil {
         for (String s : new String[]{
             "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategorical())._key);
         }
         DKV.put(tfr);
         DeepLearningParameters parms = new DeepLearningParameters();
@@ -985,7 +985,7 @@ public class DeepLearningTest extends TestUtil {
       for (String s : new String[]{
           "Merit", "Class"
       }) {
-        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toEnum())._key);
+        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategorical())._key);
       }
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
@@ -1031,7 +1031,7 @@ public class DeepLearningTest extends TestUtil {
         for (String s : new String[]{
             "Class"
         }) {
-          Vec resp = tfr.vec(s).toEnum();
+          Vec resp = tfr.vec(s).toCategorical();
           tfr.remove(s).remove();
           tfr.add(s, resp);
           DKV.put(tfr);
@@ -1081,7 +1081,7 @@ public class DeepLearningTest extends TestUtil {
       for (String s : new String[]{
               "Class"
       }) {
-        Vec resp = tfr.vec(s).toEnum();
+        Vec resp = tfr.vec(s).toCategorical();
         tfr.remove(s).remove();
         tfr.add(s, resp);
         DKV.put(tfr);

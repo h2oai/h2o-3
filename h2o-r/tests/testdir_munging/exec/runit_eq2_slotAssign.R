@@ -58,7 +58,7 @@ test.column.assignment <- function() {
 
   expect_false(all(hexReplaced==hexOriginal))
 
-  testEnd()
+  
 
 }
 

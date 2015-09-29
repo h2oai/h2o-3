@@ -16,7 +16,7 @@ test.binop2.ampersand <- function() {
   #print(hex[,1] & c(5,10,20))
   #print(c(5,10,20) & hex[,1])
   
-  testEnd()
+  
 }
 
 doTest("Binop2 EQ2 Test: & and &&", test.binop2.ampersand)

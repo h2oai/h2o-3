@@ -31,7 +31,7 @@ test.DRF.SWpreds <- function() {
   # expect_true(drfmodel.grpsplit2@model$AUC >= drfmodel.nogrp2@model$AUC - tol)
   # expect_true(drfmodel.grpsplit2@model$confusion[3,3] <= drfmodel.nogrp2@model$confusion[3,3] + tol)
 
-  testEnd()
+  
 }
 
 doTest("DRF Test: Classification with Strong/Weak Predictors", test.DRF.SWpreds)

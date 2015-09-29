@@ -25,7 +25,7 @@ test.mergecat <- function() {
   crimeMerge <- h2o.merge(crimes, census)
   print(summary(crimeMerge))
   
-  testEnd()
+  
 }
 
 doTest("Merging H2O Frames that contain categorical columns", test.mergecat)

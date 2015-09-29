@@ -24,7 +24,7 @@ test <- function() {
     suppressWarnings((coef$"Intercept"<-NULL))
     stopifnot(coef < 50)
 
-    testEnd()
+    
 }
 
 doTest("Testing glm performance on balanced synthetic dataset with perfect separation.", test)

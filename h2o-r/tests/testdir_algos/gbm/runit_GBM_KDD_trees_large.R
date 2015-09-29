@@ -26,7 +26,7 @@ check.test_KDD_trees <- function(){
 
     expect_equal(test1@model$mse_train, test2@model$mse_train, tolerance = 0.0001)
 
-    testEnd()
+    
 }
 
 doTest("GBM Test: KDD tress", check.test_KDD_trees)

@@ -33,7 +33,7 @@ test.GLM.covtype <- function() {
   covtype.h2o3 <- h2o.getFutureModel(covtype.h2o3)
   print(covtype.h2o3)
   
-  testEnd()
+  
 }
 
 doTest("Test GLM on covtype(20k) dataset", test.GLM.covtype)

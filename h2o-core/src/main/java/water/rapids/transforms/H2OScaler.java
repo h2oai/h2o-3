@@ -27,7 +27,7 @@ public class H2OScaler extends Transform<H2OScaler> {
     return this;
   }
 
-  // TODO: handle Enum, String, NA
+  // TODO: handle Categorical, String, NA
   @Override protected Frame transformImpl(Frame f) {
     final double[] fmeans = means;
     final double[] fmults = ArrayUtils.invert(sdevs);

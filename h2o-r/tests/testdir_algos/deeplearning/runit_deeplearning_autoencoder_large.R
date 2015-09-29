@@ -62,7 +62,7 @@ check.deeplearning_autoencoder <- function() {
 
      expect_equal(cm$Error[11], 0.0814, tolerance = 0.001)
 
-     testEnd()
+     
 }
 
 doTest("Deep Learning AutoEncoder MNIST", check.deeplearning_autoencoder)

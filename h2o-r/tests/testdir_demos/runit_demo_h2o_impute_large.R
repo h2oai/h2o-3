@@ -79,7 +79,7 @@ check.demo_impute <- function() {
   # impute a factor column using a grouping based on the Origin
   h2o.impute(air, "TailNum", method = "mode", by=c("Month"))
 
-  testEnd()
+  
 }
 
 doTest("Basic imputation", check.demo_impute)

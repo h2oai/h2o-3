@@ -63,7 +63,7 @@ public class GLRMCategoricalTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GLRMParameters.Loss.L1;
+      parms._loss = GLRMParameters.Loss.Absolute;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = true;
@@ -106,7 +106,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -167,13 +167,13 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
       for(GLRMParameters.Loss loss : new GLRMParameters.Loss[] {
               GLRMParameters.Loss.Quadratic,
-              GLRMParameters.Loss.L1,
+              GLRMParameters.Loss.Absolute,
               GLRMParameters.Loss.Huber,
               GLRMParameters.Loss.Poisson,
               GLRMParameters.Loss.Hinge,
@@ -245,7 +245,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -254,7 +254,7 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._k = 12;
       parms._loss = GLRMParameters.Loss.Quadratic;
       parms._multi_loss = GLRMParameters.Loss.Categorical;
-      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Ordinal, GLRMParameters.Loss.Poisson, GLRMParameters.Loss.L1 };
+      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Ordinal, GLRMParameters.Loss.Poisson, GLRMParameters.Loss.Absolute};
       parms._loss_by_col_idx = new int[] { 3 /* DPROS */, 1 /* AGE */, 6 /* VOL */ };
       parms._init = GLRM.Initialization.PlusPlus;
       parms._min_step_size = 1e-5;
@@ -344,7 +344,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toEnum())._key);
+        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toCategorical())._key);
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);

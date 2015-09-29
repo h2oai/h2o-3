@@ -23,7 +23,7 @@ test.GLM.prostate <- function() {
     checkGLMModel(prostate.glm.h2o, prostate.glm)
   }
   
-  testEnd()
+  
 }
 
 doTest("GLM Test: Prostate", test.GLM.prostate)

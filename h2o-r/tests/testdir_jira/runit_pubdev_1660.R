@@ -11,7 +11,7 @@ test.pubdev.1660 <- function() {
   Log.info("Extract first 3 eigenvectors from H2OTable")
   eigvec <- fitH2O@model$eigenvectors[,1:3]
   print(eigvec)
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1660: Slicing and printing a subset of H2OTable", test.pubdev.1660)

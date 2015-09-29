@@ -1,6 +1,8 @@
 //
 // Supports dataset synchronization with S3
 //
+import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     repositories {
         mavenCentral()
@@ -88,4 +90,30 @@ def syncData(subdir) {
     File newFile = file(localDestPath)
     newFile.setLastModified(dateFormatter.parseDateTime(it.LastModified.text()).getMillis())
   }
+}
+
+task syncRPackages {
+    group = "RPackages"
+    description = "Runs R script (h2o-r/scripts/package_verison_check_update.R), which installs R packages from " +
+            "https://s3.amazonaws.com/h2o-r. The purpose of this task is to ensure that the local system's R packages" +
+            "match those used by H2O's Jenkins jobs."
+    doLast {
+        doRSync();
+    }
+}
+
+def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
+
+def doRSync() {
+    def h2oRDir = (new File("$rootDir")).getCanonicalPath() + File.separator + "h2o-r"
+    def rPkgVerChk = h2oRDir + File.separator + "scripts" + File.separator + "package_version_check_update.R"
+    exec {
+        standardInput = System.in
+        if (project.property("noAskRPkgSync").toString().equals("true")) {
+            commandLine getOsSpecificCommandLine(['R', "--vanilla", "-f", rPkgVerChk, "--args", "update", "X"])
+        }
+        else {
+            commandLine getOsSpecificCommandLine(['R', "--vanilla", "-f", rPkgVerChk, "--args", "update"])
+        }
+    }
 }

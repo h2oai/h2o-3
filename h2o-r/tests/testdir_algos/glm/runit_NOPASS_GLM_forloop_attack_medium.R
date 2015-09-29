@@ -180,7 +180,7 @@ test.glm.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams("gamma", cars.train, cars.test, 3:7, 2)
 
-  testEnd()
+  
 }
 
 doTest("Checking GLM in Random Attack For Loops", test.glm.rand_attk_forloop)

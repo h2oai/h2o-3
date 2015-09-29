@@ -107,7 +107,7 @@ test.RF.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams(cars.train, cars.test, 4:7, 3)
 
-  testEnd()
+  
 }
 
 doTest("Checking DRF in Random Attack For-loop", test.RF.rand_attk_forloop)

@@ -19,7 +19,7 @@ public class ASTCut extends ASTPrim {
     final boolean rite   = asts[5].exec(env).getNum()==1;
     final int     digits = Math.max((int)asts[6].exec(env).getNum(),12); // cap at 12
 
-    if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
+    if(fr.vecs().length != 1 || fr.vecs()[0].isCategorical())
       throw new IllegalArgumentException("First argument must be a numeric column vector");
 
     double fmin = fr.anyVec().min();

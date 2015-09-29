@@ -31,7 +31,7 @@ test <- function(conn) {
   print(levels2)  
   if(!is.null(levels2)) stop("Numeric Column should not have any factor levels...")
 
-  testEnd()
+  
 }
 
 doTest("Print factor levels with h2o.levels:", test)

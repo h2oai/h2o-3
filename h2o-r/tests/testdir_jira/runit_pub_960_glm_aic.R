@@ -30,7 +30,7 @@ test <- function() {
                                      nfolds=0, standardize = TRUE)
   print(model.h2o.tweedie)      #AIC is NaN
 
-  testEnd()
+  
 }
 
 doTest("Testing AIC value for GLM families gamma and tweedie", test)

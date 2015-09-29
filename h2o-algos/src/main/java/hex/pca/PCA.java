@@ -252,6 +252,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Calculate standard deviation, but not projection
           parms._only_v = false;
           parms._keep_u = false;
+          parms._save_v_frame = false;
 
           SVDModel svd = null;
           SVD job = null;

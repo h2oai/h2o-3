@@ -10,7 +10,7 @@ test.head_empty_frame <- function() {
   
   print(hex)
    
-  testEnd()
+  
 }
 
 doTest("Test frame add.", test.head_empty_frame)

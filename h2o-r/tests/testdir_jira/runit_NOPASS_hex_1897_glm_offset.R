@@ -54,7 +54,7 @@ test.GLM.offset <- function() {
   }
 
   run_models <- sapply(family_type, check_models)
-  testEnd()
+  
 }
 
 doTest("GLM Test: Offset", test.GLM.offset)

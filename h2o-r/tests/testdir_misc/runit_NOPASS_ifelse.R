@@ -16,7 +16,7 @@ test.ifelse <- function() {
   
   if(!all(heart$surgery == as.data.frame(heart.hex$surgery))) stop("Conversion of column different between h2o and base ifelse function!")
   
-  testEnd()
+  
 }
 
 doTest("R and H2O ifelse Function", test.ifelse)
