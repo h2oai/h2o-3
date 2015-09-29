@@ -77,13 +77,14 @@ function(args) {
         write(paste0("INFO: Manually update your R version to match Jenkins'"),stdout()) }
 
     # download and install RCurl
-    url <- tryCatch({
-        write("INFO: Installing RCurl...",stdout())
-        install.packages("RCurl",repos="http://cran.us.r-project.org")
-    }, error = function(e) {
-        write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
-        q("no",1,FALSE)
-    })
+    if (!doCheckOnly) {
+        url <- tryCatch({
+            write("INFO: Installing RCurl...",stdout())
+            install.packages("RCurl",repos="http://cran.us.r-project.org")
+        }, error = function(e) {
+            write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
+            q("no",1,FALSE)
+        }) }
     require(RCurl,quietly=TRUE)
     url <- tryCatch({
         getURL(JENKINS.R.PKG.VER.REQS,.opts=list(ssl.verifypeer = FALSE))
