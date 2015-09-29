@@ -11,6 +11,8 @@ Endpoints accept model-specific parameters (e.g., `GBMParametersV3`) and an addi
 
 Each parameter exposed by the schema can specify if it is supported by grid search by specifying the attribute `gridable=true` in the schema @API annotation. In any case, the Java API does not restrict the parameters supported by grid search. 
 
+With grid search, each model is built sequentially, allowing users to view each model as it is built. 
+
 ##Example
 
 Invoke a new GBM model grid search by passing the following request to H2O: 

@@ -21,8 +21,11 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
-#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
-#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at least) this many bins at the root
+#'        level, then decrease by factor of two per level.
+#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+#'        Higher values can lead to more overfitting.
 #' @param validation_frame An Frame object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes logical, indicates whether or not to balance training data class
@@ -65,6 +68,7 @@ h2o.gbm <- function(x, y, training_frame,
                     min_rows = 10,
                     learn_rate = 0.1,
                     nbins = 20,
+                    nbins_top_level,
                     nbins_cats = 1024,
                     validation_frame = NULL,
                     balance_classes = FALSE,
@@ -124,6 +128,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$learn_rate <- learn_rate
   if (!missing(nbins))
     parms$nbins <- nbins
+  if (!missing(nbins_top_level))
+    parms$nbins_top_level <- nbins_top_level
   if(!missing(nbins_cats))
     parms$nbins_cats <- nbins_cats
   if (!missing(validation_frame))

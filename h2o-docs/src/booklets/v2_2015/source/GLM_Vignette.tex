@@ -225,10 +225,11 @@ GLM models are fitted by finding the set of parameters that maximizes the likeli
 
 This is also applicable when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. An iterative method such as IRLSM, L-BFGS, the Newton method, or gradient descent, must be used. To select the solver, select the model and specify the exponential density. 
 
+
 \subsection{Model Validation}
 
-After selecting the model, evaluate the precision of the estimates to determine its accuracy. The quality of the fitted model can be obtained 
-by computing the goodness of fit between the predicted values that it generates and the given input data. Multiple measures of discrepancy may be used. 
+After selecting the model, evaluate the precision of the estimates to determine its accuracy. The quality of the fitted model can be obtained by computing the goodness of fit between the predicted values that it generates and the given input data. Multiple measures of discrepancy may be used. 
+\nowidow[3]
 
 H2O returns the logarithm of the ratio of likelihoods, called deviance, and the Akaike information criterion (AIC) after fitting a GLM. A benchmark for a good model is the saturated or full model, which is the largest model that can be fitted. Assuming the dataset consists of $N$ observations, the saturated model fits $N$ parameters $\hat{\mu}_i$. Since it gives a model with one parameter per observation, its predictions trivially fit the data perfectly.
 
@@ -288,7 +289,7 @@ The elastic net both selects variables and preserves the grouping effect (shrink
 H2O supports elastic net regularization, which is a combination of the $\ell_1$ and $\ell_2$ penalties parametrized by the $\alpha$ and $\lambda$ arguments (similar to \citetalias{glmnet}).
 \begin{itemize}
 \item $\alpha$ controls the elastic net penalty distribution between the $\ell_1$ and $\ell_2$ norms. It can have any value
-in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM using ridge regression. If $\alpha = 1$, the Lasso penalty is used.
+in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM using ridge regression. If $\alpha = 1$, the Lasso penalty is used. \nowidow[3]
 \item $\lambda$ controls the penalty strength. The range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
 all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. \end{itemize}
@@ -1008,7 +1009,7 @@ To determine the accuracy of your model:
 
 The following sections discuss some of the implementation choices in H2O's GLM.
 
-\subsection{Categorical variables}
+\subsection{Categorical Variables}
 
 When applying linear models to datasets with categorical variables, the usual approach is to expand the
 categoricals into a set of binary vectors, with one vector per each categorical level (e.g. by calling
@@ -1165,7 +1166,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \newpage
 
 \section{References}
-\bibliographystyle{plainnat}  %alphadin}
+\bibliographystyle{plainnat}  
 \nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
 %use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
 
