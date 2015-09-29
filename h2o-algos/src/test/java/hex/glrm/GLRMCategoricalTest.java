@@ -203,6 +203,7 @@ public class GLRMCategoricalTest extends TestUtil {
             parms._recover_svd = false;
             parms._seed = myseed;
             parms._verbose = false;
+            parms._max_iterations = 500;
 
             GLRM job = new GLRM(parms);
             try {
