@@ -91,6 +91,11 @@ function(e) {
   q("no",1,FALSE) #exit with nonzero exit code
 }
 
+SKIP<-
+function() {
+  q("no",42,FALSE) #exit with nonzero exit code
+}
+
 WARN<-
 function(w) {
   Log.warn(w)
