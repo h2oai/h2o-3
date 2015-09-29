@@ -988,6 +988,7 @@ public class GLMTest  extends TestUtil {
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._resDev, 1e-4);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._MSE * score1.numRows(), 1e-4);
+      score1.delete();
       mm.remove();
       res = model1.score(fr);
       // Build a POJO, validate same results
@@ -1410,7 +1411,6 @@ public class GLMTest  extends TestUtil {
     GLM job = null;
     GLMModel model = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
-    Frame score = null;
     try{
       Scope.enter();
       // R results
@@ -1437,13 +1437,13 @@ public class GLMTest  extends TestUtil {
       assertEquals(396.3, aic(model),1e-1);
       model.delete();
       // test scoring
-      score = model.score(fr);
+      model.score(fr).delete();
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
       assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
-      Frame score1 = model.score(fr);
+      model.score(fr).delete();
       mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
@@ -1481,7 +1481,7 @@ public class GLMTest  extends TestUtil {
       DKV.put(fr._key,fr);
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
-      score = model3.score(fr);
+      model3.score(fr).delete();
       mm3 = ModelMetrics.getFromDKV(model3,fr);
 
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
@@ -1493,9 +1493,8 @@ public class GLMTest  extends TestUtil {
       model4 = job.trainModel().get();
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,1e-4);
-      Frame fscore4 = model4.score(fr);
+      model4.score(fr).delete();
       ModelMetrics mm4 = ModelMetrics.getFromDKV(model4,fr);
-      fscore4.delete();
       assertEquals("mse don't match, " + mm3._MSE + " != " + mm4._MSE,mm3._MSE,mm4._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)mm3)._resDev + " != " + ((ModelMetricsBinomialGLM)mm4)._resDev,((ModelMetricsBinomialGLM)mm3)._resDev, ((ModelMetricsBinomialGLM)mm4)._resDev,1e-4);
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
@@ -1507,7 +1506,6 @@ public class GLMTest  extends TestUtil {
       if(model2 != null)model2.delete();
       if(model3 != null)model3.delete();
       if(model4 != null)model4.delete();
-      if(score != null)score.delete();
       if( job != null ) job.remove();
       Scope.exit();
     }

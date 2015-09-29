@@ -714,6 +714,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final byte _priority = nextThrPriority();
     @Override protected byte priority() { return _priority; }
 
+    Key[] _adapt_keys;          // List of Vec keys generated during dataset adaptation
+
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 
     private void doCleanup(){
@@ -724,12 +726,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       catch (Throwable t) {
         // nada
       }
-      if (null != _dinfo)
-        DKV.remove(_dinfo._key);
-      if(_validDinfo != null)
-        DKV.remove(_validDinfo._key);
-      if(_rowFilter != null)
-        _rowFilter.remove();
+      if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
+        for( Key k : _adapt_keys ) Keyed.remove(k);
+      if(_dinfo      != null) _dinfo     .remove();
+      if(_validDinfo != null) _validDinfo.remove();
+      if(_rowFilter  != null) _rowFilter .remove();
       if(_tInfos != null && _tInfos[0] != null) {
         if (_tInfos[0]._wVec != null)
           _tInfos[0]._wVec.remove();
@@ -770,7 +771,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     protected void compute2() {
+      Scope.enter();
       init(true);
+      _adapt_keys = Scope.pop();
       // GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
       if (error_count() > 0) {
         GLM.this.updateValidationMessages();
