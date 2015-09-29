@@ -1,7 +1,7 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
 #' Build a Deep Learning Neural Network
 #'
-#' Performs Deep Learning neural networks on an Frame
+#' Performs Deep Learning neural networks on an H2O Frame
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
@@ -343,9 +343,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
-#' @param data An Frame object.
+#' @param data An H2O Frame object.
 #' @param per_feature Whether to return the per-feature squared reconstruction error
-#' @return Returns an Frame object containing the
+#' @return Returns an H2O Frame object containing the
 #'         reconstruction MSE or the per-feature squared error.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
@@ -375,9 +375,9 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.
-#' @param data An Frame object.
+#' @param data An H2O Frame object.
 #' @param layer Index of the hidden layer to extract.
-#' @return Returns an Frame object with as many features as the
+#' @return Returns an H2O Frame object with as many features as the
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
 #' @examples

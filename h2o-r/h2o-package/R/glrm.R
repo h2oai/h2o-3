@@ -4,7 +4,6 @@
 #' Generalized low rank decomposition of a H2O dataset.
 #'
 #'
-#' @param training_frame An Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -12,7 +11,7 @@
 #'        between 1 and the number of columns in the training frame, inclusive.
 #' @param model_id (Optional) The unique id assigned to the resulting model. 
 #'        If none is given, an id will automatically be generated.
-#' @param validation_frame An Frame object containing the
+#' @param validation_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param loading_name (Optional) The unique name assigned to the loading matrix X
 #'        in the XY decomposition. Automatically generated if none is provided.
@@ -94,7 +93,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
   
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {

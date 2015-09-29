@@ -91,7 +91,7 @@ h2o.gbm <- function(x, y, training_frame,
     if( !is.null(dots$future) ) do_future <- TRUE
   }
 
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
