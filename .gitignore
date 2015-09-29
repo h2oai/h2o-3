@@ -54,6 +54,9 @@ py2/testdir_single_jvm/h2o_fc-nodes.json
 h2o-py/demos/.ipynb_checkpoints
 Rplots.pdf
 
+# Don't delete local R packages
+Rlibrary
+
 # Data folders
 bigdata/
 smalldata/
