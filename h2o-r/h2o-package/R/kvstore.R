@@ -30,6 +30,7 @@
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
     data <- .eval.frame(x[1:N,], TRUE)
     data <- as.data.frame(data)
+    colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
     .set(x,"data",data)
     .set(x,"types",lapply(res$columns, function(c) c$type))
     .set(x,"nrow",res$rows)
