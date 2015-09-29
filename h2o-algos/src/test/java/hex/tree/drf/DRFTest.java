@@ -1210,7 +1210,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/junit/cars.head10.csv");
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
       for (String s : new String[]{
               "name",
       }) {
@@ -1233,7 +1233,7 @@ public class DRFTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
-      assertEquals(0.4934239, mm.mse(), 1e-4);
+      assertEquals(0.12765426703095312, mm.mse(), 1e-4);
 
       job.remove();
     } finally {
