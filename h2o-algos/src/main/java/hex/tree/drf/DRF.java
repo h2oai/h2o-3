@@ -40,7 +40,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   // Called from an http request
-  public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF",parms); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF", parms); init(false); }
 
   @Override public DRFV3 schema() { return new DRFV3(); }
 
@@ -72,9 +72,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
       if (_nclass >= 2) _parms._distribution = Distribution.Family.multinomial;
     }
-    if (expensive) {
-      _initialPrediction = isClassifier() ? 0 : getInitialValue();
-    }
     if (_parms._sample_rate == 1f && _valid == null)
       error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
     if (hasOffsetCol())
@@ -84,28 +81,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
   }
 
-  /** Fill work columns:
-   *   - classification: set 1 in the corresponding wrk col according to row response
-   *   - regression:     copy response into work column (there is only 1 work column)
-   */
-  private class SetWrkTask extends MRTask<SetWrkTask> {
-    @Override public void map( Chunk chks[] ) {
-      Chunk cy = chk_resp(chks);
-      for( int i=0; i<cy._len; i++ ) {
-        if( cy.isNA(i) ) continue;
-        if (isClassifier()) {
-          int cls = (int)cy.at8(i);
-          chk_work(chks,cls).set(i,1L);
-        } else {
-          float pred = (float) cy.atd(i);
-          chk_work(chks,0).set(i,pred);
-        }
-      }
-    }
-  }
-
   // ----------------------
   private class DRFDriver extends Driver {
+    @Override protected boolean doOOBScoring() { return true; }
 
     // --- Private data handled only on master node
     // Classification or Regression:
@@ -131,66 +109,38 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       }
     }
 
-    @Override protected void buildModel() {
+    @Override protected void initializeModelSpecifics() {
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
               ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
-      // How many trees was in already in provided checkpointed model
-      int ntreesFromCheckpoint = _parms.hasCheckpoint() ?
-              ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees : 0;
-
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
+      _initialPrediction = isClassifier() ? 0 : getInitialValue();
       // Initialize TreeVotes for classification, MSE arrays for regression
       initTreeMeasurements();
-      // Append number of trees participating in on-the-fly scoring
-      _train.add("OUT_BAG_TREES", _response.makeZero());
-      // Prepare working columns
-      new SetWrkTask().doAll(_train);
-      // If there was a check point recompute tree_<_> and oob columns based on predictions from previous trees
-      // but only if OOB validation is requested.
-      if (_parms.hasCheckpoint()) {
-        Timer t = new Timer();
-        // Compute oob votes for each output level
-        new OOBScorer(_ncols, _nclass, numSpecialCols(), _parms._sample_rate, _model._output._treeKeys).doAll(_train);
-        Log.info("Reconstructing oob stats from checkpointed model took " + t);
-      }
 
-      // The RNG used to pick split columns
-      Random rand = createRNG(_parms._seed);
-      // To be deterministic get random numbers for previous trees and
-      // put random generator to the same state
-      for (int i = 0; i < ntreesFromCheckpoint; i++) rand.nextLong();
-
-      int tid;
-
-      // Prepare tree statistics
-      // Build trees until we hit the limit
-      for( tid=0; tid < _ntrees; tid++) { // Building tid-tree
-        if (tid!=0 || !_parms.hasCheckpoint()) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, true, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping ) {
-            doScoringAndSaveModel(true, true, _parms._build_tree_one_node);
-            return;             // Stop when approaching round-off error
+      /** Fill work columns:
+       *   - classification: set 1 in the corresponding wrk col according to row response
+       *   - regression:     copy response into work column (there is only 1 work column)
+       */
+      new MRTask() {
+        @Override public void map(Chunk chks[]) {
+          Chunk cy = chk_resp(chks);
+          for (int i = 0; i < cy._len; i++) {
+            if (cy.isNA(i)) continue;
+            if (isClassifier()) {
+              int cls = (int) cy.at8(i);
+              chk_work(chks, cls).set(i, 1L);
+            } else {
+              float pred = (float) cy.atd(i);
+              chk_work(chks, 0).set(i, pred);
+            }
           }
         }
-        // At each iteration build K trees (K = nclass = response column domain size)
-
-        // TODO: parallelize more? build more than k trees at each time, we need to care about temporary data
-        // Idea: launch more DRF at once.
-        Timer kb_timer = new Timer();
-        buildNextKTrees(rand);
-        Log.info((tid+1) + ". tree was built " + kb_timer.toString());
-        DRF.this.update(1);
-        if( !isRunning() ) return; // If canceled during building, do not bulkscore
-
-      }
-      doScoringAndSaveModel(true, true, _parms._build_tree_one_node);
+      }.doAll(_train);
     }
-
-
 
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
-    private void buildNextKTrees(Random rand) {
+    @Override protected void buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -198,9 +148,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Define a "working set" of leaf splits, from leafs[i] to tree._len for each tree i
       int[] leafs = new int[_nclass];
 
-      growTrees(ktrees, leafs, rand);
+      // Assign rows to nodes - fill the "NIDs" column(s)
+      growTrees(ktrees, leafs, _rand);
 
-      // Move rows into the final leaf rows
+      // Move rows into the final leaf rows - fill "Tree" and OUT_BAG_TREES columns and zap the NIDs column
       CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(_train,_parms._build_tree_one_node);
 
       if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree

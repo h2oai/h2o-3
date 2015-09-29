@@ -43,7 +43,9 @@ public class ChunkSpeedTest extends TestUtil {
       Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
     }
     raw();
+    rawInverted();
     chunks();
+    chunksInverted();
     bulk();
   }
 
@@ -69,6 +71,26 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("");
   }
 
+  void rawInverted()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      for (int i = 0; i < rows; ++i) {
+        for (int j=0; j<cols; ++j) {
+          sum += raw[j][i];
+        }
+      }
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    Log.info("Data size: " + PrettyPrint.bytes(rows * cols * 8));
+    Log.info("Time to access raw double[] inverted: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
   void chunks()
   {
     long start = 0;
@@ -90,6 +112,30 @@ public class ChunkSpeedTest extends TestUtil {
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time to access via atd(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
+  void chunksInverted()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      for (int i = 0; i < rows; ++i) {
+        for (int j=0; j<cols; ++j) {
+          sum += chunks[j].atd(i);
+        }
+      }
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time to access via inverted atd(): " + PrettyPrint.msecs(done - start, true));
     Log.info("");
   }
 

@@ -167,12 +167,18 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
         double w = weight.atd(row);
         if (w == 0) continue;
+        double resp = wrks.atd(row);
         assert !Double.isNaN(wrks.atd(row)); // Already marked as sampled-away
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-        //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
-        for( int col : sCols ) { // For tracked cols
-          nhs[col].incr((float) chks[col].atd(row), wrks.atd(row), w); // Histogram row/col
+        if (sCols == null) {
+          for(int col=0; col<nhs.length; ++col ) { //all columns
+            if (nhs[col]!=null)
+              nhs[col].incr((float) chks[col].atd(row), resp, w); // Histogram row/col
+          }
+        } else {
+          for( int col : sCols )
+            nhs[col].incr((float) chks[col].atd(row), resp, w); // Histogram row/col
         }
       }
     }
@@ -249,9 +255,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           double resp = wrks.atd(row); // fitting target (residual)
+          double wy = w*resp;
           bins[b] += w;                // Bump count in bin
-          sums[b] += w*resp;
-          ssqs[b] += w*resp*resp;
+          sums[b] += wy;
+          ssqs[b] += wy*resp;
         }
 
         // Add all the data into the Histogram (atomically add)
