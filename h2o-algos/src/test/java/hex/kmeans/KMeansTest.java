@@ -516,7 +516,10 @@ public class KMeansTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (kmeans != null) kmeans.delete();
+      if (kmeans != null) {
+        kmeans.deleteCrossValidationModels();
+        kmeans.delete();
+      }
       Scope.exit();
     }
   }

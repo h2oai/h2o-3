@@ -925,7 +925,10 @@ public class DRFTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (drf != null) drf.delete();
+      if (drf != null) {
+        drf.deleteCrossValidationModels();
+        drf.delete();
+      }
       Scope.exit();
     }
   }
@@ -965,7 +968,10 @@ public class DRFTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (drf != null) drf.delete();
+      if (drf != null) {
+        drf.deleteCrossValidationModels();
+        drf.delete();
+      }
       Scope.exit();
     }
   }
@@ -1010,8 +1016,14 @@ public class DRFTest extends TestUtil {
       job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
-      if (drf1 != null) drf1.delete();
-      if (drf2 != null) drf2.delete();
+      if (drf1 != null) {
+        drf1.deleteCrossValidationModels();
+        drf1.delete();
+      }
+      if (drf2 != null) {
+        drf2.deleteCrossValidationModels();
+        drf2.delete();
+      }
       Scope.exit();
     }
   }
@@ -1108,7 +1120,10 @@ public class DRFTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (drf != null) drf.delete();
+      if (drf != null) {
+        drf.deleteCrossValidationModels();
+        drf.delete();
+      }
       Scope.exit();
     }
   }
@@ -1156,8 +1171,14 @@ public class DRFTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
-      if (drf1 != null) drf1.delete();
-      if (drf2 != null) drf2.delete();
+      if (drf1 != null) {
+        drf1.deleteCrossValidationModels();
+        drf1.delete();
+      }
+      if (drf2 != null) {
+        drf2.deleteCrossValidationModels();
+        drf2.delete();
+      }
       Scope.exit();
     }
   }
@@ -1197,7 +1218,10 @@ public class DRFTest extends TestUtil {
       } finally {
         if (tfr != null) tfr.remove();
         if (old != null) old.remove();
-        if (drf1 != null) drf1.delete();
+        if (drf1 != null) {
+          drf1.deleteCrossValidationModels();
+          drf1.delete();
+        }
         Scope.exit();
       }
     }
