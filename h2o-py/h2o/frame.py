@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
-import astfun
+from astfun import _bytecode_deparse_lambda
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
@@ -1341,23 +1341,21 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
 
-  def apply(self, fun=None, axis=2):
+  def apply(self, fun=None, axis=0):
     """
     Apply a lambda expression to an H2OFrame.
 
-    :param fun: A lambda expression to be applied per row or per column.
-    :param axis: If axis==2, then apply the lambda to columns, if 1 apply to rows.
+    :param fun: A lambda expression to be applied per row or per column
+    :param axis: 0: apply to each column; 1: apply to each row
     :return: An H2OFrame
     """
-    if axis not in [1,2]:
-      raise ValueError("margin must be either 1 (rows) or 2 (cols).")
+    if axis not in [0,1]:
+      raise ValueError("margin must be either 0 (cols) or 1 (rows).")
     if fun is None:
       raise ValueError("No function to apply.")
     if isinstance(fun, type(lambda:0)) and fun.__name__ == (lambda:0).__name__:  # have lambda
-      syntax_tree = ast.parse(inspect.getsource(fun))
-      Lambda = syntax_tree.body[0].value.args[0]
-      res = astfun._ast_deparse(Lambda)
-      return H2OFrame(expr=ExprNode("apply",self,axis,*res))
+      res = _bytecode_deparse_lambda(fun.func_code)
+      return H2OFrame(expr=ExprNode("apply",self, 1+(axis==0),*res))
     else:
       raise ValueError("unimpl: not a lambda")
 

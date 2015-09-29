@@ -19,69 +19,69 @@ public class RapidsTest extends TestUtil {
 
   @Test public void bigSlice() {
     // check that large slices do something sane
-    String tree = "(rows %a.hex [0:2147483647])";
+    String tree = "(rows a.hex [0:2147483647])";
     checkTree(tree);
   }
 
   @Test public void test1() {
     // Checking `hex + 5`
-    String tree = "(+ %a.hex #5)";
+    String tree = "(+ a.hex #5)";
     checkTree(tree);
   }
 
   @Test public void test2() {
     // Checking `hex + 5 + 10`
-    String tree = "(+ %a.hex (+ #5 #10))";
+    String tree = "(+ a.hex (+ #5 #10))";
     checkTree(tree);
   }
 
   @Test public void test3() {
     // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-    String tree = "(+ (- (+ %a.hex #5) (* #1 %a.hex)) (* #15 (/ #23 %a.hex)))";
+    String tree = "(+ (- (+ a.hex #5) (* #1 a.hex)) (* #15 (/ #23 a.hex)))";
     checkTree(tree);
   }
 
   @Test public void test4() {
     //Checking `hex == 5`, <=, >=, <, >, !=
-    String tree = "(== %a.hex #5)";
+    String tree = "(== a.hex #5)";
     checkTree(tree);
-    tree = "(<= %a.hex #5)";
+    tree = "(<= a.hex #5)";
     checkTree(tree);
-    tree = "(>= %a.hex #1.25132)";
+    tree = "(>= a.hex #1.25132)";
     checkTree(tree);
-    tree = "(< %a.hex #112.341e-5)";
+    tree = "(< a.hex #112.341e-5)";
     checkTree(tree);
-    tree = "(> %a.hex #0.0123)";
+    tree = "(> a.hex #0.0123)";
     checkTree(tree);
-    tree = "(!= %a.hex #0)";
+    tree = "(!= a.hex #0)";
     checkTree(tree);
   }
   @Test public void test4_throws() {
-    String tree = "(== %a.hex (cols a.hex [1 2]))";
+    String tree = "(== a.hex (cols a.hex [1 2]))";
     checkTree(tree,true);
   }
   
   @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
-    String tree = "(&& %a.hex %a.hex)";
+    String tree = "(&& a.hex a.hex)";
     checkTree(tree);
-    tree = "(|| %a.hex %a.hex)";
+    tree = "(|| a.hex a.hex)";
     checkTree(tree);
-    tree = "(& %a.hex %a.hex)";
+    tree = "(& a.hex a.hex)";
     checkTree(tree);
-    tree = "(| %a.hex %a.hex)";
+    tree = "(| a.hex a.hex)";
     checkTree(tree);
   }
 
   @Test public void test6() {
     // Checking `hex[,1]`
-    String tree = "(cols %a.hex [0])";
+    String tree = "(cols a.hex [0])";
     checkTree(tree);
     // Checking `hex[1,5]`
-    tree = "(rows (cols %a.hex [0]) [5])";
+    tree = "(rows (cols a.hex [0]) [5])";
     checkTree(tree);
     // Checking `hex[c(1:5,7,9),6]`
-    tree = "(cols (rows %a.hex [0:4 6 7]) [0])";
+    tree = "(cols (rows a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[c(8,1,1,7),1]`
     tree = "(rows a.hex [8 1 1 7])";
@@ -91,19 +91,19 @@ public class RapidsTest extends TestUtil {
   @Test public void testRowAssign() {
     String tree;
     // Assign column 3 over column 0
-    tree = "(= %a.hex (cols %a.hex [3]) 0 [0:150])";
+    tree = "(= a.hex (cols a.hex [3]) 0 [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0
-    tree = "(= %a.hex 17 [0] [0:150])";
+    tree = "(= a.hex 17 [0] [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0, row 5
-    tree = "(= %a.hex 17 [0] [5])";
+    tree = "(= a.hex 17 [0] [5])";
     checkTree(tree);
 
     // Append 17
-    tree = "(= %a.hex 17 [4] [0:150])";
+    tree = "(= a.hex 17 [4] [0:150])";
     checkTree(tree);
   }
 
@@ -115,7 +115,7 @@ public class RapidsTest extends TestUtil {
     tree = "({var1 . (* var1 var2)} 3)";
     checkTree(tree,true);
     // Compute 3* a.hex[0,0]
-    tree = "({var1 . (* var1 (rows %a.hex [0]))} 3)";
+    tree = "({var1 . (* var1 (rows a.hex [0]))} 3)";
     checkTree(tree);
 
     // Some more horrible functions.  Drop the passed function and return a 3
@@ -279,7 +279,7 @@ public class RapidsTest extends TestUtil {
                                       ard(3.383532e-04),
                                       ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
-      String x = String.format("(quantile %%%s %s \"interpolate\")", fr._key, Arrays.toString(probs));
+      String x = String.format("(quantile %s %s \"interpolate\")", fr._key, Arrays.toString(probs));
       Val val = Exec.exec(x);
       fr.delete();
       f = val.getFrame();

@@ -13,13 +13,15 @@ import water.fvec.Chunk;
  * <p>It prepares voter per tree and also marks
  * rows which were consider out-of-bag.</p>
  */
-/* package */ public class OOBScorer extends DTreeScorer<OOBScorer> {
+/* package */ public class ReconstructTreeState extends DTreeScorer<ReconstructTreeState> {
 
   /* @IN */ final protected float _rate;
+  /* @IN */ final protected boolean _oob;
 
-  public OOBScorer(int ncols, int nclass, int skip, float rate, Key[][] treeKeys) {
+  public ReconstructTreeState(int ncols, int nclass, int skip, float rate, Key[][] treeKeys, boolean oob) {
     super(ncols,nclass,skip,treeKeys);
     _rate = rate;
+    _oob = oob;
   }
 
   @Override public void map(Chunk[] chks) {
@@ -32,7 +34,8 @@ import water.fvec.Chunk;
       // OOB RNG for this tree
       Random rng = rngForTree(_trees[tidx], coobt.cidx());
       for (int row=0; row<coobt._len; row++) {
-        if( rng.nextFloat() >= _rate || Double.isNaN(cys.atd(row)) ) {
+        boolean sampleRow = _oob ? rng.nextFloat() >= _rate || Double.isNaN(cys.atd(row)) : false;
+        if( !_oob || sampleRow) {
           // Make a prediction
           for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row);
           Arrays.fill(preds, 0);
@@ -44,14 +47,15 @@ import water.fvec.Chunk;
             if (preds[1+c] != 0) {
               Chunk ctree = chk_tree(chks, c);
               long count = coobt.at8(row);
-              if (_nclass >= 2)
+              if (_oob && _nclass >= 2)
                 ctree.set(row, (float) (ctree.atd(row)*count + prediction)/(count+1)); //store avg prediction
               else
                 ctree.set(row, (float) (ctree.atd(row) + prediction));
             }
           }
           // Mark oob row and store number of trees voting for this row
-          coobt.set(row, coobt.atd(row)+1);
+          if (sampleRow)
+            coobt.set(row, coobt.atd(row)+1);
         }
       }
     }

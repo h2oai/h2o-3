@@ -1036,11 +1036,11 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   learn_rate : float
     An integer from 0.0 to 1.0
   nbins : int
-    For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+    For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
   nbins_top_level : int
-    For numerical columns (real/int), build a histogram of (at least) this many bins at the root level, then decrease by factor of two per level.
+    For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
   nbins_cats : int
-    For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+    For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
   validation_frame : H2OFrame
     An H2OFrame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when nfolds = 0
   balance_classes : bool
@@ -1267,11 +1267,11 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
   min_rows : int
     Minimum number of rows to assign to teminal nodes.
   nbins : int
-    For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+    For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
   nbins_top_level : int
-    For numerical columns (real/int), build a histogram of (at least) this many bins at the root level, then decrease by factor of two per level.
+    For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
   nbins_cats : int
-    For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+    For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
   binomial_double_trees : bool
     or binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
   validation_frame : H2OFrame

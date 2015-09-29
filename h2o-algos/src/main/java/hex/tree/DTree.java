@@ -255,25 +255,26 @@ public class DTree extends Iced {
   // with other histograms) in a single pass over the data.  Does not contain
   // any split-decision.
   public static class UndecidedNode extends Node {
-    public transient DHistogram[] _hs;
+    public transient DHistogram[] _hs; //(up to) one histogram per column
     public final int _scoreCols[];      // A list of columns to score; could be null for all
     public UndecidedNode( DTree tree, int pid, DHistogram[] hs ) {
       super(tree,pid);
       assert hs.length==tree._ncols;
-      _scoreCols = scoreCols(_hs=hs);
+      _hs = hs; //these histograms have no bins yet (just constructed)
+      _scoreCols = scoreCols();
     }
 
     // Pick a random selection of columns to compute best score.
     // Can return null for 'all columns'.
-    public int[] scoreCols( DHistogram[] hs ) {
+    public int[] scoreCols() {
       DTree tree = _tree;
-      if (tree._mtrys == hs.length) return null;
-      int[] cols = new int[hs.length];
+      if (tree._mtrys == _hs.length) return null;
+      int[] cols = new int[_hs.length];
       int len=0;
       // Gather all active columns to choose from.
-      for( int i=0; i<hs.length; i++ ) {
-        if( hs[i]==null ) continue; // Ignore not-tracked cols
-        assert hs[i]._min < hs[i]._maxEx && hs[i].nbins() > 1 : "broken histo range "+hs[i];
+      for( int i=0; i<_hs.length; i++ ) {
+        if( _hs[i]==null ) continue; // Ignore not-tracked cols
+        assert _hs[i]._min < _hs[i]._maxEx && _hs[i].nbins() > 1 : "broken histo range "+_hs[i];
         cols[len++] = i;        // Gather active column
       }
       int choices = len;        // Number of columns I can choose from

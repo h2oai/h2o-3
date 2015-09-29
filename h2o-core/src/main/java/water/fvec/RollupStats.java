@@ -259,6 +259,7 @@ class RollupStats extends Iced {
   }
 
   static void start(final Vec vec, Futures fs, boolean computeHisto) {
+    if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = getOrNull(vec);
     if(rs == null || computeHisto && !rs.hasHisto())

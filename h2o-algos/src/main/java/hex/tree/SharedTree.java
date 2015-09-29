@@ -2,7 +2,6 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
-
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -44,6 +43,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Sum of variable empirical improvement in squared-error.  The value is not scaled.
   private transient float[/*nfeatures*/] _improvPerVar;
+
+  protected Random _rand;
 
   public boolean isSupervised(){return true;}
 
@@ -222,14 +223,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         for( int i=0; i<_nclass; i++ )
           _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
 
+        // Append number of trees participating in on-the-fly scoring
+        _train.add("OUT_BAG_TREES", _response.makeZero());
+
         // Tag out rows missing the response column
         new ExcludeNAResponse().doAll(_train);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
+        _rand = createRNG(_parms._seed);
 
-        // Sub-class tree-model-builder specific build code
-        buildModel();
+        initializeModelSpecifics();
+        resumeFromCheckpoint();
+        scoreAndBuildTrees(doOOBScoring());
+
         done();                 // Job done!
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
@@ -255,7 +262,49 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Abstract classes implemented by the tree builders
     abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_valid );
-    abstract protected void buildModel();
+    abstract protected boolean doOOBScoring();
+    abstract protected void buildNextKTrees();
+    abstract protected void initializeModelSpecifics();
+
+    // Common methods for all tree builders
+
+    /**
+     * Restore the workspace from a previous model (checkpoint)
+     */
+    protected final void resumeFromCheckpoint() {
+      if( !_parms.hasCheckpoint() ) return;
+      // Reconstruct the working tree state from the checkpoint
+      Timer t = new Timer();
+      int ntreesFromCheckpoint = ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees;
+      new ReconstructTreeState(_ncols, _nclass, numSpecialCols(), _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train, _parms._build_tree_one_node);
+      for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
+      Log.info("Reconstructing OOB stats from checkpoint took " + t);
+    }
+
+    /**
+     * Build more trees, as specified by the model parameters
+     * @param oob Whether or not Out-Of-Bag scoring should be performed
+     */
+    protected final void scoreAndBuildTrees(boolean oob) {
+      for( int tid=0; tid< _ntrees; tid++) {
+        // During first iteration model contains 0 trees, then 1-tree, ...
+        // No need to score a checkpoint with no extra trees added
+        if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
+          double training_r2 = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
+          if( training_r2 >= _parms._r2_stopping ) {
+            doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
+            return;             // Stop when approaching round-off error
+          }
+        }
+        Timer kb_timer = new Timer();
+        buildNextKTrees();
+        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+        update(1);
+        if( !isRunning() ) return; // If canceled during building, do not bulkscore
+      }
+      // Final scoring (skip if job was cancelled)
+      doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
+    }
 
     /** Performs deep clone of given model.
      *
@@ -271,7 +320,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Key[][] treeKeys = newModel._output._treeKeys;
       for (int i = 0; i < treeKeys.length; i++) {
         for (int j = 0; j < treeKeys[i].length; j++) {
-          if (treeKeys[i][j] == null) continue;;
+          if (treeKeys[i][j] == null) continue;
           CompressedTree ct = DKV.get(treeKeys[i][j]).get();
           CompressedTree newCt = IcedUtils.clone(ct, CompressedTree.makeTreeKey(i, j), true);
           treeKeys[i][j] = newCt._key;
@@ -459,7 +508,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   transient long _timeLastScoreStart, _timeLastScoreEnd, _firstScore;
-  protected double doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
+  protected final double doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
     double training_r2 = Double.NaN; // Training R^2 value, if computed
     long now = System.currentTimeMillis();
     if( _firstScore == 0 ) _firstScore=now;
