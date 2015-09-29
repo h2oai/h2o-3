@@ -1,15 +1,15 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
 #' Build a Deep Learning Neural Network
 #'
-#' Performs Deep Learning neural networks on an Frame
+#' Performs Deep Learning neural networks on an H2O Frame
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param training_frame An Frame object containing the variables in the model.
+#' @param training_frame An H2O Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
-#' @param validation_frame (Optional) An Frame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
+#' @param validation_frame An H2O Frame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -118,7 +118,7 @@
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
-                             validation_frame,
+                             validation_frame = NULL,
                              checkpoint,
                              autoencoder = FALSE,
                              use_all_factor_levels = TRUE,
@@ -183,13 +183,13 @@ h2o.deeplearning <- function(x, y, training_frame,
                              keep_cross_validation_predictions = FALSE)
 {
 
-  # Training_frame and validation_frame may be a key or an Frame object
+  # Training_frame and validation_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  if (!missing(validation_frame)) {
+  if (!is.null(validation_frame)) {
     if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
@@ -345,9 +345,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
-#' @param data An Frame object.
+#' @param data An H2O Frame object.
 #' @param per_feature Whether to return the per-feature squared reconstruction error
-#' @return Returns an Frame object containing the
+#' @return Returns an H2O Frame object containing the
 #'         reconstruction MSE or the per-feature squared error.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
@@ -377,9 +377,9 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.
-#' @param data An Frame object.
+#' @param data An H2O Frame object.
 #' @param layer Index of the hidden layer to extract.
-#' @return Returns an Frame object with as many features as the
+#' @return Returns an H2O Frame object with as many features as the
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
 #' @examples

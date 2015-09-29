@@ -1145,7 +1145,7 @@ public class Vec extends Keyed<Vec> {
 
   /** Transform this vector to strings.  If the
    *  vector is categorical an identity transformation vector is returned.
-   *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
+   *  Transformation is done by a {@link Categorical2StrChkTask} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new String Vec  */
   public Vec toStringVec() {

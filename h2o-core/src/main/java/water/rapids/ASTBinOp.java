@@ -238,12 +238,14 @@ abstract class ASTBinOp extends ASTPrim {
 class ASTAnd  extends ASTBinOp { public String str() { return "&" ; } double op( double l, double r ) { return ASTLAnd.and_op(l,r); } }
 class ASTDiv  extends ASTBinOp { public String str() { return "/" ; } double op( double l, double r ) { return l/r;}}
 class ASTMod  extends ASTBinOp { public String str() { return "mod";} double op( double l, double r ) { return l%r;}}
+class ASTModR extends ASTBinOp { public String str() { return "%%"; } double op( double l, double r ) { return l%r;}} // Language R mod operator
 class ASTMul  extends ASTBinOp { public String str() { return "*" ; } double op( double l, double r ) { return l*r;}}
 class ASTOr   extends ASTBinOp { public String str() { return "|" ; } double op( double l, double r ) { return ASTLOr . or_op(l,r); } }
 class ASTPlus extends ASTBinOp { public String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
 class ASTPow  extends ASTBinOp { public String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
 class ASTSub  extends ASTBinOp { public String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
 class ASTIntDiv extends ASTBinOp { public String str() { return "intDiv"; } double op(double l, double r) { return (int)l/(int)r;}}
+class ASTIntDivR extends ASTBinOp { public String str() { return "%/%"; } double op(double l, double r) { return (int)(l/r);}} // Language R intdiv op
 
 class ASTRound extends ASTBinOp { 
   public String str() { return "round"; }

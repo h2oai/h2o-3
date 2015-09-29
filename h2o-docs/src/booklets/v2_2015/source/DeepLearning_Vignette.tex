@@ -1,8 +1,4 @@
 % TO DO:
-% (X) Update maxout formula
-% (X) Update loss functions for Absolute and Huber in Table 2
-% (X) Starting with this section, use algorithm mode to outline algos like SGD
-% (X) Appendix parameters:  Add notes on acceptable ranges.  ie.  rho in [0,1]?
 % Are there any parameters that should be marked as Optional or Experimental?
 
 
@@ -113,7 +109,15 @@ Printed in the United States of America.
 
 \section{Introduction}
 This document introduces the reader to Deep Learning with H2O.  Examples are written in R and Python.
-The reader is walked through the installation of H2O, basic deep learning concepts, building deep neural nets in H2O, how to interpret model output, how to make predictions, and various implementation details.
+Topics include: 
+\begin{itemize}
+\item installation of H2O
+\item basic deep learning concepts
+\item building deep neural nets in H2O
+\item how to interpret model output
+\item how to make predictions
+\end{itemize}
+as well as various implementation details.
 
 \input{common/what_is_h2o.tex}
 
@@ -657,6 +661,7 @@ To restart training in R using a checkpoint model, use the following:
 \newpage
 \waterExampleInPython
 For the Python example, we will use the original ``trial run'' model previously trained as the checkpoint model.
+\medskip
 \lstinputlisting[style=python]{deeplearning/deeplearning_checkpoint.py}
 
 \noindent
@@ -664,10 +669,12 @@ Checkpointing can also be used to reload existing models that were saved to disk
 
 \waterExampleInR
 To save a model in R, use the following: 
+\medskip
 \lstinputlisting[style=R]{deeplearning/deeplearning_savemodel.R}
 
 \waterExampleInPython
 To save a model in Python, use the following: 
+\medskip
 \lstinputlisting[style=python]{deeplearning/deeplearning_savemodel.py}
 
 
@@ -801,7 +808,7 @@ Logical indicates the parameter requires a value of either \texttt{TRUE} or \tex
 
 \item \texttt{hidden}: Specifies the number and size of each hidden layer in the model. For example, if \texttt{c(100,200,100)} is specified, a model with 3 hidden layers is generated. The middle hidden layer will have 200 neurons and the first and third hidden layers will have 100 neurons each. The default is \texttt{c(200,200)}. For grid search, use the following format: \texttt{list(c(10,10), c(20,20))}. Refer to the section on  \nameref{ssec:TrialRun} for more details. 
 
-\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts . The default is 10.
+\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 10.
 
 \item \texttt{train\_samples\_per\_iteration}: Specifies the number of training samples (globally) per MapReduce iteration. The following special values are also supported: 
 \begin{itemize}
@@ -849,7 +856,7 @@ Refer to \nameref{sssec:AdaptiveLearning} for more details.
 
 \item \texttt{initial\_weight\_scale}: Specifies the scale of the distribution function for uniform or normal distributions. For uniform distributions, the values are drawn uniformly from \texttt{initial\_weight\_scale, \\ initial\_weight\_scale}. For normal distributions, the values are drawn from a normal distribution with a standard deviation of \\ \texttt{initial\_weight\_scale}. The default is 1. Refer to \nameref{sssec:Initialization} for more details.
 
-\item \texttt{loss}: Specifies the loss option: \texttt{Automatic, CrossEntropy} (classification only), \texttt{MeanSquare, Absolute}, or \texttt{Huber}. The default is \texttt{Automatic}. Refer to \nameref{sssec:ActivationLoss} for more details.
+\item \texttt{loss}: Specifies the loss option: \texttt{Automatic, CrossEntropy} (classification only), \texttt{Quadratic, Absolute}, or \texttt{Huber}. The default is \texttt{Automatic}. Refer to \nameref{sssec:ActivationLoss} for more details.
 
 \item \texttt{distribution}: Specifies the distribution function of the response: \texttt{AUTO, bernoulli, multinomial, poisson, gamma, \\ tweedie, laplace, huber,} or \texttt{gaussian}. 
 
@@ -979,11 +986,28 @@ The default is 0, which disables cross-validation.
 
 \end{itemize}
 \newpage
-\input{common/further_info.tex}
-
-
 
 \section{References}
+\bibliographystyle{plainnat}  
+
+\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
+
+\bibentry{h2osite}
+
+\bibentry{h2odocs}
+
+\bibentry{h2ogithubrepo}
+
+\bibentry{h2odatasets}
+
+\bibentry{h2ojira}
+
+\bibentry{stream}
+
+\bibentry{rdocs}
+
+
 
 %%\textbf{H2O Training}:    {\url{http://learn.h2o.ai/}}
 
@@ -993,61 +1017,49 @@ The default is 0, which disables cross-validation.
  
 {\url{https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/booklets/v2_2015/source/deeplearning}}
 
-\bigskip
 
 
 \textbf{H2O open-source support}:   {\url{h2ostream@googlegroups.com} and \\ \url{https://groups.google.com/forum/#!forum/h2ostream}}
 
-\bigskip
 
 \textbf{H2O YouTube Channel}: 
 
 {\url{https://www.youtube.com/user/0xdata}}
 
-\bigskip
 
 
 \textbf{Learning Deep Architectures for AI}. Bengio, Yoshua, 2009. \\
  {\url{http://www.iro.umontreal.ca/~lisa/pointeurs/TR1312.pdf}}
 
-\bigskip
 
 \textbf{Efficient BackProp}.  {LeCun et al, 1998}. {\url{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}}
 
-\bigskip
 
 \textbf{Maxout Networks}. {Goodfellow et al, 2013}.  {\url{http://arxiv.org/pdf/1302.4389.pdf}}
 
-\bigskip
 
 \textbf{HOGWILD!: A Lock-Free Approach to Parallelizing Stochastic Gradient \\ Descent}. 
 {Niu et al, 2011}.  \\ {\url{http://i.stanford.edu/hazy/papers/hogwild-nips.pdf}}
 
-\bigskip
 
 \textbf{Improving neural networks by preventing co-adaptation of feature detectors}.  \\
 {Hinton et al., 2012}.  \url{http://arxiv.org/pdf/1207.0580.pdf}
 
-\bigskip
 
 \textbf{On the importance of initialization and momentum in deep learning}.  {Sutskever et al, 2014}.  \url{http://www.cs.toronto.edu/~fritz/absps/momentum.pdf}
 
-\bigskip
 
 \textbf{ADADELTA: An Adaptive Learning Rate Method}. {Zeiler, 2012}.  \\
  \url{http://arxiv.org/pdf/1212.5701v1.pdf}
 
-\bigskip
 
 \textbf{{MNIST database.}}  \url{http://yann.lecun.com/exdb/mnist/}
 
-\bigskip
 
 \textbf{Reducing the Dimensionality of
 Data with Neural Networks}.  {Hinton et al, 2006}. \\
  \url{http://www.cs.toronto.edu/~hinton/science.pdf}
 
-\bigskip
 
 \textbf{Definitive Performance Tuning Guide for Deep Learning}. \url{http://h2o.ai/blog/2015/08/deep-learning-performance/}
 

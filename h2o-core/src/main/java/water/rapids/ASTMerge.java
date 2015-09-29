@@ -14,6 +14,13 @@ import java.util.Arrays;
  *  you want to join on a subset of identical names, rename the columns first
  *  (otherwise the same column name would appear twice in the result).
  *
+ *  If the client side wants to allow named columns to be merged, the client
+ *  side is reponsible for renaming columns as needed to bring the names into
+ *  alignment as above.  This can be as simple as renaming the RHS to match the
+ *  LHS column names.  Duplicate columns NOT part of the merge are still not
+ *  allowed - because the resulting Frame will end up with duplicate column
+ *  names which blows a Frame invariant (uniqueness of column names).
+ *
  *  If allLeftFlag is true, all rows in the leftFrame will be included, even if
  *  there is no matching row in the rightFrame, and vice-versa for
  *  allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
@@ -22,6 +29,12 @@ public class ASTMerge extends ASTPrim {
   @Override public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
   @Override public String str(){ return "merge";}
   @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
+
+  // Size cutoff before switching between a hashed-join vs a sorting join.
+  // Hash tables beyond this count are assumed to be inefficient, and we're
+  // better served by sorting all the join columns and doing a global
+  // merge-join.
+  static final int MAX_HASH_SIZE = 100000000;
 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
@@ -70,9 +83,9 @@ public class ASTMerge extends ASTPrim {
     Frame hashed = walkLeft ? r : l;
     if( !walkLeft ) { boolean tmp = allLeft;  allLeft = allRite;  allRite = tmp; }
 
-    // Build categorical mappings, to rapidly convert categoricals from the distributed set
-    // to the hashed & replicated set.
-    int[][]   id_maps = new int[ncols][];
+    // Build categorical mappings, to rapidly convert categoricals from the
+    // distributed set to the hashed & replicated set.
+    int[][] id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
       if( lv.isCategorical() ) {
@@ -88,11 +101,15 @@ public class ASTMerge extends ASTPrim {
     // Build the hashed version of the hashed frame.  Hash and equality are
     // based on the known-integer key columns.  Duplicates are either ignored
     // (!allRite) or accumulated, and can force replication of the walked set.
+    //
+    // Count size of this hash table as-we-go.  Bail out if the size exceeds
+    // a known threshold, and switch a sorting join instead of a hashed join.
     final MergeSet ms = new MergeSet(ncols,id_maps,allRite).doAll(hashed);
     final Key uniq = ms._uniq;
     IcedHashMap<Row,String> rows = MergeSet.MERGE_SETS.get(uniq)._rows;
     new MRTask() { @Override public void setupLocal() { MergeSet.MERGE_SETS.remove(uniq);  } }.doAllNodes();
-
+    if( rows == null )          // Blew out hash size; switch to a sorting join
+      return sortingMerge(walked,hashed,allLeft,allRite,ncols,id_maps);
 
     // All of the walked set, and no dup handling on the right - which means no
     // need to replicate rows of the walked dataset.  Simple 1-pass over the
@@ -121,6 +138,26 @@ public class ASTMerge extends ASTPrim {
       return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(walked.numCols()+hashed.numCols()-ncols,walked).outputFrame(names,domains));
     } 
 
+    throw H2O.unimpl();
+  }
+
+  /** Use a sorting merge/join, probably because the hash table size exceeded
+   *  MAX_HASH_SIZE; i.e. the number of unique keys in the hashed Frame exceeds
+   *  MAX_HASH_SIZE.  Join is done on the first ncol columns in both frames,
+   *  which are already known to be not-null and have matching names and types.
+   *  The walked and hashed frames are sorted according to allLeft; if allRite
+   *  is set then allLeft will also be set (but not vice-versa).
+   *
+   *  @param walked is the LHS frame; not-null.
+   *  @param hashed is the RHS frame; not-null.
+   *  @param allLeft all rows in the LHS frame will appear in the result frame.
+   *  @param allRite all rows in the RHS frame will appear in the result frame.
+   *  @param ncols is the number of columns to join on, and these are ordered
+   *  as the first ncols of both the left and right frames.  
+   *  @param id_maps if not-null denote simple integer mappings from one
+   *  categorical column to another; the width is ncols
+   */
+  private ValFrame sortingMerge( Frame walked, Frame hashed, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
     throw H2O.unimpl();
   }
 
@@ -174,13 +211,16 @@ public class ASTMerge extends ASTPrim {
   // Build a HashSet of one entire Frame, where the Key is the contents of the
   // first few columns.  One entry-per-row.
   private static class MergeSet extends MRTask<MergeSet> {
-    // All active Merges have a per-Node hashset of one of the datasets
+    // All active Merges have a per-Node hashset of one of the datasets.  If
+    // this is missing, it means the HashMap exceeded the size bounds and the
+    // whole MergeSet is being aborted (gracefully) - and the Merge is
+    // switching to a sorting merge instead of a hashed merge.
     static IcedHashMap<Key,MergeSet> MERGE_SETS = new IcedHashMap<>();
     final Key _uniq;      // Key to allow sharing of this MergeSet on each Node
     final int _ncols;     // Number of leading columns for the Hash Key
-    final int[][] _id_maps;
-    final boolean _allRite;
-    boolean _dup;
+    final int[][] _id_maps; // Rapid mapping between matching enums
+    final boolean _allRite; // Collect all rows with the same matching Key, or just the first
+    boolean _dup;           // Dups are present at all
     IcedHashMap<Row,String> _rows;
 
     MergeSet( int ncols, int[][] id_maps, boolean allRite ) { 
@@ -193,12 +233,15 @@ public class ASTMerge extends ASTPrim {
     }
 
     @Override public void map( Chunk chks[] ) {
-      final IcedHashMap<Row,String> rows = _rows; // Shared per-node hashset
+      final IcedHashMap<Row,String> rows = MERGE_SETS.get(_uniq)._rows; // Shared per-node HashMap
+      if( rows == null ) return; // Missing: Aborted due to exceeding size
       final int len = chks[0]._len;
       Row row = new Row(_ncols);
-      for( int i=0; i<len; i++ )                  // For all rows
-        if( add(rows,row.fill(chks,_id_maps,i)) ) // Fill & attempt add row
+      for( int i=0; i<len; i++ )                    // For all rows
+        if( add(rows,row.fill(chks,_id_maps,i)) ) { // Fill & attempt add row
+          if( rows.size() > MAX_HASH_SIZE ) { abort(); return; }
           row = new Row(_ncols); // If added, need a new row to fill
+        }
     }
     private boolean add( IcedHashMap<Row,String> rows, Row row ) {
       if( rows.putIfAbsent(row,"")==null )
@@ -210,9 +253,11 @@ public class ASTMerge extends ASTPrim {
       }
       return false;
     }
+    private void abort( ) { MERGE_SETS.get(_uniq)._rows = _rows = null; }
     @Override public void reduce( MergeSet ms ) {
       final IcedHashMap<Row,String> rows = _rows; // Shared per-node hashset
       if( rows == ms._rows ) return;
+      if( rows == null || ms._rows == null ) { abort(); return; } // Missing: aborted due to size
       for( Row row : ms._rows.keySet() ) 
         add(rows,row);          // Merge RHS into LHS, collecting dups as we go
     }

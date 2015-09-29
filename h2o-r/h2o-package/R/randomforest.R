@@ -1,6 +1,6 @@
 #' Build a Big Data Random Forest Model
 #'
-#' Builds a Random Forest Model on an Frame
+#' Builds a Random Forest Model on an H2O Frame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
 #'        to use in building the GBM model.
@@ -8,11 +8,11 @@
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
 #'        or a categorical variable).
-#' @param training_frame An Frame object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param validation_frame An Frame object containing the variables in the model.
+#' @param validation_frame An H2O Frame object containing the variables in the model.  Default is NULL.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
@@ -24,8 +24,10 @@
 #'        grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
-#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point.
+#' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
+#'        level, then decrease by factor of two per level.
+#' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
 #' @param balance_classes logical, indicates whether or not to balance training
@@ -45,9 +47,9 @@
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
-h2o.randomForest <- function( x, y, training_frame,
+h2o.randomForest <- function(x, y, training_frame,
                              model_id,
-                             validation_frame,
+                             validation_frame = NULL,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
@@ -56,6 +58,7 @@ h2o.randomForest <- function( x, y, training_frame,
                              max_depth = 20,
                              min_rows = 1,
                              nbins = 20,
+                             nbins_top_level,
                              nbins_cats = 1024,
                              binomial_double_trees = FALSE,
                              balance_classes = FALSE,
@@ -68,13 +71,13 @@ h2o.randomForest <- function( x, y, training_frame,
                              fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE)
 {
-  # Training_frame and validation_frame may be a key or an Frame object
+  # Training_frame and validation_frame may be a key or a Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  if (!missing(validation_frame)) {
+  if (!is.null(validation_frame)) {
     if (!is.Frame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
@@ -113,6 +116,8 @@ h2o.randomForest <- function( x, y, training_frame,
     parms$min_rows <- min_rows
   if(!missing(nbins))
     parms$nbins <- nbins
+  if(!missing(nbins_top_level))
+    parms$nbins_top_level <- nbins_top_level
   if(!missing(nbins_cats))
     parms$nbins_cats <- nbins_cats
   if(!missing(balance_classes))

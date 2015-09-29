@@ -3,6 +3,7 @@ package hex.tree.drf;
 
 import hex.Model;
 import hex.ModelMetricsBinomial;
+import hex.ModelMetricsRegression;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import water.*;
@@ -1199,6 +1200,47 @@ public class DRFTest extends TestUtil {
         if (drf1 != null) drf1.delete();
         Scope.exit();
       }
+    }
+  }
+
+  @Test
+  public void testStochasticGBMEquivalent() {
+    Frame tfr = null, vfr = null;
+    DRFModel gbm = null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      for (String s : new String[]{
+              "name",
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "cylinders"; //regression
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._max_depth = 5;
+      parms._r2_stopping = 2;
+      parms._ntrees = 5;
+      parms._mtries = 3;
+      parms._sample_rate = 0.5f;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      gbm = job.trainModel().get();
+
+      ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+      assertEquals(0.12765426703095312, mm.mse(), 1e-4);
+
+      job.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
   }
 }
