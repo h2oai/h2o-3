@@ -736,7 +736,7 @@ public class GBMTest extends TestUtil {
 
   // Test uses big data and is too slow for a pre-push
   @Test @Ignore public void testCUST_A() {
-    Frame tfr=null, vfr=null;
+    Frame tfr=null, vfr=null, t_pred=null, v_pred=null;
     GBMModel gbm=null;
     Scope.enter();
     try {
@@ -772,8 +772,8 @@ public class GBMTest extends TestUtil {
       System.out.println("train_AUC= "+t_auc+" , validation_AUC= "+v_auc);
 
       // Report AUC from scoring
-      Frame t_pred = gbm.score(tfr);
-      Frame v_pred = gbm.score(vfr);
+      t_pred = gbm.score(tfr);
+      v_pred = gbm.score(vfr);
       hex.ModelMetricsBinomial tmm2 = hex.ModelMetricsBinomial.getFromDKV(gbm,tfr);
       hex.ModelMetricsBinomial vmm2 = hex.ModelMetricsBinomial.getFromDKV(gbm,vfr);
       assert tmm != tmm2;
@@ -794,6 +794,8 @@ public class GBMTest extends TestUtil {
     } finally {
       if (tfr  != null) tfr.remove();
       if (vfr  != null) vfr.remove();
+      if( t_pred != null ) t_pred.remove();
+      if( v_pred != null ) v_pred.remove();
       if (gbm  != null) gbm.delete();
       Scope.exit();
     }
@@ -1351,7 +1353,7 @@ public class GBMTest extends TestUtil {
   // just a simple sanity check - not a golden test
   @Test
   public void testDistributions() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null, vfr = null, res= null;
     GBMModel gbm = null;
 
     for (Distribution.Family dist : new Distribution.Family[]{
@@ -1387,7 +1389,7 @@ public class GBMTest extends TestUtil {
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();
 
-        Frame res = gbm.score(vfr);
+        res = gbm.score(vfr);
         Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
 
         ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
@@ -1396,6 +1398,7 @@ public class GBMTest extends TestUtil {
       } finally {
         if (tfr != null) tfr.remove();
         if (vfr != null) vfr.remove();
+        if (res != null) res.remove();
         if (gbm != null) gbm.delete();
         Scope.exit();
       }
