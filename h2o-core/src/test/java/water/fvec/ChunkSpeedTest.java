@@ -9,8 +9,8 @@ import water.util.PrettyPrint;
 public class ChunkSpeedTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  final int cols = 1000;
-  final int rows = 10000;
+  final int cols = 10;
+  final int rows = 1000000;
   final int rep = 10;
   double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
@@ -19,7 +19,7 @@ public class ChunkSpeedTest extends TestUtil {
   public void run() {
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
-//        switch (j%1) { //just do 1 byte chunks
+//        switch (j%1+1) { //just do 1 byte chunks
 //        switch (j % 2) { //just do 1/2 byte chunks
         switch (j%3) { // do 3 chunk types
 //        switch (j%4) { // do 4 chunk types
@@ -42,14 +42,17 @@ public class ChunkSpeedTest extends TestUtil {
       chunks[j] = new NewChunk(raw[j]).compress();
       Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
     }
+
     raw();
     rawInverted();
+
     chunks();
     chunksInverted();
+
+    chunks3();
+
     bulk();
   }
-
-
 
   void raw()
   {
@@ -91,6 +94,30 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("");
   }
 
+  double walkChunk(final Chunk c) {
+    double sum =0;
+    for (int i = 0; i < rows; ++i) {
+      sum += c.atd(i);
+    }
+    return sum;
+  }
+
+  double loop() {
+    double sum =0;
+    for (int j=0; j<cols; ++j) {
+      sum += walkChunk(chunks[j]);
+    }
+    return sum;
+  }
+
+  double loop3(Chunk c1, Chunk c2, Chunk c3) {
+    double sum =0;
+    sum += walkChunk(c1);
+    sum += walkChunk(c2);
+    sum += walkChunk(c3);
+    return sum;
+  }
+
   void chunks()
   {
     long start = 0;
@@ -98,11 +125,27 @@ public class ChunkSpeedTest extends TestUtil {
     for (int r = 0; r < rep; ++r) {
       if (r==rep/10)
         start = System.currentTimeMillis();
-      for (int j=0; j<cols; ++j) {
-        for (int i = 0; i < rows; ++i) {
-          sum += chunks[j].atd(i);
-        }
-      }
+      sum += loop();
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time to access via atd(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
+  void chunks3()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += loop3(chunks[0], chunks[1], chunks[2]);
     }
     long done = System.currentTimeMillis();
     Log.info("Sum: " + sum);
@@ -163,6 +206,11 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time to access via bulk reader: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
+  }
+
+  public static void main(String[] args) {
+    setup();
+    new ChunkSpeedTest().run();
   }
 }
 
