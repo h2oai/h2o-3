@@ -462,9 +462,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **min\_rows**: ([GBM](#GBM), [DRF](#DRF)) Specify the minimum number of observations for a leaf ("nodesize" in R). 
 
-- **nbins**: ([GBM](#GBM), [DRF](#DRF)) (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.   
+- **nbins**: ([GBM](#GBM), [DRF](#DRF)) (Numerical [real/int] only) Specify the minimum number of bins for the histogram to build, then split at the best point.   
 
-- **nbins_cats**: ([GBM](#GBM), [DRF](#DRF)) (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
+- **nbins_cats**: ([GBM](#GBM), [DRF](#DRF)) (Categorical [factors/enums] only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
 
 - **learn_rate**: ([GBM](#GBM)) Specify the learning rate. The range is 0.0 to 1.0. 
 
@@ -638,7 +638,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **max\_after\_balance\_size**: ([DRF](#DRF), [GBM](#GBM), [DL](#DL)) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**. 
 
-- **nbins\_top\_level**: ([DRF](#DRF), [GBM](#GBM)) (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
+- **nbins\_top\_level**: ([DRF](#DRF), [GBM](#GBM)) (For numerical [real/int] columns only) Specify the maximum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
 
 - **seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#DRF)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 

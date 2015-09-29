@@ -1149,11 +1149,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   @Override
   public void delete() {
-    deleteCrossValidationModels();
     super.delete();
   }
 
-  private void deleteCrossValidationModels( ) {
+  public void deleteCrossValidationModels( ) {
     if (_output._cross_validation_models != null) {
       for (Key k : _output._cross_validation_models) {
         Model m = DKV.getGet(k);
