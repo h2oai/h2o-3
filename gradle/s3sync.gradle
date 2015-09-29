@@ -109,11 +109,6 @@ def doRSync() {
     def rPkgVerChk = h2oRDir + File.separator + "scripts" + File.separator + "package_version_check_update.R"
     exec {
         standardInput = System.in
-        if (project.property("noAskRPkgSync").toString().equals("true")) {
-            commandLine getOsSpecificCommandLine(['R', "--vanilla", "-f", rPkgVerChk, "--args", "update", "X"])
-        }
-        else {
-            commandLine getOsSpecificCommandLine(['R', "--vanilla", "-f", rPkgVerChk, "--args", "update"])
-        }
+        commandLine getOsSpecificCommandLine(['R', "--vanilla", "-f", rPkgVerChk, "--args", "update"])
     }
 }

@@ -57,17 +57,12 @@ function(installed_packages, reqs) {
 packageVersionCheckUpdate <-
 function(args) {
     doCheckOnly <- args[1] == "check"
-    doUpdate    <- !doCheckOnly
-    interactiveUpdate <- length(args) == 1
     if (doCheckOnly) {
         write("",stdout())
         write(paste0("INFO: R package/version check only. Please run `./gradlew syncRPackages` if you want to update instead"),stdout())
     } else {
         write("",stdout())
-        write(paste0("INFO: R package/version s3 sync procedure"),stdout())
-        if (interactiveUpdate) {
-            write("",stdout())
-            write(paste0("INFO: Interactive mode enabled by default. You will be prompted prior to installing any R package. Use `-PnoAskRPkgSync=true` option to disable"),stdout()) }}
+        write(paste0("INFO: R package/version s3 sync procedure"),stdout()) }
 
     # check R version
     return_val <- 0
@@ -81,16 +76,33 @@ function(args) {
                      ", but this system's R version is ",sysRMajor,".",sysRMinor),stdout())
         write(paste0("INFO: Manually update your R version to match Jenkins'"),stdout()) }
 
-    # read the package_version_requirements file
+    # download and install RCurl
+    url <- tryCatch({
+        write("INFO: Installing RCurl...",stdout())
+        install.packages("RCurl",repos="http://cran.us.r-project.org")
+    }, error = function(e) {
+        write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
+        q("no",1,FALSE)
+    })
     require(RCurl,quietly=TRUE)
-    reqs <- read.csv(textConnection(getURL(JENKINS.R.PKG.VER.REQS)), header=FALSE)
+    url <- tryCatch({
+        getURL(JENKINS.R.PKG.VER.REQS,.opts=list(ssl.verifypeer = FALSE))
+    }, error = function(e) {
+        write(paste0("ERROR: Could not connect to S3 to retrieve R package requirements: ",e),stdout())
+        q("no",1,FALSE)
+    })
+
+    # read the package_version_requirements file
+    reqs <- read.csv(textConnection(url), header=FALSE)
     write("",stdout())
     write("INFO: Jenkins' (package,version) list:",stdout())
     write("",stdout())
     invisible(lapply(1:nrow(reqs),function(x) write(paste0("(",as.character(reqs[x,1]),", ",as.character(reqs[x,2]),")"),stdout())))
+    installed_packages <- rownames(installed.packages())
+    num_packages <- nrow(reqs)
 
     if (doCheckOnly) { # do package and version checks.
-        get_packages <- doCheck(rownames(installed.packages()),reqs)
+        get_packages <- doCheck(installed_packages,reqs)
         num_get_packages <- length(get_packages)
         if (num_get_packages > 0) return_val <- return_val + 1
         write("",stdout())
@@ -103,35 +115,25 @@ function(args) {
         write("",stdout())
         write("INFO: Starting updates...",stdout())
 
-        if (interactiveUpdate) {
-            f <- file("stdin")
-            open(f)
-            pn <- 1
-            name <- as.character(reqs[pn,3])
-            num_packages <- nrow(reqs)
-            write("",stdout())
-            write(paste0("Press 'y' to install ",name,". Press any other key to skip."),stdout())
-            while((length(line <- readLines(f,n=1)) > 0) && pn <= num_packages) {
-              if (line == "y") {
+        for (i in 1:num_packages) {
+            name <- as.character(reqs[i,1])
+            ver  <- as.character(reqs[i,2])
+            pkg  <- as.character(reqs[i,3])
+
+            no_pkg <- !name %in% installed_packages
+            wrong_version <- FALSE
+            if (!no_pkg) wrong_ver <- !ver == packageVersion(name)
+
+            if (no_pkg || wrong_version) {
                 write("",stdout())
-                install.packages(paste0(H2O.S3.R.PACKAGE.REPO,"/",name,repos=NULL,type="binary")) }
-              pn <- pn + 1
-              name <- as.character(reqs[pn,3])
-              if (pn <= num_packages) {
-                write("",stdout())
-                write(paste0("Press 'y' to install ",name,". Press any other key to skip."),stdout())
-              } else { break } }
-        } else {
-            for (p in reqs[3]) {
-                name <- as.character(p)
-                write("",stdout())
-                write(paste0("Installing package ",name,"..."),stdout())
-                install.packages(paste0(H2O.S3.R.PACKAGE.REPO,"/",name),repos=NULL,type="binary") } }
+                write(paste0("Installing package ",pkg,"..."),stdout())
+                install.packages(paste0(H2O.S3.R.PACKAGE.REPO,"/",pkg),repos=NULL,type="binary") } }
 
         # follow-on check
         write("",stdout())
         write("INFO: R package sync complete. Conducting follow-on R package/version checks...",stdout())
-        get_packages <- doCheck(rownames(installed.packages()),reqs)
+        installed_packages <- rownames(installed.packages())
+        get_packages <- doCheck(installed_packages,reqs)
 
         if (length(get_packages) > 0) {
             write("",stdout())
