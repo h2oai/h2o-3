@@ -255,9 +255,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           double resp = wrks.atd(row); // fitting target (residual)
+          double wy = w*resp;
           bins[b] += w;                // Bump count in bin
-          sums[b] += w*resp;
-          ssqs[b] += w*resp*resp;
+          sums[b] += wy;
+          ssqs[b] += wy*resp;
         }
 
         // Add all the data into the Histogram (atomically add)
