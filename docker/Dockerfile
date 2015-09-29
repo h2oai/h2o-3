@@ -3,8 +3,7 @@
 ########################################################################
 
 # pull base image
-FROM \
-  ubuntu:14.04
+FROM ubuntu:14.04
 
 # maintainer details
 MAINTAINER \
@@ -48,12 +47,12 @@ RUN \
   gunzip train.csv.gz 
 
 # Define a mountable data directory
-VOLUME \
-  ["/data"]
+#VOLUME \
+#  ["/data"]
 
 # Define the working directory
-WORKDIR \
-  /data
+#WORKDIR \
+#  /data
 
 EXPOSE 54321
 EXPOSE 54322
