@@ -47,23 +47,28 @@ public class TestUtil extends Iced {
   @AfterClass
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
+    int cnt=0;
     if( leaked_keys > 0 ) {
-      int cnt=0;
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
         // Ok to leak VectorGroups and the Jobs list
         if( value.isVecGroup() || k == Job.LIST ||
             // Also leave around all attempted Jobs for the Jobs list
-            (value.isJob() && value.<Job>get().isStopped()) ) 
+            (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
-        else {
+        } else {
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
       }
       if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
-    assertTrue("No keys leaked", leaked_keys <= 0);
+    assertTrue("No keys leaked", leaked_keys <= 0 || cnt == 0);
+    // Bulk brainless key removal.  Completely wipes all Keys without regard.
+    new MRTask(){
+      @Override public byte priority() { return H2O.GUI_PRIORITY; }
+      @Override public void setupLocal() {  H2O.raw_clear(); }
+    }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
 
