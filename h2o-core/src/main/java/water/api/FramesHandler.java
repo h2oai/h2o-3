@@ -69,12 +69,22 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     protected static Frame[] fetchAll() {
       // Get all the frames.
       final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
-      Frame[] frames = new Frame[frameKeys.length];
+      List<Frame> frames = new ArrayList<Frame>(frameKeys.length);
       for (int i = 0; i < frameKeys.length; i++) {
         Frame frame = getFromDKV("(none)", frameKeys[i]);
-        frames[i] = frame;
+        // Weed out frames with vecs that are no longer in DKV
+        Vec[] vs = frame.vecs();
+        boolean skip = false;
+        for (int j=0; j < vs.length; j++) {
+          if (DKV.get(vs[j]._key) == null) {
+            Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
+            skip = true;
+            break;
+          }
+        }
+        if (!skip) frames.add(frame);
       }
-      return frames;
+      return frames.toArray(new Frame[frames.size()]);
     }
 
     /**
