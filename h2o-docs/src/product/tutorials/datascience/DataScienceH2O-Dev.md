@@ -1184,7 +1184,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **score\_duty\_cycle**: Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. 
 
-- **autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
+- **autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
@@ -1345,7 +1345,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 To compute deviance for a Deep Learning regression model, the following formula is used: 
 
-Loss = MeanSquare -> MSE==Deviance
+Loss = Quadratic -> MSE==Deviance
 For Absolute/Laplace or Huber -> MSE != Deviance
 
 For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](https://leanpub.com/deeplearning/read). 

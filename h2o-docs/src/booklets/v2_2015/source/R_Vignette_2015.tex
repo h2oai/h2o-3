@@ -1,13 +1,12 @@
 \input{common/conf_top.tex}
+%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
-\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
-
 
 \begin{document}
 
-\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-%\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
@@ -75,13 +74,16 @@ use of the information contained herein.\\
 Printed in the United States of America. 
 
 
-}\par
+
 
 \newpage
 \thispagestyle{empty}%remove pg#
 \tableofcontents
 \thispagestyle{empty}%remove pg#
+
+
 \newpage
+
 
 \section{Introduction}
 
@@ -114,6 +116,7 @@ This document describes the four steps of data analysis with H2O:
 \end{enumerate}
 
 \input{common/what_is_h2o.tex}
+
 
 \section{Installation}
 
@@ -279,12 +282,14 @@ java -jar h2o.jar
 See the H2O Documentation for additional JVM and H2O command line options.
 After launching the H2O instance, connect to it from R with {\texttt{h2o.init()}} as described above.
 
+\newpage
 \subsection{Launching on Hadoop}
 
 To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
 \begin{lstlisting}[style=R]
 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
+
 \end{lstlisting}
 
 \begin{itemize}
@@ -335,8 +340,12 @@ To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo(
 > h2o.clusterInfo()
 \end{lstlisting}
 
+\begin{minipage}{\textwidth}
+
 An easy-to-read summary of information about the cluster displays. 
+
 \begin{lstlisting}[style=R]
+
 R is connected to H2O cluster:
   H2O cluster uptime:         43 minutes 43 seconds
   H2O cluster version:        2.7.0.1497
@@ -346,8 +355,10 @@ R is connected to H2O cluster:
   H2O cluster total cores:    8
   H2O cluster allowed cores:  8
   H2O cluster healthy:        TRUE
+
 \end{lstlisting}
 
+\end{minipage}
 
 \section{Data Preparation in R}
 
@@ -408,6 +419,8 @@ To apply a user-specified function to each subset of an H2O dataset and combine 
 The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to \nameref{sec:RunModel}. 
 
 %%mal H2O supports the following models: Deep Learning (DL), Generalized Linear Models (GLM), Gradient Boosted Regression (GBM), Na\"{i}ve Bayes (NB), Random Forest (RF), K-Means, Principal Components Analysis (PCA) and Generalized Low Rank Model (GLRM).
+
+\begin{minipage}{\textwidth}
 H2O supports the following models:  
 
 
@@ -432,6 +445,7 @@ H2O supports the following models:
 \end{tabular}
 
 \end{frame}
+\end{minipage}
 
 The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
 
@@ -461,7 +475,7 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 After creating a model, use it to make predictions. For more information about predictions, refer to \nameref{ssec:Predictions}.
 
 %%mal: this feels too lengthy for a modeling example here; perhaps it would be better to have entire work flows at the end?
-\newpage
+
 \section{Demo: GLM}
 
 The following demo demonstrates how to:
@@ -536,7 +550,7 @@ For additional help within R's Help tab, precede the command with a question mar
 
 The H2O package consolidates all of the various supported import functions using {\texttt{h2o.importFile()}}. % {\texttt{h2o.importFolder}} and {\texttt{h2o.importHDFS}} still work, these functions are deprecated and should be updated to {\texttt{h2o.importFile()}}. 
 There are a few ways to import files shown in the following examples: 
-\\
+
 \begin{lstlisting}[style=R]
 #To import small iris data file from H2O's package:
 irisPath = system.file("extdata", "iris.csv", package="h2o")
@@ -1192,7 +1206,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{head, tail}}: Return the First or Last Part of an Object 
 \medskip
 \emph{Concatenation}\par
- {\texttt{c}}: Combine Values into a Vector or List %%still supported? couldn't find in R doc
+ {\texttt{c}}: Combine Values into a Vector or List \\ %%still supported? couldn't find in R doc
  {\texttt{h2o.cbind}}: Take a sequence of H2O datasets and combine them by column.\par
 \medskip
 {\emph{Data Attributes}}\par
@@ -1253,7 +1267,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{trigamma}}: Display the second derivative of the logarithm of the gamma function. 
 \medskip
 \emph{Math2 (H2O)}\par
-{\texttt{round}}: Round the values to the specified number of decimal places (default 0).  
+{\texttt{round}}: Round the values to the specified number of decimal places. The default is 0.  
 {\texttt{signif}}: Round the values to the specified number of significant digits. 
 \newpage
 \emph{Summary (H2O)}\par
@@ -1389,8 +1403,8 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 {\texttt{h2o.loadModel}}: Load an H2OModel object from disk. 
 {\texttt{h2o.saveModel}}: Save an H2OModel object to disk to be loaded back into H2O using {\texttt{h2o.loadModel}}. 
 
-\medskip
-\emph{H2O Cluster Connection}\par
+\newpage
+\emph{H2O Cluster Connection}\par 
 {\texttt{h2o.init (nthreads = -1)}}: Connect to a running H2O instance using all CPUs on the host and check the local H2O R package is the correct version. 
 {\texttt{h2o.shutdown}}: Shut down the specified H2O instance. All data on the server will be lost! 
 
@@ -1425,9 +1439,28 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 \egroup %needed for formatting
 
 \newpage
-\input{common/further_info.tex}
 
-\section{References}\bigskip
+\section{References}
+\bibliographystyle{plainnat}  
+
+%\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
+
+%\bibentry{h2osite}
+
+%\bibentry{h2odocs}
+
+%\bibentry{h2ogithubrepo}
+
+%\bibentry{h2odatasets}
+
+%\bibentry{h2ojira}
+
+%\bibentry{stream}
+
+\bibentry{rdocs}
+
+%\bibentry{rensemble}
 
 {\bfseries{R Package}}:  \url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}
 
@@ -1435,10 +1468,11 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 {\bfseries{R project website}}: \url{http://www.r-project.org} 
 
-{\bfseries{Slide deck}}:\\ \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
+{\bfseries{Slide deck}}: \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
 
 
 \newpage
+
 \section{Authors}
 
 \textbf{Spencer Aiello}
