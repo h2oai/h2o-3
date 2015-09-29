@@ -1,14 +1,9 @@
 package water.rapids;
 
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
-import water.nbhm.NonBlockingHashSet;
 import water.parser.ValueString;
-
+import water.util.IcedHashMap;
 import java.util.Arrays;
 
 
@@ -93,17 +88,16 @@ public class ASTMerge extends ASTPrim {
     // Build the hashed version of the hashed frame.  Hash and equality are
     // based on the known-integer key columns.  Duplicates are either ignored
     // (!allRite) or accumulated, and can force replication of the walked set.
-    MergeSet ms;
-    Key uniq = (ms=new MergeSet(ncols,id_maps,allRite).doAll(hashed))._uniq;
+    final MergeSet ms = new MergeSet(ncols,id_maps,allRite).doAll(hashed);
+    final Key uniq = ms._uniq;
+    IcedHashMap<Row,String> rows = MergeSet.MERGE_SETS.get(uniq)._rows;
+    new MRTask() { @Override public void setupLocal() { MergeSet.MERGE_SETS.remove(uniq);  } }.doAllNodes();
 
 
-    if( ms._dup && allRite ) {
-      String[] names = Arrays.copyOf(walked.names(),walked.numCols() + hashed.numCols()-ncols);
-      System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
-      String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
-      System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
-      return new ValFrame(new AllRiteWithDupJoin(ncols,uniq,hashed,allLeft,allRite).doAll(walked.numCols()+hashed.numCols()-ncols,walked).outputFrame(names,domains));
-    } else if( !ms._dup && allLeft) {
+    // All of the walked set, and no dup handling on the right - which means no
+    // need to replicate rows of the walked dataset.  Simple 1-pass over the
+    // walked set adding in columns (or NAs) from the right.
+    if( allLeft && !(allRite && ms._dup) ) {
       // The lifetime of the distributed dataset is independent of the original
       // dataset, so it needs to be a deep copy.
       // TODO: COW Optimization
@@ -113,16 +107,26 @@ public class ASTMerge extends ASTPrim {
       // matching row; append matching column data
       String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
       String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      Frame res = new AllLeftNoDupe(ncols,uniq,hashed,allLeft,allRite).doAll(hashed.numCols()-ncols,walked).outputFrame(names,domains);
+      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(hashed.numCols()-ncols,walked).outputFrame(names,domains);
       return new ValFrame(walked.add(res));
-    } else {
-      throw H2O.unimpl();
     }
+
+    // Can be full or partial on the left, but won't nessecarily do all of the
+    // right.  Dups on right are OK (left will be replicated or dropped as needed).
+    if( !allRite ) {
+      String[] names = Arrays.copyOf(walked.names(),walked.numCols() + hashed.numCols()-ncols);
+      System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
+      String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
+      System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
+      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(walked.numCols()+hashed.numCols()-ncols,walked).outputFrame(names,domains));
+    } 
+
+    throw H2O.unimpl();
   }
 
-  // One Row object per row of the smaller dataset, so kept as small as
+  // One Row object per row of the hashed dataset, so kept as small as
   // possible.
-  private static class Row {
+  private static class Row extends Iced {
     final long[] _keys;   // Key: first ncols of longs
     int _hash;            // Hash of keys; not final as Row objects are reused
     long _row;            // Row in Vec; the payload is vecs[].atd(_row)
@@ -171,58 +175,57 @@ public class ASTMerge extends ASTPrim {
   // first few columns.  One entry-per-row.
   private static class MergeSet extends MRTask<MergeSet> {
     // All active Merges have a per-Node hashset of one of the datasets
-    static NonBlockingHashMap<Key,MergeSet> MERGE_SETS = new NonBlockingHashMap<>();
+    static IcedHashMap<Key,MergeSet> MERGE_SETS = new IcedHashMap<>();
     final Key _uniq;      // Key to allow sharing of this MergeSet on each Node
     final int _ncols;     // Number of leading columns for the Hash Key
     final int[][] _id_maps;
     final boolean _allRite;
     boolean _dup;
-    transient NonBlockingHashSet<Row> _rows;
+    IcedHashMap<Row,String> _rows;
 
     MergeSet( int ncols, int[][] id_maps, boolean allRite ) { 
       _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps;  _allRite = allRite;
     }
     // Per-node, make the empty hashset for later reduction
     @Override public void setupLocal() {
-      _rows = new NonBlockingHashSet<>();
+      _rows = new IcedHashMap<>();
       MERGE_SETS.put(_uniq,this);
     }
 
     @Override public void map( Chunk chks[] ) {
+      final IcedHashMap<Row,String> rows = _rows; // Shared per-node hashset
       final int len = chks[0]._len;
       Row row = new Row(_ncols);
-      for( int i=0; i<len; i++ ) {
-        boolean added = _rows.add(row.fill(chks,_id_maps,i));
-        if( !added ) {                    // dup handling: keys are identical
-          if( _allRite ) {
-            _dup = true; // MergeSet has dups.
-            _rows.get(row).atomicAddDup(row._row);
-          }
-        } else {                          // Else was added
-          row = new Row(_ncols);          // So do not re-use, but make new
-        }
+      for( int i=0; i<len; i++ )                  // For all rows
+        if( add(rows,row.fill(chks,_id_maps,i)) ) // Fill & attempt add row
+          row = new Row(_ncols); // If added, need a new row to fill
+    }
+    private boolean add( IcedHashMap<Row,String> rows, Row row ) {
+      if( rows.putIfAbsent(row,"")==null )
+        return true;            // Added!
+      // dup handling: keys are identical
+      if( _allRite ) {          // Collect the dups?
+        _dup = true;            // MergeSet has dups.
+        rows.getk(row).atomicAddDup(row._row);
       }
+      return false;
     }
     @Override public void reduce( MergeSet ms ) {
-      if( _rows == ms._rows ) return;
-      throw H2O.unimpl();
+      final IcedHashMap<Row,String> rows = _rows; // Shared per-node hashset
+      if( rows == ms._rows ) return;
+      for( Row row : ms._rows.keySet() ) 
+        add(rows,row);          // Merge RHS into LHS, collecting dups as we go
     }
   }
 
   private static abstract class JoinTask extends MRTask<JoinTask> {
-    protected final Key _uniq;      // Which mergeset being merged
+    protected final IcedHashMap<Row,String> _rows;
     protected final int _ncols;     // Number of merge columns
     protected final Frame _hashed;
     protected final boolean _allLeft, _allRite;
-    JoinTask( int ncols, Key uniq, Frame hashed, boolean allLeft, boolean allRite ) {
-      _uniq = uniq; _ncols = ncols; _hashed = hashed; _allLeft = allLeft; _allRite = allRite;
+    JoinTask( int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allLeft, boolean allRite ) {
+      _rows = rows; _ncols = ncols; _hashed = hashed; _allLeft = allLeft; _allRite = allRite;
     }
-    @Override public void map(Chunk[] chks, NewChunk[] nchks) {
-      doJoin(chks,nchks);
-    }
-    // Cleanup after last pass
-    @Override public void closeLocal() { MergeSet.MERGE_SETS.remove(_uniq);  }
-    abstract void doJoin(Chunk[] chks, NewChunk[] nchks);
     protected static void addElem(NewChunk nc, Chunk c, int row) {
       if( c.isNA(row) )                 nc.addNA();
       else if( c instanceof CStrChunk ) nc.addStr(c,row);
@@ -232,40 +235,37 @@ public class ASTMerge extends ASTPrim {
     }
     protected static void addElem(NewChunk nc, Vec v, long absRow, ValueString vstr) {
       switch( v.get_type() ) {
-        case Vec.T_NUM : nc.addNum(v.at(absRow)); break;
-        case Vec.T_ENUM:
-        case Vec.T_TIME: if( v.isNA(absRow) ) nc.addNA(); else nc.addNum(v.at8(absRow)); break;
-        case Vec.T_STR : nc.addStr(v.atStr(vstr, absRow)); break;
-        default: throw H2O.unimpl();
+      case Vec.T_NUM : nc.addNum(v.at(absRow)); break;
+      case Vec.T_ENUM:
+      case Vec.T_TIME: if( v.isNA(absRow) ) nc.addNA(); else nc.addNum(v.at8(absRow)); break;
+      case Vec.T_STR : nc.addStr(v.atStr(vstr, absRow)); break;
+      default: throw H2O.unimpl();
       }
     }
   }
 
-  // Build the join-set by iterating over all the local Chunks of the larger
-  // dataset, doing a hash-lookup on the smaller replicated dataset, and adding
+  // Build the join-set by iterating over all the local Chunks of the walked
+  // dataset, doing a hash-lookup on the hashed replicated dataset, and adding
   // in the matching columns.
   private static class AllLeftNoDupe extends JoinTask {
-    AllLeftNoDupe(int ncols, Key uniq, Frame hashed, boolean allLeft, boolean allRite) {
-      super(ncols, uniq, hashed, allLeft, allRite);
+    AllLeftNoDupe(int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allRite) {
+      super(ncols, rows, hashed, true, allRite);
     }
 
-    @Override void doJoin( Chunk chks[], NewChunk nchks[] ) {
+    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       // Shared common hash map
-      NonBlockingHashSet<Row> rows = MergeSet.MERGE_SETS.get(_uniq)._rows;
+      final IcedHashMap<Row,String> rows = _rows;
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
       assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
       water.parser.ValueString vstr = new water.parser.ValueString(); // Recycled value string
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
-        Row hashed = rows.get(row.fill(chks,null,i));
+        Row hashed = rows.getk(row.fill(chks,null,i));
         if( hashed == null ) {  // Hashed is missing
-          if( _allLeft )        // But need all of larger, so force a NA row
-            for( NewChunk nc : nchks ) nc.addNA();
-          else
-            throw H2O.unimpl(); // Need to remove walked row
+          for( NewChunk nc : nchks ) nc.addNA(); // All Left: keep row, use missing data
         } else {
-          // Copy fields from matching smaller set into larger set
+          // Copy fields from matching hashed set into walked set
           final long absrow = hashed._row;
           for( int c = 0; c < nchks.length; c++ )
             addElem(nchks[c], vecs[_ncols+c],absrow,vstr);
@@ -274,40 +274,39 @@ public class ASTMerge extends ASTPrim {
     }
   }
 
+  // Build the join-set by iterating over all the local Chunks of the walked
+  // dataset, doing a hash-lookup on the hashed replicated dataset, and adding
+  // in BOTH the walked and the matching columns.
   private static class AllRiteWithDupJoin extends JoinTask {
-
-    AllRiteWithDupJoin(int ncols, Key uniq, Frame hashed, boolean allLeft, boolean allRite) {
-      super(ncols, uniq, hashed, allLeft, allRite);
+    AllRiteWithDupJoin(int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allLeft) {
+      super(ncols, rows, hashed, allLeft, true);
     }
 
-    @Override void doJoin(Chunk[] chks, NewChunk[] nchks) {
+    @Override public void map(Chunk[] chks, NewChunk[] nchks) {
       // Shared common hash map
-      NonBlockingHashSet<Row> rows = MergeSet.MERGE_SETS.get(_uniq)._rows;
+      final IcedHashMap<Row,String> rows = _rows;
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
       assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       water.parser.ValueString vstr = new water.parser.ValueString(); // Recycled value string
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
-        Row hashed = rows.get(row.fill(chks,null,i));
+        Row hashed = rows.getk(row.fill(chks,null,i));
         if( hashed == null ) {    // no rows, fill in chks, and pad NAs as needed...
-          if( _allLeft ) { // pad NAs to the right...
+          if( _allLeft ) {        // pad NAs to the right...
             int c=0;
-            for(; c<chks.length;++c ) addElem(nchks[c],chks[c],i);
+            for(; c< chks.length;++c) addElem(nchks[c],chks[c],i);
             for(; c<nchks.length;++c) nchks[c].addNA();
-          } else {
-            // no hashed and no _allLeft... skip (row is dropped)
-          }
+          } // else no hashed and no _allLeft... skip (row is dropped)
         } else {
-          if( hashed._dups!=null ) {
-            for(int dup=0;dup<hashed._dups.length;++dup) addRow(nchks,chks,vecs,i,hashed._dups[dup],vstr);
-          } else                                         addRow(nchks,chks,vecs,i,hashed._row,vstr);
+          if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,vecs,i,  absrow   ,vstr);
+          else                                                      addRow(nchks,chks,vecs,i,hashed._row,vstr);
         }
       }
     }
     void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, ValueString vstr) {
       int c=0;
-      for( ;c<chks.length;++c ) addElem(nchks[c],chks[c],relRow);
+      for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
       for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - (chks.length + _ncols)],absRow,vstr);
     }
   }

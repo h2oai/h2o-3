@@ -38,6 +38,16 @@
 is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 
+#' Get back-end distributed key/value store id from a Frame.
+#'
+#' @param x A Frame
+#' @return The id
+#' @export
+h2o.getId <- function(x) {
+  chk.Frame(x)
+  attr(x, "id")
+}
+
 .h2o.gc <- function() {
   gc()
 }
@@ -1720,7 +1730,10 @@ as.data.frame.Frame <- function(x, ...) {
   # Substitute NAs for blank cells rather than skipping
   df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
   close(tcon)
-  # FIXME now convert all date columns to POSIXct
+  # Convert all date columns to POSIXct
+  dates <- attr(x, "types") %in% "time"
+  if (length(dates) > 0) # why do some frames come in with no attributes but many columns?
+    for (i in 1:length(dates)) { if (dates[[i]]) class(df[[i]]) = "POSIXct" }
   df
 }
 
