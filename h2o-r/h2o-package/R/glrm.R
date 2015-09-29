@@ -62,8 +62,10 @@
 #'        computation of the Gram matrix followed by a local SVD using the JAMA package, 
 #'        "Power": computation of the SVD using the power iteration method, "Randomized": 
 #'        (default) approximate SVD by projecting onto a random subspace (see references).
-#' @param user_x TO DO.
-#' @param user_y TO DO.
+#' @param user_x (Optional) A matrix, data.frame, Frame, or list of vectors specifying the 
+#'        initial X. Only used when init = "User". The number of columns must equal k.
+#' @param user_y (Optional) A matrix, data.frame, Frame, or list of vectors specifying the 
+#'        initial Y. Only used when init = "User". The number of rows must equal k.
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
