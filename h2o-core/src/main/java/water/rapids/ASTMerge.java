@@ -89,12 +89,9 @@ public class ASTMerge extends ASTPrim {
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
       if( lv.isCategorical() ) {
-        CategoricalWrappedVec ewv = new CategoricalWrappedVec(lv.domain(),hashed.vecs()[i].domain());
-        int[] ids = ewv.getDomainMap();
-        DKV.remove(ewv._key);
-        // Build an Identity map for the hashed set
-        id_maps[i] = new int[ids.length];
-        for( int j=0; j<ids.length; j++ )  id_maps[i][j] = j;
+        CategoricalWrappedVec ewv = new CategoricalWrappedVec(hashed.vecs()[i].domain(),lv.domain());
+        id_maps[i] = ewv.getDomainMap();
+        ewv.remove();
       }
     }
 
@@ -178,7 +175,8 @@ public class ASTMerge extends ASTPrim {
         if( chks[i].isNA(row) ) l = 0;
         else {
           l = chks[i].at8(row);
-          hash += (cat_maps == null || cat_maps[i]==null) ? l : cat_maps[i][(int)l];
+          l = (cat_maps == null || cat_maps[i]==null) ? l : cat_maps[i][(int)l];
+          hash += l;
         }
         _keys[i] = l;
       }
@@ -190,10 +188,7 @@ public class ASTMerge extends ASTPrim {
     @Override public boolean equals( Object o ) {
       if( !(o instanceof Row) ) return false;
       Row r = (Row)o;
-      if( _hash != r._hash ) return false; // Shortcut
-      if( _row == r._row ) return true; // Another shortcut: same absolute row
-      // Now must check key contents
-      return Arrays.equals(_keys,r._keys); 
+      return _hash == r._hash && Arrays.equals(_keys,r._keys);
     }
 
     private void atomicAddDup(long row) {
