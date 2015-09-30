@@ -145,7 +145,7 @@ function(args) {
                 } else if (LIN) { # linux
                     install.packages(paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/",pkg),repos=NULL,method="curl")
                 } else {
-                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/",pkg),repos=NULL,type="binary") }}}
+                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/",pkg),repos=NULL,type="win.binary",method="curl") }}}
 
         # follow-on check
         write("",stdout())
