@@ -257,6 +257,12 @@ public class RapidsTest extends TestUtil {
       Val res = Exec.exec(x);
       f = res.getFrame();
       System.out.println(f);
+      Vec names = f.vec(0);
+      Assert.assertEquals(names.factor(names.at8(0)),"Cliff");
+      Vec ages  = f.vec(1);
+      Assert.assertEquals(ages .factor(ages .at8(0)),">dirt");
+      Vec skilz = f.vec(2);
+      Assert.assertEquals(skilz.factor(skilz.at8(0)),"hacker");
     } finally {
       if( f != null ) f.delete();
       if( r != null ) r.delete();

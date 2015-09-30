@@ -13,8 +13,8 @@ public class ChunkSpeedTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   final int cols = 100;
-  final int rows = 50000;
-  final int rep = 20;
+  final int rows = 100000;
+  final int rep = 10;
   final double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
 
@@ -23,44 +23,35 @@ public class ChunkSpeedTest extends TestUtil {
   public void run() {
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
-        raw[j][i] = get(j,i);
+        raw[j][i] = get(j, i);
       }
     }
     for (int j = 0; j < cols; ++j) {
-      chunks[j] = new NewChunk(raw[j]).compress();
+      chunks[j] = (Chunk) new NewChunk(raw[j]).compress();
       Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
     }
     Log.info("COLS: " + cols);
     Log.info("ROWS: " + rows);
     Log.info("REPS: " + rep);
 
-    raw();
-    raw();
-
-    chunks();
-    chunks();
-
-    chunksInline();
-    chunksInline();
-
-    mrtask(false);
-    mrtask(false);
-
-    bulk();
-    bulk();
-
+    int ll = 5;
+    for (int i = 0; i < ll; ++i)
+      raw();
+    for (int i = 0; i < ll; ++i)
+      chunks();
+    for (int i = 0; i < ll; ++i)
+      chunksInline();
+    for (int i = 0; i < ll; ++i)
+      mrtask(false);
+    for (int i = 0; i < ll; ++i)
+      bulk();
     Log.info("Now doing funny stuff.\n\n");
-    mrtask(true);
-    mrtask(true);
-
-//    raw();
-//    raw();
-
-    chunksInverted();
-    chunksInverted();
-
-    rawInverted();
-    rawInverted();
+    for (int i = 0; i < ll; ++i)
+      mrtask(true);
+    for (int i = 0; i < ll; ++i)
+      chunksInverted();
+    for (int i = 0; i < ll; ++i)
+      rawInverted();
 
   }
 
