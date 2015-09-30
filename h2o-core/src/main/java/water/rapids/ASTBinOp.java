@@ -404,9 +404,10 @@ class ASTIfElse extends ASTPrim {
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
     final int[] fsIntMap = new int[tst.numCols()];
 
-    String[][] domains = new String[tst.numCols()][];
+    String[][] domains = null;
     final int[][] maps = new int[tst.numCols()][];
     if( fs!=null || ts!=null ) { // time to build domains...
+      domains = new String[tst.numCols()][];
       String s;
       if( fs!=null && ts!=null ) {
         for( int i=0;i<tst.numCols(); ++i ) {
@@ -468,20 +469,22 @@ class ASTIfElse extends ASTPrim {
       }.doAll(tst.numCols(),fr).outputFrame(null,domains);
 
     // flatten domains since they may be larger than needed
-    for(int i=0; i<res.numCols();++i) {
-      if (res.vec(i).domain() != null) {
-        final long[] dom = new Vec.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
-        String[] newDomain = new String[dom.length];
-        for (int l = 0; l < dom.length; ++l)
-          newDomain[l] = res.vec(i).domain()[(int) dom[l]];
-        new MRTask() {
-          @Override
-          public void map(Chunk c) {
-            for (int i = 0; i < c._len; ++i)
-              c.set(i, ArrayUtils.find(dom, c.at8(i)));
-          }
-        }.doAll(res.vec(i));
-        res.vec(i).setDomain(newDomain); // needs a DKVput?
+    if( domains!=null ) {
+      for (int i = 0; i < res.numCols(); ++i) {
+        if (res.vec(i).domain() != null) {
+          final long[] dom = new Vec.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
+          String[] newDomain = new String[dom.length];
+          for (int l = 0; l < dom.length; ++l)
+            newDomain[l] = res.vec(i).domain()[(int) dom[l]];
+          new MRTask() {
+            @Override
+            public void map(Chunk c) {
+              for (int i = 0; i < c._len; ++i)
+                c.set(i, ArrayUtils.find(dom, c.at8(i)));
+            }
+          }.doAll(res.vec(i));
+          res.vec(i).setDomain(newDomain); // needs a DKVput?
+        }
       }
     }
     return new ValFrame(res);
