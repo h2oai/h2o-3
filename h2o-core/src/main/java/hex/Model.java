@@ -261,7 +261,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         count++;
       }
-      xs ^= train().checksum() * (_valid == null ? 17 : valid().checksum());
+      xs ^= (train() == null ? 43 : train().checksum()) * (_valid == null ? 17 : valid().checksum());
       return xs;
     }
   }
