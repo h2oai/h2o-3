@@ -434,7 +434,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _model_metrics[_model_metrics.length - 1] = mm._key;
       return mm;                // Flow coding
     }
-    public synchronized void clearModelMetrics() { _model_metrics = null; }
+    public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
 
     long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
