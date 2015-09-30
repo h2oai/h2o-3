@@ -469,17 +469,20 @@ class ASTIfElse extends ASTPrim {
 
     // flatten domains since they may be larger than needed
     for(int i=0; i<res.numCols();++i) {
-      final long[] dom = new Vec.CollectDomainFast((int)res.vec(i).max()).doAll(res.vec(i)).domain();
-      String[] newDomain = new String[dom.length];
-      for(int l=0;l<dom.length;++l)
-        newDomain[l] = res.vec(i).domain()[(int)dom[l]];
-      new MRTask() {
-        @Override public void map(Chunk c){
-          for(int i=0;i<c._len;++i)
-            c.set(i,ArrayUtils.find(dom,c.at8(i)));
-        }
-      }.doAll(res.vec(i));
-      res.vec(i).setDomain(newDomain); // needs a DKVput?
+      if (res.vec(i).domain() != null) {
+        final long[] dom = new Vec.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
+        String[] newDomain = new String[dom.length];
+        for (int l = 0; l < dom.length; ++l)
+          newDomain[l] = res.vec(i).domain()[(int) dom[l]];
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i = 0; i < c._len; ++i)
+              c.set(i, ArrayUtils.find(dom, c.at8(i)));
+          }
+        }.doAll(res.vec(i));
+        res.vec(i).setDomain(newDomain); // needs a DKVput?
+      }
     }
     return new ValFrame(res);
   }
