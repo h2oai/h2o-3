@@ -3,9 +3,7 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.H2O;
-import water.MRTask;
-import water.TestUtil;
+import water.*;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -35,23 +33,27 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("REPS: " + rep);
 
     int ll = 5;
+//    for (int i = 0; i < ll; ++i)
+//      raw();
+//    for (int i = 0; i < ll; ++i)
+//      chunks();
+//    for (int i = 0; i < ll; ++i)
+//      chunksInline();
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(false);
     for (int i = 0; i < ll; ++i)
-      raw();
+      rollups(false);
+//    for (int i = 0; i < ll; ++i)
+//      bulk();
+//    Log.info("Now doing funny stuff.\n\n");
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(true);
     for (int i = 0; i < ll; ++i)
-      chunks();
-    for (int i = 0; i < ll; ++i)
-      chunksInline();
-    for (int i = 0; i < ll; ++i)
-      mrtask(false);
-    for (int i = 0; i < ll; ++i)
-      bulk();
-    Log.info("Now doing funny stuff.\n\n");
-    for (int i = 0; i < ll; ++i)
-      mrtask(true);
-    for (int i = 0; i < ll; ++i)
-      chunksInverted();
-    for (int i = 0; i < ll; ++i)
-      rawInverted();
+      rollups(true);
+//    for (int i = 0; i < ll; ++i)
+//      chunksInverted();
+//    for (int i = 0; i < ll; ++i)
+//      rawInverted();
 
   }
 
@@ -274,6 +276,35 @@ public class ChunkSpeedTest extends TestUtil {
     siz += fr.byteSize();
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " MRTask: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+    fr.remove();
+  }
+
+  void rollups(boolean parallel)
+  {
+    Frame fr = new Frame();
+    for (int i=0; i<cols; ++i) {
+      if (parallel)
+        fr.add("C" + i, Vec.makeCon(0, rows)); //multi-chunk (based on #cores)
+      else
+        fr.add("C"+i, Vec.makeVec(raw[i], Vec.newKey())); //directly fill from raw double array (1 chunk)
+    }
+    if (parallel) new FillTask().doAll(fr);
+
+    long start = System.currentTimeMillis();
+    for (int r = 0; r < rep; ++r) {
+      for (int i=0; i<cols; ++i) {
+        DKV.remove(fr.vec(i).rollupStatsKey());
+        Futures fs = new Futures();
+        fr.vec(i).startRollupStats(fs);
+        fs.blockForPending();
+      }
+    }
+    long done = System.currentTimeMillis();
+    long siz = 0;
+    siz += fr.byteSize();
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " Rollups: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
     fr.remove();
   }
