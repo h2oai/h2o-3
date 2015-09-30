@@ -173,7 +173,7 @@ public class FunctionUtils {
 				if (drfFamily != null) {
 					System.out.println("Set _distribution: " + drfFamily);
 					modelParameter._distribution = drfFamily;
-					
+
 					isTunedValue = true;
 				}
 				break;
@@ -189,13 +189,13 @@ public class FunctionUtils {
 				if (glmFamily != null) {
 					System.out.println("Set _family: " + glmFamily);
 					((GLMParameters) modelParameter)._family = glmFamily;
-					
+
 					isTunedValue = true;
 				}
 				if (s != null) {
 					System.out.println("Set _solver: " + s);
 					((GLMParameters) modelParameter)._solver = s;
-					
+
 					isTunedValue = true;
 				}
 				break;
@@ -210,7 +210,7 @@ public class FunctionUtils {
 				if (gbmFamily != null) {
 					System.out.println("Set _distribution: " + gbmFamily);
 					modelParameter._distribution = gbmFamily;
-					
+
 					isTunedValue = true;
 				}
 				break;
@@ -286,6 +286,7 @@ public class FunctionUtils {
 		boolean isTestSuccessfully = false;
 		Frame trainFrame = null;
 		Frame score = null;
+		Model.Output modelOutput = null;
 		ModelMetrics modelMetrics = null;
 
 		DRF drfJob = null;
@@ -315,8 +316,7 @@ public class FunctionUtils {
 					System.out.println("Predict testcase");
 					score = drfModel.score(trainFrame);
 
-					modelMetrics = drfModel._output._training_metrics;
-
+					modelOutput = drfModel._output;
 					break;
 
 				case FunctionUtils.glm:
@@ -332,7 +332,7 @@ public class FunctionUtils {
 					System.out.println("Predict testcase ");
 					score = glmModel.score(trainFrame);
 
-					modelMetrics = glmModel._output._training_metrics;
+					modelOutput = glmModel._output;
 					break;
 
 				case FunctionUtils.gbm:
@@ -346,8 +346,16 @@ public class FunctionUtils {
 					System.out.println("Predict testcase ");
 					score = gbmModel.score(trainFrame);
 
-					modelMetrics = gbmModel._output._training_metrics;
+					modelOutput = gbmModel._output;
 					break;
+			}
+
+			// check regression/classification
+			if (modelOutput.isClassifier() && !Param.parseBoolean(rawInput.get(CommonHeaders.classification))) {
+				Assert.fail("This is regression testcase");
+			}
+			else if (!modelOutput.isClassifier() && Param.parseBoolean(rawInput.get(CommonHeaders.classification))) {
+				Assert.fail("This is classification testcase");
 			}
 
 			isTestSuccessfully = true;
@@ -355,13 +363,12 @@ public class FunctionUtils {
 			if (!isNegativeTestcase) {
 				System.out.println("Testcase passed.");
 
-				// write the result to log and database
+				// write the MSE/AUC result to log and database
+				modelMetrics = modelOutput._training_metrics;
 				System.out.println("MSE: " + modelMetrics._MSE);
-//				MySQL.save("MSE", String.valueOf(modelMetrics._MSE), rawInput);
 
 				if (modelMetrics.auc() != null) {
 					System.out.println("AUC: " + modelMetrics.auc()._auc);
-//					MySQL.save("AUC", String.valueOf(modelMetrics.auc()._auc), rawInput);
 					MySQL.save(String.valueOf(modelMetrics._MSE), String.valueOf(modelMetrics.auc()._auc), rawInput);
 				}
 				else {
@@ -375,7 +382,7 @@ public class FunctionUtils {
 			System.out.println("Testcase failed");
 			ex.printStackTrace();
 			if (!isNegativeTestcase) {
-				Assert.fail("Testcase failed", ex);
+				Assert.fail(ex.getMessage(), ex);
 			}
 			else {
 				System.out.println("This is negative testcase");
@@ -386,7 +393,7 @@ public class FunctionUtils {
 			System.out.println("Testcase failed");
 			ae.printStackTrace();
 			if (!isNegativeTestcase) {
-				Assert.fail("Testcase failed", ae);
+				Assert.fail(ae.getMessage(), ae);
 			}
 			else {
 				System.out.println("This is negative testcase");

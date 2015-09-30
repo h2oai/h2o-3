@@ -8,6 +8,10 @@ public class CommonHeaders {
 
 	public final static String testcase_id = "testcase_id";
 	public final static String test_description = "test_description";
+
+	public final static String regression = "regression";
+	public final static String classification = "classification";
+
 	public final static String train_dataset_id = "train_dataset_id";
 	public final static String validate_dataset_id = "validate_dataset_id";
 
@@ -22,6 +26,9 @@ public class CommonHeaders {
 	public static List<String> commonHeaders = new ArrayList<String>(Arrays.asList(
 			test_description,
 			testcase_id,
+			
+			regression,
+			classification,
 			
 			// dataset files & ids
 			train_dataset_id,

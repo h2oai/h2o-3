@@ -38,6 +38,9 @@ public class DRFConfig {
 		new Param("_r2_stopping", "double"),
 		new Param("_build_tree_one_node", "boolean"),
 		new Param("_class_sampling_factors", "float[]"),
+		new Param("_binomial_double_trees", "boolean"),
+		new Param("_checkpoint", "Key", false, false), //TODO: check it
+		new Param("_nbins_top_level", "int"),
 	}; 
 	
 	public static List<String> listHeaders = new ArrayList<String>(
@@ -66,7 +69,10 @@ public class DRFConfig {
 					"_max_hit_ratio_k",
 					"_r2_stopping",
 					"_build_tree_one_node",
-					"_class_sampling_factors"
+					"_class_sampling_factors",
+					"_binomial_double_trees",
+					"_checkpoint",
+					"_nbins_top_level"
 					)
 			);
 	
