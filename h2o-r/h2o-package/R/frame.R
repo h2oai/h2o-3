@@ -475,6 +475,7 @@ cut.Frame <- h2o.cut
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
+  if( !is.Frame(table) && length(table)==1 && is.character(table) ) table <- .quote(table)
   .newExpr("match", chk.Frame(x), table, nomatch, incomparables)
 }
 
