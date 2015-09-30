@@ -1075,7 +1075,20 @@ h2o.length <- length.Frame
 #' iris.hex <- as.h2o(iris)
 #' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
 #' @export
-h2o.levels <- function(x, i) levels(.fetch.data(x,1)[,i])
+h2o.levels <- function(x, i) {
+  .eval.frame(x)
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
+  lvls <- lapply(res$columns, function(col) col$domain)
+  if( all(sapply(lvls, is.null)) ) return(NULL)
+  if( missing(i) ) {
+    nrow <- max(unlist(lapply(lvls, length)))
+    lvls <- sapply(lvls, function(l) { if( length(l) < nrow ) {l <- c(l,rep(NA,nrow-length(l))) } else { l } })
+    colnames(lvls) <- sapply(res$columns, function(col) col$label)
+    lvls
+  } else {
+    lvls[[i]]
+  }
+}
 
 #'
 #' Set Levels of H2O Factor Column
