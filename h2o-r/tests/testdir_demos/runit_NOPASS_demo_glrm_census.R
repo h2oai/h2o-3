@@ -29,24 +29,28 @@ test.whd_zip.demo <- function(conn) {
   print(summary(whd_zcta))
   
   Log.info(paste0("Create validation data with ", 100*missing_frac, "% missing entries"))
-  acs_miss <- h2o.assign(acs_full, "acs_miss", deepCopy = TRUE)
+  acs_miss <- h2o.uploadFile(locate("smalldata/census/ACS_13_5YR_DP02_cleaned.zip"), col.types = c("enum", rep("numeric", 149)))
+  acs_miss <- acs_miss[,-which(colnames(acs_miss) == "ZCTA5")]
   acs_miss <- h2o.insertMissingValues(data = acs_miss, fraction = missing_frac, seed = SEED)
   print(summary(acs_miss))
   
   Log.info(paste("Run GLRM to reduce ZCTA demographics to k =", k_dim, "archetypes"))
-  Log.info("Grid search for optimal regularization weights")
-  gamma_x_grid <- c(0.25, 0.5)
-  gamma_y_grid <- c(0.5, 0.75)
-  search_params = list(gamma_x = gamma_x_grid, gamma_y = gamma_y_grid)
-  acs_grid <- h2o.grid("glrm", is_supervised = FALSE, training_frame = acs_miss, validation_frame = acs_full, 
-                       k = k_dim, transform = "STANDARDIZE", init = "PlusPlus", loss = "Quadratic", max_iterations = 100, 
-                       regularization_x = "Quadratic", regularization_y = "L1", seed = SEED, hyper_params = search_params)
-  grid_models <- lapply(acs_grid@model_ids, function(i) { model = h2o.getModel(i) })
+  # Log.info("Grid search for optimal regularization weights")
+  # gamma_x_grid <- c(0.25, 0.5)
+  # gamma_y_grid <- c(0.5, 0.75)
+  # search_params = list(gamma_x = gamma_x_grid, gamma_y = gamma_y_grid)
+  # acs_grid <- h2o.grid("glrm", is_supervised = FALSE, training_frame = acs_miss, validation_frame = acs_full, 
+  #                     k = k_dim, transform = "STANDARDIZE", init = "PlusPlus", loss = "Quadratic", max_iterations = 100, 
+  #                     regularization_x = "Quadratic", regularization_y = "L1", seed = SEED, hyper_params = search_params)
+  # grid_models <- lapply(acs_grid@model_ids, function(i) { model = h2o.getModel(i) })
   
-  Log.info("Select model that achieves lowest total validation error")
-  valid_numerr <- sapply(grid_models, function(m) { m@model$validation_metrics@metrics$numerr })
-  valid_caterr <- sapply(grid_models, function(m) { m@model$validation_metrics@metrics$caterr })
-  acs_best <- grid_models[[which.min(valid_numerr + valid_caterr)]]
+  # Log.info("Select model that achieves lowest total validation error")
+  # valid_numerr <- sapply(grid_models, function(m) { m@model$validation_metrics@metrics$numerr })
+  # valid_caterr <- sapply(grid_models, function(m) { m@model$validation_metrics@metrics$caterr })
+  # acs_best <- grid_models[[which.min(valid_numerr + valid_caterr)]]
+  acs_best <- h2o.glrm(training_frame = acs_miss, validation_frame = acs_full, k = k_dim, transform = "STANDARDIZE",
+                       init = "PlusPlus", loss = "Quadratic", max_iterations = 100, regularization_x = "Quadratic",
+                       regularization_y = "L1", gamma_x = 0.25, gamma_y = 0.5, seed = SEED)
   print(acs_best)
   
   Log.info("Embedding of ZCTAs into archetypes (X):")

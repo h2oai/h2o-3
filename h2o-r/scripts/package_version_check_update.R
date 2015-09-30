@@ -83,15 +83,18 @@ function(args) {
                      ", but this system's R version is ",sysRMajor,".",sysRMinor),stdout())
         write(paste0("INFO: Manually update your R version to match Jenkins'"),stdout()) }
 
+    installed_packages <- rownames(installed.packages())
+
     # download and install RCurl
-    if (!doCheckOnly) {
-        url <- tryCatch({
+    url <- tryCatch({
+        no_rcurl <- !"RCurl" %in% installed_packages
+        if (no_rcurl) {
             write("INFO: Installing RCurl...",stdout())
-            install.packages("RCurl",repos="http://cran.us.r-project.org")
-        }, error = function(e) {
-            write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
-            q("no",1,FALSE)
-        }) }
+            install.packages("RCurl",repos="http://cran.us.r-project.org") }
+    }, error = function(e) {
+        write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
+        q("no",1,FALSE)
+    })
 
     # read the package_version_requirements file
     require(RCurl,quietly=TRUE)
@@ -111,7 +114,6 @@ function(args) {
     write("INFO: Jenkins' (package,version) list:",stdout())
     write("",stdout())
     invisible(lapply(1:nrow(reqs),function(x) write(paste0("(",as.character(reqs[x,1]),", ",as.character(reqs[x,2]),")"),stdout())))
-    installed_packages <- rownames(installed.packages())
     num_packages <- nrow(reqs)
 
     if (doCheckOnly) { # do package and version checks.
@@ -141,7 +143,7 @@ function(args) {
                 write("",stdout())
                 write(paste0("Installing package ",pkg,"..."),stdout())
                 if (OSX) { # osx
-                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/",pkg),repos=NULL,type="binary")
+                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/",pkg),repos=NULL,type="mac.binary.mavericks")
                 } else if (LIN) { # linux
                     install.packages(paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/",pkg),repos=NULL,method="curl")
                 } else {
