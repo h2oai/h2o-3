@@ -334,7 +334,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** List of all the associated ModelMetrics objects, so we can delete them
      *  when we delete this model. */
-    public Key[] _model_metrics = new Key[0];
+    Key[] _model_metrics = new Key[0];
 
     /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
      *  (run-time, etc) but that has to wait until Job is split from
@@ -434,6 +434,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _model_metrics[_model_metrics.length - 1] = mm._key;
       return mm;                // Flow coding
     }
+    public synchronized void clearModelMetrics() { _model_metrics = null; }
 
     long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
