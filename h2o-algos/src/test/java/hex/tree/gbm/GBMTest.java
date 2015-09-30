@@ -1112,7 +1112,10 @@ public class GBMTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (gbm != null) gbm.delete();
+      if (gbm != null) {
+        gbm.deleteCrossValidationModels();
+        gbm.delete();
+      }
       Scope.exit();
     }
   }
@@ -1158,8 +1161,14 @@ public class GBMTest extends TestUtil {
       job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
-      if (gbm1 != null) gbm1.delete();
-      if (gbm2 != null) gbm2.delete();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
+      if (gbm2 != null) {
+        gbm2.deleteCrossValidationModels();
+        gbm2.delete();
+      }
       Scope.exit();
     }
   }
@@ -1250,7 +1259,10 @@ public class GBMTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (gbm != null) gbm.delete();
+      if (gbm != null) {
+        gbm.deleteCrossValidationModels();
+        gbm.delete();
+      }
       Scope.exit();
     }
   }
@@ -1299,8 +1311,14 @@ public class GBMTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
-      if (gbm1 != null) gbm1.delete();
-      if (gbm2 != null) gbm2.delete();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
+      if (gbm2 != null) {
+        gbm2.deleteCrossValidationModels();
+        gbm2.delete();
+      }
       Scope.exit();
     }
   }
@@ -1345,7 +1363,10 @@ public class GBMTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (gbm != null) gbm.delete();
+      if (gbm != null) {
+        gbm.deleteCrossValidationModels();
+        gbm.delete();
+      }
       Scope.exit();
     }
   }

@@ -408,8 +408,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                           t.printStackTrace();
                                           throw new RuntimeException(t);
                                         } finally {
-                                          if (model1 != null) model1.delete();
-                                          if (model2 != null) model2.delete();
+                                          if (model1 != null) {
+                                            model1.deleteCrossValidationModels();
+                                            model1.delete();
+                                          }
+                                          if (model2 != null) {
+                                            model2.deleteCrossValidationModels();
+                                            model2.delete();
+                                          }
                                         }
                                       }
                                     }

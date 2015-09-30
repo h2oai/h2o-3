@@ -392,7 +392,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
       if (isCancelledOrCrashed()) break;
-      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
 
       // Shallow clone - not everything is a private copy!!!
       cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
@@ -403,12 +402,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvModelBuilders[i].cvModelBuilderKeys = null; //children cannot have children
       cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
       cvModelBuilders[i]._state = JobState.CREATED;
-      cvModelBuilders[i]._parms =  (P)_parms.clone();
+      cvModelBuilders[i]._parms = (P) _parms.clone();
       cvModelBuilders[i]._parms._weights_column = weightName;
       cvModelBuilders[i]._parms._train = cvTrain[i]._key;
       cvModelBuilders[i]._parms._valid = cvValid[i]._key;
       cvModelBuilders[i]._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, _parms._model_id);
+    }
+    for (int i=0; i<N; ++i) {
+      cvModelBuilders[i].init(false);
+      if (cvModelBuilders[i].error_count() > 0) {
+        _messages = cvModelBuilders[i]._messages; //bail out on first failure -> main job gets the failed N-fold CV job's error message
+        updateValidationMessages();
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(cvModelBuilders[i]);
+      }
+    }
+    for (int i=0; i<N; ++i) {
+      if (isCancelledOrCrashed()) break;
+      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       cvModelBuilders[i].trainModelImpl(-1, true); //non-blocking
       if (!async)
