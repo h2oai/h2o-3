@@ -510,7 +510,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    gs._mb.makeModelMetrics(GLRMModel.this, orig);   // save error metrics based on imputed data
     return f;
   }
 

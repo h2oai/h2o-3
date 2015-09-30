@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.DataInfo;
+import hex.ModelMetrics;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -56,7 +57,7 @@ public class GLRMCategoricalTest extends TestUtil {
   @Test public void testCategoricalIris() throws InterruptedException, ExecutionException {
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
 
     try {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
@@ -73,8 +74,8 @@ public class GLRMCategoricalTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model, train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
@@ -87,7 +88,6 @@ public class GLRMCategoricalTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (score != null) score.delete();
       if (model != null) {
         // model._parms._loading_key.get().delete();
         model._output._loading_key.get().delete();
@@ -99,7 +99,7 @@ public class GLRMCategoricalTest extends TestUtil {
   @Test public void testCategoricalProstate() throws InterruptedException, ExecutionException {
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
 
     try {
@@ -125,8 +125,8 @@ public class GLRMCategoricalTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model, train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
@@ -139,7 +139,6 @@ public class GLRMCategoricalTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (score != null) score.delete();
       if (model != null) {
         // model._parms._loading_key.get().delete();
         model._output._loading_key.get().delete();
@@ -152,7 +151,7 @@ public class GLRMCategoricalTest extends TestUtil {
   @Test public void testLosses() throws InterruptedException, ExecutionException {
     long seed = 0xDECAF;
     Random rng = new Random(seed);
-    Frame train = null, score = null;
+    Frame train = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
     final GLRMParameters.Regularizer[] regs = new GLRMParameters.Regularizer[] {
             GLRMParameters.Regularizer.Quadratic,
@@ -209,8 +208,8 @@ public class GLRMCategoricalTest extends TestUtil {
             try {
               model = job.trainModel().get();
               Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-              score = model.score(train);
-              ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+              model.score(train).delete();
+              ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model, train);
               Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
             } catch (Throwable t) {
               throw t;
@@ -225,7 +224,6 @@ public class GLRMCategoricalTest extends TestUtil {
               model._output._loading_key.get().delete();
               model.delete();
             }
-            if (score != null) score.delete();
             Scope.exit();
           }
         }
@@ -239,7 +237,7 @@ public class GLRMCategoricalTest extends TestUtil {
   @Test public void testSetColumnLossCats() throws InterruptedException, ExecutionException {
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
 
     Scope.enter();
@@ -268,8 +266,8 @@ public class GLRMCategoricalTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         GLRMTest.checkLossbyCol(parms, model);
 
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model, train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
@@ -283,7 +281,6 @@ public class GLRMCategoricalTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (score != null) score.delete();
       if (model != null) {
         model._output._loading_key.get().delete();
         model.delete();
