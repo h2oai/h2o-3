@@ -1,6 +1,7 @@
 package water.fvec;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.H2O;
 import water.MRTask;
@@ -17,6 +18,7 @@ public class ChunkSpeedTest extends TestUtil {
   final double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
 
+  @Ignore
   @Test
   public void run() {
     for (int j = 0; j < cols; ++j) {
