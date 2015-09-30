@@ -1886,7 +1886,11 @@ h2o.removeVecs <- function(data, cols) {
 #' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
 #' summary(australia.hex)
 #' @export
-h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
+h2o.ifelse <- function(test, yes, no) {
+  if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
+  if( !is.Frame(no)  && is.character(no ) ) no  <- .quote(no )
+  .newExpr("ifelse",test,yes,no)
+}
 
 #' @rdname h2o.ifelse
 #' @export

@@ -1324,7 +1324,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param table:
     :param nomatch:
 
-    :return: bit H2OVec
+    :return: H2OFrame of one boolean column
     """
     return H2OFrame(expr=ExprNode("match", self, table, nomatch, None))
 
