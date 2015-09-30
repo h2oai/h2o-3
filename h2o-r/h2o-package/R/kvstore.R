@@ -38,6 +38,12 @@
   attr(x,"data")
 }
 
+.fetch.types <- function(x) {
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES,"/",attr(x,"id")))$frames[[1]]
+  .set(x,"types",lapply(res$columns,function(c)c$type))
+  invisible(x)
+}
+
 #` Flush any cached data
 .flush.data <- function(x) {
   rm("data",envir=x)

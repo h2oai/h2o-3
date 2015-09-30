@@ -1719,6 +1719,7 @@ as.data.frame.Frame <- function(x, ...) {
   }
 
   # Get column types from H2O to set the dataframe types correctly
+  if( is.null(attr(x, "types")) ) .fetch.types(x)
   colClasses <- attr(x, "types")
   colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
   colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
