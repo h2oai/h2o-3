@@ -78,6 +78,7 @@ The following tutorial will walk the user through the download or build of H2O a
 
 	- *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
 
+
 0. To monitor your job, direct your web browser to your standard job tracker Web UI.
 To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched,
 review the output from your command after the nodes has clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
