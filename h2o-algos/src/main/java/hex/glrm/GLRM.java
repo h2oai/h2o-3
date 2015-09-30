@@ -88,11 +88,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    // if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
-    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
-      _parms._loading_name = "GLRMLoading_" + Key.rand();
-    if (!_parms._loss.isForNumeric()) error("_loss", _parms._loss + " is not a univariate loss function");
-    if (!_parms._multi_loss.isForCategorical()) error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
+    if (!_parms._loss.isForNumeric())
+      error("_loss", _parms._loss + " is not a univariate loss function");
+    if (!_parms._multi_loss.isForCategorical())
+      error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
     if (_parms._period <= 0) error("_period", "_period must be a positive integer");
     if (_parms._gamma_x < 0) error("_gamma_x", "gamma must be a non-negative number");
     if (_parms._gamma_y < 0) error("_gamma_y", "gamma_y must be a non-negative number");
@@ -364,8 +363,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         } finally {
           if (job != null) job.remove();
           if (svd != null) {
-            if(svd._parms._keep_u)
-              svd._output._u_key.get().delete();
             model._output._init_key = svd._key;
             // svd.remove();
           }
@@ -680,7 +677,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        model._output._loading_key = Key.make(_parms._loading_name);
+        String loading_name = (_parms._loading_name == null || _parms._loading_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._loading_name;
+        model._output._loading_key = Key.make(loading_name);
         Frame x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
