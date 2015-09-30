@@ -88,25 +88,22 @@ class ASTGroup extends ASTPrim {
     double[] initVal(int maxx) { return new double[]{0}; }
   }
 
-  @Override int nargs() { return -1; } // (GB data [group-by-cols] [order-by-cols] {fcn col "na"}...)
+  @Override int nargs() { return -1; } // (GB data [group-by-cols] {fcn col "na"}...)
   @Override
   public String[] args() { return new String[]{"..."}; }
   @Override public String str() { return "GB"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    int ncols = fr.numCols();
+    final int ncols = fr.numCols();
 
     ASTNumList groupby = check(ncols, asts[2]);
-    int[] gbCols = groupby.expand4();
+    final int[] gbCols = groupby.expand4();
 
-    ASTNumList orderby = check(ncols, asts[3]);
-    final int[] ordCols = orderby.expand4();
-
-    // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...),
+    // Count of aggregates; knock off the first 3 ASTs (GB data [group-by] ...),
     // then count by triples.
-    int naggs = (asts.length-4)/3;
+    int naggs = (asts.length-3)/3;
     final AGG[] aggs = new AGG[naggs];
-    for( int idx = 4; idx < asts.length; idx += 3 ) {
+    for( int idx = 3; idx < asts.length; idx += 3 ) {
       Val v = asts[idx].exec(env);
       String fn = v instanceof ValFun ? v.getFun().str() : v.getStr();
       FCN fcn = FCN.valueOf(fn);
@@ -116,30 +113,31 @@ class ASTGroup extends ASTPrim {
       if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
-      aggs[(idx-4)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
+      aggs[(idx-3)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
     }
 
     // do the group by work now
     IcedHashMap<G,String> gss = doGroups(fr,gbCols,aggs);
+    if( gss == null ) 
+      return sortingGroup(fr,gbCols,aggs);
     final G[] grps = gss.keySet().toArray(new G[gss.size()]);
 
-    // apply an ORDER by here...
-    if( ordCols.length > 0 )
-      Arrays.sort(grps,new java.util.Comparator<G>() {
-          // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
-          // or _gs[i] < that._gs[i].  Order by various columns specified by
-          // _orderByCols.  NaN is treated as least
-          @Override public int compare( G g1, G g2 ) {
-            for( int i : ordCols ) {
-              if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
-              if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
-              if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
-            }
-            return 0;
+    // Sort the groups by group key, when treated as a double.
+    Arrays.sort(grps,new java.util.Comparator<G>() {
+        // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
+        // or _gs[i] < that._gs[i].  Order by the grouping keys.  NaN is
+        // treated as least.
+        @Override public int compare( G g1, G g2 ) {
+          for( int i=0; i<ncols; i++ ) {
+            if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
+            if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
+            if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
           }
-          // I do not believe sort() calls equals() at this time, so no need to implement
-          @Override public boolean equals( Object o ) { throw H2O.unimpl(); }
-        });
+          return 0;
+        }
+        // I do not believe sort() calls equals() at this time, so no need to implement
+        @Override public boolean equals( Object o ) { throw H2O.unimpl(); }
+      });
 
     // Build the output!
     String[] fcnames = new String[aggs.length];
@@ -178,6 +176,13 @@ class ASTGroup extends ASTPrim {
     return dim;
   }
 
+  /** Use a sorting groupby, probably because the hash table size exceeded
+   *  MAX_HASH_SIZE; i.e. the number of unique keys in the GBTask.
+   */
+  private ValFrame sortingGroup(Frame fr, int[] gbCols, AGG[] aggs) {
+    throw H2O.unimpl();
+  }
+
   // Do all the grouping work.  Find groups in frame 'fr', grouped according to
   // the selected 'gbCols' columns, and for each group compute aggregrate
   // results using 'aggs'.  Return an array of groups, with the aggregate results.
@@ -185,6 +190,10 @@ class ASTGroup extends ASTPrim {
     // do the group by work now
     long start = System.currentTimeMillis();
     GBTask p1 = new GBTask(gbCols, aggs).doAll(fr);
+    if( p1._kill._killed ) {
+      Log.info("Group By Task aborted after " + (System.currentTimeMillis() - start)/1000. + " (s) due to size, switching to sorting GroupBy");
+      return null;
+    }
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
     return p1._gss;
   }
@@ -243,15 +252,19 @@ class ASTGroup extends ASTPrim {
     double[] initVal() { return _fcn.initVal(_maxx); }
   }
 
+  private static class Kill extends Iced { volatile boolean _killed; }
+
   // --------------------------------------------------------------------------
   // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
   // groups and all aggregates
   static class GBTask extends MRTask<GBTask> {
+    final Kill _kill;                 // Shared per-node, checks for size blowout
     final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
-    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); }
+    GBTask(int[] gbCols, AGG[] aggs) { _kill = new Kill(); _gss = new IcedHashMap<>(); _gbCols=gbCols; _aggs=aggs; }
     @Override public void map(Chunk[] cs) {
+      if( _kill._killed ) return; // Abort if MRTask already dead for size blowout
       // Groups found in this Chunk
       IcedHashMap<G,String> gs = new IcedHashMap<>();
       G gWork = new G(_gbCols.length,_aggs); // Working Group
@@ -273,15 +286,25 @@ class ASTGroup extends ASTPrim {
     // Racy update on a subtle path: reduction is always single-threaded, but
     // the shared global hashtable being reduced into is ALSO being written by
     // parallel map calls.
-    @Override public void reduce(GBTask t) { if( _gss != t._gss ) reduce(t._gss); }
+    @Override public void reduce(GBTask t) {
+      if( t._kill._killed && !_kill._killed ) { _kill._killed = true; _gss.clear(); }
+      if( _kill._killed ) return;
+      if( _gss != t._gss ) reduce(t._gss);
+    }
     // Non-blocking race-safe update of the shared per-node groups hashtable
     private void reduce( IcedHashMap<G,String> r ) {
-      for( G rg : r.keySet() )
+      // Abort if dead for size blowout
+      if( r.size() > ASTMerge.MAX_HASH_SIZE ) { _kill._killed = true; _gss.clear(); return; }
+      for( G rg : r.keySet() ) {
         if( _gss.putIfAbsent(rg,"")!=null ) {
           G lg = _gss.getk(rg);
           for( int i=0; i<_aggs.length; i++ )
             _aggs[i].atomic_op(lg._dss,lg._ns,i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+        } else {
+          if( _gss.size() > ASTMerge.MAX_HASH_SIZE ) { _kill._killed = true; _gss.clear(); }
+          if( _kill._killed ) return;
         }
+      }
     }
   }
 

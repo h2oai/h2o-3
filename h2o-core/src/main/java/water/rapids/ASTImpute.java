@@ -76,7 +76,7 @@ public class ASTImpute extends ASTPrim {
     } else {                    // Grouping!
       // Build and run a GroupBy command
       AST ast_grp = new ASTGroup();
-      Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,new ASTNumList(),method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
+      Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
      
       // Convert the Frame result to a group/imputation mapping
       final int[] bycols = ArrayUtils.seq(0,imputes.numCols()-1);
