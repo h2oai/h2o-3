@@ -2,6 +2,7 @@ package hex.glrm;
 
 import hex.*;
 import hex.glrm.GLRMInit.*;
+import hex.optimization.L_BFGS;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
@@ -459,34 +460,46 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       return mu;
     }
     public final double offset(Vec v, Loss loss) {
+      assert v.isNumeric() : "Vector must be numeric type";
       switch(loss) {
         case Quadratic:
           return v.mean();
         case Absolute:
           return v.median();
+        case Huber:
+          return v.mean();    // TODO: This isn't quite right - mean is not necessarily minimizer, but close enough
         case Poisson:
           return Math.log(v.mean());
         case Hinge:
           double ones = v.nzCnt();
           double zeros = v.length() - v.naCnt() - ones;
           return ones > zeros ? 1 : 0;
-        case Huber:
-          return v.mean();    // TODO: This isn't quite right - mean is not necessarily minimizer, but close enough
         case Periodic:
           assert _period > 0 : "_period must be a positive integer";
           PeriodOffset tsk = new PeriodOffset(_period).doAll(v);
           return tsk._offset;
         case Logistic:
-          throw H2O.unimpl("Generalized column mean not available for loss function " + loss);
+          LossOffsetSolver gs = new LossOffsetSolver(this, new Frame(v), loss, _period);
+          L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
+          L_BFGS.Result r = lbfgs.solve(gs, new double[] { v.mean() });
+          return r.coefs[0];
+          // throw H2O.unimpl("Generalized column mean not available for loss function " + loss);
         default:
           throw new RuntimeException("Unknown loss function " + loss);
       }
     }
     public final double[] moffset(Vec v, Loss multi_loss) {
+      assert v.isEnum() : "Vector must be enum type";
       switch(multi_loss) {
-        case Ordinal:
         case Categorical:
-          throw H2O.unimpl("Generalized column mean not available for multidimensional loss function " + multi_loss);
+        case Ordinal:
+          MultiLossOffsetSolver gs = new MultiLossOffsetSolver(this, new Frame(v), multi_loss);
+          L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
+          double[] coefs = new double[v.cardinality()];
+          coefs[Math.min(v.mode(), v.cardinality()-1)] = 1;
+          L_BFGS.Result r = lbfgs.solve(gs, coefs);
+          return r.coefs;
+          // throw H2O.unimpl("Generalized column mean not available for multidimensional loss function " + multi_loss);
         default:
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
       }

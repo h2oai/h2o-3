@@ -247,18 +247,16 @@ public abstract class GLRMInit {
     final GLRMParameters _parms;
     final Frame _train;   // Training frame with columns shuffled by DataInfo
     final Loss _loss;
-    final int _period;
 
-    public MultiLossOffsetSolver(GLRMParameters parms, Frame train, Loss loss, int period) {
+    public MultiLossOffsetSolver(GLRMParameters parms, Frame train, Loss loss) {
       _parms = parms;
       _train = train;
       _loss = loss;
-      _period = period;
     }
 
     @Override
     public GradientInfo getGradient(double[] beta) {
-      MultiLossGradCalc tsk = new MultiLossGradCalc(_parms, _loss, _period, beta).doAll(_train);
+      MultiLossGradCalc tsk = new MultiLossGradCalc(_parms, _loss, beta).doAll(_train);
       return new GradientInfo(tsk._lsum, tsk._lgrad);
     }
 
@@ -271,16 +269,14 @@ public abstract class GLRMInit {
     private static final class MultiLossGradCalc extends MRTask<MultiLossGradCalc> {
       final GLRMParameters _parms;
       final Loss _loss;
-      final int _period;
       final double[] _mu;
 
       double _lsum;
       double[] _lgrad;
 
-      MultiLossGradCalc(GLRMParameters parms, Loss loss, int period, double[] mu) {
+      MultiLossGradCalc(GLRMParameters parms, Loss loss, double[] mu) {
         _parms = parms;
         _loss = loss;
-        _period = period;
         _mu = mu;
       }
 
