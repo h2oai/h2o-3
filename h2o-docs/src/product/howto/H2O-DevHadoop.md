@@ -9,6 +9,7 @@ Currently supported versions:
 - HDP 2.2
 - MapR 3.1.1
 - MapR 4.0.1
+- MapR 5.0
 
 **Important Points to Remember**: 
 
@@ -56,6 +57,7 @@ The following tutorial will walk the user through the download or build of H2O a
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
 		
 	**Note**: Enter only one of the above commands.
 
@@ -68,7 +70,7 @@ The following tutorial will walk the user through the download or build of H2O a
 
 		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
-	- The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
+ The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
 
 	- *mapperXmx* is the mapper size or the amount of memory allocated to each node. Specify at least 6 GB. 
 
