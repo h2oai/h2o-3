@@ -28,6 +28,7 @@
   .eval.frame(chk.Frame(x))
   if( is.null( attr(x, "data")) || (is.data.frame( attr(x, "data")) && nrow( attr(x, "data")) < N) ) {
     res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
+    N <- max(N,10L)
     data <- .eval.frame(x[1:N,], TRUE)
     data <- as.data.frame(data)
     colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
