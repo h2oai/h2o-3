@@ -88,11 +88,7 @@ public class GLRMCategoricalTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -139,11 +135,7 @@ public class GLRMCategoricalTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
       Scope.exit();
     }
   }
@@ -220,10 +212,7 @@ public class GLRMCategoricalTest extends TestUtil {
             t.printStackTrace();
             throw new RuntimeException(t);
           } finally {
-            if (model != null) {
-              model._output._loading_key.get().delete();
-              model.delete();
-            }
+            if (model != null) model.delete();
             Scope.exit();
           }
         }
@@ -281,10 +270,7 @@ public class GLRMCategoricalTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) {
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
       Scope.exit();
     }
   }

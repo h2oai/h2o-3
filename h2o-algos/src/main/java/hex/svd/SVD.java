@@ -490,6 +490,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           if (!_parms._only_v && !_parms._keep_u) {          // Delete U vecs if computed, but user does not want it returned
             for (int i = 0; i < uvecs.length; i++) uvecs[i].remove();
+            model._output._u_key = null;
           } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
             u = new Frame(model._output._u_key, null, uvecs);
             DKV.put(u._key, u);

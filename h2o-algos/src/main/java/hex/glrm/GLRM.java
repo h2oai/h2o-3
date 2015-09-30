@@ -23,6 +23,7 @@ import hex.util.LinearAlgebraUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.api.ModelCacheManager;
 import water.fvec.*;
 import water.util.*;
 
@@ -267,7 +268,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     protected GLRMDriver() { super(true); } // bump driver priority
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt) {
+    private double[][] initialXY(DataInfo tinfo, Frame dfrm, GLRMModel model, long na_cnt) {
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
@@ -331,11 +332,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._impute_missing = true;
         parms._save_v_frame = false;
 
-        SVDModel svd = null;
+        ModelCacheManager MCM = H2O.getMCM();
+        SVDModel svd = MCM.get(parms);
         SVD job = null;
         try {
-          job = new EmbeddedSVD(_key, _progressKey, parms);
-          svd = job.trainModel().get();
+          if(svd == null) {
+            job = new EmbeddedSVD(_key, _progressKey, parms);
+            svd = job.trainModel().get();
+          }
 
           // Ensure SVD centers align with adapted training frame cols
           assert svd._output._permutation.length == tinfo._permutation.length;
@@ -362,7 +366,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (svd != null) {
             if(svd._parms._keep_u)
               svd._output._u_key.get().delete();
-            svd.remove();
+            model._output._init_key = svd._key;
+            // svd.remove();
           }
         }
 
@@ -379,11 +384,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._seed = _parms._seed;
         parms._pred_indicator = true;
 
-        KMeansModel km = null;
+        ModelCacheManager MCM = H2O.getMCM();
+        KMeansModel km = MCM.get(parms);
         KMeans job = null;
         try {
-          job = new EmbeddedKMeans(_key, _progressKey, parms);
-          km = job.trainModel().get();
+          if (km == null) {
+            job = new EmbeddedKMeans(_key, _progressKey, parms);
+            km = job.trainModel().get();
+          }
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
@@ -395,7 +403,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
         } finally {
           if (job != null) job.remove();
-          if (km != null) km.remove();
+          if (km != null) {
+            model._output._init_key = km._key;
+            // km.remove();
+          }
         }
 
         // Permute cluster columns to align with dinfo, normalize nums, and expand out cats to indicator cols
@@ -589,7 +600,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Use closed form solution for X if quadratic loss and regularization
         update(1, "Initializing X and Y matrices");   // One unit of work
-        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
+        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
