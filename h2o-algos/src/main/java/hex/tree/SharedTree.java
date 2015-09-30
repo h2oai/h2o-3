@@ -316,7 +316,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     protected M getModelDeepClone(M model) {
       M newModel = IcedUtils.clone(model, _dest);
       // Do not clone model metrics
-      newModel._output._model_metrics = new Key[0];
+      newModel._output.clearModelMetrics();
       newModel._output._training_metrics = null;
       newModel._output._validation_metrics = null;
       // Clone trees

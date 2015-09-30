@@ -1,9 +1,6 @@
 package hex.kmeans;
 
-import hex.ClusteringModelBuilder;
-import hex.DataInfo;
-import hex.ModelCategory;
-import hex.ModelMetricsClustering;
+import hex.*;
 import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
 import org.joda.time.format.DateTimeFormat;
@@ -313,29 +310,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 //        Log.info(model._output._scoring_history);
 //        Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
 
-        // FIXME: Remove (most of) this code - once it passes...
-        // PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
-        if (false) {
-          assert((ArrayUtils.sum(model._output._size) - _parms.train().numRows()) <= 1);
-
-//          Log.info(model._output._model_summary);
-//          Log.info(model._output._scoring_history);
-//          Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
-          model.score(_parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
-          ModelMetricsClustering mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          assert(Arrays.equals(mm._size, ((ModelMetricsClustering) model._output._training_metrics)._size));
-          for (int i=0; i<_parms._k; ++i) {
-            assert(MathUtils.compare(mm._withinss[i], ((ModelMetricsClustering) model._output._training_metrics)._withinss[i], 1e-6, 1e-6));
-          }
-          assert(MathUtils.compare(mm._totss, ((ModelMetricsClustering) model._output._training_metrics)._totss, 1e-6, 1e-6));
-          assert(MathUtils.compare(mm._betweenss, ((ModelMetricsClustering) model._output._training_metrics)._betweenss, 1e-6, 1e-6));
-          assert(MathUtils.compare(mm._tot_withinss, ((ModelMetricsClustering) model._output._training_metrics)._tot_withinss, 1e-6, 1e-6));
-        }
         // At the end: validation scoring (no need to gather scoring history)
         if (_valid != null) {
-          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
-          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
-          pred.delete();
+          model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
+          model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
           model.update(_key); // Update model in K/V store
         }
         done();                 // Job done!

@@ -28,7 +28,6 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   final GLMModel.GLMParameters _parms;
   final private int _rank;
   final double _threshold;
-  AUC2 _auc2;
   MetricBuilder _metricBuilder;
   boolean _intercept = true;
 
@@ -129,12 +128,6 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   public final long nullDOF() { return nobs - (_intercept?1:0);}
   public final long resDOF() { return nobs - _rank;}
 
-  protected double computeAUC(){
-    if(_parms._family != Family.binomial)
-      throw new IllegalArgumentException("AUC only defined for family == 'binomial', got '" + _parms._family + "'");
-    return ((MetricBuilderBinomial)_metricBuilder).auc();
-  }
-
   protected void computeAIC(){
     aic = 0;
     switch( _parms._family) {
@@ -159,8 +152,6 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
     aic += 2*_rank;
   }
 
-  private transient ModelMetrics _metrics;
-
   @Override
   public String toString(){
     if(_metricBuilder != null)
@@ -171,15 +162,14 @@ public class GLMValidation extends MetricBuilderBinomial<GLMValidation> {
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
     GLMModel gm = (GLMModel)m;
     computeAIC();
-    ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f):_metrics;
+    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f);
     if (_parms._family == Family.binomial) {
-      ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
-      metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
+      ModelMetricsBinomial metricsBinomial = (ModelMetricsBinomial) metrics;
+      metrics = new ModelMetricsBinomialGLM(gm, f, metrics._MSE, _domain, metricsBinomial._sigma, metricsBinomial._auc, metricsBinomial._logloss, residualDeviance(), nullDeviance(), aic, nullDOF(), resDOF());
     } else {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
-      metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), residualDeviance()/_wcount, nullDeviance(), aic, nullDOF(), resDOF());
+      metrics = new ModelMetricsRegressionGLM(gm, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), residualDeviance()/_wcount, nullDeviance(), aic, nullDOF(), resDOF());
     }
-    DKV.put(metrics._key,metrics);
-    return gm._output.addModelMetrics(metrics);
+    return gm._output.addModelMetrics(metrics); // Update the metrics in-place with the GLM version
   }
 }
