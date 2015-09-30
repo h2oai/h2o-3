@@ -34,10 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   //------------------- simple tests on synthetic data------------------------------------
   @Test
@@ -739,11 +736,8 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
     } finally {
-      for (Vec v : betaConstraints.vecs())
-        v.remove();
-      DKV.remove(betaConstraints._key);
-      for (Vec v : fr.vecs()) v.remove();
-      DKV.remove(fr._key);
+      betaConstraints.delete();
+      fr.delete();
       if (model != null) model.delete();
     }
   }
@@ -924,9 +918,8 @@ public class GLMTest  extends TestUtil {
     Vec v11 = Vec.makeVec(d8, Vec.newKey());
     Vec v12 = Vec.makeVec(d9, Vec.newKey());
 
-    Key k = Key.make("TestData");
-    Frame f = new Frame(v01,v02,v03,v04,v05,v05,v06,v07,v08,v09,v10,v11,v12);
-    DKV.put(k,f);
+    Frame f = new Frame(Key.make("TestData"),null,new Vec[]{v01,v02,v03,v04,v05,v05,v06,v07,v08,v09,v10,v11,v12});
+    DKV.put(f);
     DataInfo dinfo = new DataInfo(Key.make(),f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);
     final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, null, null).setSparse(true).doAll(dinfo._adaptedFrame);
@@ -955,8 +948,7 @@ public class GLMTest  extends TestUtil {
       assertEquals(glmtDense2._xy[i], glmtSparse2._xy[i], 1e-8);
     }
     dinfo.remove();
-    DKV.remove(k);
-    f.remove();
+    f.delete();
   }
 
   // test categorical autoexpansions, run on airlines which has several categorical columns,
@@ -988,6 +980,7 @@ public class GLMTest  extends TestUtil {
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._resDev, 1e-4);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._MSE * score1.numRows(), 1e-4);
+      score1.delete();
       mm.remove();
       res = model1.score(fr);
       // Build a POJO, validate same results
@@ -1235,11 +1228,6 @@ public class GLMTest  extends TestUtil {
   }
 
 
-  @Test
-  public void testYmuTsk() {
-
-  }
-
   public static double residualDeviance(GLMModel m) {
     if (m._parms._family == Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
@@ -1355,17 +1343,6 @@ public class GLMTest  extends TestUtil {
       GLMIterationTaskTest g = (GLMIterationTaskTest) gmt;
       _val2.reduce(g._val2);
     }
-
-    @Override
-    public void postGlobal() {
-      System.out.println("val1 = " + _val.toString());
-      System.out.println("val2 = " + _val2.toString());
-      ModelMetrics mm1 = _val.makeModelMetrics(_m, _dinfo._adaptedFrame);
-      ModelMetrics mm2 = _val2.makeModelMetrics(_m, _dinfo._adaptedFrame);
-      System.out.println("mm1 = " + mm1.toString());
-      System.out.println("mm2 = " + mm2.toString());
-      assert mm1.equals(mm2);
-    }
   }
 
   @Test
@@ -1410,7 +1387,6 @@ public class GLMTest  extends TestUtil {
     GLM job = null;
     GLMModel model = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
-    Frame score = null;
     try{
       Scope.enter();
       // R results
@@ -1437,13 +1413,13 @@ public class GLMTest  extends TestUtil {
       assertEquals(396.3, aic(model),1e-1);
       model.delete();
       // test scoring
-      score = model.score(fr);
+      model.score(fr).delete();
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
       assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
-      Frame score1 = model.score(fr);
+      model.score(fr).delete();
       mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
@@ -1480,8 +1456,16 @@ public class GLMTest  extends TestUtil {
       fr.remove("ID").remove();
       DKV.put(fr._key,fr);
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
-      score = model3.score(fr);
+      GLMIterationTaskTest gtt = (GLMIterationTaskTest)new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu,null,model3).doAll(dinfo._adaptedFrame);
+      System.out.println("val1 = " + gtt._val.toString());
+      System.out.println("val2 = " + gtt._val2.toString());
+      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame);
+      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame);
+      System.out.println("mm1 = " + mm1.toString());
+      System.out.println("mm2 = " + mm2.toString());
+      assert mm1.equals(mm2);
+
+      model3.score(fr).delete();
       mm3 = ModelMetrics.getFromDKV(model3,fr);
 
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
@@ -1493,9 +1477,8 @@ public class GLMTest  extends TestUtil {
       model4 = job.trainModel().get();
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,1e-4);
-      Frame fscore4 = model4.score(fr);
+      model4.score(fr).delete();
       ModelMetrics mm4 = ModelMetrics.getFromDKV(model4,fr);
-      fscore4.delete();
       assertEquals("mse don't match, " + mm3._MSE + " != " + mm4._MSE,mm3._MSE,mm4._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)mm3)._resDev + " != " + ((ModelMetricsBinomialGLM)mm4)._resDev,((ModelMetricsBinomialGLM)mm3)._resDev, ((ModelMetricsBinomialGLM)mm4)._resDev,1e-4);
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
@@ -1507,7 +1490,6 @@ public class GLMTest  extends TestUtil {
       if(model2 != null)model2.delete();
       if(model3 != null)model3.delete();
       if(model4 != null)model4.delete();
-      if(score != null)score.delete();
       if( job != null ) job.remove();
       Scope.exit();
     }
@@ -1573,7 +1555,7 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Ignore("PUBDEV-1953")
+  @Test @Ignore("PUBDEV-1953")
   public void testCitibikeReproPUBDEV1953() throws Exception {
     GLM job = null;
     GLMModel model = null;
