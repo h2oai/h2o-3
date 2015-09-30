@@ -6,8 +6,7 @@
 FROM ubuntu:14.04
 
 # maintainer details
-MAINTAINER \
-  h2oai "h2o.ai"
+MAINTAINER h2oai "h2o.ai"
 
 # add a post-invoke hook to dpkg which deletes cached deb files
 # update the sources.list
