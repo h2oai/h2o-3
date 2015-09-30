@@ -408,7 +408,6 @@ class ASTIfElse extends ASTPrim {
     final int[][] maps = new int[tst.numCols()][];
     if( fs!=null || ts!=null ) { // time to build domains...
       domains = new String[tst.numCols()][];
-      String s;
       if( fs!=null && ts!=null ) {
         for( int i=0;i<tst.numCols(); ++i ) {
           domains[i] = new String[]{fs, ts}; // false => 0; truth => 1
