@@ -3,8 +3,12 @@ options(echo=FALSE)
 #' Check that the required packages are installed and it's the correct version
 #'
 
-H2O.S3.R.PACKAGE.REPO <- "https://s3.amazonaws.com/h2o-r"
-JENKINS.R.PKG.VER.REQS <- "https://s3.amazonaws.com/h2o-r/package_version_requirements"
+H2O.S3.R.PACKAGE.REPO.OSX <- "https://s3.amazonaws.com/h2o-r/osx"
+H2O.S3.R.PACKAGE.REPO.LIN <- "https://s3.amazonaws.com/h2o-r/linux"
+H2O.S3.R.PACKAGE.REPO.WIN <- "https://s3.amazonaws.com/h2o-r/windows"
+JENKINS.R.PKG.VER.REQS.OSX <- paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/package_version_requirements.osx")
+JENKINS.R.PKG.VER.REQS.LIN <- paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/package_version_requirements.linux")
+JENKINS.R.PKG.VER.REQS.WIN <- paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/package_version_requirements.windows")
 JENKINS.R.VERSION.MAJOR <- "3"
 JENKINS.R.VERSION.MINOR <- "2.2"
 
@@ -20,8 +24,8 @@ function(installed_packages, reqs) {
         req_ver <- as.character(reqs[i,2])
         no_pkg <- !req_pkg %in% installed_packages
         wrong_version <- FALSE
-        if (!no_pkg) wrong_ver <- !req_ver == packageVersion(req_pkg)
-        if (no_pkg || wrong_ver) {
+        if (!no_pkg) wrong_version <- !req_ver == packageVersion(req_pkg)
+        if (no_pkg || wrong_version) {
             gp <- c(gp, c(as.character(reqs[i,3])))
             if (no_pkg) mp <- c(mp, c(req_pkg))
             else wv <- c(wv, c(paste0("package=", req_pkg,", installed version=", packageVersion(req_pkg), ", required version=", req_ver))) } }
@@ -64,6 +68,9 @@ function(args) {
         write("",stdout())
         write(paste0("INFO: R package/version s3 sync procedure"),stdout()) }
 
+    OSX <- Sys.info()["sysname"] == "Darwin"
+    LIN <- Sys.info()["sysname"] == "Linux"
+
     # check R version
     return_val <- 0
     sysRMajor <- R.version$major
@@ -85,15 +92,20 @@ function(args) {
             write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
             q("no",1,FALSE)
         }) }
+
+    # read the package_version_requirements file
     require(RCurl,quietly=TRUE)
     url <- tryCatch({
-        getURL(JENKINS.R.PKG.VER.REQS,.opts=list(ssl.verifypeer = FALSE))
+        if (OSX) { # osx
+            getURL(JENKINS.R.PKG.VER.REQS.OSX,.opts=list(ssl.verifypeer = FALSE))
+        } else if (LIN) { # linux
+            getURL(JENKINS.R.PKG.VER.REQS.LIN,.opts=list(ssl.verifypeer = FALSE))
+        } else {
+            getURL(JENKINS.R.PKG.VER.REQS.WIN,.opts=list(ssl.verifypeer = FALSE)) }
     }, error = function(e) {
         write(paste0("ERROR: Could not connect to S3 to retrieve R package requirements: ",e),stdout())
         q("no",1,FALSE)
     })
-
-    # read the package_version_requirements file
     reqs <- read.csv(textConnection(url), header=FALSE)
     write("",stdout())
     write("INFO: Jenkins' (package,version) list:",stdout())
@@ -123,12 +135,17 @@ function(args) {
 
             no_pkg <- !name %in% installed_packages
             wrong_version <- FALSE
-            if (!no_pkg) wrong_ver <- !ver == packageVersion(name)
+            if (!no_pkg) wrong_version <- !ver == packageVersion(name)
 
             if (no_pkg || wrong_version) {
                 write("",stdout())
                 write(paste0("Installing package ",pkg,"..."),stdout())
-                install.packages(paste0(H2O.S3.R.PACKAGE.REPO,"/",pkg),repos=NULL,type="binary") } }
+                if (OSX) { # osx
+                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/",pkg),repos=NULL,type="binary")
+                } else if (LIN) { # linux
+                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/",pkg),repos=NULL,method="curl")
+                } else {
+                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/",pkg),repos=NULL,type="win.binary",method="curl") }}}
 
         # follow-on check
         write("",stdout())

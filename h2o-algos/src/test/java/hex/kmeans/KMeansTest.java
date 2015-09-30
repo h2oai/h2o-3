@@ -1,5 +1,6 @@
 package hex.kmeans;
 
+import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
 import org.junit.*;
@@ -35,12 +36,35 @@ public class KMeansTest extends TestUtil {
     try {
       job = new KMeans(parms);
       kmm = job.trainModel().get();
+      checkConsistency(kmm);
     } finally {
       if (job != null) job.remove();
     }
     for( int i=0; i<parms._k; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
     return kmm;
+  }
+
+  //PUBDEV-781: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
+  private static void checkConsistency(KMeansModel kmm) {
+    //FIXME: TODO: remove this false, and fix the algo! PUBDEV-781
+    if (false) {
+      KMeansModel.KMeansParameters parms = kmm._parms;
+      Assert.assertTrue((ArrayUtils.sum(kmm._output._size) - parms.train().numRows()) <= 1);
+
+//    Log.info(kmm._output._model_summary);
+//    Log.info(kmm._output._scoring_history);
+//    Log.info(((ModelMetricsClustering)kmm._output._training_metrics).createCentroidStatsTable().toString());
+      kmm.score(parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
+      ModelMetricsClustering mm = (ModelMetricsClustering) ModelMetrics.getFromDKV(kmm, parms.train());
+      Assert.assertTrue(Arrays.equals(mm._size, ((ModelMetricsClustering) kmm._output._training_metrics)._size));
+      for (int i = 0; i < parms._k; ++i) {
+        Assert.assertTrue(MathUtils.compare(mm._withinss[i], ((ModelMetricsClustering) kmm._output._training_metrics)._withinss[i], 1e-6, 1e-6));
+      }
+      Assert.assertTrue(MathUtils.compare(mm._totss, ((ModelMetricsClustering) kmm._output._training_metrics)._totss, 1e-6, 1e-6));
+      Assert.assertTrue(MathUtils.compare(mm._betweenss, ((ModelMetricsClustering) kmm._output._training_metrics)._betweenss, 1e-6, 1e-6));
+      Assert.assertTrue(MathUtils.compare(mm._tot_withinss, ((ModelMetricsClustering) kmm._output._training_metrics)._tot_withinss, 1e-6, 1e-6));
+    }
   }
 
   @Test public void testIris() {
@@ -495,6 +519,7 @@ public class KMeansTest extends TestUtil {
       // Build a first model; all remaining models should be equal
       KMeans job = new KMeans(parms);
       kmeans = job.trainModel().get();
+      checkConsistency(kmeans);
 
       ModelMetricsClustering mm = (ModelMetricsClustering)kmeans._output._cross_validation_metrics;
       assertEquals(_ref_betweenss, mm._betweenss, 1e-8);
