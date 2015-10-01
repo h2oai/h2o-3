@@ -38,7 +38,6 @@ public class GenMunger implements Serializable {
     String[] patterns = parameters.get("pattern");
     return countMatches(s, patterns);
   }
-
   private static int countMatches(String s, String[] pattern) {
     int cnt=0;
     for(String pat: pattern) {
@@ -47,5 +46,29 @@ public class GenMunger implements Serializable {
       while(m.find()) cnt++;
     }
     return cnt;
+  }
+  public static double add(double d, HashMap<String, String[]> parameters) {
+    String[] leftArg = parameters.get("leftArg");
+    String[] riteArg = parameters.get("rightArg");
+    if( leftArg==null ) return d + Double.valueOf(riteArg[0]);
+    return Double.valueOf(leftArg[0]) + d;
+  }
+  public static double minus(double d, HashMap<String, String[]> parameters) {
+    String[] leftArg = parameters.get("leftArg");
+    String[] riteArg = parameters.get("rightArg");
+    if( leftArg==null ) return d - Double.valueOf(riteArg[0]);
+    return Double.valueOf(leftArg[0]) - d;
+  }
+  public static double multiply(double d, HashMap<String,String[]> parameters) {
+    String[] leftArg = parameters.get("leftArg");
+    String[] riteArg = parameters.get("rightArg");
+    if( leftArg==null ) return d * Double.valueOf(riteArg[0]);
+    return Double.valueOf(leftArg[0]) * d;
+  }
+  public static double divide(double d, HashMap<String,String[]> parameters) {
+    String[] leftArg = parameters.get("leftArg");
+    String[] riteArg = parameters.get("rightArg");
+    if( leftArg==null ) return d / Double.valueOf(riteArg[0]);
+    return Double.valueOf(leftArg[0]) / d;
   }
 }

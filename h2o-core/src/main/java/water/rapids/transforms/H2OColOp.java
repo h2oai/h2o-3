@@ -9,10 +9,26 @@ import water.rapids.ASTExec;
 import water.rapids.ASTParameter;
 import water.rapids.Exec;
 
+import java.util.HashMap;
+
 public class H2OColOp extends Transform<H2OColOp> {
   final String _fun;
   String _oldCol;
   String _newCol;
+  private static HashMap<String,String> binaryOps = new HashMap<>();
+
+  static {
+    binaryOps.put("+", "plus");
+    binaryOps.put("-", "minus");
+    binaryOps.put("*", "multiply");
+    binaryOps.put("/", "divide");
+    binaryOps.put("<", "lessThan");
+    binaryOps.put("<=","lessThanEquals");
+    binaryOps.put(">", "greaterThan");
+    binaryOps.put(">=","greaterThanEquals");
+    binaryOps.put("==", "equals");
+    binaryOps.put("!=", "notEquals");
+  }
 
   public H2OColOp(String name, String ast, boolean inplace) { // (op (cols fr cols) {extra_args})
     super(name,ast,inplace);
@@ -44,5 +60,9 @@ public class H2OColOp extends Transform<H2OColOp> {
             "      row.put(\""+_newCol+"\", GenMunger."+_fun+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params));\n" +
             "      return row;\n" +
             "    }\n";
+  }
+
+  static String lookup(String op) {
+    return binaryOps.get(op)==null?op:binaryOps.get(op);
   }
 }

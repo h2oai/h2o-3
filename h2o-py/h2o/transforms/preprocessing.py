@@ -62,7 +62,7 @@ class H2OScaler(H2OTransformer):
     :param params: (Ignored)
     :return: A scaled H2OFrame.
     """
-    return X.scale(self.means,self.stds)._frame()
+    return X.scale(self.means, self.stds)._frame()
 
   def inverse_transform(self,X,y=None,**params):
     """
@@ -74,7 +74,7 @@ class H2OScaler(H2OTransformer):
     :return: An H2OFrame
     """
     for i in X.ncol:
-      X[i] = self.means[i] + self.stds[i]*X[i]
+      X[i] = self.means[i] + self.stds[i] * X[i]
     return X
 
 
@@ -92,12 +92,13 @@ class H2OColSelect(H2OTransformer):
     ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
     return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False])
 
+
 class H2OColOp(H2OTransformer):
   """
-  Perform a column operation. If append is True, then cbind the result onto original frame,
+  Perform a column operation. If inplace is True, then cbind the result onto original frame,
   otherwise, perform the operation in place.
   """
-  def __init__(self, fun, col=None,inplace=True, **params):
+  def __init__(self,fun,col=None,inplace=True, **params):
     self.fun=fun
     self.col=col
     self.inplace=inplace
@@ -126,8 +127,23 @@ class H2OColOp(H2OTransformer):
     ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
     return super(H2OColOp, self).to_rest([step_name,"H2OColOp",ast,self.inplace])
 
-# class H2OImpute(H2OTransformer):
-#   """
-#   Impute a column of data
-#   """
-#
+
+class H2OBinaryOp(H2OColOp):
+  """ Perform a binary operation on a column.
+
+  If left is None, then the column will appear on the left in the operation; otherwise
+  it will be appear on the right.
+
+  A ValueError is raised if both left and right are None.
+  """
+
+  def __init__(self, op, col, inplace=True, left=None, right=None, **params):
+    super(H2OBinaryOp, self).__init__(op,col,inplace,**params)
+    self.left = left
+    self.right = right
+    if left is None and right is None:
+      raise ValueError("left and right cannot both be None")
+
+  def _transform_helper(self,X,**params):
+    if self.left is None: return self.fun(X[self.col],self.right)
+    return self.fun(self.left,X[self.col])
