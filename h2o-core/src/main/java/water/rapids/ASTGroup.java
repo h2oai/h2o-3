@@ -118,9 +118,9 @@ class ASTGroup extends ASTPrim {
 
     // do the group by work now
     IcedHashMap<G,String> gss = doGroups(fr,gbCols,aggs);
-    if( gss == null ) 
-      return sortingGroup(fr,gbCols,aggs);
-    final G[] grps = gss.keySet().toArray(new G[gss.size()]);
+    final G[] grps = (gss == null || _testing_force_sorted )
+      ? sortingGroup(fr,gbCols,aggs)
+      : gss.keySet().toArray(new G[gss.size()]);
 
     // Sort the groups by group key, when treated as a double.
     Arrays.sort(grps,new java.util.Comparator<G>() {
@@ -174,13 +174,6 @@ class ASTGroup extends ASTPrim {
         !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
       throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
     return dim;
-  }
-
-  /** Use a sorting groupby, probably because the hash table size exceeded
-   *  MAX_HASH_SIZE; i.e. the number of unique keys in the GBTask.
-   */
-  private ValFrame sortingGroup(Frame fr, int[] gbCols, AGG[] aggs) {
-    throw H2O.unimpl();
   }
 
   // Do all the grouping work.  Find groups in frame 'fr', grouped according to
@@ -312,7 +305,7 @@ class ASTGroup extends ASTPrim {
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
   static class G extends Iced {
-    final double _gs[];  // Group Key: Array is final; contents change with the "fill"
+    double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
     final double _dss[][];      // Aggregates: usually sum or sum*2
@@ -344,4 +337,44 @@ class ASTGroup extends ASTPrim {
     @Override public int hashCode() { return _hash; }
     @Override public String toString() { return Arrays.toString(_gs); }
   }
+
+  // --------------------------------------------------------------------------
+  /** Use a sorting groupby, probably because the hash table size exceeded
+   *  MAX_HASH_SIZE; i.e. the number of unique keys in the GBTask.
+   */
+  public static boolean _testing_force_sorted;
+  private G[] sortingGroup(Frame fr, int[] gbCols, final AGG[] aggs) {
+    Frame x = new Frame();
+    for( int gbCol : gbCols ) x.add(fr._names[gbCol],fr.vec(gbCol));
+
+    // Sort rows by Group.  Returns group-number per-row
+    final long[][] rows = new ASTGroupSorted().sort(x);
+    if( rows.length != 1 ) throw H2O.unimpl(); // more than 2b rows?
+    long ngrps = ArrayUtils.maxValue(rows[0])+1;
+    if( ngrps > Integer.MAX_VALUE ) throw H2O.unimpl(); // more than 2b groups?
+    
+    final G[] gs = new G[(int)ngrps];
+    for( int i=0; i<ngrps; i++ ) gs[i] = new G(gbCols.length,aggs);
+
+    // Now apply the aggregates using the group numbers
+    new MRTask() {
+      @Override public void map( Chunk[] cs ) {
+        long start = cs[0].start();
+        for( int row=0; row<cs[0]._len; row++ ) {
+          final G g = gs[(int)rows[0][(int)start+row]];
+          for( int i=0; i<aggs.length; i++ ) { // Accumulate aggregate reductions
+            // since dss & ns are shared across all map calls, must be atomic here, in the bad place
+            throw H2O.unimpl();
+            //aggs[i].op(g._dss,g._ns,i, cs[aggs[i]._col].atd(row));
+          }
+        }
+      }
+      @Override public void reduce( MRTask t ) {
+        throw H2O.unimpl();
+      }
+    }.doAll(fr);
+
+    return gs;
+  }
+  
 }

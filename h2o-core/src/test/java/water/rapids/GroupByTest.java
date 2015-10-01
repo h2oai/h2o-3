@@ -199,8 +199,8 @@ public class GroupByTest extends TestUtil {
     Assert.assertEquals(exp, dom[(int)fr.vec(col).at8(row)]);
   }
 
-  private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
-  private Frame chkTree(String tree, String fname, boolean expectThrow) {
+  Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
+  Frame chkTree(String tree, String fname, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("hex"),fname);
     try {
       Val val = Exec.exec(tree);
@@ -208,7 +208,7 @@ public class GroupByTest extends TestUtil {
       System.out.println(val.toString());
       if( val instanceof ValFrame )
         return ((ValFrame)val)._fr;
-      throw new IllegalArgumentException("exepcted a frame return");
+      throw new IllegalArgumentException("expected a frame return");
     } catch( IllegalArgumentException iae ) {
       if( !expectThrow ) throw iae; // If not expecting a throw, then throw which fails the junit
       fr.delete();                  // If expecting, then cleanup
