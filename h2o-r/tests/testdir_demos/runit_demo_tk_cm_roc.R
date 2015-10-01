@@ -19,8 +19,8 @@ if (TRUE) {
 
   source('../h2o-runit.R')
   options(echo=TRUE)
-  filePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
-  testFilePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+  filePath <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
+  testFilePath <- locate("smalldata/airlines/AirlinesTest.csv.zip")
 } else {
   stop("need to hardcode ip and port")
   myIP = "127.0.0.1"

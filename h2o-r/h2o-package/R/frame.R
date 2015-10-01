@@ -475,6 +475,7 @@ cut.Frame <- h2o.cut
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
+  if( !is.Frame(table) && length(table)==1 && is.character(table) ) table <- .quote(table)
   .newExpr("match", chk.Frame(x), table, nomatch, incomparables)
 }
 
@@ -917,7 +918,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 # dead, lest GC delete frames on last use... before the expression string is
 # shipped over the wire.  During the 2nd pass the internal DAG pointers are
 # wiped out, and allowed to go dead (hence can be nuked by GC).
-.eval.frame <- function(x) {
+.eval.frame <- function(x,skip_fetch=FALSE) {
   chk.Frame(x)
   if( !is.character( attr(x, "id")) ) {
     exec_str <- .eval.impl(x)
@@ -935,7 +936,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     }
     # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
-    .fetch.data(x,1) #trigger a cache update if needed
+    if(!skip_fetch) .fetch.data(x,1) #trigger a cache update if needed
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
     #.h2o.gc()
@@ -1075,7 +1076,20 @@ h2o.length <- length.Frame
 #' iris.hex <- as.h2o(iris)
 #' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
 #' @export
-h2o.levels <- function(x, i) levels(.fetch.data(x,1)[,i])
+h2o.levels <- function(x, i) {
+  .eval.frame(x)
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
+  lvls <- lapply(res$columns, function(col) col$domain)
+  if( all(sapply(lvls, is.null)) ) return(NULL)
+  if( missing(i) ) {
+    nrow <- max(unlist(lapply(lvls, length)))
+    lvls <- sapply(lvls, function(l) { if( length(l) < nrow ) {l <- c(l,rep(NA,nrow-length(l))) } else { l } })
+    colnames(lvls) <- sapply(res$columns, function(col) col$label)
+    lvls
+  } else {
+    lvls[[i]]
+  }
+}
 
 #'
 #' Set Levels of H2O Factor Column
@@ -1681,7 +1695,7 @@ as.h2o <- function(x, destination_frame= "") {
 #' as.data.frame(prostate.hex)
 #' @export
 as.data.frame.Frame <- function(x, ...) {
-  .eval.frame(x)
+  .eval.frame(x,TRUE)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
@@ -1719,6 +1733,7 @@ as.data.frame.Frame <- function(x, ...) {
   }
 
   # Get column types from H2O to set the dataframe types correctly
+  if( is.null(attr(x, "types")) ) .fetch.types(x)
   colClasses <- attr(x, "types")
   colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
   colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
@@ -1872,7 +1887,11 @@ h2o.removeVecs <- function(data, cols) {
 #' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
 #' summary(australia.hex)
 #' @export
-h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
+h2o.ifelse <- function(test, yes, no) {
+  if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
+  if( !is.Frame(no)  && is.character(no ) ) no  <- .quote(no )
+  .newExpr("ifelse",test,yes,no)
+}
 
 #' @rdname h2o.ifelse
 #' @export

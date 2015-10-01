@@ -170,7 +170,7 @@ abstract public class AST extends Iced<AST> {
     // Generic data mungers
     init(new ASTAnyFactor());
     init(new ASTAsFactor());
-    init(new ASTCharacter());
+    init(new ASTAsCharacter());
     init(new ASTAsNumeric());
     init(new ASTCBind());
     init(new ASTColNames());

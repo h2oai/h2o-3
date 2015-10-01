@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
-from astfun import _bytecode_deparse_lambda
+from astfun import _bytecode_decompile_lambda
 from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
@@ -1324,7 +1324,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param table:
     :param nomatch:
 
-    :return: bit H2OVec
+    :return: H2OFrame of one boolean column
     """
     return H2OFrame(expr=ExprNode("match", self, table, nomatch, None))
 
@@ -1354,7 +1354,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if fun is None:
       raise ValueError("No function to apply.")
     if isinstance(fun, type(lambda:0)) and fun.__name__ == (lambda:0).__name__:  # have lambda
-      res = _bytecode_deparse_lambda(fun.func_code)
+      res = _bytecode_decompile_lambda(fun.func_code)
       return H2OFrame(expr=ExprNode("apply",self, 1+(axis==0),*res))
     else:
       raise ValueError("unimpl: not a lambda")

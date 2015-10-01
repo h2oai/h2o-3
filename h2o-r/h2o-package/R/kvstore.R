@@ -27,34 +27,22 @@
   stopifnot(!missing(N))
   .eval.frame(chk.Frame(x))
   if( is.null( attr(x, "data")) || (is.data.frame( attr(x, "data")) && nrow( attr(x, "data")) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id"), "?row_count=",N))$frames[[1]]
-    # Convert to data.frame, handling short data (trailing NAs)
-    # Numeric data is OK, but can be short if e.g., there are trailing NAs
-    # String data is a list form; convert to a vector (and convert NULL to NA)
-    L <- lapply(res$columns, function(c) {
-      if( c$type!="string" )  c$data
-      else  sapply(c$string_data, function(str) { if(is.null(str)) NA_character_ else str }); 
-    })
-    # Pad out to same length (square up ragged data), and convert to data.frame
-    if( length(L) > 0 ) maxlen <- max(sapply(L,length)) else 0
-    data <- do.call(data.frame,lapply(L,function(row) c(row,rep(NA,maxlen-length(row)))))
-    # Zero rows?  Then force a zero-length full width data.frame
-    if( length(data)==0 ) data <- as.data.frame(matrix(NA,ncol=length(res$columns),nrow=0L))
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
+    N <- max(N,10L)
+    data <- .eval.frame(x[1:N,], TRUE)
+    data <- as.data.frame(data)
     colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
-    if( nrow(data) > 0 ) {
-      for( i in 1:length(data) ) {  # Set factor levels
-        dom <- res$columns[[i]]$domain
-        if( !is.null(dom) ) # H2O has a domain; force R to do so also
-          data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
-        else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
-          data[,i] <- as.character(data[,i]) # Force to string type
-      }
-    }
     .set(x,"data",data)
     .set(x,"types",lapply(res$columns, function(c) c$type))
     .set(x,"nrow",res$rows)
   }
   attr(x,"data")
+}
+
+.fetch.types <- function(x) {
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES,"/",attr(x,"id")))$frames[[1]]
+  .set(x,"types",lapply(res$columns,function(c)c$type))
+  invisible(x)
 }
 
 #` Flush any cached data

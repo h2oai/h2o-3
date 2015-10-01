@@ -388,7 +388,9 @@ class ASTIfElse extends ASTPrim {
         break;
       }
     final boolean has_tfr = tval != null && tval.isFrame();
+    final String ts = (tval != null && tval.isStr() ) ? tval.getStr() : null;
     final double td = (tval != null && tval.isNum()) ? tval.getNum() : Double.NaN;
+    final int[] tsIntMap = new int[tst.numCols()];
 
     // If all nonzero's (or NA's), then never execute false.
     Val fval = null;
@@ -398,7 +400,50 @@ class ASTIfElse extends ASTPrim {
         break;
       }
     final boolean has_ffr = fval != null && fval.isFrame();
+    final String fs = (fval != null && fval.isStr() ) ? fval.getStr() : null;
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
+    final int[] fsIntMap = new int[tst.numCols()];
+
+    String[][] domains = null;
+    final int[][] maps = new int[tst.numCols()][];
+    if( fs!=null || ts!=null ) { // time to build domains...
+      domains = new String[tst.numCols()][];
+      if( fs!=null && ts!=null ) {
+        for( int i=0;i<tst.numCols(); ++i ) {
+          domains[i] = new String[]{fs, ts}; // false => 0; truth => 1
+          fsIntMap[i] = 0;
+          tsIntMap[i]  = 1;
+        }
+      } else if( ts!=null ) {
+        for(int i=0;i<tst.numCols();++i) {
+          if( has_ffr ) {
+            Vec v = fr.vec(i+tst.numCols()+(has_tfr ? tst.numCols() : 0));
+            if( !v.isCategorical() )
+              throw H2O.unimpl("Column is not categorical.");
+            String[] dom = Arrays.copyOf(v.domain(),v.domain().length+1);
+            dom[dom.length-1] = ts;
+            Arrays.sort(dom);
+            maps[i] = computeMap(v.domain(),dom);
+            tsIntMap[i] = ArrayUtils.find(dom,ts);
+            domains[i] = dom;
+          } else throw H2O.unimpl();
+        }
+      } else { // fs!=null
+        for(int i=0;i<tst.numCols();++i) {
+          if( has_tfr ) {
+            Vec v = fr.vec(i+tst.numCols()+(has_ffr ? tst.numCols() : 0));
+            if( !v.isCategorical() )
+              throw H2O.unimpl("Column is not categorical.");
+            String[] dom = Arrays.copyOf(v.domain(),v.domain().length+1);
+            dom[dom.length-1] = fs;
+            Arrays.sort(dom);
+            maps[i] = computeMap(v.domain(),dom);
+            fsIntMap[i] = ArrayUtils.find(dom,fs);
+            domains[i] = dom;
+          } else throw H2O.unimpl();
+        }
+      }
+    }
 
     // Now pick from left-or-right in the new frame
     Frame res = new MRTask() {
@@ -410,14 +455,50 @@ class ASTIfElse extends ASTPrim {
             for( int row=0; row<ctst._len; row++ ) {
               double d;
               if(     ctst.isNA(row)    ) d = Double.NaN;
-              else if( ctst.atd(row)==0 ) d = has_ffr ? chks[i+nchks.length+(has_tfr ? nchks.length : 0)].atd(row) : fd;
-              else                        d = has_tfr ? chks[i+nchks.length                             ].atd(row) : td;
+              else if( ctst.atd(row)==0 ) d = has_ffr
+                                                  ? domainMap(chks[i+nchks.length+(has_tfr ? nchks.length : 0)].atd(row), maps[i])
+                                                  : fs!=null ? fsIntMap[i] : fd;
+              else                        d = has_tfr
+                                                  ? domainMap(chks[i+nchks.length                             ].atd(row), maps[i])
+                                                  : ts!=null ? tsIntMap[i] : td;
               res.addNum(d);
             }
           }
         }
-      }.doAll(tst.numCols(),fr).outputFrame();
+      }.doAll(tst.numCols(),fr).outputFrame(null,domains);
+
+    // flatten domains since they may be larger than needed
+    if( domains!=null ) {
+      for (int i = 0; i < res.numCols(); ++i) {
+        if (res.vec(i).domain() != null) {
+          final long[] dom = new Vec.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
+          String[] newDomain = new String[dom.length];
+          for (int l = 0; l < dom.length; ++l)
+            newDomain[l] = res.vec(i).domain()[(int) dom[l]];
+          new MRTask() {
+            @Override
+            public void map(Chunk c) {
+              for (int i = 0; i < c._len; ++i)
+                c.set(i, ArrayUtils.find(dom, c.at8(i)));
+            }
+          }.doAll(res.vec(i));
+          res.vec(i).setDomain(newDomain); // needs a DKVput?
+        }
+      }
+    }
     return new ValFrame(res);
+  }
+
+  private static double domainMap(double d, int[] maps) {
+    if( maps!=null && d==(int)d && ( 0 <= d && d < maps.length) ) return maps[(int)d];
+    return d;
+  }
+
+  private static int[] computeMap(String[] from, String[] to) {
+    int[] map = new int[from.length];
+    for(int i=0;i<from.length;++i)
+      map[i] = ArrayUtils.find(to, from[i]);
+    return map;
   }
 
   Val exec_check( Env env, Env.StackHelp stk, Frame tst, AST ast, Frame xfr ) {

@@ -579,6 +579,12 @@ public class ArrayUtils {
     return -1;
   }
 
+  public static int find(long[] ls, long elem) {
+    for(int i=0; i<ls.length; ++i )
+      if( elem==ls[i] ) return i;
+    return -1;
+  }
+
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
     return pprint(arr, default_dformat);

@@ -265,7 +265,7 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$initial_weight_scale <- initial_weight_scale
   if(!missing(loss)) {
     if(loss == "MeanSquare") {
-      warn("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
+      warning("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
       parms$loss <- "Quadratic"
     } else
       parms$loss <- loss

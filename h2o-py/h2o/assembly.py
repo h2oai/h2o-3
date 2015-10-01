@@ -4,11 +4,10 @@ from h2o import H2OConnection, _quoted, get_frame
 
 
 class H2OAssembly:
-  """
-  Extension class of Pipeline implementing additional methods:
+  """Extension class of Pipeline implementing additional methods:
 
     * to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
-    * fuse: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple concatenation.
+    * union: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple concatenation.
   """
   def __init__(self, steps):
     """
@@ -57,8 +56,7 @@ class H2OAssembly:
     res = []
     for step in self.steps:
       res.append(step[1].to_rest(step[0]))
-    res = ",".join([_quoted(r.replace('"',"'")) for r in res])
-    res = "[" + res + "]"
+    res = "[" + ",".join([_quoted(r.replace('"',"'")) for r in res]) + "]"
     j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr._id, _rest_version=99)
     self.id = j["assembly"]["name"]
     return get_frame(j["result"]["name"])

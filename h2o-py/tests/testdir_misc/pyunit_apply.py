@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o, tests
+import h2o,tests
 
 def pyunit_apply():
   fr = h2o.import_file(h2o.locate("smalldata/logreg/prostate.csv"))

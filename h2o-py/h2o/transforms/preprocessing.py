@@ -125,3 +125,9 @@ class H2OColOp(H2OTransformer):
   def to_rest(self, step_name):
     ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
     return super(H2OColOp, self).to_rest([step_name,"H2OColOp",ast,self.inplace])
+
+# class H2OImpute(H2OTransformer):
+#   """
+#   Impute a column of data
+#   """
+#

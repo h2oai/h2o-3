@@ -8,7 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.h2o.gbm <- function() {
-  prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+  prosPath <- locate("smalldata/logreg/prostate.csv")
   Log.info(paste("Uploading", prosPath))
   prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 
@@ -25,7 +25,7 @@ test.h2o.gbm <- function() {
   prostate.gbm2 <- h2o.gbm(x = c("AGE", "RACE", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 8, min_rows = 10, learn_rate = 0.2, distribution = "bernoulli")
   print(prostate.gbm2)
 
-  irisPath <- system.file("extdata", "iris.csv", package="h2o")
+  irisPath <- locate("smalldata/iris/iris.csv")
   Log.info(paste("Uploading", irisPath))
   iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 
