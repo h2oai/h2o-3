@@ -14,6 +14,7 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
@@ -411,6 +412,84 @@ public class GLRMTest extends TestUtil {
         model._output._loading_key.get().delete();
         model.delete();
       }
+    }
+  }
+
+  // Check that on quadratic loss, running with transform = DEMEAN is equivalent to setting offset = true, scale = false
+  @Test public void testOffset() throws InterruptedException, ExecutionException {
+    // Initialize using first 4 de-meaned rows of USArrests
+    Frame yinit = ArrayUtils.frame(ard(ard(5.412, 65.24, -7.54, -0.032),
+                                      ard(2.212, 92.24, -17.54, 23.268),
+                                      ard(0.312, 123.24, 14.46, 9.768)));
+    GLRM job = null;
+    GLRMModel model = null, model2 = null;
+    Frame train = null, score = null, score2 = null;
+    long seed = 1234;
+
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 3;
+      parms._init = GLRM.Initialization.User;
+      parms._user_y = yinit._key;
+      parms._loss = GLRMParameters.Loss.Quadratic;
+      parms._recover_svd = false;
+      parms._max_iterations = 10;
+      parms._seed = seed;
+
+      try {
+        Log.info("Run with transform = DEMEAN, offset = false, scale = false");
+        parms._transform = DataInfo.TransformType.DEMEAN;
+        parms._offset = parms._scale = false;
+        parms._loading_name = "GLRMLoading1";
+
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+        Log.info("Archetypes:\n" + model._output._archetypes.toString());
+        score = model.score(train);
+        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+
+        Log.info("Run with transform = NONE, offset = true, scale = false");
+        parms._transform = DataInfo.TransformType.NONE;
+        parms._offset = true; parms._scale = false;
+        parms._loading_name = "GLRMLoading2";
+
+        job = new GLRM(parms);
+        model2 = job.trainModel().get();
+        Log.info("Iteration " + model2._output._iterations + ": Objective value = " + model2._output._objective);
+        Log.info("Archetypes:\n" + model2._output._archetypes.toString());
+        score2 = model2.score(train);
+        ModelMetricsGLRM mm2 = DKV.getGet(model2._output._model_metrics[model2._output._model_metrics.length - 1]);
+        Log.info("Numeric Sum of Squared Error = " + mm2._numerr + "\tCategorical Misclassification Error = " + mm2._caterr);
+
+        Assert.assertEquals(model2._output._objective, model._output._objective, TOLERANCE);
+        Assert.assertEquals(mm2._numerr, mm._numerr, TOLERANCE);
+        Assert.assertEquals(mm2._caterr, mm._caterr, TOLERANCE);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+        if (score != null) score.delete();
+        if (score2 != null) score2.delete();
+        if (model != null) {
+          model._output._loading_key.get().delete();
+          model.delete();
+        }
+        if (model2 != null) {
+          model2._output._loading_key.get().delete();
+          model2.delete();
+        }
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      yinit.delete();
+      if (train != null) train.delete();
     }
   }
 

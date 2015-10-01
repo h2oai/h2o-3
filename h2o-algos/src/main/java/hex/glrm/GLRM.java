@@ -411,7 +411,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     // In case of quadratic loss and regularization, initialize closed form X = AY'(YY' + \gamma)^(-1)
-    private void initialXClosedForm(DataInfo dinfo, Archetypes yt_arch, double[] normSub, double[] normMul) {
+    private void initialXClosedForm(DataInfo dinfo, Archetypes yt_arch, double[] normSub, double[] normMul, double[][] lossOffset, double[] lossScale) {
       Log.info("Initializing X = AY'(YY' + gamma I)^(-1) where A = training data");
       double[][] ygram = ArrayUtils.formGram(yt_arch._archetypes);
       if (_parms._gamma_y > 0) {
@@ -422,7 +422,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if(!yychol.isSPD())
         Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting initial X to standard normal random matrix. Results will be numerically unstable");
       else {
-        CholMulTask cmtsk = new CholMulTask(_parms, yychol, yt_arch, _ncolA, _ncolX, dinfo._cats, normSub, normMul);
+        CholMulTask cmtsk = new CholMulTask(_parms, yychol, yt_arch, _ncolA, _ncolX, dinfo._cats, normSub, normMul, lossOffset, lossScale);
         cmtsk.doAll(dinfo._adaptedFrame);
       }
     }
@@ -519,9 +519,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           model._output._lossFunc[i] = _lossFunc[tinfo._permutation[i]];
 
         // Calculate one over generalized column variance for appropriate scaling
-        model._output._lossOffset = _parms._offset ? _parms.offset(tinfo, _lossFunc) : new double[_ncolA][];
+        model._output._lossOffset = _parms._offset ? _parms.offset(tinfo, model._output._lossFunc) : new double[_ncolA][];
         if(_parms._scale)
-          model._output._lossScale = _parms.scale(tinfo, _lossFunc);
+          model._output._lossScale = _parms.scale(tinfo, model._output._lossFunc);
         else {
           model._output._lossScale = new double[_ncolA];
           Arrays.fill(model._output._lossScale, 1.0);
@@ -550,7 +550,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
-          initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
+          initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul, model._output._lossOffset, model._output._lossScale);
 
         // Compute initial objective function
         update(1, "Computing initial objective function");   // One unit of work

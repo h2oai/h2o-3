@@ -122,9 +122,12 @@ public abstract class GLRMInit {
     final int _ncats;         // Number of categorical cols in training frame
     final double[] _normSub;  // For standardizing training data
     final double[] _normMul;
+    final double[][] _lossOffset;  // For offsets and scaling of loss function
+    final double[] _lossScale;
+    final double[][] _offMul;   // Store lossOffset_j * Y_{k,j} where Y_{k,j} = row k of categorical block Y_j
     CholeskyDecomposition _chol;   // Cholesky decomposition of D = D', since we solve D'X' = DX' = AY'
 
-    CholMulTask(GLRMParameters parms, CholeskyDecomposition chol, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul) {
+    CholMulTask(GLRMParameters parms, CholeskyDecomposition chol, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul, double[][] lossOffset, double[] lossScale) {
       assert yt != null && yt.rank() == ncolX;
       assert ncats <= ncolA;
       _parms = parms;
@@ -136,6 +139,15 @@ public abstract class GLRMInit {
 
       _normSub = normSub;
       _normMul = normMul;
+      _lossOffset = lossOffset;
+      _lossScale = lossScale;
+      _offMul = new double[_ncats][_ncolX];
+      if (_parms._offset) {
+        for (int j = 0; j < _ncats; j++) {
+          double[][] block = _yt.getCatBlock(j);    // Y_j the k by d_j block of Y corresponding to categorical column j
+          _offMul[j] = ArrayUtils.multArrVec(block, _lossOffset[j]);
+        }
+      }
     }
 
     // [A,X,W] A is read-only training data, X is left matrix in A = XY decomposition, W is working copy of X
@@ -151,7 +163,8 @@ public abstract class GLRMInit {
           for(int d = 0; d < _ncats; d++) {
             double a = cs[d].atd(row);
             if (Double.isNaN(a)) continue;
-            x += _yt.getCat(d, (int)a, k);
+            // x += _yt.getCat(d, (int)a, k);
+            x += (_yt.getCat(d, (int)a, k) - _offMul[d][k]) * _lossScale[d];
           }
 
           // Numeric columns
@@ -159,7 +172,9 @@ public abstract class GLRMInit {
             int ds = d - _ncats;
             double a = cs[d].atd(row);
             if (Double.isNaN(a)) continue;
-            x += (a - _normSub[ds]) * _normMul[ds] * _yt.getNum(ds, k);
+            // x += (a - _normSub[ds]) * _normMul[ds] * _yt.getNum(ds, k);
+            // x += (a - (_parms._offset ? _lossOffset[d][0] : 0)) * _lossScale[d] * _yt.getNum(ds, k);
+            x += (a - _normSub[ds] - (_parms._offset ? _lossOffset[d][0] : 0)) * _normMul[ds] * _lossScale[d] * _yt.getNum(ds, k);
           }
           xrow[k] = x;
         }
@@ -204,7 +219,15 @@ public abstract class GLRMInit {
 
     @Override
     public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
-      return new double[0];
+      double[] mu = new double[nSteps];
+      double step = initialStep;
+      for(int i = 0; i < nSteps; ++i) {
+        mu[i] = beta[0] + pk[0]*step;
+        step *= stepDec;
+      }
+
+      LossObjCalc tsk = new LossObjCalc(_parms, _loss, _period, mu).doAll(_train);
+      return tsk._lsum;
     }
 
     // Compute \sum_{i,j} L(\mu, A_{i,j}) and its gradient at given \mu
@@ -241,6 +264,39 @@ public abstract class GLRMInit {
         _lgrad += other._lgrad;
       }
     }
+
+    // Compute \sum_{i,j} L(\mu, A_{i,j}) for all values of \mu in array
+    private static final class LossObjCalc extends MRTask<LossObjCalc> {
+      final GLRMParameters _parms;
+      final Loss _loss;
+      final int _period;
+      final double[] _mu;
+
+      double[] _lsum;
+
+      LossObjCalc(GLRMParameters parms, Loss loss, int period, double[] mu) {
+        assert null != mu;
+        _parms = parms;
+        _loss = loss;
+        _period = period;
+        _mu = mu;
+      }
+
+      @Override public void map(Chunk cs) {
+        _lsum = new double[_mu.length];
+
+        for(int row = 0; row < cs._len; row++) {
+          double a = cs.atd(row);
+          if(Double.isNaN(a)) continue;
+          for(int i = 0; i < _mu.length; i++)
+            _lsum[i] += _parms.loss(_mu[i], a, _loss, _period);
+        }
+      }
+
+      @Override public void reduce(LossObjCalc other) {
+        ArrayUtils.add(_lsum, other._lsum);
+      }
+    }
   }
 
   static final class MultiLossOffsetSolver extends GradientSolver {
@@ -262,7 +318,16 @@ public abstract class GLRMInit {
 
     @Override
     public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
-      return new double[0];
+      double[][] mu = new double[nSteps][beta.length];
+      double step = initialStep;
+      for(int i = 0; i < nSteps; ++i) {
+        for(int j = 0; j < beta.length; j++)
+          mu[i][j] = beta[j] + pk[j]*step;
+        step *= stepDec;
+      }
+
+      MultiLossObjCalc tsk = new MultiLossObjCalc(_parms, _loss, mu).doAll(_train);
+      return tsk._lsum;
     }
 
     // Compute \sum_{i,j} L(\mu, A_{i,j}) and its gradient at given \mu
@@ -296,6 +361,37 @@ public abstract class GLRMInit {
       @Override public void reduce(MultiLossGradCalc other) {
         _lsum += other._lsum;
         ArrayUtils.add(_lgrad, other._lgrad);
+      }
+    }
+
+    // Compute \sum_{i,j} L(\mu, A_{i,j}) for all values of \mu in array
+    private static final class MultiLossObjCalc extends MRTask<MultiLossObjCalc> {
+      final GLRMParameters _parms;
+      final Loss _loss;
+      final double[][] _mu;
+
+      double[] _lsum;
+
+      MultiLossObjCalc(GLRMParameters parms, Loss loss, double[][] mu) {
+        assert null != mu;
+        _parms = parms;
+        _loss = loss;
+        _mu = mu;
+      }
+
+      @Override public void map(Chunk cs) {
+        _lsum = new double[_mu.length];
+
+        for(int row = 0; row < cs._len; row++) {
+          double a = cs.atd(row);
+          if(Double.isNaN(a)) continue;
+          for(int i = 0; i < _mu.length; i++)
+            _lsum[i] += _parms.mloss(_mu[i], (int)a, _loss);
+        }
+      }
+
+      @Override public void reduce(MultiLossObjCalc other) {
+        ArrayUtils.add(_lsum, other._lsum);
       }
     }
   }
@@ -337,24 +433,30 @@ public abstract class GLRMInit {
   // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
   // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
   static class LossScaleCalc extends MRTask<LossScaleCalc> {
-    final int _ncats;
+    final int _ncats;   // Number of categorical cols
+    final int _ncols;   // Total number of cols
     final GLRMParameters.Loss[] _lossFunc;
-    final int _period;
+    final int _period;    // For periodic loss function
     final double[][] _offset;
 
     long[] _count;
     double[] _scale;
 
     LossScaleCalc(int ncats, GLRMParameters.Loss[] lossFunc, int period, double[][] offset) {
+      assert lossFunc != null && offset != null && lossFunc.length == offset.length;
+      assert ncats <= offset.length;
+
       _ncats = ncats;
+      _ncols = offset.length;
       _lossFunc = lossFunc;
       _period = period;
       _offset = offset;
     }
 
     @Override public void map(Chunk[] cs) {
-      _scale = new double[cs.length];
-      _count = new long[cs.length];
+      assert cs.length == _ncols;
+      _count = new long[_ncols];
+      _scale = new double[_ncols];
 
       for(int row = 0; row < cs[0]._len; row++) {
         for(int col = 0; col < _ncats; col++) {
@@ -364,7 +466,7 @@ public abstract class GLRMInit {
           _count[col]++;
         }
 
-        for (int col = _ncats; col < cs.length; col++) {
+        for(int col = _ncats; col < cs.length; col++) {
           double a = cs[col].atd(row);
           if(Double.isNaN(a)) continue;
           _scale[col] += GLRMParameters.loss(_offset[col][0], a, _lossFunc[col], _period);
