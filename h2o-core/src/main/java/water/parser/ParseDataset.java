@@ -384,9 +384,9 @@ public final class ParseDataset extends Job<Frame> {
                   +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
             chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
-          chk.close(cidx, _fs);
           Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
         }
+        chk.close(cidx, _fs);
       }
     }
     @Override public void postGlobal() {
