@@ -71,6 +71,22 @@ class ASTColNames extends ASTPrim {
     return new ValFrame(fr);
   }  
 }
+/** Convert to StringVec */
+class ASTAsCharacter extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
+  @Override int nargs() { return 1+1; } // (as.character col)
+  @Override
+  public String str() { return "as.character"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame ary = stk.track(asts[1].exec(env)).getFrame();
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
+    Vec v0 = ary.anyVec();
+    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toCategorical() creates a new vec --> must be cleaned up!
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
+    return new ValFrame(fr);
+  }
+}
 
 /** Convert to a factor/categorical */
 class ASTAsFactor extends ASTPrim {
@@ -88,20 +104,41 @@ class ASTAsFactor extends ASTPrim {
   }
 }
 
-/** Convert to StringVec */
-class ASTCharacter extends ASTPrim {
+/** Convert to a numeric */
+class ASTAsNumeric extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; } // (as.character col)
+  @Override int nargs() { return 1+1; } // (as.numeric col)
   @Override
-  public String str() { return "as.character"; }
+  public String str() { return "as.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame ary = stk.track(asts[1].exec(env)).getFrame();
-    if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
-    Vec v0 = ary.anyVec();
-    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toCategorical() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
-    return new ValFrame(fr);
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec[] nvecs = new Vec[fr.numCols()];
+    Vec vv;
+    for(int c=0;c<nvecs.length;++c) {
+      vv = fr.vec(c);
+      nvecs[c] = ( vv.isInt() || vv.isCategorical() ) ? vv.toInt() : vv.makeCopy();
+    }
+    return new ValFrame(new Frame(fr._names, nvecs));
+  }
+}
+
+/** Is String Vec? */
+class ASTIsCharacter extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary"}; }
+  @Override int nargs() { return 1+1; } // (is.character col)
+  @Override
+  public String str() { return "is.character"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isString() ? "TRUE" : "FALSE");
+    double ds[] = new double[fr.numCols()];
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = fr.vec(i).isString() ? 1 : 0;
+    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
+    vec.setDomain(new String[]{"FALSE","TRUE"});
+    return new ValFrame(new Frame(new String[]{"is.character"}, new Vec[]{vec}));
   }
 }
 
@@ -143,25 +180,6 @@ class ASTIsNumeric extends ASTPrim {
   }
 }
 
-/** Is String Vec? */
-class ASTIsCharacter extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; } // (is.character col)
-  @Override
-  public String str() { return "is.character"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isString() ? "TRUE" : "FALSE");
-    double ds[] = new double[fr.numCols()];
-    for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = fr.vec(i).isString() ? 1 : 0;
-    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"FALSE","TRUE"});
-    return new ValFrame(new Frame(new String[]{"is.character"}, new Vec[]{vec}));
-  }
-}
-
 /** Any columns factor/categorical? */
 class ASTAnyFactor extends ASTPrim {
   @Override
@@ -178,21 +196,4 @@ class ASTAnyFactor extends ASTPrim {
   }
 }
 
-/** Convert to a numeric */
-class ASTAsNumeric extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; } // (as.numeric col)
-  @Override
-  public String str() { return "as.numeric"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] nvecs = new Vec[fr.numCols()];
-    Vec vv;
-    for(int c=0;c<nvecs.length;++c) {
-      vv = fr.vec(c);
-      nvecs[c] = ( vv.isInt() || vv.isCategorical() ) ? vv.toInt() : vv.makeCopy();
-    }
-    return new ValFrame(new Frame(fr._names, nvecs));
-  }
-}
+
