@@ -283,21 +283,21 @@ public class ChunkSpeedTest extends TestUtil {
   void rollups(boolean parallel)
   {
     Frame fr = new Frame();
-    for (int i=0; i<cols; ++i) {
-      if (parallel)
-        fr.add("C" + i, Vec.makeCon(0, rows)); //multi-chunk (based on #cores)
-      else
-        fr.add("C"+i, Vec.makeVec(raw[i], Vec.newKey())); //directly fill from raw double array (1 chunk)
-    }
-    if (parallel) new FillTask().doAll(fr);
+    Vec v = Vec.makeCon(Double.NaN, rows);
+    Log.info(v.mean());
+    Log.info(v.sigma());
+    Log.info(v.min());
+    Log.info(v.max());
+    v.remove();
+    for (int i=0; i<cols; ++i)
+      fr.add("C" + i, Vec.makeCon(0, rows, parallel)); //multi-chunk (based on #cores)
+    new FillTask().doAll(fr);
 
     long start = System.currentTimeMillis();
     for (int r = 0; r < rep; ++r) {
       for (int i=0; i<cols; ++i) {
         DKV.remove(fr.vec(i).rollupStatsKey());
-        Futures fs = new Futures();
-        fr.vec(i).startRollupStats(fs);
-        fs.blockForPending();
+        fr.vec(i).mean();
       }
     }
     long done = System.currentTimeMillis();
