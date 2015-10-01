@@ -22,7 +22,7 @@ abstract class ASTUniOp extends ASTPrim {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
-    case Val.FRM: 
+    case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk cs[], NewChunk ncs[] ) {
@@ -34,8 +34,14 @@ abstract class ASTUniOp extends ASTPrim {
             }
           }
         }.doAll(fr.numCols(),fr).outputFrame());
-    case Val.STR: throw H2O.unimpl();
-    default: throw H2O.fail();
+      case Val.ROW:
+        ValRow v = (ValRow)val;
+        double[] ds = new double[v._ds.length];
+        for(int i=0;i<ds.length;++i)
+          ds[i] = op(v._ds[i]);
+        String[] names = v._names.clone();
+        return new ValRow(ds,names);
+    default: throw H2O.unimpl("unop unimpl: " + val.getClass());
     }
   }
   abstract double op( double d );
@@ -90,7 +96,7 @@ class ASTIsNA  extends ASTPrim {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
-    case Val.FRM: 
+    case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk cs[], NewChunk ncs[] ) {
@@ -103,10 +109,10 @@ class ASTIsNA  extends ASTPrim {
           }
         }.doAll(fr.numCols(),fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
-    default: throw H2O.fail();
+    default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
   }
-  double op(double d) { return Double.isNaN(d)?1:0; } 
+  double op(double d) { return Double.isNaN(d)?1:0; }
 }
 
 class ASTRunif extends ASTPrim {

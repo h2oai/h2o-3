@@ -513,10 +513,20 @@ class ASTIfElse extends ASTPrim {
   }
 
   ValRow row_ifelse(ValRow tst, Val yes, Val no) {
-    if( !yes.isRow() || !no.isRow() ) throw H2O.unimpl();
     double[] test = tst.getRow();
-    double[] True = yes.getRow();
-    double[] False = no.getRow();
+    double[] True;
+    double[] False;
+    if( !(yes.isRow() || no.isRow()) ) throw H2O.unimpl();
+    switch( yes.type() ) {
+      case Val.NUM: True = new double[]{yes.getNum()}; break;
+      case Val.ROW: True = yes.getRow(); break;
+      default: throw H2O.unimpl("row ifelse unimpl: " + yes.getClass());
+    }
+    switch( no.type() ) {
+      case Val.NUM: False = new double[]{no.getNum()}; break;
+      case Val.ROW: False = no.getRow(); break;
+      default: throw H2O.unimpl("row ifelse unimplL " + no.getClass());
+    }
     double[] ds = new double[test.length];
     String[] ns = new String[test.length];
     for(int i=0;i<test.length;++i) {
