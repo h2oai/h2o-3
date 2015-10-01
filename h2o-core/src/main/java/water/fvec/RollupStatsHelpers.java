@@ -69,7 +69,6 @@ public class RollupStatsHelpers {
       final double mean = _rs._mean = _rs._mean / _rs._rows;
       ssqr += mean * mean * zeros; //add contribution of sparse 0s to sum of squares
       _rs._sigma += ssqr - _rs._rows * mean * mean; // _sigma := sum((x-mean(x))^2) = sum(x^2) - N*mean(x)^2
-      assert(!Double.isNaN(_rs._sigma));
     }
     return checksum;
   }

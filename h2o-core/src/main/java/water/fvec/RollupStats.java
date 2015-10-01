@@ -107,15 +107,15 @@ class RollupStats extends Iced {
       return this;
     }
 
-    if (c instanceof C0DChunk && c.isNA_impl(0)) {
-      if ((c instanceof C0DChunk && c.isNA_impl(0))) { //all NaN
-        _sigma=0; //count of non-NAs * variance of non-NAs
-        _mean = 0; //sum of non-NAs (will get turned into mean)
-        _naCnt=c._len;
-        _nzCnt=c._len;
-      }
+    //all const NaNs
+    if ((c instanceof C0DChunk && c.isNA_impl(0))) {
+      _sigma=0; //count of non-NAs * variance of non-NAs
+      _mean = 0; //sum of non-NAs (will get turned into mean)
+      _naCnt=c._len;
+      _nzCnt=c._len;
       return this;
     }
+
     // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
     if( min==0 && max==1 ) {
       int zs = c._len-c.sparseLen(); // Easy zeros
@@ -132,7 +132,6 @@ class RollupStats extends Iced {
       _rows += zs+os;
       _mean = (double)os/_rows;
       _sigma = zs*(0.0-_mean)*(0.0-_mean) + os*(1.0-_mean)*(1.0-_mean);
-      assert(!Double.isNaN(_sigma));
       return this;
     }
 
@@ -257,10 +256,6 @@ class RollupStats extends Iced {
       // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
       if( _fr.anyVec().isCategorical() && _fr.anyVec().domain().length > 2 )
         _rs._mean = _rs._sigma = Double.NaN;
-      else if (_fr.anyVec().isNumeric()){
-        assert(!Double.isNaN(_rs._mean));
-        assert(!Double.isNaN(_rs._sigma));
-      }
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
