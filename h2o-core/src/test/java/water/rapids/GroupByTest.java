@@ -75,22 +75,20 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,2,2,18.714,1e-1);
       fr.delete();
 
-      tree = "(GB hex [7] nrow 1 \"all\" nrow 1 \"rm\" nrow 1 \"ignore\")"; // Group-By on year, nrow of economy
+      tree = "(GB hex [7] nrow 1 \"all\" nrow 1 \"rm\" )"; // Group-By on year, nrow of economy
       fr = chkTree(tree,"smalldata/junit/cars.csv");
-      chkDim(fr,4,13);
+      chkDim(fr, 3, 13);
       chkFr(fr,0,0,70);         // 1970, 35 cars, 29 have economy
       chkFr(fr,1,0,35);         // ALL
-      chkFr(fr,2,0,29);         // RM
-      chkFr(fr,3,0,29);         // IGNORE
+      chkFr(fr, 2, 0, 29);         // RM
       fr.delete();
 
-      tree = "(GB hex [7] mean 1 \"all\" mean 1 \"rm\" mean 1 \"ignore\")"; // Group-By on year, mean of economy
+      tree = "(GB hex [7] mean 1 \"all\" mean 1 \"rm\" )"; // Group-By on year, mean of economy
       fr = chkTree(tree,"smalldata/junit/cars.csv");
-      chkDim(fr,4,13);
+      chkDim(fr, 3, 13);
       chkFr(fr,0,0,70);          // 1970, 35 cars, 29 have economy
       chkFr(fr,1,0,Double.NaN);  // ALL
       chkFr(fr,2,0,17.69, 1e-1); // RM
-      chkFr(fr,3,0,14.66, 1e-1); // IGNORE
 
     } finally {
       if( fr != null ) fr.delete();
@@ -101,9 +99,9 @@ public class GroupByTest extends TestUtil {
   @Test public void testAllAggs() {
     Frame fr = null;
     try {
-      String tree = "(GB hex [4] nrow 0 \"rm\"  mean 1 \"rm\"  sum 1 \"rm\"  min 1 \"rm\"  max 1 \"rm\" )";
+      String tree = "(GB hex [4] nrow 0 \"rm\"  mean 1 \"rm\"  sum 1 \"rm\"  min 1 \"rm\"  max 1 \"rm\"  sd 1 \"rm\")";
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
-      chkDim(fr,6,3);
+      chkDim(fr,7,3);
 
       chkFr(fr,0,0,"Iris-setosa");
       chkFr(fr,1,0,50);         // nrow
@@ -111,6 +109,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,3,0,170.9);      // sum
       chkFr(fr,4,0,  2.3);      // min
       chkFr(fr,5,0,  4.4);      // max
+      chkFr(fr,6,0,  0.3810244);// sd
 
       chkFr(fr,0,1,"Iris-versicolor");
       chkFr(fr,1,1,50);         // nrow
@@ -118,6 +117,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,3,1,138.5);      // sum
       chkFr(fr,4,1,  2.0);      // min
       chkFr(fr,5,1,  3.4);      // max
+      chkFr(fr,6,1,  0.3137983);// sd
 
       chkFr(fr,0,2,"Iris-virginica");
       chkFr(fr,1,2,50);         // nrow
@@ -125,6 +125,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,3,2,148.7);      // sum
       chkFr(fr,4,2,  2.2);      // min
       chkFr(fr,5,2,  3.8);      // max
+      chkFr(fr,6,2,  0.3224966);// sd
 
     } finally {
       if( fr != null ) fr.delete();

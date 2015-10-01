@@ -18,7 +18,7 @@ public class GroupByLargeTest extends TestUtil {
     DKV.put(fr);
     String rapids = "(GB raw_text [0] nrow 0 \"all\")";
 
-    ASTGroup._testing_force_sorted = true;
+    //ASTGroup._testing_force_sorted = true;
     Val val = Exec.exec(rapids);
     ASTGroup._testing_force_sorted = false;
     fr.delete();

@@ -55,6 +55,14 @@ public abstract class AtomicUtils {
       double old;
       while( !CAS(ds,i,old=ds[i],old+y) ) ;
     }
+    static public void min( double ds[], int i, double min ) {
+      double old;
+      while( !CAS(ds,i,old=ds[i],Math.min(old,min)) ) ;
+    }
+    static public void max( double ds[], int i, double max ) {
+      double old;
+      while( !CAS(ds,i,old=ds[i],Math.max(old,max)) ) ;
+    }
   }
 
   // Atomically-updated long array.  Instead of using the similar JDK pieces,

@@ -65,13 +65,13 @@ public class ASTImpute extends ASTPrim {
       throw new IllegalArgumentException("Can only update in-place named Frames");
 
     // Compute the imputed value per-group.  Empty groups are allowed and OK.
-    IcedHashMap<ASTGroup.G,IcedDouble> group_impute_map;
+    IcedHashMap<ASTGroup.GKX,IcedDouble> group_impute_map;
     if( by.isEmpty() ) {        // Empty group?  Skip the grouping work
       double res = Double.NaN;
       if( method instanceof ASTMean   ) res = vec.mean();
       if( method instanceof ASTMedian ) res = ASTMedian.median(stk.track(new Frame(vec)),combine);
       if( method instanceof ASTMode   ) res = ASTMode.mode(vec);
-      (group_impute_map = new IcedHashMap<>()).put(new ASTGroup.G(0,null).fill(0,null,new int[0]),new IcedDouble(res));
+      (group_impute_map = new IcedHashMap<>()).put(new ASTGroup.GKX(),new IcedDouble(res));
 
     } else {                    // Grouping!
       // Build and run a GroupBy command
@@ -79,8 +79,7 @@ public class ASTImpute extends ASTPrim {
       Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
      
       // Convert the Frame result to a group/imputation mapping
-      final int[] bycols = ArrayUtils.seq(0,imputes.numCols()-1);
-      group_impute_map = new Gather(bycols).doAll(imputes)._group_impute_map;
+      group_impute_map = new Gather().doAll(imputes)._group_impute_map;
       imputes.delete();
     }
 
@@ -92,30 +91,33 @@ public class ASTImpute extends ASTPrim {
     }
 
     // Now walk over the data, replace NAs with the imputed results
-    final IcedHashMap<ASTGroup.G,IcedDouble> final_group_impute_map = group_impute_map;
-    final int[] bycols = by.expand4();
+    final IcedHashMap<ASTGroup.GKX,IcedDouble> final_group_impute_map = group_impute_map;
+    
+    // Build a Frame of just the Key columns, usually just 1 column
+    final Frame fr_keys = ASTGroup.gbFrame(fr,by2.expand4());
+    final int ngbcols = fr_keys.numCols();
+
     new MRTask() {
       @Override public void map( Chunk cs[] ) {
-        Chunk x = cs[col];
-        ASTGroup.G g = new ASTGroup.G(bycols.length,null);
+        Chunk x = cs[ngbcols+col];
+        ASTGroup.GKX g = ASTGroup.GKX.init(ngbcols);
         for( int row=0; row<x._len; row++ )
           if( x.isNA(row) )
-            x.set(row,final_group_impute_map.get(g.fill(row,cs,bycols))._val);
+            x.set(row,final_group_impute_map.get(g.fill(cs,row,0))._val);
       }
-    }.doAll(fr);
+    }.doAll(fr_keys.add(fr));
 
     return new ValFrame(fr);
   }
 
   private static class Gather extends MRTask<Gather> {
-    private final int[] _bycols;
-    private IcedHashMap<ASTGroup.G,IcedDouble> _group_impute_map;
-    Gather( int[] bycols ) { _bycols = bycols; }
+    private IcedHashMap<ASTGroup.GKX,IcedDouble> _group_impute_map;
     @Override public void map( Chunk cs[] ) {
       _group_impute_map = new IcedHashMap<>();
-      Chunk means = cs[cs.length-1]; // Imputed value is last in the frame
+      Chunk means = cs[cs.length-1];    // Imputed value is last in the frame
+      ASTGroup.GKX gtmp = ASTGroup.GKX.init(cs.length-1);
       for( int i=0; i<cs[0]._len; i++ ) // For all groups
-        _group_impute_map.put(new ASTGroup.G(cs.length-1,null).fill(i,cs,_bycols),new IcedDouble(means.atd(i)));
+        _group_impute_map.put(gtmp.clone().fill(cs,i,0),new IcedDouble(means.atd(i)));
     }
     @Override public void reduce( Gather mrt ) { _group_impute_map.putAll(mrt._group_impute_map); }
   }
