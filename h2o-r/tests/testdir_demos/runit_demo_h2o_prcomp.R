@@ -8,7 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.h2o.prcomp <- function() {
-  ausPath <- system.file("extdata", "australia.csv", package="h2o")
+  ausPath <- locate("smalldata/junit/australia.csv")
   Log.info(paste("Uploading", ausPath))
   australia.hex <- h2o.uploadFile(path = ausPath, destination_frame = "australia.hex")
   
