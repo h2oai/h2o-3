@@ -283,12 +283,15 @@ public class ChunkSpeedTest extends TestUtil {
   void rollups(boolean parallel)
   {
     Frame fr = new Frame();
-    Vec v = Vec.makeCon(Double.NaN, rows);
-    Log.info(v.mean());
-    Log.info(v.sigma());
-    Log.info(v.min());
-    Log.info(v.max());
-    v.remove();
+//    Vec v = Vec.makeCon(Double.NaN, rows);
+//    Log.info(v.mean());
+//    Log.info(v.sigma());
+//    Log.info(v.min());
+//    Log.info(v.max());
+//    Log.info(v.length());
+//    Log.info(v.nzCnt());
+//    Log.info(v.naCnt());
+//    v.remove();
     for (int i=0; i<cols; ++i)
       fr.add("C" + i, Vec.makeCon(0, rows, parallel)); //multi-chunk (based on #cores)
     new FillTask().doAll(fr);
