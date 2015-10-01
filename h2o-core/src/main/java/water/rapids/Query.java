@@ -332,61 +332,6 @@ void cummulate(long x[][], long a, long b) {
 */
 
 
-// Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no need for recursion through join columns) with a downside of transfer-cost should we not need all the key
-
-//public class bmerge {
-//  public ArrayList<Object> _matchLen;
-//  Query(ArrayList leftIndex, ArrayList rightIndex) {    // leftIndex.o and .x
-//    // TO DO: parallel each of the 256 bins
-//    long lLow=-1, lUpp=lN, rLow=-1, rUpp=rN;
-//    long lr = lLow + (lUpp-lLow)/2;   // i.e. (lLow+lUpp)/2 but being robust to one day in the future someone somewhere overflowing long; e.g. 32 exabytes of 1-column ints
-//    lKey = leftIndex.x[lr];
-//    while(rLow < rUpp-1) {
-//      mid = rLow + (rUpp-rLow)/2;
-//      rKey = rightIndex.x[mid];
-//      int cmp = less(rKey, lKey);  // -1, 0 or 1.  Perhaps rename to keycmp similar to strcmp in C with the same familiar API
-//      if (cmp == -1) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
-//        rLow = mid;
-//      } else if (cmp == 1) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
-//        rUpp = mid;
-//      } else { // rKey == lKey including NA == NA
-//        // branch mid to find start and end of this group in this column
-//        // TO DO?: not if mult=first|last and col<ncol-1
-//        tmpLow = mid;
-//        tmpUpp = mid;
-//        while(tmpLow<rUpp-1) {
-//          mid = tmpLow + (rUpp-tmpLow)/2;
-//          rKey = rightIndex.x[mid];
-//          if (less(rKey,lKey)==0) tmpLow=mid; else rUpp=mid;
-//        }
-//        while(rLow<tmpUpp-1) {
-//          mid = rLow + (tmpUpp-rLow)/2;
-//          rKey = rightIndex.x[mid];
-//          if (less(rKey,lKey)==0) tmpUpp=mid; else rLow=mid;
-//        }
-//        // xLow and xUpp now surround the group in the right table
-//        break;
-//      }
-//    }
-//    // If the left table row key is duplicated (most usually when not using all the join columns) then find its extent
-//    // now. Saves i) re-finding the matching rows in the right and ii) bound setting gets awkward if other left rows can find the same right rows
-//    tmplow = lir;
-//    tmpupp = lir;
-//    while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
-//      mid = tmplow + (iupp-tmplow)/2;
-//      xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
-//      if (xval.i == ival.i) tmplow=mid; else iupp=mid;
-//    }
-//    while(ilow<tmpupp-1) {
-//      mid = ilow + (tmpupp-ilow)/2;
-//      xval.i = INTEGER(ic)[ o ? o[mid]-1 : mid ];
-//      if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
-//    }
-//    // ilow and iupp now surround the group in ic, too
-//    break;
-//
-//  }
-//
 //
 //// new helper class A extend MRTask.  In its reduce it'll get another A.  Make another class B extends ICED that wraps a bunch of long arrays (like I have now).
 //// A contains B as a member. The long arrays are easy to serialize automatically.   As you reduce two A's, do with the two B's. 'this' in the reduce will have the target A.
@@ -398,153 +343,153 @@ void cummulate(long x[][], long a, long b) {
 //// Several parallel, tight, branch free loops, faster than one heavy DKV pass per row
 //
 //
-//  public class Query {
-//    private static final int MAXVECLONG = 134217728, MAXVECBYTE = 1073741824;   // 2^31 bytes > java max (2^31-1), so 2^30 / 8 bytes per long.   TO DO - how to make global?
-//    public ArrayList<Object> _returnList;
-//    Query(Frame groupCols, Vec toSum, boolean retGrp) {
-//      System.out.println("Calling RadixCount ...");
-//      long t0 = System.nanoTime();
-//      long t00 = t0;
-//      int nChunks = groupCols.anyVec().nChunks();
-//
-//      long counts[][][] = new RadixCount(nChunks).doAll(groupCols.vec(0))._counts;
-//      System.out.println("Time of RadixCount: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
-//      // for (int c=0; c<5; c++) { System.out.print("First 10 for chunk "+c+" byte 0: "); for (int i=0; i<10; i++) System.out.print(counts[0][c][i] + " "); System.out.print("\n"); }
-//
-//      long totalHist[] = new long[256];
-//      for (int c=0; c<nChunks; c++) {
-//        for (int h=0; h<256; h++) {
-//          totalHist[h] += counts[5][c][h];   // TO DO: hard coded 5 here
-//        }
-//      }
-//
-//      for (int b=0; b<8; b++) {
-//        for (int h=0; h<256; h++) {
-//          long rollSum = 0;
-//          for (int c = 0; c < nChunks; c++) {
-//            long tmp = counts[b][c][h];
-//            counts[b][c][h] = rollSum;
-//            rollSum += tmp;
-//          }
-//        }
-//      }
-//      // Any radix skipping needs to be detected with a loop over node results to ensure no use of those bits on any node.
-//      System.out.println("Time to cumulate counts: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
-//
-//      // TO DO:  by this stage we know now the width of byte field we need.  So allocate it tight up to MAXVEC
-//      // TO DO: reduce to 5 if we're only passed the first column
-//      int keySize = 7;
-//      // Create jagged array
-//      _returnList = new ArrayList<> ();
-//      // long o[][][] = new long[256][][];
-//      // byte x[][][] = new byte[256][][];  // for each bucket,  there might be > 2^31 bytes, so an extra dimension for that
-//      long o[][][];
-//      _returnList.add(o = new long[256][][]);
-//      byte x[][][];
-//      _returnList.add(x = new byte[256][][]);  // for each bucket,  there might be > 2^31 bytes, so an extra dimension for that
-//
-//      for (int c=0; c<256; c++) {
-//        if (totalHist[c] == 0) continue;
-//        int d;
-//        int nbatch = (int)(totalHist[c] * Math.max(keySize,8) / MAXVECBYTE);   // TODO. can't be 2^31 because 2^31-1 was limit. If we use 2^30, instead of /, can we do >> for speed?
-//        int rem = (int)(totalHist[c] * Math.max(keySize,8) % MAXVECBYTE);
-//        assert nbatch==0;  // in the case of 20m rows, we should always be well within a batch size
-//        // The Math.max ensures that batches are aligned, even for wide keys.  For efficiency inside insert() above so it doesn't have to cross boundaries.
-//        o[c] = new long[nbatch + (rem>0?1:0)][];
-//        x[c] = new byte[nbatch + (rem>0?1:0)][];
-//        assert nbatch==0;
-//        for (d=0; d<nbatch; d++) {
-//          o[c][d] = new long[MAXVECLONG];
-//          // TO DO?: use MemoryManager.malloc8()
-//          x[c][d] = new byte[MAXVECBYTE];
-//        }
-//        if (rem>0) {
-//          o[c][d] = new long[rem];
-//          x[c][d] = new byte[rem * keySize];
-//        }
-//      }
-//      System.out.println("Time to allocate o[][] and x[][]: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
-//      // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be as dense as possible.
-//      // o is the full ordering vector of the right size
-//      // x is the byte key aligned with o
-//      // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
-//
-//      new MoveByFirstByte(5, o, x, counts, keySize).doAll(groupCols);  // feasibly, that we could move by byte 5 and then skip the next byte.  Too complex case though and rare so simplify
-//      System.out.println("Time to MoveByFirstByte: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
-//
-//      // Add check that this first split is reasonable.  e.g. if it were just 2, it definitely would not be enough.   90 is enough though.  Need to fill L2 with pages.
-//      // for counted completer 0:255
-//      long groups[][] = new long[256][];  //  at most MAXVEC groups per radix, currently
-//      long nGroup[] = new long[257];   // one extra to make undo of cumulate easier
-//      Futures fs = new Futures();
-//      for (int i=0; i<256; i++) {
-//        if (totalHist[i] > 0)
-//          fs.add(H2O.submitTask(new dradix(groups, nGroup, i, x[i], o[i], totalHist[i], keySize)));
-//      }
-//      fs.blockForPending();
-//      long nGroups = 0;
-//      for (int i = 0; i < 257; i++) {
-//        long tmp = nGroup[i];
-//        nGroup[i] = nGroups;
-//        nGroups += tmp;
-//      }
-//      System.out.println("Time to recursive radix: " + (System.nanoTime() - t0) / 1e9 ); t0 = System.nanoTime();
-//      System.out.println("Total groups found: " + nGroups);
-//
-//      // We now have o and x that bmerge() needs
-//
-//      long nrow = groupCols.anyVec().length();
-//
-//      long g[][] = new long[(int)(1 + nrow / MAXVECLONG)][];
-//      int c;
-//      for (c=0; c<nrow/MAXVECLONG; c++) {
-//        g[c] = new long[MAXVECLONG];
-//      }
-//      g[c] = new long[(int)(nrow % MAXVECLONG)];
-//      fs = new Futures();
-//      for (int i=0; i<256; i++) {
-//        if (totalHist[i] > 0)
-//          fs.add(H2O.submitTask(new assignG(g, groups[i], nGroup[i+1]-nGroup[i], nGroup[i], o[i])));
-//        // reuse the x vector we allocated before to store the group numbers.  i.e. a perfect and ordered hash, stored alongside table
-//      }
-//      fs.blockForPending();
-//      System.out.println("Time to assign group index (length nrows): " + (System.nanoTime() - t0) / 1e9 ); t0 = System.nanoTime();
-//
-//      //Vec res = Vec.makeZero(nGroups);  // really slow to assign to
-//      double res[] = new double[(int)nGroups];
-//      new runSum(g, res).doAll(toSum);
-//
-//      // TO DO: Create final frame with 3 columns
-//
-//      System.out.println("Time to sum column: " + (System.nanoTime() - t0) / 1e9 );
-//      System.out.println("Total time: " + (System.nanoTime() - t00) / 1e9);
-//
-//      for (int i = 0; i < 5; i++) System.out.format("%7.0f\n", res[i]);
-//      System.out.println("---");
-//      for (int i = 4; i >= 0; i--) System.out.format("%7.0f\n", res[(int)nGroups-i-1]);
-//
-///*
-//        System.out.println("Head and tail:");
-//        int head=10, done=0, batch = -1;
-//        while (done < head) {
-//            while (o[++batch] == null) ;
-//            for (int i = 0; done < head && i < o[batch][0].length; i++)
-//                System.out.format("%7d: %16d\n", done++, vec.at8(o[batch][0][i]));
-//        }
-//
-//        System.out.println("--------");
-//        batch = 256;
-//        done = 0;
-//        while (done < head) {
-//            while (o[--batch] == null) ;
-//            for (int i = o[batch][0].length - 1; done < head && i >= 0; i--)
-//                System.out.format("%7d: %16d\n", vec.length() - ++done, vec.at8(o[batch][0][i]));
-//        }
-//        System.out.print("\n");
-//*/
-//
-//    }
-//  }
-//
-//
-//
+public class Query {
+  private static final int MAXVECLONG = 134217728, MAXVECBYTE = 1073741824;   // 2^31 bytes > java max (2^31-1), so 2^30 / 8 bytes per long.   TO DO - how to make global?
+  public ArrayList<Object> _returnList;
+  Query(Frame groupCols, Vec toSum, boolean retGrp) {
+    System.out.println("Calling RadixCount ...");
+    long t0 = System.nanoTime();
+    long t00 = t0;
+    int nChunks = groupCols.anyVec().nChunks();
+
+    long counts[][][] = new RadixCount(nChunks).doAll(groupCols.vec(0))._counts;
+    System.out.println("Time of RadixCount: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
+    // for (int c=0; c<5; c++) { System.out.print("First 10 for chunk "+c+" byte 0: "); for (int i=0; i<10; i++) System.out.print(counts[0][c][i] + " "); System.out.print("\n"); }
+
+    long totalHist[] = new long[256];
+    for (int c=0; c<nChunks; c++) {
+      for (int h=0; h<256; h++) {
+        totalHist[h] += counts[5][c][h];   // TO DO: hard coded 5 here
+      }
+    }
+
+    for (int b=0; b<8; b++) {
+      for (int h=0; h<256; h++) {
+        long rollSum = 0;
+        for (int c = 0; c < nChunks; c++) {
+          long tmp = counts[b][c][h];
+          counts[b][c][h] = rollSum;
+          rollSum += tmp;
+        }
+      }
+    }
+    // Any radix skipping needs to be detected with a loop over node results to ensure no use of those bits on any node.
+    System.out.println("Time to cumulate counts: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
+
+    // TO DO:  by this stage we know now the width of byte field we need.  So allocate it tight up to MAXVEC
+    // TO DO: reduce to 5 if we're only passed the first column
+    int keySize = 7;
+    // Create jagged array
+    _returnList = new ArrayList<> ();
+    // long o[][][] = new long[256][][];
+    // byte x[][][] = new byte[256][][];  // for each bucket,  there might be > 2^31 bytes, so an extra dimension for that
+    long o[][][];
+    _returnList.add(o = new long[256][][]);
+    byte x[][][];
+    _returnList.add(x = new byte[256][][]);  // for each bucket,  there might be > 2^31 bytes, so an extra dimension for that
+
+    for (int c=0; c<256; c++) {
+      if (totalHist[c] == 0) continue;
+      int d;
+      int nbatch = (int)(totalHist[c] * Math.max(keySize,8) / MAXVECBYTE);   // TODO. can't be 2^31 because 2^31-1 was limit. If we use 2^30, instead of /, can we do >> for speed?
+      int rem = (int)(totalHist[c] * Math.max(keySize,8) % MAXVECBYTE);
+      assert nbatch==0;  // in the case of 20m rows, we should always be well within a batch size
+      // The Math.max ensures that batches are aligned, even for wide keys.  For efficiency inside insert() above so it doesn't have to cross boundaries.
+      o[c] = new long[nbatch + (rem>0?1:0)][];
+      x[c] = new byte[nbatch + (rem>0?1:0)][];
+      assert nbatch==0;
+      for (d=0; d<nbatch; d++) {
+        o[c][d] = new long[MAXVECLONG];
+        // TO DO?: use MemoryManager.malloc8()
+        x[c][d] = new byte[MAXVECBYTE];
+      }
+      if (rem>0) {
+        o[c][d] = new long[rem];
+        x[c][d] = new byte[rem * keySize];
+      }
+    }
+    System.out.println("Time to allocate o[][] and x[][]: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
+    // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be as dense as possible.
+    // o is the full ordering vector of the right size
+    // x is the byte key aligned with o
+    // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
+
+    new MoveByFirstByte(5, o, x, counts, keySize).doAll(groupCols);  // feasibly, that we could move by byte 5 and then skip the next byte.  Too complex case though and rare so simplify
+    System.out.println("Time to MoveByFirstByte: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
+
+    // Add check that this first split is reasonable.  e.g. if it were just 2, it definitely would not be enough.   90 is enough though.  Need to fill L2 with pages.
+    // for counted completer 0:255
+    long groups[][] = new long[256][];  //  at most MAXVEC groups per radix, currently
+    long nGroup[] = new long[257];   // one extra to make undo of cumulate easier
+    Futures fs = new Futures();
+    for (int i=0; i<256; i++) {
+      if (totalHist[i] > 0)
+        fs.add(H2O.submitTask(new dradix(groups, nGroup, i, x[i], o[i], totalHist[i], keySize)));
+    }
+    fs.blockForPending();
+    long nGroups = 0;
+    for (int i = 0; i < 257; i++) {
+      long tmp = nGroup[i];
+      nGroup[i] = nGroups;
+      nGroups += tmp;
+    }
+    System.out.println("Time to recursive radix: " + (System.nanoTime() - t0) / 1e9 ); t0 = System.nanoTime();
+    System.out.println("Total groups found: " + nGroups);
+
+    // We now have o and x that bmerge() needs
+
+    long nrow = groupCols.anyVec().length();
+
+    long g[][] = new long[(int)(1 + nrow / MAXVECLONG)][];
+    int c;
+    for (c=0; c<nrow/MAXVECLONG; c++) {
+      g[c] = new long[MAXVECLONG];
+    }
+    g[c] = new long[(int)(nrow % MAXVECLONG)];
+    fs = new Futures();
+    for (int i=0; i<256; i++) {
+      if (totalHist[i] > 0)
+        fs.add(H2O.submitTask(new assignG(g, groups[i], nGroup[i+1]-nGroup[i], nGroup[i], o[i])));
+      // reuse the x vector we allocated before to store the group numbers.  i.e. a perfect and ordered hash, stored alongside table
+    }
+    fs.blockForPending();
+    System.out.println("Time to assign group index (length nrows): " + (System.nanoTime() - t0) / 1e9 ); t0 = System.nanoTime();
+
+    //Vec res = Vec.makeZero(nGroups);  // really slow to assign to
+    double res[] = new double[(int)nGroups];
+    new runSum(g, res).doAll(toSum);
+
+    // TO DO: Create final frame with 3 columns
+
+    System.out.println("Time to sum column: " + (System.nanoTime() - t0) / 1e9 );
+    System.out.println("Total time: " + (System.nanoTime() - t00) / 1e9);
+
+    for (int i = 0; i < 5; i++) System.out.format("%7.0f\n", res[i]);
+    System.out.println("---");
+    for (int i = 4; i >= 0; i--) System.out.format("%7.0f\n", res[(int)nGroups-i-1]);
+
+/*
+      System.out.println("Head and tail:");
+      int head=10, done=0, batch = -1;
+      while (done < head) {
+          while (o[++batch] == null) ;
+          for (int i = 0; done < head && i < o[batch][0].length; i++)
+              System.out.format("%7d: %16d\n", done++, vec.at8(o[batch][0][i]));
+      }
+
+      System.out.println("--------");
+      batch = 256;
+      done = 0;
+      while (done < head) {
+          while (o[--batch] == null) ;
+          for (int i = o[batch][0].length - 1; done < head && i >= 0; i--)
+              System.out.format("%7d: %16d\n", vec.length() - ++done, vec.at8(o[batch][0][i]));
+      }
+      System.out.print("\n");
+*/
+
+  }
+}
+
+
+
