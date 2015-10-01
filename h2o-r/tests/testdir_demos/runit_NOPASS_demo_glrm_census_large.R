@@ -16,20 +16,20 @@ locate_source <- function(s) {
 test.whd_zip.demo <- function(conn) {
   missing_frac <- 0.2
   train_frac <- 0.8
-  k_dim <- 15
+  k_dim <- 10
   
   Log.info("Import and parse ACS 2013 5-year DP02 demographic data...")
-  acs_orig <- h2o.uploadFile(locate("smalldata/census/ACS_13_5YR_DP02_cleaned.zip"), col.types = c("enum", rep("numeric", 149)))
+  acs_orig <- h2o.uploadFile(locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip"), col.types = c("enum", rep("numeric", 149)))
   print(summary(acs_orig))
   acs_zcta_col <- acs_orig$ZCTA5
   acs_full <- acs_orig[,-which(colnames(acs_orig) == "ZCTA5")]
   
   Log.info("Import and parse WHD 2014-2015 labor violations data...")
-  whd_zcta <- h2o.uploadFile(locate("smalldata/census/whd_zcta_cleaned.zip"), col.types = c(rep("enum", 7), rep("numeric", 97)))
+  whd_zcta <- h2o.uploadFile(locate("bigdata/laptop/census/whd_zcta_cleaned.zip"), col.types = c(rep("enum", 7), rep("numeric", 97)))
   print(summary(whd_zcta))
   
   Log.info(paste0("Create validation data with ", 100*missing_frac, "% missing entries"))
-  acs_miss <- h2o.uploadFile(locate("smalldata/census/ACS_13_5YR_DP02_cleaned.zip"), col.types = c("enum", rep("numeric", 149)))
+  acs_miss <- h2o.uploadFile(locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip"), col.types = c("enum", rep("numeric", 149)))
   acs_miss <- acs_miss[,-which(colnames(acs_miss) == "ZCTA5")]
   acs_miss <- h2o.insertMissingValues(data = acs_miss, fraction = missing_frac, seed = SEED)
   print(summary(acs_miss))
@@ -86,9 +86,9 @@ test.whd_zip.demo <- function(conn) {
                               ntrees = 10, max_depth = 6, distribution = "multinomial"))
 
   Log.info("Performance comparison:")
-  gbm_sum <- data.frame(original = c(orig_time, gbm_orig@model$training_metric@metrics$AUC, gbm_orig@model$validation_metric@metrics$AUC),
-                        reduced = c(mod_time, gbm_mod@model$training_metric@metrics$AUC, gbm_mod@model$validation_metric@metrics$AUC),
-                        row.names = c("runtime", "train_auc", "test_auc"))
+  gbm_sum <- data.frame(original = c(orig_time[3], gbm_orig@model$training_metric@metrics$MSE, gbm_orig@model$validation_metric@metrics$MSE),
+                        reduced = c(mod_time[3], gbm_mod@model$training_metric@metrics$MSE, gbm_mod@model$validation_metric@metrics$MSE),
+                        row.names = c("runtime", "train_mse", "test_mse"))
   print(gbm_sum)
   testEnd()
 }
