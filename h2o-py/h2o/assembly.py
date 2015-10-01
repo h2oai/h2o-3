@@ -1,6 +1,6 @@
 from collections import namedtuple
 import uuid, urllib2
-from h2o import H2OConnection, _quoted, get_frame
+from h2o import H2OConnection, _quoted, get_frame, H2OFrame
 
 
 class H2OAssembly:
@@ -60,3 +60,33 @@ class H2OAssembly:
     j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr._id, _rest_version=99)
     self.id = j["assembly"]["name"]
     return get_frame(j["result"]["name"])
+
+  @property
+  def divide(self): return H2OFrame.__div__
+
+  @property
+  def plus(self): return H2OFrame.__add__
+
+  @property
+  def multiply(self): return H2OFrame.__mul__
+
+  @property
+  def minus(self): return H2OFrame.__sub__
+
+  @property
+  def less_than(self): return H2OFrame.__lt__
+
+  @property
+  def less_than_equal(self): return H2OFrame.__le__
+
+  @property
+  def equal_equal(self): return H2OFrame.__eq__
+
+  @property
+  def not_equal(self): return H2OFrame.__ne__
+
+  @property
+  def greater_than(self): return H2OFrame.__gt__
+
+  @property
+  def greater_than_equal(self): return H2OFrame.__ge__
