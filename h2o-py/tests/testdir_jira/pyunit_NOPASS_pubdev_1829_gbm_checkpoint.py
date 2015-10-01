@@ -4,8 +4,8 @@ import h2o, tests
 
 def pubdev_1829():
 
-    train =  h2o.import_file(path=h2o.locate("smalldata/jira/gbm_checkpoint_train.csv"))
-    valid =  h2o.import_file(path=h2o.locate("smalldata/jira/gbm_checkpoint_valid.csv"))
+    train =  h2o.import_file(path=tests.locate("smalldata/jira/gbm_checkpoint_train.csv"))
+    valid =  h2o.import_file(path=tests.locate("smalldata/jira/gbm_checkpoint_valid.csv"))
 
     predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"

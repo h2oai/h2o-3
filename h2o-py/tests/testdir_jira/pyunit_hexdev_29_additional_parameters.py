@@ -13,7 +13,7 @@ def additional_parameters():
     c_names = ["a", "b", "c"]
     c_types = ["enum", "enum", "enum"]
 
-    fhex = h2o.import_file(h2o.locate("smalldata/jira/hexdev_29.csv"),
+    fhex = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"),
                            destination_frame=dest_frame,
                            col_names=c_names,
                            col_types=c_types)

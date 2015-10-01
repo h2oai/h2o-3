@@ -582,6 +582,7 @@ class Test:
         @param port: Port of cloud to run on.
         @return: none
         """
+        global g_on_jenk_hadoop
         if (self.cancelled or self.terminated):
             return
 
@@ -589,16 +590,12 @@ class Test:
         self.ip = ip
         self.port = port
 
-        if (is_python_test_file(self.test_name)):
+        if (is_python_test_file(self.test_name) or is_python_file(self.test_name)):
             cmd = ["python",
                    self.test_name,
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-        elif (is_python_file(self.test_name)):
-            cmd = ["python",
-                   self.test_name,
-                   "--usecloud",
-                   self.ip + ":" + str(self.port)]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
         elif (is_ipython_notebook(self.test_name)):
             cmd = ["python",
                    self.notebook_runner,
@@ -606,12 +603,15 @@ class Test:
                    self.ip + ":" + str(self.port),
                    "--ipynb",
                    self.test_name]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
         elif (is_runit_test_file(self.test_name)):
             cmd = ["R",
                    "-f",
                    self.test_name,
                    "--args",
+                   "--usecloud",
                    self.ip + ":" + str(self.port)]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
@@ -1634,6 +1634,7 @@ g_produce_unit_reports = True
 g_phantomjs_to = 3600
 g_phantomjs_packs = "examples"
 g_r_pkg_ver_chk = False
+g_on_jenk_hadoop = False
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1729,6 +1730,9 @@ def usage():
     print("")
     print("    --rPkgVerChk     Check that Jenkins-approved R packages/versions are present")
     print("")
+    print("    --onJenkHadoop   Signify to runit/pyunit test that they are being run on jenkins h2o-hadoop clusters.")
+    print("                     The tests need this signal for the `locate` functions to behave properly")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1815,6 +1819,7 @@ def parse_args(argv):
     global g_phantomjs_to
     global g_phantomjs_packs
     global g_r_pkg_ver_chk
+    global g_on_jenk_hadoop
 
     i = 1
     while (i < len(argv)):
@@ -1928,6 +1933,8 @@ def parse_args(argv):
             usage()
         elif (s == "--rPkgVerChk"):
             g_r_pkg_ver_chk = True
+        elif (s == "--onJenkHadoop"):
+            g_on_jenk_hadoop = True
         else:
             unknown_arg(s)
 

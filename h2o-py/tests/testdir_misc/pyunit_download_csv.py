@@ -7,11 +7,11 @@ def download_csv():
     
     
 
-    iris1 = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris1 = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
 
     h2o.download_csv(iris1,"iris_delete.csv")
 
-    iris2 = h2o.import_file(path=h2o.locate("iris_delete.csv"))
+    iris2 = h2o.import_file(path=tests.locate("iris_delete.csv"))
     os.remove("iris_delete.csv")
 
     rand_row = random.randint(0,iris1.nrow-1)

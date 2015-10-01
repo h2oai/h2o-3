@@ -7,7 +7,7 @@ def link_correct_default():
 	
 
 	print("Reading in original prostate data.")
-	h2o_data = h2o.upload_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
+	h2o_data = h2o.upload_file(path=tests.locate("smalldata/prostate/prostate.csv.zip"))
 
 	print("Compare models with link unspecified and canonical link specified.")
 	print("GAUSSIAN: ")

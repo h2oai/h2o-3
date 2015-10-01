@@ -6,7 +6,7 @@ def iris_nfolds():
     
     
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
 
     model = h2o.random_forest(y=iris[4], x=iris[0:4], ntrees=50, nfolds=5)
     model.show()

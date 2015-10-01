@@ -4,7 +4,7 @@ import h2o, tests
 
 def intdiv():
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
     iris = iris[:,0:4]
     rows, cols = iris.dim
 

@@ -6,7 +6,7 @@ def center_scale():
     
     
 
-    iris =  h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))[0:4]
+    iris =  h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))[0:4]
 
     # frame (default args)
     foo = iris.scale()

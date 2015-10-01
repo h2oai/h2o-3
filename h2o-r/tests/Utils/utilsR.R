@@ -138,23 +138,48 @@ safeSystem <- function(x) {
   }
 }
 
-getArgs<-
+parseArgs<-
 function(args) {
-  fileName <- commandArgs()[grep('*\\.R',unlist(commandArgs()))]
-  if (length(args) > 1) {
-    m <- paste("Usage: R f ", paste(fileName, " --args H2OServer:Port",sep=""),sep="")
-    stop(m);
+  i <- 1
+  while (i <= length(args)) {
+      s <- args[i]
+      if (s == "--usecloud") {
+        i <- i + 1
+        if (i > length(args)) {
+          usage()
+        }
+        argsplit <- strsplit(args[i], ":")[[1]]
+        H2O.IP   <<- argsplit[1]
+        H2O.PORT <<- as.numeric(argsplit[2])
+      } else if (s == "--onJenkHadoop") {
+        print("GOT HERE")
+        ON.JENKINS.HADOOP <<- TRUE
+      } else {
+        unknownArg(s)
+      }
+      i <- i + 1
   }
+}
 
-  if (length(args) == 0) {
-    myIP   = "127.0.0.1"
-    myPort = 54321
-  } else {
-    argsplit = strsplit(args[1], ":")[[1]]
-    myIP     = argsplit[1]
-    myPort   = as.numeric(argsplit[2])
-  }
-  return(list(myIP,myPort));
+usage<-
+function() {
+  print("")
+  print("Usage for:  R -f runit.R --args [...options...]")
+  print("")
+  print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
+  print("                     IP:PORT")
+  print("")
+  print("    --onJenkHadoop   signal to runt that it will be run on h2o-hadoop cluster.")
+  print("")
+  q("no",1,FALSE) #exit with nonzero exit code
+}
+
+unknownArg<-
+function(arg) {
+  print("")
+  print(paste0("ERROR: Unknown argument: ",arg))
+  print("")
+  usage()
 }
 
 withWarnings <- function(expr) {

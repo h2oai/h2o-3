@@ -7,7 +7,7 @@ def test_get_future_model():
     
     
 
-    covtype=h2o.upload_file(h2o.locate("smalldata/covtype/covtype.altered.gz"))
+    covtype=h2o.upload_file(tests.locate("smalldata/covtype/covtype.altered.gz"))
 
     myY=54
     myX=list(set(range(54)) - set([20,28]))   # Cols 21 and 29 are constant, so must be explicitly ignored

@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 def test_as_data():
-  hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
+  hdf = h2o.import_file(path=tests.locate("smalldata/jira/v-11.csv"))
   print hdf.head()
 
   # NB: columns 1,5 are currently unsupported as date types
@@ -51,7 +51,7 @@ def test_as_data():
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
+  hdf = h2o.import_file(path=tests.locate("smalldata/jira/v-11.csv"))
   hdf["ds9"] = hdf["ds9"].asfactor()
 
   hdf5 = hdf["ds5"]

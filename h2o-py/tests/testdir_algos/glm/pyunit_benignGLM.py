@@ -6,7 +6,7 @@ def benign():
     
     
 
-    training_data = h2o.import_file(h2o.locate("smalldata/logreg/benign.csv"))
+    training_data = h2o.import_file(tests.locate("smalldata/logreg/benign.csv"))
 
     Y = 3
     X = range(3) + range(4,11)

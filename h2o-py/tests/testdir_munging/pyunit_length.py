@@ -6,7 +6,7 @@ def length_check():
     # Connect to a pre-existing cluster
 
     # Test on strings
-    frame = h2o.import_file(path=h2o.locate("smalldata/junit/names.csv"), col_types=["string","string","numeric"])
+    frame = h2o.import_file(path=tests.locate("smalldata/junit/names.csv"), col_types=["string","string","numeric"])
 
     # single column (frame)
     # UTF strings

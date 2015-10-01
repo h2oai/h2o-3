@@ -126,7 +126,8 @@ def _func_bc(nargs,idx,ops,keys):
     args.insert(0, arg)
   elif is_load_fast(ops[idx][0]):
     args.insert(0, _load_fast(ops[idx][1][0]))
-  return [expr.ExprNode(op,*args),idx-1]
+    idx-=1
+  return [expr.ExprNode(op,*args),idx]
 
 def _load_fast(x):
   return ASTId(x)

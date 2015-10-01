@@ -8,10 +8,10 @@ def deeplearning_autoencoder():
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)
 
-    train_hex = h2o.upload_file(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    train_hex = h2o.upload_file(tests.locate("bigdata/laptop/mnist/train.csv.gz"))
     train_hex[resp] = train_hex[resp].asfactor()
 
-    test_hex = h2o.upload_file(h2o.locate("bigdata/laptop/mnist/test.csv.gz"))
+    test_hex = h2o.upload_file(tests.locate("bigdata/laptop/mnist/test.csv.gz"))
     test_hex[resp] = test_hex[resp].asfactor()
 
     # split data into two parts

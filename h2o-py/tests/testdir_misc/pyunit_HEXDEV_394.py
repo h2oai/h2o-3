@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o,tests
 
 def hexdev_394():
-  path = h2o.locate("smalldata/covtype/covtype.20k.data")
+  path = tests.locate("smalldata/covtype/covtype.20k.data")
   trainraw = h2o.lazy_import(path)
   tsetup = h2o.parse_setup(trainraw)
   tsetup["column_types"][10] = "ENUM"

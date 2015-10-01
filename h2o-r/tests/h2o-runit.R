@@ -15,11 +15,12 @@ options(echo=FALSE)
 #' ----------------- Global variables -----------------
 #'
 #'
-H2O.IP                      <- NULL
-H2O.PORT                    <- NULL
-SEED                        <- NULL
-PROJECT.ROOT                <- "h2o-3"
-H2O.INTERNAL.HDFS.NAME.NODE <- "172.16.2.176"
+H2O.IP                      <<- "127.0.0.1"
+H2O.PORT                    <<- 54321
+ON.JENKINS.HADOOP           <<- FALSE
+SEED                        <<- NULL
+PROJECT.ROOT                <<- "h2o-3"
+H2O.INTERNAL.HDFS.NAME.NODE <<- "172.16.2.176"
 
 #'
 #'
@@ -36,9 +37,7 @@ function() {
     utils.path <- locate("tests/Utils/", "h2o-r")
     src.utils(utils.path)
 
-    ipPort <- getArgs(commandArgs(trailingOnly = TRUE)) # provided by --args ip:port
-    H2O.IP   <<- ipPort[[1]]
-    H2O.PORT <<- ipPort[[2]]
+    parseArgs(commandArgs(trailingOnly=TRUE)) # provided by --args
 
     Log.info("Load default packages. Additional required packages must be loaded explicitly.\n")
     default.packages()
@@ -68,10 +67,18 @@ function() {
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 locate<-
 function(pathStub, root.parent = NULL) {
-  pathStub <- clean(pathStub)
-  bucket <- pathStub[1]
-  offset <- pathStub[-1]
-  cur.dir <- getwd()
+  if (ON.JENKINS.HADOOP) {
+    # HACK: jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+    # in a h2o-hadoop cluster scenario, the other machines don't have this link. We need to reference the actual path,
+    # which is /home/0xdiag/ on ALL jenkins machines. If ON.JENKINS.HADOOP is set by the run.py, pathStub MUST be
+    # relative to /home/0xdiag/
+    return(paste0("/home/0xdiag/",pathStub))
+  } else {
+    pathStub <- clean(pathStub)
+    bucket <- pathStub[1]
+    offset <- pathStub[-1]
+    cur.dir <- getwd()
+  }
   #recursively ascend until `bucket` is found
   bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
   if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))

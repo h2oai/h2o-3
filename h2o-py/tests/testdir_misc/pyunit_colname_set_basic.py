@@ -8,8 +8,8 @@ def colname_set_basic():
 
     print "Uploading iris data..."
 
-    no_headers = h2o.upload_file(h2o.locate("smalldata/iris/iris.csv"))
-    headers_and = h2o.upload_file(h2o.locate("smalldata/iris/iris_header.csv"))
+    no_headers = h2o.upload_file(tests.locate("smalldata/iris/iris.csv"))
+    headers_and = h2o.upload_file(tests.locate("smalldata/iris/iris_header.csv"))
 
     print no_headers.names
     print headers_and.names
