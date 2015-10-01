@@ -6,6 +6,7 @@ import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OIllegalValueException;
 import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
@@ -237,6 +238,7 @@ public final class ParseDataset extends Job<Frame> {
         if (offendingColNames.size() > 0)
           throw new H2OParseException("Exceeded categorical limit on columns "+ offendingColNames+".   Consider reparsing these columns as a string.");
       }
+      Log.trace("Done collecting categorical domains across nodes.");
 
       job.update(0, "Compressing data.");
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
@@ -244,8 +246,9 @@ public final class ParseDataset extends Job<Frame> {
       // Update categoricals to the globally agreed numbering
       Vec[] evecs = new Vec[ecols.length];
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
+      Log.trace("Done compressing data.");
 
-      job.update(0, "Unifying categoricals across nodes.");
+      job.update(0, "Unifying categorical domains across nodes.");
       {
         // new CreateParse2GlobalCategoricalMaps(mfpt._cKey).doAll(evecs);
         // Using Dtask since it starts and returns faster than an MRTask
@@ -360,7 +363,8 @@ public final class ParseDataset extends Job<Frame> {
 
     @Override public void map(Chunk [] chks){
       CategoricalUpdateMap temp = DKV.getGet(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + _chunk2ParseNodeMap[chks[0].cidx()]));
-      //FIXME sanity check
+      if ( temp == null || temp.map == null)
+        throw new H2OIllegalValueException("Missing categorical update map",this);
       int[][] _parse2GlobalCatMaps = temp.map;
 
       //update the chunk with the new map
@@ -378,16 +382,16 @@ public final class ParseDataset extends Job<Frame> {
                   +"caused by unrecognized characters in the data.\n The problem categorical value "
                   +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
                   +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
-              //throw new H2OParseException(H2O.SELF.toString() + ": missing categorical at col:" + i + ", row: " + (chk.start() + j) + ", val = " + old + ", chunk=" + chk.getClass().getSimpleName() + ".", map = " + Arrays.toString(_parse2GlobalCatMaps[i]));
             chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
+          chk.close(cidx, _fs);
+          Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
         }
-        chk.close(cidx, _fs);
       }
     }
     @Override public void postGlobal() {
       for (int i=0; i < H2O.CLOUD.size(); i++)
-      DKV.remove(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + i));
+        DKV.remove(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + i));
     }
   }
   private static class GatherCategoricalDomainsTask extends MRTask<GatherCategoricalDomainsTask> {
@@ -414,6 +418,7 @@ public final class ParseDataset extends Job<Frame> {
         _packedDomains[i] = packDomain(_perColDomains[i]);
         i++;
       }
+      Log.trace("Done collecting local domains.");
     }
 
     @Override
@@ -487,12 +492,15 @@ public final class ParseDataset extends Job<Frame> {
               }
               _packedDomains[fi]  = Arrays.copyOf(mergedDom, mbi);// reduce size
               UnsafeUtils.set4(_packedDomains[fi], 0, mergeLen);
+              Log.trace("Merged domain length is "+mergeLen+" for the "
+                  +PrettyPrint.withOrdinalIndicator(fi+1)+ " categorical column.");;
               tryComplete();
             }
           });
         }
         for (int i = 0; i < _catColIdxs.length; i++) if (domtasks[i] != null) domtasks[i].join();
       }
+      Log.trace("Done merging domains.");
     }
 
     private byte[] packDomain(BufferedString[] domain) {
