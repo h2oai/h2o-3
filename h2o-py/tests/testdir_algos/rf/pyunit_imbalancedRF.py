@@ -6,7 +6,7 @@ def imbalanced():
     
     
 
-    covtype = h2o.import_file(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.import_file(path=tests.locate("smalldata/covtype/covtype.20k.data"))
     covtype[54] = covtype[54].asfactor()
 
     imbalanced = h2o.random_forest(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=False, nfolds=3)

@@ -7,7 +7,7 @@ def svd_1_golden():
     
 
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
 
     print "Compare with SVD"
     fitH2O = h2o.svd(x=arrestsH2O[0:4], nv=4, transform="NONE", max_iterations=2000)

@@ -8,7 +8,7 @@ def lambda_search():
     
 
     #Log.info("Importing prostate.csv data...\n")
-    prostate = h2o.import_file(h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(tests.locate("smalldata/logreg/prostate.csv"))
     #prostate.summary()
 
     # GLM without lambda search, lambda is single user-provided value

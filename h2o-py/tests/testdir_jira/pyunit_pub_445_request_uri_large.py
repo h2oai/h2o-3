@@ -6,8 +6,8 @@ def pub_445_long_request_uri():
     
     
 
-    mnistTrain = h2o.import_file(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
-    mnistTest = h2o.import_file(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    mnistTrain = h2o.import_file(path=tests.locate("bigdata/laptop/mnist/train.csv.gz"))
+    mnistTest = h2o.import_file(path=tests.locate("bigdata/laptop/mnist/train.csv.gz"))
 
     mnistTrain.set_name(col=784, name="label")
     mnistTest.set_name(col=784, name="label")

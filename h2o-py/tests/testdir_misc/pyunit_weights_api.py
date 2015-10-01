@@ -6,7 +6,7 @@ def weights_api():
     
     
 
-    h2o_iris_data = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
+    h2o_iris_data = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
     r = h2o_iris_data.runif()
     iris_train = h2o_iris_data[r > 0.2]
     iris_valid = h2o_iris_data[r <= 0.2]

@@ -11,7 +11,7 @@ def swpredsGBM():
   
   
   #Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds = h2o.import_file(path=h2o.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
+  swpreds = h2o.import_file(path=tests.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
   swpreds["y"] = swpreds["y"].asfactor()
 
   #Log.info("Summary of swpreds_1000x3.csv from H2O:\n")

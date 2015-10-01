@@ -6,14 +6,14 @@ import h2o, tests
 def consistency_check():
 
     try:
-        small = h2o.locate("h2o-py/demos/citi_bike_small.ipynb")
+        small = tests.locate("h2o-py/demos/citi_bike_small.ipynb")
     except ValueError:
-        small = h2o.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
+        small = tests.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
 
     try:
-        large = h2o.locate("h2o-py/demos/citi_bike_large.ipynb")
+        large = tests.locate("h2o-py/demos/citi_bike_large.ipynb")
     except ValueError:
-        large = h2o.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
+        large = tests.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
     tests.ipy_notebook_exec(small, save_and_norun=True)
     tests.ipy_notebook_exec(large, save_and_norun=True)
@@ -22,8 +22,8 @@ def consistency_check():
     l = os.path.basename(large).split('.')[0]+".py"
     small_list = list(open(s, 'r'))
     large_list = list(open(l, 'r'))
-    os.remove(h2o.locate(s))
-    os.remove(h2o.locate(l))
+    os.remove(tests.locate(s))
+    os.remove(tests.locate(l))
 
     for s, l in zip(small_list, large_list):
         if s != l:

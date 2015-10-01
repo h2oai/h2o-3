@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o,tests
 
 def pyunit_apply():
-  fr = h2o.import_file(h2o.locate("smalldata/logreg/prostate.csv"))
+  fr = h2o.import_file(tests.locate("smalldata/logreg/prostate.csv"))
 
   fr.apply(lambda x: x["PSA"], axis=1).show()
   print

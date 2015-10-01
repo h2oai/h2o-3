@@ -7,7 +7,7 @@ def mnist_manyCols_largeGBM():
     
 
     #Log.info("Importing mnist train data...\n")
-    train = h2o.import_file(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    train = h2o.import_file(path=tests.locate("bigdata/laptop/mnist/train.csv.gz"))
     #Log.info("Check that tail works...")
     train.tail()
 

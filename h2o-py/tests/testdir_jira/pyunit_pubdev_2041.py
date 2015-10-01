@@ -4,7 +4,7 @@ import h2o, tests
 
 def pubdev_2041():
 
-    iris = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
 
     s = iris.runif(seed=12345)
     train1 = iris[s >= 0.5]

@@ -4,7 +4,7 @@ import h2o, tests
 
 def test_any_all():
 
-    foo = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
+    foo = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
 
     foo["C6"] = foo["C1"] > 0.0
     any = foo[:,"C6"].any()

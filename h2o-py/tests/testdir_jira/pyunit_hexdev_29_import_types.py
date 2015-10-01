@@ -8,7 +8,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 def continuous_or_categorical():
-  fraw = h2o.lazy_import(h2o.locate("smalldata/jira/hexdev_29.csv"))
+  fraw = h2o.lazy_import(tests.locate("smalldata/jira/hexdev_29.csv"))
   fsetup = h2o.parse_setup(fraw)
   fsetup["column_types"][0] = "ENUM"
   fsetup["column_types"][1] = "ENUM"

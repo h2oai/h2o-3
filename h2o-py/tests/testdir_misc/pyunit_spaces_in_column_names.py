@@ -6,7 +6,7 @@ def spaces_in_column_names():
     
     
 
-    train_data = h2o.upload_file(path=h2o.locate("smalldata/jira/spaces_in_column_names.csv"))
+    train_data = h2o.upload_file(path=tests.locate("smalldata/jira/spaces_in_column_names.csv"))
     train_data.show()
     train_data.describe()
     X = ["p r e d i c t o r 1","predictor2","p r e d i ctor3","pre d ictor4","predictor5"]

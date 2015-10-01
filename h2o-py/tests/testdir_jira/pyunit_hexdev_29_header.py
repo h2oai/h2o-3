@@ -13,16 +13,16 @@ def header():
 
     path = "smalldata/jira/hexdev_29.csv"
 
-    fhex_header_true = h2o.import_file(h2o.locate(path), header=1)
+    fhex_header_true = h2o.import_file(tests.locate(path), header=1)
 
-    fhex_header_unknown = h2o.import_file(h2o.locate(path), header=0)
+    fhex_header_unknown = h2o.import_file(tests.locate(path), header=0)
 
-    fhex_header_false = h2o.import_file(h2o.locate(path), header=-1)
+    fhex_header_false = h2o.import_file(tests.locate(path), header=-1)
 
-    fhex_header_unspecified = h2o.import_file(h2o.locate(path))
+    fhex_header_unspecified = h2o.import_file(tests.locate(path))
 
     try:
-        h2o.import_file(h2o.locate(path), header=2)
+        h2o.import_file(tests.locate(path), header=2)
         assert False
     except ValueError:
         pass

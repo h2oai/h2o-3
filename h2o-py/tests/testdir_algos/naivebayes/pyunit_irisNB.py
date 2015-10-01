@@ -6,7 +6,7 @@ def nb_iris():
     
 
     print "Importing iris_wheader.csv data...\n"
-    iris = h2o.upload_file(h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.upload_file(tests.locate("smalldata/iris/iris_wheader.csv"))
     iris.describe()
 
     laplace_range = [0, 1, 0.25]

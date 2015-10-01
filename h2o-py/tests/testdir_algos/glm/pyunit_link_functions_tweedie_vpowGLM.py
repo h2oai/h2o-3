@@ -7,7 +7,7 @@ def link_functions_tweedie_vpow():
     
 
     # Load example data from HDtweedie, y = aggregate claim loss
-    hdf = h2o.upload_file(h2o.locate("smalldata/glm_test/auto.csv"))
+    hdf = h2o.upload_file(tests.locate("smalldata/glm_test/auto.csv"))
     y = "y"
     x = list(set(hdf.names) - set(["y"]))
 
