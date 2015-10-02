@@ -22,17 +22,18 @@ task run_selenium(type: Exec){
 			commandLine 'echo', "phantomjsPath parameter is required. Please imput it"
 		}
 		else{
-			def testcaseFile = "$algorithm" + "Cases"
-			commandLine 'python', 'run.py', '-t', "$testcaseFile", '-l', "$phantomjsPath"
+			commandLine 'python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath"
 		}
 	} 
 
 task selenium()<<{ 
 	def startH2OServer = Thread.start { 
 		run_java.execute() 
-    }	
-	sleep 10000 
+	}
 	println "Run java -jar h20: finished" 
+	println "Please wait 10 second to start selenium testing" 
+	sleep 10000 
+	println "Run selenium testing" 
 	run_selenium.execute()
 } 
 

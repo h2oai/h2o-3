@@ -3,30 +3,50 @@ SE advanced functions
 '''
 
 import time
-
 import logging
-from datetime import datetime
 
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
+from utils import config
 
-H2O_WEBSITE = r"http://localhost:54321/flow/index.html"
+
+def open_browser(agrs):
+    return get_web_driver(agrs.browser, agrs.location)
 
 
-def get_web_driver(name, location):
-    '''
-    TODO: implement for other browsers too
-    '''
-    driver = webdriver.PhantomJS (location, port = 65000)
-    driver.get(H2O_WEBSITE)
+def get_web_driver(browser, location):
+    if 'chrome' == browser:
+        driver = webdriver.Chrome(location)
+    elif 'phantomjs' == browser:
+        driver = webdriver.PhantomJS (location, config.port)
+    elif 'firefox' == browser:
+        driver = webdriver.Firefox()
+    else:
+        print 'Do not implemented for browser :', browser
+        raise Exception('Do not implemented for browser :' + browser)
+
+    driver.get(config.H2O_WEBSITE)
     driver.implicitly_wait(60)
     driver.set_window_size (1124, 850)
 
     return driver
+
+# def get_web_driver(name, location):
+#     '''
+#     TODO: implement for other browsers too
+#     '''
+#     #driver = webdriver.PhantomJS (location, port = 65000)
+#     driver = webdriver.Chrome(location)
+#     driver.get(H2O_WEBSITE)
+#     driver.implicitly_wait(60)
+#     driver.set_window_size (1124, 850)
+#
+#     return driver
 
 
 def wait_n_click(driver, xpath, timeout = 100):
@@ -89,6 +109,8 @@ def get_text(driver, xpath):
 
 
 def set_value(driver, xpath, value):
+
+    print 'Set_values:',xpath['xpath']
     '''
     Depends on type of xpath, perform the correspondent action
     For example: send keys to a input, click a button, ...
@@ -120,6 +142,7 @@ def set_value(driver, xpath, value):
 
 
 def set_values(driver, xpaths, orders, configs):
+
     '''
     Automatically setting all given configs based on the orders.
     With optional configs, only set those if they are passed in via configs.
@@ -142,14 +165,12 @@ def set_values(driver, xpaths, orders, configs):
 
 
 def get_auto_configs(orders, csv_configs):
-    cfgs = dict ()
+    cfgs = dict()
 
     for i in orders:
         for j in csv_configs:
             if i == j :
                 if csv_configs[j] != '':
-                    print j
-                    print csv_configs[j]
                     cfgs[i] = csv_configs[j]
                 else:
                     cfgs[i] = ''
@@ -178,10 +199,10 @@ def verify_progress_and_click(driver, xpath_text, xpath_click, timeout = 7000):
 
 
 def get_log(test_case_id):
-    log_filename = r'results/logs/%s.log' % test_case_id
+    log_filename = config.log_filename % test_case_id
     logging.basicConfig(filename=log_filename, level=logging.ERROR)
 
 
 def get_screenshot(driver, test_case_id):
-    screenshot = r'results/screenshots/%s.png' % test_case_id
+    screenshot = config.screenshot % test_case_id
     driver.get_screenshot_as_file(screenshot)

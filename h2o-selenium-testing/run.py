@@ -1,16 +1,24 @@
 '''
 For running tests, run this from command line.
 '''
-
 import sys
 import os
 import inspect
 import argparse
 import shutil
 import time
+import xml.etree.ElementTree as ET
+import datetime
+import logging
+import subprocess
+import sys
+import codecs
 
-from utils.common import load_csv, append_csv, DatasetCharacteristics
-from utils.se_functions import get_web_driver
+
+from utils import se_functions
+from utils.common import load_csv, append_xml, DatasetCharacteristics
+from utils import config
+from utils import Logger
 
 
 def load_testclass(modulename, classname):
@@ -44,17 +52,18 @@ def setup_ouput_directories():
     '''
     Remove all old results and create new /results directory
     '''
-    if os.path.exists('results'):
-        shutil.rmtree('results')
 
-    mkdir(r'results')
-    mkdir(r'results/logs')
-    mkdir(r'results/screenshots')
+    if os.path.exists(config.results):
+        shutil.rmtree(config.results)
+
+    mkdir(config.results)
+    mkdir(config.results_logs)
+    mkdir(config.results_screenshots)
 
 
 def load_testsuite(suite_name):
     ''' load testsuite from csv file '''
-    return load_csv('test_data/%s.csv' % suite_name)
+    return load_csv(config.load_csv % suite_name)
 
 
 def run_testcase(testclass, tc_id, configs, additional_configs):
@@ -67,7 +76,6 @@ def run_testcase(testclass, tc_id, configs, additional_configs):
     result = test_obj.test()
     test_obj.clean_up()
     return result
-
 
 
 def run_testsuite(testsuite, additional_configs):
@@ -86,31 +94,60 @@ def run_testsuite(testsuite, additional_configs):
                       'validate_dataset': 'iris_validation1'},
       }
     '''
-    result_filename = r'results/test_results.csv'
-    are_headers_written = False
 
+    #are_headers_written = False
+
+    result_filename = r'results/testng-results.xml'
     total_tc_Pass = 0
     total_tc_Fail = 0
-    total = 0
-    percentPass = 0
-    percentFail = 0
+
+    testng_results = ET.Element("testng_results")
+    test = ET.SubElement(testng_results, "test")
+    class1 = ET.SubElement(test, "class", name = 'h2o.testng.TestNG')
 
     for tc_id, test_cfgs in testsuite.iteritems():
+        time_start_tc = datetime.datetime.now()
+
+        # redirect output console to write log into TestNG format file
+        sys.stdout = Logger.Logger(config.temporary_log_file_name)
+
+        driver = se_functions.open_browser(additional_configs['args'])
+        additional_configs['driver'] = driver
+
         testscript = test_cfgs.pop('testscript')
         classname = test_cfgs.pop('classname')
 
         testclass = load_testclass(testscript, classname)
         test_result = run_testcase(testclass, tc_id, test_cfgs, additional_configs)
 
-        if not are_headers_written:
-            append_csv(result_filename, ','.join(['testcase_id', 'result', 'message', 'mse', 'auc',
-                                                  'train_dataset_id', 'validate_dataset_id',
-                                                  'distribution', 'sparse']))
-            are_headers_written = True
+        test_method_attributes =  dict()
 
-        append_csv(result_filename, ','.join([tc_id, test_result['result'], test_result['message'], test_result['mse'], test_result['auc'],
-                                              test_result['train_dataset_id'], test_result['validate_dataset_id'],
-                                              test_result['distribution'], test_result['sparse']]))
+        test_method_attributes['started-at'] = str(time_start_tc.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        test_method_attributes['name'] = tc_id
+        test_method_attributes['status'] = test_result['result']
+        time_finish_tc = datetime.datetime.now()
+        test_method_attributes['finished-at'] = str(time_finish_tc.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        duration = (time_finish_tc - time_start_tc).seconds * 1000
+        test_method_attributes['duration-ms'] = str(duration)
+
+        test_method = ET.SubElement(class1, "test-method", test_method_attributes)
+
+        params = ET.SubElement(test_method, 'params')
+
+        param0 = ET.SubElement(params, 'param', index = '0')
+        ET.SubElement(param0, 'value').text = "<![CDATA[Testcase: %s]]>" % tc_id
+        param2 = ET.SubElement(params, 'param', index = '1')
+        ET.SubElement(param2, 'value').text =  "<![CDATA[Train Dataset: %s]]>" % test_result['train_dataset_id']
+        param3 = ET.SubElement(params, 'param', index = '2')
+        ET.SubElement(param3, 'value').text =  "<![CDATA[Validate Dataset: %s]]>" % test_result['validate_dataset_id']
+        param4 = ET.SubElement(params, 'param', index = '3')
+        ET.SubElement(param4, 'value').text =  "<![CDATA[MSE: %s]]>" % test_result['mse']
+
+        reporter_output = ET.SubElement(test_method, "reporter_output")
+
+        #get log from log file
+        ET.SubElement(reporter_output, 'line').text =  "<![CDATA[%s]]>" % (sys.stdout.read())
+
 
 
         if "PASS" == test_result['result']:
@@ -119,12 +156,16 @@ def run_testsuite(testsuite, additional_configs):
             total_tc_Fail += 1
 
         total = total_tc_Pass + total_tc_Fail
-        percentPass = total_tc_Pass * 100/ total
-        percentFail = total_tc_Fail * 100/ total
-        time.sleep(3)
 
-    append_csv(result_filename, ','.join(['Total Tc Pass', 'Total TC Fail', 'Total', 'Percent Pass', 'Percent Fail']))
-    append_csv(result_filename, ','.join([str(total_tc_Pass), str(total_tc_Fail), str(total), str(percentPass), str(percentFail)]))
+
+        driver.quit()
+
+        testng_results.set('Passed',str(total_tc_Pass))
+        testng_results.set('Failed',str(total_tc_Fail))
+        testng_results.set('total', str(total))
+
+
+        append_xml(result_filename, testng_results)
 
 
 def parse_arguments():
@@ -143,7 +184,7 @@ def parse_arguments():
         dest = 'location',
         help = 'Browser installed location on hard drive',
         required = False,
-        default = 'C:\phantomjs-1.9.8-windows\phantomjs-1.9.8-windows/phantomjs.exe')
+        default = r'D:\application\phantomjs-1.9.7-windows\phantomjs.exe')
 
     parser.add_argument(
         '-t',
@@ -171,11 +212,12 @@ def main():
     setup_ouput_directories()
 
     args = parse_arguments()
+    print 'parse arguments: ', args
 
     # Create web driver instance, load dataset characteristics and pass them in as
     additional_configs = dict(
-        driver = get_web_driver(args.browser, args.location),
-        dataset_chars = DatasetCharacteristics('dataset_characteristics.csv'),
+        args = args,
+        dataset_chars = DatasetCharacteristics(config.dataset_chars),
     )
 
     # Load the testsuite and run all its testcases

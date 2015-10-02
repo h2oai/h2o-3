@@ -155,7 +155,7 @@ DEEP_LEARNING_XPATHS = dict(
     epochs = xp("//tr[th[contains(., 'epochs')]]//input", 'input', True),
     variable_importances = xp("//tr[th[contains(., 'variable_importances')]]//input", 'checkbox', True),
 
-    ##advance
+    #advance
     fold_assignment = xp("//tr[th[contains(., 'fold_assignment')]]//select", 'select', True),
     fold_column = xp("//tr[th[contains(., 'fold_column')]]//select", 'select', True),
     weights_column = xp("//tr[th[contains(., 'weights_column')]]//select", 'select', True),
@@ -175,7 +175,7 @@ DEEP_LEARNING_XPATHS = dict(
     tweedie_power = xp("//tr[th[contains(., 'tweedie_power')]]//input", 'input', True),
     score_interval = xp("//tr[th[contains(., 'score_interval')]]//input", 'input', True),
     score_training_samples = xp("//tr[th[contains(., 'score_training_samples')]]//input", 'input', True),
-    #score_validation_samples = xp("//tr[th[contains(., 'score_validation_samples')]]//input", 'input', True),
+    score_validation_samples = xp("//tr[th[contains(., 'score_validation_samples')]]//input", 'input', True),
     score_duty_cycle = xp("//tr[th[contains(., 'score_duty_cycle')]]//input", 'input', True),
     autoencoder = xp("//tr[th[contains(., 'autoencoder')]]//input", 'checkbox', True),
 
@@ -190,9 +190,9 @@ DEEP_LEARNING_XPATHS = dict(
     epsilon = xp("//tr[th[contains(., 'epsilon')]]//input", 'input', True),
     max_w2 = xp("//tr[th[contains(., 'max_w2')]]//input", 'input', True),
     initial_weight_distribution = xp("//tr[th[contains(., 'initial_weight_distribution')]]//select", 'select', True),
-    #classification_stop = xp("//tr[th[contains(., 'max_w2')]]//input", 'input', True),
+    classification_stop = xp("//tr[th[contains(., 'max_w2')]]//input", 'input', True),
     regression_stop = xp("//tr[th[contains(., 'regression_stop')]]//input", 'input', True),
-    #score_validation_sampling = xp("//tr[th[contains(., 'score_validation_sampling')]]//select", 'select', True),
+    score_validation_sampling = xp("//tr[th[contains(., 'score_validation_sampling')]]//select", 'select', True),
     diagnostics = xp("//tr[th[contains(., 'diagnostics')]]//input", 'checkbox', True),
     fast_mode = xp("//tr[th[contains(., 'fast_mode')]]//input", 'checkbox', True),
     force_load_balance = xp("//tr[th[contains(., 'force_load_balance')]]//input", 'checkbox', True),
@@ -276,7 +276,7 @@ GLM_XPATHS = dict(
     alpha = xp("//tr[th[contains(., 'alpha')]]//input", 'input', True),
     lamda = xp("//tr[th[contains(., 'lambda')]]//input", 'input'),
     lambda_search = xp("//tr[th[contains(., 'lambda_search')]]//input", 'checkbox', True),
-    #nlambdas = xp("//tr[th[contains(., 'nlambdas')]]//input", 'input', True),
+    nlambdas = xp("//tr[th[contains(., 'nlambdas')]]//input", 'input', True),
     standardize = xp("//tr[th[contains(., 'standardize')]]//input", 'checkbox', True),
     non_negative = xp("//tr[th[contains(., 'non_negative')]]//input", 'checkbox'),
     beta_constraints = xp("//tr[th[contains(., 'beta_constraints')]]//select", 'select', True),
@@ -296,7 +296,7 @@ GLM_XPATHS = dict(
     gradient_epsilon = xp("//tr[th[contains(., 'gradient_epsilon')]]//input", 'input', True),
     prior = xp("//tr[th[contains(., 'prior')]]//input", 'input', True),
     max_active_predictors = xp("//tr[th[contains(., 'max_active_predictors')]]//input", 'input', True),
-    #lambda_min_ratio = xp("//tr[th[contains(., 'lambda_min_ratio')]]//input", 'input', True),
+    lambda_min_ratio = xp("//tr[th[contains(., 'lambda_min_ratio')]]//input", 'input', True),
 )
 
 DRF_XPATHS = dict(

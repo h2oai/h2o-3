@@ -1,5 +1,3 @@
-__author__ = 'trang.huynh'
-
 from testlibs import common
 from utils.se_functions import set_values
 from testlibs.xpaths import GLM_XPATHS
@@ -20,26 +18,31 @@ ORDERS = [
     #expert
     'intercept', 'objective_epsilon', 'beta_epsilon',
     'gradient_epsilon', 'prior', 'max_active_predictors'
-
     ]
 
 
-def create_model_glm (driver, configs = {}):
+def create_model_glm(driver, configs = {}):
+    #Create glm_model
+    print 'Start create glm model...'
     #Param is required
     cfgs = dict(
         train_dataset_id = '',
         validate_dataset_id = '',
         response_column = '',
     )
-
     cfgs.update(configs)
 
+    print '---Select generalized_linear_model model:'
     common.navigate_to(driver, 'generalized_linear_model')
 
+    print '---Set value for param:'
     set_values(driver, GLM_XPATHS, ORDERS, cfgs)
-    common.click_build_model(driver)
 
+    print '---Click build model:'
+    common.click_build_model(driver)
     common.wait_progress_n_click(driver)
+    print 'Model is created done...'
+
 
 def unit_test():
     pass

@@ -1,4 +1,6 @@
 import csv
+import config
+import xml.etree.cElementTree as ET
 
 
 def load_csv(filename):
@@ -33,10 +35,25 @@ def load_csv(filename):
 
 def append_csv(filename, row):
     '''
-    Open a csv to write a row in append mode
+    Open a csv to write a row in append mo
+    de
     '''
     with open(filename, 'a') as f:
         f.write('%s\n' % row)
+
+
+def append_xml(filename, root):
+    tree = ET.ElementTree(root)
+    tree.write(filename)
+
+    with open(filename,'r') as f:
+        newlines = []
+        for line in f.readlines():
+            newlines.append(line.replace('&lt;', '<').replace('&gt;', '>'))
+
+    with open(filename, 'w') as f:
+        for line in newlines:
+            f.write(line)
 
 
 def load_dataset_characteristics(filename):
@@ -53,7 +70,7 @@ def load_dataset_characteristics(filename):
      ...
     }
     '''
-    ds_chars = load_csv('test_data/%s' % filename)
+    ds_chars = load_csv(config.test_data % filename)
 
     for chars in ds_chars.itervalues():
         for char_k in chars.keys():
@@ -69,10 +86,12 @@ class DatasetCharacteristics:
 
 
     def get_filepath(self, key):
-        '''
-        TODO: HACK HERE!!! shouldn't add /testng/ here... should be in config file
-        '''
-        return r'../%s/testng/%s' % (self.ds_chars[key]['dataset_directory'], self.ds_chars[key]['file_name'])
+        filepath = config.file__small_paths
+
+        if 'bigdata' == self.ds_chars[key]['dataset_directory']:
+            filepath = config.file__big_paths
+
+        return filepath + (self.ds_chars[key]['file_name'])
 
 
     def get_target(self, key):
