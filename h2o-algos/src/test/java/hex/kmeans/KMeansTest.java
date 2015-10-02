@@ -107,7 +107,7 @@ public class KMeansTest extends TestUtil {
                                       ard(8.8, 190, 50, 19.5)));
 
     // R k-means results for comparison
-    double totssR = 355807.821599;
+    double totssR = 355807.8216;
     double btwssR = 318155.162076;
     double[] wssR = new double[] {2546.350000, 6705.906667, 9136.642857, 19263.760000};
     double[][] centersR = ard(ard( 4.270000,  87.550000, 59.750000, 14.390000),
