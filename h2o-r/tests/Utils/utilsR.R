@@ -152,7 +152,6 @@ function(args) {
         H2O.IP   <<- argsplit[1]
         H2O.PORT <<- as.numeric(argsplit[2])
       } else if (s == "--onJenkHadoop") {
-        print("GOT HERE")
         ON.JENKINS.HADOOP <<- TRUE
       } else {
         unknownArg(s)
