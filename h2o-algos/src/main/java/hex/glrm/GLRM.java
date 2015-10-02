@@ -216,6 +216,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
     }
 
+    // TODO: Remove once _transform is eliminated
+    if(_parms._transform != DataInfo.TransformType.NONE && !(_parms._offset == false && _parms._scale == false))
+      error("_transform", "Either set _transform to NONE or both _offset = false and _scale = false, otherwise results will be incorrect");
+
     _ncolX = _parms._k;
     _ncolA = _train.numCols();
   }
@@ -519,13 +523,15 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           model._output._lossFunc[i] = _lossFunc[tinfo._permutation[i]];
 
         // Calculate one over generalized column variance for appropriate scaling
-        model._output._lossOffset = _parms._offset ? _parms.offset(tinfo, model._output._lossFunc) : new double[_ncolA][];
-        if(_parms._scale)
-          model._output._lossScale = _parms.scale(tinfo, model._output._lossFunc);
-        else {
+        _parms.setOffsetScale(tinfo, model._output._lossFunc, model._output);
+        /* model._output._lossOffset = _parms._offset ? _parms.offset(tinfo, model._output._lossFunc) : new double[_ncolA][];
+        if(_parms._scale) {
+          double[][] lossOffset = _parms._offset ? model._output._lossOffset : _parms.offset(tinfo, model._output._lossFunc);
+          model._output._lossScale = _parms.scale(tinfo, model._output._lossFunc, lossOffset);
+        } else {
           model._output._lossScale = new double[_ncolA];
           Arrays.fill(model._output._lossScale, 1.0);
-        }
+        } */
 
         long nobs = _train.numRows() * _train.numCols();
         long na_cnt = 0;

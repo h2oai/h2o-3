@@ -442,7 +442,7 @@ public class GLRMTest extends TestUtil {
         Log.info("Run with transform = DEMEAN, offset = false, scale = false");
         parms._transform = DataInfo.TransformType.DEMEAN;
         parms._offset = parms._scale = false;
-        parms._loading_name = "GLRMLoading1";
+        parms._loading_name = "GLRMLoading_1";
 
         job = new GLRM(parms);
         model = job.trainModel().get();
@@ -455,7 +455,7 @@ public class GLRMTest extends TestUtil {
         Log.info("Run with transform = NONE, offset = true, scale = false");
         parms._transform = DataInfo.TransformType.NONE;
         parms._offset = true; parms._scale = false;
-        parms._loading_name = "GLRMLoading2";
+        parms._loading_name = "GLRMLoading_2";
 
         job = new GLRM(parms);
         model2 = job.trainModel().get();

@@ -41,6 +41,13 @@ public class ArrayUtils {
     for (double d: from) result += d;
     return result;
   }
+  public static int sum(final boolean[] from) {
+    int result = 0;
+    for( boolean d : from ) {
+      if(d) result++;
+    }
+    return result;
+  }
   public static float[] reduceMin(float[] a, float[] b) {
     for (int i=0; i<a.length; ++i)
       a[i] = Math.min(a[i], b[i]);

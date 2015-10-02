@@ -137,6 +137,7 @@ public abstract class GLRMInit {
       _ncats = ncats;
       _chol = chol;
 
+      // TODO: Remove normSub and normMul once offsets and scaling fully functional
       _normSub = normSub;
       _normMul = normMul;
       _lossOffset = lossOffset;
@@ -174,7 +175,8 @@ public abstract class GLRMInit {
             if (Double.isNaN(a)) continue;
             // x += (a - _normSub[ds]) * _normMul[ds] * _yt.getNum(ds, k);
             // x += (a - (_parms._offset ? _lossOffset[d][0] : 0)) * _lossScale[d] * _yt.getNum(ds, k);
-            x += (a - _normSub[ds] - (_parms._offset ? _lossOffset[d][0] : 0)) * _normMul[ds] * _lossScale[d] * _yt.getNum(ds, k);
+            if(_parms._offset) a -= _lossOffset[d][0];
+            x += (a - _normSub[ds]) * _normMul[ds] * _lossScale[d] * _yt.getNum(ds, k);
           }
           xrow[k] = x;
         }
@@ -434,41 +436,51 @@ public abstract class GLRMInit {
   // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
   static class LossScaleCalc extends MRTask<LossScaleCalc> {
     final int _ncats;   // Number of categorical cols
-    final int _ncols;   // Total number of cols
-    final GLRMParameters.Loss[] _lossFunc;
+    final Loss[] _lossFunc;
     final int _period;    // For periodic loss function
     final double[][] _offset;
+    final boolean[] _skipCol;
 
     long[] _count;
     double[] _scale;
 
-    LossScaleCalc(int ncats, GLRMParameters.Loss[] lossFunc, int period, double[][] offset) {
+    LossScaleCalc(int ncats, Loss[] lossFunc, int period, double[][] offset, double[] scale) {
+      this(ncats, lossFunc, period, offset, scale, new boolean[lossFunc.length]);
+    }
+
+    LossScaleCalc(int ncats, Loss[] lossFunc, int period, double[][] offset, double[] scale, boolean[] skipCol) {
       assert lossFunc != null && offset != null && lossFunc.length == offset.length;
-      assert ncats <= offset.length;
+      assert ncats <= offset.length && scale.length == offset.length;
 
       _ncats = ncats;
-      _ncols = offset.length;
       _lossFunc = lossFunc;
       _period = period;
       _offset = offset;
+      _skipCol = skipCol;
+      _scale = scale;
     }
 
     @Override public void map(Chunk[] cs) {
-      assert cs.length == _ncols;
-      _count = new long[_ncols];
-      _scale = new double[_ncols];
+      assert cs.length == _offset.length;
+      _count = new long[_offset.length];
 
-      for(int row = 0; row < cs[0]._len; row++) {
-        for(int col = 0; col < _ncats; col++) {
+      for(int col = 0; col < _ncats; col++) {
+        if(_skipCol[col]) continue;
+
+        for(int row = 0; row < cs[0]._len; row++) {
           double a = cs[col].atd(row);
-          if(Double.isNaN(a)) continue;
+          if (Double.isNaN(a)) continue;
           _scale[col] += GLRMParameters.mloss(_offset[col], (int) a, _lossFunc[col]);
           _count[col]++;
         }
+      }
 
-        for(int col = _ncats; col < cs.length; col++) {
+      for(int col = _ncats; col < cs.length; col++) {
+        if(_skipCol[col]) continue;
+
+        for(int row = 0; row < cs[0]._len; row++) {
           double a = cs[col].atd(row);
-          if(Double.isNaN(a)) continue;
+          if (Double.isNaN(a)) continue;
           _scale[col] += GLRMParameters.loss(_offset[col][0], a, _lossFunc[col], _period);
           _count[col]++;
         }
@@ -476,14 +488,21 @@ public abstract class GLRMInit {
     }
 
     @Override public void reduce(LossScaleCalc other) {
-      ArrayUtils.add(_scale, other._scale);
-      ArrayUtils.add(_count, other._count);
+      // ArrayUtils.add(_scale, other._scale);
+      // ArrayUtils.add(_count, other._count);
+      for(int i = 0; i < _scale.length; i++) {
+        if(_skipCol[i]) continue;
+        _scale[i] += other._scale[i];
+        _count[i] += other._count[i];
+      }
     }
 
     @Override protected void postGlobal() {
-      for(int i = 0; i < _scale.length; i++)
+      for(int i = 0; i < _scale.length; i++) {
+        if (_skipCol[i]) continue;
         // _scale[i] /= _count[i]-1;
-        _scale[i] = _scale[i] != 0 ? (_count[i]-1) / _scale[i] : 1.0;   // Need reciprocal since dividing by generalized variance
+        _scale[i] = _scale[i] != 0 ? (_count[i] - 1) / _scale[i] : 1.0;   // Need reciprocal since dividing by generalized variance
+      }
     }
   }
 }

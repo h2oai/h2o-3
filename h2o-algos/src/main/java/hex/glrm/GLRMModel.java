@@ -1,6 +1,5 @@
 package hex.glrm;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import hex.*;
 import hex.glrm.GLRMInit.*;
 import hex.optimization.L_BFGS;
@@ -12,9 +11,8 @@ import water.fvec.Vec;
 import water.util.*;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
 import java.util.Random;
-
-import static hex.glrm.GLRMModel.GLRMParameters.Loss.*;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
   private static final int NUM_PARALLEL_TASKS = 10;
@@ -104,8 +102,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     public final boolean hasClosedForm(long na_cnt) {
-      boolean loss_quad = (null == _loss_by_col && _loss == Quadratic) ||
-              (null != _loss_by_col && allLossEquals(Quadratic) && (_loss_by_col.length == _train.get().numCols() || _loss == Quadratic));
+      boolean loss_quad = (null == _loss_by_col && _loss == Loss.Quadratic) ||
+              (null != _loss_by_col && allLossEquals(Loss.Quadratic) && (_loss_by_col.length == _train.get().numCols() || _loss == Loss.Quadratic));
 
       return na_cnt == 0 && ((loss_quad && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
               && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic)));
@@ -452,20 +450,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
-    public final double[][] offset(DataInfo dinfo, Loss[] losses) {
-      Frame fr = dinfo._adaptedFrame;
-      double[][] mu = new double[fr.numCols()][];
-
-      // Categorical columns
-      for(int i = 0; i < dinfo._cats; i++)
-        mu[i] = moffset(fr.vec(i), losses[i]);
-
-      // Numeric columns
-      for(int i = dinfo._cats; i < fr.numCols(); i++)
-        mu[i] = new double[] { offset(fr.vec(i), losses[i]) };
-      return mu;
-    }
     public final double offset(Vec v, Loss loss) {
       assert v.isNumeric() : "Vector must be numeric type";
       switch(loss) {
@@ -512,18 +496,65 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
+    public final double scale(Vec v, Loss loss) {
+      assert v.isNumeric() : "Vector must be numeric type";
+      switch(loss) {
+        case Quadratic:   // Quadratic scale is just reciprocal of variance
+          double sigma = v.sigma();
+          return sigma != 0 ? 1.0 / (sigma * sigma) : 1.0;
+        case Absolute:
+        case Huber:
+        case Poisson:
+        case Hinge:
+        case Periodic:
+        case Logistic:
+          throw H2O.unimpl("Generalized column variance not available for loss function " + loss);
+        default:
+          throw new RuntimeException("Unknown loss function " + loss);
+      }
+    }
+    public final double mscale(Vec v, Loss multi_loss) {
+      assert v.isEnum() : "Vector must be enum type";
+      switch(multi_loss) {
+        case Categorical:
+        case Ordinal:
+          throw H2O.unimpl("Generalized column variance not available for multidimensional loss function " + multi_loss);
+        default:
+          throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
+      }
+    }
+
+    // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
+    /* public final double[][] offset(DataInfo dinfo, Loss[] losses) {
+      Frame fr = dinfo._adaptedFrame;
+      double[][] mu = new double[fr.numCols()][];
+
+      // Categorical columns
+      for(int i = 0; i < dinfo._cats; i++)
+        mu[i] = moffset(fr.vec(i), losses[i]);
+
+      // Numeric columns
+      for(int i = dinfo._cats; i < fr.numCols(); i++)
+        mu[i] = new double[] { offset(fr.vec(i), losses[i]) };
+      return mu;
+    }
+
     // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
     // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
     public final double[] scale(DataInfo dinfo, Loss[] losses) {
-      double[][] offset = offset(dinfo, losses);
+      return scale(dinfo, losses, null);
+    }
+    public final double[] scale(DataInfo dinfo, Loss[] losses, double[][] offset) {
+      if(offset == null) offset = offset(dinfo, losses);
+      double[] scale = new double[losses.length];
 
-      LossScaleCalc lstsk = new LossScaleCalc(dinfo._cats, losses, _period, offset);
+      LossScaleCalc lstsk = new LossScaleCalc(dinfo._cats, losses, _period, offset, scale);
       lstsk.doAll(dinfo._adaptedFrame);
       return lstsk._scale;
-    }
+    } */
 
     // Is there a closed form solution for the M-estimator? If not, must use L-BFGS to get minimizer.
-    /* private final boolean closedFormOffset(Loss loss) {
+    private final boolean closedFormOffset(Loss loss) {
       switch(loss) {
         case Quadratic:
         case Absolute:
@@ -541,19 +572,45 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    private final void calcOffsetScale(Frame fr, Loss[] losses) {
-      double[][] offset = new double[losses.length][];
-      double[] scale = new double[losses.length];
-      boolean[] calcOff = new boolean[losses.length];
+    private final boolean closedFormScale(Loss loss) {
+      switch(loss) {
+        case Quadratic:
+          return true;
+        case Absolute:
+        case Huber:
+        case Poisson:
+        case Hinge:
+        case Periodic:
+        case Logistic:
+        case Categorical:
+        case Ordinal:
+          return false;
+        default:
+          throw new RuntimeException("Unknown loss function " + loss);
+      }
+    }
 
+    public final void setOffsetScale(DataInfo dinfo, Loss[] losses, GLRMOutput output) {
+      Frame fr = dinfo._adaptedFrame;
+      long nrows = fr.numRows();
+      assert losses != null && losses.length == fr.numCols() : "Number of losses " + losses.length + " != " + fr.numCols();
+
+      output._lossOffset = new double[losses.length][];
+      output._lossScale = new double[losses.length];
+      if(!_scale) Arrays.fill(output._lossScale, 1.0);
+      if(!_offset && !_scale) return;
+
+      double[][] lossOffset = new double[losses.length][];
+      double[] lossScale = new double[losses.length];
+      boolean[] skipScale = new boolean[losses.length];
       for(int i = 0; i < losses.length; i++) {
-        calcOff[i] = !closedFormOffset(losses[i]);
+        skipScale[i] = closedFormScale(losses[i]) || !closedFormOffset(losses[i]);
 
         if (closedFormOffset(losses[i])) {
           if(losses[i].isForNumeric())
-            offset[i] = new double[] { offset(fr.vec(i), losses[i]) };
+            lossOffset[i] = new double[] { offset(fr.vec(i), losses[i]) };
           else if(losses[i].isForCategorical())
-            offset[i] = moffset(fr.vec(i), losses[i]);
+            lossOffset[i] = moffset(fr.vec(i), losses[i]);
 
         } else {
           L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
@@ -569,11 +626,28 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             res = lbfgs.solve(gs, coefs);
           }
 
-          offset[i] = res.coefs;
-          scale[i] = res.ginfo._objVal / (fr.numRows() - fr.vec(i).naCnt() - 1);
+          // Both offset and scale immediately available from L-BFGS solution
+          lossOffset[i] = res.coefs;
+          if(_scale) lossScale[i] = res.ginfo._objVal != 0 ? (nrows-fr.vec(i).naCnt()-1) / res.ginfo._objVal : 1.0;
+        }
+
+        if(_scale && closedFormScale(losses[i])) {
+          if(losses[i].isForNumeric())
+            lossScale[i] = scale(fr.vec(i), losses[i]);
+          else if(losses[i].isForCategorical())
+            lossScale[i] = mscale(fr.vec(i), losses[i]);
         }
       }
-    } */
+
+      // Additional pass to calculate scaling factor where L-BFGS was not applied and closed form unavailable
+      if(_scale && ArrayUtils.sum(skipScale) < losses.length) {
+        LossScaleCalc lstsk = new LossScaleCalc(dinfo._cats, losses, _period, lossOffset, lossScale, skipScale);
+        lstsk.doAll(dinfo._adaptedFrame);
+      }
+
+      if(_offset) output._lossOffset = lossOffset;
+      if(_scale) output._lossScale = lossScale;
+    }
   }
 
   public static class GLRMOutput extends Model.Output {
