@@ -101,6 +101,11 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     strict_version_check = FALSE
   }
 
+  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
+  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
+  if (nchar(doc_ip)) ip = doc_ip
+  if (nchar(doc_port)) port = doc_port
+
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port)
   if (!h2o.clusterIsUp(tmpConn)) {
