@@ -211,9 +211,7 @@ class RollupStats extends Iced {
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
     else if(rs._rows != 0){
       _mean = (_mean * _rows + rs._mean * rs._rows) / (_rows + rs._rows);
-      double dd = rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
-      if (!Double.isNaN(dd)) //dd can be NaN if _mean is NaN (C0DChunk with all NaN), don't ruin _sigma (which would be 0 in that case)
-        _sigma += dd;
+      _sigma += rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }
     _rows += rs._rows;
     _size += rs._size;
@@ -224,14 +222,14 @@ class RollupStats extends Iced {
   double min( double d ) {
     assert(!Double.isNaN(d));
     for( int i=0; i<_mins.length; i++ )
-      if( d < _mins[i] || Double.isNaN(_mins[i]))
+      if( d < _mins[i] )
         { double tmp = _mins[i];  _mins[i] = d;  d = tmp; }
     return _mins[_mins.length-1];
   }
   double max( double d ) {
     assert(!Double.isNaN(d));
     for( int i=0; i<_maxs.length; i++ )
-      if( d > _maxs[i] || Double.isNaN(_maxs[i]))
+      if( d > _maxs[i] )
         { double tmp = _maxs[i];  _maxs[i] = d;  d = tmp; }
     return _maxs[_maxs.length-1];
   }
