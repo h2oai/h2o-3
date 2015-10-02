@@ -54,7 +54,7 @@ public class ValidationAdapter {
 //    if (_fromValid2CM!=null) {
 //      assert classification : "Validation response transformation should be declared only for classification!";
 //      assert _fromModel2CM != null : "Model response transformation should exist if validation response transformation exists!";
-//      Vec tmp = _validResponse.toCategorical();
+//      Vec tmp = _validResponse.toCategoricalVec();
 //      _adaptedValidationResponse = tmp.makeTransf(_fromValid2CM, getCMDomain()); // Add an original response adapted to CM domain
 ////      gtrash(_adaptedValidationResponse); // Add the created vector to a clean-up list
 ////      gtrash(tmp);

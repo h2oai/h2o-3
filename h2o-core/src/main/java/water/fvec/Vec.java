@@ -1051,7 +1051,7 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link CategoricalWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new categorical Vec  */
-//  public CategoricalWrappedVec toCategorical() {
+//  public CategoricalWrappedVec toCategoricalVec() {
 //    if( isCategorical() ) return adaptTo(domain()); // Use existing domain directly
 //    if( !isInt() ) throw new IllegalArgumentException("Categorical conversion only works on integer columns");
 //    int min = (int) min(), max = (int) max();
@@ -1064,7 +1064,7 @@ public class Vec extends Keyed<Vec> {
 
   /** Create a new Vec (as opposed to wrapping it) that is the categorical'ified version of the original.
    *  The original Vec is not mutated.  */
-  public Vec toCategorical() {
+  public Vec toCategoricalVec() {
     if( isCategorical() ) return makeCopy(domain());
     if( !isInt() ) throw new IllegalArgumentException("Categorical conversion only works on integer columns");
     int min = (int) min(), max = (int) max();
@@ -1124,9 +1124,9 @@ public class Vec extends Keyed<Vec> {
    * Otherwise, the this pointer is copied to a new Vec whose domain is null.
    * @return A new Vec
    */
-  public Vec toInt() {
+  public Vec toIntVec() {
     if( isInt() && _domain==null ) return copyOver(null);
-    if( !isCategorical() ) throw new IllegalArgumentException("toInt conversion only works on categorical and Int vecs");
+    if( !isCategorical() ) throw new IllegalArgumentException("toIntVec conversion only works on categorical and Int vecs");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
     Vec newVec = copyOver(null);
@@ -1173,40 +1173,6 @@ public class Vec extends Keyed<Vec> {
       for(int i=0;i<c._len;++i)
         nc.addStr(_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]);
     }
-  }
-
-  /** Convert entire Vec to an array of doubles, loading all of the data into a
-   *  single large array.  Naturally this can easily run out of memory and throw
-   *  an OOM; also due to JVM limitations often limited to 800M entries. */
-  public double[] toDoubleArray( ) {
-    if( (int)length() != length() )
-      throw new IllegalArgumentException("Vec length is larger than int");
-    final double[] ds = MemoryManager.malloc8d((int)length());
-    new MRTask() {
-      @Override public void map( Chunk cs ) {
-        for( int i=0; i<cs._len; i++ ) ds[i+(int)cs._start] = cs.atd(i);
-      }
-    }.doAll(this);
-    return ds;
-  }
-
-  /** Convert entire Vec to an array of bytes, loading all of the data into a
-   *  single large array.  Naturally this can easily run out of memory and throw
-   *  an OOM; also due to JVM limitations often limited to 800M entries. */
-  public byte[] toByteArray( ) {
-    if( (int)length() != length() )
-      throw new IllegalArgumentException("Vec length is larger than int");
-    if( min() < Byte.MIN_VALUE || max() > Byte.MAX_VALUE || !isInt() )
-      throw new IllegalArgumentException("Vec elements do not fit in a byte");
-    if( naCnt() > 0 )
-      throw new IllegalArgumentException("Byte array does not support missing values");
-    final byte[] bs = MemoryManager.malloc1((int)length());
-    new MRTask() {
-      @Override public void map( Chunk cs ) {
-        for( int i=0; i<cs._len; i++ ) bs[i+(int)cs._start] = (byte)cs.at8(i);
-      }
-    }.doAll(this);
-    return bs;
   }
 
   /** Collect numeric domain of given vector

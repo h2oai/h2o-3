@@ -82,7 +82,7 @@ class ASTAsCharacter extends ASTPrim {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
     Vec v0 = ary.anyVec();
-    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toCategorical() creates a new vec --> must be cleaned up!
+    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toCategoricalVec() creates a new vec --> must be cleaned up!
     Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
     return new ValFrame(fr);
   }
@@ -99,7 +99,7 @@ class ASTAsFactor extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.factor requires a single column");
     Vec v0 = fr.anyVec();
-    if( !v0.isCategorical() ) v0 = v0.toCategorical();
+    if( !v0.isCategorical() ) v0 = v0.toCategoricalVec();
     return new ValFrame(new Frame(fr._names, new Vec[]{v0}));
   }
 }
@@ -117,7 +117,7 @@ class ASTAsNumeric extends ASTPrim {
     Vec vv;
     for(int c=0;c<nvecs.length;++c) {
       vv = fr.vec(c);
-      if( vv.isCategorical() ) nvecs[c] = vv.toInt();
+      if( vv.isCategorical() ) nvecs[c] = vv.toIntVec();
       else if( vv.isString() ) nvecs[c] = vv.toNumeric();
       else                     nvecs[c] = vv.makeCopy();
     }

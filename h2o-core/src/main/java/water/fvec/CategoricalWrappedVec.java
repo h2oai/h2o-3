@@ -106,7 +106,7 @@ public class CategoricalWrappedVec extends WrappedVec {
     }
 
     // The desired result Vec does not have a domain, hence is a numeric
-    // column.  For classification of numbers, we did an original toCategorical
+    // column.  For classification of numbers, we did an original toCategoricalVec
     // wrapping the numeric values up as Strings for the classes.  Unwind that,
     // converting numeric strings back to their original numbers.
     _map = new int[from.length];
