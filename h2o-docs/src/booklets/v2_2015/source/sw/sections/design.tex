@@ -5,9 +5,12 @@ Since Sparkling Water is primarily designed as Spark application, it is launched
 inside a Spark executor, which is created after application submission. At this
 point, H2O starts services, including distributed K/V store and memory manager, and orchestrates them into a cloud. The topology of the created cloud matches the topology of the underlying Spark cluster exactly.
 
-TODO: picture
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{sw/images/Topology.png}
+	\caption{Sparkling Water design. The scenario depicts deployment of Sparkling Water application to standalone Spark cluster.}
+\end{figure}
 
-\section{Deployment}
 
 \subsection{Data Sharing between Spark and H2O}
 
@@ -21,20 +24,20 @@ Converting in the opposite direction (from RDD to H2OFrame) introduces data dupl
 
 \begin{table}
 \centering
-\begin{tabularx}{\textwidth}{l l p{5.5cm}}
+\begin{tabularx}{\textwidth}{l l p{5.2cm}}
 \toprule
 Concept & API Representation & Description \\
 \midrule
-H2O context & \texttt{org.apache.spark.h2o.H2OContext} & Holds
+H2O context & \texttt{H2OContext}\footnote{Fullname of class is \texttt{org.apache.spark.h2o.H2OContext}} & Holds
 H2O state and provides primitives to publish \texttt{RDD} as \texttt{H2OFrame} and
 vice versa. It follows design principles of Spark primitives such as
 \texttt{SparkContext} or \texttt{SQLContext} \\  \addlinespace
 
-H2O entry point & \texttt{water.H2O} & Represents the entry point for accessing
+H2O entry point & \texttt{H2O}\footnote{Fullname of class is \texttt{water.H2Ot}} & Represents the entry point for accessing
 H2O services. It holds information about running H2O services including a list of
 nodes and the status of distributed K/V datastore. \\  \addlinespace
 
-H2O Frame & \texttt{water.fvec.H2OFrame} & A data structure that
+H2O Frame & \texttt{H2OFrame}\footnote{Fullname of class is \texttt{water.fvec.H2OFrame}} & A data structure that
 represents a table of values. The table is column-based and provides column and
 row accessors. \\  \addlinespace
 
