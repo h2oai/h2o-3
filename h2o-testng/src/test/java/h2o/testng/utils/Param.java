@@ -8,6 +8,8 @@ import java.util.HashMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 
+import water.Key;
+
 public class Param {
 
 	public String name = null;
@@ -164,44 +166,42 @@ public class Param {
 			return false;
 		}
 
-		// Only boolean has a special case: "" can be used as false.
-		// So it is parsed here before other datatypes will be parsed.
-		if ("boolean".equals(type)) {
-			v = parseBoolean(value);
-		}
-		else {
-			switch (type) {
-			// case "boolean": this case has already been checked previously
+		switch (type) {
+			case "boolean":
+				v = parseBoolean(value);
+				break;
 
-				case "String":
-					v = value;
-					break;
+			case "String":
+				v = value;
+				break;
 
-				case "String[]":
-					// TODO: may be we need to parse this one too!!!
-					v = new String[] { value };
-					break;
+			case "String[]":
+				// TODO: may be we need to parse this one too!!!
+				v = new String[] { value };
+				break;
 
-				case "double":
-					v = Double.parseDouble(value);
-					break;
+			case "double":
+				v = Double.parseDouble(value);
+				break;
 
-				case "double[]":
-					v = new double[] { Double.parseDouble(value) };
-					break;
+			case "double[]":
+				v = new double[] { Double.parseDouble(value) };
+				break;
 
-				case "int":
-					v = Integer.parseInt(value);
-					break;
+			case "int":
+				v = Integer.parseInt(value);
+				break;
 
-				case "float":
-					v = Float.parseFloat(value);
-					break;
+			case "float":
+				v = Float.parseFloat(value);
+				break;
+			case "Key":
+				v = Key.make(value);
+				break;
 
-				default:
-					System.out.println("Unrecognized type: " + type);
-					break;
-			}
+			default:
+				System.out.println("Unrecognized type: " + type);
+				break;
 		}
 
 		Class<?> clazz = params.getClass();

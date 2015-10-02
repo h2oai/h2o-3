@@ -39,7 +39,7 @@ public class DRFConfig {
 		new Param("_build_tree_one_node", "boolean"),
 		new Param("_class_sampling_factors", "float[]"),
 		new Param("_binomial_double_trees", "boolean"),
-		new Param("_checkpoint", "Key", false, false), //TODO: check it
+		new Param("_checkpoint", "Key"),
 		new Param("_nbins_top_level", "int"),
 	}; 
 	
