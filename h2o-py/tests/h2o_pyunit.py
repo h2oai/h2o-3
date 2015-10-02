@@ -102,7 +102,7 @@ def parse_args(args):
     i = 1
     while (i < len(args)):
         s = args[i]
-        if (s == "--usecloud"):
+        if ( s == "--usecloud" or s == "--uc" ):
             i = i + 1
             if (i > len(args)):
                 usage()

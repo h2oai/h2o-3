@@ -2435,7 +2435,7 @@ h2o.toupper <- function(x) .newExpr("toupper", x)
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", x, .quote(pattern), .quote(replacement),ignore.case)
 
 #'
 #' String Global Substitute
@@ -2448,7 +2448,7 @@ h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefi
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", x, .quote(pattern), .quote(replacement),ignore.case)
 
 #'
 #' Trim Space
