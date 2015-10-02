@@ -136,7 +136,7 @@ public class FunctionUtils {
 			// we only want predictors
 			if (!name.equals(responseColumn) && !trainFrame.vec(name).isConst()) {
 				// need coefficient names for each level of a categorical column
-				if (trainFrame.vec(name).isEnum()) {
+				if (trainFrame.vec(name).isConst()) {
 					for (String level : trainFrame.vec(name).domain()) {
 						betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
 					}
