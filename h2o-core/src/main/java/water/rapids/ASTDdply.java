@@ -23,7 +23,7 @@ class ASTDdply extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
-    ASTNumList groupby = ASTGroup.check(ncols, asts[2]);
+    ASTNumList groupby = ASTGroup.check(fr, asts[2]);
     AST fun = asts[3].exec(env).getFun();
     ASTFun scope = env._scope;  // Current execution scope; needed to lookup variables
     // Frame of group keys

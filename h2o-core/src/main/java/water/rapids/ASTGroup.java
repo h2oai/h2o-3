@@ -30,6 +30,12 @@ import java.util.Arrays;
 class ASTGroup extends ASTPrim {
   enum NAHandling { ALL, RM }
 
+  // Size cutoff before switching between a hashed-join vs a sorting join.
+  // Hash tables beyond this count are assumed to be inefficient, and we're
+  // better served by sorting all the join columns and doing a global
+  // merge-join.
+  static final int MAX_HASH_SIZE = 1000000;
+
   // Functions handled by GroupBy
   enum FCN {
     nrow() { 
@@ -102,7 +108,7 @@ class ASTGroup extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final int ncols = fr.numCols();
 
-    ASTNumList groupby = check(ncols, asts[2]);
+    ASTNumList groupby = check(fr, asts[2]);
     final Frame fr_keys = gbFrame(fr,groupby.expand4()); // Frame of just the group-by keys
     final int ngbCols = fr_keys.numCols(); 
 
@@ -115,7 +121,7 @@ class ASTGroup extends ASTPrim {
       Val v = asts[idx].exec(env);
       String fn = v instanceof ValFun ? v.getFun().str() : v.getStr();
       FCN fcn = FCN.valueOf(fn);
-      ASTNumList col = check(ncols,asts[idx+1]);
+      ASTNumList col = check(fr,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
       int agg_col = (int)col.min(); // Aggregate column
       if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
@@ -128,7 +134,7 @@ class ASTGroup extends ASTPrim {
     // ---
     // Find the groups, either by hashing, or by sorting
     IcedHashMap<GKX,String> gs = findGroups(fr_keys);
-    long grs[][] = (gs == null || _testing_force_sorted ) ? sortingGroup(fr) : null;
+    long grs[][] = (gs == null || _testing_force_sorted ) ? sortingGroup(fr_keys) : null;
 
     // ---
     // Shared between methods, allocate memory for aggregates and initialize
@@ -187,18 +193,7 @@ class ASTGroup extends ASTPrim {
   }
 
   // Argument check helper
-  static ASTNumList check( long dstX, AST ast ) {
-    // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
-    ASTNumList dim;
-    if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
-    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
-    else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
-    if( dim.isEmpty() ) return dim; // Allow empty
-    if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
-        !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
-      throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
-    return dim;
-  }
+  static ASTNumList check( Frame dst, AST ast ) { return new ASTNumList(ast.columns(dst.names())); }
 
   // Build a Frame of just the Key columns, usually just 1 column
   static Frame gbFrame( Frame fr, int[] gbCols ) {
@@ -254,7 +249,7 @@ class ASTGroup extends ASTPrim {
     @Override public void map(Chunk[] cs) {
       if( _kill._killed ) return; // Abort if MRTask already dead for size blowout
       IcedHashMap<GKX,String> gs = _gs;
-      GKX gOld, gWork = _gTemplate.clone();
+      GKX gWork = _gTemplate.clone();
       final int rlen = cs[0]._len;
       for( int row=0; row<rlen; row++ ) {
         // Find the Group being worked on
@@ -262,6 +257,14 @@ class ASTGroup extends ASTPrim {
         if( gs.putIfAbsent(gWork,"")==null ) // Insert if not absent
           gWork=_gTemplate.clone();          // need entirely new G
       }
+      if( _gs.size() > MAX_HASH_SIZE ) _kill._killed = true;
+    }
+    @Override public void reduce( HashingGroup hg ) {
+      if( _gs == hg._gs ) return;
+      if( hg._kill._killed ) _kill._killed = true;
+      if( _kill._killed ) return;
+      // Need to merge hash tables here
+      throw H2O.unimpl();
     }
   }
 

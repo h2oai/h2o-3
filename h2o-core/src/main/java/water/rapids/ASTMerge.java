@@ -30,12 +30,6 @@ public class ASTMerge extends ASTPrim {
   @Override public String str(){ return "merge";}
   @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
 
-  // Size cutoff before switching between a hashed-join vs a sorting join.
-  // Hash tables beyond this count are assumed to be inefficient, and we're
-  // better served by sorting all the join columns and doing a global
-  // merge-join.
-  static final int MAX_HASH_SIZE = 100000000;
-
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
@@ -232,11 +226,10 @@ public class ASTMerge extends ASTPrim {
       if( rows == null ) return; // Missing: Aborted due to exceeding size
       final int len = chks[0]._len;
       Row row = new Row(_ncols);
-      for( int i=0; i<len; i++ )                    // For all rows
-        if( add(rows,row.fill(chks,_id_maps,i)) ) { // Fill & attempt add row
-          if( rows.size() > MAX_HASH_SIZE ) { abort(); return; }
+      for( int i=0; i<len; i++ )                  // For all rows
+        if( add(rows,row.fill(chks,_id_maps,i)) ) // Fill & attempt add row
           row = new Row(_ncols); // If added, need a new row to fill
-        }
+      if( rows.size() > ASTGroup.MAX_HASH_SIZE ) abort();
     }
     private boolean add( IcedHashMap<Row,String> rows, Row row ) {
       if( rows.putIfAbsent(row,"")==null )
