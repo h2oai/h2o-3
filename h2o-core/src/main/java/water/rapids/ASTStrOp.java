@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.*;
 import water.parser.BufferedString;
 
@@ -103,13 +104,53 @@ class ASTCountMatches extends ASTPrim {
       ? ((ASTStrList)asts[2])._strs 
       : new String[]{asts[2].exec(env).getStr()};
 
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("countmatches() only takes a single column of data. " +
-                                         "Got " + fr.numCols() + " columns.");
-    Vec vec = fr.anyVec();  assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("countmatches() requires a string" +
-        "column.  Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    Frame res = new MRTask() {
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("countmatches() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = countMatchesCategoricalCol(v, pattern);
+      else
+        nvs[i] = countMatchesStringCol(v, pattern);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  private Vec countMatchesCategoricalCol(Vec vec, String[] pattern){
+    final int[] matchCounts = countDomainMatches(vec.domain(), pattern);
+    return new MRTask() {
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        Chunk c = cs[0];
+        for (int i = 0; i < c._len; ++i) {
+          if( !c.isNA(i) ) {
+            int idx = (int) c.at8(i);
+            ncs[0].addNum(matchCounts[idx]);
+          } else ncs[i].addNA();
+        }
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
+  }
+
+  int[] countDomainMatches(String[] domain, String[] pattern) {
+    int[] res = new int[domain.length];
+    for (int i=0; i < domain.length; i++)
+      for (String aPattern : pattern)
+        res[i] += StringUtils.countMatches(domain[i], aPattern);
+    return res;
+  }
+
+  private Vec countMatchesStringCol(Vec vec, String[] pat){
+    final String[] pattern = pat;
+    return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk) {
         if ( chk instanceof C0DChunk ) // all NAs
           for( int i = 0; i < chk.len(); i++)
@@ -127,9 +168,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
-    assert res != null;
-    return new ValFrame(res);
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
 
@@ -146,21 +185,39 @@ class ASTToLower extends ASTPrim {
   @Override public String str() { return "tolower"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("tolower() only takes a single column of data. " +
-                                         "Got " + fr.numCols() + " columns.");
-    Frame res = null;
-    Vec vec = fr.anyVec();  assert vec != null;
-    if (vec.isString()) res = toLowerStringCol(vec);
-    else throw new IllegalArgumentException("tolower() requires a string column. "
-        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to strings first.");
-    assert res != null;
-    return new ValFrame(res);
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("tolower() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = toLowerCategoricalCol(v);
+      else
+        nvs[i] = toLowerStringCol(v);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
   }
-  private Frame toLowerStringCol(Vec vec) {
-    Frame f = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
+
+  private Vec toLowerCategoricalCol(Vec vec) {
+    String[] dom = vec.domain();
+    for (int i = 0; i < dom.length; ++i)
+      dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
+
+    return vec.makeCopy(dom);
+  }
+
+  private Vec toLowerStringCol(Vec vec) {
+    return new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if ( chk instanceof C0DChunk ) // all NAs
           for (int i = 0; i < chk.len(); i++)
             newChk.addNA();
         else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
@@ -170,13 +227,12 @@ class ASTToLower extends ASTPrim {
           for(int i =0; i < chk._len; i++) {
             if (chk.isNA(i))
               newChk.addNA();
-            else
+            else // Locale.ENGLISH to give the correct results for local insensitive strings
               newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH));
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
-    return f;
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
 
@@ -193,19 +249,37 @@ class ASTToUpper extends ASTPrim {
   @Override public String str() { return "toupper"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("toupper() only takes a single column of data. " +
-                                         "Got "+ fr.numCols()+" columns.");
-    Frame res = null;
-    Vec vec = fr.anyVec();   assert vec != null;
-    if (vec.isString()) res = toUpperStringCol(vec);
-    else throw new IllegalArgumentException("toupper() requires a string column. "
-        + "Received " + fr.anyVec().get_type_str() + ". Please convert column to strings first.");
-    assert res != null;
-    return new ValFrame(res);
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("toupper() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = toUpperCategoricalCol(v);
+      else
+        nvs[i] = toUpperStringCol(v);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
   }
-  private Frame toUpperStringCol(Vec vec) {
-    Frame f = new MRTask() {
+
+  private Vec toUpperCategoricalCol(Vec vec) {
+    String[] dom = vec.domain();
+    for (int i = 0; i < dom.length; ++i)
+      dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
+
+    return vec.makeCopy(dom);
+  }
+
+  private Vec toUpperStringCol(Vec vec) {
+    return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
           for (int i = 0; i < chk.len(); i++)
@@ -222,8 +296,7 @@ class ASTToUpper extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
-    return f;
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
 
@@ -242,45 +315,69 @@ class ASTReplaceFirst extends ASTPrim {
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replacefirst"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    final String _pattern     = asts[2].exec(env).getStr();
-    final String _replacement = asts[3].exec(env).getStr();
+    final String pattern     = asts[2].exec(env).getStr();
+    final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
+    final boolean ignoreCase = asts[4].exec(env).getNum()==1;
 
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("replacefirst() works on a single column at a time." +
-          "Got "+ fr.numCols()+" columns.");
-    Frame res = null;
-    Vec vec = fr.anyVec();   assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("replacefirst() requires a string column."
-        +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    else {
-      res = new MRTask() {
-        @Override public void map(Chunk chk, NewChunk newChk){
-          if ( chk instanceof C0DChunk ) // all NAs
-            for (int i = 0; i < chk.len(); i++)
-              newChk.addNA();
-          else {
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("replacefirst() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = replaceFirstCategoricalCol(v, pattern, replacement, ignoreCase);
+      else
+        nvs[i] = replaceFirstStringCol(v, pattern, replacement, ignoreCase);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  private Vec replaceFirstCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
+    String[] doms = vec.domain();
+    for (int i = 0; i < doms.length; ++i)
+      doms[i] = ignoreCase
+          ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
+          : doms[i].replaceFirst(pattern, replacement);
+
+    return vec.makeCopy(doms);
+  }
+
+  private Vec replaceFirstStringCol(Vec vec, String pat, String rep, boolean ic) {
+    final String pattern = pat;
+    final String replacement = rep;
+    final boolean ignoreCase = ic;
+    return new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else {
 //        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
 //          ((CStrChunk) chk).asciiReplaceFirst(newChk);
 //        } else { //UTF requires Java string methods for accuracy
-            BufferedString tmpStr = new BufferedString();
-            for (int i = 0; i < chk._len; i++) {
-              if (chk.isNA(i))
-                newChk.addNA();
-              else {
-                if (_ignoreCase)
-                  newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(_pattern, _replacement));
-                else
-                  newChk.addStr(chk.atStr(tmpStr, i).toString().replaceFirst(_pattern, _replacement));
-              }
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              if (ignoreCase)
+                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement));
+              else
+                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceFirst(pattern, replacement));
             }
           }
         }
-      }.doAll(1, vec).outputFrame();
-    }
-    assert res != null;
-    return new ValFrame(res);
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
 
@@ -299,45 +396,69 @@ class ASTReplaceAll extends ASTPrim {
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replaceall"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    final String _pattern     = asts[2].exec(env).getStr();
-    final String _replacement = asts[3].exec(env).getStr();
+    final String pattern     = asts[2].exec(env).getStr();
+    final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
+    final boolean ignoreCase = asts[4].exec(env).getNum()==1;
 
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("replaceall() works on a single column at a time." +
-                                         "Got "+ fr.numCols()+" columns.");
-    Frame res = null;
-    Vec vec = fr.anyVec();   assert vec != null;
-    if ( !vec.isString() ) throw new IllegalArgumentException("replaceall() requires a string column."
-        +" Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    else {
-      res = new MRTask() {
-        @Override public void map(Chunk chk, NewChunk newChk){
-          if ( chk instanceof C0DChunk ) // all NAs
-            for (int i = 0; i < chk.len(); i++)
-              newChk.addNA();
-          else {
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("replaceall() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = replaceAllCategoricalCol(v, pattern, replacement, ignoreCase);
+      else
+        nvs[i] = replaceAllStringCol(v, pattern, replacement, ignoreCase);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  private Vec replaceAllCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
+    String[] doms = vec.domain();
+    for (int i = 0; i < doms.length; ++i)
+      doms[i] = ignoreCase
+          ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
+          : doms[i].replaceAll(pattern, replacement);
+
+    return vec.makeCopy(doms);
+  }
+
+  private Vec replaceAllStringCol(Vec vec, String pat, String rep, boolean ic) {
+    final String pattern = pat;
+    final String replacement = rep;
+    final boolean ignoreCase = ic;
+    return new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else {
 //        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
 //          ((CStrChunk) chk).asciiReplaceAll(newChk);
 //        } else { //UTF requires Java string methods for accuracy
-            BufferedString tmpStr = new BufferedString();
-            for (int i = 0; i < chk._len; i++) {
-              if (chk.isNA(i))
-                newChk.addNA();
-              else {
-                if (_ignoreCase)
-                  newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(_pattern, _replacement));
-                else
-                  newChk.addStr(chk.atStr(tmpStr, i).toString().replaceAll(_pattern, _replacement));
-              }
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              if (ignoreCase)
+                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement));
+              else
+                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceAll(pattern, replacement));
             }
           }
         }
-      }.doAll(1, vec).outputFrame();
-    }
-    assert res != null;
-    return new ValFrame(res);
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
 
@@ -353,20 +474,37 @@ class ASTTrim extends ASTPrim {
   @Override public String str() { return "trim"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Frame res = null;
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("trim() only works on a single column at a time." +
-                                         "Got "+ fr.numCols()+" columns.");
-    Vec vec = fr.anyVec();   assert vec != null;
-    if ( vec.isString() ) res = trimStringCol(vec);
-    else throw new IllegalArgumentException("trim() requires a string column. "
-        +"Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    assert res != null;
-    return new ValFrame(res);
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("trim() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = trimCategoricalCol(v);
+      else
+        nvs[i] = trimStringCol(v);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
   }
 
-  private Frame trimStringCol(Vec vec) {
-    Frame f = new MRTask() {
+  // FIXME: this should resolve any categoricals that now have the same value after the trim
+  private Vec trimCategoricalCol(Vec vec) {
+    String[] doms = vec.domain();
+    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
+    Vec v = vec.makeCopy(doms);
+    return v;
+  }
+
+  private Vec trimStringCol(Vec vec) {
+    return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
           for (int i = 0; i < chk.len(); i++)
@@ -375,8 +513,7 @@ class ASTTrim extends ASTPrim {
         // so UTF-8 safe methods are not needed here.
         else ((CStrChunk)chk).asciiTrim(newChk);
       }
-    }.doAll(1, vec).outputFrame();
-    return f;
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
 
@@ -390,20 +527,55 @@ class ASTStrLength extends ASTPrim {
   @Override public String str() { return "length"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Frame res = null;
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("length() only works on a single column at a time." +
-                                         "Got "+ fr.numCols()+" columns.");
-    Vec vec = fr.anyVec();   assert vec != null;
-    if ( vec.isString() ) res = lengthStringCol(vec);
-    else throw new IllegalArgumentException("length() requires a string column. "
-        +"Received "+fr.anyVec().get_type_str()+". Please convert column to strings first.");
-    assert res != null;
-    return new ValFrame(res);
+
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("length() requires a string or categorical column. "
+            +"Received "+fr.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = lengthCategoricalCol(v);
+      else
+        nvs[i] = lengthStringCol(v);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
   }
 
-  private Frame lengthStringCol(Vec vec) {
-    Frame f = new MRTask() {
+  private Vec lengthCategoricalCol(Vec vec) {
+    String[] doms = vec.domain();
+    int[] catLengths = new int[doms.length];
+    for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+    Vec res = new MRTask() {
+      transient int[] catLengths;
+      @Override public void setupLocal() {
+        String[] doms = _fr.anyVec().domain();
+        catLengths = new int[doms.length];
+        for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+      }
+      @Override public void map(Chunk chk, NewChunk newChk){
+        // pre-allocate since the size is known
+        newChk._ls = MemoryManager.malloc8(chk._len);
+        newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
+        for (int i =0; i < chk._len; i++)
+          if(chk.isNA(i))
+            newChk.addNA();
+          else
+            newChk.addNum(catLengths[(int)chk.atd(i)],0);
+      }
+    }.doAll(1, vec).outputFrame().anyVec();
+    return res;
+  }
+
+  private Vec lengthStringCol(Vec vec) {
+    return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if( chk instanceof C0DChunk ) { // All NAs
           for( int i =0; i < chk._len; i++)
@@ -418,7 +590,6 @@ class ASTStrLength extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
-    return f;
+    }.doAll(1, vec).outputFrame().anyVec();
   }
 }
