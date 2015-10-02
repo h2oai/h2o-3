@@ -139,12 +139,12 @@ class ASTGroup extends ASTPrim {
     // Data Layout: 2-d array of doubles; Groups going down, and Aggregates
     // going across.  Each AGG needs 1 (most), 2 (var, sdev), or N (mode)
     // columns to hold the aggregations.
-    final double[/*agg col*/][/*group num*/] dss = new double[naggcols][ngrps];
+    double[/*agg col*/][/*group num*/] dss = new double[naggcols][ngrps];
     for( int a=0; a<naggs; a++ ) {
       double d = aggs[a]._fcn.initVal();
       if( d != 0 ) Arrays.fill(dss[aggs[a]._aggcol],d);
     }
-    final long[/*agg col*/][/*groupnum*/] nrows = new long[naggs][ngrps];
+    long[/*agg col*/][/*groupnum*/] nrows = new long[naggs][ngrps];
 
     // ---
     // Compute the aggregates into dss.
@@ -153,7 +153,9 @@ class ASTGroup extends ASTPrim {
     GK0[] gkxs0;
     if( grs == null ) {
       gkxs0 = sortGroups(gs);
-      new HashingCompute(gs,aggs,ngbCols,dss, nrows).doAll(new Frame(fr_keys).add(fr));
+      HashingCompute hc = new HashingCompute(gs,aggs,ngbCols,dss, nrows).doAll(new Frame(fr_keys).add(fr));
+      dss = hc._dss;
+      nrows = hc._nrows;
     } else {
       throw H2O.unimpl();
     }
@@ -164,7 +166,8 @@ class ASTGroup extends ASTPrim {
     String[] fcnames = new String[aggs.length];
     for( int i=0; i<aggs.length; i++ )
       fcnames[i] = aggs[i]._fcn.toString()+"_"+fr.name(aggs[i]._col);
-    
+    final double[][] fdss = dss;
+    final long[][] fnrows = nrows;
     MRTask mrfill = new MRTask() {
       @Override public void map(Chunk[] c, NewChunk[] ncs) {
         final int start = (int)c[0].start();
@@ -174,7 +177,7 @@ class ASTGroup extends ASTPrim {
           GK0 gk0 = gkxs[gnum]; // One Group per row
           gk0.setkey(ncs);      // The Group Key in the first cols
           for( int a=0; a<aggs.length; a++ )
-            ncs[a+ngbCols].addNum(aggs[a].postPass(dss, gnum, nrows[a][gnum]));
+            ncs[a+ngbCols].addNum(aggs[a].postPass(fdss, gnum, fnrows[a][gnum]));
         }
       }
       };
