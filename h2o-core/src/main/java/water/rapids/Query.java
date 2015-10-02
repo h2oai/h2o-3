@@ -55,7 +55,8 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   @Override public void map(Chunk chk[]) {
     long myCounts[] = _counts[_byte][chk[0].cidx()];
     long DateMin = 0;
-    if (chk.length>1) DateMin = (long)chk[1].vec().min();
+    //if (chk.length>1) DateMin = (long)chk[1].vec().min();
+    DateMin = 1389427200000L;  // hard code so left and right in the test are the same minimum.  TO DO: attach minimum to key and feed through.  Is that enough to know the skipped-byte values? Need num bytes per field as well.
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       long thisx = chk[0].at8(r);
       int group = (int) (thisx>>(_byte*8) & 0xffL);
@@ -391,17 +392,17 @@ public class Query {
     for (int c=0; c<256; c++) {
       if (totalHist[c] == 0) continue;
       int d;
-      int nbatch = (int)(totalHist[c] * Math.max(keySize,8) / MAXVECBYTE);   // TODO. can't be 2^31 because 2^31-1 was limit. If we use 2^30, instead of /, can we do >> for speed?
-      int rem = (int)(totalHist[c] * Math.max(keySize,8) % MAXVECBYTE);
+      int batchSize = MAXVECBYTE / Math.max(keySize, 8);
+      // The Math.max ensures that batches of o and x are aligned, even for wide keys. For efficiency inside insert() above so it doesn't have to cross boundaries.
+      int nbatch = (int)(totalHist[c] / batchSize);
+      int rem = (int)(totalHist[c] % batchSize);
       assert nbatch==0;  // in the case of 20m rows, we should always be well within a batch size
-      // The Math.max ensures that batches are aligned, even for wide keys.  For efficiency inside insert() above so it doesn't have to cross boundaries.
       o[c] = new long[nbatch + (rem>0?1:0)][];
       x[c] = new byte[nbatch + (rem>0?1:0)][];
-      assert nbatch==0;
       for (d=0; d<nbatch; d++) {
-        o[c][d] = new long[MAXVECLONG];
+        o[c][d] = new long[batchSize];
         // TO DO?: use MemoryManager.malloc8()
-        x[c][d] = new byte[MAXVECBYTE];
+        x[c][d] = new byte[batchSize * keySize];
       }
       if (rem>0) {
         o[c][d] = new long[rem];
@@ -422,6 +423,7 @@ public class Query {
     long groups[][] = new long[256][];  //  at most MAXVEC groups per radix, currently
     long nGroup[] = new long[257];   // one extra to make undo of cumulate easier
     Futures fs = new Futures();
+    //for (int i=70; i<71; i++) {
     for (int i=0; i<256; i++) {
       if (totalHist[i] > 0)
         fs.add(H2O.submitTask(new dradix(groups, nGroup, i, x[i], o[i], totalHist[i], keySize)));
@@ -435,6 +437,7 @@ public class Query {
     }
     System.out.println("Time to recursive radix: " + (System.nanoTime() - t0) / 1e9 ); t0 = System.nanoTime();
     System.out.println("Total groups found: " + nGroups);
+    if (!retGrp) return;
 
     // We now have o and x that bmerge() needs
 

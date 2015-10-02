@@ -30,7 +30,7 @@ public class BinaryMerge {
     // TO DO: rationalize x and y being chunked into 2GB pieces.  Take x[0][] and y[0][] outside loop / function
     int len = _keySize;
     while (len > 1 && x[0][(int)xi] == y[0][(int)yi]) { xi++; yi++; len--; }
-    return (x[0][(int)xi] - y[0][(int)yi]);   // For comparison don't need to 0xff both sides, can compare the signed bytes.  for getting back from -1 to 255
+    return ((x[0][(int)xi] & 0xFF) - (y[0][(int)yi] & 0xFF));
   }
 
   void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn) {
@@ -79,10 +79,12 @@ public class BinaryMerge {
     // lLow and lUpp now surround the group in the left table.  If left key is unique then lLow==lr-1 and lUpp==lr+1.
 
     long len = rUpp - rLow - 1;  // if value found, rLow and rUpp surround it, unlike standard binary search where rLow falls on it
-    if (len > 1) _allLen1 = false;
-    for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
-      _retFirst[(int)j] = rLow + 1;
-      _retLen[(int)j] = len;
+    if (len > 0) {
+      if (len > 1) _allLen1 = false;
+      for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
+        _retFirst[(int) j] = rLow + 1;
+        _retLen[(int) j] = len;
+      }
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
     // Now branch (and TO DO in parallel) to merge below and merge above
