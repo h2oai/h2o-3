@@ -166,7 +166,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         }
 
   if setup["destination_frame"]:
-    setup["destination_frame"] = _quoted(setup["destination_frame"])
+    setup["destination_frame"] = _quoted(setup["destination_frame"]).replace("%",".").replace("&",".")
 
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]
