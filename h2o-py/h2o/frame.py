@@ -82,6 +82,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     fr._computed = True
     fr._keep = True
     fr._col_names = [c["label"] for c in res["columns"]]
+    types = [c["type"] for c in res["columns"]]
+    fr._types = dict(zip(fr._col_names,types))
     return fr
 
   def __str__(self): return self._id
@@ -474,7 +476,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()),id=self._id)
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()), id=self._id)
     self._update()
     return self
 
@@ -482,10 +484,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     Set the name of the column at the specified index.
 
-    :param col: Index of the column whose name is to be set.
+    :param col: Index of the column whose name is to be set. Or current name of the column to change.
     :param name: The new name of the column to set
     :return: the input frame
     """
+    if isinstance(col, basestring): col = self._find_idx(col)  # lookup the name!
     if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol == 1: col = 0
     h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()),id=self._id)
@@ -1147,7 +1150,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("replacefirst",pattern,replacement,self,ignore_case))
+    return H2OFrame(expr=ExprNode("replacefirst", self, pattern, replacement, ignore_case))
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
@@ -1158,7 +1161,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param ignore_case:
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("replaceall", pattern, replacement, self, ignore_case))
+    return H2OFrame(expr=ExprNode("replaceall", self, pattern, replacement, ignore_case))
 
   def interaction(self, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
     """

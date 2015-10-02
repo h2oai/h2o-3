@@ -1,13 +1,14 @@
 package water.rapids;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Locale;
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
 
 public class ASTStrOp { /*empty*/}
 
@@ -237,13 +238,13 @@ class ASTToUpper extends ASTPrim {
  */
 class ASTReplaceFirst extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
-  @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
+  public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
+  @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replacefirst"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    final String _pattern     = asts[1].exec(env).getStr();
-    final String _replacement = asts[2].exec(env).getStr();
-    Frame fr = stk.track(asts[3].exec(env)).getFrame();
+    final String _pattern     = asts[2].exec(env).getStr();
+    final String _replacement = asts[3].exec(env).getStr();
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
 
     if (fr.numCols() != 1)
@@ -294,13 +295,13 @@ class ASTReplaceFirst extends ASTPrim {
  */
 class ASTReplaceAll extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"pattern", "replacement", "ary", "ignore_case"}; }
-  @Override int nargs() { return 1+4; } // (sub pattern replacement x ignore.case)
+  public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
+  @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replaceall"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    final String _pattern     = asts[1].exec(env).getStr();
-    final String _replacement = asts[2].exec(env).getStr();
-    Frame fr = stk.track(asts[3].exec(env)).getFrame();
+    final String _pattern     = asts[2].exec(env).getStr();
+    final String _replacement = asts[3].exec(env).getStr();
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final boolean _ignoreCase = asts[4].exec(env).getNum()==1;
 
     if (fr.numCols() != 1)

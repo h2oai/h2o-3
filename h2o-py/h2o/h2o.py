@@ -233,8 +233,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
 def _quoted(key, replace=True):
   if key == None: return "\"\""
   #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
-  key = key.replace("%", ".")
-  key = key.replace("&", ".")
+  # key = key.replace("%", ".")
+  # key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else '"' + key + '"'
   return key

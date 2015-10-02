@@ -14,7 +14,8 @@ import java.util.HashMap;
 public class H2OColOp extends Transform<H2OColOp> {
   final String _fun;
   String _oldCol;
-  String _newCol;
+  String[] _newCol;
+  boolean _multiColReturn;
   private static HashMap<String,String> binaryOps = new HashMap<>();
 
   static {
@@ -45,9 +46,16 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override protected Frame transformImpl(Frame f) {
     ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
     Frame fr = Exec.execute(_ast).getFrame();
-    _newCol = _inplace?_oldCol:f.uniquify(_oldCol);
-    if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
-    else           f.add(_newCol,fr.anyVec());
+    if( (_multiColReturn=fr.numCols() > 1) ) {
+      _newCol = new String[fr.numCols()];
+      for(int i=0;i<_newCol.length;i++)
+        _newCol[i] = f.uniquify(i>0?_newCol[i-1]:_oldCol);
+       throw H2O.unimpl("unimpl: multiple columns");
+    } else {
+      _newCol = new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)};
+      if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
+      else          f.add(_newCol[0], fr.anyVec());
+    }
     DKV.put(f);
     return f;
   }

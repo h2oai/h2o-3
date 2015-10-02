@@ -1077,7 +1077,20 @@ public class Vec extends Keyed<Vec> {
 
   /** Create a new Vec (as opposed to wrapping it) that is the Numeric'd version of the original.
    *  The original Vec is not mutated.  */
-  public Vec toNumeric() { return makeCopy(null, T_NUM); }
+  public Vec toNumeric() {
+    if( isString() ) {
+      return new MRTask() {
+        @Override public void map(Chunk c, NewChunk nc) {
+          BufferedString bStr = new BufferedString();
+          for( int row=0;row<c._len;++row) {
+            if( c.isNA(row) ) nc.addNA();
+            else              nc.addNum(Double.valueOf(c.atStr(bStr,row).toString()));
+          }
+        }
+      }.doAll(1,this).outputFrame().anyVec();
+    }
+    return makeCopy(null, T_NUM);
+  }
 
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];

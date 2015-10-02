@@ -117,7 +117,9 @@ class ASTAsNumeric extends ASTPrim {
     Vec vv;
     for(int c=0;c<nvecs.length;++c) {
       vv = fr.vec(c);
-      nvecs[c] = ( vv.isInt() || vv.isCategorical() ) ? vv.toInt() : vv.makeCopy();
+      if( vv.isCategorical() ) nvecs[c] = vv.toInt();
+      else if( vv.isString() ) nvecs[c] = vv.toNumeric();
+      else                     nvecs[c] = vv.makeCopy();
     }
     return new ValFrame(new Frame(fr._names, nvecs));
   }
