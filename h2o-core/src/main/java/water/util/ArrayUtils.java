@@ -106,12 +106,25 @@ public class ArrayUtils {
       sum += x[i] >= 0?x[i]:-x[i];
     return sum;
   }
+  public static double linfnorm(double [] x) { return linfnorm(x, false); }
   public static double linfnorm(double [] x, boolean skipLast){
     double res = Double.NEGATIVE_INFINITY;
     int last = x.length -(skipLast?1:0);
     for(int i = 0; i < last; ++i) {
       if(x[i] > res) res = x[i];
       if(-x[i] > res) res = -x[i];
+    }
+    return res;
+  }
+  public static double linfnorm(double[] x, double[] y) { return linfnorm(x, y, false); }
+  public static double linfnorm(double[] x, double[] y, boolean skipLast) {
+    assert x.length == y.length;
+    double res = Double.NEGATIVE_INFINITY;
+    int last = x.length-(skipLast?1:0);
+    for(int i = 0; i < last; ++i) {
+      double diff = x[i] - y[i];
+      if(diff > res) res = diff;
+      if(-diff > res) res = -diff;
     }
     return res;
   }

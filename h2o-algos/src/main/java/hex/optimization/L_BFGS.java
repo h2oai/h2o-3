@@ -248,7 +248,7 @@ public final class L_BFGS extends Iced {
    *
    * Will result into multiple (10s to 100s or even 1000s) calls of the user-provided gradient function.
    * Outside of that it does only limited single threaded computation (order of number of coefficients).
-   * The gradient is likely to be the most expensive part and key for good perfomance.
+   * The gradient is likely to be the most expensive part and key for good performance.
    *
    * @param gslvr - user gradient function
    * @param beta - starting solution

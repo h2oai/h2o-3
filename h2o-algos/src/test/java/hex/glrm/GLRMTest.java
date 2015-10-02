@@ -416,7 +416,7 @@ public class GLRMTest extends TestUtil {
   }
 
   // Check that on quadratic loss, running with transform = DEMEAN is equivalent to setting offset = true, scale = false
-  @Test public void testOffset() throws InterruptedException, ExecutionException {
+  @Test public void testOffsetDemean() throws InterruptedException, ExecutionException {
     // Initialize using first 4 de-meaned rows of USArrests
     Frame yinit = ArrayUtils.frame(ard(ard(5.412, 65.24, -7.54, -0.032),
                                       ard(2.212, 92.24, -17.54, 23.268),

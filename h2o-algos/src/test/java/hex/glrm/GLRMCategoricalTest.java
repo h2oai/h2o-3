@@ -291,6 +291,87 @@ public class GLRMCategoricalTest extends TestUtil {
     }
   }
 
+  @Test public void testOffsetScale() throws InterruptedException, ExecutionException {
+    long seed = 0xDECAF;
+    Random rng = new Random(seed);
+    Frame train = null, score = null;
+    final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
+    final GLRMParameters.Loss[] losses = new GLRMParameters.Loss[] {
+            GLRMParameters.Loss.Quadratic,
+            GLRMParameters.Loss.Absolute,
+            GLRMParameters.Loss.Huber,
+            GLRMParameters.Loss.Poisson,
+            GLRMParameters.Loss.Hinge,
+            GLRMParameters.Loss.Logistic
+    };
+    final GLRMParameters.Loss[] multi_losses = new GLRMParameters.Loss[] {
+            GLRMParameters.Loss.Categorical,
+            GLRMParameters.Loss.Ordinal
+    };
+
+    Scope.enter();
+    try {
+      train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+      for(int i = 0; i < cats.length; i++)
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toEnum())._key);
+      train.remove("ID").remove();
+      DKV.put(train._key, train);
+
+      for(boolean offset : new boolean[] { false, true })
+      {
+        for(boolean scale : new boolean[] { false, true })
+        {
+          GLRMModel model = null;
+          try {
+            Scope.enter();
+
+            GLRMParameters parms = new GLRMParameters();
+            parms._train = train._key;
+            parms._transform = DataInfo.TransformType.NONE;
+            parms._offset = offset;
+            parms._scale = scale;
+            parms._k = 5;
+            parms._loss = losses[rng.nextInt(losses.length)];
+            parms._multi_loss = multi_losses[rng.nextInt(multi_losses.length)];
+            parms._init = GLRM.Initialization.Random;
+            parms._regularization_x = GLRMParameters.Regularizer.None;
+            parms._regularization_y = GLRMParameters.Regularizer.None;
+            parms._recover_svd = false;
+            parms._seed = seed;
+            parms._verbose = false;
+
+            Log.info("\nGLRM with offset = " + offset + ", scale = " + scale);
+            GLRM job = new GLRM(parms);
+            try {
+              model = job.trainModel().get();
+              Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+              score = model.score(train);
+              ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+              Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+            } catch (Throwable t) {
+              throw t;
+            } finally {
+              job.remove();
+            }
+          } catch (Throwable t) {
+            t.printStackTrace();
+            throw new RuntimeException(t);
+          } finally {
+            if (model != null) {
+              model._output._loading_key.get().delete();
+              model.delete();
+            }
+            if (score != null) score.delete();
+            Scope.exit();
+          }
+        }
+      }
+    } finally {
+      if(train != null) train.delete();
+      Scope.exit();
+    }
+  }
+
   @Test public void testExpandCatsIris() throws InterruptedException, ExecutionException {
     double[][] iris = ard(ard(6.3, 2.5, 4.9, 1.5, 1),
             ard(5.7, 2.8, 4.5, 1.3, 1),

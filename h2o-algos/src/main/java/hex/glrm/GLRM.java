@@ -306,7 +306,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
-        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY);
+        centers_exp = ArrayUtils.gaussianArray(_ncolX, _ncolY, _parms._seed);
         InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
         xtsk.doAll(dfrm);
 
@@ -524,14 +524,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Calculate one over generalized column variance for appropriate scaling
         _parms.setOffsetScale(tinfo, model._output._lossFunc, model._output);
-        /* model._output._lossOffset = _parms._offset ? _parms.offset(tinfo, model._output._lossFunc) : new double[_ncolA][];
-        if(_parms._scale) {
-          double[][] lossOffset = _parms._offset ? model._output._lossOffset : _parms.offset(tinfo, model._output._lossFunc);
-          model._output._lossScale = _parms.scale(tinfo, model._output._lossFunc, lossOffset);
-        } else {
-          model._output._lossScale = new double[_ncolA];
-          Arrays.fill(model._output._lossScale, 1.0);
-        } */
 
         long nobs = _train.numRows() * _train.numCols();
         long na_cnt = 0;

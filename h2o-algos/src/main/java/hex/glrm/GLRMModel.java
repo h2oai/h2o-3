@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.*;
+import hex.glm.GLM;
 import hex.glrm.GLRMInit.*;
 import hex.optimization.L_BFGS;
 import hex.svd.SVDModel.SVDParameters;
@@ -15,6 +16,10 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
+  // Convergence tolerance
+  private static final double TOLERANCE = 1e-6;
+
+  // Number of tasks to run in parallel when computing offset term
   private static final int NUM_PARALLEL_TASKS = 10;
 
   public static class GLRMParameters extends Model.Parameters {
@@ -39,6 +44,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public Regularizer _regularization_y = Regularizer.None;   // Regularization function for Y matrix
     public double _gamma_x = 0;                   // Regularization weight on X matrix
     public double _gamma_y = 0;                   // Regularization weight on Y matrix
+    public double _rho = 1e-5;    // Regularization weight on proximal gradient penalty term
 
     // Optional parameters
     public int _max_iterations = 1000;            // Max iterations
@@ -189,8 +195,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \grad_u L(u,a): Gradient of multidimensional loss function with respect to u
-    public final double[] mlgrad(double[] u, int a) {
-      return mlgrad(u, a, _multi_loss, null); }
+    public final double[] mlgrad(double[] u, int a) { return mlgrad(u, a, _multi_loss, null); }
     public static double[] mlgrad(double[] u, int a, Loss multi_loss) { return mlgrad(u, a, multi_loss, null); }
     public static double[] mlgrad(double[] u, int a, Loss multi_loss, double[] offset) {
       assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
@@ -440,6 +445,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       if(null == offset) offset = new double[u.length];
       switch(multi_loss) {
         case Categorical:
+          return ArrayUtils.maxIndex(u);    // Let u = x_iY_j, then imputed category is \argmax_l u_l
         case Ordinal:
           double[] cand = new double[u.length];
           for (int a = 0; a < cand.length; a++)
@@ -488,6 +494,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
           double[] coefs = new double[v.cardinality()];
           coefs[Math.min(v.mode(), v.cardinality()-1)] = 1;
+          // double[] coefs = L_BFGS.startCoefs(v.cardinality(), _seed);
           L_BFGS.Result r = lbfgs.solve(gs, coefs);
           return r.coefs;
           // throw H2O.unimpl("Generalized column mean not available for multidimensional loss function " + multi_loss);
@@ -523,35 +530,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
       }
     }
-
-    // \mu_j = \argmin_{\mu} \sum L_{i,j}(\mu, A_{i,j}): M-estimator that generalizes mean of column j
-    /* public final double[][] offset(DataInfo dinfo, Loss[] losses) {
-      Frame fr = dinfo._adaptedFrame;
-      double[][] mu = new double[fr.numCols()][];
-
-      // Categorical columns
-      for(int i = 0; i < dinfo._cats; i++)
-        mu[i] = moffset(fr.vec(i), losses[i]);
-
-      // Numeric columns
-      for(int i = dinfo._cats; i < fr.numCols(); i++)
-        mu[i] = new double[] { offset(fr.vec(i), losses[i]) };
-      return mu;
-    }
-
-    // \sigma_j = 1/(n_j-1) \sum L_{i,j}(\mu_j, A_{i,j}): M-estimator that generalizes variance of column j
-    // n_j = number of non-missing elements in col j, \mu_j = generalized column mean from above
-    public final double[] scale(DataInfo dinfo, Loss[] losses) {
-      return scale(dinfo, losses, null);
-    }
-    public final double[] scale(DataInfo dinfo, Loss[] losses, double[][] offset) {
-      if(offset == null) offset = offset(dinfo, losses);
-      double[] scale = new double[losses.length];
-
-      LossScaleCalc lstsk = new LossScaleCalc(dinfo._cats, losses, _period, offset, scale);
-      lstsk.doAll(dinfo._adaptedFrame);
-      return lstsk._scale;
-    } */
 
     // Is there a closed form solution for the M-estimator? If not, must use L-BFGS to get minimizer.
     private final boolean closedFormOffset(Loss loss) {
@@ -590,6 +568,32 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
+    private final L_BFGS.Result proxSolver(L_BFGS.GradientSolver gs, double[] coefs) {
+      return proxSolver(gs, coefs, _rho);
+    }
+    private final L_BFGS.Result proxSolver(L_BFGS.GradientSolver gs, double[] coefs, double reg) {
+      L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
+      L_BFGS.Result res = null;
+
+      int count = 0;
+      double diff = 2 * TOLERANCE;
+      double[] coefs_old = coefs.clone();
+      double[] rho = new double[coefs.length];
+      Arrays.fill(rho, reg);
+
+      while(diff > TOLERANCE && count < _max_iterations) {
+        GLM.ProximalGradientSolver ps = new GLM.ProximalGradientSolver(gs, coefs, rho);
+        res = lbfgs.solve(ps, coefs);
+
+        diff = ArrayUtils.linfnorm(res.coefs, coefs_old);
+        coefs_old = coefs;
+        coefs = res.coefs;
+        count++;
+      }
+      if(_verbose) Log.info("Iterations: " + count + "\tDifference: " + diff);
+      return res;
+    }
+
     public final void setOffsetScale(DataInfo dinfo, Loss[] losses, GLRMOutput output) {
       Frame fr = dinfo._adaptedFrame;
       long nrows = fr.numRows();
@@ -603,6 +607,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       double[][] lossOffset = new double[losses.length][];
       double[] lossScale = new double[losses.length];
       boolean[] skipScale = new boolean[losses.length];
+
       for(int i = 0; i < losses.length; i++) {
         skipScale[i] = closedFormScale(losses[i]) || !closedFormOffset(losses[i]);
 
@@ -612,7 +617,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           else if(losses[i].isForCategorical())
             lossOffset[i] = moffset(fr.vec(i), losses[i]);
 
-        } else {
+        } else {    // Both offset and scale immediately available from L-BFGS solution
           L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
           L_BFGS.Result res = null;
 
@@ -621,12 +626,13 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             res = lbfgs.solve(gs, new double[] { fr.vec(i).mean() });
           } else if(losses[i].isForCategorical()) {
             MultiLossOffsetSolver gs = new MultiLossOffsetSolver(this, new Frame(fr.vec(i)), losses[i]);
-            double[] coefs = new double[fr.vec(i).cardinality()];
-            coefs[Math.min(fr.vec(i).mode(), fr.vec(i).cardinality()-1)] = 1;
-            res = lbfgs.solve(gs, coefs);
+            // double[] coefs = new double[fr.vec(i).cardinality()];
+            // coefs[Math.min(fr.vec(i).mode(), fr.vec(i).cardinality()-1)] = 1;
+            double[] coefs = L_BFGS.startCoefs(fr.vec(i).cardinality(), _seed);
+            // res = lbfgs.solve(gs, coefs);
+            res = proxSolver(gs, coefs, _rho);
           }
 
-          // Both offset and scale immediately available from L-BFGS solution
           lossOffset[i] = res.coefs;
           if(_scale) lossScale[i] = res.ginfo._objVal != 0 ? (nrows-fr.vec(i).naCnt()-1) / res.ginfo._objVal : 1.0;
         }
