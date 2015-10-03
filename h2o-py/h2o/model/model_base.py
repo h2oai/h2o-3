@@ -164,7 +164,7 @@ class ModelBase(object):
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
       for mm in res["model_metrics"]:
-        if mm["frame"]["name"] == test_data._id:
+        if not mm["frame"] == None and mm["frame"]["name"] == test_data._id:
           raw_metrics = mm
           break
       return self._metrics_class(raw_metrics,algo=self._model_json["algo"])
