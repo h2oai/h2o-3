@@ -71,4 +71,8 @@ public class GenMunger implements Serializable {
     if( leftArg==null ) return d / Double.valueOf(riteArg[0]);
     return Double.valueOf(leftArg[0]) / d;
   }
+  public static String[] strsplit(String s, HashMap<String,String[]> parameters) {
+    String[] pattern = parameters.get("split");
+    return s.split(pattern[0]);
+  }
 }
