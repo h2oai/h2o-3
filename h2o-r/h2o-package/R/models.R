@@ -1886,8 +1886,11 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
     xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
     if(missing(main)) {
       main <- paste(yaxis, "vs", xaxis)
-      if( x@on_train ) main <- paste(main, "(on train)")
-      else             main <- paste(main, "(on valid)")
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
     }
     graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
     graphics::abline(0, 1, lty = 2)
