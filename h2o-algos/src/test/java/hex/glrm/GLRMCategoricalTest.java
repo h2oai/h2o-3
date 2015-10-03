@@ -294,7 +294,7 @@ public class GLRMCategoricalTest extends TestUtil {
   @Test public void testOffsetScale() throws InterruptedException, ExecutionException {
     long seed = 0xDECAF;
     Random rng = new Random(seed);
-    Frame train = null, score = null;
+    Frame train = null, score = null, score2 = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
     final GLRMParameters.Loss[] losses = new GLRMParameters.Loss[] {
             GLRMParameters.Loss.Quadratic,
@@ -308,6 +308,8 @@ public class GLRMCategoricalTest extends TestUtil {
             GLRMParameters.Loss.Categorical,
             GLRMParameters.Loss.Ordinal
     };
+    Frame yinit = ArrayUtils.frame(ArrayUtils.gaussianArray(5, 8, seed));
+    Frame xinit = ArrayUtils.frame(ArrayUtils.gaussianArray(380, 5, seed));
 
     Scope.enter();
     try {
@@ -317,32 +319,34 @@ public class GLRMCategoricalTest extends TestUtil {
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
-      for(boolean offset : new boolean[] { false, true })
-      {
-        for(boolean scale : new boolean[] { false, true })
-        {
-          GLRMModel model = null;
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._loss = losses[rng.nextInt(losses.length)];
+      parms._multi_loss = multi_losses[rng.nextInt(multi_losses.length)];
+      parms._regularization_x = GLRMParameters.Regularizer.None;
+      parms._regularization_y = GLRMParameters.Regularizer.None;
+      parms._k = 5;
+      parms._seed = seed;
+      parms._verbose = false;
+      // parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GLRM.Initialization.User;
+      parms._user_y = yinit._key;
+      parms._user_x = xinit._key;
+      parms._max_iterations = 2000;
+
+      for (boolean offset : new boolean[]{false, true}) {
+        for (boolean scale : new boolean[]{false, true}) {
+          GLRMModel model = null, model2 = null;
           try {
             Scope.enter();
-
-            GLRMParameters parms = new GLRMParameters();
-            parms._train = train._key;
             parms._transform = DataInfo.TransformType.NONE;
             parms._offset = offset;
             parms._scale = scale;
-            parms._k = 5;
-            parms._loss = losses[rng.nextInt(losses.length)];
-            parms._multi_loss = multi_losses[rng.nextInt(multi_losses.length)];
-            parms._init = GLRM.Initialization.Random;
-            parms._regularization_x = GLRMParameters.Regularizer.None;
-            parms._regularization_y = GLRMParameters.Regularizer.None;
-            parms._recover_svd = false;
-            parms._seed = seed;
-            parms._verbose = false;
+            parms._loading_name = "GLRMLoading_1";
 
-            Log.info("\nGLRM with offset = " + offset + ", scale = " + scale);
             GLRM job = new GLRM(parms);
             try {
+              Log.info("\nGLRM with offset = " + offset + ", scale = " + scale);
               model = job.trainModel().get();
               Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
               score = model.score(train);
@@ -353,6 +357,26 @@ public class GLRMCategoricalTest extends TestUtil {
             } finally {
               job.remove();
             }
+
+            if(offset && scale) parms._transform = DataInfo.TransformType.STANDARDIZE;
+            else if(offset && !scale) parms._transform = DataInfo.TransformType.DEMEAN;
+            else if(!offset && scale) parms._transform = DataInfo.TransformType.DESCALE;
+            else parms._transform = DataInfo.TransformType.NONE;
+            parms._offset = parms._scale = false;
+            parms._loading_name = "GLRMLoading_2";
+            GLRM job2 = new GLRM(parms);
+            try {
+              Log.info("\nGLRM with transform = " + parms._transform);
+              model2 = job2.trainModel().get();
+              Log.info("Iteration " + model2._output._iterations + ": Objective value = " + model2._output._objective);
+              score2 = model2.score(train);
+              ModelMetricsGLRM mm2 = DKV.getGet(model2._output._model_metrics[model2._output._model_metrics.length - 1]);
+              Log.info("Numeric Sum of Squared Error = " + mm2._numerr + "\tCategorical Misclassification Error = " + mm2._caterr);
+            } catch (Throwable t) {
+              throw t;
+            } finally {
+              job2.remove();
+            }
           } catch (Throwable t) {
             t.printStackTrace();
             throw new RuntimeException(t);
@@ -361,12 +385,19 @@ public class GLRMCategoricalTest extends TestUtil {
               model._output._loading_key.get().delete();
               model.delete();
             }
+            if (model2 != null) {
+              model2._output._loading_key.get().delete();
+              model2.delete();
+            }
             if (score != null) score.delete();
+            if (score2 != null) score2.delete();
             Scope.exit();
           }
         }
       }
     } finally {
+      yinit.delete();
+      xinit.delete();
       if(train != null) train.delete();
       Scope.exit();
     }

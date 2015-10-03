@@ -14,6 +14,8 @@ import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.util.Arrays;
+
 public class LinearAlgebraUtils {
 
   // Regularized Cholesky decomposition using H2O implementation
@@ -107,6 +109,8 @@ public class LinearAlgebraUtils {
    */
   public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp) { return expandRow(row, dinfo, tmp, true); }
   public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp, boolean modify_numeric) {
+    assert row != null && row.length == dinfo._adaptedFrame.numCols();
+
     // Categorical columns
     int cidx;
     for(int col = 0; col < dinfo._cats; col++) {
@@ -133,30 +137,46 @@ public class LinearAlgebraUtils {
     return tmp;
   }
 
-  public static double[] expandRow(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] tmp, boolean modify_numeric) {
+  public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp, double[][] offset, double[] scale) {
+    if(offset == null && scale == null)
+      return expandRow(row, dinfo, tmp, false);
+
+    assert row != null && row.length == dinfo._adaptedFrame.numCols();
+    double[][] means = offset == null ? new double[row.length][] : offset;
+    double[] mults = scale == null ? new double[row.length] : scale;
+    if(scale == null) Arrays.fill(mults, 1.0);
+    int[] numLevels = dinfo._adaptedFrame.cardinality();
+
     // Categorical columns
     int cidx;
     for(int col = 0; col < dinfo._cats; col++) {
-      double x = chks[col].atd(row_in_chunk);
-      if (Double.isNaN(x)) {
+      if (Double.isNaN(row[col])) {
         if (dinfo._imputeMissing)
           cidx = dinfo._catModes[col];
         else if (dinfo._catMissing[col] == 0)
           continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
         else
-          cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
+          cidx = dinfo._catOffsets[col+1]-1;  // Otherwise, missing value turns into extra (last) factor
       } else
-        cidx = dinfo.getCategoricalId(col, (int)x);
+        cidx = dinfo.getCategoricalId(col, (int)row[col]);
       if(cidx >= 0) tmp[cidx] = 1;
+
+      // Offset each of the cols corresponding to expanded categorical level
+      int cat_cnt = dinfo._catOffsets[col];
+      assert means[col] == null || means[col].length == numLevels[col];
+      for(int level = 0; level < numLevels[col]; level++) {
+        tmp[cat_cnt] = (tmp[cat_cnt] - (means[col] != null ? means[col][level] : 0)) * mults[col];
+        cat_cnt++;
+      }
+      assert cat_cnt == dinfo._catOffsets[col+1];
     }
 
     // Numeric columns
+    int chk_cnt = dinfo._cats;
     int exp_cnt = dinfo.numStart();
     for(int col = 0; col < dinfo._nums; col++) {
-      double x = chks[col].atd(row_in_chunk);
-      // Only do imputation and transformation if requested
-      tmp[exp_cnt] = modify_numeric ? modifyNumeric(x, col, dinfo) : x;
-      exp_cnt++;
+      tmp[exp_cnt] = (row[chk_cnt] - (means[chk_cnt] != null ? means[chk_cnt][0] : 0)) * mults[chk_cnt];
+      exp_cnt++; chk_cnt++;
     }
     return tmp;
   }

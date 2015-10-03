@@ -6,6 +6,7 @@ import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
 import hex.*;
+import hex.deeplearning.Neurons;
 import hex.glrm.GLRMInit.*;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
@@ -25,6 +26,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.*;
+import water.init.MemoryBandwidth;
 import water.util.*;
 
 import java.lang.reflect.Array;
@@ -224,8 +226,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     _ncolA = _train.numCols();
   }
 
-  // Transform each column of a 2-D array, assuming categoricals sorted before numeric cols
-  public static double[][] transform(double[][] centers, double[] normSub, double[] normMul, int ncats, int nnums) {
+  // Transform only numeric columns of a 2-D array, assuming categoricals sorted before numeric cols
+  public static double[][] transformNum(double[][] centers, double[] normSub, double[] normMul, int ncats, int nnums) {
     int K = centers.length;
     int N = centers[0].length;
     assert ncats + nnums == N;
@@ -243,16 +245,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // More efficient implementation assuming sdata cols aligned with adaptedFrame
-  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) {
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo) { return expandCats(sdata, dinfo, null, null); }
+  public static double[][] expandCats(double[][] sdata, DataInfo dinfo, double[][] offset, double[] scale) {
     if(sdata == null) return sdata;
-    assert sdata[0].length == dinfo._adaptedFrame.numCols();
+    int ncols = dinfo._adaptedFrame.numCols();
+    assert sdata[0].length == ncols;
 
     // Column count for expanded matrix
     int catsexp = dinfo._catOffsets[dinfo._catOffsets.length-1];
     double[][] cexp = new double[sdata.length][catsexp + dinfo._nums];
 
     for(int i = 0; i < sdata.length; i++)
-      LinearAlgebraUtils.expandRow(sdata[i], dinfo, cexp[i], false);
+      LinearAlgebraUtils.expandRow(sdata[i], dinfo, cexp[i], offset, scale);
     return cexp;
   }
 
@@ -261,7 +265,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     protected GLRMDriver() { super(true); } // bump driver priority
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt) {
+    private double[][] initialXY(DataInfo tinfo, Frame dfrm, double[][] lossOffset, double[] lossScale, long na_cnt) {
       double[][] centers, centers_exp = null;
       Random rand = RandomUtils.getRNG(_parms._seed);
 
@@ -395,8 +399,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Permute cluster columns to align with dinfo, normalize nums, and expand out cats to indicator cols
         centers = ArrayUtils.permuteCols(km._output._centers_raw, tinfo.mapNames(km._output._names));
-        centers = transform(centers, tinfo._normSub, tinfo._normMul, tinfo._cats, tinfo._nums);
-        centers_exp = expandCats(centers, tinfo);
+        centers = transformNum(centers, tinfo._normSub, tinfo._normMul, tinfo._cats, tinfo._nums);
+        // centers_exp = expandCats(centers, tinfo);
+        centers_exp = expandCats(centers, tinfo, lossOffset, null);   // Want XY = de-meaned training data A
       } else
         error("_init", "Initialization method " + _parms._init + " is undefined");
 
@@ -515,6 +520,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._ncats = tinfo._cats;
         model._output._catOffsets = tinfo._catOffsets;
         model._output._names_expanded = tinfo.coefNames();
+        model._output._impute_orig = _parms._impute_orig;
 
         // Save loss function for each column in adapted frame order
         assert _lossFunc != null && _lossFunc.length == _train.numCols();
@@ -545,7 +551,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Use closed form solution for X if quadratic loss and regularization
         update(1, "Initializing X and Y matrices");   // One unit of work
-        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
+        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model._output._lossOffset, model._output._lossScale, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul, model._output._lossOffset, model._output._lossScale);

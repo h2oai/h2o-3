@@ -28,11 +28,13 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     public long _numcnt;      // Number of observed numeric entries
     public long _catcnt;     // Number of observed categorical entries
     public int[] _permutation;  // Permutation array for shuffling cols
+    public boolean _impute_orig;  // Is reconstruction the original training data?
 
-    public GLRMModelMetrics(int dims, int[] permutation) {
+    public GLRMModelMetrics(int dims, int[] permutation, boolean impute_orig) {
       _work = new double[dims];
       _miscls = _numcnt = _catcnt = 0;
       _permutation = permutation;
+      _impute_orig = impute_orig;
     }
 
     @Override
@@ -56,7 +58,8 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       for (int i = ncats; i < dataRow.length; i++) {
         int idx = _permutation[i];
         if (Double.isNaN(dataRow[idx])) { c++; continue; }
-        double diff = (dataRow[idx] - sub[c]) * mul[c] - preds[idx];
+        // double diff = (dataRow[idx] - sub[c]) * mul[c] - preds[idx];
+        double diff = (_impute_orig ? dataRow[idx] : (dataRow[idx] - sub[c]) * mul[c]) - preds[idx];
         _sumsqe += diff * diff;
         _numcnt++;
         c++;

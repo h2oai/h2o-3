@@ -23,8 +23,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   private static final int NUM_PARALLEL_TASKS = 10;
 
   public static class GLRMParameters extends Model.Parameters {
+    public int _k = 1;  // Rank of resulting XY matrix
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
-    public int _k = 1;                            // Rank of resulting XY matrix
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
     public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
@@ -33,18 +33,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Loss functions
     public Loss _loss = Loss.Quadratic;                  // Default loss function for numeric cols
     public Loss _multi_loss = Loss.Categorical;  // Default loss function for categorical cols
-    public int _period = 1;                       // Length of the period when _loss = Periodic
-    public Loss[] _loss_by_col;                // Override default loss function for specific columns
+    public int _period = 1;                      // Length of the period when _loss = Periodic
+    public Loss[] _loss_by_col;                 // Override default loss function for specific columns
     public int[] _loss_by_col_idx;
-    public boolean _offset = false;  // Include offset term in loss function?
-    public boolean _scale = false;   // Scale loss function by generalized column variance?
+    public boolean _offset = false;             // Include offset term in loss function?
+    public boolean _scale = false;              // Scale loss function by generalized column variance?
 
     // Regularization functions
     public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
     public Regularizer _regularization_y = Regularizer.None;   // Regularization function for Y matrix
     public double _gamma_x = 0;                   // Regularization weight on X matrix
     public double _gamma_y = 0;                   // Regularization weight on Y matrix
-    public double _rho = 1e-5;    // Regularization weight on proximal gradient penalty term
+    public double _rho_loss = 1e-4;               // Regularization weight on proximal gradient penalty for multidimensional loss functions
 
     // Optional parameters
     public int _max_iterations = 1000;            // Max iterations
@@ -53,8 +53,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public long _seed = System.nanoTime();        // RNG seed
     // public Key<Frame> _loading_key;               // Key to save X matrix
     public String _loading_name;
+
+    // Internal use
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _verbose = true;               // Log when objective increases each iteration?
+    public boolean _impute_orig = true;          // If true, impute original training data by reversing transform
+
+    // TODO: Currently set to false while I figure out why error is so high with multidimensional offset/scaling
+    public boolean _off_scale_cats = false;       // Should categorical loss functions include offset/scaling?
 
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
     // Absolute -> Laplace distribution ~ exp(-|a-u|)
@@ -436,7 +442,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for categorical values {0,1,2,...}
-    // TODO: Is there a faster way to find the loss minimizer?
     public final int mimpute(double[] u) { return mimpute(u, _multi_loss, null); }
     public static int mimpute(double[] u, Loss multi_loss) { return mimpute(u, multi_loss, null); }
     public static int mimpute(double[] u, Loss multi_loss, double[] offset) {
@@ -446,7 +451,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(multi_loss) {
         case Categorical:
           return ArrayUtils.maxIndex(u);    // Let u = x_iY_j, then imputed category is \argmax_l u_l
-        case Ordinal:
+        case Ordinal:   // TODO: Is there a faster way to find the loss minimizer?
           double[] cand = new double[u.length];
           for (int a = 0; a < cand.length; a++)
             cand[a] = mloss(u, a, multi_loss, offset);
@@ -491,11 +496,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Categorical:
         case Ordinal:
           MultiLossOffsetSolver gs = new MultiLossOffsetSolver(this, new Frame(v), multi_loss);
-          L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
-          double[] coefs = new double[v.cardinality()];
-          coefs[Math.min(v.mode(), v.cardinality()-1)] = 1;
-          // double[] coefs = L_BFGS.startCoefs(v.cardinality(), _seed);
-          L_BFGS.Result r = lbfgs.solve(gs, coefs);
+          // L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
+          // double[] coefs = new double[v.cardinality()];
+          // coefs[Math.min(v.mode(), v.cardinality()-1)] = 1;
+          double[] coefs = L_BFGS.startCoefs(v.cardinality(), _seed);
+          // L_BFGS.Result r = lbfgs.solve(gs, coefs);
+          L_BFGS.Result r = proxSolver(gs, coefs, _rho_loss);
           return r.coefs;
           // throw H2O.unimpl("Generalized column mean not available for multidimensional loss function " + multi_loss);
         default:
@@ -569,7 +575,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     private final L_BFGS.Result proxSolver(L_BFGS.GradientSolver gs, double[] coefs) {
-      return proxSolver(gs, coefs, _rho);
+      return proxSolver(gs, coefs, _rho_loss);
     }
     private final L_BFGS.Result proxSolver(L_BFGS.GradientSolver gs, double[] coefs, double reg) {
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
@@ -609,6 +615,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       boolean[] skipScale = new boolean[losses.length];
 
       for(int i = 0; i < losses.length; i++) {
+        if(!_off_scale_cats && losses[i].isForCategorical()) {
+          lossOffset[i] = new double[fr.vec(i).cardinality()];
+          lossScale[i] = 1.0;
+          continue;
+        }
         skipScale[i] = closedFormScale(losses[i]) || !closedFormOffset(losses[i]);
 
         if (closedFormOffset(losses[i])) {
@@ -630,7 +641,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
             // coefs[Math.min(fr.vec(i).mode(), fr.vec(i).cardinality()-1)] = 1;
             double[] coefs = L_BFGS.startCoefs(fr.vec(i).cardinality(), _seed);
             // res = lbfgs.solve(gs, coefs);
-            res = proxSolver(gs, coefs, _rho);
+            res = proxSolver(gs, coefs, _rho_loss);
           }
 
           lossOffset[i] = res.coefs;
@@ -702,6 +713,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Expanded column names of adapted training frame
     public String[] _names_expanded;
+
+    // Did we reconstruct the original training frame?
+    public boolean _impute_orig;
 
     // Loss function for every column in adapted training frame
     public GLRMParameters.Loss[] _lossFunc;
@@ -802,7 +816,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       return preds;
     }
 
-    // TODO: Add parameter to select imputation including/excluding offset (include = impute original train, exclude = impute de-meaned train)
     private double[] impute_data(double[] tmp, double[] preds) {
       assert preds.length == _output._nnums + _output._ncats;
 
@@ -818,6 +831,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
         if(_parms._offset) xy += _output._lossOffset[d][0];
         preds[_output._permutation[d]] = _parms.impute(xy, _output._lossFunc[d]);
+        if(_parms._impute_orig)
+          preds[_output._permutation[d]] = preds[_output._permutation[d]]/_output._normMul[ds] + _output._normSub[ds];
       }
       return preds;
     }
@@ -847,6 +862,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_output._ncolX, _output._permutation);
+    return new ModelMetricsGLRM.GLRMModelMetrics(_output._ncolX, _output._permutation, _output._impute_orig);
   }
 }

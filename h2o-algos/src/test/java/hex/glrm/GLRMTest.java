@@ -416,6 +416,7 @@ public class GLRMTest extends TestUtil {
   }
 
   // Check that on quadratic loss, running with transform = DEMEAN is equivalent to setting offset = true, scale = false
+  // TODO: Check all possible initializations (currently, SVD is incorrect because doesn't incorporate offset/scale)
   @Test public void testOffsetDemean() throws InterruptedException, ExecutionException {
     // Initialize using first 4 de-meaned rows of USArrests
     Frame yinit = ArrayUtils.frame(ard(ard(5.412, 65.24, -7.54, -0.032),
@@ -449,6 +450,7 @@ public class GLRMTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes:\n" + model._output._archetypes.toString());
         score = model.score(train);
+        System.out.println(score.toString());
         ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
 
