@@ -91,7 +91,7 @@ class H2OColSelect(H2OTransformer):
 
   def to_rest(self, step_name):
     ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
-    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False])
+    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False,"|"])
 
 
 class H2OColOp(H2OTransformer):
