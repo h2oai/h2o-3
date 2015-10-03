@@ -182,12 +182,12 @@ public class TestUtil extends Iced {
   public static Vec vec(String[] domain, int ...rows) { 
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k);
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
     avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
     chunk.close(0, fs);
-    Vec vec = avec.close(fs);
+    Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
   }

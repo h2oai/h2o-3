@@ -62,9 +62,11 @@ public class ShuffleSplitFrame {
     Futures fs = new Futures();
     for( int i=0; i<ratios.length; i++ ) {
       Vec[] nvecs = new Vec[ncols];
+      final int rowLayout = mr.appendables()[i*ncols].compute_rowLayout();
       for( int c=0; c<ncols; c++ ) {
-        mr.appendables()[i*ncols+c].setDomain(vecs[c].domain());
-        nvecs[c] = mr.appendables()[i*ncols+c].close(fs);
+        AppendableVec av = mr.appendables()[i*ncols + c];
+        av.setDomain(vecs[c].domain());
+        nvecs[c] = av.close(rowLayout,fs);
       }
       frames[i] = new Frame(keys[i],fr.names(),nvecs);
       DKV.put(frames[i],fs);

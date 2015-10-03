@@ -6,6 +6,8 @@ import water.fvec.*;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
 
+import java.util.Arrays;
+
 /**
  * Map/Reduce style distributed computation.
  * <p>
@@ -120,30 +122,24 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    */
   public Frame _fr;
 
-  /**
-   * This <code>Key[]</code> instance is the handle used for computation when an MRTask is
-   * invoked over an array of <code>Key</code>instances.
-   */
+  /** This <code>Key[]</code> instance is the handle used for computation when
+   *  an MRTask is invoked over an array of <code>Key</code>instances. */
   public Key[] _keys;
 
-  /** The number of output Vec instances produced by an MRTask.
-   *  If this number is 0, then there are no outputs. Additionally, if _noutputs is 0,
-   *  _appendables will be null, and calls to <code>outputFrame</code> will return null.
-   */
-  private int _noutputs;
+  /** The number and type of output Vec instances produced by an MRTask.  If
+   *  null then there are no outputs, _appendables will be null, and calls to
+   *  <code>outputFrame</code> will return null. */
+  private byte _output_types[];
 
-  /**
-   * Accessor for the protected array of AppendableVec instances. If <code>_nouputs</code>
-   * is 0, then the return result is null. Additionally, if <code>outputFrame</code> is
-   * not called and <code>_noutputs > 0</code>, then these <code>AppendableVec</code>
-   * instances must be closed by the caller.
-   *
-   *
-   * @return the set of AppendableVec instances or null if _noutputs==0
-   */
+  /** First reserved VectorGroup key index for all output Vecs */
+  private int _vid;
+
+  /** New Output vectors; may be null.
+   * @return the set of AppendableVec instances or null if _output_types is null  */
   public AppendableVec[] appendables() { return _appendables; }
 
-  /** Appendables are treated separately (roll-ups computed in map/reduce style, can not be passed via K/V store).*/
+  /** Appendables are treated separately (roll-ups computed in map/reduce
+   *  style, can not be passed via K/V store).*/
   protected AppendableVec[] _appendables;
 
   /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
@@ -173,14 +169,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  task.  Pragmatically, we block on a finer grained basis. */
   transient protected Futures _fs; // More things to block on
 
-  /**
-   * If _noutputs is 0, then _vid is never set. Otherwise, _noutput Keys are reserved in
-   * the VectorGroup associated with the Vec instances in _fr.
-   *
-   * This is the first index of such reserved Keys.
-   */
-  private int _vid;
-
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
@@ -196,27 +184,26 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   @Override public byte priority() { return _priority; }
   private byte _priority;
 
-  /**
+  /** Get the resulting Frame from this invoked MRTask.  <b>This Frame is not
+   *  in the DKV.</b> AppendableVec instances are closed into Vec instances,
+   *  which then appear in the DKV.
    *
-   * Get the resulting Frame from this invoked MRTask. <b>This Frame is not in the DKV.</b>
-   * AppendableVec instances are closed into Vec instances, which then appear in the DKV.
-   *
-   * @return null if _noutputs is 0, otherwise returns the resulting Frame from the MRTask
+   *  @return null if no outputs, otherwise returns the resulting Frame from
+   *  the MRTask.  The Frame has no column names nor domains.
    */
   public Frame outputFrame() { return outputFrame(null,null,null); }
 
-  /**
-   * Get the resulting Frame from this invoked MRTask. <b>This Frame is not in the DKV.</b>
-   * AppendableVec instances are closed into Vec instances, which then appear in the DKV.
+  /** Get the resulting Frame from this invoked MRTask.  <b>This Frame is not in
+   *  the DKV.</b> AppendableVec instances are closed into Vec instances, which
+   *  then appear in the DKV.
    *
-   * @param names The names of the columns in the resulting Frame.
-   * @param domains The domains of the columns in the resulting Frame.
-   * @return null if _noutputs is 0, otherwise returns a Frame
+   *  @param names The names of the columns in the resulting Frame.
+   *  @param domains The domains of the columns in the resulting Frame.
+   *  @return The result Frame, or null if no outputs
    */
   public Frame outputFrame(String [] names, String [][] domains){ return outputFrame(null,names,domains); }
 
   /**
-   *
    * Get the resulting Frame from this invoked MRTask. If the passed in <code>key</code>
    * is not null, then the resulting Frame will appear in the DKV. AppendableVec instances
    * are closed into Vec instances, which then appear in the DKV.
@@ -230,25 +217,27 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public Frame outputFrame(Key key, String [] names, String [][] domains){
     Futures fs = new Futures();
     Frame res = closeFrame(key, names, domains, fs);
+    if( key != null ) DKV.put(res,fs);
     fs.blockForPending();
     return res;
   }
 
   // the work-horse for the outputFrame calls
-  private Frame closeFrame(Key key, String [] names, String [][] domains, Futures fs) {
-    if(_noutputs == 0) return null;
-    Vec [] vecs = new Vec[_noutputs];
-    for(int i = 0; i < _noutputs; ++i) {
-      if( _appendables==null )  // Zero rows?
+  private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
+    if( _output_types == null) return null;
+    final int noutputs = _output_types.length;
+    Vec[] vecs = new Vec[noutputs];
+    if( _appendables==null )  // Zero rows?
+      for( int i = 0; i < noutputs; i++ )
         vecs[i] = _fr.anyVec().makeZero();
-      else {
+    else {
+      int rowLayout = _appendables[0].compute_rowLayout();
+      for( int i = 0; i < noutputs; i++ ) {
         _appendables[i].setDomain(domains==null ? null : domains[i]);
-        vecs[i] = _appendables[i].close(fs);
+        vecs[i] = _appendables[i].close(rowLayout,fs);
       }
     }
-    Frame fr = new Frame(key,names,vecs);
-    if( key != null ) DKV.put(fr,fs);
-    return fr;
+    return new Frame(key,names,vecs);
   }
 
   /** Override with your map implementation.  This overload is given a single
@@ -486,8 +475,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    */
   public final void asyncExec( int outputs, Frame fr, boolean run_local){
     _topGlobal = true;
-    // Use first readable vector to gate home/not-home
-    if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
+    // Default output type is all numbers
+    if( outputs > 0 ) {
+      Arrays.fill(_output_types = new byte[outputs], Vec.T_NUM);
+      _vid = fr.anyVec().group().reserveKeys(outputs);
+    }
     _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?
@@ -639,12 +631,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
               : "Chunk="+_lo+" v0="+v0+", k="+v0.chunkKey(_lo)+"   v["+i+"]="+vecs[i]+", k="+vecs[i].chunkKey(_lo);
             bvs[i] = vecs[i].chunkForChunkIdx(_lo);
           }
-        if(_noutputs > 0){
+
+        if(_output_types != null) {
           final VectorGroup vg = vecs[0].group();
-          _appendables = new AppendableVec[_noutputs];
-          appendableChunks = new NewChunk[_noutputs];
-          for(int i = 0; i < _appendables.length; ++i){
-            _appendables[i] = new AppendableVec(vg.vecKey(_vid+i));
+          _appendables = new AppendableVec[_output_types.length];
+          appendableChunks = new NewChunk[_output_types.length];
+          for(int i = 0; i < _appendables.length; ++i) {
+            _appendables[i] = new AppendableVec(vg.vecKey(_vid+i),_output_types[i]);
             appendableChunks[i] = _appendables[i].chunkForChunkIdx(_lo);
           }
         }
@@ -655,14 +648,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1]);
         if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2]);
         if( true                  )  map(bvs );
-        if(_noutputs == 1){ // convenience versions for cases with single output.
+        if( _output_types != null && _output_types.length == 1 ) { // convenience versions for cases with single output.
           if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0]);
           if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0]);
           if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0]);
           if( true                  )  map(bvs,    appendableChunks[0]);
         }
-        if(_noutputs == 2){ // convenience versions for cases with 2 outputs (e.g split).
+        if( _output_types != null && _output_types.length == 2) { // convenience versions for cases with 2 outputs (e.g split).
           if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0],appendableChunks[1]);
           if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
@@ -675,7 +668,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_doProfile)
           _profile._closestart = System.currentTimeMillis();
         for( Chunk bv : bvs )  bv.close(_lo,_fs);
-        if(_noutputs > 0) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
+        if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
       }
     }
     if(_doProfile)
@@ -769,7 +762,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  internal by F/J.  Not expected to be user-called.  */
   void reduce4( T mrt ) {
     // Reduce any AppendableVecs
-    if( _noutputs > 0 )
+    if( _output_types != null )
       for( int i=0; i<_appendables.length; i++ )
         _appendables[i].reduce(mrt._appendables[i]);
     if( _ex == null ) _ex = mrt._ex;

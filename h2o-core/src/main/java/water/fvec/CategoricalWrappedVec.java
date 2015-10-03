@@ -29,8 +29,8 @@ public class CategoricalWrappedVec extends WrappedVec {
   int _p=0;
 
   /** Main constructor: convert from one categorical to another */
-  public CategoricalWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
-    super(key, espc, masterVecKey);
+  public CategoricalWrappedVec(Key key, int rowLayout, String[] toDomain, Key masterVecKey) {
+    super(key, rowLayout, masterVecKey);
     computeMap(masterVec().domain(),toDomain,masterVec().isBad());
     DKV.put(this);
   }
@@ -38,7 +38,7 @@ public class CategoricalWrappedVec extends WrappedVec {
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
   public CategoricalWrappedVec(String[] from, String[] to) {
-    super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
+    super(Vec.VectorGroup.VG_LEN1.addVec(),-1/*no row layout*/,null,null);
     computeMap(from,to,false);
     DKV.put(this);
   }

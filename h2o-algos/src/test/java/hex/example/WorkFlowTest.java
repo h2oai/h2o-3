@@ -251,7 +251,7 @@ public class WorkFlowTest extends TestUtil {
       NewChunk ncs[] = new NewChunk[ncols];
       Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(ncols);
       for( int c = 0; c < avecs.length; c++ )
-        avecs[c] = new AppendableVec(keys[c]);
+        avecs[c] = new AppendableVec(keys[c], Vec.T_NUM);
 
       Futures fs = new Futures();
       int chunknum=0;
@@ -278,8 +278,9 @@ public class WorkFlowTest extends TestUtil {
       }
 
       Vec[] vecs = new Vec[ncols];
+      final int rowLayout = avecs[0].compute_rowLayout();
       for( int c = 0; c < avecs.length; c++ )
-        vecs[c] = avecs[c].close(fs);
+        vecs[c] = avecs[c].close(rowLayout,fs);
       vecs[0].setDomain(_fr.vec(1).domain());
       vecs[1].setDomain(null);
       vecs[2].setDomain(new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});

@@ -226,8 +226,9 @@ class ASTLevels extends ASTPrim {
       if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
+    final int rowLayout = Vec.ESPC.rowLayout(keys[0],new long[]{0,max});
     for( int i=0;i<f.numCols();++i ) {
-      AppendableVec v = new AppendableVec(keys[i]);
+      AppendableVec v = new AppendableVec(keys[i],Vec.T_NUM);
       NewChunk nc = new NewChunk(v,0);
       String[] dom = f.vec(i).domain();
       int numToPad = dom==null?max:max-dom.length;
@@ -235,7 +236,7 @@ class ASTLevels extends ASTPrim {
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
       nc.close(0,fs);
-      vecs[i] = v.close(fs);
+      vecs[i] = v.close(rowLayout,fs);
       vecs[i].setDomain(dom);
     }
     fs.blockForPending();
@@ -407,14 +408,14 @@ class ASTWhich extends ASTPrim {
       for(int i=0;i<in.length;++i) in[i] = f.vecs()[i].at(0)==1?i:-1;
       Futures fs = new Futures();
       Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-      AppendableVec v = new AppendableVec(key);
+      AppendableVec v = new AppendableVec(key,Vec.T_NUM);
       NewChunk chunk = new NewChunk(v, 0);
       for (double d : in) {
         if( d!=-1)
           chunk.addNum(d);
       }
       chunk.close(0, fs);
-      Vec vec = v.close(fs);
+      Vec vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }

@@ -795,11 +795,11 @@ public class Frame extends Lockable<Frame> {
   // Make NewChunks to for holding data from e.g. Spark.  Once per set of
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
-  static NewChunk[] createNewChunks( String name, int cidx ) {
+  static NewChunk[] createNewChunks( String name, byte type, int cidx ) {
     Frame fr = (Frame)Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for( int i=0; i<nchks.length; i++ )
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i]),cidx);
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i],type),cidx);
     return nchks;
   }
 
@@ -813,7 +813,6 @@ public class Frame extends Lockable<Frame> {
 
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
-  // FIXME: have proper representation of column type
   void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
@@ -832,7 +831,7 @@ public class Frame extends Lockable<Frame> {
     for( int i=0; i<_keys.length; i++ ) {
       // Insert Vec header
       Vec vec = _vecs[i] = new Vec( _keys[i],
-                                    espc2,
+                                    Vec.ESPC.rowLayout(_keys[i],espc2),
                                     domains!=null ? domains[i] : null,
                                     types[i]);
       // Here we have to save vectors since
@@ -941,7 +940,7 @@ public class Frame extends Lockable<Frame> {
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey());
+      AppendableVec av = new AppendableVec(Vec.newKey(),Vec.T_NUM);
       int r = 0;
       int c = 0;
       while (r < rows.length) {
@@ -952,7 +951,7 @@ public class Frame extends Lockable<Frame> {
         }
         nc.close(c++, fs);
       }
-      Vec c0 = av.close(fs);   // c0 is the row index vec
+      Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
       fs.blockForPending();
       Frame ff = new Frame(new String[]{"rownames"}, new Vec[]{c0});
       Frame fr2 = new Slice(c2, this).doAll(c2.length,ff)
@@ -1169,8 +1168,9 @@ public class Frame extends Lockable<Frame> {
     final Vec[] _vecs;
     DoCopyFrame(Vec[] vecs) {
       _vecs = new Vec[vecs.length];
+      int rowLayout = _vecs[0]._rowLayout;
       for(int i=0;i<vecs.length;++i)
-        _vecs[i] = new Vec(vecs[i].group().addVec(),vecs[i]._espc.clone(), vecs[i].domain(), vecs[i]._type);
+        _vecs[i] = new Vec(vecs[i].group().addVec(),rowLayout, vecs[i].domain(), vecs[i]._type);
     }
     @Override public void map(Chunk[] cs) {
       int i=0;
@@ -1248,14 +1248,12 @@ public class Frame extends Lockable<Frame> {
   }
 
   private boolean isLastRowOfCurrentNonEmptyChunk(int chunkIdx, long row) {
-    long lastRowOfCurrentChunk = anyVec().get_espc()[chunkIdx + 1] - 1;
-
+    long[] espc = anyVec()._espc;
+    long lastRowOfCurrentChunk = espc[chunkIdx + 1] - 1;
     // Assert chunk is non-empty.
-    assert anyVec().get_espc()[chunkIdx + 1] > anyVec().get_espc()[chunkIdx];
-
+    assert espc[chunkIdx + 1] > espc[chunkIdx];
     // Assert row numbering sanity.
     assert row <= lastRowOfCurrentChunk;
-
     return row >= lastRowOfCurrentChunk;
   }
 

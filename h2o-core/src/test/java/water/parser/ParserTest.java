@@ -19,7 +19,7 @@ public class ParserTest extends TestUtil {
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
     Key k = Vec.newKey();
-    ByteVec bv = new ByteVec(k,espc);
+    ByteVec bv = new ByteVec(k,Vec.ESPC.rowLayout(k,espc));
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
       Key ck = bv.chunkKey(i);

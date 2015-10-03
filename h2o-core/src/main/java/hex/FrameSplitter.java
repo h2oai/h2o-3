@@ -142,7 +142,9 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
     Vec[][] t = new Vec[nsplits][/*num*/]; // resulting vectors for all
     for (int i=0; i<nsplits; i++) {
       // vectors for j-th split
-      t[i] = new Vec(Vec.newKey(),espcPerSplit[i/*-th split*/]).makeCons(num, 0, domains, types);
+      Key vkey = Vec.newKey();
+      int rowLayout = Vec.ESPC.rowLayout(vkey,espcPerSplit[i]);
+      t[i] = new Vec(vkey,rowLayout).makeCons(num, 0, domains, types);
     }
     return t;
   }

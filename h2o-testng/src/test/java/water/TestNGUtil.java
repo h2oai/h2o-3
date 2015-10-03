@@ -152,12 +152,12 @@ public class TestNGUtil extends Iced {
     public static Vec vec(String[] domain, int ...rows) {
         Key k = Vec.VectorGroup.VG_LEN1.addVec();
         Futures fs = new Futures();
-        AppendableVec avec = new AppendableVec(k);
+        AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
         avec.setDomain(domain);
         NewChunk chunk = new NewChunk(avec, 0);
         for( int r : rows ) chunk.addNum(r);
         chunk.close(0, fs);
-        Vec vec = avec.close(fs);
+        Vec vec = avec.layout_and_close(fs);
         fs.blockForPending();
         return vec;
     }
@@ -172,12 +172,14 @@ public class TestNGUtil extends Iced {
         Futures fs = new Futures();
         Vec[] vecs = new Vec[rows[0].length];
         Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+        int rowLayout = -1;
         for( int c = 0; c < vecs.length; c++ ) {
-            AppendableVec vec = new AppendableVec(keys[c]);
+            AppendableVec vec = new AppendableVec(keys[c], Vec.T_NUM);
             NewChunk chunk = new NewChunk(vec, 0);
             for (double[] row : rows) chunk.addNum(row[c]);
             chunk.close(0, fs);
-            vecs[c] = vec.close(fs);
+            if( rowLayout == -1 ) rowLayout = vec.compute_rowLayout();
+            vecs[c] = vec.close(rowLayout,fs);
         }
         fs.blockForPending();
         Frame fr = new Frame(key, names, vecs);

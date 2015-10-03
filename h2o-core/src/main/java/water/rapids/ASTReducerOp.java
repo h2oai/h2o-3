@@ -290,11 +290,11 @@ class ASTMean extends ASTPrim {
     }
     Futures fs = new Futures();
     Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key);
+    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
     NewChunk chunk = new NewChunk(v, 0);
     for( int i=0;i<fr.numCols();++i ) chunk.addNum((fr.vec(i).isNumeric()||fr.vec(i).naCnt()>0)?fr.vec(i).mean():Double.NaN);
     chunk.close(0,fs);
-    Vec vec = v.close(fs);
+    Vec vec = v.layout_and_close(fs);
     fs.blockForPending();
     Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
     DKV.put(fr2);
@@ -316,11 +316,11 @@ class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package res
     }
     Futures fs = new Futures();
     Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key);
+    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
     NewChunk chunk = new NewChunk(v, 0);
     for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).sigma():Double.NaN);
     chunk.close(0,fs);
-    Vec vec = v.close(fs);
+    Vec vec = v.layout_and_close(fs);
     fs.blockForPending();
     Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
     DKV.put(fr2);

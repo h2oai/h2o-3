@@ -115,8 +115,9 @@ class ASTDdply extends ASTPrim {
     Vec[] close() {
       Futures fs = new Futures();
       Vec[] vgrps = new Vec[_gss.size()];
+      final int rowLayout = _appendables[0].compute_rowLayout();
       for( int i = 0; i < vgrps.length; i++ )
-        vgrps[i] = _appendables[i].close(fs);
+        vgrps[i] = _appendables[i].close(rowLayout,fs);
       fs.blockForPending();
       return vgrps;
     }
@@ -155,7 +156,7 @@ class ASTDdply extends ASTPrim {
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._espc, gvec.domain(), gvec.get_type()), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._rowLayout, gvec.domain(), gvec.get_type()), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {

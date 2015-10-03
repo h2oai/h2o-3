@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 public class ConfusionMatrixTest extends TestUtil {
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
+  public static void stall() { stall_till_cloudsize(5); }
 
   final boolean debug = false;
 

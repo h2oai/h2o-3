@@ -39,7 +39,6 @@ public class NewChunk extends Chunk {
   int   [] alloc_str_indices(int l) { return _is = MemoryManager.malloc4(l); }
 
   final protected long  [] mantissa() { return _ls; }
-  final protected int   [] exponent() { return _xs; }
   final protected int   []  indices() { return _id; }
   final protected double[]  doubles() { return _ds; }
 
@@ -54,9 +53,7 @@ public class NewChunk extends Chunk {
   private int _naCnt=-1;                // Count of NA's   appended
   protected int naCnt() { return _naCnt; }               // Count of NA's   appended
   private int _catCnt;                  // Count of Categorical's appended
-  protected int catCnt() { return _catCnt; }                 // Count of Categorical's appended
   private int _strCnt;                  // Count of string's appended
-  protected int strCnt() { return _strCnt; }                 // Count of strings's appended
   private int _nzCnt;                   // Count of non-zero's appended
   private int _uuidCnt;                 // Count of UUIDs
 
@@ -115,23 +112,6 @@ public class NewChunk extends Chunk {
 
   public void set_vec(Vec vec) { _vec = vec; }
 
-  public NewChunk convertCategorical2Str(BufferedString[] cmap) {
-    NewChunk strChunk = new NewChunk(_vec, _cidx);
-    int j = 0, l = _len;
-    for( int i = 0; i < l; ++i ) {
-      if( _id != null && _id.length > 0 && (j < _id.length && _id[j] == i ) ) // Sparse storage
-        // adjust for categorical ids using 1-based indexing
-        strChunk.addStr(cmap[(int) _ls[j++] - 1]);
-      else if (_xs[i] != Integer.MIN_VALUE) // Categorical value isn't NA
-        strChunk.addStr(cmap[(int) _ls[i] - 1]);
-      else
-        strChunk.addNA();
-    }
-    if (_id != null)
-      assert j == sparseLen() :"j = " + j + ", sparseLen = " + sparseLen();
-    return strChunk;
-  }
-
   public final class Value {
     int _gId; // row number in dense (ie counting zeros)
     int _lId; // local array index of this value, equal to _gId if dense
@@ -189,7 +169,7 @@ public class NewChunk extends Chunk {
   }
 
   // Heuristic to decide the basic type of a column
-  public byte type() {
+  byte type() {
     if( _naCnt == -1 ) {        // No rollups yet?
       int nas=0, es=0, nzs=0, ss=0;
       if( _ds != null && _ls != null ) { // UUID?
@@ -217,16 +197,16 @@ public class NewChunk extends Chunk {
     }
     // Now run heuristic for type
     if(_naCnt == _len)          // All NAs ==> NA Chunk
-      return AppendableVec.NA;
+      return Vec.T_BAD;
     if(_strCnt > 0)
-      return AppendableVec.STRING;
+      return Vec.T_STR;
     if(_catCnt > 0 && _catCnt + _naCnt == _len)
-      return AppendableVec.CATEGORICAL; // All are Strings+NAs ==> Categorical Chunk
+      return Vec.T_CAT; // All are Strings+NAs ==> Categorical Chunk
     // UUIDs?
-    if( _uuidCnt > 0 ) return AppendableVec.UUID;
+    if( _uuidCnt > 0 ) return Vec.T_UUID;
     // Larger of time & numbers
     int nums = _len -_naCnt-_timCnt;
-    return _timCnt >= nums ? AppendableVec.TIME : AppendableVec.NUMBER;
+    return _timCnt >= nums ? Vec.T_TIME : Vec.T_NUM;
   }
 
   //what about sparse reps?
@@ -416,17 +396,6 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
 
-  // PREpend all of 'nc' onto the current NewChunk.  Kill nc.
-  public void addr( NewChunk nc ) {
-    long  [] tmpl = _ls; _ls = nc._ls; nc._ls = tmpl;
-    int   [] tmpi = _xs; _xs = nc._xs; nc._xs = tmpi;
-    tmpi = _id; _id = nc._id; nc._id = tmpi;
-    double[] tmpd = _ds; _ds = nc._ds; nc._ds = tmpd;
-    int      tmp  = _sparseLen; _sparseLen=nc._sparseLen; nc._sparseLen=tmp;
-    tmp  = _len; _len = nc._len; nc._len = tmp;
-    add(nc);
-  }
-
   // Fast-path append long data
   void append2( long l, int x ) {
     if(_id == null || l != 0){
@@ -561,7 +530,7 @@ public class NewChunk extends Chunk {
   public Chunk new_close() {
     Chunk chk = compress();
     if(_vec instanceof AppendableVec)
-      ((AppendableVec)_vec).closeChunk(this);
+      ((AppendableVec)_vec).closeChunk(_cidx,chk._len);
     return chk;
   }
   public void close(Futures fs) { close(_cidx,fs); }
@@ -690,12 +659,27 @@ public class NewChunk extends Chunk {
     }
     _id = null;
   }
+
   // Study this NewVector and determine an appropriate compression scheme.
   // Return the data so compressed.
-
   public Chunk compress() {
     Chunk res = compress2();
-    // force everything to null after compress to free up the memory
+    byte type = type();
+    assert _vec == null ||  // Various testing scenarios do not set a Vec
+      type == _vec._type || // Equal types
+      // Allow all-bad Chunks in any type of Vec
+      type == Vec.T_BAD ||
+      // Specifically allow the NewChunk to be a numeric type (better be all
+      // ints) and the selected Vec type an categorical - whose String mapping
+      // may not be set yet.
+      (type==Vec.T_NUM && _vec._type==Vec.T_CAT)
+      : "NewChunk has type "+Vec.TYPE_STR[type]+", but the Vec is of type "+_vec.get_type_str();
+    assert _len == res._len : "NewChunk has length "+_len+", compressed Chunk has "+res._len;
+    // Force everything to null after compress to free up the memory.  Seems
+    // like a non-issue in the land of GC, but the NewChunk *should* be dead
+    // after this, but might drag on.  The arrays are large, and during a big
+    // Parse there's lots and lots of them... so free early just in case a GC
+    // happens before the drag-time on the NewChunk finishes.
     _id = null;
     _xs = null;
     _ds = null;
@@ -716,12 +700,12 @@ public class NewChunk extends Chunk {
   private Chunk compress2() {
     // Check for basic mode info: all missing or all strings or mixed stuff
     byte mode = type();
-    if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
+    if( mode==Vec.T_BAD ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, sparseLen());
-    if( mode==AppendableVec.STRING )
+    if( mode==Vec.T_STR )
       return new CStrChunk(_sslen, _ss, sparseLen(), _len, _is, _isAllASCII);
     boolean rerun=false;
-    if(mode == AppendableVec.CATEGORICAL){
+    if(mode == Vec.T_CAT) {
       for( int i=0; i< sparseLen(); i++ )
         if(isCategorical2(i))
           _xs[i] = 0;
@@ -730,7 +714,7 @@ public class NewChunk extends Chunk {
           ++_naCnt;
         }
         // Smack any mismatched string/numbers
-    } else if(mode == AppendableVec.NUMBER){
+    } else if( mode == Vec.T_NUM ) {
       for( int i=0; i< sparseLen(); i++ )
         if(isCategorical2(i)) {
           setNA_impl2(i);
@@ -738,6 +722,7 @@ public class NewChunk extends Chunk {
         }
     }
     if( rerun ) { _naCnt = -1;  type(); } // Re-run rollups after dropping all numbers/categoricals
+
     boolean sparse = false;
     // sparse? treat as sparse iff we have at least MIN_SPARSE_RATIOx more zeros than nonzeros
     if(_sparseRatio*(_naCnt + _nzCnt) < _len) {
@@ -1046,11 +1031,9 @@ public class NewChunk extends Chunk {
       }
       if (fitsInUnique) {
         if (hs.size() < CUDChunk.MAX_UNIQUES) //still got space
-          hs.put(new Long(Double.doubleToLongBits(d)),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
-        else if (hs.size() == CUDChunk.MAX_UNIQUES) //full, but might not need more space because of repeats
-          fitsInUnique = hs.containsKey(Double.doubleToLongBits(d));
-        else //full - no longer try to fit into CUDChunk
-          fitsInUnique = false;
+          hs.put(Double.doubleToLongBits(d),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
+        else fitsInUnique = (hs.size() == CUDChunk.MAX_UNIQUES) && // full, but might not need more space because of repeats
+                            hs.containsKey(Double.doubleToLongBits(d));
       }
       UnsafeUtils.set8d(bs, 8*i, d);
     }

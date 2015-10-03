@@ -325,8 +325,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         for (int j = 0; j < treeKeys[i].length; j++) {
           if (treeKeys[i][j] == null) continue;
           CompressedTree ct = DKV.get(treeKeys[i][j]).get();
-          CompressedTree newCt = IcedUtils.clone(ct, CompressedTree.makeTreeKey(i, j), true);
-          treeKeys[i][j] = newCt._key;
+          CompressedTree newCt = IcedUtils.clone(ct, CompressedTree.makeTreeKey(i, j));
+          DKV.put(treeKeys[i][j] = newCt._key,newCt);
         }
       }
       return newModel;

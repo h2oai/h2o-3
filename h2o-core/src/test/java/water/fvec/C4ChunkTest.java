@@ -54,7 +54,8 @@ public class C4ChunkTest extends TestUtil {
 
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
-    Vec vec = new Vec(Vec.newKey(), new long[]{0,15}).makeZero();
+    water.Key key = Vec.newKey();
+    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, Integer.MIN_VALUE+1, 0, 12, Integer.MAX_VALUE, 32767, 0, 0, 19};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
