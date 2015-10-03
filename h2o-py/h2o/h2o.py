@@ -1436,7 +1436,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
     "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
   user_x : H2OFrame
     (Optional) An H2OFrame object specifying the initial X matrix. Only used when init = "User".
-  user_y : 
+  user_y : H2OFrame
     (Optional) An H2OFrame object specifying the initial Y matrix. Only used when init = "User".
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
@@ -1669,7 +1669,7 @@ def as_list(data, use_pandas=True):
 
   :return: List of list (Rows x Columns).
   """
-  return H2OFrame.as_data_frame(data, use_pandas)
+  return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
 
 
 def set_timezone(tz):
@@ -1817,7 +1817,7 @@ def h2o_deprecated(newfun=None):
       print
       print
       warnings.warn(m, category=DeprecationWarning, stacklevel=2)
-      return fun(*args, **kwargs)
+      return newfun(*args, **kwargs)
     return i
   return o
 
