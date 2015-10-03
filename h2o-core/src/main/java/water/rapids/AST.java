@@ -229,7 +229,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTStratifiedKFold());
   }
 
-  public static ASTId newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTId  newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTStr newASTStr  (String s) { return new ASTStr(s); }
 }
 
 /** A number.  Execution is just to return the constant. */

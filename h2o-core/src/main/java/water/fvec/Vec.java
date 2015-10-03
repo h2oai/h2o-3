@@ -1083,7 +1083,8 @@ public class Vec extends Keyed<Vec> {
         @Override public void map(Chunk c, NewChunk nc) {
           BufferedString bStr = new BufferedString();
           for( int row=0;row<c._len;++row) {
-            if( c.isNA(row) ) nc.addNA();
+           if( c.isNA(row) ) nc.addNA();
+            else if( c.atStr(bStr,row).toString().equals("") ) nc.addNA();
             else              nc.addNum(Double.valueOf(c.atStr(bStr,row).toString()));
           }
         }
