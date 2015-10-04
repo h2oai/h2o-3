@@ -333,24 +333,13 @@ public class Vec extends Keyed<Vec> {
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
-    int nchunks = (int)Math.max(1,len >> log_rows_per_chunk);
+    int nchunks = redistribute ? (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len) : (int)Math.max(1,len>>log_rows_per_chunk);
     long[] espc = new long[nchunks+1];
-    for( int i=0; i<nchunks; i++ )
-      espc[i] = ((long)i)<<log_rows_per_chunk;
+    espc[0] = 0;
+    for( int i=1; i<nchunks; i++ )
+      espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    Vec v0 = makeCon(x,VectorGroup.VG_LEN1,espc);
-    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
-    if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
-      Key newKey = Key.make(Key.rand()+".makeConRebalance" + chunks);
-      Frame f = new Frame(v0);
-      RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
-      H2O.submitTask(rb);
-      rb.join();
-      Keyed.remove(v0._key);
-      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(); // this is gross.
-      Keyed.remove(newKey);
-    }
-    return v0;
+    return makeCon(x,VectorGroup.VG_LEN1,espc);
   }
 
   /** Make a new vector with the same size and data layout as the current one,
