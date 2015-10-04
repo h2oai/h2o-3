@@ -29,6 +29,8 @@ H2O.INTERNAL.HDFS.NAME.NODE <<- "172.16.2.176"
 #'
 h2oRunitSetup <-
 function() {
+    testName <- R.utils::commandArgs(asValues=TRUE)$"f"
+
     # source h2o-r/h2o-package/R
     root.path <- locate("h2o-package/R/", "h2o-r")
     src(root.path)   # overrides package load
@@ -39,8 +41,8 @@ function() {
 
     parseArgs(commandArgs(trailingOnly=TRUE)) # provided by --args
 
-    Log.info("Load default packages. Additional required packages must be loaded explicitly.\n")
     default.packages()
+    Log.info("Loaded default packages. Additional required packages must be loaded explicitly.\n")
 
     Log.info(paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT,"\n"))
     h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE)
@@ -48,11 +50,15 @@ function() {
     setupRandomSeed()
     Log.info(paste0("[SEED] : ",SEED))
 
-    sandbox()
+    sb <- sandbox(create=TRUE)
+    Log.info(paste0("Created sandbox for test ",testName," in directory ",sb,".\n"))
+
+    h2o.startLogging(paste(sb, "/rest.log", sep = ""))
+    Log.info(paste0("Started rest logging in ",sb,"/rest.log.\n"))
 
     h2o.logAndEcho("------------------------------------------------------------")
     h2o.logAndEcho("")
-    h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+    h2o.logAndEcho(paste("STARTING TEST: ", testName))
     h2o.logAndEcho("")
     h2o.logAndEcho("------------------------------------------------------------")
 }
