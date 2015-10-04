@@ -160,12 +160,7 @@ class RollupStats extends Iced {
           checksum ^= (17 * (start + i)) ^ 23 * l;
       }
     } else {
-      // handle the zeros
-      if( c.isSparse() ) {
-        int zeros = c._len - c.sparseLen();
-        for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
-        _rows += zeros;
-      }
+      // Work off all numeric rows, or only the nonzeros for sparse
       if (c instanceof C1Chunk)
         checksum=new RollupStatsHelpers(this).numericChunkRollup((C1Chunk) c, start, checksum);
       else if (c instanceof C1SChunk)
@@ -188,6 +183,25 @@ class RollupStats extends Iced {
         checksum=new RollupStatsHelpers(this).numericChunkRollup((C8DChunk) c, start, checksum);
       else
         checksum=new RollupStatsHelpers(this).numericChunkRollup(c, start, checksum);
+
+      // special case for sparse chunks
+      // we need to merge with the mean (0) and variance (0) of the zeros count of 0s of the sparse chunk - which were skipped above
+      // _rows is the count of non-zero rows
+      // _mean is the mean of non-zero rows
+      // _sigma is the mean of non-zero rows
+      // handle the zeros
+      if( c.isSparse() ) {
+        int zeros = c._len - c.sparseLen();
+        if (zeros > 0) {
+          for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
+          double zeromean = 0;
+          double zeroM2 = 0;
+          double delta = _mean - zeromean;
+          _mean = (_mean * _rows + zeromean * zeros) / (_rows + zeros);
+          _sigma += zeroM2 + delta*delta * _rows * zeros / (_rows + zeros); //this is the variance*(N-1), will do sqrt(_sigma/(N-1)) later in postGlobal
+          _rows += zeros;
+        }
+      }
     }
     _checksum = checksum;
 
@@ -207,9 +221,9 @@ class RollupStats extends Iced {
     _nzCnt += rs._nzCnt;
     _pinfs += rs._pinfs;
     _ninfs += rs._ninfs;
-    double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
     else if(rs._rows != 0){
+      double delta = _mean - rs._mean;
       _mean = (_mean * _rows + rs._mean * rs._rows) / (_rows + rs._rows);
       _sigma += rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }

@@ -19,15 +19,16 @@ public class RollupStatsHelpers {
    * @return
    */
   public long numericChunkRollup(Chunk c, long start, long checksum) {
-    long pinfs = _rs._pinfs;
-    long ninfs = _rs._ninfs;
-    long naCnt = _rs._naCnt;
-    long nzCnt = _rs._nzCnt;
+    long pinfs=0, ninfs=0, naCnt=0, nzCnt=0;
+    // pull (some) members into local variables for speed
     boolean isInt = _rs._isInt;
     boolean hasNA = c.hasNA();
     boolean hasFloat = c.hasFloat();
     double dmin = _rs._mins[_rs._mins.length-1];
     double dmax = _rs._maxs[_rs._maxs.length-1];
+
+    assert(_rs._pinfs == 0); assert(_rs._ninfs == 0); assert(_rs._naCnt == 0); assert(_rs._nzCnt == 0);
+    assert(dmin == Double.MAX_VALUE); assert(dmax == -Double.MAX_VALUE);
 
     long rows = 0; //count of non-NA rows, might be >0 for sparse chunks (all 0s are already processed outside)
     double mean = 0; //mean of non-NA rows, will be 0 for all 0s of sparse chunks
@@ -56,10 +57,7 @@ public class RollupStatsHelpers {
       }
     }
 
-    double variance = 0;
-    if (rows > 1) {
-      variance = M2;
-    }
+    // write back local variables into members
     _rs._pinfs = pinfs;
     _rs._ninfs = ninfs;
     _rs._naCnt = naCnt;
@@ -67,7 +65,7 @@ public class RollupStatsHelpers {
     _rs._rows += rows; // add to pre-filled value for sparse chunks
     _rs._isInt = isInt;
     _rs._mean = mean;
-    _rs._sigma = variance;
+    _rs._sigma = M2;
     return checksum;
   }
 }
