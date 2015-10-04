@@ -26,7 +26,7 @@ public abstract class Transform<T> extends Iced {
     _params = new IcedHashMap<>();
   }
   public String name() { return _name; }
-  public abstract Transform<T> fit(Frame f);
+  protected abstract Transform<T> fit(Frame f);
   public Frame transform(Frame f) {
     _inNames = f.names();
     _inTypes = f.typesStr();

@@ -72,7 +72,21 @@ public class GenMunger implements Serializable {
     return Double.valueOf(leftArg[0]) / d;
   }
   public static String[] strsplit(String s, HashMap<String,String[]> parameters) {
-    String[] pattern = parameters.get("split");
-    return s.split(pattern[0]);
+    String pattern = parameters.get("split")[0];
+    return s.split(pattern);
+  }
+  public static double asnumeric(String s, HashMap<String, String[]> parameters) {
+    return Double.valueOf(s);
+  }
+  public static String trim(String s, HashMap<String, String[]> parameters) {
+    return s.trim();
+  }
+  public static String replaceall(String s, HashMap<String, String[]> parameters) {
+    String pattern = parameters.get("pattern")[0];
+    String replacement = parameters.get("replacement")[0];
+    boolean ignoreCase = parameters.get("ignore_case")[0].equals("TRUE");
+    return ignoreCase
+            ? s.replaceAll("(?i)"+Pattern.quote(pattern),replacement)
+            : s.replaceAll(pattern,replacement);
   }
 }

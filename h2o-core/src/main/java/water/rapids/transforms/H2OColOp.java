@@ -9,56 +9,35 @@ import water.rapids.ASTExec;
 import water.rapids.ASTParameter;
 import water.rapids.Exec;
 
-import java.util.HashMap;
-
 public class H2OColOp extends Transform<H2OColOp> {
-  private final String _fun;
-  String _oldCol;
-  String[] _newCol;
-  String _newColTypes;
+  protected final String _fun;
+  private final String _oldCol;
+  private String[] _newCol;
+  private String _newColTypes;
   boolean _multiColReturn;
-  boolean _leftIsCol;
-  boolean _riteIsCol;
-  String _binCol;  // only if _leftIsCol || _riteIsCol
-  private static final HashMap<String,String> binaryOps = new HashMap<>();
-
-  static {
-    binaryOps.put("+", "plus");
-    binaryOps.put("-", "minus");
-    binaryOps.put("*", "multiply");
-    binaryOps.put("/", "divide");
-    binaryOps.put("<", "lessThan");
-    binaryOps.put("<=","lessThanEquals");
-    binaryOps.put(">", "greaterThan");
-    binaryOps.put(">=","greaterThanEquals");
-    binaryOps.put("==", "equals");
-    binaryOps.put("!=", "notEquals");
-  }
 
   public H2OColOp(String name, String ast, boolean inplace, String[] newNames) { // (op (cols fr cols) {extra_args})
     super(name,ast,inplace,newNames);
     _fun = _ast._asts[0].str();
     _oldCol = ((ASTExec)_ast._asts[1])._asts[2].str();
+    setupParams();
+  }
+
+  private void setupParams() {
     String[] args = _ast.getArgs();
     if( args!=null && args.length > 1 ) { // first arg is the frame
-      for(int i=1; i<args.length; ++i) {
-        if( _ast._asts[i+1] instanceof ASTExec) {
-          if( !isBinaryOp(_fun) ) throw H2O.unimpl("unimpl: " + lookup(_fun));
-          _leftIsCol = args[i].equals("leftArg");
-          _riteIsCol = !_leftIsCol;
-          _binCol = ((ASTExec)_ast._asts[i+1])._asts[2].str();
-          _params.put(args[i], AST.newASTStr(((ASTExec)_ast._asts[i+1])._asts[2].str()));
-        } else
-          _params.put(args[i], (ASTParameter) _ast._asts[i + 1]);
-      }
+      for(int i=1; i<args.length; ++i)
+        setupParamsImpl(i,args);
     }
+  }
+
+  protected void setupParamsImpl(int i, String[] args) {
+    _params.put(args[i], (ASTParameter) _ast._asts[i + 1]);
   }
 
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
     ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
-    if( _leftIsCol || _riteIsCol )
-      ((ASTExec)_ast._asts[2])._asts[1] = AST.newASTFrame(f);
     Frame fr = Exec.execute(_ast).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
     _newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
@@ -81,26 +60,30 @@ public class H2OColOp extends Transform<H2OColOp> {
 
   @Override public String genClassImpl() {
     String typeCast = _inTypes[ArrayUtils.indexOf(_inNames, _oldCol)].equals("Numeric")?"double":"String";
-    StringBuilder sb =   new StringBuilder(
-            "    @Override public RowData transform(RowData row) {\n");
 
-    if( _leftIsCol || _riteIsCol ) // need to fetch left/right value for binary op from (RowData)row;
-      sb.append("      _params.put(\""+ (_leftIsCol?"leftArg":"rightArg") +"\", new String[]{row.get(\"" +_binCol+ "\")}; // writer over the previous value");
-
-    sb.append("      " + _newColTypes + (_multiColReturn?"[]":"") + " res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params));\n");
-
-    for(int i=0; i<_newCol.length; ++i) {
+    if( _multiColReturn ) {
+      StringBuilder sb = new StringBuilder(
+              "    @Override public RowData transform(RowData row) {\n"+
+              (paramIsRow() ? addRowParam() : "") +
+              "     "+_newColTypes+"[] res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n");
+      for(int i=0;i<_newCol.length;i++)
+        sb.append(
+              "      row.put(\""+_newCol[i]+"\", res["+i+"]);\n");
       sb.append(
-            "      row.put(\""+_newCol[i]+"\", res" + (_multiColReturn?"["+i+"]":"") + ");\n"
-      );
+              "      return row;\n" +
+              "    }\n");
+      return sb.toString();
+    } else {
+      return "    @Override public RowData transform(RowData row) {\n"+
+             (paramIsRow() ? addRowParam() : "") +
+             "      "+_newColTypes+" res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n"+
+             "      row.put(\""+_newCol[0]+"\", res);\n" +
+             "      return row;\n" +
+             "    }\n";
     }
-    sb.append(
-            "      return row;\n" +
-            "    }\n"
-    );
-    return sb.toString();
   }
 
-  static String lookup(String op) { return binaryOps.get(op)==null?op:binaryOps.get(op); }
-  static boolean isBinaryOp(String op) { return binaryOps.get(op)!=null; }
+  protected boolean paramIsRow() { return false; }
+  protected String addRowParam() { return ""; }
+  protected String lookup(String op) { return op.replaceAll("\\.",""); }
 }

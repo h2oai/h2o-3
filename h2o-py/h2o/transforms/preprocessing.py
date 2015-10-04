@@ -132,7 +132,7 @@ class H2OColOp(H2OTransformer):
     new_col_names = self.new_col_name
     if new_col_names is None: new_col_names=["|"]
     elif not isinstance(new_col_names, (list,tuple)): new_col_names = [new_col_names]
-    return super(H2OColOp, self).to_rest([step_name,"H2OColOp",ast,self.inplace,"|".join(new_col_names)])
+    return super(H2OColOp, self).to_rest([step_name,self.__class__.__name__,ast,self.inplace,"|".join(new_col_names)])
 
 
 class H2OBinaryOp(H2OColOp):
