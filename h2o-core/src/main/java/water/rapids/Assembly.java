@@ -23,13 +23,11 @@ public class Assembly extends Keyed<Assembly> {
 
   Transform[] steps() { return _steps; }
 
-  public Frame applyTransforms(Frame f) {
+  public Frame fit(Frame f) {
     for(Transform step: _steps)
       f = step.fitTransform(f);
     return f;
   }
-
-  public Frame fit(Frame f) { return applyTransforms(f); }
 
   public String toJava(String pojoName) {
     if( pojoName==null ) pojoName = "GeneratedMungingPojo";

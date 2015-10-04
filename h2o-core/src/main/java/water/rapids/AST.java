@@ -281,6 +281,7 @@ class ASTId extends ASTParameter {
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }
+  @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*
