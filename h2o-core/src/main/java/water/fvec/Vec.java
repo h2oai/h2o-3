@@ -1458,7 +1458,7 @@ public class Vec extends Keyed<Vec> {
         }
         if( local._espcs.length > remote._espcs.length ) {
           System.err.println(kespc+", Stale remote, using local, ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
-          local = res;
+          return local;
         }
         System.err.println(kespc+", Failed, retrying ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
         local = res;
@@ -1523,7 +1523,7 @@ public class Vec extends Keyed<Vec> {
           return new ESPC(_key,espcs);
         }
         @Override public void onSuccess( ESPC old ) { 
-          System.err.println(_key+",TAtomic installs at #"+(old==null?0:old._espcs.length)+" for R"+espc[1]+", invalidates are done!");
+          System.err.println(_key+",TAtomic installed at #"+(old==null?0:old._espcs.length)+" for R"+espc[1]+", all invalidates are done!");
         }
       }.invoke(kespc);
       // Refetch from master, try again

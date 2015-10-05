@@ -462,6 +462,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // (hence ACKACK) doesn't go out until after this function returns.
     replicas()[h2o._unique_idx] = 1;
     // Both rwlock taken, and replica count is up now.
+    if( _key.equals(water.fvec.Vec.ESPC.DEBUG) )
+      System.err.println(_key + ", add replica on "+h2o);
     return true;
   }
 

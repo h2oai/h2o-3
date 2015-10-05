@@ -599,8 +599,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           _dt.read(ab);             // Read the answer (under lock?)
           _size_rez = ab.size();    // Record received size
           ab.close();               // Also finish the read (under lock?  even if canceled, since need to drain TCP)
-          if (!isCancelled())      // Can be canceled already (locally by MRTask while recieving remote answer)
+          if (!isCancelled())       // Can be canceled already (locally by MRTask while recieving remote answer)
             _dt.onAck();            // One time only execute (before sending ACKACK)
+          if( _dt instanceof TaskInvalidateKey && ((TaskInvalidateKey)_dt)._xkey.equals(water.fvec.Vec.ESPC.DEBUG) )
+            System.err.println(water.fvec.Vec.ESPC.DEBUG + ", invalidate completes from "+ab._h2o);
           _done = true;             // Only read one (of many) response packets
           _sentMsg = null;
           ab._h2o.taskRemove(_tasknum); // Flag as task-completed, even if the result is null

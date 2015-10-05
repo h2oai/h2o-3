@@ -123,9 +123,14 @@ public abstract class DKV {
 
     // Check for trivial success: no need to invalidate remotes if the new
     // value equals the old.
-    if( old != null && old == val ) return old; // Trivial success?
-    if( old != null && val != null && val.equals(old) )
+    if( old != null && old == val ) {
+      System.out.println("No invalidate, new==old");
+      return old; // Trivial success?
+    }
+    if( old != null && val != null && val.equals(old) ) {
+      System.out.println("No invalidate, new.equals(old)");
       return old;               // Less trivial success, but no network i/o
+    }
 
     // Before we start doing distributed writes... block until the cloud
     // stabilizes.  After we start doing distributed writes, it is an error to
