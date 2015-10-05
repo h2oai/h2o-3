@@ -88,6 +88,18 @@ public class GenMunger implements Serializable {
     if( leftArg==null ) return d / Double.valueOf(riteArg[0]);
     return Double.valueOf(leftArg[0]) / d;
   }
+  public static double mod(double d, HashMap<String,String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String riteArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return d % Double.valueOf(riteArg);
+    return Double.valueOf(leftArg) % d;
+  }
+  public static double pow(double d, HashMap<String, String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String riteArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return Math.pow(d,Double.valueOf(riteArg));
+    return Math.pow(Double.valueOf(leftArg),d);
+  }
   public static String[] strsplit(String s, HashMap<String,String[]> parameters) {
     String pattern = parameters.get("split")[0];
     return s.split(pattern);
@@ -105,5 +117,32 @@ public class GenMunger implements Serializable {
     return ignoreCase
             ? s.replaceAll("(?i)"+Pattern.quote(pattern),replacement)
             : s.replaceAll(pattern,replacement);
+  }
+  public static String toupper(String s, HashMap<String, String[]> parameters) {
+    return s.toUpperCase();
+  }
+  public static String tolower(String s, HashMap<String, String[]> parameters) {
+    return s.toLowerCase();
+  }
+  public static String cut(double d, HashMap<String, String[]> parameters) {
+    String[] breaks = parameters.get("breaks");
+    String[] labels = parameters.get("labels");
+    boolean lowest = parameters.get("include_lowest")[0].equals("TRUE");
+    boolean rite = parameters.get("right")[0].equals("TRUE");
+    if( Double.isNaN(d) || (lowest && d < Double.valueOf(breaks[0]))
+            || (!lowest && d <= Double.valueOf(breaks[0]))
+            || (rite    && d >  Double.valueOf(breaks[breaks.length-1]))
+            || (!rite   && d >= Double.valueOf(breaks[breaks.length-1]))) return "";
+    else {
+      for(int i=1;i<breaks.length;++i) {
+        if( rite )
+          if( d <= Double.valueOf(breaks[i]) ) return labels[i-1];
+        else if( d < Double.valueOf(breaks[i]) ) return labels[i-1];
+      }
+    }
+    return "";
+  }
+  public static double nchar(String s, HashMap<String, String[]> parameters) {
+    return s.length();
   }
 }
