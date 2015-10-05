@@ -27,6 +27,23 @@ public class GenMunger implements Serializable {
     return row;
   }
 
+  public RowData fill(String[] vals) {
+    RowData row = new RowData();
+    String[] types = inTypes();
+    String[] names = inNames();
+    for(int i=0;i<vals.length;++i)
+      row.put(names[i],valueOf(types[i],vals[i]));
+    return row;
+  }
+
+  private static Object valueOf(String type, String val) {
+    return type.equals("Numeric")
+            ? val.equals("")
+              ? Double.NaN
+              : Double.valueOf(val)
+            : val;
+  }
+
   // currents/transforms/GenMunger utilities
   public static void scaleInPlace(final double[] means, final double[] mults, double[] in) {
     for(int i=0; i<in.length; ++i)

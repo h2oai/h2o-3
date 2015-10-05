@@ -47,7 +47,7 @@ public abstract class Transform<T> extends Iced {
     for (String k : _params.keySet()) {
       String v = _params.get(k).toJavaString();
       sb.append(
-              "    _params.put(\""+k+"\", new String[]{"+v+"});\n"
+              "    _params.put(\""+k+"\", new String[]{"+v.replace("\\","\\\\")+"});\n"
       );
     }
     sb.append("  }\n");
