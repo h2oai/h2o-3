@@ -7,7 +7,7 @@ import water.rapids.ASTExec;
 
 import java.util.HashMap;
 
-public class H2OBinaryOp extends H2OColOp {
+public class H2OBinaryOp extends H2OColOp { // called thru reflection
   boolean _leftIsCol;
   boolean _riteIsCol;
   String _binCol;  // !=null only if _leftIsCol || _riteIsCol
@@ -49,7 +49,7 @@ public class H2OBinaryOp extends H2OColOp {
   @Override protected boolean paramIsRow() { return _leftIsCol || _riteIsCol; }
   @Override protected String addRowParam() {
     return "      _params.put(\""+ (_leftIsCol?"leftArg":"rightArg") + "\", " +
-            "new String[]{row.get(\"" +_binCol+ "\")}); // writer over the previous value\n";
+            "new String[]{String.valueOf(row.get(\"" +_binCol+ "\"))}); // write over the previous value\n";
   }
   private static boolean isBinaryOp(String op) { return binaryOps.get(op)!=null; }
 }
