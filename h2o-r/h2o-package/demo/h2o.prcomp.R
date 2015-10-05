@@ -3,9 +3,9 @@
 # Then, it runs PCA on a subset of the features
 # Note: This demo runs H2O on localhost:54321
 library(h2o)
-localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+h2o.init()
 
-australia.hex = h2o.uploadFile(localH2O, system.file("extdata", "australia.csv", package="h2o"), "australia.hex")
+australia.hex = h2o.uploadFile(system.file("extdata", "australia.csv", package="h2o"), "australia.hex")
 summary(australia.hex)
 
 australia.pca = h2o.prcomp(australia.hex, k = 8)
