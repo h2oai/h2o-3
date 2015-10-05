@@ -159,14 +159,15 @@ function(args) {
       s <- args[i]
       if (s == "--usecloud") {
         i <- i + 1
-        if (i > length(args)) {
-          usage()
-        }
+        if (i > length(args)) usage()
         argsplit <- strsplit(args[i], ":")[[1]]
         H2O.IP   <<- argsplit[1]
         H2O.PORT <<- as.numeric(argsplit[2])
       } else if (s == "--onJenkHadoop") {
         ON.JENKINS.HADOOP <<- TRUE
+        i <- i + 1
+        if (i > length(args)) usage()
+        H2O.INTERNAL.HDFS.NAME.NODE <<- args[i]
       } else {
         unknownArg(s)
       }
@@ -182,7 +183,8 @@ function() {
   print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
   print("                     IP:PORT")
   print("")
-  print("    --onJenkHadoop   signal to runt that it will be run on h2o-hadoop cluster.")
+  print("    --onJenkHadoop   signal to runit that it will be run on h2o-hadoop cluster with the specified hdfs name")
+  print("                     node.")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }

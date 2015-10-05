@@ -583,6 +583,7 @@ class Test:
         @return: none
         """
         global g_on_jenk_hadoop
+        global g_hdfs_name_node
         if (self.cancelled or self.terminated):
             return
 
@@ -595,7 +596,7 @@ class Test:
                    self.test_name,
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
         elif (is_ipython_notebook(self.test_name)):
             cmd = ["python",
                    self.notebook_runner,
@@ -603,7 +604,7 @@ class Test:
                    self.ip + ":" + str(self.port),
                    "--ipynb",
                    self.test_name]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
         elif (is_runit_test_file(self.test_name)):
             cmd = ["R",
                    "-f",
@@ -611,7 +612,7 @@ class Test:
                    "--args",
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
@@ -1635,6 +1636,7 @@ g_phantomjs_to = 3600
 g_phantomjs_packs = "examples"
 g_r_pkg_ver_chk = False
 g_on_jenk_hadoop = False
+g_hdfs_name_node = None
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1731,7 +1733,8 @@ def usage():
     print("    --rPkgVerChk     Check that Jenkins-approved R packages/versions are present")
     print("")
     print("    --onJenkHadoop   Signify to runit/pyunit test that they are being run on jenkins h2o-hadoop clusters.")
-    print("                     The tests need this signal for the `locate` functions to behave properly")
+    print("                     The tests need this signal for the `locate` and `sandbox` functions to behave properly.")
+    print("                     Supply hdfs name node to use.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
@@ -1820,6 +1823,7 @@ def parse_args(argv):
     global g_phantomjs_packs
     global g_r_pkg_ver_chk
     global g_on_jenk_hadoop
+    global g_hdfs_name_node
 
     i = 1
     while (i < len(argv)):
@@ -1935,6 +1939,10 @@ def parse_args(argv):
             g_r_pkg_ver_chk = True
         elif (s == "--onJenkHadoop"):
             g_on_jenk_hadoop = True
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_hdfs_name_node = argv[i]
         else:
             unknown_arg(s)
 

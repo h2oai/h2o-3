@@ -18,9 +18,9 @@ options(echo=FALSE)
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
 ON.JENKINS.HADOOP           <<- FALSE
+H2O.INTERNAL.HDFS.NAME.NODE <<- NULL
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
-H2O.INTERNAL.HDFS.NAME.NODE <<- "172.16.2.176"
 
 #'
 #'

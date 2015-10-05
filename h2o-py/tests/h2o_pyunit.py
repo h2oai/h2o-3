@@ -4,10 +4,11 @@ sys.path.insert(1, "..")
 import h2o
 from tests import utils
 
-_H2O_IP_            = "127.0.0.1"
-_H2O_PORT_          = 54321
-_ON_JENKINS_HADOOP_ = False
-_IPYNB_             = None
+_H2O_IP_                      = "127.0.0.1"
+_H2O_PORT_                    = 54321
+_ON_JENKINS_HADOOP_           = False
+_H2O_INTERNAL_HDFS_NAME_NODE_ = None
+_IPYNB_                       = None
 
 """
 Here is some testing infrastructure for running the pyunit tests in conjunction with run.py.
@@ -21,7 +22,7 @@ import sys
 sys.path.insert(1, "..")  # may vary depending on this test's position relative to h2o-py
 import h2o, tests
 
-def my_test(ip=None, port=None):
+def my_test():
   ...test filling...
 
 if __name__ == "__main__":
@@ -49,7 +50,8 @@ def run_test(sys_args, test_to_run):
 
 # HDFS helpers
 def get_h2o_internal_hdfs_name_node():
-    return "172.16.2.176"
+    global _H2O_INTERNAL_HDFS_NAME_NODE_
+    return _H2O_INTERNAL_HDFS_NAME_NODE_
 
 def is_running_internal_to_h2o():
     url = "http://{0}:50070".format(get_h2o_internal_hdfs_name_node())
@@ -98,23 +100,25 @@ def parse_args(args):
     global _H2O_IP_
     global _H2O_PORT_
     global _ON_JENKINS_HADOOP_
+    global _H2O_INTERNAL_HDFS_NAME_NODE_
     global _IPYNB_
     i = 1
     while (i < len(args)):
         s = args[i]
         if ( s == "--usecloud" or s == "--uc" ):
             i = i + 1
-            if (i > len(args)):
-                usage()
+            if (i > len(args)): usage()
             argsplit   = args[i].split(":")
             _H2O_IP_   = argsplit[0]
             _H2O_PORT_ = int(argsplit[1])
         elif (s == "--onJenkHadoop"):
             _ON_JENKINS_HADOOP_ = True
+            i = i + 1
+            if (i > len(args)): usage()
+            _H2O_INTERNAL_HDFS_NAME_NODE_ = args[i]
         elif (s == "--ipynb"):
             i = i + 1
-            if (i > len(args)):
-                usage()
+            if (i > len(args)): usage()
             _IPYNB_ = args[i]
         else:
             unknownArg(s)
@@ -127,7 +131,8 @@ def usage():
     print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
     print("                     IP:PORT")
     print("")
-    print("    --onJenkHadoop   signal to runt that it will be run on h2o-hadoop cluster.")
+    print("    --onJenkHadoop   signal to pyunit that it will be run on h2o-hadoop cluster with the specified hdfs name")
+    print("                     node.")
     print("")
     print("    --ipynb          name of the ipython notebook.")
     print("")
