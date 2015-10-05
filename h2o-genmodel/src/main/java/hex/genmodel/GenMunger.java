@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 
 public class GenMunger implements Serializable {
   protected Step[] _steps;
-  String[] inTypes() { return _steps[0].types(); }
-  String[] inNames() { return _steps[0].names(); }
+  public String[] inTypes() { return _steps[0].types(); }
+  public String[] inNames() { return _steps[0].names(); }
   public abstract class Step<T> {
     private final String[] _names;
     private final String[] _types;
@@ -27,7 +27,7 @@ public class GenMunger implements Serializable {
     return row;
   }
 
-  public RowData fill(String[] vals) {
+  public RowData fillDefault(String[] vals) {
     RowData row = new RowData();
     String[] types = inTypes();
     String[] names = inNames();
