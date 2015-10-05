@@ -1,12 +1,24 @@
-\input{common/conf_top.tex}
-%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+
+
+
+%\input{common/conf_top.tex}
+\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
 
-\begin{document}
+
 
 %\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
 \input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
+
+\usepackage{syntonly}
+
+%\syntaxonly
+
+\usepackage{jurabib}
+
+\begin{document}
+
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
@@ -27,7 +39,7 @@
 
 \bigskip
 \monthname \hspace{1pt}  \the\year: Third Edition 
-\\
+
 \bigskip
 \end{center}
 
@@ -720,7 +732,7 @@ To obtain the minimum values for the real-valued columns in a data set, use {\te
 \subsection{Getting Quantiles}
 
 To request quantiles for an H2O parsed data set, use {\texttt{quantile()}} with the name of the R reference object in the parentheses.
-To request a quantile for a single numerical column, use {\texttt{quantile(ReferenceObject\$ColumnName)}},  where {\texttt{ReferenceObject}} represents the R reference object name and {\texttt{ColumnName}} represents the name of the specified column. 
+To request a quantile for a single numerical column, use  {\texttt{quantile(ReferenceObject\$ColumnName)}},  where {\texttt{ReferenceObject}} represents the R reference object name and \\{\texttt{ColumnName}} represents the name of the specified column. 
 
 When you request for a full parsed data set consisting of a single column, {\texttt{quantile()}} displays a matrix with quantile information for the data set. 
 \smallskip
@@ -845,7 +857,7 @@ To append a column of random numbers to an H2O data frame for testing/training d
 
 \subsection{Splitting Frames}
 
-To generate two subsets (according to specified ratios) from an existing H2O data set for testing/training, use {\texttt{h2o.splitFrame()}}.  h2o.splitFrame() returns contiguous sections of the data without random sampling.
+To generate two subsets (according to specified ratios) from an existing H2O data set for testing/training, use {\texttt{h2o.splitFrame()}}, which returns contiguous sections of the data without random sampling.
 
 \begin{lstlisting}[style=R]
 # Splits data in prostate data frame with a ratio of 0.75
@@ -1269,7 +1281,7 @@ The following section lists some common R commands by function and a brief descr
 \emph{Math2 (H2O)}\par
 {\texttt{round}}: Round the values to the specified number of decimal places. The default is 0.  
 {\texttt{signif}}: Round the values to the specified number of significant digits. 
-\newpage
+
 \emph{Summary (H2O)}\par
 {\texttt{max}}: Display the maximum of all the input arguments.  
 {\texttt{min}}: Display the minimum of all the input arguments.  
@@ -1341,7 +1353,6 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.month}}: Convert the entries of a H2OParsedData object from milliseconds to months (on a 0 to 11 scale).  
 {\texttt{h2o.year}}: Convert the entries of a H2OParsedData object from milliseconds to years, indexed starting from 1900. 
 
-\newpage
 \emph{Matrix Operations}\par
 {\texttt{\%$*$\%}}}: Multiply two matrices, if they are conformable. 
 {\texttt{t}}: Given a matrix or data.frame x, t returns the transpose of x. 
@@ -1362,7 +1373,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.anomaly}}: Detect anomalies in a H2O dataset using a H2O deep learning model with auto-encoding. 
 {\texttt{h2o.deepfeatures}}: Extract the non-linear features from a H2O dataset using a H2O deep learning model. 
 {\texttt{h2o.kmeans}}: Perform k-means clustering on a data set.  
-%%\newpage
+
 \medskip
 \emph{Grid Search}\par
 {\texttt{h2o.grid}}: Efficient method to build multiple models with different hyperparameters.  
@@ -1403,7 +1414,6 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 {\texttt{h2o.loadModel}}: Load an H2OModel object from disk. 
 {\texttt{h2o.saveModel}}: Save an H2OModel object to disk to be loaded back into H2O using {\texttt{h2o.loadModel}}. 
 
-\newpage
 \emph{H2O Cluster Connection}\par 
 {\texttt{h2o.init (nthreads = -1)}}: Connect to a running H2O instance using all CPUs on the host and check the local H2O R package is the correct version. 
 {\texttt{h2o.shutdown}}: Shut down the specified H2O instance. All data on the server will be lost! 
@@ -1438,15 +1448,18 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 \egroup %needed for formatting
 
+
+
 \newpage
 
 \section{References}
-\bibliographystyle{plainnat}  
 
-%\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%TODO: Fix this doc so that everything in this section that is commented out works. It should be able to reference the bibliography the same way as GLM_Vignette.tex and GBM_Vignette.tex. Can't get it to work right, so hard-coding this section for now. 
+
+%\bibliographystyle{plain}  %alphadin}
+ %\nobibliography{bibliography.bib}
+ %hides entire bibliography so just \bibentry items are included
 %use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
-
-%\bibentry{h2osite}
 
 %\bibentry{h2odocs}
 
@@ -1458,7 +1471,7 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 %\bibentry{stream}
 
-\bibentry{rdocs}
+%\bibentry{rdocs}
 
 %\bibentry{rensemble}
 
@@ -1469,6 +1482,7 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 {\bfseries{R project website}}: \url{http://www.r-project.org} 
 
 {\bfseries{Slide deck}}: \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
+
 
 
 \newpage
@@ -1489,7 +1503,7 @@ Anqi is a data hacker at H2O.ai. After completing her undergraduate at Universit
 
 \textbf{Mark Landry}
 
-Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Most at home in SQL, he found H2O through hacking in R. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
+Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
 
 \textbf{Jessica Lanford}
 
