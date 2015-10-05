@@ -1,3 +1,12 @@
+"""
+*** Deprecated Model Builder functionality ***
+
+Supports functional algorithm calls found in the top-level h2o module.
+
+Current modeling is performed via estimator fitting (see estimators sub module for details)
+"""
+
+
 from connection import H2OConnection
 from frame      import H2OFrame
 from job        import H2OJob
