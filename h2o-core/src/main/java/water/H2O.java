@@ -1442,6 +1442,8 @@ final public class H2O {
     // Insert into the K/V store
     Value res = STORE.putIfMatchUnlocked(key,val,old);
     if( res != old ) return res; // Return the failure cause
+    if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
+      System.err.println(key + ", Update from #" + foo(old) + " to #" + foo(val));
     // Persistence-tickle.
     // If the K/V mapping is going away, remove the old guy.
     // If the K/V mapping is changing, let the store cleaner just overwrite.
@@ -1452,6 +1454,10 @@ final public class H2O {
       if( old==null ) Scope.track(key); // New Key - start tracking
     }
     return old; // Return success
+  }
+  public static String foo( Value v ) {
+    if( v==null ) return null;
+    return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
   }
 
   // Get the value from the store

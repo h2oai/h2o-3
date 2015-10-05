@@ -162,12 +162,12 @@ public class Vec extends Keyed<Vec> {
   /** Element-start per chunk, i.e. the row layout.  Defined in the
    *  VectorGroup.  This field is dead/ignored in subclasses that are
    *  guaranteed to have fixed-sized chunks such as file-backed Vecs. */
-  public final int _rowLayout;
+  public int _rowLayout;
   // Carefully set in the constructor and read_impl to be pointer-equals to a
   // common copy one-per-node.  These arrays can get both *very* common
   // (one-per-Vec at least, sometimes one-per-Chunk), and very large (one per
   // Chunk, could run into the millions).
-  public final transient long _espc[];
+  private transient long _espc[];
 
   // String domain, only for Categorical columns
   private String[] _domain;
@@ -254,32 +254,33 @@ public class Vec extends Keyed<Vec> {
     _espc = ESPC.espc(this);
   }
 
+  public long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
    *  an {@code int} because Vecs support more than 2^32 elements. Overridden
    *  by subclasses that compute length in an alternative way, such as
    *  file-backed Vecs.
    *  @return Number of elements in the vector */
-  public long length() { return _espc[_espc.length-1]; }
+  public long length() { espc(); return _espc[_espc.length-1]; }
 
   /** Number of chunks, returned as an {@code int} - Chunk count is limited by
    *  the max size of a Java {@code long[]}.  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs.
    *  @return Number of chunks */
-  public int nChunks() { return _espc.length-1; }
+  public int nChunks() { return espc().length-1; }
 
   /** Convert a chunk-index into a starting row #.  For constant-sized chunks
    *  this is a little shift-and-add math.  For variable-sized chunks this is a
    *  table lookup. */
-  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
+  long chunk2StartElem( int cidx ) { return espc()[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
-  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
+  private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
-    return (_espc == v._espc || Arrays.equals(_espc, v._espc)) &&
+    return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e5);
   }
 
@@ -719,13 +720,14 @@ public class Vec extends Keyed<Vec> {
    *  compute chunks in an alternative way, such as file-backed Vecs. */
    int elem2ChunkIdx( long i ) {
     if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
+    long[] espc = espc();       // Preload
     int lo=0, hi = nChunks();
     while( lo < hi-1 ) {
       int mid = (hi+lo)>>>1;
-      if( i < _espc[mid] ) hi = mid;
-      else                 lo = mid;
+      if( i < espc[mid] ) hi = mid;
+      else                lo = mid;
     }
-    while( _espc[lo+1] == i ) lo++;
+    while( espc[lo+1] == i ) lo++;
     return lo;
   }
 
@@ -1095,7 +1097,7 @@ public class Vec extends Keyed<Vec> {
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain==null?null:ArrayUtils.toString(domain);
-    return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
+    return new CPTask(domain).doAll(new byte[]{T_NUM},this).outputFrame(null,dom).anyVec();
   }
 
   private static class CPTask extends MRTask<CPTask> {
@@ -1163,7 +1165,7 @@ public class Vec extends Keyed<Vec> {
    *  @return A new String Vec  */
   public Vec toStringVec() {
     if( !isCategorical() ) throw new IllegalArgumentException("String conversion only works on categorical columns");
-    return new Categorical2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
+    return new Categorical2StrChkTask(_domain).doAll(new byte[]{T_STR},this).outputFrame().anyVec();
   }
 
   private class Categorical2StrChkTask extends MRTask<Categorical2StrChkTask> {
@@ -1396,6 +1398,10 @@ public class Vec extends Keyed<Vec> {
 
   public static class ESPC extends Keyed<ESPC> {
     static private NonBlockingHashMap<Key,ESPC> ESPCS = new NonBlockingHashMap<>();
+    public static Key DEBUG = Key.make("$06fffffffffffeffffff$nfs:\\smalldata\\iris\\iris_wheader.csv");
+    static {
+      System.err.println("DEBUG KEY HOME IS "+DEBUG.home_node());
+    }
 
     // Array of Row Layouts (Element Start Per Chunk) ever seen by this
     // VectorGroup.  Shared here, amongst all Vecs using the same row layout
@@ -1404,7 +1410,7 @@ public class Vec extends Keyed<Vec> {
     //
     // Element-start per chunk.  Always zero for chunk 0.  One more entry than
     // chunks, so the last entry is the total number of rows.
-    long[][] _espcs;
+    public long[][] _espcs;
 
     private ESPC(Key key) { this(key,new long[0][]); }
     private ESPC(Key key, long[][] espcs) { super(key); _espcs = espcs;}
@@ -1417,8 +1423,9 @@ public class Vec extends Keyed<Vec> {
     }
 
     // Fetch from remote, and unify as needed
-    private static ESPC getRemote( ESPC local, Key kespc ) {
+    private static ESPC getRemote( ESPC local, Key kespc, String msg ) {
       final ESPC remote = DKV.getGet(kespc);
+      System.err.println(kespc+", ESPC remote= #"+(remote==null?"null":remote._espcs.length)+", local= #"+local._espcs.length+", "+msg);
       if( remote == null || remote == local ) return local; // No change
 
       // Something New?  If so, we need to unify the sharable arrays with a
@@ -1430,11 +1437,32 @@ public class Vec extends Keyed<Vec> {
       // efficient!) to make the new copy use the old copies arrays where
       // possible.
       assert local._espcs.length <= remote._espcs.length; // Monotonically growing
-      // Use my (local, older, more heavily shared) ESPCS where possible
-      if( local._espcs != remote._espcs ) 
-        System.arraycopy(local._espcs,0,remote._espcs,0,local._espcs.length);
-      ESPCS.put(kespc,remote);  // Update local copy with larger
-      return remote;            // Return larger one
+      // Spin attempting to move the larger remote value into the local cache
+      while( true ) {
+        // Use my (local, older, more heavily shared) ESPCS where possible
+        if( local._espcs != remote._espcs ) {
+          try {
+            System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
+          } catch( ArrayIndexOutOfBoundsException iae ) {
+            try { iae.wait(); } catch( InterruptedException ie ) {}
+          }
+        }
+        ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
+        if( res==local ) {
+          System.err.println(kespc+", Updated ESPCS from #"+local._espcs.length+" to #"+remote._espcs.length);
+          return remote;
+        }
+        if( res==remote ) {
+          System.err.println(kespc+", ESPCS was already updated to #"+remote._espcs.length);
+          return remote;
+        }
+        if( local._espcs.length > remote._espcs.length ) {
+          System.err.println(kespc+", Stale remote, using local, ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
+          local = res;
+        }
+        System.err.println(kespc+", Failed, retrying ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
+        local = res;
+      }
     }
 
     /** Get the ESPC for a Vec.  Called once per new construction or read_impl.  */
@@ -1445,10 +1473,9 @@ public class Vec extends Keyed<Vec> {
       final int r = v._rowLayout;
       if( r < local._espcs.length ) return r==-1 ? null : local._espcs[r];
       // Now try to refresh the local cache from the remote cache
-      final ESPC remote = getRemote( local, kespc );
+      final ESPC remote = getRemote( local, kespc, ("find espc for layout #"+r) );
       if( r < remote._espcs.length ) return remote._espcs[r];
-      local = remote;
-      throw H2O.fail("Vec "+v._key+" asked for layout "+r+", but only "+local._espcs.length+" layouts defined");
+      throw H2O.fail("Vec "+v._key+" asked for layout "+r+", but only "+remote._espcs.length+" layouts defined");
     }
 
     // Check for a prior matching ESPC
@@ -1476,35 +1503,36 @@ public class Vec extends Keyed<Vec> {
       // invalidated, and a refetch might get a new larger ESPC with the
       // desired layout.
       if( !H2O.containsKey(kespc) ) {
-        local = getRemote(local,kespc); // Fetch remote, merge as needed
-        idx = find_espc(espc,local._espcs); // Retry
+        local = getRemote(local,kespc, ("get rowLayout for R"+espc[1]+", and kespc not in local STORE")); // Fetch remote, merge as needed
+        idx = find_espc(espc, local._espcs); // Retry
         if( idx != -1 ) return idx;
       }
       
       // Send the ESPC over to the ESPC master, and request it get
       // inserted.
+      System.err.println(kespc+", Calling TAtomic for R"+espc[1]);
       new TAtomic<ESPC>() {
         @Override public ESPC atomic( ESPC old ) {
-          long[][] espcs;
-          if( old != null ) {
-            espcs = old._espcs;
-            int idx = find_espc(espc,espcs);
-            if( idx != -1 ) return null; // Abort transaction, idx exists; client needs to refresh
-            int len = espcs.length;
-            espcs = Arrays.copyOf(espcs,len+1);
-            espcs[len] = espc;    // Insert into array
-          } else {
-            espcs = new long[][]{espc}; // Initial 1-element array
-          }
+          if( old == null ) return new ESPC(_key,new long[][]{espc});
+          long[][] espcs = old._espcs;
+          int idx = find_espc(espc,espcs);
+          if( idx != -1 ) { System.err.println(_key+", TAtomic finds at #"+idx+" for R"+espc[1]); return null;} // Abort transaction, idx exists; client needs to refresh
+          int len = espcs.length;
+          espcs = Arrays.copyOf(espcs,len+1);
+          espcs[len] = espc;    // Insert into array
           return new ESPC(_key,espcs);
+        }
+        @Override public void onSuccess( ESPC old ) { 
+          System.err.println(_key+",TAtomic installs at #"+(old==null?0:old._espcs.length)+" for R"+espc[1]+", invalidates are done!");
         }
       }.invoke(kespc);
       // Refetch from master, try again
-      local = getRemote(local,kespc); // Fetch remote, merge as needed
-      idx = find_espc(espc,local._espcs); // Retry
+      ESPC reloaded = getRemote(local,kespc, ("get rowLayout after TAtomic install for R"+espc[1])); // Fetch remote, merge as needed
+      idx = find_espc(espc,reloaded._espcs); // Retry
       assert idx != -1;                   // Must work now (or else the install failed!)
       return idx;
     }
+    public static void clear() { ESPCS.clear(); }
     @Override protected long checksum_impl() { throw H2O.fail(); }
   }
 }
