@@ -31,16 +31,20 @@ library(h2o)
 
 ### Install H2O Ensemble
 The `h2oEnsemble` package can be installed using either of the following methods.
-- Clone the main h2o repository and install the package:
-```
-git clone https://github.com/h2oai/h2o-3.git
-R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
-```
+
+Recommended:
 - Install in R using `devtools::install_github`:
 ```
 library(devtools)
 install_github("h2oai/h2o-3/h2o-r/ensemble/h2oEnsemble-package")
 ```
+If you cloned the main h2o-3 repo:
+- Clone the main h2o repository and install the package:
+```
+git clone https://github.com/h2oai/h2o-3.git
+R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
+```
+
 
 ## Create Ensembles
 - An example of how to train and test an ensemble is in the `h2o.ensemble` function documentation in the `h2oEnsemble` package.
