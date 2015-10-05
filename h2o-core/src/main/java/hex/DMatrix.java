@@ -88,7 +88,7 @@ public class DMatrix  {
     public TransposeTsk(Frame tgt){ _tgt = tgt;}
     public void map(final Chunk[] chks) {
       final Frame tgt = _tgt;
-      final long [] espc = tgt.anyVec()._espc;
+      final long [] espc = tgt.anyVec().espc();
       final int colStart = (int)chks[0].start();
 //      addToPendingCount(espc.length - 2);
       for (int i = 0; i < espc.length - 1; ++i) {

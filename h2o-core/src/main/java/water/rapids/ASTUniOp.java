@@ -33,7 +33,7 @@ abstract class ASTUniOp extends ASTPrim {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
       case Val.ROW:
         ValRow v = (ValRow)val;
         double[] ds = new double[v._ds.length];
@@ -107,7 +107,7 @@ class ASTIsNA  extends ASTPrim {
                 nc.addNum(c.isNA(i) ? 1 : 0);
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
     default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
@@ -163,7 +163,7 @@ class ASTStratifiedSplit extends ASTPrim {
           }
         }
       }
-    }.doAll(1,y).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
+    }.doAll_numericResult(1,new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
   }
 }
 
@@ -270,7 +270,7 @@ class ASTSetLevel extends ASTPrim {
         for (int i=0;i<c._len;++i)
           nc.addNum(idx);
       }
-    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
     return new ValFrame(fr2);
   }
 }
@@ -368,7 +368,7 @@ class ASTMatch extends ASTPrim {
         else
           for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
-    }.doAll(1, fr.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
   private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
@@ -425,7 +425,7 @@ class ASTWhich extends ASTPrim {
         for(int i=0;i<c._len;++i)
           if( c.at8(i)==1 ) nc.addNum(start+i);
       }
-    }.doAll(1,f.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM},f.anyVec()).outputFrame();
     return new ValFrame(f2);
   }
 }

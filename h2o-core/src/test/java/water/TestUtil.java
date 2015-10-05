@@ -52,7 +52,7 @@ public class TestUtil extends Iced {
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value.isVecGroup() || k == Job.LIST ||
+        if( value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
             // Also leave around all attempted Jobs for the Jobs list
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
@@ -67,7 +67,7 @@ public class TestUtil extends Iced {
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
       @Override public byte priority() { return H2O.GUI_PRIORITY; }
-      @Override public void setupLocal() {  H2O.raw_clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }

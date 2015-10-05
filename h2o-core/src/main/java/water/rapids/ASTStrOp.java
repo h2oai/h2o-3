@@ -44,7 +44,7 @@ class ASTStrSplit extends ASTPrim {
             for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
         }
       }
-    }.doAll(new_domains.length, fr).outputFrame(null,null,new_domains);
+    }.doAll_numericResult(new_domains.length, fr).outputFrame(null,null,new_domains);
     return new ValFrame(fr2);
   }
 
@@ -126,7 +126,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
+    }.doAll_numericResult(1, new Frame(vec)).outputFrame();
     assert res != null;
     return new ValFrame(res);
   }
@@ -174,7 +174,7 @@ class ASTToLower extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame();
     return f;
   }
 }
@@ -221,7 +221,7 @@ class ASTToUpper extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame();
     return f;
   }
 }
@@ -276,7 +276,7 @@ class ASTReplaceFirst extends ASTPrim {
             }
           }
         }
-      }.doAll(1, vec).outputFrame();
+      }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame();
     }
     assert res != null;
     return new ValFrame(res);
@@ -333,7 +333,7 @@ class ASTReplaceAll extends ASTPrim {
             }
           }
         }
-      }.doAll(1, vec).outputFrame();
+      }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame();
     }
     assert res != null;
     return new ValFrame(res);
@@ -374,7 +374,7 @@ class ASTTrim extends ASTPrim {
         // so UTF-8 safe methods are not needed here.
         else ((CStrChunk)chk).asciiTrim(newChk);
       }
-    }.doAll(1, vec).outputFrame();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame();
     return f;
   }
 }
@@ -417,7 +417,7 @@ class ASTStrLength extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame();
     return f;
   }
 }

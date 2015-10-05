@@ -39,7 +39,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     _in = srcFrame;
     _jobKey = jobKey;
     _okey = dstKey;
-    _espc = modelFrame.anyVec()._espc; // Get prior layout
+    _espc = modelFrame.anyVec().espc(); // Get prior layout
     _vg = modelFrame.anyVec().group();
     _nchunks = modelFrame.anyVec().nChunks();
   }

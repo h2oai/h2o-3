@@ -210,7 +210,7 @@ public class WorkFlowTest extends TestUtil {
   // Split out Days, Month, DayOfWeek and HourOfDay from Unix Epoch msec
   class TimeSplit extends MRTask<TimeSplit> {
     public Frame doIt(Vec time) {
-      return doAll(1, time).outputFrame(new String[]{"Days"}, null);
+      return doAll(new byte[]{Vec.T_NUM}, time).outputFrame(new String[]{"Days"}, null);
     }
 
     @Override public void map(Chunk msec, NewChunk day) {

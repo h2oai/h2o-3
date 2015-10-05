@@ -64,7 +64,7 @@ class ASTTable extends ASTPrim {
             }
           }
         }
-      }.doAll(2, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
+      }.doAll(new byte[]{Vec.T_NUM,Vec.T_NUM}, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
                                             new String[][]{v1.domain(),null});
     dataLayoutVec.remove();
     return new ValFrame(fr);

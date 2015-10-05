@@ -73,7 +73,7 @@ public class ASTCut extends ASTPrim {
           }
         }
       }
-    }.doAll(1, fr).outputFrame(fr.names(), domains);
+    }.doAll_numericResult(1, fr).outputFrame(fr.names(), domains);
     return new ValFrame(fr2);
   }
 

@@ -279,7 +279,7 @@ public class MathUtils {
               ncs[i].addNum(a[i]);
           }
         }
-      }.doAll(input.numCols(), input).outputFrame();
+      }.doAll_numericResult(input.numCols(), input).outputFrame();
     }
 
     /**
@@ -316,7 +316,7 @@ public class MathUtils {
 
           }
         }
-      }.doAll(height * width, input).outputFrame();
+      }.doAll_numericResult(height * width, input).outputFrame();
     }
 
     /**
@@ -356,7 +356,7 @@ public class MathUtils {
                   ncs[i*(width*depth) + j*depth + k].addNum(a[i][j][k]);
           }
         }
-      }.doAll(height*width*depth, input).outputFrame();
+      }.doAll_numericResult(height*width*depth, input).outputFrame();
     }
   }
 

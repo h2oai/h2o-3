@@ -42,7 +42,7 @@ public class H2OScaler extends Transform<H2OScaler> {
             ncs[col].addNum(in[col]);
         }
       }
-    }.doAll(f.numCols(),f).outputFrame(f.names(),f.domains());
+    }.doAll_numericResult(f.numCols(),f).outputFrame(f.names(),f.domains());
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }

@@ -103,7 +103,7 @@ class ASTRowSlice extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), fr).outputFrame(fr.names(),fr.domains());
+      }.doAll(fr.types(), fr).outputFrame(fr.names(),fr.domains());
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
@@ -257,7 +257,7 @@ class ASTRBind extends ASTPrim {
 
       // Roll up the ESPC row counts
       long roffset = espc[coffset];
-      long[] espc2 = fr0.anyVec()._espc;
+      long[] espc2 = fr0.anyVec().espc();
       for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
         espc[coffset + j] = (roffset+espc2[j]);
       coffset += espc2.length-1; // Chunk offset

@@ -183,7 +183,11 @@ public abstract class DKV {
     Value val = H2O.get(key);
     // Hit in local cache?
     if( val != null ) {
-      if( val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) return val;
+      if( val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) {
+        if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
+          System.err.println(key + ", GET STORE hit len= #" + water.H2O.foo(val));
+        return val;
+      }
       assert !key.home(); // Master must have *something*; we got nothing & need to fetch
     }
 
@@ -203,10 +207,19 @@ public abstract class DKV {
     // send to the remote, so the local get has missed above, but a remote
     // get still might 'win' because the remote 'remove' is still in-progress.
     TaskPutKey tpk = home.pendingPutKey(key);
-    if( tpk != null ) return tpk._xval;
+    if( tpk != null ) {
+      if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
+        System.err.println(key + ", GET PENDING putKey hit len= #" + water.H2O.foo(tpk._xval));
+      return tpk._xval;
+    }
 
     // Get data "the hard way"
     RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
-    return blocking ? TaskGetKey.get(tgk) : null;
+    if( !blocking ) return null;
+    val = TaskGetKey.get(tgk);
+    if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
+      System.err.println(key + ", GET TaskGetKey (blocking) got len= #" + water.H2O.foo(val));
+    return val;
+    //return blocking ? TaskGetKey.get(tgk) : null;
   }
 }

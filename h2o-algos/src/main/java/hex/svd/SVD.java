@@ -159,7 +159,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     private double computeSigmaU(DataInfo dinfo, SVDModel model, int k, double[][] ivv_sum, Vec[] uvecs) {
       double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
-      CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(1, dinfo._adaptedFrame);
+      CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll_numericResult(1, dinfo._adaptedFrame);
       model._output._d[k] = ctsk._sval;
       assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
       Frame tmp = ctsk.outputFrame();
@@ -178,7 +178,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
+        rtsk.doAll_numericResult(_parms._nv, dinfo._adaptedFrame);
         yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
 
         // Make input frame [A,Q] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
@@ -240,7 +240,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
+        rtsk.doAll_numericResult(_parms._nv, dinfo._adaptedFrame);
         ybig = rtsk.outputFrame(Key.make(), null, null);
 
         // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
@@ -335,7 +335,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
           DKV.put(qinfo._key, qinfo);
           BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(svdJ_u));
-          btsk.doAll(_parms._nv, qinfo._adaptedFrame);
+          btsk.doAll_numericResult(_parms._nv, qinfo._adaptedFrame);
           u = btsk.outputFrame(model._output._u_key, null, null);
         }
 
@@ -424,7 +424,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             double[][] vt = ArrayUtils.transpose(model._output._v);
             for (int k = 0; k < _parms._nv; k++)
               ArrayUtils.div(vt[k], model._output._d[k]);
-            BMulTask tsk = new BMulTask(self(), dinfo, vt).doAll(_parms._nv, dinfo._adaptedFrame);
+            BMulTask tsk = new BMulTask(self(), dinfo, vt).doAll_numericResult(_parms._nv, dinfo._adaptedFrame);
             u = tsk.outputFrame(model._output._u_key, null, null);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Power) {

@@ -224,7 +224,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   // the work-horse for the outputFrame calls
   private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
-    if( _output_types == null) return null;
+    if( _output_types == null ) return null;
     final int noutputs = _output_types.length;
     Vec[] vecs = new Vec[noutputs];
     if( _appendables==null )  // Zero rows?
@@ -360,19 +360,25 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** Invokes the map/reduce computation over the given Vecs.  This call is
    *  blocking. */
-  public final T doAll( Vec... vecs ) { return doAll(0,vecs); }
-  public final T doAll(int outputs, Vec... vecs ) { return doAll(outputs,new Frame(vecs), false); }
-  public final T doAll( Vec vec, boolean run_local ) { return doAll(0,vec, run_local); }
-  public final T doAll(int outputs, Vec vec, boolean run_local ) { return doAll(outputs,new Frame(vec), run_local); }
+  public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
+  public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
+  public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
+  public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
 
   /** Invokes the map/reduce computation over the given Frame.  This call is
    *  blocking.  */
-  public final T doAll( Frame fr, boolean run_local) { return doAll(0,fr, run_local); }
-  public final T doAll( Frame fr ) { return doAll(0,fr, false); }
-  public final T doAll( int outputs, Frame fr) {return doAll(outputs,fr,false);}
-  public final T doAll( int outputs, Frame fr, boolean run_local) {
-    dfork(outputs,fr, run_local);
+  public final T doAll( Frame fr, boolean run_local) { return doAll(null,fr, run_local); }
+  public final T doAll( Frame fr ) { return doAll(null,fr, false); }
+  public final T doAll( byte[] types, Frame fr) {return doAll(types,fr,false);}
+  public final T doAll( byte[] types, Frame fr, boolean run_local) {
+    dfork(types,fr, run_local);
     return getResult();
+  }
+  // Default output type is all numbers
+  public final T doAll_numericResult( int nouts, Frame fr) {
+    byte[] types = new byte[nouts];
+    Arrays.fill(types , Vec.T_NUM);
+    return doAll(types,fr,false);
   }
 
   // Special mode doing 1 map per key.  No frame
@@ -416,7 +422,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param fr Perform the computation on this Frame instance.
    * @return this
    */
-   public T dfork( Frame fr ){ return dfork(0,fr,false); }
+   public T dfork( Frame fr ){ return dfork(null,fr,false); }
 
   /**
    * Invokes the map/reduce computation over the given array of Vec instances. This call
@@ -427,7 +433,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param vecs Perform the computation on this array of Vec instances.
    * @return this
    */
-  public final T dfork( Vec... vecs ) { return dfork(0,vecs); }
+  public final T dfork( Vec... vecs ) { return dfork(null,vecs); }
 
   /**
    * Invokes the map/reduce computation over the given Vec instances and produces
@@ -435,11 +441,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * which <code>getResult</code> may be invoked by the caller to block for pending
    * computation to complete.
    *
-   * @param outputs The number of output Vec instances to create.
+   * @param types The type of output Vec instances to create.
    * @param vecs The input set of Vec instances upon which computation is performed.
    * @return this
    */
-  public final T dfork( int outputs, Vec... vecs) { return dfork(outputs,new Frame(vecs),false); }
+  public final T dfork( byte[] types, Vec... vecs) { return dfork(types,new Frame(vecs),false); }
 
   /**
    * Invokes the map/reduce computation over the given Vec instances and produces
@@ -447,7 +453,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * which <code>getResult</code> may be invoked by the caller to block for pending
    * computation to complete.
    *
-   * @param outputs The number of output Vec instances to create.
+   * @param types The type of output Vec instances to create.
    * @param fr The input Frame instances upon which computation is performed.
    * @param run_local If <code>true</code>, then all data is pulled to the calling
    *                  <code>H2ONode</code> and all computation is performed locally. If
@@ -455,17 +461,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *                  computation over its own node-local data.
    * @return this
    */
-  public final T dfork( int outputs, Frame fr, boolean run_local) {
+  public final T dfork( byte[] types, Frame fr, boolean run_local) {
     // Raise the priority, so that if a thread blocks here, we are guaranteed
     // the task completes (perhaps using a higher-priority thread from the
     // upper thread pools).  This prevents thread deadlock.
     _priority = nextThrPriority();
-    asyncExec(outputs,fr,run_local);
+    asyncExec(types,fr,run_local);
     return self();
   }
 
-  public final T asyncExec(Vec... vecs){asyncExec(0,new Frame(vecs),false); return self();}
-  public final T asyncExec(Frame fr){asyncExec(0,fr,false); return self();}
+  public final T asyncExec(Vec... vecs){asyncExec(null,new Frame(vecs),false); return self();}
+  public final T asyncExec(Frame fr){asyncExec(null,fr,false); return self();}
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should
@@ -473,13 +479,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
    */
-  public final void asyncExec( int outputs, Frame fr, boolean run_local){
+  public final void asyncExec( byte[] types, Frame fr, boolean run_local){
     _topGlobal = true;
-    // Default output type is all numbers
-    if( outputs > 0 ) {
-      Arrays.fill(_output_types = new byte[outputs], Vec.T_NUM);
-      _vid = fr.anyVec().group().reserveKeys(outputs);
-    }
+    _output_types = types;
+    if( types != null && types.length > 0 )
+      _vid = fr.anyVec().group().reserveKeys(types.length);
     _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?

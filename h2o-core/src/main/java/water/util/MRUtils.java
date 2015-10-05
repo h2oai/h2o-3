@@ -45,7 +45,7 @@ public class MRUtils {
             }
           }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(newKey, fr.names(), fr.domains());
+    }.doAll(fr.types(), fr).outputFrame(newKey, fr.names(), fr.domains());
     if (r.numRows() == 0) {
       Log.warn("You asked for " + rows + " rows (out of " + fr.numRows() + "), but you got none (seed=" + seed + ").");
       Log.warn("Let's try again. You've gotta ask yourself a question: \"Do I feel lucky?\"");
@@ -72,7 +72,7 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll_numericResult(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
   }
 
   /**
@@ -280,7 +280,7 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
 
     // Confirm the validity of the distribution
     Vec lab = r.vecs()[labelidx];

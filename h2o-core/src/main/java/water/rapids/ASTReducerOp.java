@@ -158,7 +158,7 @@ class ASTMad extends ASTPrim {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll(1, f).outputFrame();
+    }.doAll_numericResult(1, f).outputFrame();
     if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
     DKV.remove(f._key); // drp mapping, keep vec
@@ -404,7 +404,7 @@ abstract class ASTCumu extends ASTPrim {
     if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
 
     CumuTask t = new CumuTask(f.anyVec().nChunks(),init());
-    t.doAll(1,f.anyVec());
+    t.doAll(new byte[]{Vec.T_NUM},f.anyVec());
     final double[] chkCumu = t._chkCumu;
     Vec cumuVec = t.outputFrame().anyVec();
     new MRTask() {

@@ -53,7 +53,7 @@ public class ShuffleSplitFrame {
           }
         }
       }
-    }.doAll(ncols*ratios.length,fr);
+    }.doAll_numericResult(ncols*ratios.length,fr);
 
     // Build output frames
     Frame frames[] = new Frame[ratios.length];

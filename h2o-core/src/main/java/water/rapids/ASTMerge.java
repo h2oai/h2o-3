@@ -88,11 +88,8 @@ public class ASTMerge extends ASTPrim {
     int[][] id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
-      if( lv.isCategorical() ) {
-        CategoricalWrappedVec ewv = new CategoricalWrappedVec(hashed.vecs()[i].domain(),lv.domain());
-        id_maps[i] = ewv.getDomainMap();
-        ewv.remove();
-      }
+      if( lv.isCategorical() )
+        id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
     }
 
     // Build the hashed version of the hashed frame.  Hash and equality are
@@ -121,7 +118,8 @@ public class ASTMerge extends ASTPrim {
       // matching row; append matching column data
       String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
       String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(hashed.numCols()-ncols,walked).outputFrame(names,domains);
+      byte[] types = Arrays.copyOfRange(hashed.types(),ncols,hashed.numCols());
+      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walked).outputFrame(names,domains);
       return new ValFrame(walked.add(res));
     }
 
@@ -132,7 +130,10 @@ public class ASTMerge extends ASTPrim {
       System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
       String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
       System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
-      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(walked.numCols()+hashed.numCols()-ncols,walked).outputFrame(names,domains));
+      byte[] types = walked.types();
+      types = Arrays.copyOf(types,types.length+hashed.numCols()-ncols);
+      System.arraycopy(hashed.types(),ncols,types,walked.numCols(),hashed.numCols()-ncols);
+      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(types,walked).outputFrame(names,domains));
     } 
 
     throw H2O.unimpl();

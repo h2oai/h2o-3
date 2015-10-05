@@ -37,13 +37,13 @@ public class CategoricalWrappedVec extends WrappedVec {
 
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
-  public CategoricalWrappedVec(String[] from, String[] to) {
-    super(Vec.VectorGroup.VG_LEN1.addVec(),-1/*no row layout*/,null,null);
-    computeMap(from,to,false);
-    DKV.put(this);
+  private CategoricalWrappedVec(Key key) { super(key,ESPC.rowLayout(key,new long[]{0}),null,null); }
+  public static int[] computeMap(String[] from, String[] to) {
+    Key key = Vec.newKey();
+    CategoricalWrappedVec tmp = new CategoricalWrappedVec(key);
+    tmp.computeMap(from,to,false);
+    return tmp._map;
   }
-
-  public int[] getDomainMap() { return _map; }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);

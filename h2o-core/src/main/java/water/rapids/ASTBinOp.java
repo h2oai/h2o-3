@@ -83,7 +83,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(d,chk.atd(i)));
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+      }.doAll(fr.types(),fr).outputFrame(fr._names,null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
@@ -98,7 +98,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+      }.doAll(fr.types(),fr).outputFrame(fr._names,null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
@@ -148,7 +148,7 @@ abstract class ASTBinOp extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+      }.doAll_numericResult(fr.numCols(),fr).outputFrame(fr._names,null);
     return new ValFrame(res);
   }
 
@@ -183,7 +183,7 @@ abstract class ASTBinOp extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
+      }.doAll(fr.types(),fr).outputFrame(fr._names,null);
     return new ValFrame(res);
   }
 
@@ -212,7 +212,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame(lf._names,null));
+      }.doAll(lf.types(),new Frame(lf).add(rt)).outputFrame(lf._names,null));
   }
 
   private ValRow row_op_row( double[] lf, double[] rt, String[] names ) {
@@ -294,7 +294,7 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
                 cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(fr.numCols(),fr).outputFrame());
+      }.doAll_numericResult(fr.numCols(),fr).outputFrame());
   }
   @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
@@ -465,7 +465,7 @@ class ASTIfElse extends ASTPrim {
             }
           }
         }
-      }.doAll(tst.numCols(),fr).outputFrame(null,domains);
+      }.doAll_numericResult(tst.numCols(),fr).outputFrame(null,domains);
 
     // flatten domains since they may be larger than needed
     if( domains!=null ) {

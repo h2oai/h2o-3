@@ -267,6 +267,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Check if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype. */
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
+  /** Check if the Value's POJO is a {@link water.fvec.Vec.ESPC} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link water.fvec.Vec.ESPC} subtype. */
+  public boolean isESPCGroup() { return _type == TypeMap.ESPCGROUP; }
   /** Check if the Value's POJO is a {@link Lockable} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Lockable} subtype. */
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
