@@ -84,13 +84,14 @@ def is_runit_test_file(file_name):
 
     return False
 
-def is_rscript(file_name):
+def is_rdemo(file_name):
     """
     Return True if file_name matches a regexp for a R demo.  False otherwise.
     """
-
-    if not is_runit_test_file(file_name) and (re.match(".*\.[rR]$", file_name)):
-        return True
+    demos = ["h2o.anomaly.R", "h2o.deeplearning.R", "h2o.gbm.R", "h2o.glm.R", "h2o.glrm.R", "h2o.kmeans.R",
+             "h2o.naiveBayes.R", "h2o.prcomp.R", "h2o.randomForest.R"]
+    for demo in demos:
+        if file_name == demo: return True
 
     return False
 
@@ -625,7 +626,7 @@ class Test:
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
             if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
-        elif (is_rscript(self.test_name) and g_r_demo):
+        elif (is_rdemo(self.test_name) and g_r_demo):
             cmd = ["R",
                    "-f",
                    self.test_name]
@@ -1022,7 +1023,7 @@ class TestRunner:
                     is_test = True
                 if (is_runit_test_file(f)):
                     is_test = True
-                if (is_rscript(f)):
+                if (is_rdemo(f)):
                     is_test = True
                 if (not is_test):
                     continue
@@ -1457,7 +1458,7 @@ class TestRunner:
         """
         for test in self.tests:
             test_name = test.get_test_name()
-            if (is_rscript(test_name)):
+            if (is_rdemo(test_name)):
                 return True
 
         return False
