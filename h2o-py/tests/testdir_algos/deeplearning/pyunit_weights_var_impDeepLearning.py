@@ -108,8 +108,8 @@ def weights_vi():
                                               activation="Tanh")
 
     varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
-    assert varimp_combined == ('p3', 'p1', 'p2'), "Expected the following relative variable importance on the combined " \
-                                                  "dataset: ('p3', 'p1', 'p2'), but got: {0}".format(varimp_combined)
+    assert varimp_combined == ('p1', 'p3', 'p2'), "Expected the following relative variable importance on the combined " \
+                                                  "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, weights_vi)

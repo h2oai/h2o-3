@@ -17,6 +17,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.MathUtils;
 
 import java.util.Arrays;
 
@@ -505,7 +506,7 @@ public class DeepLearningTest extends TestUtil {
         Log.info("\nTraining CM:\n" + mm.cm().toASCII());
         Log.info("\nTraining CM:\n" + hex.ModelMetrics.getFromDKV(model, test).cm().toASCII());
       } else {
-        assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
+        assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), MathUtils.compare(expMSE, mm.mse(), 1e-8, 1e-8));
         Log.info("\nOOB Training MSE: " + mm.mse());
         Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());
       }

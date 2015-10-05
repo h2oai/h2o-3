@@ -8,6 +8,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.save.all.algos <- function() {
+
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
@@ -28,7 +29,7 @@ test.save.all.algos <- function() {
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
-  tmp_dir <- tempdir()
+  tmp_dir <- sandbox()
 
   Log.info("Order is Multinmoal (w val, w/o val) Regression (w val, w/o val) Bin (w val, w/o val)")
 
@@ -148,7 +149,6 @@ test.save.all.algos <- function() {
   expect_equal(pros.nv.drf, pros.no_val.drf)
   expect_equal(pros.v.drf, pros.val.drf)
 
-  
 }
 
 doTest("Saving Models of All Algos with/without Validation", test.save.all.algos)

@@ -31,7 +31,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("gbm",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+    doJavapredictTest("gbm",test_file,test_frame,params)
 }
 
 doTest("GBM test", test.gbm.javapredict.iris.rand)

@@ -439,7 +439,7 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
 
-- **nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
+- **nbins_cats**: (Categorical/enums only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  The levels are ordered alphabetically; if there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.
 
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
@@ -956,7 +956,7 @@ There was some code cleanup and refactoring to support the following features:
 
 - **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
 
-- **nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.   
+- **nbins_cats**: (Categorical/enums only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  The levels are ordered alphabetically; if there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.  
 
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
