@@ -911,6 +911,9 @@ class TestRunner:
                 cloud = H2OUseCloud(node_num, c[0], c[1])
                 self.clouds.append(cloud)
                 node_num += 1
+        elif (r_demo):
+            cloud = H2OCloud(0, False, 1, h2o_jar, self.base_port, xmx, self.output_dir)
+            self.clouds.append(cloud)
         else:
             for i in range(self.num_clouds):
                 cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
@@ -1018,6 +1021,8 @@ class TestRunner:
                 if (is_ipython_notebook(f)):
                     is_test = True
                 if (is_runit_test_file(f)):
+                    is_test = True
+                if (is_rscript(f)):
                     is_test = True
                 if (not is_test):
                     continue
@@ -1142,9 +1147,9 @@ class TestRunner:
 
         if self._have_some_r_tests() and self.r_pkg_ver_chk == True: self._r_pkg_ver_chk()
 
-        if self._have_some_r_demos() and self.r_demo: self._install_h2o_r_pkg(self.path_to_tar)
+        elif self._have_some_r_demos() and self.r_demo: self._install_h2o_r_pkg(self.path_to_tar)
 
-        if self._have_some_py_tests() and self.path_to_whl is not None:
+        elif self._have_some_py_tests() and self.path_to_whl is not None:
             # basically only do this if we have a whl to install
             self._log("")
             self._log("Setting up Python H2O package...")
@@ -2114,7 +2119,7 @@ def main(argv):
 
     # Create runner object.
     # Just create one cloud if we're only running one test, even if the user specified more.
-    if (g_test_to_run is not None):
+    if ((g_test_to_run is not None) or g_r_demo):
         g_num_clouds = 1
 
     g_runner = TestRunner(test_root_dir,
