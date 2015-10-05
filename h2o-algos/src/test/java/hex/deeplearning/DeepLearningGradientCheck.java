@@ -32,7 +32,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       for (String s : new String[]{
               "Merit", "Class"
       }) {
-        Vec f = tfr.vec(s).toCategorical();
+        Vec f = tfr.vec(s).toCategoricalVec();
         tfr.remove(s).remove();
         tfr.add(s, f);
       }

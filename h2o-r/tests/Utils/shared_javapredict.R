@@ -1,4 +1,4 @@
-doJavapredictTest <- function(model,TEST_ROOT_DIR,test_file,test_frame,params) {
+doJavapredictTest <- function(model,test_file,test_frame,params) {
   conn <- h2o.getConnection()
   myIP <- conn@ip
   myPort <- conn@port
@@ -21,7 +21,7 @@ doJavapredictTest <- function(model,TEST_ROOT_DIR,test_file,test_frame,params) {
   
   print("Downloading Java prediction model code from H2O")
   model_key <- model@model_id
-  tmpdir_name <- sprintf("%s/results/tmp_model_%s", TEST_ROOT_DIR, as.character(Sys.getpid()))
+  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
   cmd <- sprintf("rm -fr %s", tmpdir_name)
   safeSystem(cmd)
   cmd <- sprintf("mkdir -p %s", tmpdir_name)

@@ -1,4 +1,5 @@
 from ..frame import H2OFrame
+import urllib
 
 class TransformAttributeError(AttributeError):
   def __init__(self,obj,method):
@@ -52,4 +53,4 @@ class H2OTransformer(object):
     return dummy
 
   def to_rest(self, args):
-    return "{}__{}__{}__{}".format(*args)
+    return urllib.quote("{}__{}__{}__{}".format(*args))

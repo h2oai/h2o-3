@@ -131,7 +131,7 @@ public class ModelSerializationTest extends TestUtil {
     Frame f = parse_test_file(dataset);
     try {
       if (classification && !f.vec(response).isCategorical()) {
-        f.replace(f.find(response), f.vec(response).toCategorical()).remove();
+        f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
         DKV.put(f._key, f);
       }
       GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
@@ -150,7 +150,7 @@ public class ModelSerializationTest extends TestUtil {
     Frame f = parse_test_file(dataset);
     try {
       if (classification && !f.vec(response).isCategorical()) {
-        f.replace(f.find(response), f.vec(response).toCategorical()).remove();
+        f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
         DKV.put(f._key, f);
       }
       DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();

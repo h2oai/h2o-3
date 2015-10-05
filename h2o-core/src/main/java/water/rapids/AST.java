@@ -273,7 +273,7 @@ class ASTRow extends AST {
 }
 
 /** An ID.  Execution does lookup in the current scope. */
-class ASTId extends AST {
+class ASTId extends ASTParameter {
   final String _id;
   ASTId(Exec e) { _id = e.token(); }
   ASTId(String id) { _id=id; }

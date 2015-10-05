@@ -72,7 +72,7 @@ public class DRFCheckpointTest extends TestUtil {
     // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
-      f.replace(responseIdx, respVec.toCategorical()).remove();
+      f.replace(responseIdx, respVec.toCategoricalVec()).remove();
       DKV.put(f._key, f);
     }
     DRFModel model = null;

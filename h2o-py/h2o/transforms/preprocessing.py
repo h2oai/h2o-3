@@ -1,5 +1,5 @@
 from .transform_base import H2OTransformer
-
+import warnings
 
 class H2OScaler(H2OTransformer):
   """
@@ -98,11 +98,14 @@ class H2OColOp(H2OTransformer):
   Perform a column operation. If inplace is True, then cbind the result onto original frame,
   otherwise, perform the operation in place.
   """
-  def __init__(self,fun,col=None,inplace=True, **params):
-    self.fun=fun
+  def __init__(self,op,col=None,inplace=True,new_col_name="",**params):
+    self.fun=op
     self.col=col
     self.inplace=inplace
     self.params=params
+    self.new_col_name=new_col_name
+    if inplace and new_col_name!="":
+      warnings.warn("inplace was False, but new_col_name was not empty. Ignoring new_col_name.")
     if isinstance(col, (list,tuple)): raise ValueError("col must be None or a single column.")
 
   def fit(self,X,y=None,**params):

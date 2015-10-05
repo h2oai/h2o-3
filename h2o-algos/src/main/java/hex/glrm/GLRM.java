@@ -269,7 +269,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
     private double[][] initialXY(DataInfo tinfo, Frame dfrm, GLRMModel model, long na_cnt) {
       double[][] centers, centers_exp = null;
-      Random rand = RandomUtils.getRNG(_parms._seed);
 
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
@@ -422,6 +421,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
 
       // Project rows of Y into appropriate subspace for regularizer
+      Random rand = RandomUtils.getRNG(_parms._seed);
       for(int i = 0; i < _parms._k; i++)
         centers_exp[i] = _parms.project_y(centers_exp[i], rand);
       return centers_exp;
@@ -957,10 +957,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     @Override public void map( Chunk chks[] ) {
-      Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+      Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
         double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
+        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
         xrow = _parms.project_x(xrow, rand);
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
@@ -1012,12 +1013,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override public void map( Chunk chks[] ) {
       double tmp [] = new double[_ncolA];
-      Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+      Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
         // double preds[] = new double[_ncolX];
         // double p[] = _model.score_indicator(chks, row, tmp, preds);
         double p[] = _model.score_ratio(chks, row, tmp);
+        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
         p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
         for(int c = 0; c < p.length; c++) {
           chks[_ncolA+c].set(row, p[c]);

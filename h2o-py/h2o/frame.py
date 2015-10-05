@@ -82,6 +82,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     fr._computed = True
     fr._keep = True
     fr._col_names = [c["label"] for c in res["columns"]]
+    types = [c["type"] for c in res["columns"]]
+    fr._types = dict(zip(fr._col_names,types))
     return fr
 
   def __str__(self): return self._id
@@ -358,38 +360,36 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return H2OFrame(expr=ExprNode("unique", self))._frame()
 
-  def show(self,as_pandas=True):
+  def show(self, use_pandas=True):
     """
     Used by the H2OFrame.__repr__ method to display a snippet of the data frame.
 
-    :param as_pandas: Display a pandas style data frame (better for pretty printing wide datasets)
+    :param use_pandas: Display a pandas style data frame (better for pretty printing wide datasets)
     :return: None
     """
-    self.head(rows=10,cols=sys.maxint,show=True,as_pandas=as_pandas)  # all columns
+    self.head(rows=10,cols=sys.maxint,show=True,use_pandas=use_pandas)  # all columns
 
-  def head(self, rows=10, cols=200, show=False, as_pandas=False):
+  def head(self,rows=10,cols=200,show=False,use_pandas=False):
     """
-    Analgous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
+    Analogous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
-    :param rows: Number of rows to display.
-    :param cols: Number of columns to display.
-    :param show: Display the output.
-    :param as_pandas: Display with pandas frame.
-    :return: None
+    :param rows: Number of rows starting from the topmost to display.
+    :param cols: Number of columns starting from the leftmost to display.
+    :param show: A flag specifying whether or not to display the output.
+    :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
+    :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
+    pandas DataFrame) containing this H2OFrame instance's data.
     """
     self._eager()
-    nrows = min(self.nrow,rows)
+    nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
-    colnames = self.names[:ncols]
-    if nrows == self.nrow and ncols == self.ncol: head = self
-    else:                                        head = self[0:nrows,0:ncols]
-    res = head.as_data_frame(as_pandas) if as_pandas else head.as_data_frame(as_pandas)[1:]
-    if show: self._do_show(as_pandas,res,colnames)
-    return res if as_pandas else head
+    res = self.as_data_frame(nrows=nrows,ncols=ncols,use_pandas=use_pandas)
+    if show: self._do_show(res,use_pandas)
+    return res
 
-  def _do_show(self,as_pandas,fr,names):
+  def _do_show(self,fr,use_pandas):
     print "H2OFrame with {} rows and {} columns: ".format(self.nrow, self.ncol)
-    if as_pandas:
+    if use_pandas:
       import pandas
       pandas.options.display.max_rows=20
       if h2o.H2ODisplay._in_ipy():
@@ -398,27 +398,26 @@ class H2OFrame(H2OFrameWeakRefMixin):
       else:
         print fr
     else:
-      h2o.H2ODisplay(fr,names)
+      h2o.H2ODisplay(fr[1:],fr[0])
 
-  def tail(self, rows=10, cols=200, show=False, as_pandas=False):
+  def tail(self, rows=10, cols=200, show=False, use_pandas=False):
     """
-    Analgous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
+    Analogous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
-    :param rows: Number of rows to display.
-    :param cols: Number of columns to display.
-    :param show:
-    :param as_pandas: 
-    :return: None
+    :param rows: Number of rows starting from the bottommost to display in their original order.
+    :param cols: Number of columns starting from the leftmost to display.
+    :param show: A flag specifying whether or not to display the output.
+    :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
+    :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a pandas
+     DataFrame) containing this H2OFrame instance's data.
     """
     self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
-    start_idx = max(self.nrow-nrows,0)
-    tail = self[start_idx:(start_idx+nrows),:ncols]
-    res = tail.as_data_frame(False)
-    colnames = res.pop(0)
-    if show: self._do_show(as_pandas,res,colnames)
-    return tail
+    start_idx = self.nrow - nrows if rows is not None else 0
+    res = self.as_data_frame(skiprows=range(1,start_idx+1),ncols=ncols,use_pandas=use_pandas)
+    if show: self._do_show(res,use_pandas)
+    return res
 
   def levels(self, col=None):
     """
@@ -460,7 +459,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     Works on a single categorical vector. New domains must be aligned with the old domains.
     This call has copy-on-write semantics.
 
-    
+
     :param levels: A list of strings specifying the new levels. The number of new levels must match the number of
     old levels.
     :return: A new column with the domains.
@@ -474,7 +473,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param names: A list of strings equal to the number of columns in the H2OFrame.
     :return: None. Rename the column names in this H2OFrame.
     """
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()),id=self._id)
+    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()), id=self._id)
     self._update()
     return self
 
@@ -482,10 +481,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     Set the name of the column at the specified index.
 
-    :param col: Index of the column whose name is to be set.
+    :param col: Index of the column whose name is to be set. Or current name of the column to change.
     :param name: The new name of the column to set
     :return: the input frame
     """
+    if isinstance(col, basestring): col = self._find_idx(col)  # lookup the name!
     if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol == 1: col = 0
     h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()),id=self._id)
@@ -694,26 +694,54 @@ class H2OFrame(H2OFrameWeakRefMixin):
       else:
         print "num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:]))
 
-  def as_data_frame(self, use_pandas=True):
+  def as_data_frame(self, nrows=None, skiprows=None, ncols=None, use_pandas=True):
     """
     Obtain the dataset as a python-local object (pandas frame if possible, list otherwise)
 
-    :param use_pandas: A flag specifying whether or not to attempt to coerce to Pandas.
-    :return: A local python object containing this H2OFrame instance's data.s
+    :param nrows: The number of rows for pandas to read. Default is None, which reads all rows.
+    :param skiprows: A list of rows to skip. Default is None, which skips no rows.
+    :param ncols: The number of columns for pandas to read. Default is None, which reads all columns.
+    :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
+    :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
+    pandas DataFrame) containing this H2OFrame instance's data.
     """
     self._eager()
     url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self._id) + "&hex_string=false"
     response = urllib2.urlopen(url)
     if h2o.can_use_pandas() and use_pandas:
       import pandas
-      return pandas.read_csv(response, low_memory=False)
+      df = pandas.read_csv(response,low_memory=False,nrows=nrows,skiprows=skiprows,usecols=None if ncols is None else range(ncols))
+      time_cols = []
+      category_cols = []
+      if self.types is not None:
+        for col_name in self.names[:ncols]:
+          type = self.types[col_name]
+          if type.lower() == 'time': time_cols.append(col_name)
+          elif type.lower() == 'enum': category_cols.append(col_name)
+        #change Time to pandas datetime
+        if time_cols:
+          #hacky way to get the utc offset
+          from datetime import datetime
+          sample_timestamp = 1380610868
+          utc_offset = 1000 * ((datetime.utcfromtimestamp(sample_timestamp) - datetime.fromtimestamp(sample_timestamp)).total_seconds())
+          try:
+            df[time_cols] = (df[time_cols] - utc_offset).astype('datetime64[ms]')
+          except pandas.tslib.OutOfBoundsDatetime:
+            pass
+        #change Enum to pandas category
+        for cat_col in category_cols: #for loop is required
+          df[cat_col] = df[cat_col].astype('category')
+      return df
     else:
       cr = csv.reader(response)
       rows = []
-      for row in cr: rows.append([''] if row == [] else row)
-      return rows
+      for row in cr: rows.append([''] if row == [] else row[:ncols])
+      if not skiprows:
+        return rows[:None if nrows is None else nrows+1]
+      else:
+        return [rows[0]] + rows[skiprows[-1]+1:]
 
-  # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
+  # Find a named H2OVec and return the zero-based index for it.  Error if name is missing
   def _find_idx(self,name):
     self._eager()
     for i,v in enumerate(self._col_names):
@@ -1147,7 +1175,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("replacefirst",pattern,replacement,self,ignore_case))
+    return H2OFrame(expr=ExprNode("replacefirst", self, pattern, replacement, ignore_case))
 
   def gsub(self, pattern, replacement, ignore_case=False):
     """
@@ -1158,7 +1186,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param ignore_case:
     :return: H2OFrame
     """
-    return H2OFrame(expr=ExprNode("replaceall", pattern, replacement, self, ignore_case))
+    return H2OFrame(expr=ExprNode("replaceall", self, pattern, replacement, ignore_case))
 
   def interaction(self, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
     """
@@ -1364,7 +1392,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def _scalar(self):
     self._eager()  # scalar should be stashed into self._data
     if self._data is None:
-      res = self.as_data_frame(False)[1:]
+      res = self.as_data_frame(use_pandas=False)[1:]
       if len(res)==1: return H2OFrame._get_scalar(res[0][0])
       else:
         return [H2OFrame._get_scalar(r[0]) for r in res]
@@ -1434,7 +1462,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._nrows = res["rows"]
     self._ncols = len(res["columns"])
     self._col_names = [c["label"] for c in res["columns"]]
-    self._types = [c["type"] for c in res["columns"]]
+    self._types = dict(zip(self._col_names, [c["type"] for c in res["columns"]]))
     self._computed=True
     self._ast=None
   #### DO NOT ADD ANY MEMBER METHODS HERE ####

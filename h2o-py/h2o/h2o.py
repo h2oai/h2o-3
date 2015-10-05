@@ -52,7 +52,7 @@ Parameters
   col_names :
     (Optional) A list of column names for the file.
   col_types :
-    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+    (Optional) A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
   na_strings :
     (Optional) A list of strings which are to be interpreted as missing values.
 
@@ -83,7 +83,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   col_names :
     (Optional) A list of column names for the file.
   col_types :
-    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+    (Optional) A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
   na_strings :
     (Optional) A list of strings which are to be interpreted as missing values.
   :return: A new H2OFrame
@@ -112,7 +112,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   col_names :
     (Optional) A list of column names for the file.
   col_types :
-    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+    (Optional) A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
   na_strings :
     (Optional) A list of strings which are to be interpreted as missing values.
   :return: A ParseSetup "object"
@@ -124,15 +124,21 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   if destination_frame: j["destination_frame"] = destination_frame
   if not isinstance(header, tuple):
-      if header not in (-1, 0, 1):
-          raise ValueError("header should be -1, 0, or 1")
-      j["check_header"] = header
+    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
+    j["check_header"] = header
   if separator:
-      if not isinstance(separator, basestring) or len(separator) != 1:
-          raise ValueError("separator should be a single character string")
-      j["separator"] = separator
-  if column_names: j["column_names"] = column_names
-  if column_types: j["column_types"] = column_types
+    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
+    j["separator"] = separator
+  if column_names:
+    if not isinstance(column_names, list): raise ValueError("col_names should be a list")
+    j["column_names"] = column_names
+  if column_types:
+    if isinstance(column_types, dict):
+      if not column_names: raise ValueError("col_names should be specified if col_types is a dictionary of column names to types")
+      if set(column_names) != set(column_types.keys()): raise ValueError("col_names and column names in col_types are unequal")
+    elif not isinstance(column_types, list):
+      raise ValueError("col_types should be a list of types or a dictionary of column names to types")
+    j["column_types"] = column_types
   if na_strings: j["na_strings"] = na_strings
 
   return j
@@ -166,7 +172,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         }
 
   if setup["destination_frame"]:
-    setup["destination_frame"] = _quoted(setup["destination_frame"])
+    setup["destination_frame"] = _quoted(setup["destination_frame"]).replace("%",".").replace("&",".")
 
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]
@@ -174,13 +180,17 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   if isinstance(setup["separator"], basestring):
     setup["separator"] = ord(setup["separator"])
 
+  if setup["column_types"]: #process column_types before column_names for matching keys before quoting
+    if isinstance(setup["column_types"], dict):
+      #overwrite dictionary to ordered list of column types
+      setup["column_types"] = [_quoted(setup["column_types"][name]) for name in setup["column_names"]]
+    else: #if list
+      setup["column_types"] = [_quoted(name) for name in setup["column_types"]]
+    p["column_types"] = None
+
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
     p["column_names"] = None
-
-  if setup["column_types"]:
-    setup["column_types"] = [_quoted(name) for name in setup["column_types"]]
-    p["column_types"] = None
 
   if setup["na_strings"]:
     if _is_list_of_lists(setup["na_strings"]): setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
@@ -233,8 +243,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
 def _quoted(key, replace=True):
   if key == None: return "\"\""
   #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
-  key = key.replace("%", ".")
-  key = key.replace("&", ".")
+  # key = key.replace("%", ".")
+  # key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else '"' + key + '"'
   return key
@@ -1436,7 +1446,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
     "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
   user_x : H2OFrame
     (Optional) An H2OFrame object specifying the initial X matrix. Only used when init = "User".
-  user_y : 
+  user_y : H2OFrame
     (Optional) An H2OFrame object specifying the initial Y matrix. Only used when init = "User".
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
@@ -1669,7 +1679,7 @@ def as_list(data, use_pandas=True):
 
   :return: List of list (Rows x Columns).
   """
-  return H2OFrame.as_data_frame(data, use_pandas)
+  return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
 
 
 def set_timezone(tz):
@@ -1817,7 +1827,7 @@ def h2o_deprecated(newfun=None):
       print
       print
       warnings.warn(m, category=DeprecationWarning, stacklevel=2)
-      return fun(*args, **kwargs)
+      return newfun(*args, **kwargs)
     return i
   return o
 

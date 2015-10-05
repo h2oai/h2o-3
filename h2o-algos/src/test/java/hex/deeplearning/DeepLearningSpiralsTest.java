@@ -20,6 +20,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
     Scope.enter();
     NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/two_spiral.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);
+    Log.info(frame);
     int resp = frame.names().length-1;
 
     Key dest = Key.make("spirals2");
@@ -31,7 +32,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         // build the model
         {
           DeepLearningParameters p = new DeepLearningParameters();
-          p._seed = 0xbabe;
+          p._seed = 0xbabefff;
           p._epochs = 600;
           p._hidden = new int[]{100};
           p._sparse = sparse;
@@ -46,7 +47,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
-          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategorical())._key); // Convert response to categorical
+          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())._key); // Convert response to categorical
           DKV.put(frame);
           p._valid = null;
           p._score_interval = 2;

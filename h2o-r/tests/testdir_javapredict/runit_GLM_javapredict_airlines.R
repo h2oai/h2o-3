@@ -10,6 +10,7 @@ source("../h2o-runit.R")
 
 test.glm.javapredict.airlines <-
 function() {
+
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
@@ -18,11 +19,11 @@ function() {
     training_frame <- air[s <= 0.8,]
     test_frame <- air[s > 0.8,]
 
-    test_file <- paste(tempdir(), "airtest.csv", sep='/')
+    test_file <- paste(sandbox(), "airtest.csv", sep=.Platform$file.sep)
     print("")
     print(paste("WRITING TEST FILE:", test_file))
     print("")
-    h2o.exportFile(test_frame, path = test_file, force = TRUE)
+    h2o.exportFile(test_frame, path=test_file, force=TRUE)
 
     params                 <- list()
     params$x               <- c("Year","Month","DayofMonth","DayOfWeek","CRSDepTime","CRSArrTime","UniqueCarrier",
@@ -34,7 +35,8 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("glm",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+    doJavapredictTest("glm",test_file,test_frame,params)
+
 }
 
 doTest("GLM test", test.glm.javapredict.airlines)

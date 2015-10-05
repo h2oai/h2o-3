@@ -3,9 +3,7 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.H2O;
-import water.MRTask;
-import water.TestUtil;
+import water.*;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -35,23 +33,27 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("REPS: " + rep);
 
     int ll = 5;
+//    for (int i = 0; i < ll; ++i)
+//      raw();
+//    for (int i = 0; i < ll; ++i)
+//      chunks();
+//    for (int i = 0; i < ll; ++i)
+//      chunksInline();
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(false);
     for (int i = 0; i < ll; ++i)
-      raw();
+      rollups(false);
+//    for (int i = 0; i < ll; ++i)
+//      bulk();
+//    Log.info("Now doing funny stuff.\n\n");
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(true);
     for (int i = 0; i < ll; ++i)
-      chunks();
-    for (int i = 0; i < ll; ++i)
-      chunksInline();
-    for (int i = 0; i < ll; ++i)
-      mrtask(false);
-    for (int i = 0; i < ll; ++i)
-      bulk();
-    Log.info("Now doing funny stuff.\n\n");
-    for (int i = 0; i < ll; ++i)
-      mrtask(true);
-    for (int i = 0; i < ll; ++i)
-      chunksInverted();
-    for (int i = 0; i < ll; ++i)
-      rawInverted();
+      rollups(true);
+//    for (int i = 0; i < ll; ++i)
+//      chunksInverted();
+//    for (int i = 0; i < ll; ++i)
+//      rawInverted();
 
   }
 
@@ -274,6 +276,38 @@ public class ChunkSpeedTest extends TestUtil {
     siz += fr.byteSize();
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " MRTask: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+    fr.remove();
+  }
+
+  void rollups(boolean parallel)
+  {
+    Frame fr = new Frame();
+//    Vec v = Vec.makeCon(Double.NaN, rows);
+//    Log.info(v.mean());
+//    Log.info(v.sigma());
+//    Log.info(v.min());
+//    Log.info(v.max());
+//    Log.info(v.length());
+//    Log.info(v.nzCnt());
+//    Log.info(v.naCnt());
+//    v.remove();
+    for (int i=0; i<cols; ++i)
+      fr.add("C" + i, Vec.makeCon(0, rows, parallel)); //multi-chunk (based on #cores)
+    new FillTask().doAll(fr);
+
+    long start = System.currentTimeMillis();
+    for (int r = 0; r < rep; ++r) {
+      for (int i=0; i<cols; ++i) {
+        DKV.remove(fr.vec(i).rollupStatsKey());
+        fr.vec(i).mean();
+      }
+    }
+    long done = System.currentTimeMillis();
+    long siz = 0;
+    siz += fr.byteSize();
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " Rollups: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
     fr.remove();
   }

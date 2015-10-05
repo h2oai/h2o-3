@@ -84,6 +84,17 @@ def is_runit_test_file(file_name):
 
     return False
 
+def is_rdemo(file_name):
+    """
+    Return True if file_name matches a regexp for a R demo.  False otherwise.
+    """
+    demos = ["h2o.anomaly.R", "h2o.deeplearning.R", "h2o.gbm.R", "h2o.glm.R", "h2o.glrm.R", "h2o.kmeans.R",
+             "h2o.naiveBayes.R", "h2o.prcomp.R", "h2o.randomForest.R"]
+    for demo in demos:
+        if file_name == demo: return True
+
+    return False
+
 
 class H2OUseCloudNode:
     """
@@ -583,6 +594,9 @@ class Test:
         @return: none
         """
         global g_on_jenk_hadoop
+        global g_hdfs_name_node
+        global g_r_demo
+
         if (self.cancelled or self.terminated):
             return
 
@@ -595,7 +609,7 @@ class Test:
                    self.test_name,
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
         elif (is_ipython_notebook(self.test_name)):
             cmd = ["python",
                    self.notebook_runner,
@@ -603,7 +617,7 @@ class Test:
                    self.ip + ":" + str(self.port),
                    "--ipynb",
                    self.test_name]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
         elif (is_runit_test_file(self.test_name)):
             cmd = ["R",
                    "-f",
@@ -611,7 +625,11 @@ class Test:
                    "--args",
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop"]
+            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
+        elif (is_rdemo(self.test_name) and g_r_demo):
+            cmd = ["R",
+                   "-f",
+                   self.test_name]
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
@@ -816,7 +834,7 @@ class TestRunner:
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, ipynb_runner_dir, r_pkg_ver_chk):
+                 testreport_dir, ipynb_runner_dir, r_pkg_ver_chk, r_demo):
         """
         Create a runner.
 
@@ -833,12 +851,13 @@ class TestRunner:
         @param xmx: Java -Xmx parameter.
         @param output_dir: Directory for output files.
         @param failed_output_dir: Directory to copy failed test output.
-        @param path_to_tar: NA
+        @param path_to_tar: path to h2o R package.
         @param path_to_whl: NA
         @param produce_unit_reports: if true then runner produce xUnit test reports for Jenkins
         @param testreport_dir: directory to put xUnit test reports for Jenkins (should follow build system conventions)
         @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
         @param r_pkg_ver_chk: check R packages/versions
+        @param r_demo: run the R script against the R package, instead of using the h2o-runit test harness
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
@@ -880,6 +899,7 @@ class TestRunner:
         self.path_to_tar = path_to_tar
         self.path_to_whl = path_to_whl
         self.r_pkg_ver_chk = r_pkg_ver_chk
+        self.r_demo = r_demo
 
         if (use_cloud):
             node_num = 0
@@ -892,6 +912,9 @@ class TestRunner:
                 cloud = H2OUseCloud(node_num, c[0], c[1])
                 self.clouds.append(cloud)
                 node_num += 1
+        elif (r_demo):
+            cloud = H2OCloud(0, False, 1, h2o_jar, self.base_port, xmx, self.output_dir)
+            self.clouds.append(cloud)
         else:
             for i in range(self.num_clouds):
                 cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
@@ -999,6 +1022,8 @@ class TestRunner:
                 if (is_ipython_notebook(f)):
                     is_test = True
                 if (is_runit_test_file(f)):
+                    is_test = True
+                if (is_rdemo(f)):
                     is_test = True
                 if (not is_test):
                     continue
@@ -1123,7 +1148,9 @@ class TestRunner:
 
         if self._have_some_r_tests() and self.r_pkg_ver_chk == True: self._r_pkg_ver_chk()
 
-        if self._have_some_py_tests() and self.path_to_whl is not None:
+        elif self._have_some_r_demos() and self.r_demo: self._install_h2o_r_pkg(self.path_to_tar)
+
+        elif self._have_some_py_tests() and self.path_to_whl is not None:
             # basically only do this if we have a whl to install
             self._log("")
             self._log("Setting up Python H2O package...")
@@ -1341,6 +1368,24 @@ class TestRunner:
     # --------------------------------------------------------------------
     # Private methods below this line.
     # --------------------------------------------------------------------
+    def _install_h2o_r_pkg(self,h2o_r_pkg_path):
+        """
+        Installs h2o R package from the specified location.
+        """
+
+        self._log("")
+        self._log("Installing H2O R package...")
+
+        cmd = ["R", "CMD", "INSTALL", h2o_r_pkg_path]
+        child = subprocess.Popen(args=cmd)
+        rv = child.wait()
+        if (self.terminated):
+            return
+        if (rv == 1):
+            self._log("")
+            self._log("ERROR: failed to install H2O R package.")
+            sys.exit(1)
+
     def _r_pkg_ver_chk(self):
         """
         Run R script that checks if the Jenkins-approve R packages and versions are present. Exit, if they are not
@@ -1403,6 +1448,17 @@ class TestRunner:
         for test in self.tests:
             test_name = test.get_test_name()
             if (is_runit_test_file(test_name)):
+                return True
+
+        return False
+
+    def _have_some_r_demos(self):
+        """
+        Do we have any R demos to run at all?
+        """
+        for test in self.tests:
+            test_name = test.get_test_name()
+            if (is_rdemo(test_name)):
                 return True
 
         return False
@@ -1629,12 +1685,14 @@ g_nointernal = False
 g_convenient = False
 g_path_to_h2o_jar = None
 g_path_to_tar = None
+g_r_demo = None
 g_path_to_whl = None
 g_produce_unit_reports = True
 g_phantomjs_to = 3600
 g_phantomjs_packs = "examples"
 g_r_pkg_ver_chk = False
 g_on_jenk_hadoop = False
+g_hdfs_name_node = None
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1722,7 +1780,8 @@ def usage():
     print("")
     print("    --h2ojar         Supply a path to the H2O jar file.")
     print("")
-    print("    --tar            Supply a path to the R TAR.")
+    print("    --rDemo          Supply a path to the R TAR. Runs the R script against the giving R package, instead of")
+    print("                     h2o-runit.R test harness.")
     print("")
     print("    --pto            The phantomjs timeout in seconds. Default is 3600 (1hr).")
     print("")
@@ -1731,7 +1790,8 @@ def usage():
     print("    --rPkgVerChk     Check that Jenkins-approved R packages/versions are present")
     print("")
     print("    --onJenkHadoop   Signify to runit/pyunit test that they are being run on jenkins h2o-hadoop clusters.")
-    print("                     The tests need this signal for the `locate` functions to behave properly")
+    print("                     The tests need this signal for the `locate` and `sandbox` functions to behave properly.")
+    print("                     Supply hdfs name node to use.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
@@ -1813,6 +1873,7 @@ def parse_args(argv):
     global g_nointernal
     global g_convenient
     global g_path_to_h2o_jar
+    global g_r_demo
     global g_path_to_tar
     global g_path_to_whl
     global g_produce_unit_reports
@@ -1820,6 +1881,7 @@ def parse_args(argv):
     global g_phantomjs_packs
     global g_r_pkg_ver_chk
     global g_on_jenk_hadoop
+    global g_hdfs_name_node
 
     i = 1
     while (i < len(argv)):
@@ -1914,7 +1976,8 @@ def parse_args(argv):
         elif s == "--ptt":
             i += 1
             g_phantomjs_packs = argv[i]
-        elif s == "--tar":
+        elif s == "--rDemo":
+            g_r_demo = True
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])
         elif s == "--whl":
@@ -1935,6 +1998,10 @@ def parse_args(argv):
             g_r_pkg_ver_chk = True
         elif (s == "--onJenkHadoop"):
             g_on_jenk_hadoop = True
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_hdfs_name_node = argv[i]
         else:
             unknown_arg(s)
 
@@ -2006,6 +2073,7 @@ def main(argv):
     global g_runner
     global g_nopass
     global g_nointernal
+    global g_r_demo
     global g_path_to_tar
     global g_path_to_whl
 
@@ -2052,14 +2120,14 @@ def main(argv):
 
     # Create runner object.
     # Just create one cloud if we're only running one test, even if the user specified more.
-    if (g_test_to_run is not None):
+    if ((g_test_to_run is not None) or g_r_demo):
         g_num_clouds = 1
 
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, ipynb_runner_dir, g_r_pkg_ver_chk)
+                          testreport_dir, ipynb_runner_dir, g_r_pkg_ver_chk, g_r_demo)
 
     # Build test list.
     if (g_test_to_run is not None):
