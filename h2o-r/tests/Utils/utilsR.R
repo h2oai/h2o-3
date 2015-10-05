@@ -13,19 +13,33 @@ function(zipfile, exdir,header=T) {
   read.csv(file,header=header)
 }
 
+# returns the directory of the sandbox for the given test.
 sandbox<-
-function() {
+function(create=FALSE) {
   test_name <- R.utils::commandArgs(asValues=TRUE)$"f"
-  if (is.null(test_name)) {
-      test_name <- paste(getwd(), "r_command_line", sep="/")
-  }
   Rsandbox <- paste("./Rsandbox_", basename(test_name), sep = "")
-  dir.create(Rsandbox, showWarnings = FALSE)
-  commandsLog <- paste(Rsandbox, "/commands.log", sep = "")
-  errorsLog <- paste(Rsandbox, "/errors.log", sep = "")
-  if(file.exists(commandsLog)) file.remove(commandsLog)
-  if(file.exists(errorsLog)) file.remove(errorsLog)
-  h2o.startLogging(paste(Rsandbox, "/rest.log", sep = ""))
+  if (create) { dir.create(Rsandbox, showWarnings=FALSE) }
+  if (dir.exists(Rsandbox)) { return(normalizePath(Rsandbox))
+  } else { Log.err(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
+}
+
+# makes a directory in sandbox, one level down
+sandboxMakeSubDir<-
+function(dirname) {
+  if (!is.character(dirname)) Log.err("dirname argument must be of type character")
+  subdir <- paste(sandbox(),dirname,sep=.Platform$file.sep)
+  dir.create(subdir, showWarnings=FALSE)
+  return(subdir)
+}
+
+# renames sandbox subdir
+sandboxRenameSubDir<-
+function(oldSubDir,newSubDirName) {
+  if (!is.character(oldSubDir)) Log.err("oldSubDir argument must be of type character")
+  if (!is.character(newSubDirName)) Log.err("newSubDirName argument must be of type character")
+  newSubDir <- sandboxMakeSubDir(dirname=newSubDirName)
+  file.rename(oldSubDir, newSubDir)
+  return(newSubDir)
 }
 
 Log.info<-
@@ -145,14 +159,15 @@ function(args) {
       s <- args[i]
       if (s == "--usecloud") {
         i <- i + 1
-        if (i > length(args)) {
-          usage()
-        }
+        if (i > length(args)) usage()
         argsplit <- strsplit(args[i], ":")[[1]]
         H2O.IP   <<- argsplit[1]
         H2O.PORT <<- as.numeric(argsplit[2])
       } else if (s == "--onJenkHadoop") {
         ON.JENKINS.HADOOP <<- TRUE
+        i <- i + 1
+        if (i > length(args)) usage()
+        H2O.INTERNAL.HDFS.NAME.NODE <<- args[i]
       } else {
         unknownArg(s)
       }
@@ -168,7 +183,8 @@ function() {
   print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
   print("                     IP:PORT")
   print("")
-  print("    --onJenkHadoop   signal to runt that it will be run on h2o-hadoop cluster.")
+  print("    --onJenkHadoop   signal to runit that it will be run on h2o-hadoop cluster with the specified hdfs name")
+  print("                     node.")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
