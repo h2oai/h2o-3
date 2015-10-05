@@ -141,3 +141,8 @@ Regression : gaussian : nfolds = 1,Regression_gaussian_nfolds=1,glm_neg_testcase
 Regression : gaussian : nfolds = 20,Regression_gaussian_nfolds=20,glm_neg_testcase_137,x,,x,,,,,,,,,,20,,,,,,,,,,,,,,,,,Regression,,x,airquality_train1,airquality_validation1,,x,x,,,,,,,
 Regression : gaussian : nfolds > observations,Regression_gaussian_nfolds>observations,glm_neg_testcase_138,x,,x,,,,,,,,,,100,,,,,,,,,,,,,,,,,Regression,,x,airquality_train1,airquality_validation1,,x,x,,,,,,,
 Regression : gaussian : nfolds = observations(# of rows),Regression_gaussian_nfolds=observations,glm_neg_testcase_139,x,,x,,,,,,,,,,77,,,,,,,,,,,,,,,,,Regression,,x,airquality_train1,airquality_validation1,,x,x,,,,,,,
+Binomial Prior < 0,Classification_Balanced data_Binomial_PriorsLessThanZero,glm_neg_testcase_140,,x,,x,,,,,,x,,,,,,,,,,,,,x,0.5,1,,,-1,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,
+Binomial Prior > 1,Classification_Balanced data_Binomial_PriorsGreaterThanOne,glm_neg_testcase_141,,x,,x,,,,,,x,,,,,,,,,,,,,x,0.5,1,,,10,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,
+Binomial Prior = 0,Classification_Balanced data_Binomial_PriorsEqualsZero,glm_neg_testcase_142,,x,,x,,,,,,x,,,,,,,,,,,,,x,0.5,1,,,0,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,
+Binomial Prior = 1,Classification_Balanced data_Binomial_PriorsEqualsOne,glm_neg_testcase_143,,x,,x,,,,,,x,,,,,,,,,,,,,x,0.5,1,,,1,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,
+Gaussian Prior = 0.5,Regresssion_ValidPriors,glm_neg_testcase_144,x,,x,,,,,,,x,,,,,,,,,,,,,x,100,0,,,0.5,,Regression,,x,airquality_train1,airquality_validation1,,x,x,,,,,,,

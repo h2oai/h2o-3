@@ -517,3 +517,4 @@ Priors enabled with beta constraints,Classification_Balanced data_Binomial_Auto_
 ,Classification_Balanced data_Binomial_IRLSM_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_509,,x,,x,,,,,x,,,,,,,,,0,,,x,,x,0,1,,,0.5,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 ,Classification_Balanced data_Binomial_LBFGS_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_510,,x,,x,,,,,,x,,,,,,,,0,,,x,,x,0,1,,,1,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 DefaultParams,Default Params,glm_testcase_511,x,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,,,,,,,,,
+Binomial Prior = 0.5,Classification_Balanced data_Binomial_ValidPriors,glm_testcase_512,,x,,x,,,,,,x,,,,,,,,,,,,,x,0.5,1,,,0.5,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,
