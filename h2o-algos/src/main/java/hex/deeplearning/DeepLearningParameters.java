@@ -711,9 +711,8 @@ public class DeepLearningParameters extends Model.Parameters {
       checkCompleteness();
       if (newP._nfolds != 0)
         throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
-      if ((newP._valid == null) != (oldP._valid == null)
-              || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
-        throw new H2OIllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
+      if ((newP._valid == null) != (oldP._valid == null)) {
+        throw new H2OIllegalArgumentException("Presence of validation dataset must agree with the checkpointed model.");
       }
       if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
         throw new H2OIllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);

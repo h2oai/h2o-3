@@ -368,6 +368,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
   public boolean hasFloat(){return true;}
+  public boolean hasNA(){return true;}
 
   /** Replace all rows with this new chunk */
   public void replaceAll( Chunk replacement ) {

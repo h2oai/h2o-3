@@ -60,7 +60,7 @@ check.deeplearning_autoencoder <- function() {
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     expect_equal(cm$Error[11], 0.0814, tolerance = 0.001)
+     expect_equal(cm$Error[11], 0.0810, tolerance = 0.001)
 
      
 }

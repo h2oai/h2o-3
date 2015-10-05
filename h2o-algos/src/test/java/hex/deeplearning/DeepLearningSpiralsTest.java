@@ -20,6 +20,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
     Scope.enter();
     NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/two_spiral.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);
+    Log.info(frame);
     int resp = frame.names().length-1;
 
     Key dest = Key.make("spirals2");
@@ -31,7 +32,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         // build the model
         {
           DeepLearningParameters p = new DeepLearningParameters();
-          p._seed = 0xbabe;
+          p._seed = 0xbabefff;
           p._epochs = 600;
           p._hidden = new int[]{100};
           p._sparse = sparse;

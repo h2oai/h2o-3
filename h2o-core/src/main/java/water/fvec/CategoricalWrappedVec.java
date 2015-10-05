@@ -177,5 +177,6 @@ public class CategoricalWrappedVec extends WrappedVec {
     }
     @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
     @Override public Chunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
+    @Override public boolean hasNA() { return false; }
   }
 }
