@@ -1,5 +1,6 @@
 from ..model.model_base import ModelBase
 from ..model import build_model
+import inspect, warnings
 
 class EstimatorAttributeError(AttributeError):
   def __init__(self,obj,method):
@@ -9,8 +10,9 @@ class EstimatorAttributeError(AttributeError):
 class H2OEstimator(ModelBase):
   """H2O Estimators
 
-  H2O Estimators implement the following methods
-    * fit
+  H2O Estimators implement the following methods for model construction:
+    * train - Top-level user-facing API for model building.
+    * fit - Used by scikit-learn.
 
   Because H2OEstimator instances are instances of ModelBase, these objects can use the
   H2O model API.
@@ -21,10 +23,9 @@ class H2OEstimator(ModelBase):
     self.estimator=None
     self.parms=None
 
-  def fit(self,X,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
-    """Fit the H2O model by specifying the predictor columns, response column, and any
+  def train(self,X,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
+    """Train the H2O model by specifying the predictor columns, response column, and any
     additional frame-specific values.
-
 
     Parameters
     ----------
@@ -47,14 +48,60 @@ class H2OEstimator(ModelBase):
     -------
       Returns self.
     """
-    raise EstimatorAttributeError(self,"fit")
+    algo_params = locals()
+    self.parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params"] })
+    y = algo_params["y"]
+    tframe = algo_params["training_frame"]
+    if tframe is None: raise ValueError("Missing training_frame")
+    if y is not None:
+      self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
+    self.__dict__=build_model(self.parms).__dict__.copy()
+
+
+  ##### Scikit-learn Interface Methods #####
+  def fit(self, X, y=None, **params):
+    """Fit an H2O model as part of a scikit-learn pipeline or grid search.
+
+    A warning will be issued if a caller other than sklearn attempts to use this method.
+
+    Parameters
+    ----------
+      X : H2OFrame
+        An H2OFrame consisting of the predictor variables.
+      y : H2OFrame, optional
+        An H2OFrame consisting of the response variable.
+      params : optional
+        Extra arguments.
+
+    Returns
+    -------
+      None
+    """
+    stk = inspect.stack()[1:]
+    warn = True
+    for s in stk:
+      mod = inspect.getmodule(s[0])
+      warn = "sklearn" not in mod.__name__
+      if not warn: break
+    if warn:
+      warnings.warn("\n\n\t`fit` is not recommended outside of the sklearn framework. Use `train` instead.", UserWarning, stacklevel=2)
+    training_frame = X.cbind(y) if y is not None else X
+    X = X.names
+    y = y.names[0] if y is not None else None
+    self.train(X, y, training_frame, **params)
 
   def get_params(self, deep=True):
-    """
-    Get parameters for this estimator.
+    """Useful method for obtaining parameters for this estimator. Used primarily for
+    sklearn Pipelines and sklearn grid search.
 
-    :param deep: (Optional) boolean; if True, return parameters of all subobjects that are estimators.
-    :return: A dict of parameters.
+    Parameters
+    ----------
+      deep : bool, optional
+        If True, return parameters of all sub-objects that are estimators.
+
+    Returns
+    -------
+      A dict of parameters
     """
     out = dict()
     for key,value in self.parms.iteritems():
@@ -65,14 +112,16 @@ class H2OEstimator(ModelBase):
     return out
 
   def set_params(self, **parms):
+    """Used by sklearn for updating parameters during grid search.
+
+    Parameters
+    ----------
+      parms : dict
+        A dictionary of parameters that will be set on this model.
+
+    Returns
+    -------
+      Returns self, the current estimator object with the parameters all set as desired.
+    """
     self.parms.update(parms)
     return self
-
-  def model_build(self, algo_params):
-    self.parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params"] })
-    y = algo_params["y"]
-    tframe = algo_params["training_frame"]
-    if tframe is None: raise ValueError("Missing training_frame")
-    if y is not None:
-      self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
-    self.__dict__=build_model(self.parms).__dict__.copy()

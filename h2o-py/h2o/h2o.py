@@ -45,16 +45,16 @@ Parameters
     A path specifying the location of the data to upload.
   destination_frame : H2OFrame
     The name of the H2O Frame in the H2O Cluster.
-  header :
-   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep :
-    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names :
-    (Optional) A list of column names for the file.
-  col_types :
-    (Optional) A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings :
-    (Optional) A list of strings which are to be interpreted as missing values.
+  header : int, optional
+   -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep : string, optional
+    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names : optional
+    A list of column names for the file.
+  col_types : optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings : optional
+    A list of strings which are to be interpreted as missing values.
 
  :return: A new H2OFrame
   """
@@ -172,7 +172,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         }
 
   if setup["destination_frame"]:
-    setup["destination_frame"] = _quoted(setup["destination_frame"]).replace("%",".").replace("&",".")
+    setup["destination_frame"] = _quoted(setup["destination_frame"]).replace("%",".").replace("&",".")  # TODO: really should be url encoding...
 
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = setup["check_header"]

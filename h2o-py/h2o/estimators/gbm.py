@@ -9,12 +9,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
   Parameters
   ----------
-  model_id : str
-    (Optional) The unique id assigned to the resulting model. If none is given, an id will
+  model_id : str, optional
+    The unique id assigned to the resulting model. If none is given, an id will
     automatically be generated.
   distribution : str
-     A character string. The distribution function of the response. Must be "AUTO",
-     "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+     The distribution function of the response. Must be "AUTO", "bernoulli",
+     "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
   ntrees : int
@@ -24,7 +24,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   min_rows : int
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
-    An integer from 0.0 to 1.0
+    A value from 0.0 to 1.0
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then
     split at the best point.
@@ -70,6 +70,3 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
     self.parms["algo"] = "gbm"
     self._estimator_type = ""
-
-  def fit(self,X,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
-    self.model_build(locals())
