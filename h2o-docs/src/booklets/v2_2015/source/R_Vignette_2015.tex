@@ -380,7 +380,7 @@ The following section contains information about data preparation (also known as
 \begin{itemize}
 
 \item Although it may seem like you are manipulating the data in R, once the data has been passed to H2O, all data munging occurs in the H2O instance. The information is passed to R through JSON APIs, so some functions may not have another method. 
-\item You are limited by the total amount of memory allocated to the H2O instance, not by R's ability to handle data. To process large data sets, make sure to allocate enough memory. For more information, refer to \nameref{ssec:LaunchR}. 
+\item You are limited by the total amount of memory allocated to the H2O instance, not by R's ability to handle data. To process large data sets, make sure to allocate enough memory. For more information, refer to {\textbf{\nameref{ssec:LaunchR}}}. 
 \item You can manipulate datasets with thousands of factor levels using H2O in R, so if you ask H2O to display a table in R with information from high cardinality factors, the results may overwhelm R`s capacity. 
 \item To manipulate data in R and not in H2O, use {\texttt{as.data.frame()}}, {\texttt{as.h2o()}}, and {\texttt{str()}}. \begin{itemize}
 \item {\texttt{as.data.frame()}} converts an H2O data frame into an R data frame. If your request exceeds the amount of data supported by R, the R session will crash. If possible, we recommend only taking subsets of the entire data set (the necessary data columns or rows) instead of the whole data set. 
@@ -428,7 +428,7 @@ To apply a user-specified function to each subset of an H2O dataset and combine 
 \section{Models}
 %TODO: Another candidate for "common"
 
-The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to \nameref{sec:RunModel}. 
+The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to {\textbf{\nameref{sec:RunModel}}}. 
 
 %%mal H2O supports the following models: Deep Learning (DL), Generalized Linear Models (GLM), Gradient Boosted Regression (GBM), Na\"{i}ve Bayes (NB), Random Forest (RF), K-Means, Principal Components Analysis (PCA) and Generalized Low Rank Model (GLRM).
 
@@ -484,7 +484,7 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 
 {\textbf{Grid Search}}: Performs standard hyper-parameter optimization to simplify model configuration. %%should be supported in latest version, but adding note in case
 
-After creating a model, use it to make predictions. For more information about predictions, refer to \nameref{ssec:Predictions}.
+After creating a model, use it to make predictions. For more information about predictions, refer to {\textbf{\nameref{ssec:Predictions}}}.
 
 %%mal: this feels too lengthy for a modeling example here; perhaps it would be better to have entire work flows at the end?
 
