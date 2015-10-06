@@ -84,9 +84,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "reproducible",
         "export_weights_and_biases",
 //        "mini_batch_size",
-        "elastic_averaging",
-        "elastic_averaging_moving_rate",
-        "elastic_averaging_regularization"
+//        "elastic_averaging",
+//        "elastic_averaging_moving_rate",
+//        "elastic_averaging_regularization"
     };
 
   /*Imbalanced Classes*/
@@ -539,13 +539,13 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public int mini_batch_size;
 
-    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean elastic_averaging;
-
-    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
-    public double elastic_averaging_moving_rate;
-
-    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
-    public double elastic_averaging_regularization;
+//    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public boolean elastic_averaging;
+//
+//    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public double elastic_averaging_moving_rate;
+//
+//    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public double elastic_averaging_regularization;
   }
 }
