@@ -125,11 +125,7 @@ public class GLRMTest extends TestUtil {
     } finally {
       yinit.delete();
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -170,11 +166,7 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -227,11 +219,7 @@ public class GLRMTest extends TestUtil {
     } finally {
       yinit.delete();
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -268,11 +256,7 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -346,11 +330,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         if (train != null) train.delete();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
     }
     sb.append("\nMissing Fraction --> Avg SSE in Std Dev\n");
@@ -400,11 +380,7 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -449,11 +425,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
 
       Log.info("\nOrthogonal non-negative matrix factorization");
@@ -473,11 +445,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
 
       Log.info("\nQuadratic clustering (k-means)");
@@ -497,11 +465,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
 
       Log.info("\nQuadratic mixture (soft k-means)");
@@ -521,11 +485,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
     } catch (Throwable t) {
       t.printStackTrace();

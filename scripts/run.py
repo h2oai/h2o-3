@@ -1148,7 +1148,15 @@ class TestRunner:
 
         if self._have_some_r_tests() and self.r_pkg_ver_chk == True: self._r_pkg_ver_chk()
 
-        elif self._have_some_r_demos() and self.r_demo: self._install_h2o_r_pkg(self.path_to_tar)
+        elif self._have_some_r_demos() and self.r_demo:
+            if self.path_to_tar is None:
+                print("")
+                print("ERROR: Must specify --tar when using --rDemo option.")
+                print("")
+                sys.exit(1)
+            self._install_h2o_r_pkg(self.path_to_tar)
+
+        elif self.path_to_tar is not None: self._install_h2o_r_pkg(self.path_to_tar)
 
         elif self._have_some_py_tests() and self.path_to_whl is not None:
             # basically only do this if we have a whl to install
@@ -1782,6 +1790,8 @@ def usage():
     print("")
     print("    --rDemo          Supply a path to the R TAR. Runs the R script against the giving R package, instead of")
     print("                     h2o-runit.R test harness.")
+    print("    --tar         Supply a path to the R TAR.")
+    print("")
     print("")
     print("    --pto            The phantomjs timeout in seconds. Default is 3600 (1hr).")
     print("")
@@ -1978,6 +1988,7 @@ def parse_args(argv):
             g_phantomjs_packs = argv[i]
         elif s == "--rDemo":
             g_r_demo = True
+        elif s == "--tar":
             i += 1
             g_path_to_tar = os.path.abspath(argv[i])
         elif s == "--whl":
