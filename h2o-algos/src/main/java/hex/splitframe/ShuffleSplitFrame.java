@@ -23,9 +23,13 @@ public class ShuffleSplitFrame {
       ratios[i] = sum;
     }
     assert water.util.MathUtils.equalsWithinOneSmallUlp(sum,1.0);
+    byte[] types = fr.types();
+    final int ncols = fr.numCols();
+    byte[] alltypes = new byte[ncols*ratios.length];
+    for( int i = 0; i<ratios.length; i++ )
+      System.arraycopy(types,0,alltypes,i*ncols,ncols);
 
     // Do the split, into ratios.length groupings of NewChunks
-    final int ncols = fr.numCols();
     MRTask mr = new MRTask() {
       @Override public void map( Chunk cs[], NewChunk ncs[] ) {
         Random rng = new Random(seed*cs[0].cidx());
@@ -53,7 +57,7 @@ public class ShuffleSplitFrame {
           }
         }
       }
-    }.doAll_numericResult(ncols*ratios.length,fr);
+    }.doAll(alltypes,fr);
 
     // Build output frames
     Frame frames[] = new Frame[ratios.length];

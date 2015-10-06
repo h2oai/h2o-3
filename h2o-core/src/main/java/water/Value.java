@@ -562,8 +562,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Construct a Value which behaves like a "null" or "deleted" Value, but
   // allows for counting pending invalidates on the delete operation... and can
   // thus stall future Puts overriding the deletion until the delete completes.
-  static Value makeNull( Key key ) { return new Value(key,0,null,(short)0,TCP); }
-  boolean isNull() { return _type == 0; }
+  static Value makeNull( Key key ) { assert key.home(); return new Value(key,0,null,(short)0,TCP); }
+  boolean isNull() { assert _type != 0 || _key.home(); return _type == 0; }
   // Get from the local STORE.  If we fetch out a special Null Value, and it is
   // unlocked (it will never be write-locked, but may be read-locked if there
   // are pending invalidates on it), upgrade it in-place to a true null.
@@ -572,6 +572,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Value val = H2O.get(key);
     if( val == null ) return null; // A true null
     if( !val.isNull() ) return val; // Not a special Null
+    if( val._rwlock.get()>0 ) return val; // Not yet invalidates all completed
     // One-shot throwaway attempt at upgrading the special Null to a true null
     H2O.putIfMatch(key,null,val);
     return null;

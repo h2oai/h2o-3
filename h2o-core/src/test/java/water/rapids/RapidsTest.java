@@ -334,7 +334,7 @@ public class RapidsTest extends TestUtil {
   static boolean checkSaneFrame_impl() {
     for( Key k : H2O.localKeySet() ) {
       Value val = Value.STORE_get(k);
-      if( val.isFrame() ) {
+      if( val != null && val.isFrame() ) {
         Frame fr = val.get();
         Vec vecs[] = fr.vecs();
         for( int i=0; i<vecs.length; i++ ) {

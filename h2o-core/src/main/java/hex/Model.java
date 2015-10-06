@@ -171,11 +171,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         valid().read_lock(job._key);
     }
 
-    /** Read-UnLock both training and validation User frames. */
+    /** Read-UnLock both training and validation User frames.  This method is
+     *  called on crashing cleanup pathes, so handles the case where the frames
+     *  are not actually locked. */
     public void read_unlock_frames(Job job) {
       Frame tr = train();
-      if( tr != null ) tr.unlock(job._key);
-      if( _valid != null && !_train.equals(_valid) )
+      if( tr != null && tr.is_locked() ) tr.unlock(job._key);
+      if( _valid != null && !_train.equals(_valid) && valid().is_locked() )
         valid().unlock(job._key);
     }
 

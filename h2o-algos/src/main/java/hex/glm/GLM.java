@@ -720,12 +720,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup(){
       updateModelOutput();
-      try {
-        _parms.read_unlock_frames(GLM.this);
-      }
-      catch (Throwable t) {
-        // nada
-      }
+      _parms.read_unlock_frames(GLM.this);
       if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
         for( Key k : _adapt_keys ) Keyed.remove(k);
       if(_dinfo      != null) _dinfo     .remove();
