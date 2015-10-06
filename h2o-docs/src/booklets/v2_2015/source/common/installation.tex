@@ -1,3 +1,7 @@
+\documentclass{standalone}
+
+\begin{document}
+
 \section{Installation} 
 \Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
 
@@ -14,10 +18,12 @@ To load a recent H2O package from CRAN, run:
 install.packages("h2o")
 \end{lstlisting}
 
-{\bf{Note}}: The version of H2O in CRAN is often one release behind the current version.
+{\bf{Note}}: The version of H2O in CRAN may be one release behind the current version.
 
 For the latest recommended version, download the
 latest stable H2O-3 build from the H2O download page:
+
+\begin{minipage}{\textwidth}
 
 \begin{enumerate}
 \item Go to {\url{http://h2o.ai/download}}.
@@ -26,8 +32,11 @@ latest stable H2O-3 build from the H2O download page:
 \item Copy and paste the commands into your R session.
 \end{enumerate}
 
-\bigskip
+\end{minipage}
+
 After H2O is installed on your system, verify the installation:
+
+\begin{minipage}{\textwidth}
 
 \begin{lstlisting}[style=R]
 library(h2o)
@@ -45,6 +54,8 @@ demo(h2o.glm)
 demo(h2o.gbm)
 \end{lstlisting}
 
+\end{minipage}
+
 \subsection{Installation in Python}
 
 To load a recent H2O package from PyPI, run:
@@ -56,6 +67,8 @@ pip install h2o
 To download the
 latest stable H2O-3 build from the H2O download page:
 
+\begin{minipage}{\textwidth}
+
 \begin{enumerate}
 \item Go to {\url{http://h2o.ai/download}}.
 \item Choose the latest stable H2O-3 build.
@@ -63,8 +76,12 @@ latest stable H2O-3 build from the H2O download page:
 \item Copy and paste the commands into your Python session.
 \end{enumerate}
 
+\end{minipage}
+
 \bigskip
 After H2O is installed, verify the installation:
+
+\begin{minipage}{\textwidth}
 
 \begin{lstlisting}[style=python]
 import h2o
@@ -82,6 +99,8 @@ h2o.demo("gbm")
 
 \end{lstlisting}
 
+\end{minipage}
+
 \subsection{Pointing to a Different H2O Cluster}
 
 The instructions in the previous sections create a one-node H2O cluster on your local machine. 
@@ -95,3 +114,4 @@ h2o.init(ip = "123.45.67.89", port = 54321)
 
 %if it's the same, only one is needed
 
+\end{document}

@@ -229,7 +229,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTStratifiedKFold());
   }
 
-  public static ASTId newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTId  newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTStr newASTStr  (String s) { return new ASTStr(s); }
 }
 
 /** A number.  Execution is just to return the constant. */
@@ -280,6 +281,7 @@ class ASTId extends ASTParameter {
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }
+  @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*
