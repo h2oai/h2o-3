@@ -10,7 +10,7 @@ Classification Unbalanced Dense Data,Classification_UnBalanced_data_Auto_Balance
 Classification Balanced Sparse Data,Classification_Balanced_data_Auto_Balance_classes_disabled_Sparse,rf_testcase_5,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,
 Classification Unbalanced Sparse Data,Classification_UnBalanced_data_Auto_Balance_classes_disabled_Sparse,rf_testcase_6,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Unbalanced,x,,mnist_sparse_binary_unbalanced_train,mnist_sparse_binary_unbalanced_test,,x,x,,,,,,
 Weights enabled,Classification_Balanced_data_Auto_Weights_enabled_insurance_zero_weights_dataset,rf_testcase_7,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,insurance_zero_one_weights,,,,,,,,,,
-,Classification_Balanced_data_Auto_Weights_enabled_lung_zero_weights_dataset,rf_testcase_8,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,lung_zero_one_weights,,,,,,,,,,
+,Classification_Balanced_data_Auto_Weights_enabled_lung_zero_weights_dataset,rf_testcase_8,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,lung_zero_one_weights_classification,,,,,,,,,,
 ,Classification_Balanced_data_Auto_Weights_enabled_sweden_zero_weights_dataset,rf_testcase_9,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,sweden_zero_one_weights,,,,,,,,,,
 Trees = 150; learn_rate = 0.05,Classification_Balanced_data_Auto_Balance_classes_Sparse_Trees_150,rf_testcase_10,,x,x,,,,,,,,,,,,150,5,,,,,x,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
 ,Classification_Balanced_data_Auto_Balance_classes_disabled_Sparse_Trees_150,rf_testcase_11,,x,x,,,,,,,,,,,,150,5,,,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
