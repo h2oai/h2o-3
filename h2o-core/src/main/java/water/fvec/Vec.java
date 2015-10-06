@@ -1436,32 +1436,37 @@ public class Vec extends Keyed<Vec> {
       // are immutable and monotonically growing, it's safe (and much more
       // efficient!) to make the new copy use the old copies arrays where
       // possible.
-      assert local._espcs.length <= remote._espcs.length; // Monotonically growing
+      long[][] local_espcs = local ._espcs;
+      long[][] remote_espcs= remote._espcs;
       // Spin attempting to move the larger remote value into the local cache
       while( true ) {
-        // Use my (local, older, more heavily shared) ESPCS where possible
-        if( local._espcs != remote._espcs ) {
-          try {
-            System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
-          } catch( ArrayIndexOutOfBoundsException iae ) {
-            try { iae.wait(); } catch( InterruptedException ie ) {}
-          }
-        }
+        // Is the remote stale, and the local value already larger?  Can happen
+        // if the local is racily updated by another thread, after this thread
+        // reads the remote value (which then gets invalidated, and updated to
+        // a new larger value).
+        if( local_espcs.length >= remote_espcs.length ) return local;
+        // Use my (local, older, more heavily shared) ESPCs where possible.
+        // I.e., the standard remote read will create new copies of all ESPC
+        // arrays, but the *local* copies are heavily shared.  All copies are
+        // equal, but using the same shared copies cuts down on copies.
+        System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
         ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
-        if( res==local ) {
-          System.err.println(kespc+", Updated ESPCS from #"+local._espcs.length+" to #"+remote._espcs.length);
-          return remote;
-        }
-        if( res==remote ) {
-          System.err.println(kespc+", ESPCS was already updated to #"+remote._espcs.length);
-          return remote;
-        }
-        if( local._espcs.length > remote._espcs.length ) {
-          System.err.println(kespc+", Stale remote, using local, ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
-          return local;
-        }
-        System.err.println(kespc+", Failed, retrying ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
+        //if( res==local ) {
+        //  System.err.println(kespc+", Updated ESPCS from #"+local._espcs.length+" to #"+remote._espcs.length);
+        //  return remote;
+        //}
+        //if( res==remote ) {
+        //  System.err.println(kespc+", ESPCS was already updated to #"+remote._espcs.length);
+        //  return remote;
+        //}
+        //if( local._espcs.length > remote._espcs.length ) {
+        //  System.err.println(kespc+", Stale remote, using local, ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
+        //  return local;
+        //}
+        System.err.println(kespc+", Failed, retrying ESPCS update from #"+local_espcs.length+" to #"+remote_espcs.length+", existing size is #"+res._espcs.length);
         local = res;
+        local_espcs = local ._espcs;
+        remote_espcs= remote._espcs;
       }
     }
 

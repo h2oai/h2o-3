@@ -50,9 +50,9 @@ public class TestUtil extends Iced {
     int cnt=0;
     if( leaked_keys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
-        Value value = H2O.raw_get(k);
+        Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
+        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
             // Also leave around all attempted Jobs for the Jobs list
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;

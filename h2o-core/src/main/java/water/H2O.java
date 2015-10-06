@@ -1458,15 +1458,16 @@ final public class H2O {
   }
   public static String foo( Value v ) {
     if( v==null ) return null;
+    if( v.isNull() ) return "Null";
     return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
   }
 
   // Get the value from the store
-  public static Value get( Key key ) { return STORE.get(key); }
-  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
+  public static Value     get(Key key) { return STORE.get(key); }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
   public static void raw_clear() { STORE.clear(); }
+  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }

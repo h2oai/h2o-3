@@ -117,6 +117,7 @@ public abstract class DKV {
     if( old != null && !key.home() ) old.startRemotePut();
 
     // local update first, since this is a weak update
+    if( val == null ) val = Value.makeNull(key);
     Value res = H2O.putIfMatch(key,val,old);
     if( res != old )            // Failed?
       return res;               // Return fail value
@@ -141,7 +142,8 @@ public abstract class DKV {
     // If PUT is on     HOME, invalidate remote caches
     // If PUT is on non-HOME, replicate/push to HOME
     if( key.home() ) {          // On     HOME?
-      if( old != null ) old.lockAndInvalidate(H2O.SELF,fs);
+      if( old != null ) old.lockAndInvalidate(H2O.SELF,val,fs);
+      else val.lowerActiveGetCount(null);  // Remove initial read-lock, accounting for pending inv counts
     } else {                    // On non-HOME?
       // Start a write, but do not block for it
       TaskPutKey.put(key.home_node(),key,val,fs, dontCache);
@@ -185,7 +187,7 @@ public abstract class DKV {
   static private Value get( Key key, boolean blocking ) {
     // Read the Cloud once per put-attempt, to keep a consistent snapshot.
     H2O cloud = H2O.CLOUD;
-    Value val = H2O.get(key);
+    Value val = Value.STORE_get(key);
     // Hit in local cache?
     if( val != null ) {
       if( val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) {
