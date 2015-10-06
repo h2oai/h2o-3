@@ -1502,6 +1502,7 @@ final public class H2O {
       Object ov = kvs[i+1];
       if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
       Value val = (Value)ov;
+      if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another variant of NULL
       int t = val.type();
       while( t >= cnts.length ) cnts = Arrays.copyOf(cnts,cnts.length<<1);
       cnts[t]++;

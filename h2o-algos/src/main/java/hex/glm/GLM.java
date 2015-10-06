@@ -760,7 +760,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           return false;
         }
         try {
-          doCleanup();
+          if( !(ex instanceof IllegalArgumentException) ) // e.g. Illegal beta constraints file, got duplicate constraint for predictor
+            doCleanup();
           new RemoveCall(null, _dest).invokeTask();
         } catch(Throwable t) {Log.err(t);}
         failed(ex);

@@ -228,9 +228,10 @@ public final class ParseDataset extends Job<Frame> {
         //Test domains for excessive length.
         List<String> offendingColNames = new ArrayList<>();
         for (int i = 0; i < ecols.length; i++) {
-          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT)
-            avs[ecols[i]].setDomain(gcdt.getDomain(i));
-          else
+          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT) {
+            if( gcdt.getDomainLength(i)==0 ) avs[ecols[i]].setBad(); // The all-NA column
+            else avs[ecols[i]].setDomain(gcdt.getDomain(i));
+          } else
             offendingColNames.add(setup._column_names[ecols[i]]);
         }
         if (offendingColNames.size() > 0)
@@ -643,7 +644,7 @@ public final class ParseDataset extends Job<Frame> {
       int nchunks = 0;          // Count chunks across all Vecs
       int nCols = 0;            // SVMLight special: find max columns
       for( FVecParseWriter dout : _dout ) {
-        nchunks += dout.nChunks();
+        nchunks += dout._vecs[0]._tmp_espc.length;
         nCols = Math.max(dout._vecs.length,nCols);
       }
       // One Big Happy Shared ESPC
@@ -660,14 +661,13 @@ public final class ParseDataset extends Job<Frame> {
       for( FVecParseWriter fvpw : _dout ) {
         AppendableVec[] avs = fvpw._vecs;
         long[] file_local_espc = avs[0]._tmp_espc;
-        int len = fvpw.nChunks();
-        assert len <= file_local_espc.length;
         // Quick assert that all partial AVs in each DOUT are sharing a common chunkOff, and common Vec Keys
         for( int j = 0; j < avs.length; ++j ) {
           assert res[j]._key.equals(avs[j]._key);
           assert avs[0]._chunkOff == avs[j]._chunkOff;
+          assert file_local_espc == avs[j]._tmp_espc || Arrays.equals(file_local_espc,avs[j]._tmp_espc);
         }
-        System.arraycopy(file_local_espc, 0, espc, avs[0]._chunkOff, len);
+        System.arraycopy(file_local_espc, 0, espc, avs[0]._chunkOff, file_local_espc.length);
       }
 
       _vecs = res;
