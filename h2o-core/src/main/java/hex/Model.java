@@ -157,7 +157,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
-    public final Frame train() { return _train.get(); }
+    public final Frame train() { return _train == null ? null : _train.get(); }
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.<Frame>get(); }
