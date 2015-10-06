@@ -79,12 +79,12 @@ function(pathStub, root.parent = NULL) {
     # which is /home/0xdiag/ on ALL jenkins machines. If ON.JENKINS.HADOOP is set by the run.py, pathStub MUST be
     # relative to /home/0xdiag/
     return(paste0("/home/0xdiag/",pathStub))
-  } else {
-    pathStub <- clean(pathStub)
-    bucket <- pathStub[1]
-    offset <- pathStub[-1]
-    cur.dir <- getwd()
   }
+  pathStub <- clean(pathStub)
+  bucket <- pathStub[1]
+  offset <- pathStub[-1]
+  cur.dir <- getwd()
+
   #recursively ascend until `bucket` is found
   bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
   if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
@@ -131,7 +131,7 @@ function(cur.dir, root, root.parent = NULL) {
     if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is h2o-dev, check the children here (and fail if `root` not found)
-    if (parent.name == PROJECT.ROOT) {
+    if (parent.name == PROJECT.ROOT || parent.name == "workspace") {
       if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }

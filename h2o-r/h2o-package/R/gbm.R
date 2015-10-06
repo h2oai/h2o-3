@@ -20,7 +20,9 @@
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
+#' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
+#' @param sample_rate Row sample rate (from \code{0.0} to \code{1.0})
+#' @param col_sample_rate Column sample rate (from \code{0.0} to \code{1.0})
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
 #'        level, then decrease by factor of two per level.
@@ -32,7 +34,7 @@
 #'        counts via over/under-sampling (for imbalanced data).
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
 #'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
-#' @param seed Seed for random numbers (affects sampling when balance_classes=T).
+#' @param seed Seed for random numbers (affects sampling).
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -66,6 +68,8 @@ h2o.gbm <- function(x, y, training_frame,
                     max_depth = 5,
                     min_rows = 10,
                     learn_rate = 0.1,
+                    sample_rate = 1.0,
+                    col_sample_rate = 1.0,
                     nbins = 20,
                     nbins_top_level,
                     nbins_cats = 1024,
@@ -125,6 +129,10 @@ h2o.gbm <- function(x, y, training_frame,
     parms$min_rows <- min_rows
   if (!missing(learn_rate))
     parms$learn_rate <- learn_rate
+  if (!missing(sample_rate))
+    parms$sample_rate <- sample_rate
+  if (!missing(col_sample_rate))
+    parms$col_sample_rate <- col_sample_rate
   if (!missing(nbins))
     parms$nbins <- nbins
   if (!missing(nbins_top_level))

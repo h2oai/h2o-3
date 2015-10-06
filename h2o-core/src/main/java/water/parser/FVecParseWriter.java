@@ -71,7 +71,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public FVecParseWriter close(Futures fs){
     ++_nChunks;
     if( _nvs == null ) return this; // Might call close twice
-    for(NewChunk nv:_nvs) nv.close(_cidx, fs);
+    for(int i=0; i < _nvs.length; i++) {
+      _nvs[i].close(_cidx, fs);
+      _nvs[i] = null; // free immediately, don't wait for all columns to close
+    }
     _nvs = null;  // Free for GC
     return this;
   }
