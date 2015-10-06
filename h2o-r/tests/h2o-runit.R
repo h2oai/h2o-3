@@ -79,12 +79,12 @@ function(pathStub, root.parent = NULL) {
     # which is /home/0xdiag/ on ALL jenkins machines. If ON.JENKINS.HADOOP is set by the run.py, pathStub MUST be
     # relative to /home/0xdiag/
     return(paste0("/home/0xdiag/",pathStub))
-  } else {
-    pathStub <- clean(pathStub)
-    bucket <- pathStub[1]
-    offset <- pathStub[-1]
-    cur.dir <- getwd()
   }
+  pathStub <- clean(pathStub)
+  bucket <- pathStub[1]
+  offset <- pathStub[-1]
+  cur.dir <- getwd()
+
   #recursively ascend until `bucket` is found
   bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
   if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
