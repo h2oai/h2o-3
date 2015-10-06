@@ -1,7 +1,5 @@
 package water;
 
-import java.util.concurrent.Future;
-
 /** Push the given key to the remote node
  *  @author <a href="mailto:cliffc@h2o.ai"></a>
  *  @version 1.0
@@ -25,7 +23,7 @@ public class TaskPutKey extends DTask<TaskPutKey> {
     Paxos.lockCloud(_key);
     // Initialize Value for having a single known replica (the sender)
     if( _val != null ) _val.initReplicaHome(sender,_key);
-    else _val = Value.makeNull(_key);
+    else if( _key.home() ) _val = Value.makeNull(_key);
     // Spin, until we update something.
     Value old = H2O.raw_get(_key); // Raw-get: do not lazy-manifest if overwriting
     while( H2O.putIfMatch(_key,_val,old) != old )

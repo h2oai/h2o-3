@@ -117,7 +117,7 @@ public abstract class DKV {
     if( old != null && !key.home() ) old.startRemotePut();
 
     // local update first, since this is a weak update
-    if( val == null ) val = Value.makeNull(key);
+    if( val == null && key.home() ) val = Value.makeNull(key);
     Value res = H2O.putIfMatch(key,val,old);
     if( res != old )            // Failed?
       return res;               // Return fail value
