@@ -465,7 +465,7 @@ Priors enabled,Classification_Balanced data_Binomial_Auto_Standardized_Sparse_Lo
 ,Classification_Balanced data_Binomial_LBFGS_Standardized_Sparse_Lowerbound=Upperbound_Alpha=0,glm_testcase_461,,x,,x,,,,,,x,,,,,,,,0,,,x,,,,,,,1,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 Max predictors set,Classification_Balanced data_Binomial_Auto_Standardized_Sparse_Beta constraints enabled_Lowerbound=Upperbound_Alpha=0,glm_testcase_462,,x,,x,,,,x,,,,,,,,,,0,,,x,,x,0,1,,,,782,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 ,Classification_Balanced data_Multinomial_IRLSM_Standardized_Sparse_Beta constraints enabled_Lowerbound=Upperbound_Alpha=0,glm_testcase_463,,x,,x,,,,,x,,,,,,,,,0,,,x,,x,0,1,,,,782,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
-,Classification_Balanced data_Multinomial_LBFGS_Standardized_Sparse_Beta constraints enabled_Lowerbound=Upperbound_Alpha=0,glm_testcase_464,,x,x,,,,,,,x,,,,,,,,0,,,x,,x,0,1,,,,782,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
+,Classification_Balanced data_Multinomial_LBFGS_Standardized_Sparse_Beta constraints enabled_Lowerbound=Upperbound_Alpha=0,glm_testcase_464,,x,,x,,,,,,x,,,,,,,,0,,,x,,x,0,1,,,,782,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,
 Offset Enabled,Regression_Offset_enabled_insurance_dataset,glm_testcase_465,x,,x,,,,,,,,,,,,,log_holders,,,,,,,,,,,,,,Balanced,,,insurance_log_holders_poisson,,,,,,,,,,,
 ,Regression_Offset_enabled_lung_dataset,glm_testcase_466,x,,x,,,,,,,,,,,,,log_pop,,,,,,,,,,,,,,Balanced,,,lung_log_pop,,,,,,,,,,,
 ,Regression_Offset_enabled_sweden_log_insured_dataset,glm_testcase_467,x,,x,,,,,,,,,,,,,log_insured,,,,,,,,,,,,,,Balanced,,,sweden_log_insured_regression,,,,,,,,,,,
