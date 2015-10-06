@@ -87,6 +87,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           if (error > 0) {
             Assert.fail("Classification error is not 0, but " + error + ".");
           }
+          Assert.assertTrue(mymodel.testJavaScoring(frame,pred,1e-6));
           pred.delete();
           mymodel.delete();
         }
