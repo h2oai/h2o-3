@@ -16,6 +16,8 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Created by tomasnykodym on 10/5/15.
+ *
+ * Test that our DKV follows java mm.
  */
 public class DKVTest extends TestUtil {
   @BeforeClass()
@@ -33,9 +35,6 @@ public class DKVTest extends TestUtil {
       final H2OCountedCompleter barrier = (new H2OCountedCompleter() {
         @Override
         protected void compute2() {
-        }
-        @Override public void onCompletion(CountedCompleter cc){
-          System.out.println("barrier completed by cc = " + cc.getClass().getSimpleName() + ", pending count = " + getPendingCount());
         }
       });
       barrier.addToPendingCount(_keys.length-1);
@@ -63,17 +62,21 @@ public class DKVTest extends TestUtil {
           }
         }).fork(_keys[i]);
       }
-//      barrier
       barrier.join();
     }
   }
 
-  /*
-  Test that DKV.put is globally visible and consistent after the task returns.
-  Test by doing atomic update and immediately launching remote tasks to all nodes to assert that they see correct version
+  /**
+   * Test for recently discovered bug in DKV where updates sometimes failed to wait for all invalidates to the given key.
+   *
+   * Test that DKV puts (Tatomic updates) are globally visible after the tatomic task gets back.
+   *
+   * Makes a Key per node, caches it on all other nodes and then performs atomic updates followed by global visibility check.
+   * Fails if the update is not globally visible.
+   * 
    */
   @Test
-  public  void testMM(){
+  public  void testTatomic(){
     try {
       final Key[] keys = new Key[H2O.CLOUD.size()];
       for (int r = 0; r < 20; ++r) {
@@ -88,7 +91,7 @@ public class DKVTest extends TestUtil {
         }
       }
     } finally {
-      H2O.orderlyShutdown();
+//      H2O.orderlyShutdown();
     }
   }
 
