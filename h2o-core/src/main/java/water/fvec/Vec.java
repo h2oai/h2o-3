@@ -1398,10 +1398,6 @@ public class Vec extends Keyed<Vec> {
 
   public static class ESPC extends Keyed<ESPC> {
     static private NonBlockingHashMap<Key,ESPC> ESPCS = new NonBlockingHashMap<>();
-    public static Key DEBUG = Key.make("$06fffffffffffeffffff$nfs:\\smalldata\\iris\\iris_wheader.csv");
-    static {
-      System.err.println("DEBUG KEY HOME IS "+DEBUG.home_node());
-    }
 
     // Array of Row Layouts (Element Start Per Chunk) ever seen by this
     // VectorGroup.  Shared here, amongst all Vecs using the same row layout
@@ -1423,9 +1419,8 @@ public class Vec extends Keyed<Vec> {
     }
 
     // Fetch from remote, and unify as needed
-    private static ESPC getRemote( ESPC local, Key kespc, String msg ) {
+    private static ESPC getRemote( ESPC local, Key kespc ) {
       final ESPC remote = DKV.getGet(kespc);
-      System.err.println(kespc+", ESPC remote= #"+(remote==null?"null":remote._espcs.length)+", local= #"+local._espcs.length+", "+msg);
       if( remote == null || remote == local ) return local; // No change
 
       // Something New?  If so, we need to unify the sharable arrays with a
@@ -1451,19 +1446,6 @@ public class Vec extends Keyed<Vec> {
         // equal, but using the same shared copies cuts down on copies.
         System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
         ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
-        //if( res==local ) {
-        //  System.err.println(kespc+", Updated ESPCS from #"+local._espcs.length+" to #"+remote._espcs.length);
-        //  return remote;
-        //}
-        //if( res==remote ) {
-        //  System.err.println(kespc+", ESPCS was already updated to #"+remote._espcs.length);
-        //  return remote;
-        //}
-        //if( local._espcs.length > remote._espcs.length ) {
-        //  System.err.println(kespc+", Stale remote, using local, ESPCS update from #"+local._espcs.length+" to #"+remote._espcs.length+", existing size is #"+res._espcs.length);
-        //  return local;
-        //}
-        System.err.println(kespc+", Failed, retrying ESPCS update from #"+local_espcs.length+" to #"+remote_espcs.length+", existing size is #"+res._espcs.length);
         local = res;
         local_espcs = local ._espcs;
         remote_espcs= remote._espcs;
@@ -1478,7 +1460,7 @@ public class Vec extends Keyed<Vec> {
       final int r = v._rowLayout;
       if( r < local._espcs.length ) return r==-1 ? null : local._espcs[r];
       // Now try to refresh the local cache from the remote cache
-      final ESPC remote = getRemote( local, kespc, ("find espc for layout #"+r) );
+      final ESPC remote = getRemote( local, kespc);
       if( r < remote._espcs.length ) return remote._espcs[r];
       throw H2O.fail("Vec "+v._key+" asked for layout "+r+", but only "+remote._espcs.length+" layouts defined");
     }
@@ -1508,33 +1490,29 @@ public class Vec extends Keyed<Vec> {
       // invalidated, and a refetch might get a new larger ESPC with the
       // desired layout.
       if( !H2O.containsKey(kespc) ) {
-        local = getRemote(local,kespc, ("get rowLayout for R"+espc[1]+", and kespc not in local STORE")); // Fetch remote, merge as needed
+        local = getRemote(local,kespc);      // Fetch remote, merge as needed
         idx = find_espc(espc, local._espcs); // Retry
         if( idx != -1 ) return idx;
       }
       
       // Send the ESPC over to the ESPC master, and request it get
       // inserted.
-      System.err.println(kespc+", Calling TAtomic for R"+espc[1]);
       new TAtomic<ESPC>() {
         @Override public ESPC atomic( ESPC old ) {
           if( old == null ) return new ESPC(_key,new long[][]{espc});
           long[][] espcs = old._espcs;
           int idx = find_espc(espc,espcs);
-          if( idx != -1 ) { System.err.println(_key+", TAtomic finds at #"+idx+" for R"+espc[1]); return null;} // Abort transaction, idx exists; client needs to refresh
+          if( idx != -1 ) return null; // Abort transaction, idx exists; client needs to refresh
           int len = espcs.length;
           espcs = Arrays.copyOf(espcs,len+1);
           espcs[len] = espc;    // Insert into array
           return new ESPC(_key,espcs);
         }
-        @Override public void onSuccess( ESPC old ) { 
-          System.err.println(_key+",TAtomic installed at #"+(old==null?0:old._espcs.length)+" for R"+espc[1]+", all invalidates are done!");
-        }
       }.invoke(kespc);
       // Refetch from master, try again
-      ESPC reloaded = getRemote(local,kespc, ("get rowLayout after TAtomic install for R"+espc[1])); // Fetch remote, merge as needed
-      idx = find_espc(espc,reloaded._espcs); // Retry
-      assert idx != -1;                   // Must work now (or else the install failed!)
+      ESPC reloaded = getRemote(local,kespc); // Fetch remote, merge as needed
+      idx = find_espc(espc,reloaded._espcs);  // Retry
+      assert idx != -1;                       // Must work now (or else the install failed!)
       return idx;
     }
     public static void clear() { ESPCS.clear(); }

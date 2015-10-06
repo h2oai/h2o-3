@@ -1442,9 +1442,6 @@ final public class H2O {
     // Insert into the K/V store
     Value res = STORE.putIfMatchUnlocked(key,val,old);
     if( res != old ) return res; // Return the failure cause
-    if( key.equals(water.fvec.Vec.ESPC.DEBUG) ) {
-      System.err.println(key + ", H2O.putIfMatch update from #" + foo(old) + " to #" + foo(val));
-    }
     // Persistence-tickle.
     // If the K/V mapping is going away, remove the old guy.
     // If the K/V mapping is changing, let the store cleaner just overwrite.

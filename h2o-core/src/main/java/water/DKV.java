@@ -78,7 +78,7 @@ public abstract class DKV {
     assert key != null;
     assert val==null || val._key == key:"non-matching keys " + key.toString() + " != " + val._key.toString();
     while( true ) {
-      Value old = H2O.raw_get(key); // Raw-get: do not lazy-manifest if overwriting
+      Value old = Value.STORE_get(key); // Raw-get: do not lazy-manifest if overwriting
       Value res = DputIfMatch(key,val,old,fs,dontCache);
       if( res == old ) return old; // PUT is globally visible now?
       if( val != null && val._key != key ) key = val._key;
@@ -190,11 +190,8 @@ public abstract class DKV {
     Value val = Value.STORE_get(key);
     // Hit in local cache?
     if( val != null ) {
-      if( val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) {
-        if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
-          System.err.println(key + ", GET STORE hit len= #" + water.H2O.foo(val));
+      if( val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() )
         return val;
-      }
       assert !key.home(); // Master must have *something*; we got nothing & need to fetch
     }
 
@@ -214,19 +211,10 @@ public abstract class DKV {
     // send to the remote, so the local get has missed above, but a remote
     // get still might 'win' because the remote 'remove' is still in-progress.
     TaskPutKey tpk = home.pendingPutKey(key);
-    if( tpk != null ) {
-      if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
-        System.err.println(key + ", GET PENDING putKey hit len= #" + water.H2O.foo(tpk._xval));
-      return tpk._xval;
-    }
+    if( tpk != null ) return tpk._xval;
 
     // Get data "the hard way"
     RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
-    if( !blocking ) return null;
-    val = TaskGetKey.get(tgk);
-    if( key.equals(water.fvec.Vec.ESPC.DEBUG) )
-      System.err.println(key + ", GET TaskGetKey (blocking) got len= #" + water.H2O.foo(val));
-    return val;
-    //return blocking ? TaskGetKey.get(tgk) : null;
+    return blocking ? TaskGetKey.get(tgk) : null;
   }
 }
