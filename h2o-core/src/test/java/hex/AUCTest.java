@@ -4,6 +4,7 @@ import java.util.Arrays;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 public class AUCTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -92,7 +93,7 @@ public class AUCTest extends TestUtil {
     double rows[][] = new double[probs.length][];
     for( int i=0; i<probs.length; i++ )
       rows[i] = new double[]{probs[i],actls[i]};
-    Frame fr = frame(new String[]{"probs","actls"},rows);
+    Frame fr = ArrayUtils.frame(new String[]{"probs", "actls"}, rows);
     AUC2 auc = new AUC2(fr.vec("probs"),fr.vec("actls"));
     fr.remove();
     for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._p)+","+((double)auc._fps[i]/auc._n)+"} ");

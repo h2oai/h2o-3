@@ -34,7 +34,7 @@ test.one.node.drf <- function() {
     expect_equal(h2o.r2(drf.sing), h2o.r2(drf.mult), tolerance = 0.01)
   }
 
-  testEnd()
+  
 }
 
 doTest("Testing One Node vs Multi Node Random Forest", test.one.node.drf)

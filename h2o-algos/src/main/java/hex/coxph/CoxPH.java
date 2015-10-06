@@ -37,7 +37,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   /** Start the Cox PH training Job on an F/J thread.
    * @param work
    * @param restartTimer*/
-  @Override public Job<CoxPHModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<CoxPHModel> trainModelImpl(long work, boolean restartTimer) {
     CoxPHDriver cd = new CoxPHDriver();
     cd.setModelBuilderTrain(_train);
     CoxPH cph = (CoxPH) start(cd, work, restartTimer);
@@ -64,7 +64,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     if (!_parms.stop_column.isInt())
       error("stop_column", "stop time must be of type integer");
 
-    if (!_parms.event_column.isInt() && !_parms.event_column.isEnum())
+    if (!_parms.event_column.isInt() && !_parms.event_column.isCategorical())
       error("event_column", "event must be of type integer or factor");
 
     if (Double.isNaN(_parms.lre_min) || _parms.lre_min <= 0)

@@ -15,7 +15,7 @@ test.pca.arrests <- function() {
     print(arrests.pca.h2o)
   }
   
-  testEnd()
+  
 }
 
 doTest("PCA Test: USArrests Data", test.pca.arrests)

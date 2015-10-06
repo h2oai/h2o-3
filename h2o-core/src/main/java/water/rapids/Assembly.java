@@ -3,10 +3,8 @@ package water.rapids;
 import water.H2O;
 import water.Key;
 import water.Keyed;
-import water.rapids.transforms.Transform;
 import water.fvec.Frame;
-
-import java.util.HashMap;
+import water.rapids.transforms.Transform;
 
 /**
  * Assemblies are essentially Pipelines.
@@ -25,24 +23,17 @@ public class Assembly extends Keyed<Assembly> {
 
   Transform[] steps() { return _steps; }
 
-  HashMap<String, HashMap<String,ASTParameter>> getParams(boolean deep) {
-    HashMap<String, HashMap<String, ASTParameter>> out = new HashMap<>();
-    for (Transform step: _steps)
-      out.put(step.name(), step.getParams(deep));
-    return out;
-  }
-
-  public Frame applyTransforms(Frame f) {
+  public Frame fit(Frame f) {
     for(Transform step: _steps)
       f = step.fitTransform(f);
     return f;
   }
 
-  public Frame fit(Frame f) { return applyTransforms(f); }
-
-  public StringBuilder toJava(String pojoName) {
+  public String toJava(String pojoName) {
     if( pojoName==null ) pojoName = "GeneratedMungingPojo";
     StringBuilder sb = new StringBuilder(
+            "import hex.genmodel.GenMunger;\n"+
+            "import hex.genmodel.easy.RowData;\n\n" +
             "class " + pojoName + " extends GenMunger {\n"+
             "  public " + pojoName + "() {\n"+
             "    _steps = new Step[" + _steps.length + "];\n"
@@ -54,7 +45,7 @@ public class Assembly extends Keyed<Assembly> {
     for(Transform step: _steps)
       sb.append(step.genClass());
     sb.append("}\n");
-    return sb;
+    return sb.toString();
   }
 
   @Override protected long checksum_impl() {

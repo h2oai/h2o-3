@@ -551,7 +551,16 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
-Currently, this is not yet supported. To provide resource isolation (for example, to isolate H2O to the worker nodes, rather than the master nodes), use YARN Nodemanagers to specify the nodes to use. 
+After creating and applying the desired node labels and associating them with specific queues as described in the [Hadoop documentation](http://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.2.0/YARN_RM_v22/node_labels/index.html#Item1.1), launch H2O using the following command: 
+
+`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName`
+
+
+- `-Dmapreduce.job.queuename=<my-h2o-queue>` represents the queue name
+- `-nodes <num-nodes>` represents the number of nodes
+- `-mapperXmx 6g` launches H2O with 6g of memory
+- `-output hdfsOutputDirName` specifies the HDFS output directory as `hdfsOutputDirName`
+
 
 ---
 
@@ -762,6 +771,20 @@ fsetup["column_types"][1] = "Enum" # change second column "CAPSULE" to categoric
 fr = h2o.parse_raw(fsetup) 
 fr.describe()
 ```
+
+---
+
+**How do I view a list of variable importances in Python?**
+
+Use `model.varimp(return_list=True)` as shown in the following example:
+
+```
+model = h2o.gbm(y = "IsDepDelayed", x = ["Month"], training_frame = df)
+vi = model.varimp(return_list=True)
+Out[26]:
+[(u'Month', 69.27436828613281, 1.0, 1.0)]
+```
+
 
 
 ---

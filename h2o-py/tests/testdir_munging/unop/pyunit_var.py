@@ -13,8 +13,8 @@ def var_test():
     
     
 
-    iris_h2o = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    iris_np = np.genfromtxt(h2o.locate("smalldata/iris/iris_wheader.csv"),
+    iris_h2o = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris_np = np.genfromtxt(tests.locate("smalldata/iris/iris_wheader.csv"),
                             delimiter=',',
                             skip_header=1,
                             usecols=(0, 1, 2, 3))

@@ -8,7 +8,7 @@ def link_incompatible_error():
 
 
     print("Reading in original prostate data.")
-    prostate = h2o.import_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
+    prostate = h2o.import_file(path=tests.locate("smalldata/prostate/prostate.csv.zip"))
 
     print("Throw error when trying to create model with incompatible logit link.")
     try:

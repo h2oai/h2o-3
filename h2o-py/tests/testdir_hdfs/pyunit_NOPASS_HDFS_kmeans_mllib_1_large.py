@@ -23,7 +23,7 @@ def kmeans_mllib():
         cross_h2o = h2o.import_file(url)
         n = cross_h2o.nrow
 
-        err_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
+        err_mllib = np.genfromtxt(tests.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
         ncent = [int(err_mllib[r][0]) for r in range(len(err_mllib))]
 
         for k in ncent:
@@ -31,7 +31,7 @@ def kmeans_mllib():
             cross_km = h2o.kmeans(training_frame = cross_h2o, x = cross_h2o, k = k, init = "PlusPlus",
                                   max_iterations = 10, standardize = False)
 
-            clust_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
+            clust_mllib = np.genfromtxt(tests.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
                                         delimiter=",").tolist()
             clust_h2o = cross_km.centers()
 

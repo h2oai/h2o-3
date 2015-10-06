@@ -97,7 +97,7 @@ print(dl.VI)
 # Plot variable importance from deeplearing
 barplot(dl.VI$scaled_importance[1:20], names.arg = dl.VI$variable[1:20], las=2,main="VI from Deep Learning")
 
-testEnd()
+
 }
 
 doTest("Plot to compare the Variable Importance as predicted by different algorithms on the bank-marketing dataset", test)

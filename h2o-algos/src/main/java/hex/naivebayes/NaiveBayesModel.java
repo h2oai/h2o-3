@@ -1,13 +1,17 @@
 package hex.naivebayes;
 
-import hex.*;
+import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
+import hex.ModelMetricsMultinomial;
 import hex.genmodel.GenModel;
 import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
+import water.codegen.CodeGeneratorPipeline;
 import water.util.JCodeGen;
-import water.util.SB;
+import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
@@ -59,7 +63,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
   // Note: For small probabilities, product may end up zero due to underflow error. Can circumvent by taking logs.
   @Override protected double[] score0(double[] data, double[] preds) {
     double[] nums = new double[_output._levels.length];    // log(p(x,y)) for all levels of y
-    assert preds.length == (_output._levels.length + 1);   // Note: First column of preds is predicted response class
+    assert preds.length >= (_output._levels.length + 1);   // Note: First column of preds is predicted response class
 
     // Compute joint probability of predictors for every response class
     for(int rlevel = 0; rlevel < _output._levels.length; rlevel++) {
@@ -105,8 +109,8 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     return preds;
   }
 
-  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
-    sb = super.toJavaInit(sb, fileContextSB);
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb = super.toJavaInit(sb, fileCtx);
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
@@ -125,8 +129,10 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     return sb;
   }
 
-  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
-    SB model = new SB();
+  @Override protected void toJavaPredictBody(SBPrintStream bodySb,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     bodySb.i().p("double mean, sdev, prob;").nl();
     bodySb.i().p("double[] nums = new double[" + _output._levels.length + "];").nl();
@@ -137,7 +143,8 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     bodySb.i(2).p("if(Double.isNaN(data[j])) continue;").nl();
     bodySb.i(2).p("int level = (int)data[j];").nl();
     bodySb.i(2).p("prob = level < " + _output._pcond_raw.length + " ? PCOND[j][i][level] : " +
-            (_parms._laplace == 0 ? 0 : _parms._laplace + "/(RESCNT[i] + " + _parms._laplace + "*DOMLEN[j])")).p(";").nl();
+                  (_parms._laplace == 0 ? 0 : _parms._laplace + "/(RESCNT[i] + " + _parms._laplace
+                                              + "*DOMLEN[j])")).p(";").nl();
     bodySb.i(2).p("nums[i] += Math.log(prob <= " + _parms._eps_prob + " ? " + _parms._min_prob + " : prob);").nl();
     bodySb.i(1).p("}").nl();
 
@@ -159,7 +166,6 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     bodySb.i(1).p("}").nl();
     bodySb.i(1).p("preds[i+1] = 1/sum;").nl();
     bodySb.i().p("}").nl();
-    fileCtxSb.p(model);
 
     bodySb.i().p("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold()+");").nl();
   }

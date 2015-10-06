@@ -44,9 +44,9 @@ ratings.y
 print("Plot first archetype on a subset of movies")
 movie_idx <- 1:50
 plot(1:length(movie_idx), ratings.y[1,movie_idx], xlab = "Movie", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights", col = "blue", pch = 19, lty = "solid")
-text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,2], cex = 0.7, pos = 3)
+# text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,2], cex = 0.7, pos = 3)
 plot(1:length(movie_idx), ratings.y[1,movie_idx], xlab = "Movie", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights by Genre", col = "blue", pch = 19, lty = "solid")
-text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,3], cex = 0.7, pos = 3)
+# text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,3], cex = 0.7, pos = 3)
 
 # print("Plot subset of movies in 2-dimensional archetype space")
 # movie_idx <- 1:20

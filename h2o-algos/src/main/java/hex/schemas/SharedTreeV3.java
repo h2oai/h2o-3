@@ -58,7 +58,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level", level = API.Level.expert, gridable = true)
     public int nbins_top_level;
 
-    @API(help="For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
+    @API(help="For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
     public int nbins_cats;
 
     @API(help="Stop making trees when the R^2 metric equals or exceeds this", level = API.Level.secondary, gridable = true)
@@ -70,5 +70,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.secondary)
     public boolean build_tree_one_node;
 
+    @API(help = "Row sample rate (from 0.0 to 1.0)", gridable = true)
+    public float sample_rate;
   }
 }

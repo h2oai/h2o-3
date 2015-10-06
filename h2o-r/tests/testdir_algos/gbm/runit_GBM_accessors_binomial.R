@@ -89,7 +89,7 @@ test.gbm.bin.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.gbm))
 
-  testEnd()
+  
 }
 
 doTest("Testing model accessors for GBM", test.gbm.bin.accessors)

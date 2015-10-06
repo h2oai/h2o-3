@@ -15,7 +15,7 @@ trait FrameOps { self: Frame =>
   def colToEnum(cols: Array[String]): Unit = {
     if(!cols.map(name => { if (!this.names.contains(name)) false}).contains(false)) {
       val indexes = this.find(cols)
-      indexes.zipWithIndex.map(i => this.replace(this.find(cols(i._2)),this.vec(i._1).toEnum))
+      indexes.zipWithIndex.map(i => this.replace(this.find(cols(i._2)),this.vec(i._1).toCategoricalVec))
       this.update(null)
     } else {
       throw new IllegalArgumentException("One or several columns are not present in your DataFrame")

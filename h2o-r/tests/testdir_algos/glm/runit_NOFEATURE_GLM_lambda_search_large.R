@@ -34,7 +34,7 @@ test.GLM.lambda.search <- function() {
   models.bestlambda = models.best@model$params$lambda_best
   expect_equal(models.best@model$lambda, models.bestlambda)
   
-  testEnd()
+  
 }
 
 doTest("GLM Lambda Search Test: Prostate", test.GLM.lambda.search)

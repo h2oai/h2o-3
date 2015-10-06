@@ -16,7 +16,7 @@ test.PCA.australia <- function() {
   
   expect_equal(ncol(australia.pca@model$eigenvectors), 8)
   expect_equal(ncol(australia.pca2@model$eigenvectors), 2)
-  testEnd()
+  
 }
 
 doTest("PCA: Australia Data", test.PCA.australia)

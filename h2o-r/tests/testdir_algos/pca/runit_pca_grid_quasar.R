@@ -36,7 +36,7 @@ check.pca.grid.quasar <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  testEnd()
+  
 }
 
 doTest("PCA Grid Search using quasar dataset", check.pca.grid.quasar)

@@ -16,6 +16,6 @@ Log.info("Performing compound task !( ( hex[,c(\"petal_len\")] != 4.56344348577 
          filterHex <- hex[!( ( hex[,c("petal_len")] != 4.56344348577 ) & ( hex[,c("petal_len")] >= 3.54674974992 ) | ( ( hex[,c("species")] >= 2.26145385905 )) ), c("petal_wid","petal_len","sepal_len","species")]
     Log.info("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[!( ( hex[,c("petal_len")] != 4.56344348577 ) & ( hex[,c("petal_len")] >= 3.54674974992 ) | ( ( hex[,c("species")] >= 2.26145385905 )) ), c("sepal_wid")]
-testEnd()
+
 }
 doTest("compoundFilterTest_ on data iris_test_numeric_missing_extra unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_iris_test_numeric_missing_extra_40)

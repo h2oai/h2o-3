@@ -41,8 +41,8 @@ randomParams <- function(train, test, x, y) {
       if (!is.null(val))
         if (is.vector(val))
           Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
-        else if (inherits(val, "H2OFrame"))
-          Log.info(paste0(sub("_", " ", parm), ": ", val@id))
+        else if (class(val) == "Frame")
+          Log.info(paste("Frame: ", head(val)))
         else
           Log.info(paste0(sub("_", " ", parm), ": ", val))
       return(val)
@@ -107,7 +107,7 @@ test.RF.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams(cars.train, cars.test, 4:7, 3)
 
-  testEnd()
+  
 }
 
 doTest("Checking DRF in Random Attack For-loop", test.RF.rand_attk_forloop)

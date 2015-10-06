@@ -14,7 +14,7 @@ test.GLM.offset <- function(){
     Log.info("Run glm with offset specified")
     my_glm <- h2o.glm(x = 1:3, y = 4, training_frame = prostate.hex, family = "gaussian", offset_column = "GLEASON")
 
-    testEnd()
+    
 }
 
 doTest("GLM offset implementation test", test.GLM.offset)

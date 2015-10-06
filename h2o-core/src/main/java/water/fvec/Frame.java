@@ -3,7 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -205,7 +205,7 @@ public class Frame extends Lockable<Frame> {
     if(_vecs == null) return 0;
     int cols = 0;
     for(int i = 0; i < _vecs.length; i++) {
-      if(_vecs[i].isEnum() && _vecs[i].domain() != null)
+      if(_vecs[i].isCategorical() && _vecs[i].domain() != null)
         cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
       else cols++;
     }
@@ -373,8 +373,17 @@ public class Frame extends Lockable<Frame> {
     return bs;
   }
 
-  /** All the domains for enum columns; null for non-enum columns.  
-   *  @return the domains for enum columns */
+  /** String name for each Vec type */
+  public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
+    Vec[] vecs = vecs();
+    String s[] = new String[vecs.length];
+    for(int i=0;i<vecs.length;++i)
+      s[i] = vecs[i].get_type_str();
+    return s;
+  }
+
+  /** All the domains for categorical columns; null for non-categorical columns.
+   *  @return the domains for categorical columns */
   public String[][] domains() {
     Vec[] vecs = vecs();
     String ds[][] = new String[vecs.length][];
@@ -383,8 +392,8 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
-  /** Number of categorical levels for enum columns; -1 for non-enum columns.
-   * @return the number of levels for enum columns */
+  /** Number of categorical levels for categorical columns; -1 for non-categorical columns.
+   * @return the number of levels for categorical columns */
   public int[] cardinality() {
     Vec[] vecs = vecs();
     int[] card = new int[vecs.length];
@@ -393,13 +402,21 @@ public class Frame extends Lockable<Frame> {
     return card;
   }
 
-  /** Majority class for enum columns; -1 for non-enum columns.
-   * @return the majority class for enum columns */
-  public int[] modes() {
+  private Vec[] bulkRollups() {
+    Futures fs = new Futures();
     Vec[] vecs = vecs();
+    for(Vec v : vecs)  v.startRollupStats(fs);
+    fs.blockForPending();
+    return vecs;
+  }
+
+  /** Majority class for categorical columns; -1 for non-categorical columns.
+   * @return the majority class for categorical columns */
+  public int[] modes() {
+    Vec[] vecs = bulkRollups();
     int[] modes = new int[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
-      modes[i] = vecs[i].isEnum() ? vecs[i].mode() : -1;
+      modes[i] = vecs[i].isCategorical() ? vecs[i].mode() : -1;
     }
     return modes;
   }
@@ -407,7 +424,7 @@ public class Frame extends Lockable<Frame> {
   /** All the column means.
    *  @return the mean of each column */
   public double[] means() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] means = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ )
       means[i] = vecs[i].mean();
@@ -417,7 +434,7 @@ public class Frame extends Lockable<Frame> {
   /** One over the standard deviation of each column.
    *  @return Reciprocal the standard deviation of each column */
   public double[] mults() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] mults = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
       double sigma = vecs[i].sigma();
@@ -434,8 +451,8 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
+    Vec[] vecs = bulkRollups();
     long sum=0;
-    Vec[] vecs = vecs();
     for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
   }
@@ -1039,10 +1056,10 @@ public class Frame extends Lockable<Frame> {
         break;
       case Vec.T_STR :
         coltypes[i] = "string"; 
-        ValueString vstr = new ValueString();
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        BufferedString tmpStr = new BufferedString();
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
-      case Vec.T_ENUM:
+      case Vec.T_CAT:
         coltypes[i] = "string"; 
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
@@ -1102,7 +1119,8 @@ public class Frame extends Lockable<Frame> {
           }
         }
         // Process this next set of rows
-        // For all cols in the new set
+        // For all cols in the new set;
+        BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < _cols.length; i++) {
           Chunk oc = chks[_cols[i]];
           NewChunk nc = nchks[i];
@@ -1113,7 +1131,7 @@ public class Frame extends Lockable<Frame> {
               else nc.addNum(oc.at8(j), 0);
           } else if (oc._vec.isString()) {
             for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(new ValueString(), j));
+              nc.addStr(oc.atStr(tmpStr, j));
           } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
               nc.addNum(oc.atd(j));
@@ -1138,7 +1156,6 @@ public class Frame extends Lockable<Frame> {
           for(int row=0;row<cs[0]._len;++row) {
             if( cs[col].isNA(row) ) ncs[col].addNA();
             else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
-            else if( cs[col] instanceof StrWrappedVec.StrWrappedChunk) ncs[col].addStr(cs[col], row);
             else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
             else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
             else ncs[col].addNum(cs[col].atd(row));
@@ -1175,13 +1192,14 @@ public class Frame extends Lockable<Frame> {
   private static class DeepSelect extends MRTask<DeepSelect> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
+      BufferedString tmpStr = new BufferedString();
       for(int i = 0; i < pred._len; ++i) {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
             if( chk.isNA(i) )                   nchks[j].addNA();
             else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            else if( chk instanceof CStrChunk)  nchks[j].addStr(chk.atStr(tmpStr, i));
             else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
             else                                nchks[j].addNum(chk.at8(i),0);
           }
@@ -1283,13 +1301,14 @@ public class Frame extends Lockable<Frame> {
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
+      BufferedString tmpStr = new BufferedString();
       for( int i = 0; i < vs.length; i++ ) {
         if(i > 0) sb.append(',');
         if(!vs[i].isNA(_row)) {
-          if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
+          if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
           else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
           else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
+          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(tmpStr, _row)).append('"');
           else {
             double d = vs[i].at(_row);
             // R 3.1 unfortunately changed the behavior of read.csv().

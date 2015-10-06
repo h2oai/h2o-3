@@ -51,7 +51,7 @@ demo_workflow <- function() {
     }
     confusion_matrix(pred1.R)
     # confusion_matrix(pred2.R)
-    testEnd()
+    
 }
 
 doTest("Build KMeans model for iris, score and build confusion matrix.", demo_workflow)

@@ -60,7 +60,7 @@ test <- function() {
 	expect_equal(572.55, min(ph[,1]), tolerance=1e-2 )
 	expect_equal(217891.6, max(ph[,1]), tolerance=1e-2 )
 
-	testEnd()
+	
 }
 doTest("Deeplearning offset Test: deeplearning w/ offset for poisson distribution", test)
 

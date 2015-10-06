@@ -11,13 +11,13 @@ check.deeplearning_imbalanced <- function() {
                             reproducible=T, seed=1234, export_weights_and_biases=T)
   #print(dlmodel)
 
-  weights1 <- h2o.getFrame(h2o.weights(dlmodel,matrix_id=1)$name)
-  weights2 <- h2o.getFrame(h2o.weights(dlmodel,matrix_id=2)$name)
-  weights3 <- h2o.getFrame(h2o.weights(dlmodel,matrix_id=3)$name)
+  weights1 <- h2o.weights(dlmodel,matrix_id=1)
+  weights2 <- h2o.weights(dlmodel,matrix_id=2)
+  weights3 <- h2o.weights(dlmodel,matrix_id=3)
 
-  biases1 <- h2o.getFrame( h2o.biases(dlmodel,vector_id=1)$name)
-  biases2 <- h2o.getFrame( h2o.biases(dlmodel,vector_id=2)$name)
-  biases3 <- h2o.getFrame( h2o.biases(dlmodel,vector_id=3)$name)
+  biases1 <- h2o.biases(dlmodel,vector_id=1)
+  biases2 <- h2o.biases(dlmodel,vector_id=2)
+  biases3 <- h2o.biases(dlmodel,vector_id=3)
 
   checkTrue(ncol(weights1) == 52, "wrong dimensionality!")
   checkTrue(nrow(weights1) == 17, "wrong dimensionality!")
@@ -37,7 +37,7 @@ check.deeplearning_imbalanced <- function() {
   checkTrue(ncol(biases3) == 1, "wrong dimensionality!")
   checkTrue(nrow(biases3) == 7, "wrong dimensionality!")
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Weights/Biases Test", check.deeplearning_imbalanced)

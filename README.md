@@ -2,7 +2,11 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O makes Hadoop do math! H2O scales statistics, machine learning, and math over Big Data. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Python, Scala, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+H2O scales statistics, machine learning, and math over Big Data. 
+
+H2O uses familiar interfaces like R, Python, Scala, the Flow notebook graphical interface, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of algorithms including advanced ones like Deep Learning. H2O is extensible so that developers can add data transformations and model algorithms of their choice and access them through all of those clients.
+
+Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
@@ -171,7 +175,7 @@ Python tests require:
     pip install numpy
     pip install scipy
     pip install pandas
-    pip install statsmodles
+    pip install statsmodels
     pip install patsy
 
 ### 4.3. Setup on Windows

@@ -29,7 +29,7 @@ test.pubdev.1383 <- function() {
   Log.info("H2O PC Importance:"); print(impH2O)
   expect_equal(as.numeric(impR[1,1:k]), as.numeric(impH2O[1,]), tolerance = 1e-6)
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1383: Compare numerical accuracy of H2O and R PCA", test.pubdev.1383)

@@ -63,6 +63,6 @@ test <- function() {
 	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	
-	testEnd()
+	
 }
 doTest("DL residual deviance Test: DL deviance for poisson/gamma/tweedie distributions", test)

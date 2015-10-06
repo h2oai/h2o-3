@@ -8,7 +8,7 @@ def plot_test():
     kwargs = {}
     kwargs['server'] = True
 
-    air = h2o.import_file(h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air = h2o.import_file(tests.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     # Constructing test and train sets by sampling (20/80)
     s = air[0].runif()
@@ -25,7 +25,7 @@ def plot_test():
     air_gbm.plot(type="roc", train=True, **kwargs)
     air_gbm.plot(type="roc", valid=True, **kwargs)
 
-    air_test = h2o.import_file(h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(tests.locate("smalldata/airlines/AirlinesTest.csv.zip"))
     perf = air_gbm.model_performance(air_test)
 
     #Plot ROC for test set

@@ -19,8 +19,8 @@ if (TRUE) {
 
   source('../h2o-runit.R')
   options(echo=TRUE)
-  filePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
-  testFilePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+  filePath <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
+  testFilePath <- locate("smalldata/airlines/AirlinesTest.csv.zip")
 } else {
   stop("need to hardcode ip and port")
   myIP = "127.0.0.1"
@@ -100,7 +100,7 @@ check.demo_cm_roc <- function() {
       air.glm <- h2o.glm(x = myX, y = myY, training_frame = df, family = "binomial", nfolds = 10, alpha = 0.25, lambda = 0.001)
       air.glm@model$confusion
   }
-  testEnd()
+  
 }
 
 doTest("Airlines CM and ROC", check.demo_cm_roc)

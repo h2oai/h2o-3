@@ -4,6 +4,7 @@ import hex.Distribution;
 import hex.Model;
 import water.H2O;
 import static water.H2O.technote;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -410,11 +411,11 @@ public class DeepLearningParameters extends Model.Parameters {
 
   /**
    * Loss functions
-   * Absolute, MeanSquare, Huber for regression
-   * Absolute, MeanSquare, Huber or CrossEntropy for classification
+   * Absolute, Quadratic, Huber for regression
+   * Absolute, Quadratic, Huber or CrossEntropy for classification
    */
   public enum Loss {
-    Automatic, MeanSquare, CrossEntropy, Huber, Absolute
+    Automatic, Quadratic, CrossEntropy, Huber, Absolute
   }
 
   /**
@@ -505,7 +506,7 @@ public class DeepLearningParameters extends Model.Parameters {
     }
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
-        dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
+        dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), Quadratic, Absolute or Huber for numerical response (regression).");
       }
       //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
     } else {
@@ -515,7 +516,7 @@ public class DeepLearningParameters extends Model.Parameters {
         dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
     }
     if (!classification && _loss == Loss.CrossEntropy)
-      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
+      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, Quadratic, Absolute or Huber loss for regression, or use a categorical response.");
     if (classification) {
       switch(_distribution) {
         case gaussian:
@@ -709,30 +710,29 @@ public class DeepLearningParameters extends Model.Parameters {
       checkCompleteness();
       if (newP._nfolds != 0)
         throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
-      if ((newP._valid == null) != (oldP._valid == null)
-              || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
-        throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
+      if ((newP._valid == null) != (oldP._valid == null)) {
+        throw new H2OIllegalArgumentException("Presence of validation dataset must agree with the checkpointed model.");
       }
       if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
-        throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+        throw new H2OIllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
       }
       if (!Arrays.equals(newP._hidden, oldP._hidden)) {
-        throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
+        throw new H2OIllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
       }
       if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
-        throw new IllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
+        throw new H2OIllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
       }
 
       //compare the user-given parameters before and after and check that they are not changed
-      for (Field fBefore : oldP.getClass().getDeclaredFields()) {
+      for (Field fBefore : oldP.getClass().getFields()) {
         if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
-          for (Field fAfter : newP.getClass().getDeclaredFields()) {
+          for (Field fAfter : newP.getClass().getFields()) {
             if (fBefore.equals(fAfter)) {
               try {
                 if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
                   if (fBefore.get(oldP) == null && fAfter.get(newP) == null)
                     continue; //if both parameters are null, we don't need to do anything
-                  throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
+                  throw new H2OIllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
                 }
               } catch (IllegalAccessException e) {
                 e.printStackTrace();
@@ -838,7 +838,7 @@ public class DeepLearningParameters extends Model.Parameters {
 
       // Automatically set the distribution
       if (fromParms._distribution == Distribution.Family.AUTO) {
-        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/MeanSquare/Huber/Absolute
+        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
         if (nClasses > 1) {
           toParms._distribution = nClasses == 2 ? Distribution.Family.bernoulli : Distribution.Family.multinomial;
         }
@@ -846,7 +846,7 @@ public class DeepLearningParameters extends Model.Parameters {
           //regression/autoencoder
           switch(fromParms._loss) {
             case Automatic:
-            case MeanSquare:
+            case Quadratic:
               toParms._distribution = Distribution.Family.gaussian;
               break;
             case Absolute:
@@ -862,9 +862,9 @@ public class DeepLearningParameters extends Model.Parameters {
       }
 
       if (fromParms._loss == Loss.Automatic) {
-        switch (fromParms._distribution) {
+        switch (toParms._distribution) {
           case gaussian:
-            toParms._loss = Loss.MeanSquare;
+            toParms._loss = Loss.Quadratic;
             break;
           case laplace:
             toParms._loss = Loss.Absolute;

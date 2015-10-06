@@ -15,7 +15,7 @@ test.nbayes.iris <- function() {
     print(iris.nbayes.h2o)
   }
   
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Test: Iris Data with Laplace Smoothing", test.nbayes.iris)

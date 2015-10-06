@@ -27,7 +27,7 @@ test.nbayes.golden <- function() {
   checkNaiveBayesPrediction(predH2O, classR, type = "class", tolerance = 1e-4)
   checkNaiveBayesPrediction(predH2O, postR, type = "raw", tolerance = 1e-4)
   
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Golden Test: Covtype without Laplace smoothing", test.nbayes.golden)

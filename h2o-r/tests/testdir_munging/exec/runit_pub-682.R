@@ -43,7 +43,7 @@ test.head_empty <- function() {
     print(head(b.h2o[,1]))
     print(head(b.h2o[1,]))
 
-    testEnd()
+    
 }
 
 doTest("Test for head_empty.", test.head_empty)

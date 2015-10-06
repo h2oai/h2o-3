@@ -1,13 +1,17 @@
 package hex.pca;
 
-import hex.*;
+import hex.DataInfo;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
 import water.DKV;
 import water.Key;
 import water.MRTask;
+import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.JCodeGen;
-import water.util.SB;
+import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
@@ -137,8 +141,8 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     return preds;
   }
 
-  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
-    sb = super.toJavaInit(sb, fileContextSB);
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb = super.toJavaInit(sb, fileCtx);
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+_parms._k+"; }").nl();
@@ -153,8 +157,10 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     return sb;
   }
 
-  @Override protected void toJavaPredictBody( final SB bodySb, final SB classCtxSb, final SB fileCtxSb) {
-    SB model = new SB();
+  @Override protected void toJavaPredictBody(SBPrintStream bodySb,
+                                             CodeGeneratorPipeline classCtx,
+                                             CodeGeneratorPipeline fileCtx,
+                                             final boolean verboseCode) {
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     final int cats = _output._ncats;
     final int nums = _output._nnums;
@@ -176,6 +182,5 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     bodySb.i(2).p("preds[i] += (data[PERMUTE[j" + (cats > 0 ? "+" + cats : "") + "]]-NORMSUB[j])*NORMMUL[j]*EIGVECS[j" + (cats > 0 ? "+ nstart" : "") +"][i];").nl();
     bodySb.i(1).p("}").nl();
     bodySb.i().p("}").nl();
-    fileCtxSb.p(model);
   }
 }

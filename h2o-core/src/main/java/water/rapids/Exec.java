@@ -65,7 +65,6 @@ public class Exec {
   //   '{'   a nested function definition  expression '}'
   //   '#'   a double: attached_token
   //   '['   a numeric list expression, till ']'
-  //   '%'   an ID: attached_token
   //   '"'   a String (double quote): attached_token
   //   "'"   a String (single quote): attached_token
   //   digits: a double
@@ -84,7 +83,6 @@ public class Exec {
     case '[':  return isQuote(xpeek('[').skipWS()) ? new ASTStrList(this) : new ASTNumList(this);
     case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
     case '-':  return (peek(1)>='0' && peek(1) <='9') ? new ASTNum(this) : new ASTId(this);
-    case '%':  _x++;             // Skip before ID, FALL THRU
     default:  return new ASTId(this);
     }    
   }

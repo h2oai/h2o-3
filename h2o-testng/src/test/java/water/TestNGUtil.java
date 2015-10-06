@@ -145,7 +145,7 @@ public class TestNGUtil extends Iced {
      *  @param rows Data
      *  @return The Vec  */
     public static Vec vec(int...rows) { return vec(null, rows); }
-    /** A Categorical/Factor Vec from an array of ints - with enum/domain mapping
+    /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
      *  @param domain Categorical/Factor names, mapped by the data values
      *  @param rows Data
      *  @return The Vec  */

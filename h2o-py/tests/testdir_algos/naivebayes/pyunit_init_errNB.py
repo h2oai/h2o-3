@@ -6,7 +6,7 @@ def nb_init_err():
     
 
     print "Importing iris_wheader.csv data...\n"
-    iris = h2o.upload_file(h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.upload_file(tests.locate("smalldata/iris/iris_wheader.csv"))
     iris.describe
 
     print "Laplace smoothing parameter is negative"

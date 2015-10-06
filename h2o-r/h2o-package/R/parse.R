@@ -5,7 +5,7 @@
 #'
 #' Parse the Raw Data produced by the import phase.
 #'
-#' @param data An Frame object to be parsed.
+#' @param data An H2O Frame object to be parsed.
 #' @param destination_frame (Optional) The hex key assigned to the parsed file.
 #' @param header (Optional) A logical value indicating whether the first row is
 #'        the column header. If missing, H2O will automatically try to detect

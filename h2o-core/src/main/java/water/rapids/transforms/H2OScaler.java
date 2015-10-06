@@ -1,6 +1,6 @@
 package water.rapids.transforms;
 
-import hex.genmodel.GenModel;
+import hex.genmodel.GenMunger;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -13,11 +13,9 @@ public class H2OScaler extends Transform<H2OScaler> {
   double[] means;
   double[] sdevs;
 
-  H2OScaler(String name, String ast, boolean inplace) {
-    super(name,ast,inplace);
-  }
+  H2OScaler(String name, String ast, boolean inplace, String[] newNames) { super(name,ast,inplace,newNames); }
 
-  @Override Transform<H2OScaler> fit(Frame f) {
+  @Override public Transform<H2OScaler> fit(Frame f) {
     means = new double[f.numCols()];
     sdevs = new double[f.numCols()];
     for(int i=0;i<f.numCols();++i) {
@@ -27,8 +25,8 @@ public class H2OScaler extends Transform<H2OScaler> {
     return this;
   }
 
-  // TODO: handle Enum, String, NA
-  @Override Frame transform(Frame f) {
+  // TODO: handle Categorical, String, NA
+  @Override protected Frame transformImpl(Frame f) {
     final double[] fmeans = means;
     final double[] fmults = ArrayUtils.invert(sdevs);
     return new MRTask() {
@@ -37,7 +35,7 @@ public class H2OScaler extends Transform<H2OScaler> {
         for(int row=0; row<cs[0]._len; row++) {
           for(int col=0; col<cs.length; col++)
             in[col] = cs[col].atd(row);
-          GenModel.scaleInPlace(fmeans, fmults, in);
+          GenMunger.scaleInPlace(fmeans, fmults, in);
           for(int col=0; col<ncs.length; col++)
             ncs[col].addNum(in[col]);
         }
@@ -46,7 +44,7 @@ public class H2OScaler extends Transform<H2OScaler> {
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
-  @Override public StringBuilder genClass() {
+  @Override public String genClassImpl() {
     throw H2O.unimpl();
   }
 }

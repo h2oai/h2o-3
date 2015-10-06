@@ -34,7 +34,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
     ++_nLines;
     _col = 0;
   }
-  @Override public void addStrCol(int idx, ValueString str){addInvalidCol(idx);}
+  @Override public void addStrCol(int idx, BufferedString str){addInvalidCol(idx);}
   @Override public boolean isString(int idx){return false;}
   @Override public FVecParseWriter close(Futures fs) {
     for(NewChunk nc:_nvs) {

@@ -127,7 +127,7 @@ test_weights_vs_glmnet <- function() {
                 type = "response")
   expect_equal(mean(pr), mean(ph3$predict), tolerance = 0.01)
   
-  testEnd()
+  
 }
 
 doTest("GLM weight Test: GLM w/ weights vs glmnet", test_weights_vs_glmnet)

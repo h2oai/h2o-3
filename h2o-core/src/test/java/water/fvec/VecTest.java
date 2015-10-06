@@ -14,19 +14,19 @@ import static water.fvec.Vec.makeSeq;
 public class VecTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  /** Test toEnum call to return correct domain. */
-  @Test public void testToEnum() {
-    testToEnumDomainMatch(vec(0,1,0,1), ar("0", "1") );
-    testToEnumDomainMatch(vec(1,2,3,4,5,6,7), ar("1", "2", "3", "4", "5", "6", "7") );
-    testToEnumDomainMatch(vec(0,1,2,99,4,5,6), ar("0", "1", "2", "4", "5", "6", "99") );
+  /** Test toCategoricalVec call to return correct domain. */
+  @Test public void testToCategorical() {
+    testToCategoricalDomainMatch(vec(0, 1, 0, 1), ar("0", "1"));
+    testToCategoricalDomainMatch(vec(1, 2, 3, 4, 5, 6, 7), ar("1", "2", "3", "4", "5", "6", "7"));
+    testToCategoricalDomainMatch(vec(0, 1, 2, 99, 4, 5, 6), ar("0", "1", "2", "4", "5", "6", "99"));
   }
 
-  private void testToEnumDomainMatch(Vec f, String[] expectedDomain) {
+  private void testToCategoricalDomainMatch(Vec f, String[] expectedDomain) {
     Vec ef = null;
     try {
-      ef = f.toEnum();
+      ef = f.toCategoricalVec();
       String[] actualDomain = ef.domain();
-      Assert.assertArrayEquals("toEnum call returns wrong domain!", expectedDomain, actualDomain);
+      Assert.assertArrayEquals("toCategoricalVec call returns wrong domain!", expectedDomain, actualDomain);
     } finally {
       if( f !=null ) f .remove();
       if( ef!=null ) ef.remove();

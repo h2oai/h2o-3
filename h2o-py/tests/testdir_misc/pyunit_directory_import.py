@@ -20,7 +20,7 @@ def directory_import():
         assert r1*3 == ra, "Expected 3 times the rows, but got {0} and {1}".format(r1,ra)
         assert c1 == ca, "Expected same number of cols, but got {0} and {1}".format(c1,ca)
 
-    small1 = h2o.locate("smalldata/jira/identical_files/iris1.csv")
+    small1 = tests.locate("smalldata/jira/identical_files/iris1.csv")
     small2 = small1.split("iris1.csv")[0]
     print "Importing smalldata file {0} and directory {1}".format(small1, small2)
     frm_one = h2o.import_file(small1)

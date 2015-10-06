@@ -6,7 +6,7 @@ def pca_scoring():
     
 
     print "Importing arrests.csv data..."
-    arrestsH2O = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
 
     print "Run PCA with transform = 'DEMEAN'"
     fitH2O = h2o.prcomp(x=arrestsH2O[0:4], k = 4, transform = "DEMEAN")

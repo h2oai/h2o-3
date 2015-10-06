@@ -1,7 +1,7 @@
 package hex.genmodel;
 
-import water.genmodel.IGeneratedModel;
 import hex.ModelCategory;
+import water.genmodel.IGeneratedModel;
 
 import java.io.Serializable;
 import java.util.*;
@@ -254,6 +254,40 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return min;
   }
 
+  // only used for GLRM initialization - inverse of distance to each cluster center normalized to sum to one
+  public static double[] KMeans_simplex(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
+    double[] dist = new double[centers.length];
+    double sum = 0, inv_sum = 0;
+    for( int cluster = 0; cluster < centers.length; cluster++ ) {
+      dist[cluster] = KMeans_distance(centers[cluster],point,domains,means,mults);
+      sum += dist[cluster];
+      inv_sum += 1.0 / dist[cluster];
+    }
+
+    double[] ratios = new double[centers.length];
+    if (sum == 0) {   // In degenerate case where all cluster centers identical to point, pick one at random
+      Random rng = new Random();
+      int idx = rng.nextInt(centers.length);
+      ratios[idx] = 1;
+    } else {
+      // Is the point identical to an existing cluster center?
+      int idx = -1;
+      for (int cluster = 0; cluster < centers.length; cluster++) {
+        if(dist[cluster] == 0) {
+          idx = cluster;
+          break;
+        }
+      }
+
+      if(idx == -1) {  // If not, take ratios as inverse of cluster distance normalized to sum to one
+        for (int cluster = 0; cluster < centers.length; cluster++)
+          ratios[cluster] = 1.0 / (dist[cluster] * inv_sum);
+      } else   // Otherwise, just assign directly to closest cluster
+        ratios[idx] = 1;
+    }
+    return ratios;
+  }
+
   // only used for metric builder - uses float[] and fills up colSum & colSumSq arrays, otherwise the same as method below.
   // WARNING - if changing this code - also change the code below
   public static double KMeans_distance(double[] center, float[] point, String[][] domains, double[] means, double[] mults,
@@ -368,11 +402,4 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public static double GLM_logInv( double x ) { return Math.exp(x); }
   public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
   public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
-
-
-  // currents utiltiy
-  public static void scaleInPlace(final double[] means, final double[] mults, double[] in) {
-    for(int i=0; i<in.length; ++i)
-      in[i] = (in[i]-means[i])*mults[i];
-  }
 }

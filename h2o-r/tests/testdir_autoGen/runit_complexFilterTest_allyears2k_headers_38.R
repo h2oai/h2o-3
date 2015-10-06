@@ -16,6 +16,6 @@ Log.info("Performing compound task ( ( hex[,c(\"Diverted\")] <= 0.952276526236 )
          filterHex <- hex[( ( hex[,c("Diverted")] <= 0.952276526236 )) , c("ActualElapsedTime","DepDelay","Diverted","DayOfWeek","Distance","TaxiIn","TaxiOut","CRSElapsedTime","ArrTime","CarrierDelay","CRSArrTime","DayofMonth","Year")]
     Log.info("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[( ( hex[,c("Diverted")] <= 0.952276526236 )) , c("ArrDelay","SecurityDelay","Month","DepTime","Origin","CancellationCode","FlightNum","LateAircraftDelay","WeatherDelay","Cancelled","TailNum","AirTime","IsArrDelayed","CRSDepTime","IsDepDelayed","Dest","UniqueCarrier","NASDelay")]
-testEnd()
+
 }
 doTest("compoundFilterTest_ on data allyears2k_headers unit= ['', '<=']", complexFilterTest_allyears2k_headers_38)

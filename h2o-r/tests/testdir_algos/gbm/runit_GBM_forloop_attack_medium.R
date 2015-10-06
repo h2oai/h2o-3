@@ -48,8 +48,8 @@ randomParams <- function(distribution, train, test, x, y) {
       if (!is.null(val))
         if (is.vector(val))
           Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
-        else if (inherits(val, "H2OFrame"))
-          Log.info(paste0(sub("_", " ", parm), ": ", val@id))
+        else if (class(val) == "Frame")
+          Log.info(paste("Frame: ", head(val)))
         else
           Log.info(paste0(sub("_", " ", parm), ": ", val))
       return(val)
@@ -120,7 +120,7 @@ test.GBM.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
-  testEnd()
+  
 }
 
 doTest("Checking GBM in Random Attack For Loops", test.GBM.rand_attk_forloop)

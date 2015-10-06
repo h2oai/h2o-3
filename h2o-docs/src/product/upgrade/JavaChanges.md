@@ -10,7 +10,7 @@ The representation of the distribution family has been unified across the H2O co
 
 ##`ValueString#equals` semantics changed
 
-This change affects all comparisons using the form `new ValueString("test") == "test"`. In previous versions of H2O, the method `water.parser.ValueString#equals` was used for comparing Java strings. This method has been deprecated; instead, use the `toString` method to convert the ValueString to a Java string, then compare the results using the `String#equals` method. 
+This change affects all comparisons using the form `new ValueString("test") == "test"`. In previous versions of H2O, the method `water.parser.BufferedString#equals` was used for comparing Java strings. This method has been deprecated; instead, use the `toString` method to convert the ValueString to a Java string, then compare the results using the `String#equals` method.
 
 ##Start of H2O client app changed 
 

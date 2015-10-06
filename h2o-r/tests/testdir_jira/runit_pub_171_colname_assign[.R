@@ -15,7 +15,7 @@ test.pub_171_colname_assign_with_square_brackets <- function() {
   
   expect_that(names(df), equals("earl"))
   
-  testEnd()
+  
 }
 
 doTest("PUB-171: Perform colname assign wihth [] and <-", test.pub_171_colname_assign_with_square_brackets)

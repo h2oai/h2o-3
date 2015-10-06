@@ -6,7 +6,7 @@ def cv_nfoldsGBM():
   
   
 
-  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
   prostate[1] = prostate[1].asfactor()
   prostate.summary()
 

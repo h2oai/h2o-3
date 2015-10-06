@@ -4,9 +4,9 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
 #' @param y A character string or index that represent the response variable in the model.
-#' @param training_frame An Frame object containing the variables in the model.
+#' @param training_frame An H2O Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-#' @param validation_frame An Frame object containing the variables in the model.
+#' @param validation_frame An H2O Frame object containing the variables in the model.  Defaults to NULL.
 #' @param max_iterations A non-negative integer specifying the maximum number of iterations.
 #' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
 #'        Defines the convergence criterion for \code{h2o.glm}.
@@ -47,7 +47,7 @@
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo"
-#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
@@ -75,9 +75,9 @@
 #'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #'
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
-#' #myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
-#' #h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
-#' #        nfolds = 0, alpha = 0.1, lambda_search = FALSE)
+#' myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
+#' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
 #' \donttest{
 #'  # GLM variable importance
@@ -92,7 +92,8 @@
 #'                  lambda_search=TRUE)
 #' }
 #' @export
-h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
+h2o.glm <- function(x, y, training_frame, model_id, 
+                    validation_frame = NULL,
                     max_iterations = 50,
                     beta_epsilon = 0,
                     solver = c("IRLSM", "L_BFGS"),
@@ -115,20 +116,15 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
-                    max_active_predictors = -1,
-                    ...
-                    )
+                    max_active_predictors = -1)
 {
   if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "Frame"))
-        stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
+      if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
+        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
         beta_constraints <- as.h2o(beta_constraints)
       }
   }
-  #Handle ellipses
-  if (length(list(...)) > 0)
-    dots <- .model.ellipses( list(...))
 
   if (!is.Frame(training_frame))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -178,7 +174,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
     .eval.frame(beta_constraints)
     parms$beta_constraints <- beta_constraints
   }
-  m <- .h2o.modelJob('glm', parms, do_future=FALSE)
+  m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
@@ -227,8 +223,8 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
                     )
 {
   if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "Frame"))
-        stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
+      if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
+        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
         beta_constraints <- as.h2o(beta_constraints)
       }

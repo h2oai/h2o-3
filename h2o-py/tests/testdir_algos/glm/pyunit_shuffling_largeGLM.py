@@ -7,8 +7,8 @@ def shuffling_large():
     
 
     print("Reading in Arcene training data for binomial modeling.")
-    train_data = h2o.upload_file(path=h2o.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))
-    train_data_shuffled = h2o.upload_file(path=h2o.locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"))
+    train_data = h2o.upload_file(path=tests.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))
+    train_data_shuffled = h2o.upload_file(path=tests.locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"))
 
 
     print("Create model on original Arcene dataset.")

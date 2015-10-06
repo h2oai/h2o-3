@@ -60,14 +60,14 @@ def random_attack():
         print "-----------------------"
 
     print "Import and data munging..."
-    pros = h2o.upload_file(h2o.locate("smalldata/prostate/prostate.csv.zip"))
+    pros = h2o.upload_file(tests.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
     r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
 
-    cars = h2o.upload_file(h2o.locate("smalldata/junit/cars.csv"))
+    cars = h2o.upload_file(tests.locate("smalldata/junit/cars.csv"))
     r = cars[0].runif()
     cars_train = cars[r > .2]
     cars_valid = cars[r <= .2]

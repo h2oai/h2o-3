@@ -6,43 +6,32 @@
 #           curl, javac, java must be installed.
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
-
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../h2o-runit.R")
 
+test.drf.javapredict.chess <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- locate("smalldata/chess/chess_2x2x1000/train.csv")
+    test_file <- locate("smalldata/chess/chess_2x2x1000/test.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+    params                 <- list()
+    params$ntrees          <- sample( 100, 1)
+    params$max_depth       <- sample( 10, 1)
+    params$min_rows        <- sample( 5, 1)
+    params$balance_classes <- sample( c(T,F), 1)
+    params$x               <- c("x", "y")
+    params$y               <- "color"
+    params$training_frame  <- training_frame
 
-heading("Choose random parameters")
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("randomForest",test_file,test_frame,params)
+}
 
-ntree <- sample(100, 1)
-print(paste("ntree", ntree))
-
-depth <- sample(10, 1)
-print(paste("depth", depth))
-
-nodesize <- sample(5, 1)
-print(paste("nodesize", nodesize))
-
-train <- locate("smalldata/chess/chess_2x2x1000/train.csv")
-print(paste("train", train))
-
-test <- locate("smalldata/chess/chess_2x2x1000/test.csv")
-print(paste("test", test))
-
-x = c("x", "y")
-print("x")
-print(x)
-
-y = "color"
-print(paste("y", y))
-
-
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_RF.R')
+doTest("RF test", test.drf.javapredict.chess)

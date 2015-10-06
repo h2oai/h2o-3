@@ -107,7 +107,7 @@ test.GLM.betaConstraints <- function(){
 
     fullTest <- mapply(run_glm, as.character(grid[,1]), grid[,2], grid[,3])
 
-    testEnd()
+    
 }
 
 doTest("GLM Test: GLM w/ Beta Constraints", test.GLM.betaConstraints)

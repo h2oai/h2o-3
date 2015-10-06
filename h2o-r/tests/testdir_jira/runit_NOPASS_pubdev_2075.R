@@ -26,7 +26,7 @@ test.pubdev.2075 <- function(conn){
   Log.info(paste0(num_models," models were constructed"))
   expect_equal(108, num_models)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-2075", test.pubdev.2075)

@@ -70,7 +70,7 @@ test.pub.668 <- function() {
     expect_that(all(d == dd     ), equals(T))
 
 
-    testEnd()
+    
 }
 
 doTest("Test for pub-668.", test.pub.668)

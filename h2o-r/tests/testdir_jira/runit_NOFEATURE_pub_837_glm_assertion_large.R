@@ -34,7 +34,7 @@ test <- function() {
                                        alpha=1, lambda_search=T, nfolds=5, standardize = TRUE))    # This line is failing
   h2o.glm.CV
 
-  testEnd()
+  
 }
 
 doTest("Testing glm cross validation performance with adult dataset", test)

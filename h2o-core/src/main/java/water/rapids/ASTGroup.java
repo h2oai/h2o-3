@@ -100,8 +100,6 @@ class ASTGroup extends ASTPrim {
     int[] gbCols = groupby.expand4();
 
     ASTNumList orderby = check(ncols, asts[3]);
-    if( orderby.isEmpty() ) orderby = new ASTNumList(0,gbCols.length); // If missing, sort by groups in-order
-    else throw H2O.unimpl();
     final int[] ordCols = orderby.expand4();
 
     // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...),
@@ -115,7 +113,7 @@ class ASTGroup extends ASTPrim {
       ASTNumList col = check(ncols,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
       int agg_col = (int)col.min(); // Aggregate column
-      if( fcn==FCN.mode && !fr.vec(agg_col).isEnum() )
+      if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
       aggs[(idx-4)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
@@ -126,21 +124,22 @@ class ASTGroup extends ASTPrim {
     final G[] grps = gss.keySet().toArray(new G[gss.size()]);
 
     // apply an ORDER by here...
-    Arrays.sort(grps,new java.util.Comparator<G>() {
-        // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
-        // or _gs[i] < that._gs[i].  Order by various columns specified by
-        // _orderByCols.  NaN is treated as least
-        @Override public int compare( G g1, G g2 ) {
-          for( int i : ordCols ) {
-            if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
-            if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
-            if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
+    if( ordCols.length > 0 )
+      Arrays.sort(grps,new java.util.Comparator<G>() {
+          // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
+          // or _gs[i] < that._gs[i].  Order by various columns specified by
+          // _orderByCols.  NaN is treated as least
+          @Override public int compare( G g1, G g2 ) {
+            for( int i : ordCols ) {
+              if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
+              if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
+              if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
+            }
+            return 0;
           }
-          return 0;
-        }
-        // I do not believe sort() calls equals() at this time, so no need to implement
-        @Override public boolean equals( Object o ) { throw H2O.unimpl(); }
-      });
+          // I do not believe sort() calls equals() at this time, so no need to implement
+          @Override public boolean equals( Object o ) { throw H2O.unimpl(); }
+        });
 
     // Build the output!
     String[] fcnames = new String[aggs.length];

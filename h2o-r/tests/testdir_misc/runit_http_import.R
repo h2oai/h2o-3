@@ -12,7 +12,7 @@ test.import.http <- function() {
   print(aa)
   print(t)
 
-  testEnd()
+  
 }
 
 doTest("Testing HTTP File Import", test.import.http)

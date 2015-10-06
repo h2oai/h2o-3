@@ -36,7 +36,7 @@ test.slice.rows <- function() {
   print(head(R[I,2:6]))
   DSlice <- as.data.frame(H[I, 2:6])
   
-  testEnd()
+  
 }
 
 doTest("Slice Tests: Row slice using R index", test.slice.rows)

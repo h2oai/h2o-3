@@ -140,7 +140,7 @@ public class DataInfo extends Keyed {
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
     for(int i = 0; i < n; ++i)
-      if (tvecs[i].isEnum())
+      if (tvecs[i].isCategorical())
         cats[ncats++] = i;
       else
         nums[nnums++] = i;
@@ -261,7 +261,7 @@ public class DataInfo extends Keyed {
   }
 
   public static int imputeCat(Vec v) {
-    if(v.isEnum()) return v.mode();
+    if(v.isCategorical()) return v.mode();
     return (int)Math.round(v.mean());
   }
 

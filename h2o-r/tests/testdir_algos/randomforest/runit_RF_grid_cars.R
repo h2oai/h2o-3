@@ -79,7 +79,7 @@ check.rf.grid.cars <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  testEnd()
+  
 }
 
 doTest("RF Grid Search using cars dataset", check.rf.grid.cars)

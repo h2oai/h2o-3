@@ -6,7 +6,7 @@ import water.fvec.C16Chunk;
  * Utility class for parsing UUIDs.
  *
  * This class creates a hash value of two longs from
- * a {@link ValueString} containing a correct UUID.
+ * a {@link BufferedString} containing a correct UUID.
  *
  */
 public class ParseUUID {
@@ -17,7 +17,7 @@ public class ParseUUID {
    * @param str
    * @return TRUE if str represents a valid UUID
    */
-  public static final boolean isUUID(ValueString str) {
+  public static final boolean isUUID(BufferedString str) {
     boolean res;
     int old = str.getOffset();
     attemptUUIDParseLow(str);
@@ -28,11 +28,11 @@ public class ParseUUID {
   }
 
   /**
-   * Attempts to parse the provided {@link ValueString} as
+   * Attempts to parse the provided {@link BufferedString} as
    * a UUID into hash value in two longs.
    *
    * Warning: as written, this method does modify the state
-   * of the passed in ValueString.
+   * of the passed in BufferedString.
    *
    * @param str
    * @return A two value long array array containing the low
@@ -41,7 +41,7 @@ public class ParseUUID {
    * {link @C16Chunk._LO_NA} and {link @C16Chunk._HI_NA},
    * respectively.
    */
-  public static long[] attemptUUIDParse( ValueString str) {
+  public static long[] attemptUUIDParse( BufferedString str) {
     long[] uuid = new long[2];
     uuid[0] = attemptUUIDParseLow(str);
     if (str.getOffset() == -1) return badUUID();
@@ -53,7 +53,7 @@ public class ParseUUID {
   // --------------------------------
   // Parse XXXXXXXX-XXXX-XXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).
-  private static long attemptUUIDParseLow(ValueString str) {
+  private static long attemptUUIDParseLow(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     if( i+36 > buf.length ) return markBad(str);
@@ -72,7 +72,7 @@ public class ParseUUID {
 
   // Parse -XXXX-XXXXXXXXXXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).
-  public static long attemptUUIDParseHigh(ValueString str) {
+  public static long attemptUUIDParseHigh(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     if ( i== -1 ) return markBad(str);
@@ -89,7 +89,7 @@ public class ParseUUID {
     return attemptUUIDParseEnd(str, hi, buf, i);
   }
 
-  private static long attemptUUIDParseEnd(ValueString str, long lo, byte[] buf, int i) {
+  private static long attemptUUIDParseEnd(BufferedString str, long lo, byte[] buf, int i) {
     // Can never equal MIN_VALUE since only parsed 14 of 16 digits, unless
     // failed parse already.
     if( lo == Long.MIN_VALUE ) return markBad(str);
@@ -121,7 +121,7 @@ public class ParseUUID {
     else if( b >= 'a' && b <= 'f' ) return (x<<4)+b-'a'+10;
     else return Long.MIN_VALUE;
   }
-  private static long markBad(ValueString str) {
+  private static long markBad(BufferedString str) {
     str.setOff(-1);
     return Long.MIN_VALUE;
   }

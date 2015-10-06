@@ -6,7 +6,7 @@ def offset_gaussian():
     # Connect to a pre-existing cluster
     
 
-    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(tests.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 

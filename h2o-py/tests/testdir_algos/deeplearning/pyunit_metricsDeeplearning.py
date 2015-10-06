@@ -6,7 +6,7 @@ import h2o, tests
 def deep_learning_metrics_test():
                    # connect to existing cluster
 
-    df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    df = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
 
     df.drop("ID")                              # remove ID
     df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical

@@ -21,7 +21,7 @@ d <- head(h2o.ddply(covtype.hex, c(1), function(x) {}))
 expect_equal(0, dim(d)[1])
 expect_equal(0, dim(d)[2])
 
-testEnd()
+
 
 }
 

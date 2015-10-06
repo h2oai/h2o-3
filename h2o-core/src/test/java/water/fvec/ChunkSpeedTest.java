@@ -1,53 +1,79 @@
 package water.fvec;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
-import water.TestUtil;
+import water.*;
 import water.util.Log;
 import water.util.PrettyPrint;
 
 public class ChunkSpeedTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  final int cols = 1000;
-  final int rows = 10000;
+  final int cols = 100;
+  final int rows = 100000;
   final int rep = 10;
-  double[][] raw = new double[cols][rows];
+  final double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
 
+  @Ignore
   @Test
   public void run() {
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
-//        switch (j%1) { //just do 1 byte chunks
-//        switch (j % 2) { //just do 1/2 byte chunks
-        switch (j%3) { // do 3 chunk types
-//        switch (j%4) { // do 4 chunk types
-          case 0:
-            raw[j][i] = i % 200; //C1NChunk - 1 byte integer
-            break;
-          case 1:
-            raw[j][i] = i % 500; //C2Chunk - 2 byte integer
-            break;
-          case 2:
-            raw[j][i] = i*Integer.MAX_VALUE;
-            break;
-          case 3:
-            raw[j][i] = i == 17 ? 1 : 0; //CX0Chunk - sparse
-            break;
-        }
+        raw[j][i] = get(j, i);
       }
     }
     for (int j = 0; j < cols; ++j) {
-      chunks[j] = new NewChunk(raw[j]).compress();
+      chunks[j] = (Chunk) new NewChunk(raw[j]).compress();
       Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
     }
-    raw();
-    chunks();
-    bulk();
+    Log.info("COLS: " + cols);
+    Log.info("ROWS: " + rows);
+    Log.info("REPS: " + rep);
+
+    int ll = 5;
+//    for (int i = 0; i < ll; ++i)
+//      raw();
+//    for (int i = 0; i < ll; ++i)
+//      chunks();
+//    for (int i = 0; i < ll; ++i)
+//      chunksInline();
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(false);
+    for (int i = 0; i < ll; ++i)
+      rollups(false);
+//    for (int i = 0; i < ll; ++i)
+//      bulk();
+//    Log.info("Now doing funny stuff.\n\n");
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(true);
+    for (int i = 0; i < ll; ++i)
+      rollups(true);
+//    for (int i = 0; i < ll; ++i)
+//      chunksInverted();
+//    for (int i = 0; i < ll; ++i)
+//      rawInverted();
+
   }
 
-
+  double get(int j, int i) {
+//        switch (j%1+1) { //just do 1 byte chunks
+//        switch (j % 2) { //just do 1/2 byte chunks
+    switch (j%3) { // do 3 chunk types
+//        switch (j%4) { // do 4 chunk types
+      case 0:
+        return i % 200; //C1NChunk - 1 byte integer
+      case 1:
+        return i % 500; //C2Chunk - 2 byte integer
+      case 2:
+        return  i*Integer.MAX_VALUE;
+      case 3:
+        return i == 17 ? 1 : 0; //CX0Chunk - sparse
+      default:
+        throw H2O.unimpl();
+    }
+  }
 
   void raw()
   {
@@ -65,11 +91,47 @@ public class ChunkSpeedTest extends TestUtil {
     long done = System.currentTimeMillis();
     Log.info("Sum: " + sum);
     Log.info("Data size: " + PrettyPrint.bytes(rows * cols * 8));
-    Log.info("Time to access raw double[]: " + PrettyPrint.msecs(done - start, true));
+    Log.info("Time for RAW double[]: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
   }
 
-  void chunks()
+  void rawInverted()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      for (int i = 0; i < rows; ++i) {
+        for (int j=0; j<cols; ++j) {
+          sum += raw[j][i];
+        }
+      }
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    Log.info("Data size: " + PrettyPrint.bytes(rows * cols * 8));
+    Log.info("Time for INVERTED RAW double[]: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
+  double walkChunk(final Chunk c) {
+    double sum =0;
+    for (int i = 0; i < rows; ++i) {
+      sum += c.atd(i);
+    }
+    return sum;
+  }
+
+  double loop() {
+    double sum =0;
+    for (int j=0; j<cols; ++j) {
+      sum += walkChunk(chunks[j]);
+    }
+    return sum;
+  }
+
+  void chunksInline()
   {
     long start = 0;
     double sum = 0;
@@ -89,7 +151,51 @@ public class ChunkSpeedTest extends TestUtil {
       siz += chunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
-    Log.info("Time to access via atd(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("Time for INLINE chunks atd(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
+  void chunks()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += loop();
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for METHODS chunks atd(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
+  void chunksInverted()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      for (int i = 0; i < rows; ++i) {
+        for (int j=0; j<cols; ++j) {
+          sum += chunks[j].atd(i);
+        }
+      }
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for INVERTED INLINE chunks atd(): " + PrettyPrint.msecs(done - start, true));
     Log.info("");
   }
 
@@ -115,8 +221,100 @@ public class ChunkSpeedTest extends TestUtil {
       siz += chunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
-    Log.info("Time to access via bulk reader: " + PrettyPrint.msecs(done - start, true));
+    Log.info("Time for bulk reader: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
+  }
+
+  class FillTask extends MRTask<FillTask> {
+    @Override
+    public void map(Chunk[] cs) {
+      for (int col=0; col<cs.length; ++col) {
+        for (int row=0; row<cs[0]._len; ++row) {
+          cs[col].set(row, raw[col][row]);
+        }
+      }
+    }
+  }
+
+  static class SumTask extends MRTask<SumTask> {
+    double _sum;
+    @Override
+    public void map(Chunk[] cs) {
+      for (int col=0; col<cs.length; ++col) {
+        for (int row=0; row<cs[0]._len; ++row) {
+          _sum += cs[col].atd(row);
+        }
+      }
+    }
+    @Override
+    public void reduce(SumTask other) {
+      _sum += other._sum;
+    }
+  }
+
+  void mrtask(boolean parallel)
+  {
+    long start = 0;
+    double sum = 0;
+    Frame fr = new Frame();
+    for (int i=0; i<cols; ++i) {
+      if (parallel)
+        fr.add("C" + i, Vec.makeCon(0, rows)); //multi-chunk (based on #cores)
+      else
+        fr.add("C"+i, Vec.makeVec(raw[i], Vec.newKey())); //directly fill from raw double array (1 chunk)
+    }
+    if (parallel) new FillTask().doAll(fr);
+
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += new SumTask().doAll(fr)._sum;
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    siz += fr.byteSize();
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " MRTask: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+    fr.remove();
+  }
+
+  void rollups(boolean parallel)
+  {
+    Frame fr = new Frame();
+//    Vec v = Vec.makeCon(Double.NaN, rows);
+//    Log.info(v.mean());
+//    Log.info(v.sigma());
+//    Log.info(v.min());
+//    Log.info(v.max());
+//    Log.info(v.length());
+//    Log.info(v.nzCnt());
+//    Log.info(v.naCnt());
+//    v.remove();
+    for (int i=0; i<cols; ++i)
+      fr.add("C" + i, Vec.makeCon(0, rows, parallel)); //multi-chunk (based on #cores)
+    new FillTask().doAll(fr);
+
+    long start = System.currentTimeMillis();
+    for (int r = 0; r < rep; ++r) {
+      for (int i=0; i<cols; ++i) {
+        DKV.remove(fr.vec(i).rollupStatsKey());
+        fr.vec(i).mean();
+      }
+    }
+    long done = System.currentTimeMillis();
+    long siz = 0;
+    siz += fr.byteSize();
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " Rollups: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+    fr.remove();
+  }
+
+  public static void main(String[] args) {
+    setup();
+    new ChunkSpeedTest().run();
   }
 }
 

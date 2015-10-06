@@ -9,7 +9,7 @@ check.deeplearning_multi <- function() {
   hh <- h2o.deeplearning(x=c(2,3,4),y=5,training_frame=prostate,validation_frame=prostate)
   print(hh)
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning MultiClass Test", check.deeplearning_multi)

@@ -35,7 +35,7 @@ test <- function(h) {
 	expect_equal(0.941, min(ph[,1]), tolerance=1e-2 )
 	expect_equal(415, max(ph[,1]), tolerance=1e-2 )
 
-	testEnd()
+	
 }
 doTest("Deeplearning offset Test: deeplearning w/ offset for gamma distribution", test)
 

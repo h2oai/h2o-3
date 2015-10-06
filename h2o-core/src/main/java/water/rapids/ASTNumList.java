@@ -1,5 +1,6 @@
 package water.rapids;
 
+import water.util.ArrayUtils;
 import water.util.SB;
 
 import java.util.ArrayList;
@@ -95,8 +96,12 @@ public class ASTNumList extends ASTParameter {
     _strides= new double[list.length];
     _cnts   = new long[list.length];
     _isList = true;
-    Arrays.fill(_strides,0);
+    Arrays.fill(_strides,1);
     Arrays.fill(_cnts,1);
+  }
+
+  ASTNumList(int[] list) {
+    this(ArrayUtils.copyFromIntArray(list));
   }
 
   // This is a special syntatic form; the number-list never executes and hits
@@ -119,9 +124,20 @@ public class ASTNumList extends ASTParameter {
   }
   // Strange count of args, due to custom parsing
   @Override int nargs() { return -1; }
+  @Override public String toJavaString() {
+    double[] ary = expand();
+    if( ary==null || ary.length==0 ) return "\"null\"";
+    SB sb = new SB().p('{');
+    for(int i=0;i<ary.length;++i) {
+      sb.p(ary[i]);
+      if( i==ary.length-1) return sb.p('}').toString();
+      sb.p(',');
+    }
+    throw new RuntimeException("Should never be here");
+  }
 
   // Expand the compressed form into an array of doubles.
-  double[] expand() {
+  public double[] expand() {
     // Count total values
     int nrows=(int)cnt(), r=0;
     // Fill in values
@@ -212,4 +228,7 @@ public class ASTNumList extends ASTParameter {
     } while( m!=lb );
     res[1]=new int[]{lb,ub}; // return 2 closest bases
   }
+
+  // Select columns by number or String.
+  @Override int[] columns( String[] names ) { return expand4(); }
 }

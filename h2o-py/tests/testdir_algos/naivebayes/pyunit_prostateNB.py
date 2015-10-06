@@ -6,7 +6,7 @@ def nb_prostate():
     
 
     print "Importing prostate.csv data..."
-    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
 
     print "Converting CAPSULE, RACE, DCAPS, and DPROS to categorical"
     prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()

@@ -41,7 +41,7 @@ test.quoted_comma <- function() {
     print(b.h2o.R)
     expect_that(all(b == b.h2o.R), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test for quoted_comma.", test.quoted_comma)

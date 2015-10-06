@@ -13,10 +13,10 @@ class ASTAssign extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
-    ASTNumList cols = check(dst.numCols(), asts[3]);
+    ASTNumList cols = check(dst.numCols(), asts[3], dst);
 
     // Check for append; add a col of NAs if appending
-    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
+    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {
       String newColName =  asts.length==6?asts[5].exec(env).getStr():Frame.defaultColName(dst.numCols());
       dst = new Frame(dst._names.clone(),dst.vecs().clone());
       dst.add(newColName, dst.anyVec().makeCon(Double.NaN));
@@ -30,7 +30,8 @@ class ASTAssign extends ASTPrim {
 
     // Assign over the column slice
     if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
-      ASTNumList rows = check( dst.numRows(), asts[4] );
+      ASTNumList rows = asts[4] instanceof ASTNum ? new ASTNumList(((ASTNum)asts[4])._v.getNum()) : ((ASTNumList)asts[4]);
+      if( rows.isEmpty() ) rows = new ASTNumList(0,dst.numRows());
       switch( vsrc.type() ) {
       case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
       case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
@@ -49,12 +50,9 @@ class ASTAssign extends ASTPrim {
     return new ValFrame(dst);
   }
 
-  private ASTNumList check( long dstX, AST ast ) {
+  private ASTNumList check( long dstX, AST ast, Frame dst ) {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
-    ASTNumList dim;
-    if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
-    else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
-    else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
+    ASTNumList dim = new ASTNumList(ast.columns(dst.names()));
     // Special for ASTAssign: "empty" really means "all"
     if( dim.isEmpty() ) return new ASTNumList(0,dstX);
     if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
@@ -87,7 +85,7 @@ class ASTAssign extends ASTPrim {
           }
         }
       }.doAll(new Frame().add(dst).add(src));
-      // Now update all the header info; enums & types
+      // Now update all the header info; categoricals & types
       Futures fs = new Futures();
       for( int col=0; col<dvecs.length; col++ )
         dvecs[col].copyMeta(svecs[col],fs);

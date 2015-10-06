@@ -19,7 +19,7 @@ def refine_date_col(data, col, pattern):
 
 
 def date_munge():
-  crimes_path = h2o.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
+  crimes_path = tests.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
   crimes = h2o.import_file(path=crimes_path)
   crimes.describe()
 

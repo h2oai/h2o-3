@@ -1,6 +1,5 @@
 package hex.tree.drf;
 
-import hex.Model;
 import hex.tree.CompressedTree;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -70,10 +69,10 @@ public class DRFCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
-    // If classification turn response into enum
+    // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
-      f.replace(responseIdx, respVec.toEnum()).remove();
+      f.replace(responseIdx, respVec.toCategoricalVec()).remove();
       DKV.put(f._key, f);
     }
     DRFModel model = null;

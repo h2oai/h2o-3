@@ -7,7 +7,7 @@ test.rdocasdataframe.golden <- function() {
     prostate.hex <- h2o.uploadFile(path = prosPath)
     as.data.frame.Frame(prostate.hex)
 
-    testEnd()
+    
 }
 
 doTest("R Doc as.data.frame", test.rdocasdataframe.golden)

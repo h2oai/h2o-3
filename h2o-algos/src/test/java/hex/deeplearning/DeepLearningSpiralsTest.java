@@ -20,18 +20,19 @@ public class DeepLearningSpiralsTest extends TestUtil {
     Scope.enter();
     NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/two_spiral.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);
+    Log.info(frame);
     int resp = frame.names().length-1;
 
     Key dest = Key.make("spirals2");
 
-    for (boolean sparse : new boolean[]{false}) {
+    for (boolean sparse : new boolean[]{false,true}) {
       for (boolean col_major : new boolean[]{false}) {
         if (!sparse && col_major) continue;
 
         // build the model
         {
           DeepLearningParameters p = new DeepLearningParameters();
-          p._seed = 0xbabe;
+          p._seed = 0xbabefff;
           p._epochs = 600;
           p._hidden = new int[]{100};
           p._sparse = sparse;
@@ -46,7 +47,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
-          Scope.track(frame.replace(resp, frame.vecs()[resp].toEnum())._key); // Convert response to categorical
+          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())._key); // Convert response to categorical
           DKV.put(frame);
           p._valid = null;
           p._score_interval = 2;
@@ -86,6 +87,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           if (error > 0) {
             Assert.fail("Classification error is not 0, but " + error + ".");
           }
+          Assert.assertTrue(mymodel.testJavaScoring(frame,pred,1e-6));
           pred.delete();
           mymodel.delete();
         }

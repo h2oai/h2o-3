@@ -26,7 +26,7 @@ test.summary.factor <- function() {
 #   Log.info("H2O Summary:"); print(sumH2O)
 #   checkSummary(sumH2O, sumR)
   
-  testEnd()
+  
 }
 
 doTest("Summary Test: Prostate with Conversion of Cols to Factors", test.summary.factor)

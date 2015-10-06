@@ -34,7 +34,7 @@ test.pub.657 <- function() {
     a.h2o.R <- as.data.frame(a.h2o)
     expect_that(all(a == a.h2o.R), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test for pub-657.", test.pub.657)

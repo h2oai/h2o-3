@@ -19,7 +19,7 @@ the_test <- function(){
   
   scores <- apply(df, 2, metric.quantilesScore)
 
-  testEnd()
+  
 }
 
 doTest('the_test', the_test)

@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.DataInfo;
+import hex.ModelMetrics;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -10,7 +11,6 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.Exec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -84,12 +84,12 @@ public class GLRMTest extends TestUtil {
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
-    Frame yinit = frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
-            ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
-            ard(0.07163341, 1.4788032, 0.9989801, 1.042878388)));
+    Frame yinit = ArrayUtils.frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
+                                      ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
+                                      ard(0.07163341, 1.4788032, 0.9989801, 1.042878388)));
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
     long seed = 1234;
 
     try {
@@ -103,15 +103,15 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.User;
       parms._recover_svd = false;
-      parms._user_points = yinit._key;
+      parms._user_y = yinit._key;
       parms._seed = seed;
 
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM) ModelMetrics.getFromDKV(model, train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
@@ -125,19 +125,14 @@ public class GLRMTest extends TestUtil {
     } finally {
       yinit.delete();
       if (train != null) train.delete();
-      if (score != null) score.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
   @Test public void testBenignSVD() throws InterruptedException, ExecutionException {
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
 
     try {
       train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
@@ -157,8 +152,8 @@ public class GLRMTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
@@ -171,21 +166,16 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (score != null) score.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
   @Test public void testArrestsSVD() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
-    Frame yinit = frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
-            ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
-            ard(0.07163341, 1.4788032, 0.9989801, 1.042878388),
-            ard(0.23234938, 0.2308680, -1.0735927, -0.184916602)));
+    Frame yinit = ArrayUtils.frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
+                                      ard(0.50786248, 1.1068225, -1.2117642, 2.484202941),
+                                      ard(0.07163341, 1.4788032, 0.9989801, 1.042878388),
+                                      ard(0.23234938, 0.2308680, -1.0735927, -0.184916602)));
     double[] sval = new double[] {11.024148, 6.964086, 4.179904, 2.915146};
     double[][] eigvec = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
             ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
@@ -193,7 +183,7 @@ public class GLRMTest extends TestUtil {
             ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
 
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
     try {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
@@ -202,7 +192,7 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       // parms._init = GLRM.Initialization.PlusPlus;
       parms._init = GLRM.Initialization.User;
-      parms._user_points = yinit._key;
+      parms._user_y = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
       parms._recover_svd = true;
@@ -213,9 +203,8 @@ public class GLRMTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         // checkStddev(sval, model._output._singular_vals, 1e-4);
         // checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-4);
-
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
         Assert.assertEquals(model._output._objective, mm._numerr, TOLERANCE);
       } catch (Throwable t) {
@@ -230,18 +219,13 @@ public class GLRMTest extends TestUtil {
     } finally {
       yinit.delete();
       if (train != null) train.delete();
-      if (score != null) score.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
   @Test public void testArrestsPlusPlus() throws InterruptedException, ExecutionException {
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
     try {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
@@ -253,7 +237,7 @@ public class GLRMTest extends TestUtil {
       parms._gamma_x = parms._gamma_y = 1;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
-      parms._max_iterations = 1000;
+      parms._max_iterations = 100;
       parms._min_step_size = 1e-8;
       parms._recover_svd = true;
 
@@ -272,12 +256,7 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (score != null) score.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
@@ -290,7 +269,7 @@ public class GLRMTest extends TestUtil {
             ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
 
     long seed = 1234;
-    Frame train = null, score = null;
+    Frame train = null;
     GLRMModel model = null;
     GLRMParameters parms;
 
@@ -335,8 +314,8 @@ public class GLRMTest extends TestUtil {
           sd_map.put(missing_fraction, sd_err);
           ev_map.put(missing_fraction, ev_err);
 
-          score = model.score(train);
-          ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          model.score(train).delete();
+          ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
           Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
           Assert.assertEquals(model._output._objective, mm._numerr, TOLERANCE);
         } catch (Throwable t) {
@@ -344,7 +323,6 @@ public class GLRMTest extends TestUtil {
           throw new RuntimeException(t);
         } finally {
           job.remove();
-          if (score != null) score.delete();
         }
         Scope.exit();
       } catch(Throwable t) {
@@ -352,11 +330,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         if (train != null) train.delete();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
     }
     sb.append("\nMissing Fraction --> Avg SSE in Std Dev\n");
@@ -370,7 +344,7 @@ public class GLRMTest extends TestUtil {
   @Test public void testSetColumnLoss() throws InterruptedException, ExecutionException {
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
 
     try {
       train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
@@ -378,7 +352,7 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 12;
       parms._loss = GLRMParameters.Loss.Quadratic;
-      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.L1, GLRMParameters.Loss.Huber };
+      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Absolute, GLRMParameters.Loss.Huber };
       parms._loss_by_col_idx = new int[] { 2 /* AGMT */, 5 /* DEG */ };
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
@@ -392,8 +366,8 @@ public class GLRMTest extends TestUtil {
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         checkLossbyCol(parms, model);
 
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
@@ -406,25 +380,20 @@ public class GLRMTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (score != null) score.delete();
-      if (model != null) {
-        // model._parms._loading_key.get().delete();
-        model._output._loading_key.get().delete();
-        model.delete();
-      }
+      if (model != null) model.delete();
     }
   }
 
   @Test public void testRegularizers() throws InterruptedException, ExecutionException {
     // Initialize using first 4 rows of USArrests
-    Frame init = frame(ard(ard(13.2, 236, 58, 21.2),
-            ard(10.0, 263, 48, 44.5),
-            ard(8.1, 294, 80, 31.0),
-            ard(8.8, 190, 50, 19.5)));
+    Frame init = ArrayUtils.frame(ard(ard(13.2, 236, 58, 21.2),
+                                      ard(10.0, 263, 48, 44.5),
+                                      ard(8.1, 294, 80, 31.0),
+                                      ard(8.8, 190, 50, 19.5)));
 
     GLRM job = null;
     GLRMModel model = null;
-    Frame train = null, score = null;
+    Frame train = null;
     long seed = 1234;
 
     try {
@@ -433,7 +402,7 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._init = GLRM.Initialization.User;
-      parms._user_points = init._key;
+      parms._user_y = init._key;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = false;
       parms._max_iterations = 1000;
@@ -448,20 +417,15 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes:\n" + model._output._archetypes.toString());
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (score != null) score.delete();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
 
       Log.info("\nOrthogonal non-negative matrix factorization");
@@ -473,20 +437,15 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes:\n" + model._output._archetypes.toString());
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (score != null) score.delete();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
 
       Log.info("\nQuadratic clustering (k-means)");
@@ -498,20 +457,15 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes:\n" + model._output._archetypes.toString());
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (score != null) score.delete();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
 
       Log.info("\nQuadratic mixture (soft k-means)");
@@ -523,20 +477,15 @@ public class GLRMTest extends TestUtil {
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         Log.info("Archetypes:\n" + model._output._archetypes.toString());
-        score = model.score(train);
-        ModelMetricsGLRM mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+        model.score(train).delete();
+        ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
         Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
       } finally {
         job.remove();
-        if (score != null) score.delete();
-        if (model != null) {
-          // model._parms._loading_key.get().delete();
-          model._output._loading_key.get().delete();
-          model.delete();
-        }
+        if (model != null) model.delete();
       }
     } catch (Throwable t) {
       t.printStackTrace();

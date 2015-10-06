@@ -21,7 +21,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Map of operations known to H2O
 #'
 .h2o.primitives = c( 
-  "*", "+", "/", "-", 
+  "*", "+", "/", "-", "^", "%%", "%/%",
+  "==", "!=", "<", ">", "<=", ">=",
   "cos", "sin", "acos", "cosh", "tan", "tanh", "exp", "log", "sqrt", 
   "abs", "ceiling", "floor", 
   "mean", "sd", "sum", "prod", "all", "any", "min", "max", 

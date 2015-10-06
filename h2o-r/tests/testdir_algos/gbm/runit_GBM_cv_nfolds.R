@@ -15,7 +15,7 @@ test.GBM.nfolds <- function() {
   print(valid.and.nfolds.preds)
   print(h2o.getModel(valid.and.nfolds.preds@model$cross_validation_models[[4]]$name))
   print(h2o.getFrame(valid.and.nfolds.preds@model$cross_validation_predictions[[4]]$name))
-  testEnd()
+  
 }
 
 doTest("GBM Cross-Validation Test: Prostate", test.GBM.nfolds)

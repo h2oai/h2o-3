@@ -644,8 +644,8 @@ h2o_util.assertKeysExistAndNonNull(col, '', ['label', 'missing_count', 'zero_cou
 h2o_util.assertKeysExist(col, '', ['domain', 'string_data'])
 assert col['mins'][0] == 43, 'FAIL: Failed to find 43 as the first min for AGE.'
 assert col['maxs'][0] == 79, 'FAIL: Failed to find 79 as the first max for AGE.'
-assert col['mean'] == 66.03947368421052, 'FAIL: Failed to find 66.03947368421052 as the mean for AGE.'
-assert col['sigma'] == 6.527071269173308, 'FAIL: Failed to find 6.527071269173308 as the sigma for AGE.'
+assert abs(col['mean'] - 66.03947368421052) < 1e-8, 'FAIL: Failed to find 66.03947368421052 as the mean for AGE.'
+assert abs(col['sigma'] - 6.527071269173308) < 1e-8, 'FAIL: Failed to find 6.527071269173308 as the sigma for AGE.'
 assert col['type'] == 'int', 'FAIL: Failed to find int as the type for AGE.'
 assert col['data'][0] == 65, 'FAIL: Failed to find 65 as the first data for AGE.'
 assert col['precision'] == -1, 'FAIL: Failed to find -1 as the precision for AGE.'
@@ -694,7 +694,7 @@ models_to_build = [
     # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
-    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1, 'loss': 'MeanSquare' } ),
+    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1, 'loss': 'Quadratic' } ),
 # TODO: add toEnum of the response column and put back:    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': [20, 20], 'loss': 'CrossEntropy' } ),
     ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10], 'loss': 'CrossEntropy' } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1, 'loss': 'CrossEntropy' } ),

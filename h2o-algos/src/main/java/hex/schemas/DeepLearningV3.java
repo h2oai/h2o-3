@@ -387,11 +387,11 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * hypothesis is true. Cross entropy is the recommended loss function when the
      * target values are class labels, and especially for imbalanced data.
      * It strongly penalizes error in the prediction of the actual class label.
-     * MeanSquare loss is used when the model output are continuous real values, but can
+     * Quadratic loss is used when the model output are continuous real values, but can
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Loss loss;
 
     @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, level = API.Level.secondary, gridable = true)

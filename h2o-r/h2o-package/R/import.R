@@ -56,9 +56,8 @@
 #' summary(prostate.hex)
 #' @name h2o.importFile
 #' @export
-h2o.importFolder <- function(path, pattern = "",
-                             destination_frame = "", parse = TRUE, header = NA, sep = "",
-                             col.names = NULL, na.strings=NULL) {
+h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
+                             col.names = NULL, col.types=NULL, na.strings=NULL) {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
@@ -87,7 +86,8 @@ h2o.importFolder <- function(path, pattern = "",
   if(length(res$files) <= 0L) stop("all files failed to import")
   if(parse) {
     srcKey <- res$destination_frames
-    return( h2o.parseRaw(data=.newFrame(op="ImportFolder",id=srcKey), destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, na.strings=na.strings) )
+    return( h2o.parseRaw(data=.newFrame(op="ImportFolder",id=srcKey), destination_frame=destination_frame,
+                         header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
   }
   myData <- lapply(res$destination_frames, function(x) .newFrame( op="ImportFolder", id=x))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
@@ -98,8 +98,10 @@ h2o.importFolder <- function(path, pattern = "",
 
 
 #' @export
-h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL, na.strings=NULL) {
-  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, na.strings=na.strings)
+h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
+                           col.types=NULL, na.strings=NULL) {
+  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
+                   na.strings=na.strings)
 }
 
 

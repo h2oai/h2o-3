@@ -78,7 +78,7 @@ check.deeplearning_stacked_autoencoder <- function() {
   p <- h2o.performance(model_on_compressed_data, test_w_resp)
   h2o.logloss(p)
   
-  testEnd()
+  
 }
 
 doTest("Deep Learning Stacked Autoencoder", check.deeplearning_stacked_autoencoder)

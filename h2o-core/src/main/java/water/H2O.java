@@ -8,6 +8,7 @@ import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -439,7 +440,10 @@ final public class H2O {
     }
   }
 
-  //Google analytics performance measurement
+  // Model cache manager
+  public static ModelCacheManager getMCM() { return new ModelCacheManager(); }
+
+  // Google analytics performance measurement
   public static GoogleAnalytics GA;
   public static int CLIENT_TYPE_GA_CUST_DIM = 1;
   public static int CLIENT_ID_GA_CUST_DIM = 2;
@@ -974,8 +978,12 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
-    public H2OCountedCompleter(){}
-    protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+    public final byte _priority;
+    public H2OCountedCompleter( ) { this(false); }
+    public H2OCountedCompleter( boolean bumpPriority ) {
+      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    }
+    protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
      *  drain the high priority queue before doing any low priority work.
@@ -1029,7 +1037,7 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    protected byte priority() { return MIN_PRIORITY; }
+    protected byte priority() { return _priority; }
     @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
@@ -1566,26 +1574,34 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA
+    // Register with GA or not
+    List<String> gaidList = JarHash.getResourcesList("gaid");
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out ) {
+            || ARGS.ga_opt_out
+            || gaidList.contains("CRAN")) {
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
       try {
         GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
         DefaultRequest defReq = GA.getDefaultRequest();
-        try {
-          String bakedGaId;
-          BufferedReader index = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream("gaid")));
-          while ((bakedGaId = index.readLine()) != null) {
-            if (!(bakedGaId.equals("index") || bakedGaId.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))) {
-              defReq.clientId(bakedGaId);
+        String gaid = null;
+        if (gaidList.size() > 0) {
+          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
+          for (String str : gaidList) {
+            if (str.matches("........-....-....-....-............")
+                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
+              gaid = str;
+              break;
             }
           }
-        } catch (Exception ignore) {}
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
+        }
+        if (gaid == null) { // No UUID, create one
+          gaid = defReq.clientId();
+          gaid = gaid.replaceFirst("........-","ANONYMOU-");
+        }
+        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
         Log.POST(11, t.toString());

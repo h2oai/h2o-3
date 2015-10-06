@@ -55,7 +55,7 @@ test.plus.onFrame <- function() {
   Log.info("HPH:")
   print(hph)
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: '+' with Frames", test.plus.onFrame)

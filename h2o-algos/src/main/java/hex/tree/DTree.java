@@ -2,6 +2,7 @@ package hex.tree;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
@@ -35,10 +36,30 @@ public class DTree extends Iced {
   // Public stats about tree
   public int _leaves;
   public int _depth;
+  public final int _mtrys;           // Number of columns to choose amongst in splits
+  final long _seeds[];        // One seed for each chunk, for sampling
+  public final transient Random _rand; // RNG for split decisions & sampling
 
-  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, double min_rows ) { this(names,ncols,nbins,nbins_cats,nclass,min_rows,-1); }
-  public DTree( String[] names, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, long seed ) {
-    _names = names; _ncols = ncols; _nbins=nbins; _nbins_cats=nbins_cats; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed;
+  public DTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, long seed ) {
+    _names = fr.names();
+    _ncols = ncols;
+    _nbins=nbins;
+    _nbins_cats=nbins_cats;
+    _nclass=nclass;
+    _min_rows = min_rows;
+    _ns = new Node[1];
+    _mtrys = mtrys;
+    _seed = seed;
+    _rand = SharedTree.createRNG(seed);
+    _seeds = new long[fr.vecs()[0].nChunks()];
+    for (int i = 0; i < _seeds.length; i++)
+      _seeds[i] = _rand.nextLong();
+  }
+
+  // Return a deterministic chunk-local RNG.  Can be kinda expensive.
+  public Random rngForChunk(int cidx) {
+    long seed = _seeds[cidx];
+    return SharedTree.createRNG(seed);
   }
 
   public final Node root() { return _ns[0]; }
@@ -47,7 +68,8 @@ public class DTree extends Iced {
 
   // Return Node i
   public final Node node( int i ) {
-    if( i >= _len ) throw new ArrayIndexOutOfBoundsException(i);
+    if( i >= _len )
+      throw new ArrayIndexOutOfBoundsException(i);
     return _ns[i];
   }
   public final UndecidedNode undecided( int i ) { return (UndecidedNode)node(i); }
@@ -232,18 +254,43 @@ public class DTree extends Iced {
   // An UndecidedNode: Has a DHistogram which is filled in (in parallel
   // with other histograms) in a single pass over the data.  Does not contain
   // any split-decision.
-  public static abstract class UndecidedNode extends Node {
-    public transient DHistogram[] _hs;
+  public static class UndecidedNode extends Node {
+    public transient DHistogram[] _hs; //(up to) one histogram per column
     public final int _scoreCols[];      // A list of columns to score; could be null for all
     public UndecidedNode( DTree tree, int pid, DHistogram[] hs ) {
       super(tree,pid);
       assert hs.length==tree._ncols;
-      _scoreCols = scoreCols(_hs=hs);
+      _hs = hs; //these histograms have no bins yet (just constructed)
+      _scoreCols = scoreCols();
     }
 
     // Pick a random selection of columns to compute best score.
     // Can return null for 'all columns'.
-    abstract public int[] scoreCols( DHistogram[] hs );
+    public int[] scoreCols() {
+      DTree tree = _tree;
+      if (tree._mtrys == _hs.length) return null;
+      int[] cols = new int[_hs.length];
+      int len=0;
+      // Gather all active columns to choose from.
+      for( int i=0; i<_hs.length; i++ ) {
+        if( _hs[i]==null ) continue; // Ignore not-tracked cols
+        assert _hs[i]._min < _hs[i]._maxEx && _hs[i].nbins() > 1 : "broken histo range "+_hs[i];
+        cols[len++] = i;        // Gather active column
+      }
+      int choices = len;        // Number of columns I can choose from
+      assert choices > 0;
+
+      // Draw up to mtry columns at random without replacement.
+      for( int i=0; i<tree._mtrys; i++ ) {
+        if( len == 0 ) break;   // Out of choices!
+        int idx2 = tree._rand.nextInt(len);
+        int col = cols[idx2];     // The chosen column
+        cols[idx2] = cols[--len]; // Compress out of array; do not choose again
+        cols[len] = col;          // Swap chosen in just after 'len'
+      }
+      assert choices - len > 0;
+      return Arrays.copyOfRange(cols, len, choices);
+    }
 
     // Make the parent of this Node use a -1 NID to prevent the split that this
     // node otherwise induces.  Happens if we find out too-late that we have a
@@ -333,7 +380,7 @@ public class DTree extends Iced {
   // Internal tree nodes which split into several children over a single
   // column.  Includes a split-decision: which child does this Row belong to?
   // Does not contain a histogram describing how the decision was made.
-  public static abstract class DecidedNode extends Node {
+  public static class DecidedNode extends Node {
     public final Split _split;         // Split: col, equal/notequal/less/greater, nrows, MSE
     public final float _splat;         // Split At point: lower bin-edge of split
     // _equals\_nids[] \   0   1
@@ -346,10 +393,27 @@ public class DTree extends Iced {
     transient int _size = 0;  // Compressed byte size of this subtree
 
     // Make a correctly flavored Undecided
-    public abstract UndecidedNode makeUndecidedNode(DHistogram hs[]);
+    public UndecidedNode makeUndecidedNode(DHistogram hs[]) {
+      return new UndecidedNode(_tree, _nid, hs);
+    }
 
     // Pick the best column from the given histograms
-    public abstract Split bestCol( UndecidedNode u, DHistogram hs[] );
+    public Split bestCol( UndecidedNode u, DHistogram hs[] ) {
+      // Find the column with the best split (lowest score).  Unlike RF, DRF
+      // scores on all columns and selects splits on all columns.
+      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
+      if( hs == null ) return best;
+      final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
+      for( int i=0; i<maxCols; i++ ) {
+        int col = u._scoreCols == null ? i : u._scoreCols[i];
+        if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
+        DTree.Split s = hs[col].scoreMSE(col, _tree._min_rows);
+        if( s == null ) continue;
+        if( s.se() < best.se() ) best = s;
+        if( s.se() <= 0 ) break; // No point in looking further!
+      }
+      return best;
+    }
 
     public DecidedNode( UndecidedNode n, DHistogram hs[] ) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
@@ -513,7 +577,7 @@ public class DTree extends Iced {
     }
   }
 
-  public static abstract class LeafNode extends Node {
+  public final static class LeafNode extends Node {
     public float _pred;
     public LeafNode( DTree tree, int pid ) { super(tree,pid); tree._leaves++; }
     public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); tree._leaves++; }
@@ -523,6 +587,10 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
+    // Insert just the predictions: a single byte/short if we are predicting a
+    // single class, or else the full distribution.
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
+    @Override protected int size() { return 4; }
     public final double pred() { return _pred; }
   }
 

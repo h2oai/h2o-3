@@ -161,9 +161,9 @@ public class KMeansGridTest extends TestUtil {
   public void testUserPointsCarsGrid() {
     Grid grid = null;
     Frame fr = null;
-    Frame init = frame(ard(ard(5.0, 3.4, 1.5, 0.2),
-                           ard(7.0, 3.2, 4.7, 1.4),
-                           ard(6.5, 3.0, 5.8, 2.2)));
+    Frame init = ArrayUtils.frame(ard(ard(5.0, 3.4, 1.5, 0.2),
+                                     ard(7.0, 3.2, 4.7, 1.4),
+                                     ard(6.5, 3.0, 5.8, 2.2)));
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();
@@ -209,9 +209,9 @@ public class KMeansGridTest extends TestUtil {
     Grid grid = null;
     KMeansModel kmRebuilt = null;
     Frame fr = null;
-    Frame init = frame(ard(ard(5.0, 3.4, 1.5, 0.2),
-                           ard(7.0, 3.2, 4.7, 1.4),
-                           ard(6.5, 3.0, 5.8, 2.2)));
+    Frame init = ArrayUtils.frame(ard(ard(5.0, 3.4, 1.5, 0.2),
+                                     ard(7.0, 3.2, 4.7, 1.4),
+                                     ard(6.5, 3.0, 5.8, 2.2)));
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       fr.remove("class").remove();

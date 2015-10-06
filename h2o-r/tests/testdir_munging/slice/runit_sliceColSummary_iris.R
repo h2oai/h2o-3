@@ -40,7 +40,7 @@ test.slice.colSummary <- function() {
   Log.info(stats_)
   cat("\n")
   expect_that(unlist(stats),equals(unlist(stats_)))
-  testEnd()
+  
 }
 
 doTest("Slice Tests: Column Summary", test.slice.colSummary)

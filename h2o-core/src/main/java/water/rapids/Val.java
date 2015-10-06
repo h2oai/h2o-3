@@ -23,6 +23,7 @@ abstract public class Val extends Iced {
   public String getStr() { throw new IllegalArgumentException("Expected a String but found a "+getClass()); }
   public Frame  getFrame(){throw new IllegalArgumentException("Expected a Frame but found a "+getClass()); }
   public double[]getRow(){ throw new IllegalArgumentException("Expected a Row but found a "+getClass()); }
+  public String[]getNames(){ throw new IllegalArgumentException("Expected a Row but found a "+getClass()); }
   public AST    getFun() { throw new IllegalArgumentException("Expected a function but found a "+getClass()); }
 }
 
@@ -55,11 +56,23 @@ class ValFrame extends Val {
 
 class ValRow extends Val {
   final double[] _ds;
-  ValRow(double[] ds) { _ds = ds; }
+  final String[] _names;
+  ValRow(double[] ds, String[] names) { _ds = ds; _names=names; }
   @Override public String toString() { return java.util.Arrays.toString(_ds); }
   @Override public int type () { return ROW; }
   @Override boolean isRow() { return true; }
   @Override public double[] getRow() { return _ds; }
+  @Override public String[] getNames() { return _names; }
+
+  ValRow slice(int[] cols) {
+    double[] ds = new double[cols.length];
+    String[] ns = new String[cols.length];
+    for(int i=0;i<cols.length;++i) {
+      ds[i] = _ds[cols[i]];
+      ns[i] = _names[cols[i]];
+    }
+    return new ValRow(ds,ns);
+  }
 }
 
 class ValFun extends Val {
