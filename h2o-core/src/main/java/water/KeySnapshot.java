@@ -151,7 +151,7 @@ public class KeySnapshot {
       //  - if we do not see Value object directly (it can be wrapped in Prime marker class),
       //    try to unwrap it via calling STORE.get (~H2O.get) and then
       //    look at wrapped value again.
-      Value val = ov instanceof Value ? (Value)ov : H2O.get(key);
+      Value val = ov instanceof Value ? Value.STORE_get(key) : H2O.get(key);
       if( val == null ) continue;
       res.add(new KeyInfo(key,val));
     }
