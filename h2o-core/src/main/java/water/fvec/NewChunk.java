@@ -672,7 +672,9 @@ public class NewChunk extends Chunk {
       // Specifically allow the NewChunk to be a numeric type (better be all
       // ints) and the selected Vec type an categorical - whose String mapping
       // may not be set yet.
-      (type==Vec.T_NUM && _vec._type==Vec.T_CAT)
+      (type==Vec.T_NUM && _vec._type==Vec.T_CAT) ||
+      // Another one: numeric Chunk and Time Vec (which will turn into all longs/zeros/nans Chunks)
+      (type==Vec.T_NUM && _vec._type == Vec.T_TIME && !res.hasFloat())
       : "NewChunk has type "+Vec.TYPE_STR[type]+", but the Vec is of type "+_vec.get_type_str();
     assert _len == res._len : "NewChunk has length "+_len+", compressed Chunk has "+res._len;
     // Force everything to null after compress to free up the memory.  Seems
