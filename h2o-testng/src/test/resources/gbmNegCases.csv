@@ -19,3 +19,4 @@ nfolds = 1,Classification_Balanced_data_Multinomial_Balance_classes_Dense_nfolds
 ,Classification_Balanced_data_Multinomial_Balance_classes_disabled_Dense_nfolds_1,gbm_neg_testcase_14,,x,,,,x,,,,1,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,
 nfolds = observations(# of rows),Classification_Balanced_data_Multinomial_Balance_classes_Dense_nfolds_sameas_observations,gbm_neg_testcase_15,,x,,,,x,,,,150,,,,,,,,,,,,x,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
 ,Classification_Balanced_data_Multinomial_Balance_classes_disabled_Dense_nfolds_sameas_observations,gbm_neg_testcase_16,,x,,,,x,,,,150,,,,,,,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,
+Offset is not supported for multinomial distribution,Classification_Balanced_data_Binomial_Offset_enabled_lung_dataset,gbm_neg_testcase_17,,x,,,x,,,,,,,,log_pop,,,,,,,,,,,,,,,Balanced,,,lung_log_pop_classification,,,,,,,,,,
