@@ -11,8 +11,9 @@ import water.util.Log;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import water.util.MathUtils;
+import water.util.Pair;
 
-import java.util.Arrays;
+import java.util.*;
 
 public class GBMTest extends TestUtil {
 
@@ -1429,44 +1430,66 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testStochasticGBM() {
     Frame tfr = null, vfr = null;
     GBMModel gbm = null;
+    float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
+    float[] col_sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
 
-    Scope.enter();
-    try {
-      tfr = parse_test_file("./smalldata/junit/cars.head10.csv");
-      for (String s : new String[]{
-              "name",
-      }) {
-        tfr.remove(s).remove();
+    Map<Double, Pair<Float,Float>> hm = new TreeMap<>();
+    for (float sample_rate : sample_rates) {
+      for (float col_sample_rate : col_sample_rates) {
+        Scope.enter();
+        try {
+          tfr = parse_test_file("./smalldata/junit/cars.csv");
+          for (String s : new String[]{
+                  "name",
+          }) {
+            tfr.remove(s).remove();
+          }
+          DKV.put(tfr);
+          GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+          parms._train = tfr._key;
+          parms._response_column = "cylinders"; //regression
+          parms._seed = 234;
+          parms._min_rows = 2;
+          parms._max_depth = 5;
+          parms._ntrees = 50;
+          parms._col_sample_rate = col_sample_rate;
+          parms._sample_rate = sample_rate;
+
+          // Build a first model; all remaining models should be equal
+          GBM job = new GBM(parms);
+          gbm = job.trainModel().get();
+
+          ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+          hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
+
+          job.remove();
+        } finally {
+          if (tfr != null) tfr.remove();
+          if (vfr != null) vfr.remove();
+          if (gbm != null) gbm.delete();
+          Scope.exit();
+        }
       }
-      DKV.put(tfr);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      parms._train = tfr._key;
-      parms._response_column = "cylinders"; //regression
-      parms._seed = 234;
-      parms._min_rows = 2;
-      parms._max_depth = 5;
-      parms._ntrees = 5;
-      parms._col_sample_rate = 1f;
-      parms._sample_rate = 0.5f;
-
-      // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-
-      ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
-      assertEquals(1.03088, mm.mse(), 1e-4);
-
-      job.remove();
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
-      if (gbm != null) gbm.delete();
-      Scope.exit();
     }
+    double fullDataMSE = hm.entrySet().iterator().next().getKey();
+    Iterator<Map.Entry<Double, Pair<Float, Float>>> it;
+    int i=0;
+    Pair<Float, Float> last = null;
+    // iterator over results (min to max MSE) - best to worst
+    for (it=hm.entrySet().iterator(); it.hasNext(); ++i) {
+      Map.Entry<Double, Pair<Float,Float>> n = it.next();
+      if (i>0) Assert.assertTrue(n.getKey() > fullDataMSE); //any sampling should make training set MSE worse
+      Log.info( "MSE: " + n.getKey() + ", "
+              + ", row sample: " + ((Pair)n.getValue()).getKey()
+              + ", col sample: " + ((Pair)n.getValue()).getValue());
+      last=n.getValue();
+    }
+    // worst MSE should belong to the most sampled case
+    Assert.assertTrue(last.getKey()==sample_rates[0]);
+    Assert.assertTrue(last.getValue()==col_sample_rates[0]);
   }
 }
