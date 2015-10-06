@@ -31,8 +31,6 @@ test.glrm.arrests <- function() {
   pred_svd_user <- predict(fitH2O_svd_user, arrestsH2O)
   pred_svd_h2o <- predict(fitH2O_svd_h2o, arrestsH2O)
   expect_equal(as.matrix(pred_svd_h2o), as.matrix(pred_svd_user))
-  
-  
 }
 
 doTest("GLRM Golden Test: USArrests with Centering", test.glrm.arrests)
