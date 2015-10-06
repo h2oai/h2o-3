@@ -418,7 +418,7 @@ public final class ParseDataset extends Job<Frame> {
         _packedDomains[i] = packDomain(_perColDomains[i]);
         i++;
       }
-      Log.trace("Done collecting local domains.");
+      Log.trace("Done locally collecting domains on each node.");
     }
 
     @Override
