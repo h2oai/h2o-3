@@ -13,9 +13,7 @@ public class H2OScaler extends Transform<H2OScaler> {
   double[] means;
   double[] sdevs;
 
-  H2OScaler(String name, String ast, boolean inplace) {
-    super(name,ast,inplace);
-  }
+  H2OScaler(String name, String ast, boolean inplace, String[] newNames) { super(name,ast,inplace,newNames); }
 
   @Override public Transform<H2OScaler> fit(Frame f) {
     means = new double[f.numCols()];

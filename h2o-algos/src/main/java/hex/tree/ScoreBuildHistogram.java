@@ -8,7 +8,7 @@ import water.fvec.Chunk;
 import water.util.AtomicUtils;
 
 /**  Score and Build Histogram
- * 
+ *
  * <p>Fuse 2 conceptual passes into one:
  *
  * <dl>
@@ -223,13 +223,18 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     double bins[] = new double[Math.max(_nbins, _nbins_cats)];
     double sums[] = new double[Math.max(_nbins, _nbins_cats)];
     double ssqs[] = new double[Math.max(_nbins, _nbins_cats)];
+    int binslen = bins.length;
+    int cols = _ncols;
+    int hcslen = hcs.length;
     // For All Columns
-    for( int c=0; c<_ncols; c++) { // for all columns
+    for( int c=0; c<cols; c++) { // for all columns
       Chunk chk = chks[c];
       // For All NIDs
-      for( int n=0; n<hcs.length; n++ ) {
-        final DHistogram rh = ((DHistogram)hcs[n][c]);
+      for( int n=0; n<hcslen; n++ ) {
+        final DHistogram rh = hcs[n][c];
         if( rh==null ) continue; // Ignore untracked columns in this split
+        double[] rhbins = rh._bins;
+        int rhbinslen = rhbins.length;
         final int lo = n==0 ? 0 : nh[n-1];
         final int hi = nh[n];
         float min = rh._min2;
@@ -238,10 +243,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         // in a few cases (top-level splits have few total bins across all
         // the (few) splits) so it's safe to bin more; also categoricals want
         // to split one bin-per-level no matter how many levels).
-        if( rh._bins.length >= bins.length ) { // Grow bins if needed
-          bins = new double[rh._bins.length];
-          sums = new double[rh._bins.length];
-          ssqs = new double[rh._bins.length];
+        if( rhbinslen >= binslen) { // Grow bins if needed
+          bins = new double[rhbinslen];
+          sums = new double[rhbinslen];
+          ssqs = new double[rhbinslen];
         }
 
         // Gather all the data for this set of rows, for 1 column and 1 split/NID
@@ -264,8 +269,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         // Add all the data into the Histogram (atomically add)
         rh.setMin(min);       // Track actual lower/upper bound per-bin
         rh.setMax(max);
-        for( int b=0; b<rh._bins.length; b++ ) { // Bump counts in bins
-          if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rh._bins,b,bins[b]); bins[b]=0; }
+        int len = rhbinslen;
+        for( int b=0; b<len; b++ ) { // Bump counts in bins
+          if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rhbins,b,bins[b]); bins[b]=0; }
           if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
         }
       }
