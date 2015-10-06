@@ -575,6 +575,7 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Ignore
   @Test public void elasticAveraging() {
     DeepLearningParameters dl;
     Frame frTrain;
