@@ -1,5 +1,6 @@
 from .transform_base import H2OTransformer
 import warnings
+from ..assembly import H2OCol
 
 class H2OScaler(H2OTransformer):
   """
@@ -90,7 +91,7 @@ class H2OColSelect(H2OTransformer):
 
   def to_rest(self, step_name):
     ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
-    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False])
+    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False,"|"])
 
 
 class H2OColOp(H2OTransformer):
@@ -98,13 +99,13 @@ class H2OColOp(H2OTransformer):
   Perform a column operation. If inplace is True, then cbind the result onto original frame,
   otherwise, perform the operation in place.
   """
-  def __init__(self,op,col=None,inplace=True,new_col_name="",**params):
+  def __init__(self,op,col=None,inplace=True,new_col_name=None,**params):
     self.fun=op
     self.col=col
     self.inplace=inplace
     self.params=params
     self.new_col_name=new_col_name
-    if inplace and new_col_name!="":
+    if inplace and new_col_name is not None:
       warnings.warn("inplace was False, but new_col_name was not empty. Ignoring new_col_name.")
     if isinstance(col, (list,tuple)): raise ValueError("col must be None or a single column.")
 
@@ -128,7 +129,10 @@ class H2OColOp(H2OTransformer):
 
   def to_rest(self, step_name):
     ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
-    return super(H2OColOp, self).to_rest([step_name,"H2OColOp",ast,self.inplace])
+    new_col_names = self.new_col_name
+    if new_col_names is None: new_col_names=["|"]
+    elif not isinstance(new_col_names, (list,tuple)): new_col_names = [new_col_names]
+    return super(H2OColOp, self).to_rest([step_name,self.__class__.__name__,ast,self.inplace,"|".join(new_col_names)])
 
 
 class H2OBinaryOp(H2OColOp):
@@ -140,13 +144,15 @@ class H2OBinaryOp(H2OColOp):
   A ValueError is raised if both left and right are None.
   """
 
-  def __init__(self, op, col, inplace=True, left=None, right=None, **params):
-    super(H2OBinaryOp, self).__init__(op,col,inplace,**params)
+  def __init__(self, op, col, inplace=True, new_col_name=None, left=None, right=None, **params):
+    super(H2OBinaryOp, self).__init__(op,col,inplace, new_col_name, **params)
+    self.left_is_col  = isinstance(left, H2OCol)
+    self.right_is_col = isinstance(right,H2OCol)
     self.left = left
     self.right = right
     if left is None and right is None:
       raise ValueError("left and right cannot both be None")
 
   def _transform_helper(self,X,**params):
-    if self.left is None: return self.fun(X[self.col],self.right)
-    return self.fun(self.left,X[self.col])
+    if self.left is None: return self.fun(X[self.col],X[self.right.col] if self.right_is_col else self.right)
+    return self.fun(X[self.left.col] if self.left_is_col else self.left,X[self.col])
