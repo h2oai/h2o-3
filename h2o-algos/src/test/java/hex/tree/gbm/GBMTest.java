@@ -1442,20 +1442,15 @@ public class GBMTest extends TestUtil {
       for (float col_sample_rate : col_sample_rates) {
         Scope.enter();
         try {
-          tfr = parse_test_file("./smalldata/junit/cars.csv");
-          for (String s : new String[]{
-                  "name",
-          }) {
-            tfr.remove(s).remove();
-          }
+          tfr = parse_test_file("./smalldata/gbm_test/ecology_model.csv");
           DKV.put(tfr);
           GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
           parms._train = tfr._key;
-          parms._response_column = "cylinders"; //regression
+          parms._response_column = "Angaus"; //regression
           parms._seed = 234;
           parms._min_rows = 2;
-          parms._max_depth = 5;
-          parms._ntrees = 50;
+          parms._max_depth = 10;
+          parms._ntrees = 10;
           parms._col_sample_rate = col_sample_rate;
           parms._sample_rate = sample_rate;
 
@@ -1488,8 +1483,82 @@ public class GBMTest extends TestUtil {
               + ", col sample: " + ((Pair)n.getValue()).getValue());
       last=n.getValue();
     }
-    // worst MSE should belong to the most sampled case
+    // worst training MSE should belong to the most sampled case
     Assert.assertTrue(last.getKey()==sample_rates[0]);
     Assert.assertTrue(last.getValue()==col_sample_rates[0]);
+  }
+
+  @Test
+  public void testStochasticGBMHoldout() {
+    Frame tfr = null;
+    Key[] ksplits = new Key[0];
+    try{
+      tfr=parse_test_file("./smalldata/gbm_test/ecology_model.csv");
+      SplitFrame sf = new SplitFrame();
+      sf.dataset = tfr;
+      sf.ratios = new double[] { 0.5, 0.5 };
+      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      // Invoke the job
+      sf.exec().get();
+      ksplits = sf.destination_frames;
+
+      GBMModel gbm = null;
+      float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
+      float[] col_sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
+
+      Map<Double, Pair<Float,Float>> hm = new TreeMap<>();
+      for (float sample_rate : sample_rates) {
+        for (float col_sample_rate : col_sample_rates) {
+          Scope.enter();
+          try {
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = ksplits[0];
+            parms._valid = ksplits[1];
+            parms._response_column = "Angaus"; //regression
+            parms._seed = 234;
+            parms._min_rows = 1;
+            parms._max_depth = 15;
+            parms._ntrees = 10;
+            parms._col_sample_rate = col_sample_rate;
+            parms._sample_rate = sample_rate;
+
+            // Build a first model; all remaining models should be equal
+            GBM job = new GBM(parms);
+            gbm = job.trainModel().get();
+
+            // too slow, but passes (now)
+//            // Build a POJO, validate same results
+//            Frame pred = gbm.score(tfr);
+//            Assert.assertTrue(gbm.testJavaScoring(tfr,pred,1e-15));
+//            pred.remove();
+
+            ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._validation_metrics;
+            hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
+
+            job.remove();
+          } finally {
+            if (gbm != null) gbm.delete();
+            Scope.exit();
+          }
+        }
+      }
+      Iterator<Map.Entry<Double, Pair<Float, Float>>> it;
+      Pair<Float, Float> last = null;
+      // iterator over results (min to max MSE) - best to worst
+      for (it=hm.entrySet().iterator(); it.hasNext();) {
+        Map.Entry<Double, Pair<Float,Float>> n = it.next();
+        Log.info( "MSE: " + n.getKey()
+            + ", row sample: " + ((Pair)n.getValue()).getKey()
+            + ", col sample: " + ((Pair)n.getValue()).getValue());
+        last=n.getValue();
+      }
+      // worst validation MSE should belong to the most overfit case (1.0, 1.0)
+      Assert.assertTrue(last.getKey()==sample_rates[sample_rates.length-1]);
+      Assert.assertTrue(last.getValue()==col_sample_rates[col_sample_rates.length-1]);
+    } finally {
+      if (tfr != null) tfr.remove();
+      for (Key k : ksplits)
+        if (k!=null) k.remove();
+    }
   }
 }
