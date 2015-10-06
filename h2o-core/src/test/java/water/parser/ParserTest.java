@@ -9,7 +9,7 @@ import water.util.Log;
 import java.io.File;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -779,7 +779,7 @@ public class ParserTest extends TestUtil {
             Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
-            Log.throwErr(t);
+            throw Log.throwErr(t);
           }
         }
       }

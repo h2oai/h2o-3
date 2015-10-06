@@ -568,7 +568,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // unlocked (it will never be write-locked, but may be read-locked if there
   // are pending invalidates on it), upgrade it in-place to a true null.
   // Return the not-Null value, or the true null.
-  static Value STORE_get( Key key ) {
+  public static Value STORE_get( Key key ) {
     Value val = H2O.get(key);
     if( val == null ) return null; // A true null
     if( !val.isNull() ) return val; // Not a special Null

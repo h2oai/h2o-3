@@ -61,7 +61,7 @@ public class TestNGUtil extends Iced {
         if( leaked_keys > 0 ) {
             int cnt=0;
             for( Key k : H2O.localKeySet() ) {
-                Value value = H2O.raw_get(k);
+                Value value = Value.STORE_get(k);
                 // Ok to leak VectorGroups and the Jobs list
                 if( value.isVecGroup() || k == Job.LIST ||
                         // Also leave around all attempted Jobs for the Jobs list

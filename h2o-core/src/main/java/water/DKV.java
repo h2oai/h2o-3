@@ -211,7 +211,7 @@ public abstract class DKV {
     // send to the remote, so the local get has missed above, but a remote
     // get still might 'win' because the remote 'remove' is still in-progress.
     TaskPutKey tpk = home.pendingPutKey(key);
-    if( tpk != null ) return tpk._xval;
+    if( tpk != null ) return tpk._xval == null || tpk._xval.isNull() ? null : tpk._xval;
 
     // Get data "the hard way"
     RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
