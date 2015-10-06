@@ -161,6 +161,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       _model._output.addKTrees(ktrees);
     }
 
+    // Assumes that the "Work" column are filled with horizontalized (0/1) class memberships per row (or copy of regression response)
     private void growTrees(DTree[] ktrees, int[] leafs, Random rand) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
