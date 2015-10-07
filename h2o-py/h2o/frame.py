@@ -91,7 +91,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(file_path)
     setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
-    parse = h2o.parse(setup, _py_tmp_key())  # create a new key
+    parse = h2o.parse(setup)
     self._id = parse["job"]["dest"]["name"]
     self._computed=True
     self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
@@ -150,7 +150,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
     if check_header is not None: setup["check_header"] = check_header
-    parse = h2o.parse(setup, _py_tmp_key())
+    parse = h2o.parse(setup)
     self._computed=True
     self._id = parse["destination_frame"]["name"]
     self._ncols = parse["number_columns"]

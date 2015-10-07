@@ -1,6 +1,5 @@
 import sys
 sys.path.insert(1, "../../")
-from collections import OrderedDict as ODict
 import h2o,tests
 from h2o.assembly import *
 from h2o.transforms.preprocessing import *
@@ -30,12 +29,12 @@ def lending_club_munging_assembly():
                'Enum', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric',
                'Numeric', 'Numeric', 'Enum', 'Numeric', 'Enum', 'Enum', 'Numeric', 'Enum', 'Numeric']
 
-  types = ODict(zip(col_names,col_types))
+  types = dict(zip(col_names,col_types))
   types["int_rate"]   = "String"
   types["revol_util"] = "String"
   types["emp_length"] = "String"
 
-  data = h2o.import_file(path=small_test, col_types=types.values())
+  data = h2o.import_file(path=small_test, col_types=types)
   data[["int_rate","revol_util","emp_length"]].show()
 
   assembly = H2OAssembly(

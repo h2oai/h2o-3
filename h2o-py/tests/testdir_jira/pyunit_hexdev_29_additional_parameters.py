@@ -4,7 +4,7 @@
 ## column_names, and column_types and that certain characters are replaced.
 ##
 ################################################################################
-import sys, os
+import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 
@@ -30,7 +30,7 @@ def additional_parameters():
     #col_types as dictionary
     dest_frame="dev29&hex%"
     c_names = ["a", "b", "c"]
-    c_types = {"c":"string", "a":"enum", "b": "enum"}
+    c_types = {"c":"string", "a":"string"}
 
     fhex = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"),
                            destination_frame=dest_frame,
@@ -42,7 +42,9 @@ def additional_parameters():
     assert fhex.col_names == c_names
     col_summary = h2o.frame(fhex._id)["frames"][0]["columns"]
     for i in range(len(col_summary)):
-      assert col_summary[i]["type"] == c_types[c_names[i]]
+      name = c_names[i]
+      if name in c_types:
+        assert col_summary[i]["type"] == c_types[name]
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, additional_parameters)

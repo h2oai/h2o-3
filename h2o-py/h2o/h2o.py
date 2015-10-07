@@ -1,7 +1,6 @@
 import warnings
 warnings.simplefilter('always', DeprecationWarning)
 import os
-import itertools
 import functools
 import os.path
 import re
@@ -43,19 +42,18 @@ Parameters
 ----------
   path : str
     A path specifying the location of the data to upload.
-  destination_frame : H2OFrame
-    The name of the H2O Frame in the H2O Cluster.
+  destination_frame : str, optional
+    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
   header : int, optional
    -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : string, optional
+  sep : str, optional
     The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : optional
+  col_names : list, optional
     A list of column names for the file.
-  col_types : optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings : optional
-    A list of strings which are to be interpreted as missing values.
-
+  col_types : list or dict, optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+  na_strings : list or dict, optional
+    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
  :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
@@ -72,20 +70,20 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   ----------
   path : str
     A path specifying the location of the data to import.
-  destination_frame :
-    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse :
-    (Optional) A logical value indicating whether the file should be parsed after import.
-  header :
-   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep :
-    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names :
-    (Optional) A list of column names for the file.
-  col_types :
-    (Optional) A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings :
-    (Optional) A list of strings which are to be interpreted as missing values.
+  destination_frame : str, optional
+    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse : boolean, optional
+    A logical value indicating whether the file should be parsed after import.
+  header : int, optional
+   -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep : str, optional
+    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names : list, optional
+    A list of column names for the file.
+  col_types : list or dict, optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+  na_strings : list or dict, optional
+    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
   :return: A new H2OFrame
   """
   if not parse:
@@ -101,20 +99,20 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   raw_frames : H2OFrame
     A collection of imported file frames
-  destination_frame :
-    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse :
-    (Optional) A logical value indicating whether the file should be parsed after import.
-  header :
-    (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep :
-    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names :
-    (Optional) A list of column names for the file.
-  col_types :
-    (Optional) A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings :
-    (Optional) A list of strings which are to be interpreted as missing values.
+  destination_frame : str, optional
+    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse : boolean, optional
+    A logical value indicating whether the file should be parsed after import.
+  header : int, optional
+   -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep : str, optional
+    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names : list, optional
+    A list of column names for the file.
+  col_types : list or dict, optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+  na_strings : list or dict, optional
+    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
   :return: A ParseSetup "object"
   """
 
@@ -122,29 +120,63 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
-  if destination_frame: j["destination_frame"] = destination_frame
+  if destination_frame: j["destination_frame"] = _quoted(destination_frame).replace("%",".").replace("&",".") # TODO: really should be url encoding...
   if not isinstance(header, tuple):
     if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
     j["check_header"] = header
   if separator:
     if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
-    j["separator"] = separator
+    j["separator"] = ord(separator)
   if column_names:
     if not isinstance(column_names, list): raise ValueError("col_names should be a list")
+    if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
     j["column_names"] = column_names
   if column_types:
     if isinstance(column_types, dict):
-      if not column_names: raise ValueError("col_names should be specified if col_types is a dictionary of column names to types")
-      if set(column_names) != set(column_types.keys()): raise ValueError("col_names and column names in col_types are unequal")
-    elif not isinstance(column_types, list):
+      #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
+      if not j["column_names"]: raise ValueError("column names should be specified")
+      if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
+      idx = 0
+      column_types_list = []
+      for name in j["column_names"]:
+        if name in column_types:
+          column_types_list.append(column_types[name])
+        else:
+          column_types_list.append(j["column_types"][idx])
+        idx += 1
+      column_types = column_types_list
+    elif isinstance(column_types, list):
+      if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
+      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
+    else: #not dictionary or list
       raise ValueError("col_types should be a list of types or a dictionary of column names to types")
     j["column_types"] = column_types
-  if na_strings: j["na_strings"] = na_strings
+  if na_strings:
+    if isinstance(na_strings, dict):
+      #overwrite dictionary to ordered list of lists of na_strings
+      if not j["column_names"]: raise ValueError("column names should be specified")
+      if not set(na_strings.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in na_strings is not a subset of the column names")
+      j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
+      for name, na in na_strings.items():
+        idx = j["column_names"].index(name)
+        if isinstance(na, basestring): na = [na]
+        for n in na: j["na_strings"][idx].append(_quoted(n))
+    elif _is_list_of_lists(na_strings):
+      if len(na_strings) != len(j["column_types"]): raise ValueError("length of na_strings should be equal to the number of columns")
+      j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
+    elif isinstance(na_strings, list):
+      j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_names"])
+    else: #not a dictionary or list
+      raise ValueError("na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
+                       "names to strings which are to be interpreted as missing values")
 
+  #quote column names and column types also when not specified by user
+  if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
+  j["column_types"] = map(_quoted, j["column_types"])
   return j
 
 
-def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
+def parse(setup):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
 
@@ -152,58 +184,26 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   ----------
   setup : dict
     The result of calling parse_setup.
-  h2o_name : H2OFrame
-    The name of the H2O Frame on the back end.
-  first_line_is_header : int
-    -1 means data, 0 means guess, 1 means header.
 
 :return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
-  p = { 'destination_frame' : h2o_name,
-        'parse_type' : None,
-        'separator' : None,
-        'single_quotes' : None,
-        'check_header'  : None,
-        'number_columns' : None,
-        'chunk_size'    : None,
-        'delete_on_done' : True,
-        'blocking' : False,
+  p = { "destination_frame" : _py_tmp_key(),
+        "parse_type" : None,
+        "separator" : None,
+        "single_quotes" : None,
+        "check_header"  : None,
+        "number_columns" : None,
+        "chunk_size"    : None,
+        "delete_on_done" : True,
+        "blocking" : False,
+        "column_types" : None
         }
 
-  if setup["destination_frame"]:
-    setup["destination_frame"] = _quoted(setup["destination_frame"]).replace("%",".").replace("&",".")  # TODO: really should be url encoding...
+  if setup["column_names"]: p["column_names"] = None
+  if setup["na_strings"]: p["na_strings"] = None
 
-  if isinstance(first_line_is_header, tuple):
-    first_line_is_header = setup["check_header"]
-
-  if isinstance(setup["separator"], basestring):
-    setup["separator"] = ord(setup["separator"])
-
-  if setup["column_types"]: #process column_types before column_names for matching keys before quoting
-    if isinstance(setup["column_types"], dict):
-      #overwrite dictionary to ordered list of column types
-      setup["column_types"] = [_quoted(setup["column_types"][name]) for name in setup["column_names"]]
-    else: #if list
-      setup["column_types"] = [_quoted(name) for name in setup["column_types"]]
-    p["column_types"] = None
-
-  if setup["column_names"]:
-    setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
-    p["column_names"] = None
-
-  if setup["na_strings"]:
-    if _is_list_of_lists(setup["na_strings"]): setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
-    else:
-      setup["na_strings"] = [_quoted(na) for na in setup["na_strings"]] # quote the strings
-      setup["na_strings"] = '\"' + str(list(itertools.repeat(setup["na_strings"], len(setup["column_types"])))) + '\"'
-    p["na_strings"] = None
-
-
-  # update the parse parameters with the parse_setup values
   p.update({k: v for k, v in setup.iteritems() if k in p})
-
-  p["check_header"] = first_line_is_header
 
   # Extract only 'name' from each src in the array of srcs
   p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -231,7 +231,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   """
   id = setup["destination_frame"]
   fr = H2OFrame()
-  parsed = parse(setup, id, first_line_is_header)
+  parsed = parse(setup)
   fr._computed = True
   fr._id = id
   fr._keep = True
@@ -240,7 +240,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
-def _quoted(key, replace=True):
+def _quoted(key):
   if key == None: return "\"\""
   #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
   # key = key.replace("%", ".")
