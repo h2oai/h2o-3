@@ -157,7 +157,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
-    public final Frame train() { return _train == null ? null : _train.get(); }
+    public final Frame train() { return _train==null ? null : _train.<Frame>get(); }
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.<Frame>get(); }
@@ -224,22 +224,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (f.get(this) != null) {
               if (c.getComponentType() == Integer.TYPE){
                 int[] arr = (int[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs  + P * (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Float.TYPE) {
                 float[] arr = (float[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs + P * (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Double.TYPE) {
                 double[] arr = (double[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs + P * (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs + P * (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
-                xs = P * xs + (long) Arrays.deepHashCode(arr);
+                xs = xs + P * (long) Arrays.deepHashCode(arr);
               } //else lead to ClassCastException
             } else {
-              xs = P * xs + P;
+              xs = xs + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -251,9 +251,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             f.setAccessible(true);
             Object value = f.get(this);
             if (value != null) {
-              xs = P * xs + (long)(value.hashCode());
+              xs = xs + P * (long)(value.hashCode());
             } else {
-              xs = P * xs + P;
+              xs = xs + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
