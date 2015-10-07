@@ -358,7 +358,7 @@ Relative to P, the larger that (N/CPUs) becomes, the more trivial p becomes to t
 
    &nbsp;&nbsp;&nbsp;&nbsp;\(Complexity = O(p^3 + N*p^2)\) 
 
-
+For more information about how GLM works, refer to the [Generalized Linear Modeling booklet](http://h2o.ai/resources). 
 
 
 ###References
@@ -1087,6 +1087,8 @@ val weight
 
 The above vec has a real-valued type if passed as a whole, but if the zero-weighted rows are sliced away first, the integer weight is used. The resulting histogram is either kept at full `nbins` resolution or potentially shrunk to the discrete integer range, which affects the split points. 
 
+For more information about the GBM algorithm, refer to the [Gradient Boosted Machines booklet](http://h2o.ai/resources). 
+
 ###References
 
 Dietterich, Thomas G, and Eun Bae Kong. "Machine Learning Bias,
@@ -1352,7 +1354,7 @@ To compute deviance for a Deep Learning regression model, the following formula 
 Loss = Quadratic -> MSE==Deviance
 For Absolute/Laplace or Huber -> MSE != Deviance
 
-For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](https://leanpub.com/deeplearning/read). 
+For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](http://h2o.ai/resources). 
 
 ###References
 
