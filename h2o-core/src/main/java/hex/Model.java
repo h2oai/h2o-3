@@ -1145,7 +1145,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double val = dvecs[col].at(row);
           rowData.put(
                   genmodel._names[col],
-                  genmodel._domains[col] == null ? (Double) val : (String) genmodel._domains[col][(int)val]);
+                  genmodel._domains[col] == null ? (Double) val
+                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel");
         }
         EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
         AbstractPrediction p=null;
