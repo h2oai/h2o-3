@@ -24,7 +24,7 @@ class H2OTransformer(object):
   def inverse_transform(self,X,y=None,**params): raise TransformAttributeError(self,"inverse_transform")
   def export(self,X,y,**params):                 raise TransformAttributeError(self,"export")
   def fit_transform(self, X, y=None, **params):
-      return self.fit(X, y, **params).transform(X)
+      return self.fit(X, y, **params).transform(X, **params)
 
   def get_params(self, deep=True):
     """

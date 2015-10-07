@@ -13,7 +13,7 @@ def pubdev_2041():
     m1 = h2o.deeplearning(x=train1[0:4], y=train1[4], epochs=100)
 
     # update m1 with new training data
-    m2 = h2o.deeplearning(x=train2[0:4], y=train2[4], epochs=200, checkpoint=m1.id)
+    m2 = h2o.deeplearning(x=train2[0:4], y=train2[4], epochs=200, checkpoint=m1.model_id)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, pubdev_2041)

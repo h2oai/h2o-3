@@ -31,7 +31,7 @@ class ModelBase(object):
       for p in self._model_json["parameters"]: self._params[p["label"]]=p
 
   @property
-  def id(self):
+  def model_id(self):
     """
     :return: Retrieve this model's identifier.
     """

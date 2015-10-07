@@ -445,6 +445,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Frame key of X matrix
     public Key<Frame> _loading_key;
+    public Key<? extends Model> _init_key;
 
     // Number of categorical and numeric columns
     public int _ncats;
@@ -484,6 +485,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey, parms, output); }
+
+  @Override protected Futures remove_impl( Futures fs ) {
+    if(null != _output._init_key)
+      _output._init_key.remove(fs);
+    if(null != _output._loading_key)
+      _output._loading_key.remove(fs);
+    return super.remove_impl(fs);
+  }
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {

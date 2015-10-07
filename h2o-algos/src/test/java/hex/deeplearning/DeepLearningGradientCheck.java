@@ -147,7 +147,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
                           for (DataInfo.Row myRow : miniBatch) {
                             if (myRow == null) continue;
-                            ((Neurons.Input) neurons[0]).setInput(-1, myRow.numVals, myRow.nBins, myRow.binIds);
+                            ((Neurons.Input) neurons[0]).setInput(-1, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds);
                             DeepLearningTask.step(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, new double[]{myRow.response[0]}, myRow.offset);
                           }
 

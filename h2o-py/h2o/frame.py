@@ -1040,7 +1040,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :param na_rm: True or False to remove NAs from computation.
     :return: Standard deviation of the H2OVec elements.
     """
-    return H2OFrame(expr=ExprNode("sd", self))._get()
+    return H2OFrame(expr=ExprNode("sd", self))._scalar()
 
   def asfactor(self):
     """
