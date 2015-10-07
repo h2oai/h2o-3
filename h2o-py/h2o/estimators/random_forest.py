@@ -1,4 +1,3 @@
-from ..h2o import random_forest
 from .estimator_base import H2OEstimator
 
 class H2ORandomForestEstimator(H2OEstimator):

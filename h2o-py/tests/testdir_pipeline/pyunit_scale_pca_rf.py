@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1, "../../")
-import h2o, tests
+import h2o,tests
 
 def scale_pca_rf_pipe():
 
