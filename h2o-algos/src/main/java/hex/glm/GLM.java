@@ -445,6 +445,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private class InitTsk extends H2OCountedCompleter {
     final int _foldId;
     final boolean _intercept;
+    public InitTsk(int foldId, boolean intercept) { super(true); _foldId = foldId; _intercept = intercept; }
     public InitTsk(int foldId, boolean intercept, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId; _intercept = intercept; }
     long _nobs;
     double _ymu;
