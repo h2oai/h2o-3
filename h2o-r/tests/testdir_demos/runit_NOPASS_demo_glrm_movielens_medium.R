@@ -68,7 +68,7 @@ test.movielens.demo <- function(conn) {
   ratings_new <- as.h2o(t(data.frame(ratings_new.df)))
   
   Log.info(paste("Run GLRM on new user rating vector with k =", k_dim, "and initial Y from previous model"))
-  fitH2O_new <- h2o.glrm(ratings_new, k = k_dim, ignore_const_cols = FALSE, transform = "NONE", init = fitY, loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000, seed = SEED)
+  fitH2O_new <- h2o.glrm(ratings_new, k = k_dim, ignore_const_cols = FALSE, transform = "NONE", user_y = fitY, init = "User", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000, seed = SEED)
   print(fitH2O_new)
   
   Log.info("Embedding of new user into movie archetypes (X):")
