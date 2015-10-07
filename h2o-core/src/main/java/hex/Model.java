@@ -1158,7 +1158,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         try { if (p==null) p = epmw.predictRegression(rowData); } catch (AbstractPredictException e) { }
         try { if (p==null) p = epmw.predictBinomial(rowData); } catch (AbstractPredictException e) { }
         try { if (p==null) p = epmw.predictMultinomial(rowData); } catch (AbstractPredictException e) { }
-        assert (p!=null);
+        if  (p==null) continue;
         miss=0;
         int oldmiss=0;
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
