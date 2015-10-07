@@ -30,36 +30,44 @@ checkRollups <- function(h2o_data, r_data) {
             print(paste0("R column is numeric: ",r_col_is_numeric))
             expect_true(r_col_is_numeric)
 
-            h2o_mean_rollup  <- h2o_sum$columns[[c]]$mean
-            h2o_sigma_rollup <- h2o_sum$columns[[c]]$sigma
-            h2o_max_rollup   <- h2o_sum$columns[[c]]$maxs[1]
-            h2o_min_rollup   <- h2o_sum$columns[[c]]$mins[1]
+            h2o_mean_rollup    <- h2o_sum$columns[[c]]$mean
+            h2o_sigma_rollup   <- h2o_sum$columns[[c]]$sigma
+            h2o_max_rollup     <- h2o_sum$columns[[c]]$maxs[1]
+            h2o_min_rollup     <- h2o_sum$columns[[c]]$mins[1]
+            h2o_zeros_rollup   <- h2o_sum$columns[[c]]$zero_count
+            h2o_missing_rollup <- h2o_sum$columns[[c]]$missing_count
 
-            h2o_mean         <- mean(h2o_data[[c]])
-            h2o_sigma        <- sd(h2o_data[[c]])
-            h2o_max          <- max(h2o_data[[c]])
-            h2o_min          <- min(h2o_data[[c]])
+            #h2o_mean         <- mean(h2o_data[[c]])
+            #h2o_sigma        <- sd(h2o_data[[c]])
+            #h2o_max          <- max(h2o_data[[c]])
+            #h2o_min          <- min(h2o_data[[c]])
 
             r_mean           <- mean(r_data[[c]],na.rm=TRUE)
             r_sigma          <- sd(r_data[[c]],na.rm=TRUE)
             r_max            <- max(r_data[[c]],na.rm=TRUE)
             r_min            <- min(r_data[[c]],na.rm=TRUE)
+            r_zeros          <- sum(r_data[[c]]==0,na.rm=TRUE)
+            r_missing        <- sum(is.na(r_data[[c]]))
 
             print("Expect H2O and R mean, sd, max, and min to be equivalent")
-            h2o_rollup_df <- data.frame(mean=h2o_mean_rollup,sd=h2o_sigma_rollup,max=h2o_max_rollup,min=h2o_min_rollup)
-            print(paste0("H2O-rollup (mean, sd, max, min): ",h2o_rollup_df))
+            h2o_rollup_df <- data.frame(mean=h2o_mean_rollup,sd=h2o_sigma_rollup,max=h2o_max_rollup,min=h2o_min_rollup,
+                                        zeros=h2o_zeros_rollup,missing=h2o_missing_rollup)
+            print(paste0("H2O-rollup (mean, sd, max, min, zeros, missing): ",h2o_rollup_df))
             print("")
-            h2o_df <- data.frame(mean=h2o_mean,sd=h2o_sigma,max=h2o_max,min=h2o_min)
-            print(paste0("H2O (mean, sd, max, min): ",h2o_df))
-            print("")
-            r_df <- data.frame(mean=r_mean,sd=r_sigma,max=r_max,min=r_min)
-            print(paste0("R (mean, sd, max, min): ",r_df))
+            #h2o_df <- data.frame(mean=h2o_mean,sd=h2o_sigma,max=h2o_max,min=h2o_min)
+            #print(paste0("H2O (mean, sd, max, min): ",h2o_df))
+            #print("")
+            r_df <- data.frame(mean=r_mean,sd=r_sigma,max=r_max,min=r_min,zeros=r_zeros,missing=r_missing)
+            print(paste0("R (mean, sd, max, min, zeros, missing): ",r_df))
             print("")
 
             expect_equal(h2o_rollup_df$mean, r_df$mean, tol=1e-8)
             expect_equal(h2o_rollup_df$max, r_df$max, tol=1e-8)
             expect_equal(h2o_rollup_df$min, r_df$min, tol=1e-8)
             expect_equal(h2o_rollup_df$sd, r_df$sd, tol=1e-8)
+            expect_equal(h2o_rollup_df$zeros, r_df$zeros)
+            expect_equal(h2o_rollup_df$missing, r_df$missing)
+        } else if ((h2o_sum$columns[[c]]$type == "string")) { next
         } else { stop(paste0("Unknown H2O column type: ",h2o_sum$columns[[c]]$type)) }
     }
 }
@@ -69,29 +77,37 @@ test <- function() {
     r_datasets <- list()
 
     smalldata_paths <- c("smalldata/iris/iris.csv", "smalldata/logreg/prostate.csv", "smalldata/junit/cars_20mpg.csv",
-                         "smalldata/junit/australia.csv", "smalldata/airlines/AirlinesTrain.csv.zip")
+                         "smalldata/junit/australia.csv", "smalldata/airlines/AirlinesTrain.csv.zip",
+                         "smalldata/arcene/arcene_train.data", "smalldata/chicago/chicagoCensus.csv",
+                         "smalldata/covtype/covtype.20k.data" )
     smalldata <- lapply(smalldata_paths, function (p) h2o.importFile(locate(p)))
     for (data in smalldata) { h2o_datasets[[length(h2o_datasets)+1]] <- data }
 
     seed <- sample(1:10000,1)
     print(paste0("SEED: ", seed))
 
-    sparse_binary <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 0.0, binary_fraction = 1.0, binary_ones_fraction = 0.01, missing_fraction = 0.0, seed = seed)
+    sparse_binary <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 0.0, binary_fraction = 1.0,
+                                     binary_ones_fraction = 0.01, missing_fraction = 0.0, seed = seed)
     h2o_datasets[[length(h2o_datasets)+1]] <- sparse_binary
 
-    binary <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 0.0, binary_fraction = 1.0, binary_ones_fraction = 0.5, missing_fraction = 0.0, seed = seed)
+    binary <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 0.0, binary_fraction = 1.0,
+                              binary_ones_fraction = 0.5, missing_fraction = 0.0, seed = seed)
     h2o_datasets[[length(h2o_datasets)+1]] <- binary
 
-    integer <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 1.0, binary_fraction = 0.0, missing_fraction = 0.0, seed = seed)
+    integer <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 1.0, binary_fraction = 0.0,
+                               missing_fraction = 0.0, seed = seed)
     h2o_datasets[[length(h2o_datasets)+1]] <- integer
 
-    double <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 0.0, binary_fraction = 0.0, missing_fraction = 0.0, seed = seed)
+    double <- h2o.createFrame(categorical_fraction = 0.0, integer_fraction = 0.0, binary_fraction = 0.0,
+                              missing_fraction = 0.0, seed = seed)
     h2o_datasets[[length(h2o_datasets)+1]] <- double
 
-    categorical <- h2o.createFrame(categorical_fraction = 1.0, integer_fraction = 0.0, binary_fraction = 0.0, missing_fraction = 0.0, seed = seed)
+    categorical <- h2o.createFrame(categorical_fraction = 1.0, integer_fraction = 0.0, binary_fraction = 0.0,
+                                   missing_fraction = 0.0, seed = seed)
     h2o_datasets[[length(h2o_datasets)+1]] <- categorical
 
-    alltypes <- h2o.createFrame(categorical_fraction = 0.25, integer_fraction = 0.25, binary_fraction = 0.25, missing_fraction = 0.0, seed = seed)
+    alltypes <- h2o.createFrame(categorical_fraction = 0.25, integer_fraction = 0.25, binary_fraction = 0.25,
+                                missing_fraction = 0.0, seed = seed)
     h2o_datasets[[length(h2o_datasets)+1]] <- alltypes
 
     for (data in h2o_datasets) { r_datasets[[length(r_datasets)+1]] <- as.data.frame(data) }
