@@ -23,12 +23,12 @@ public class DeepLearningSpiralsTest extends TestUtil {
     Log.info(frame);
     int resp = frame.names().length-1;
 
-    Key dest = Key.make("spirals2");
 
-    for (boolean sparse : new boolean[]{false}) {
+    for (boolean sparse : new boolean[]{true, false}) {
       for (boolean col_major : new boolean[]{false}) {
         if (!sparse && col_major) continue;
 
+        Key model_id = Key.make();
         // build the model
         {
           DeepLearningParameters p = new DeepLearningParameters();
@@ -61,7 +61,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._shuffle_training_data = false;
           p._force_load_balance = false;
           p._replicate_training_data = false;
-          p._model_id = dest;
+          p._model_id = model_id;
           p._adaptive_rate = true;
           p._reproducible = true;
           p._rho = 0.99;
@@ -79,7 +79,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
 
         // score and check result
         {
-          DeepLearningModel mymodel = DKV.getGet(dest);
+          DeepLearningModel mymodel = DKV.getGet(model_id);
           Frame pred = mymodel.score(frame);
           ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
           double error = mm._auc.defaultErr();
