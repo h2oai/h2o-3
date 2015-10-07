@@ -2,13 +2,6 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 test.GLM.solvers <- function() {
-#  Log.info("Importing prostate.csv data...\n")
-#  prostate.hex = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate.hex")
-#  prostate.sum = summary(prostate.hex)
-#  print(prostate.sum)
-#
-#  prostate.data = read.csv(locate("smalldata/logreg/prostate.csv"), header = TRUE)
-#  prostate.data = na.omit(prostate.data)
 
   training_data <- h2o.importFile(locate("smalldata/junit/cars_20mpg.csv"))
   predictors <- c("displacement","power","weight","acceleration","year")
