@@ -1,8 +1,8 @@
 Package: h2oEnsemble
 Type: Package
 Title: H2O Ensemble Learning
-Version: 0.0.7
-Date: 2015-10-04
+Version: 0.0.8
+Date: 2015-10-07
 Author: Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
 Description: This package implements the Super Learner ensemble (stacking) algorithm using the H2O R interface to provide base learning algorithms.   

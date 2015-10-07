@@ -1,9 +1,14 @@
 # News for the h2oEnsemble package. #
 
-h2oEnsemble 0.0.8 (TO DO LIST)
+h2oEnsemble 0.0.9 (In progress)
 ----------------
 * TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
+
+
+h2oEnsemble 0.0.8 (2015-10-07)
+----------------
+* Added support for the `col_sample_rate` and `sample_rate` arguments in the GLM wrapper.
 
 
 h2oEnsemble 0.0.7 (2015-10-04)
