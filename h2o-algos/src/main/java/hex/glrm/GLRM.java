@@ -331,7 +331,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._save_v_frame = false;
 
         ModelCacheManager MCM = H2O.getMCM();
-        SVDModel svd = MCM.get(parms);
+        SVDModel svd = MCM.<SVDModel, SVDParameters>get(parms);
         SVD job = null;
         try {
           if(svd == null) {
@@ -381,7 +381,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._pred_indicator = true;
 
         ModelCacheManager MCM = H2O.getMCM();
-        KMeansModel km = MCM.get(parms);
+        KMeansModel km = MCM.<KMeansModel, KMeansModel.KMeansParameters>get(parms);
         KMeans job = null;
         try {
           if (km == null) {
