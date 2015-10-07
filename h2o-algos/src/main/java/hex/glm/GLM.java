@@ -346,7 +346,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       _tInfos = new GLMTaskInfo[_parms._nfolds + 1];
-      InitTsk itsk = new InitTsk(0, _parms._intercept, null);
+      InitTsk itsk = new InitTsk(0, _parms._intercept);
       H2O.submitTask(itsk).join();
 
       assert itsk._nobs == 0 || itsk._gtNull != null;
