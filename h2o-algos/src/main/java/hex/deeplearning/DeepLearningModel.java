@@ -625,7 +625,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // store weights and matrices to Frames
       if (_output.weights != null && _output.biases != null) {
         for (int i = 0; i < _output.weights.length; ++i) {
-          model_info.get_weights(i).toFrame(_output.weights[i]);
+          Frame f = model_info.get_weights(i).toFrame(_output.weights[i]);
+          if (i==0) {
+            f._names = model_info.data_info.coefNames();
+            DKV.put(f);
+          }
         }
         for (int i = 0; i < _output.biases.length; ++i) {
           model_info.get_biases(i).toFrame(_output.biases[i]);
