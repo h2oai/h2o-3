@@ -825,19 +825,16 @@ public class DeepLearningTest extends TestUtil {
     dl = new DeepLearningParameters();
     Scope.enter();
     try {
-      frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
-      Vec resp = frTrain.lastVec().toCategoricalVec();
-      frTrain.remove(frTrain.vecs().length-1);
-      frTrain.add("Response", resp);
+      frTrain = parse_test_file("/users/arno/good.svm");
+      Scope.track(frTrain.replace(frTrain.find("C1"), frTrain.vec("C1").toCategoricalVec())._key);
+
       // Configure DL
       dl._train = frTrain._key;
-      dl._response_column = ((Frame) DKV.getGet(dl._train)).lastVecName();
-      dl._seed = 1234;
-      dl._reproducible = true;
-      dl._epochs = 0.0001;
-      dl._export_weights_and_biases = true;
-      dl._hidden = new int[]{188, 191};
-      dl._elastic_averaging = false;
+      dl._response_column = "C1";
+      dl._epochs = 1;
+      dl._ignore_const_cols = false;
+      dl._sparse = true;
+      dl._hidden = new int[]{20, 20, 20};
 
       // Invoke DL and block till the end
       DeepLearning job = null;
@@ -846,6 +843,9 @@ public class DeepLearningTest extends TestUtil {
         // Get the model
         model = job.trainModel().get();
         Log.info(model._output);
+        Frame pred;
+        assertTrue(model.testJavaScoring(frTrain, pred = model.score(frTrain), 1e-5));
+        pred.delete();
       } finally {
         if (job != null) job.remove();
       }
