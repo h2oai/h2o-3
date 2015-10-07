@@ -15,7 +15,7 @@ import water.fvec.Vec;
 public class FVecParseWriter extends Iced implements StreamParseWriter {
   protected transient NewChunk[] _nvs;
   protected AppendableVec[]_vecs;
-  protected final Categorical [] _enums;
+  transient protected final Categorical [] _categoricals;
   protected transient byte[] _ctypes;
   long _nLines;
   int _nCols;
