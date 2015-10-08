@@ -32,6 +32,7 @@ import water.Scope;
 import water.TestNGUtil;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 
 public class FunctionUtils {
@@ -49,7 +50,7 @@ public class FunctionUtils {
 	// execute testcase
 	// ---------------------------------------------- //
 	public static String validate(Param[] params, String train_dataset_id, Dataset train_dataset,
-			HashMap<String, String> rawInput) {
+			String validate_dataset_id, Dataset validate_dataset, HashMap<String, String> rawInput) {
 
 		System.out.println("Validate Parameters object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 		String result = null;
@@ -61,7 +62,11 @@ public class FunctionUtils {
 			result = String.format("Dataset id %s do not have in dataset characteristic", train_dataset_id);
 		}
 		else if (!train_dataset.isAvailabel()) {
-			result = "Dataset characteristic is not available";
+			result = String.format("Dataset id %s is not available in dataset characteristic", train_dataset_id);
+		}
+		else if (StringUtils.isNotEmpty(validate_dataset_id)
+				&& (validate_dataset == null || !validate_dataset.isAvailabel())) {
+			result = String.format("Dataset id %s is not available in dataset characteristic", validate_dataset_id);
 		}
 		else {
 			result = Param.validateAutoSetParams(params, rawInput);
@@ -136,7 +141,7 @@ public class FunctionUtils {
 			// we only want predictors
 			if (!name.equals(responseColumn) && !trainFrame.vec(name).isConst()) {
 				// need coefficient names for each level of a categorical column
-				if (trainFrame.vec(name).isConst()) {
+				if (trainFrame.vec(name).isCategorical()) {
 					for (String level : trainFrame.vec(name).domain()) {
 						betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
 					}
@@ -243,8 +248,9 @@ public class FunctionUtils {
 			System.out.println("Create train frame: " + train_dataset_id);
 			trainFrame = train_dataset.getFrame();
 
-			if (StringUtils.isNotEmpty(train_dataset_id) && validate_dataset != null && validate_dataset.isAvailabel()) {
-				System.out.println("Create validate frame: " + train_dataset_id);
+			if (StringUtils.isNotEmpty(validate_dataset_id) && validate_dataset != null
+					&& validate_dataset.isAvailabel()) {
+				System.out.println("Create validate frame: " + validate_dataset_id);
 				validateFrame = validate_dataset.getFrame();
 			}
 
@@ -280,10 +286,47 @@ public class FunctionUtils {
 		return modelParameter;
 	}
 
+	/**
+	 * If the testcase is negative testcase. The function will compare error message with a message in testcase
+	 * 
+	 * @param isNegativeTestcase
+	 * @param exception
+	 * @param rawInput
+	 */
+	// TODO: remove algorithm parameter when all algos is validated error message
+	private static void handleTestcaseFailed(boolean isNegativeTestcase, Throwable exception,
+			HashMap<String, String> rawInput, String algorithm) {
+
+		System.out.println("Testcase failed");
+		exception.printStackTrace();
+		if (isNegativeTestcase) {
+
+			System.out.println("This is negative testcase");
+			System.out.println("Error message in testcase: " + rawInput.get(CommonHeaders.error_message));
+			System.out.println("Error message in program: " + exception.getMessage());
+
+			// TODO: remove it when GLM is validated error message
+			if (algorithm.equals(FunctionUtils.glm)) {
+				System.out.println("Not yet implement the feature error message validation in GLM algorithm");
+			}
+			else if (StringUtils.isEmpty(rawInput.get(CommonHeaders.error_message))
+					|| !exception.getMessage().contains(rawInput.get(CommonHeaders.error_message))) {
+				Assert.fail("Error message do not match with testcase", exception);
+			}
+			else {
+				System.out.println("Error message match with testcase");
+			}
+		}
+		else {
+			Assert.fail(exception.getMessage(), exception);
+		}
+	}
+
 	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase,
 			HashMap<String, String> rawInput) {
 
 		boolean isTestSuccessfully = false;
+		Vec trainResponseColumnVec = null;
 		Frame trainFrame = null;
 		Frame score = null;
 		Model.Output modelOutput = null;
@@ -301,6 +344,16 @@ public class FunctionUtils {
 		GBMModel gbmModel = null;
 
 		trainFrame = parameter._train.get();
+
+		//TODO: I am implementing it but I can't test
+		// cast ResponseColumn to Enum when testcase is classification
+//		if (Param.parseBoolean(rawInput.get(CommonHeaders.classification))
+//				&& !trainFrame.vec(parameter._response_column).isCategorical()) {
+
+//			System.out.println("Cast response_column to enum");
+//			trainResponseColumnVec = trainFrame.remove(parameter._response_column);
+//			trainFrame.add(parameter._response_column, trainResponseColumnVec.toCategorical());
+//		}
 
 		try {
 			Scope.enter();
@@ -360,10 +413,10 @@ public class FunctionUtils {
 
 			isTestSuccessfully = true;
 
+			// write the MSE/AUC result to log and database
 			if (!isNegativeTestcase) {
 				System.out.println("Testcase passed.");
 
-				// write the MSE/AUC result to log and database
 				modelMetrics = modelOutput._training_metrics;
 				System.out.println("MSE: " + modelMetrics._MSE);
 
@@ -373,33 +426,24 @@ public class FunctionUtils {
 				}
 				else {
 					System.out.println("AUC: NA");
-					MySQL.save(String.valueOf(modelMetrics._MSE), "0", rawInput);
+					MySQL.save(String.valueOf(modelMetrics._MSE), null, rawInput);
 				}
 			}
 		}
 		catch (Exception ex) {
 
-			System.out.println("Testcase failed");
-			ex.printStackTrace();
-			if (!isNegativeTestcase) {
-				Assert.fail(ex.getMessage(), ex);
-			}
-			else {
-				System.out.println("This is negative testcase");
-			}
+			handleTestcaseFailed(isNegativeTestcase, ex, rawInput, algorithm);
 		}
 		catch (AssertionError ae) {
 
-			System.out.println("Testcase failed");
-			ae.printStackTrace();
-			if (!isNegativeTestcase) {
-				Assert.fail(ae.getMessage(), ae);
-			}
-			else {
-				System.out.println("This is negative testcase");
-			}
+			handleTestcaseFailed(isNegativeTestcase, ae, rawInput, algorithm);
 		}
 		finally {
+			if (trainResponseColumnVec != null) {
+				trainFrame.vec(parameter._response_column).remove();
+				trainFrame.remove(parameter._response_column);
+				trainFrame.add(parameter._response_column, trainResponseColumnVec);
+			}
 			if (drfJob != null) {
 				drfJob.remove();
 			}

@@ -126,7 +126,8 @@ public class TestNG extends TestNGUtil {
 		}
 
 		try {
-			invalidMessage = FunctionUtils.validate(params, train_dataset_id, train_dataset, rawInput);
+			invalidMessage = FunctionUtils.validate(params, train_dataset_id, train_dataset, validate_dataset_id,
+					validate_dataset, rawInput);
 			if (FunctionUtils.drf.equals(algorithm)) {
 				notImplMessage = FunctionUtils.checkImplemented(rawInput);
 			}

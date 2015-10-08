@@ -72,7 +72,9 @@ public class DRFConfig {
 					"_class_sampling_factors",
 					"_binomial_double_trees",
 					"_checkpoint",
-					"_nbins_top_level"
+					"_nbins_top_level",
+					
+					CommonHeaders.error_message
 					)
 			);
 	

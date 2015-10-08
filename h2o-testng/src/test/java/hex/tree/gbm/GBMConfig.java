@@ -43,18 +43,18 @@ public class GBMConfig {
 	
 	//TODO: Family have no binomial attribute
 	public final static OptionsGroupParam familyParams = new OptionsGroupParam(
-			new String[] {"auto", "gaussian", "multinomial", "poisson", "gamma", "tweedie"},
-			new Object[] {Family.AUTO, Family.gaussian, Family.multinomial, Family.poisson, Family.gamma, Family.tweedie});
+			new String[] {CommonHeaders.family_auto, CommonHeaders.family_gaussian, CommonHeaders.family_binomial, CommonHeaders.family_multinomial, CommonHeaders.family_poisson, CommonHeaders.family_gamma, CommonHeaders.family_tweedie},
+			new Object[] {Family.AUTO, Family.gaussian, Family.bernoulli, Family.multinomial, Family.poisson, Family.gamma, Family.tweedie});
 	
 	public static List<String> listHeaders = new ArrayList<String>(
 			Arrays.asList(
-					"auto",
-					"gaussian",
-					"binomial",
-					"multinomial",
-					"poisson",
-					"gamma",
-					"tweedie",
+					CommonHeaders.family_auto,
+					CommonHeaders.family_gaussian,
+					CommonHeaders.family_binomial,
+					CommonHeaders.family_multinomial,
+					CommonHeaders.family_poisson,
+					CommonHeaders.family_gamma,
+					CommonHeaders.family_tweedie,
 					
 					"_nfolds",
 					"_fold_column",
@@ -73,7 +73,9 @@ public class GBMConfig {
 					"_max_hit_ratio_k",
 					"_r2_stopping",
 					"_build_tree_one_node",
-					"_class_sampling_factors"
+					"_class_sampling_factors",
+					
+					CommonHeaders.error_message
 			)
 	);
 	
