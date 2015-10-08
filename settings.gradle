@@ -16,6 +16,7 @@ include 'h2o-genmodel'
 include 'h2o-java-rest-bindings'
 
 if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HADOOP") != null) {
+  if (System.getenv("BUILD_HADOOP") != "false") {
     include 'h2o-hadoop:h2o-cdh5.2'
     include 'h2o-hadoop:h2o-cdh5.2-assembly'
     include 'h2o-hadoop:h2o-cdh5.3'
@@ -32,6 +33,7 @@ if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HA
     include 'h2o-hadoop:h2o-mapr4.0.1-assembly'
     include 'h2o-hadoop:h2o-mapr5.0'
     include 'h2o-hadoop:h2o-mapr5.0-assembly'
+  }
 }
 
 include 'h2o-test-integ'
