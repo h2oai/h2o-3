@@ -690,12 +690,14 @@ public class Vec extends Keyed<Vec> {
    *  computed. */
   public Futures postWrite( Futures fs ) {
     // Get the latest rollups *directly* (do not compute them!).
-    final Key rskey = rollupStatsKey();
-    Value val = DKV.get(rollupStatsKey());
-    if( val != null ) {
-      RollupStats rs = val.get(RollupStats.class);
-      if( rs.isMutating() )  // Vector was mutating, is now allowed for rollups
-        DKV.remove(rskey,fs);// Removing will cause them to be rebuilt, on demand
+    if (writable()) { // skip this for immutable vecs (like FileVec)
+      final Key rskey = rollupStatsKey();
+      Value val = DKV.get(rollupStatsKey());
+      if (val != null) {
+        RollupStats rs = val.get(RollupStats.class);
+        if (rs.isMutating())  // Vector was mutating, is now allowed for rollups
+          DKV.remove(rskey, fs);// Removing will cause them to be rebuilt, on demand
+      }
     }
     return fs;                  // Flow-coding
   }
