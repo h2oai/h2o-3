@@ -18,7 +18,7 @@ expect_equal(1, dim(remote)[2])
 
 expect_error(t(pub697$AGE) %*% prostate.hex$CAPSULE)
 
-testEnd()
+
 
 }
 

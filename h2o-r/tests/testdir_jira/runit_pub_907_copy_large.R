@@ -24,7 +24,7 @@ test <- function() {
     print("Assert runtime less than 180 seconds")
         stopifnot(elapsedTime < 180)  # should finish in less than three minutes.
 
-  testEnd()
+  
 }
 
 doTest("Test logging time for copy", test)

@@ -186,22 +186,22 @@ public class ConfusionMatrixTest extends TestUtil {
 
   }
 
-  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toEnum) {
+  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
     try {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
       v2 = v1.makeCompatible(v2);
-      simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug, toEnum);
+      simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug, toCategorical);
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  /** Delete v1, v2 after potential modifying operations during processing: enums and/or train/test adaptation. */
-  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toEnum) {
+  /** Delete v1, v2 after potential modifying operations during processing: categoricals and/or train/test adaptation. */
+  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = buildCM(v1.vecs()[0].toEnum(), v2.vecs()[0].toEnum());
+      ConfusionMatrix cm = buildCM(v1.vecs()[0].toCategoricalVec(), v2.vecs()[0].toCategoricalVec());
 
       // -- DEBUG --
       if (debug) {

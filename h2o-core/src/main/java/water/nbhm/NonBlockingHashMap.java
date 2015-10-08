@@ -247,7 +247,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // can trigger a table resize.  Several places must have exact agreement on
   // what the reprobe_limit is, so we share it here.
   private static final int reprobe_limit( int len ) {
-    return REPROBE_LIMIT + (len>>2);
+    return REPROBE_LIMIT + (len>>8);
   }
 
   // --- NonBlockingHashMap --------------------------------------------------
@@ -908,8 +908,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
       long tm = System.currentTimeMillis();
       long q=0;
       if( newsz <= oldlen && // New table would shrink or hold steady?
-          tm <= topmap._last_resize_milli+10000 && // Recent resize (less than 1 sec ago)
-          (q=_slots.estimate_get()) >= (sz<<1) ) // 1/2 of keys are dead?
+          (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 1 sec ago)
+           (q=_slots.estimate_get()) >= (sz<<1)) )  // 1/2 of keys are dead?
         newsz = oldlen<<1;      // Double the existing size
 
       // Do not shrink, ever

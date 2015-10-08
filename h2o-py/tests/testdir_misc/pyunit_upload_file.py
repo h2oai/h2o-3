@@ -6,7 +6,7 @@ import h2o, tests
 def upload_file():
     
 
-    a = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))
+    a = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
     print a.describe()
 
     from h2o import H2OFrame

@@ -19,7 +19,7 @@ test.pca.quasar <- function() {
   Log.info(paste("Standard deviation with Power  :", paste(h2o.sdev(fitPower), collapse = " ")))
   Log.info(paste("Standard deviation with GLRM   :", paste(h2o.sdev(fitGLRM), collapse = " ")))
   Log.info(paste("GLRM final objective value:", fitGLRM@model$objective))
-  testEnd()
+  
 }
 
 doTest("PCA Test: SDSS Quasar with different methods", test.pca.quasar)

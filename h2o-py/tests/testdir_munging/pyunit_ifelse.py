@@ -3,7 +3,7 @@ sys.path.insert(1, "../../")
 import h2o, tests
 
 def insert_missing():
-  air_path = [h2o.locate("smalldata/airlines/allyears2k_headers.zip")]
+  air_path = [tests.locate("smalldata/airlines/allyears2k_headers.zip")]
 
   data = h2o.import_file(path=air_path)
 

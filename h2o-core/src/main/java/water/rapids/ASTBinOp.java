@@ -6,7 +6,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import java.util.Arrays;
@@ -56,8 +56,11 @@ abstract class ASTBinOp extends ASTPrim {
     case Val.ROW:
       double dslf[] = left.getRow();
       switch( rite.type() ) {
-      case Val.NUM:  throw H2O.unimpl();
-      case Val.ROW:  return row_op_row(dslf,rite.getRow());
+      case Val.NUM:
+        double[] right = new double[dslf.length];
+        Arrays.fill(right, rite.getNum());
+        return row_op_row(dslf,right,left.getNames());
+      case Val.ROW:  return row_op_row(dslf,rite.getRow(),rite.getNames());
       default: throw H2O.fail();
       }
 
@@ -67,7 +70,7 @@ abstract class ASTBinOp extends ASTPrim {
 
   /** Override to express a basic math primitive */
   abstract double op( double l, double r );
-  double str_op( ValueString l, ValueString r ) { throw H2O.fail(); }
+  double str_op( BufferedString l, BufferedString r ) { throw H2O.fail(); }
 
   /** Auto-widen the scalar to every element of the frame */
   private ValFrame scalar_op_frame( final double d, Frame fr ) {
@@ -81,7 +84,7 @@ abstract class ASTBinOp extends ASTPrim {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
-    return cleanEnum( fr, res ); // Cleanup enum misuse
+    return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
   /** Auto-widen the scalar to every element of the frame */
@@ -96,18 +99,18 @@ abstract class ASTBinOp extends ASTPrim {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr._names,null);
-    return cleanEnum( fr, res ); // Cleanup enum misuse
+    return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
-  // Ops do not make sense on Enums, except EQ/NE; flip such ops to NAs
-  private ValFrame cleanEnum( Frame oldfr, Frame newfr ) {
-    final boolean enumOK = enumOK();
+  // Ops do not make sense on categoricals, except EQ/NE; flip such ops to NAs
+  private ValFrame cleanCategorical(Frame oldfr, Frame newfr) {
+    final boolean categoricalOK = categoricalOK();
     final Vec oldvecs[] = oldfr.vecs();
     final Vec newvecs[] = newfr.vecs();
     for( int i=0; i<oldvecs.length; i++ )
       if( !oldvecs[i].isNumeric() && // Must be numeric OR
           !oldvecs[i].isTime() &&    // time OR
-          !(oldvecs[i].isEnum() && enumOK) ) // Enum and enums are OK (op is EQ/NE)
+          !(oldvecs[i].isCategorical() && categoricalOK) ) // categorical are OK (op is EQ/NE)
         newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(newfr);
   }
@@ -116,25 +119,25 @@ abstract class ASTBinOp extends ASTPrim {
   private ValFrame frame_op_scalar( Frame fr, final String str ) {
     Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
-          ValueString vstr = new ValueString();
+          BufferedString vstr = new BufferedString();
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             Vec vec = chk.vec();
-            // String Vectors: apply str_op as ValueStrings to all elements
+            // String Vectors: apply str_op as BufferedStrings to all elements
             if( vec.isString() ) {
-              final ValueString conStr = new ValueString(str);
+              final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(chk.atStr(vstr,i),conStr));
-            } else if( vec.isEnum() ) {
-              // Enum Vectors: convert string to domain value; apply op (not
+            } else if( vec.isCategorical() ) {
+              // categorical Vectors: convert string to domain value; apply op (not
               // str_op).  Not sure what the "right" behavior here is, can
-              // easily argue that should instead apply str_op to the Enum
+              // easily argue that should instead apply str_op to the categorical
               // string domain value - except that this whole operation only
               // makes sense for EQ/NE, and is much faster when just comparing
               // doubles vs comparing strings.  Note that if the string is not
-              // part of the Enum domain, the find op returns -1 which is never
-              // equal to any Enum dense integer (which are always 0+).
+              // part of the categorical domain, the find op returns -1 which is never
+              // equal to any categorical dense integer (which are always 0+).
               final double d = (double)ArrayUtils.find(vec.domain(),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
@@ -153,20 +156,20 @@ abstract class ASTBinOp extends ASTPrim {
   private ValFrame scalar_op_frame( final String str, Frame fr ) {
     Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
-          ValueString vstr = new ValueString();
+          BufferedString vstr = new BufferedString();
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             Vec vec = chk.vec();
-            // String Vectors: apply str_op as ValueStrings to all elements
+            // String Vectors: apply str_op as BufferedStrings to all elements
             if( vec.isString() ) {
-              final ValueString conStr = new ValueString(str);
+              final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(conStr,chk.atStr(vstr,i)));
-            } else if( vec.isEnum() ) {
-              // Enum Vectors: convert string to domain value; apply op (not
+            } else if( vec.isCategorical() ) {
+              // categorical Vectors: convert string to domain value; apply op (not
               // str_op).  Not sure what the "right" behavior here is, can
-              // easily argue that should instead apply str_op to the Enum
+              // easily argue that should instead apply str_op to the categorical
               // string domain value - except that this whole operation only
               // makes sense for EQ/NE, and is much faster when just comparing
               // doubles vs comparing strings.
@@ -212,11 +215,11 @@ abstract class ASTBinOp extends ASTPrim {
       }.doAll(lf.numCols(),new Frame(lf).add(rt)).outputFrame(lf._names,null));
   }
 
-  private ValRow row_op_row( double[] lf, double[] rt ) {
+  private ValRow row_op_row( double[] lf, double[] rt, String[] names ) {
     double[] res = new double[lf.length];
     for( int i=0; i<lf.length; i++ )
       res[i] = op(lf[i],rt[i]);
-    return new ValRow(res);
+    return new ValRow(res,names);
   }
 
   private ValFrame vec_op_frame( Vec vec, Frame fr ) {
@@ -227,7 +230,7 @@ abstract class ASTBinOp extends ASTPrim {
   }
   
   // Make sense to run this OP on an enm?
-  boolean enumOK() { return false; }
+  boolean categoricalOK() { return false; }
 }
 
 // ----------------------------------------------------------------------------
@@ -235,12 +238,14 @@ abstract class ASTBinOp extends ASTPrim {
 class ASTAnd  extends ASTBinOp { public String str() { return "&" ; } double op( double l, double r ) { return ASTLAnd.and_op(l,r); } }
 class ASTDiv  extends ASTBinOp { public String str() { return "/" ; } double op( double l, double r ) { return l/r;}}
 class ASTMod  extends ASTBinOp { public String str() { return "mod";} double op( double l, double r ) { return l%r;}}
+class ASTModR extends ASTBinOp { public String str() { return "%%"; } double op( double l, double r ) { return l%r;}} // Language R mod operator
 class ASTMul  extends ASTBinOp { public String str() { return "*" ; } double op( double l, double r ) { return l*r;}}
 class ASTOr   extends ASTBinOp { public String str() { return "|" ; } double op( double l, double r ) { return ASTLOr . or_op(l,r); } }
 class ASTPlus extends ASTBinOp { public String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
 class ASTPow  extends ASTBinOp { public String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
 class ASTSub  extends ASTBinOp { public String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
 class ASTIntDiv extends ASTBinOp { public String str() { return "intDiv"; } double op(double l, double r) { return (int)l/(int)r;}}
+class ASTIntDivR extends ASTBinOp { public String str() { return "%/%"; } double op(double l, double r) { return (int)(l/r);}} // Language R intdiv op
 
 class ASTRound extends ASTBinOp { 
   public String str() { return "round"; }
@@ -276,7 +281,7 @@ class ASTLE   extends ASTBinOp { public String str() { return "<="; } double op(
 class ASTLT   extends ASTBinOp { public String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
 
 class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
-  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); } 
+  double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); }
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
@@ -291,12 +296,12 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
         }
       }.doAll(fr.numCols(),fr).outputFrame());
   }
-  @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
+  @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
 class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
-  double str_op( ValueString l, ValueString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); } 
-  @Override boolean enumOK() { return true; }  // Make sense to run this OP on an enm?
+  double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); }
+  @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
 // ----------------------------------------------------------------------------
@@ -334,7 +339,7 @@ class ASTLOr extends ASTBinOp {
     return prim_apply(left,rite);
   }
   // Weird R semantics, zero trumps NA
-  double op( double l, double r ) { return or_op(l,r); }
+  double op( double l, double r ) { return or_op(l, r); }
   static double or_op( double l, double r ) {   
     return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0); 
   } 
@@ -370,6 +375,8 @@ class ASTIfElse extends ASTPrim {
     }
 
     // Frame test.  Frame result.
+    if( val.type() == Val.ROW)
+      return row_ifelse((ValRow)val,asts[2].exec(env), asts[3].exec(env));
     Frame tst = val.getFrame();
 
     // If all zero's, return false and never execute true.
@@ -381,7 +388,9 @@ class ASTIfElse extends ASTPrim {
         break;
       }
     final boolean has_tfr = tval != null && tval.isFrame();
+    final String ts = (tval != null && tval.isStr() ) ? tval.getStr() : null;
     final double td = (tval != null && tval.isNum()) ? tval.getNum() : Double.NaN;
+    final int[] tsIntMap = new int[tst.numCols()];
 
     // If all nonzero's (or NA's), then never execute false.
     Val fval = null;
@@ -391,7 +400,50 @@ class ASTIfElse extends ASTPrim {
         break;
       }
     final boolean has_ffr = fval != null && fval.isFrame();
+    final String fs = (fval != null && fval.isStr() ) ? fval.getStr() : null;
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
+    final int[] fsIntMap = new int[tst.numCols()];
+
+    String[][] domains = null;
+    final int[][] maps = new int[tst.numCols()][];
+    if( fs!=null || ts!=null ) { // time to build domains...
+      domains = new String[tst.numCols()][];
+      if( fs!=null && ts!=null ) {
+        for( int i=0;i<tst.numCols(); ++i ) {
+          domains[i] = new String[]{fs, ts}; // false => 0; truth => 1
+          fsIntMap[i] = 0;
+          tsIntMap[i]  = 1;
+        }
+      } else if( ts!=null ) {
+        for(int i=0;i<tst.numCols();++i) {
+          if( has_ffr ) {
+            Vec v = fr.vec(i+tst.numCols()+(has_tfr ? tst.numCols() : 0));
+            if( !v.isCategorical() )
+              throw H2O.unimpl("Column is not categorical.");
+            String[] dom = Arrays.copyOf(v.domain(),v.domain().length+1);
+            dom[dom.length-1] = ts;
+            Arrays.sort(dom);
+            maps[i] = computeMap(v.domain(),dom);
+            tsIntMap[i] = ArrayUtils.find(dom,ts);
+            domains[i] = dom;
+          } else throw H2O.unimpl();
+        }
+      } else { // fs!=null
+        for(int i=0;i<tst.numCols();++i) {
+          if( has_tfr ) {
+            Vec v = fr.vec(i+tst.numCols()+(has_ffr ? tst.numCols() : 0));
+            if( !v.isCategorical() )
+              throw H2O.unimpl("Column is not categorical.");
+            String[] dom = Arrays.copyOf(v.domain(),v.domain().length+1);
+            dom[dom.length-1] = fs;
+            Arrays.sort(dom);
+            maps[i] = computeMap(v.domain(),dom);
+            fsIntMap[i] = ArrayUtils.find(dom,fs);
+            domains[i] = dom;
+          } else throw H2O.unimpl();
+        }
+      }
+    }
 
     // Now pick from left-or-right in the new frame
     Frame res = new MRTask() {
@@ -403,14 +455,50 @@ class ASTIfElse extends ASTPrim {
             for( int row=0; row<ctst._len; row++ ) {
               double d;
               if(     ctst.isNA(row)    ) d = Double.NaN;
-              else if( ctst.atd(row)==0 ) d = has_ffr ? chks[i+nchks.length+(has_tfr ? nchks.length : 0)].atd(row) : fd;
-              else                        d = has_tfr ? chks[i+nchks.length                             ].atd(row) : td;
+              else if( ctst.atd(row)==0 ) d = has_ffr
+                                                  ? domainMap(chks[i+nchks.length+(has_tfr ? nchks.length : 0)].atd(row), maps[i])
+                                                  : fs!=null ? fsIntMap[i] : fd;
+              else                        d = has_tfr
+                                                  ? domainMap(chks[i+nchks.length                             ].atd(row), maps[i])
+                                                  : ts!=null ? tsIntMap[i] : td;
               res.addNum(d);
             }
           }
         }
-      }.doAll(tst.numCols(),fr).outputFrame();
+      }.doAll(tst.numCols(),fr).outputFrame(null,domains);
+
+    // flatten domains since they may be larger than needed
+    if( domains!=null ) {
+      for (int i = 0; i < res.numCols(); ++i) {
+        if (res.vec(i).domain() != null) {
+          final long[] dom = new Vec.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
+          String[] newDomain = new String[dom.length];
+          for (int l = 0; l < dom.length; ++l)
+            newDomain[l] = res.vec(i).domain()[(int) dom[l]];
+          new MRTask() {
+            @Override
+            public void map(Chunk c) {
+              for (int i = 0; i < c._len; ++i)
+                c.set(i, ArrayUtils.find(dom, c.at8(i)));
+            }
+          }.doAll(res.vec(i));
+          res.vec(i).setDomain(newDomain); // needs a DKVput?
+        }
+      }
+    }
     return new ValFrame(res);
+  }
+
+  private static double domainMap(double d, int[] maps) {
+    if( maps!=null && d==(int)d && ( 0 <= d && d < maps.length) ) return maps[(int)d];
+    return d;
+  }
+
+  private static int[] computeMap(String[] from, String[] to) {
+    int[] map = new int[from.length];
+    for(int i=0;i<from.length;++i)
+      map[i] = ArrayUtils.find(to, from[i]);
+    return map;
   }
 
   Val exec_check( Env env, Env.StackHelp stk, Frame tst, AST ast, Frame xfr ) {
@@ -422,6 +510,31 @@ class ASTIfElse extends ASTPrim {
       xfr.add(fr);
     }
     return val;
+  }
+
+  ValRow row_ifelse(ValRow tst, Val yes, Val no) {
+    double[] test = tst.getRow();
+    double[] True;
+    double[] False;
+    if( !(yes.isRow() || no.isRow()) ) throw H2O.unimpl();
+    switch( yes.type() ) {
+      case Val.NUM: True = new double[]{yes.getNum()}; break;
+      case Val.ROW: True = yes.getRow(); break;
+      default: throw H2O.unimpl("row ifelse unimpl: " + yes.getClass());
+    }
+    switch( no.type() ) {
+      case Val.NUM: False = new double[]{no.getNum()}; break;
+      case Val.ROW: False = no.getRow(); break;
+      default: throw H2O.unimpl("row ifelse unimplL " + no.getClass());
+    }
+    double[] ds = new double[test.length];
+    String[] ns = new String[test.length];
+    for(int i=0;i<test.length;++i) {
+      ns[i] = "C"+(i+1);
+      if( Double.isNaN(test[i])) ds[i] = Double.NaN;
+      else                       ds[i] = test[i]==0 ? False[i] : True[i];
+    }
+    return new ValRow(ds,ns);
   }
 }
 

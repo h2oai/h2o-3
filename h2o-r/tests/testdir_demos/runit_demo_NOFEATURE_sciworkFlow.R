@@ -105,7 +105,7 @@ pred <- predict ( model, pros.test )
 perf <- h2o.performance ( pred$'1', pros.test$CAPSULE, measure="F1" )
 print(perf)
 
-testEnd()
+
 }
 
 doTest("Split data into test/train, do Grid search over lambda and Score all the models on a test set and choose the best model by AUC on the test set. Do grid search on gbm and predict on test set, print the AUCs and model params ", test)

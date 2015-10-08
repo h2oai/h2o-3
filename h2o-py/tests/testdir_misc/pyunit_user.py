@@ -5,7 +5,7 @@ import h2o, tests
 
 def user():
 
-    a = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    a = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
     print a[0].names  # Column header
@@ -36,7 +36,7 @@ def user():
     try:                   print a["Sepal_len"].dim  # Error, mispelt column name
     except Exception: pass  # Expected error
 
-    b = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    b = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
     d = c + c + sum(a)
     e = c + a + 1

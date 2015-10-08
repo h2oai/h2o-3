@@ -36,7 +36,7 @@ public class Interaction extends Job<Frame> {
       for (String v: _factor_columns) {
         int idx = source_frame.find(v);
         if (idx >= 0) {
-          if (!source_frame.vecs()[idx].isEnum()) {
+          if (!source_frame.vecs()[idx].isCategorical()) {
             throw new IllegalArgumentException("Column " + v + " is not categorical.");
           }
           _factors[count++] = idx;

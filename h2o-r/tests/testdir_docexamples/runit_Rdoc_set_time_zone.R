@@ -64,7 +64,7 @@ test.rdoc_settimezone.golden <- function() {
   # erase side effect of test
   h2o.setTimezone(origTZ)
   h2o.rm(hdf)
-  testEnd()
+  
 }
 
 doTest("R Doc setTimezone", test.rdoc_settimezone.golden)

@@ -10,7 +10,7 @@ min(australia.hex)
 min(australia.hex[,1:4], australia.hex[,5:8], na.rm=FALSE)
 
 
-testEnd()
+
 }
 
 doTest("R Doc Extremes", test.rdocextremes.golden)

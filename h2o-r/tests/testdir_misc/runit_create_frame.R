@@ -22,7 +22,7 @@ test.createFrame <- function() {
   cons_col <- sapply(1:21, function(i) { min(hex2[,i]) == 5 && max(hex2[,i]) == 5 })
   expect_true(all(cons_col))
   
-  testEnd()
+  
 }
 
 doTest("Create a random data frame in H2O", test.createFrame)

@@ -27,7 +27,7 @@ import water.H2O.H2OCallback;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.H2O.H2OCountedCompleter;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -198,9 +198,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (v.isString()) {
           dom = new String[(int) v.length()];
           map = new int[dom.length];
-          ValueString vs = new ValueString();
+          BufferedString tmpStr = new BufferedString();
           for (int i = 0; i < dom.length; ++i) {
-            dom[i] = v.atStr(vs, i).toString();
+            dom[i] = v.atStr(tmpStr, i).toString();
             map[i] = i;
           }
           // check for dups
@@ -209,7 +209,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for(int i = 1; i < sortedDom.length; ++i)
             if(sortedDom[i-1].equals(sortedDom[i]))
               throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + sortedDom[i-1] +"'!");
-        } else if (v.isEnum()) {
+        } else if (v.isCategorical()) {
           dom = v.domain();
           map = FrameUtils.asInts(v);
           // check for dups
@@ -220,7 +220,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + dom[sortedMap[i-1]] +"'!");
         } else
           throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
-        // for now only enums allowed here
+        // for now only categoricals allowed here
         String[] names = ArrayUtils.append(_dinfo.coefNames(), "Intercept");
         if (!Arrays.deepEquals(dom, names)) { // need mapping
           HashMap<String, Integer> m = new HashMap<String, Integer>();
@@ -346,7 +346,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       _tInfos = new GLMTaskInfo[_parms._nfolds + 1];
-      InitTsk itsk = new InitTsk(0, _parms._intercept, null);
+      InitTsk itsk = new InitTsk(0, _parms._intercept);
       H2O.submitTask(itsk).join();
 
       assert itsk._nobs == 0 || itsk._gtNull != null;
@@ -445,6 +445,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private class InitTsk extends H2OCountedCompleter {
     final int _foldId;
     final boolean _intercept;
+    public InitTsk(int foldId, boolean intercept) { super(true); _foldId = foldId; _intercept = intercept; }
     public InitTsk(int foldId, boolean intercept, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId; _intercept = intercept; }
     long _nobs;
     double _ymu;
@@ -714,6 +715,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final byte _priority = nextThrPriority();
     @Override protected byte priority() { return _priority; }
 
+    Key[] _adapt_keys;          // List of Vec keys generated during dataset adaptation
+
     public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
 
     private void doCleanup(){
@@ -724,12 +727,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       catch (Throwable t) {
         // nada
       }
-      if (null != _dinfo)
-        DKV.remove(_dinfo._key);
-      if(_validDinfo != null)
-        DKV.remove(_validDinfo._key);
-      if(_rowFilter != null)
-        _rowFilter.remove();
+      if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
+        for( Key k : _adapt_keys ) Keyed.remove(k);
+      if(_dinfo      != null) _dinfo     .remove();
+      if(_validDinfo != null) _validDinfo.remove();
+      if(_rowFilter  != null) _rowFilter .remove();
       if(_tInfos != null && _tInfos[0] != null) {
         if (_tInfos[0]._wVec != null)
           _tInfos[0]._wVec.remove();
@@ -770,7 +772,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     protected void compute2() {
+      Scope.enter();
       init(true);
+      _adapt_keys = Scope.pop();
       // GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
       if (error_count() > 0) {
         GLM.this.updateValidationMessages();
@@ -1121,7 +1125,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               Frame fr3 = new Frame(fr2);
               fr3.add("xjm1", _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1 ) ); // add last variable updated in cycle to the frame
               GLMCoordinateDescentTaskSeqNaive iupdate ;
-              if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1).isEnum()) { // only categorical vars
+              if( _activeData._adaptedFrame.vec( _activeData._cats + _activeData._nums-1).isCategorical()) { // only categorical vars
                 cat_num = 2;
                 iupdate = new GLMCoordinateDescentTaskSeqNaive( false, true, cat_num , new double [] {betaold[betaold.length-1]},
                         Arrays.copyOfRange(beta, _activeData._catOffsets[_activeData._cats-1], _activeData._catOffsets[_activeData._cats] ),
@@ -1294,7 +1298,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //                Vec currentVec = i == _dinfo._adaptedFrame.numCols()-1?_taskInfo._iVec:_dinfo._adaptedFrame.vec(i);
 //                xOldSub = xNewSub;
 //                xOldMul = xNewMul;
-//                boolean isCategorical = currentVec.isEnum();
+//                boolean isCategorical = currentVec.isCategorical();
 //                int to;
 //                if (isCategorical) {
 //                  xNewSub = 0;

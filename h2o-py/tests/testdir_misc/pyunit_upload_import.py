@@ -10,8 +10,8 @@ def upload_import_small():
                         "smalldata/prostate/prostate_woheader.csv.gz"]
 
     for dataset in various_datasets:
-        uploaded_frame = h2o.upload_file(h2o.locate(dataset))
-        imported_frame = h2o.import_file(h2o.locate(dataset))
+        uploaded_frame = h2o.upload_file(tests.locate(dataset))
+        imported_frame = h2o.import_file(tests.locate(dataset))
 
         rows_u, cols_u = uploaded_frame.dim
         rows_i, cols_i = imported_frame.dim

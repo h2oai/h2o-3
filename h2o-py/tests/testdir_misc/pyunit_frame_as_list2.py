@@ -7,7 +7,7 @@ def expr_as_list():
     
     
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
 
     # multiple rows and columns
     res = 2 - iris

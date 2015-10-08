@@ -25,7 +25,7 @@ test <- function() {
   Log.info("h2o.ls() should return an empty list")
   expect_equal(length(h2o.ls()$key), 0)
 
-  testEnd()
+  
 }
 
 doTest("Many Keys Test: Removing", test)

@@ -1,37 +1,37 @@
 #----------------------------------------------------------------------
 # Purpose:  This test exercises the GBM model downloaded as java code
-#           for the iris data set while randomly setting the parameters.
+#           for the iris data set.
 #
 # Notes:    Assumes unix environment.
 #           curl, javac, java must be installed.
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
-
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../h2o-runit.R")
 
+test.gbm.javapredict.iris.pub <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- locate("smalldata/iris/iris_train.csv")
+    test_file <- locate("smalldata/iris/iris_test.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+    params                 <- list()
+    params$ntrees          <- 944
+    params$max_depth       <- 4
+    params$min_rows        <- 2
+    params$learn_rate      <- 0.2
+    params$x               <- c("sepal_len","sepal_wid","petal_len","petal_wid");
+    params$y               <- "species"
+    params$training_frame  <- training_frame
 
-heading("Choose PUB-426 parameters")
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("gbm",test_file,test_frame,params)
+}
 
-n.trees <-944
-interaction.depth <- 4
-n.minobsinnode <- 2
-shrinkage <- 0.2
-
-train <- locate("smalldata/iris/iris_train.csv")
-test <- locate("smalldata/iris/iris_test.csv")
-
-x = c("sepal_len","sepal_wid","petal_len","petal_wid");
-y = "species"
-
-
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_GBM.R')
+doTest("GBM test", test.gbm.javapredict.iris.pub)

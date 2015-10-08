@@ -36,7 +36,7 @@ check.hex_850 <- function() {
       stop ("rcoolname mismatch")
   }
 
-  testEnd()
+  
 }
 
 doTest("HEX-850 test", check.hex_850)

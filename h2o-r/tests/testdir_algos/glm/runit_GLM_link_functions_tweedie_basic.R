@@ -49,7 +49,7 @@ test_linkFunctions <- function() {
     checkTrue(difference <= 0.01, "h2o's model's residualDeviance/nullDeviance is more than 0.01 lower than R's model's")
   }
 
-  testEnd()
+  
 }
 
 doTest("Comparison of H2O to R with varying link functions for the TWEEDIE family", test_linkFunctions)

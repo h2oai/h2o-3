@@ -7,7 +7,7 @@ def glrm_arrests_miss():
     missing_ratios = np.arange(0.1, 1, 0.1).tolist()
     
     print "Importing USArrests.csv data and saving for validation..."
-    arrests_full = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))
+    arrests_full = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
     arrests_full.describe()
     totobs = arrests_full.nrow * arrests_full.ncol
     train_err = [0]*len(missing_ratios)
@@ -16,7 +16,7 @@ def glrm_arrests_miss():
     for i in range(len(missing_ratios)):
         ratio = missing_ratios[i]
         print "Importing USArrests.csv and inserting {0}% missing entries".format(100*ratio)
-        arrests_miss = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))
+        arrests_miss = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
         arrests_miss = arrests_miss.insert_missing_values(fraction=ratio)
         arrests_miss.describe()
         

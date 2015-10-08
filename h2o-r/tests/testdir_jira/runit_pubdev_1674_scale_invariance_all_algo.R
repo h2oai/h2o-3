@@ -95,7 +95,7 @@ test <- function() {
 	expect_equal(max(pr[,1]), max(scaled_pr) ,tolerance = 6e-1 )
 	}
 	
-	testEnd()
+	
 }
 doTest("Scale Invariance Test: for all algos", test)
 

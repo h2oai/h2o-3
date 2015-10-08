@@ -28,8 +28,8 @@ public class ConfusionMatrix extends Iced {
    *  never predicted).  Actuals with NAs are not scored, and their predictions
    *  ignored. */
   public static ConfusionMatrix buildCM(Vec actuals, Vec predictions) {
-    if (!actuals.isEnum()) throw new IllegalArgumentException("actuals must be enum.");
-    if (!predictions.isEnum()) throw new IllegalArgumentException("predictions must be enum.");
+    if (!actuals.isCategorical()) throw new IllegalArgumentException("actuals must be categorical.");
+    if (!predictions.isCategorical()) throw new IllegalArgumentException("predictions must be categorical.");
     Scope.enter();
     try {
       Vec adapted = predictions.adaptTo(actuals.domain());

@@ -29,7 +29,7 @@ test.div.frame <- function() {
   print(hexDivHex)
   print(head(hexDivHex))
   
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '/' on frames", test.div.frame)

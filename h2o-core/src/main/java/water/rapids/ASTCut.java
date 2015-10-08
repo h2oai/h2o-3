@@ -19,7 +19,7 @@ public class ASTCut extends ASTPrim {
     final boolean rite   = asts[5].exec(env).getNum()==1;
     final int     digits = Math.max((int)asts[6].exec(env).getNum(),12); // cap at 12
 
-    if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
+    if(fr.vecs().length != 1 || fr.vecs()[0].isCategorical())
       throw new IllegalArgumentException("First argument must be a numeric column vector");
 
     double fmin = fr.anyVec().min();
@@ -36,8 +36,8 @@ public class ASTCut extends ASTPrim {
       cuts[0] = fmin - 0.001*(fmax - fmin);
       for (int i = 1; i < cuts.length; ++i) cuts[i] = (i == cuts.length-1) ? (fmax + 0.001*(fmax-fmin))  : (fmin + i*width);
     }
-    width = (fmax - fmin)/nbins;
-    if(width == 0) throw new IllegalArgumentException("Data vector is constant!");
+    // width = (fmax - fmin)/nbins;
+    // if(width == 0) throw new IllegalArgumentException("Data vector is constant!");
     if (labels != null && labels.length != nbins) throw new IllegalArgumentException("`labels` vector does not match the number of cuts.");
 
     // Construct domain names from _labels or bin intervals if _labels is null

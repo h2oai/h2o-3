@@ -8,6 +8,7 @@ import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -439,7 +440,10 @@ final public class H2O {
     }
   }
 
-  //Google analytics performance measurement
+  // Model cache manager
+  public static ModelCacheManager getMCM() { return new ModelCacheManager(); }
+
+  // Google analytics performance measurement
   public static GoogleAnalytics GA;
   public static int CLIENT_TYPE_GA_CUST_DIM = 1;
   public static int CLIENT_ID_GA_CUST_DIM = 2;

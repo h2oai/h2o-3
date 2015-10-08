@@ -113,7 +113,7 @@ class ASTGroup extends ASTPrim {
       ASTNumList col = check(ncols,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
       int agg_col = (int)col.min(); // Aggregate column
-      if( fcn==FCN.mode && !fr.vec(agg_col).isEnum() )
+      if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
       aggs[(idx-4)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);

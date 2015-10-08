@@ -4,8 +4,8 @@ import h2o, tests
 
 def pubdev_1839():
 
-    train = h2o.import_file(h2o.locate("smalldata/jira/pubdev_1839_repro_train.csv"))
-    test  = h2o.import_file(h2o.locate("smalldata/jira/pubdev_1839_repro_test.csv"))
+    train = h2o.import_file(tests.locate("smalldata/jira/pubdev_1839_repro_train.csv"))
+    test  = h2o.import_file(tests.locate("smalldata/jira/pubdev_1839_repro_test.csv"))
 
     glm0 = h2o.glm(x           =train.drop("bikes"),
                    y           =train     ["bikes"],

@@ -25,6 +25,6 @@ simpleFilterTest_prostate_cat_replaced_18 <- function() {
          filterHex <- hex[hex[,c("DCAPS")] > 1.61381138188, c("DCAPS")]
         Log.info("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c("DCAPS")] > 1.61381138188, c("GLEASON","DPROS","PSA","DCAPS","VOL","CAPSULE","RACE","ID","AGE")]
-testEnd()
+
 }
 doTest("simpleFilterTest_ on data prostate_cat_replaced unit= >", simpleFilterTest_prostate_cat_replaced_18)

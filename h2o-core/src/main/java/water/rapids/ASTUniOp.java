@@ -22,7 +22,7 @@ abstract class ASTUniOp extends ASTPrim {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
-    case Val.FRM: 
+    case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk cs[], NewChunk ncs[] ) {
@@ -34,15 +34,20 @@ abstract class ASTUniOp extends ASTPrim {
             }
           }
         }.doAll(fr.numCols(),fr).outputFrame());
-    case Val.STR: throw H2O.unimpl();
-    default: throw H2O.fail();
+      case Val.ROW:
+        ValRow v = (ValRow)val;
+        double[] ds = new double[v._ds.length];
+        for(int i=0;i<ds.length;++i)
+          ds[i] = op(v._ds[i]);
+        String[] names = v._names.clone();
+        return new ValRow(ds,names);
+    default: throw H2O.unimpl("unop unimpl: " + val.getClass());
     }
   }
   abstract double op( double d );
 }
 
-class ASTCeiling extends ASTUniOp{
-  public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
+class ASTCeiling extends ASTUniOp{ public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
 class ASTFloor extends ASTUniOp { public String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
 class ASTNot   extends ASTUniOp { public String str() { return "!!"   ; } double op(double d) { return d==0?1:0; } }
 class ASTTrunc extends ASTUniOp { public String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
@@ -90,7 +95,7 @@ class ASTIsNA  extends ASTPrim {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
-    case Val.FRM: 
+    case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk cs[], NewChunk ncs[] ) {
@@ -103,10 +108,10 @@ class ASTIsNA  extends ASTPrim {
           }
         }.doAll(fr.numCols(),fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
-    default: throw H2O.fail();
+    default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
   }
-  double op(double d) { return Double.isNaN(d)?1:0; } 
+  double op(double d) { return Double.isNaN(d)?1:0; }
 }
 
 class ASTRunif extends ASTPrim {
@@ -133,7 +138,7 @@ class ASTStratifiedSplit extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
     Vec y = fr.anyVec();
-    if( !(y.isEnum() || (y.isNumeric() && y.isInt())) )
+    if( !(y.isCategorical() || (y.isNumeric() && y.isInt())) )
       throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " + y.get_type_str());
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long)asts[3].exec(env).getNum();
@@ -196,7 +201,7 @@ class ASTNLevels extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {
       Vec v = fr.anyVec();
-      nlevels = v.isEnum()?v.domain().length:0;
+      nlevels = v.isCategorical()?v.domain().length:0;
       return new ValNum(nlevels);
     } else throw new IllegalArgumentException("nlevels applies to a single column. Got: " + fr.numCols());
   }
@@ -217,7 +222,7 @@ class ASTLevels extends ASTPrim {
     // compute the longest vec... that's the one with the most domain levels
     int max=0;
     for(int i=0;i<f.numCols();++i )
-      if( f.vec(i).isEnum() )
+      if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
     for( int i=0;i<f.numCols();++i ) {
@@ -280,7 +285,7 @@ class ASTSetDomain extends ASTPrim {
     String[] _domains = ((ASTStrList)asts[2])._strs;
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
     Vec v = f.anyVec();
-    if( !v.isEnum() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
+    if( !v.isCategorical() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
     if( _domains!=null && _domains.length != v.domain().length) {
       // in this case we want to recollect the domain and check that number of levels matches _domains
       Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
@@ -293,7 +298,7 @@ class ASTSetDomain extends ASTPrim {
           for(int i=0;i<c._len;++i) {
             if( !c.isNA(i) ) {
               long num = Arrays.binarySearch(dom, c.at8(i));
-              if( num < 0 ) throw new IllegalArgumentException("Could not find the enum value!");
+              if( num < 0 ) throw new IllegalArgumentException("Could not find the categorical value!");
               c.set(i,num);
             }
           }
@@ -341,8 +346,7 @@ class ASTMatch extends ASTPrim {
   public String str() { return "match"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1 && !fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
-    Key tmp = Key.make();
+    if (fr.numCols() != 1 && !fr.anyVec().isCategorical()) throw new IllegalArgumentException("can only match on a single categorical column.");
     String[] _strsTable=null;
     double[] _dblsTable=null;
     if( asts[2] instanceof ASTNumList ) _dblsTable = ((ASTNumList)asts[2]).expand();
@@ -362,11 +366,11 @@ class ASTMatch extends ASTPrim {
         else
           for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
-    }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
+    }.doAll(1, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
-  private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0;}
-  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0;}
+  private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
+  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0; }
 
   private static int binarySearchDoublesUlp(double[] a, int from, int to, double key) {
     int lo = from;

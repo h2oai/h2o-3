@@ -53,7 +53,7 @@ test <- function() {
 	expect_equal(max(pr),max(ph$p1),tolerance = 0.0001)
 	expect_equal(mean(pr),mean(ph$p1),tolerance = 0.0001)
 
-	testEnd()
+	
 }
 
 

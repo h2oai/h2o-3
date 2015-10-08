@@ -8,7 +8,7 @@ def czechboardRF():
     
 
     # Training set has checkerboard pattern
-    board = h2o.import_file(path=h2o.locate("smalldata/gbm_test/czechboard_300x300.csv"))
+    board = h2o.import_file(path=tests.locate("smalldata/gbm_test/czechboard_300x300.csv"))
     board["C3"] = board["C3"].asfactor()
     board.summary()
 

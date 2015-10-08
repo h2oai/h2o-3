@@ -9,8 +9,8 @@ def iris_h2o_vs_sciKmeans():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  iris_h2o = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
-  iris_sci = np.genfromtxt(h2o.locate("smalldata/iris/iris.csv"), delimiter=',')
+  iris_h2o = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+  iris_sci = np.genfromtxt(tests.locate("smalldata/iris/iris.csv"), delimiter=',')
   iris_sci = iris_sci[:,0:4]
 
   s =[[4.9,3.0,1.4,0.2],

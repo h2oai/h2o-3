@@ -6,7 +6,7 @@ import random
 def cv_carsGBM():
 
     # read in the dataset and construct training set (and validation set)
-    cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=tests.locate("smalldata/junit/cars_20mpg.csv"))
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial

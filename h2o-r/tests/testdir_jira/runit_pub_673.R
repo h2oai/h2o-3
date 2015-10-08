@@ -17,7 +17,7 @@ test.pubdev_673 <- function() {
   Log.info("H2O Summary:"); print(xh2o.sum)
   # expect_equal(xh2o.sum, xr.sum)
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-673: H2O summary and quantile of all NA col", test.pubdev_673)

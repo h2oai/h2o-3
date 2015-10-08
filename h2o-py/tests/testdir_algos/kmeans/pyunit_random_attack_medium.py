@@ -21,6 +21,7 @@ def random_attack():
                 s = []
                 for p in range(kwargs['k']):
                     s.append([random.uniform(train[c].mean()-100,train[c].mean()+100) for c in x])
+                print "s: {0}".format(s)
                 start = h2o.H2OFrame(python_obj=s)
                 kwargs['user_points'] = start
             else:
@@ -40,7 +41,7 @@ def random_attack():
         print "-----------------------"
 
     print "Import and data munging..."
-    ozone = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+    ozone = h2o.import_file(path=tests.locate("smalldata/glm_test/ozone.csv"))
 
     for i in range(50):
         attack(ozone, random.sample([0,1,2,3],random.randint(1,4)))

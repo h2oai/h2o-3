@@ -31,7 +31,7 @@ test.colapply <- function() {
   scaledH2O.df = as.data.frame(scaledH2O)
   expect_equal(scaledH2O.df, (as.data.frame(scaledR)))
 
-  testEnd()
+  
 }
 
 doTest("PUB-169 Test: Apply scale over columns", test.colapply)

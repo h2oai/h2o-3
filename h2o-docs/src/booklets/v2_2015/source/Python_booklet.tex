@@ -1,0 +1,219 @@
+\input{common/conf_top.tex}
+%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+
+\input{common/conf_titles.tex}
+
+\begin{document}
+
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
+
+
+\thispagestyle{empty} %removes page number
+\newgeometry{bmargin=0cm, hmargin=0cm}
+
+
+\begin{center}
+\textsc{\Large\bf{Python with H2O}}
+
+\bigskip
+\line(1,0){250}  %inserts  horizontal line 
+\\
+\bigskip
+\small
+\textsc{Spencer Aiello \hspace{10pt} Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} }
+
+\textsc{Ludi Rehak \hspace{10pt} Hank Roark}
+
+\normalsize
+
+\line(1,0){250}  %inserts  horizontal line
+
+{\url{http://h2o.ai/resources/}}
+
+\bigskip
+
+\monthname \hspace{1pt}  \the\year: First Edition 
+
+\bigskip
+\end{center}
+
+% commenting out lines image due to print issues, but leaving in for later
+%\null\vfill
+%\begin{figure}[!b]
+%\noindent\makebox[\textwidth]{%
+%\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+%\end{figure}
+
+\newpage
+\restoregeometry
+
+\null\vfill %move next text block to lower left of new page
+
+\thispagestyle{empty}%remove pg#
+
+{\raggedright 
+
+Python with H2O\\
+
+  by Spencer Aiello, Cliff Click, \\ 
+Jessica Lanford, Ludi Rehak \\
+\&\  Hank Roark\\
+\bigskip
+  Published by H2O.ai, Inc. \\
+2307 Leghorn St. \\
+Mountain View, CA 94043\\
+\bigskip
+\textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
+\bigskip
+
+\monthname \hspace{1pt}  \the\year: First Edition 
+\bigskip
+
+Photos by \textcopyright H2O.ai, Inc.
+\bigskip
+
+All copyrights belong to their respective owners.\\
+While every precaution has been taken in the\\
+preparation of this book, the publisher and\\
+authors assume no responsibility for errors or\\
+omissions, or for damages resulting from the\\
+use of the information contained herein.\\
+\bigskip
+Printed in the United States of America. 
+}
+
+
+\newpage
+\thispagestyle{empty}%remove pg#
+
+\tableofcontents
+
+
+\newpage
+
+\input{common/what_is_h2o.tex}
+
+\newpage
+
+\section{Requirements and Configuration}
+
+\input{common/installation.tex}
+
+\section{Quickstart Example}
+
+\section{What is Machine Learning?}
+
+\subsection{Preparing Data}
+
+\subsection{Analyzing Data}
+
+\section{Supervised Learning}
+
+\subsection{Classification}
+
+\subsection{Regression}
+
+\subsubsection{Linear Algorithms}
+
+\subsubsection{Tree-based Algorithms}
+
+\subsubsection{Neural Networks}
+
+\section{Unsupervised Learning}
+
+\subsection{Clustering}
+
+\subsubsection{K-means}
+
+\subsection{Dimensionality Reduction}
+
+\subsubsection{PCA}
+
+\subsubsection{Autoencoders}
+
+\subsection{Anomaly Detection}
+
+\section{Choosing the Right Algorithm}
+
+\section{Evaluating Models}
+
+\subsection{Model Validation}
+
+\subsection{Overfitting}
+
+\subsection{Underfitting}
+
+\subsection{Bias}
+
+\subsection{Variance}
+
+\section{Measuring Performance}
+
+\subsection{Improving Models}
+
+\subsubsection{Validation Curves}
+
+\subsubsection{Learning Curves}
+
+\subsubsection{Hyperparameter Search}
+
+\section{Feature Engineering}
+
+\subsection{Distributed Data Frame}
+
+\subsection{Data Representation}
+
+\subsection{Data Frame Manipulation}
+
+\subsection{Summary Statistics}
+
+\section{Categorical Interactions}
+
+\subsection{Managing Levels}
+
+\subsection{Processing Strings}
+
+\subsection{Grouping}
+
+\subsection{Joining Frames}
+
+\section{Production Scoring}
+
+\subsection{Flask}
+
+\subsection{Py4J}
+
+\subsection{Nanofast scoring}
+
+\section{Distributed H2O}
+
+\section{H2O on Hadoop}
+
+\section{PySparklingWater}
+
+
+
+
+
+\newpage
+\section{References}
+\bibliographystyle{plainnat}  %alphadin}
+\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
+
+\bibentry{h2osite}
+
+\bibentry{h2odocs}
+
+\bibentry{h2ogithubrepo}
+
+\bibentry{h2odatasets}
+
+\bibentry{h2ojira}
+
+\bibentry{stream}
+
+\bibentry{rdocs}
+
+\enddocument

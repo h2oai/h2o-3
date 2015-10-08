@@ -15,7 +15,7 @@ test.upload.import <- function() {
     expect_equal(rows_u, rows_i, info="Expected same number of rows regardless of method.")
     expect_equal(cols_u, cols_i, info="Expected same number of cols regardless of method.")
 
-    testEnd()
+    
 }
 
 doTest("Test upload import", test.upload.import)

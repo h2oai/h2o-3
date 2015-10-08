@@ -48,7 +48,7 @@ test.cbind <- function() {
     expect_that(all(h == h.h2o.R), equals(T))
 
 
-    testEnd()
+    
 }
 
 doTest("Test cbind.", test.cbind)

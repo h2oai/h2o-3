@@ -24,7 +24,7 @@ expect_true(is.factor(hex$col1))
 expect_true(is.factor(hex$col2))
 expect_true(is.factor(hex$col5))
 
-testEnd()
+
 
 }
 

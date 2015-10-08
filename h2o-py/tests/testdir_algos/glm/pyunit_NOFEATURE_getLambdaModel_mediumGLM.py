@@ -8,7 +8,7 @@ def getLambdaModel():
 	
 
 	print("Read data")
-	prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+	prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
 
 	myX = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
 	myY = "CAPSULE"

@@ -43,7 +43,7 @@ test.op.precedence <- function() {
     S6 <- as.data.frame(A | B & C)
     expect_that(all(S6 == s6), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test operator precedence.", test.op.precedence)

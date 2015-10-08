@@ -4,7 +4,7 @@ import h2o, tests
 
 def pubdev_random_cv():
 
-    cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=tests.locate("smalldata/junit/cars_20mpg.csv"))
     response_col = "economy"
     distribution = "gaussian"
     predictors = ["displacement","power","weight","acceleration","year"]

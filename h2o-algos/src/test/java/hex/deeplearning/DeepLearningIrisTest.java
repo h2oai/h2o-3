@@ -116,12 +116,12 @@ public class DeepLearningIrisTest extends TestUtil {
                               // of classes is not known unless we visit
                               // all the response data - force that now.
                               String respname = _train.lastVecName();
-                              Vec resp = _train.lastVec().toEnum();
+                              Vec resp = _train.lastVec().toCategoricalVec();
                               _train.remove(respname).remove();
                               _train.add(respname, resp);
                               DKV.put(_train);
 
-                              Vec vresp = _test.lastVec().toEnum();
+                              Vec vresp = _test.lastVec().toCategoricalVec();
                               _test.remove(respname).remove();
                               _test.add(respname, vresp);
                               DKV.put(_test);
@@ -135,7 +135,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             DeepLearningParameters p = new DeepLearningParameters();
                             p._train = _train._key;
                             p._response_column = _train.lastVecName();
-                            assert _train.lastVec().isEnum();
+                            assert _train.lastVec().isCategorical();
                             p._ignored_columns = null;
 
                             p._seed = seed;

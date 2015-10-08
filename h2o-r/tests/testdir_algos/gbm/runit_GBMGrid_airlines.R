@@ -29,7 +29,7 @@ gbm.grid.test <- function() {
     expect_model_param(grid_models, "max_depth", max_depth_opts)
     expect_model_param(grid_models, "learn_rate", learn_rate_opts)
 
-    testEnd()
+    
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)

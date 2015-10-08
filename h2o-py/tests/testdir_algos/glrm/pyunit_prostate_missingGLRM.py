@@ -7,7 +7,7 @@ def glrm_prostate_miss():
     missing_ratios = np.arange(0.1, 1, 0.1).tolist()
     
     print "Importing prostate_cat.csv data and saving for validation..."
-    prostate_full = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_cat.csv"), na_strings=["NA"]*8)
+    prostate_full = h2o.upload_file(tests.locate("smalldata/prostate/prostate_cat.csv"), na_strings=["NA"]*8)
     prostate_full.describe()
     totnas = 0
     for i in range(prostate_full.ncol):
@@ -22,7 +22,7 @@ def glrm_prostate_miss():
     for i in range(len(missing_ratios)):
         ratio = missing_ratios[i]
         print "Importing prostate_cat.csv and inserting {0}% missing entries".format(100*ratio)
-        prostate_miss = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_cat.csv"))
+        prostate_miss = h2o.upload_file(tests.locate("smalldata/prostate/prostate_cat.csv"))
         prostate_miss = prostate_miss.insert_missing_values(fraction=ratio)
         prostate_miss.describe()
         

@@ -4,7 +4,7 @@ import h2o, tests, random
 
 def glrm_iris():
     print "Importing iris_wheader.csv data..."
-    irisH2O = h2o.upload_file(h2o.locate("smalldata/iris/iris_wheader.csv"))
+    irisH2O = h2o.upload_file(tests.locate("smalldata/iris/iris_wheader.csv"))
     irisH2O.describe()
     
     for trans in ["NONE", "DEMEAN", "DESCALE", "STANDARDIZE"]:

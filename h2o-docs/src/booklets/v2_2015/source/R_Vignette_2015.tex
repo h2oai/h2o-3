@@ -1,10 +1,24 @@
-\input{common/conf_top.tex}
+
+
+
+%\input{common/conf_top.tex}
+\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
 
+
+
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
+
+%\usepackage{syntonly}
+
+%\syntaxonly
+
+%\usepackage{jurabib}
+
 \begin{document}
 
-\input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
@@ -13,24 +27,28 @@
 \textsc{\Large\bf{Fast Scalable R with H2O}}
 \\
 \bigskip
-\textsc{\small{Spencer Aiello \hspace{10pt} Eric Eckstrand \hspace{10pt} Anqi Fu \\  \hspace{10pt} Mark Landry  \hspace{10pt}  Jessica Lanford \hspace{10pt}  Patrick Aboyoun }}
-\\
-\bigskip
+\line(1,0){250}  %inserts  horizontal line 
+
+\textsc{\small {Spencer Aiello \hspace{10pt} Eric Eckstrand \hspace{10pt} Anqi Fu}}
+
+\textsc{\small {Mark Landry  \hspace{10pt}  Jessica Lanford \hspace{10pt}  Patrick Aboyoun}}
+
 \line(1,0){250}  %inserts  horizontal line
 
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-August 2015: Third Edition 
-\\%add front page image here? (wavy lines)
+\monthname \hspace{1pt}  \the\year: Third Edition 
+
 \bigskip
 \end{center}
 
-\null\vfill
-\begin{figure}[!b]
-\noindent\makebox[\textwidth]{%
-\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
-\end{figure}
+% commenting out lines image due to print issues, but leaving in for later
+%\null\vfill
+%\begin{figure}[!b]
+%\noindent\makebox[\textwidth]{%
+%\centerline{\includegraphics[width=\paperwidth]{waves.png}}}
+%\end{figure}
 
 \newpage
 \restoregeometry
@@ -49,10 +67,10 @@ Fast Scalable R with H2O\\
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-August 2015: Third Edition
+September 2015: Third Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -68,13 +86,16 @@ use of the information contained herein.\\
 Printed in the United States of America. 
 
 
-}\par
+
 
 \newpage
 \thispagestyle{empty}%remove pg#
 \tableofcontents
 \thispagestyle{empty}%remove pg#
+
+
 \newpage
+
 
 \section{Introduction}
 
@@ -107,6 +128,7 @@ This document describes the four steps of data analysis with H2O:
 \end{enumerate}
 
 \input{common/what_is_h2o.tex}
+
 
 \section{Installation}
 
@@ -272,12 +294,14 @@ java -jar h2o.jar
 See the H2O Documentation for additional JVM and H2O command line options.
 After launching the H2O instance, connect to it from R with {\texttt{h2o.init()}} as described above.
 
+\newpage
 \subsection{Launching on Hadoop}
 
 To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
 \begin{lstlisting}[style=R]
 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
+
 \end{lstlisting}
 
 \begin{itemize}
@@ -328,8 +352,12 @@ To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo(
 > h2o.clusterInfo()
 \end{lstlisting}
 
+\begin{minipage}{\textwidth}
+
 An easy-to-read summary of information about the cluster displays. 
+
 \begin{lstlisting}[style=R]
+
 R is connected to H2O cluster:
   H2O cluster uptime:         43 minutes 43 seconds
   H2O cluster version:        2.7.0.1497
@@ -339,8 +367,10 @@ R is connected to H2O cluster:
   H2O cluster total cores:    8
   H2O cluster allowed cores:  8
   H2O cluster healthy:        TRUE
+
 \end{lstlisting}
 
+\end{minipage}
 
 \section{Data Preparation in R}
 
@@ -350,7 +380,7 @@ The following section contains information about data preparation (also known as
 \begin{itemize}
 
 \item Although it may seem like you are manipulating the data in R, once the data has been passed to H2O, all data munging occurs in the H2O instance. The information is passed to R through JSON APIs, so some functions may not have another method. 
-\item You are limited by the total amount of memory allocated to the H2O instance, not by R's ability to handle data. To process large data sets, make sure to allocate enough memory. For more information, refer to \nameref{ssec:LaunchR}. 
+\item You are limited by the total amount of memory allocated to the H2O instance, not by R's ability to handle data. To process large data sets, make sure to allocate enough memory. For more information, refer to {\textbf{\nameref{ssec:LaunchR}}}. 
 \item You can manipulate datasets with thousands of factor levels using H2O in R, so if you ask H2O to display a table in R with information from high cardinality factors, the results may overwhelm R`s capacity. 
 \item To manipulate data in R and not in H2O, use {\texttt{as.data.frame()}}, {\texttt{as.h2o()}}, and {\texttt{str()}}. \begin{itemize}
 \item {\texttt{as.data.frame()}} converts an H2O data frame into an R data frame. If your request exceeds the amount of data supported by R, the R session will crash. If possible, we recommend only taking subsets of the entire data set (the necessary data columns or rows) instead of the whole data set. 
@@ -398,9 +428,11 @@ To apply a user-specified function to each subset of an H2O dataset and combine 
 \section{Models}
 %TODO: Another candidate for "common"
 
-The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to \nameref{sec:RunModel}. 
+The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to {\textbf{\nameref{sec:RunModel}}}. 
 
 %%mal H2O supports the following models: Deep Learning (DL), Generalized Linear Models (GLM), Gradient Boosted Regression (GBM), Na\"{i}ve Bayes (NB), Random Forest (RF), K-Means, Principal Components Analysis (PCA) and Generalized Low Rank Model (GLRM).
+
+\begin{minipage}{\textwidth}
 H2O supports the following models:  
 
 
@@ -425,6 +457,7 @@ H2O supports the following models:
 \end{tabular}
 
 \end{frame}
+\end{minipage}
 
 The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
 
@@ -451,10 +484,10 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 
 {\textbf{Grid Search}}: Performs standard hyper-parameter optimization to simplify model configuration. %%should be supported in latest version, but adding note in case
 
-After creating a model, use it to make predictions. For more information about predictions, refer to ``Predictions." 
+After creating a model, use it to make predictions. For more information about predictions, refer to {\textbf{\nameref{ssec:Predictions}}}.
 
 %%mal: this feels too lengthy for a modeling example here; perhaps it would be better to have entire work flows at the end?
-\newpage
+
 \section{Demo: GLM}
 
 The following demo demonstrates how to:
@@ -529,7 +562,7 @@ For additional help within R's Help tab, precede the command with a question mar
 
 The H2O package consolidates all of the various supported import functions using {\texttt{h2o.importFile()}}. % {\texttt{h2o.importFolder}} and {\texttt{h2o.importHDFS}} still work, these functions are deprecated and should be updated to {\texttt{h2o.importFile()}}. 
 There are a few ways to import files shown in the following examples: 
-\\
+
 \begin{lstlisting}[style=R]
 #To import small iris data file from H2O's package:
 irisPath = system.file("extdata", "iris.csv", package="h2o")
@@ -699,7 +732,7 @@ To obtain the minimum values for the real-valued columns in a data set, use {\te
 \subsection{Getting Quantiles}
 
 To request quantiles for an H2O parsed data set, use {\texttt{quantile()}} with the name of the R reference object in the parentheses.
-To request a quantile for a single numerical column, use {\texttt{quantile(ReferenceObject\$ColumnName)}},  where {\texttt{ReferenceObject}} represents the R reference object name and {\texttt{ColumnName}} represents the name of the specified column. 
+To request a quantile for a single numerical column, use  {\texttt{quantile(ReferenceObject\$ColumnName)}},  where {\texttt{ReferenceObject}} represents the R reference object name and \\{\texttt{ColumnName}} represents the name of the specified column. 
 
 When you request for a full parsed data set consisting of a single column, {\texttt{quantile()}} displays a matrix with quantile information for the data set. 
 \smallskip
@@ -824,7 +857,7 @@ To append a column of random numbers to an H2O data frame for testing/training d
 
 \subsection{Splitting Frames}
 
-To generate two subsets (according to specified ratios) from an existing H2O data set for testing/training, use {\texttt{h2o.splitFrame()}}.  h2o.splitFrame() returns contiguous sections of the data without random sampling.
+To generate two subsets (according to specified ratios) from an existing H2O data set for testing/training, use {\texttt{h2o.splitFrame()}}, which returns contiguous sections of the data without random sampling.
 
 \begin{lstlisting}[style=R]
 # Splits data in prostate data frame with a ratio of 0.75
@@ -987,11 +1020,11 @@ Top-3 Hit Ratios:
 \subsection{Generalized Linear Models (GLM)}
 
 
-Generalized linear models (GLM) are some of the most commonly-used models for many types of data analysis use cases. While some data analysis can be done using general linear models, if the variables are more complex, general linear models may not be as accurate. For example, if the dependent variable has a non-continuous distribution or if the effect of the predictors is not linear, generalized linear models will produce more accurate results than general linear models.  
+Generalized linear models (GLM) are some of the most commonly-used models for many types of data analysis use cases. While some data can be analyzed using general linear models, general linear models may not be as accurate if the variables are more complex. For example, if the dependent variable has a non-continuous distribution or if the effect of the predictors is not linear, generalized linear models will produce more accurate results than general linear models.  
 
 Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions in general. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, gamma and Tweedie distributions. Each serves a different purpose, and depending on distribution and link function choice, it can be used either for prediction or classification.
 
-H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast,and scales extremely well for models with a limited number (\~\ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute gaussian (linear), logistic, poisson, and gamma regression models.
+H2O's GLM algorithm fits the generalized linear model with elastic net penalties. The model fitting computation is distributed, extremely fast,and scales extremely well for models with a limited number ($\sim$ low thousands) of predictors with non-zero coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute Gaussian (linear), logistic, Poisson, and gamma regression models.
 
 
 To generate a generalized linear model for developing linear models for exponential distributions, use {\texttt{h2o.glm()}}. You can apply regularization to the model by adjusting the lambda and alpha parameters. 
@@ -1092,6 +1125,7 @@ Cumulative Proportion  0.383120 0.668942 0.801859
 \end{lstlisting}
 
 \subsection{Predictions}
+\label{ssec:Predictions}
 
 The following section describes some of the prediction methods available in H2O. 
 
@@ -1184,7 +1218,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{head, tail}}: Return the First or Last Part of an Object 
 \medskip
 \emph{Concatenation}\par
- {\texttt{c}}: Combine Values into a Vector or List %%still supported? couldn't find in R doc
+ {\texttt{c}}: Combine Values into a Vector or List \\ %%still supported? couldn't find in R doc
  {\texttt{h2o.cbind}}: Take a sequence of H2O datasets and combine them by column.\par
 \medskip
 {\emph{Data Attributes}}\par
@@ -1245,9 +1279,9 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{trigamma}}: Display the second derivative of the logarithm of the gamma function. 
 \medskip
 \emph{Math2 (H2O)}\par
-{\texttt{round}}: Round the values to the specified number of decimal places (default 0).  
+{\texttt{round}}: Round the values to the specified number of decimal places. The default is 0.  
 {\texttt{signif}}: Round the values to the specified number of significant digits. 
-\newpage
+
 \emph{Summary (H2O)}\par
 {\texttt{max}}: Display the maximum of all the input arguments.  
 {\texttt{min}}: Display the minimum of all the input arguments.  
@@ -1319,7 +1353,6 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.month}}: Convert the entries of a H2OParsedData object from milliseconds to months (on a 0 to 11 scale).  
 {\texttt{h2o.year}}: Convert the entries of a H2OParsedData object from milliseconds to years, indexed starting from 1900. 
 
-\newpage
 \emph{Matrix Operations}\par
 {\texttt{\%$*$\%}}}: Multiply two matrices, if they are conformable. 
 {\texttt{t}}: Given a matrix or data.frame x, t returns the transpose of x. 
@@ -1340,7 +1373,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.anomaly}}: Detect anomalies in a H2O dataset using a H2O deep learning model with auto-encoding. 
 {\texttt{h2o.deepfeatures}}: Extract the non-linear features from a H2O dataset using a H2O deep learning model. 
 {\texttt{h2o.kmeans}}: Perform k-means clustering on a data set.  
-%%\newpage
+
 \medskip
 \emph{Grid Search}\par
 {\texttt{h2o.grid}}: Efficient method to build multiple models with different hyperparameters.  
@@ -1381,8 +1414,7 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 {\texttt{h2o.loadModel}}: Load an H2OModel object from disk. 
 {\texttt{h2o.saveModel}}: Save an H2OModel object to disk to be loaded back into H2O using {\texttt{h2o.loadModel}}. 
 
-\medskip
-\emph{H2O Cluster Connection}\par
+\emph{H2O Cluster Connection}\par 
 {\texttt{h2o.init (nthreads = -1)}}: Connect to a running H2O instance using all CPUs on the host and check the local H2O R package is the correct version. 
 {\texttt{h2o.shutdown}}: Shut down the specified H2O instance. All data on the server will be lost! 
 
@@ -1416,10 +1448,32 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 \egroup %needed for formatting
 
-\newpage
-\input{common/further_info.tex}
 
-\section{References}\bigskip
+
+\newpage
+
+\section{References}
+
+%TODO: Fix this doc so that everything in this section that is commented out works. It should be able to reference the bibliography the same way as GLM_Vignette.tex and GBM_Vignette.tex. Can't get it to work right, so hard-coding this section for now. 
+
+%\bibliographystyle{plain}  %alphadin}
+ %\nobibliography{bibliography.bib}
+ %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
+
+%\bibentry{h2odocs}
+
+%\bibentry{h2ogithubrepo}
+
+%\bibentry{h2odatasets}
+
+%\bibentry{h2ojira}
+
+%\bibentry{stream}
+
+%\bibentry{rdocs}
+
+%\bibentry{rensemble}
 
 {\bfseries{R Package}}:  \url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}
 
@@ -1427,10 +1481,12 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 {\bfseries{R project website}}: \url{http://www.r-project.org} 
 
-{\bfseries{Slide deck}}:\\ \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
+{\bfseries{Slide deck}}: \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
+
 
 
 \newpage
+
 \section{Authors}
 
 \textbf{Spencer Aiello}
@@ -1447,7 +1503,7 @@ Anqi is a data hacker at H2O.ai. After completing her undergraduate at Universit
 
 \textbf{Mark Landry}
 
-Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Most at home in SQL, he found H2O through hacking in R. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
+Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
 
 \textbf{Jessica Lanford}
 

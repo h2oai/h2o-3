@@ -9,7 +9,7 @@ check.deeplearning_basic <- function() {
   print(predict(hh, iris.hex))
   m <- h2o.getModel(hh@model_id)
   print(predict(m, iris.hex))
-  testEnd()
+  
 }
 
 doTest("Deep Learning Test: Iris", check.deeplearning_basic)

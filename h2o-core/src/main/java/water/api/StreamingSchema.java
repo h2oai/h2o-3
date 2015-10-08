@@ -8,7 +8,7 @@ import water.Iced;
 public class StreamingSchema extends Schema<Iced, StreamingSchema> {
 
   private final transient StreamWriter streamWriter;
-  private final String filename;
+  private final transient String filename;
 
   public StreamingSchema() {
     this(null);

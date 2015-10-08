@@ -69,7 +69,7 @@ test.match <- function() {
   expect_true(all(dim(hh_in) == dim(hh_r)))
   expect_true(all(dim(hh_match) == dim(hh_r)))
     
-  testEnd()
+  
 }
 
 doTest("test match", test.match)

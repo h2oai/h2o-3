@@ -15,6 +15,7 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /** Gradient Boosted Trees
  *
@@ -76,7 +77,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // expected.  However, all the minority classes have large guesses in the
     // wrong direction, and it takes a long time (lotsa trees) to correct that
     // - so your CM sucks for a long time.
-    double mean = 0;
     if (expensive) {
       if (error_count() > 0) {
         GBM.this.updateValidationMessages();
@@ -95,8 +95,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
-      // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
-      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
     }
 
     switch( _parms._distribution) {
@@ -105,7 +103,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
       break;
     case multinomial:
-      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an enum response."));
+      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an categorical response."));
       break;
     case poisson:
       if (isClassifier()) error("_distribution", H2O.technote(2, "Poisson requires the response to be numeric."));
@@ -127,12 +125,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
+    if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
+      error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
 
   // ----------------------
   private class GBMDriver extends Driver {
+    @Override protected boolean doOOBScoring() { return false; }
+    @Override protected void initializeModelSpecifics() {
+      _mtry = Math.max(1, (int)(_parms._col_sample_rate * _ncols));
+      if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
-    @Override protected void buildModel() {
+      // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
+      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
       if (hasOffsetCol() && _parms._distribution == Distribution.Family.bernoulli) {
         _initialPrediction = getInitialValueBernoulliOffset(_train);
       }
@@ -148,42 +153,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
       }
-
-      // Reconstruct the working tree state from the checkpoint
-      if( _parms.hasCheckpoint() ) {
-        Timer t = new Timer();
-        new ResidualsCollector(_ncols, _nclass, numSpecialCols(),_model._output._treeKeys).doAll(_train, _parms._build_tree_one_node);
-        Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
-      }
-
-      // Loop over the K trees
-      for( int tid=0; tid< _ntrees; tid++) {
-        // During first iteration model contains 0 trees, then 1-tree, ...
-        // No need to score a checkpoint with no extra trees added
-        if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, false, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping ) {
-            doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
-            return;             // Stop when approaching round-off error
-          }
-        }
-
-        // Compute predictions and resulting residuals for trees built so far
-        // ESL2, page 387, Steps 2a, 2b
-        ComputePredAndRes cpr = new ComputePredAndRes();
-        cpr.doAll(_train, _parms._build_tree_one_node);
-
-        // Build more trees, based on residuals above
-        // ESL2, page 387, Step 2b ii, iii, iv
-        Timer kb_timer = new Timer();
-
-        buildNextKTrees();
-        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
-        GBM.this.update(1);
-        if( !isRunning() ) return; // If canceled during building, do not bulkscore
-      }
-      // Final scoring (skip if job was cancelled)
-      doScoringAndSaveModel(true, false, _parms._build_tree_one_node);
     }
 
     /**
@@ -252,6 +221,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     // --------------------------------------------------------------------------
     // Compute Residuals
+    // Do this for all rows, whether OOB or not
     class ComputePredAndRes extends MRTask<ComputePredAndRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
@@ -373,8 +343,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
-    // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
-    private void buildNextKTrees() {
+    // the prior trees.
+    @Override protected void buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -382,17 +352,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Define a "working set" of leaf splits, from here to tree._len
       int[] leafs = new int[_nclass];
 
+      // Compute predictions and resulting residuals for trees built so far
+      // ESL2, page 387, Steps 2a, 2b
+//      Log.info("3 before ComputePredAndRes\n", _train);
+      new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB)
+
+//      Log.info("4 before growTrees\n", _train);
       // ----
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      growTrees(ktrees, leafs);
+      growTrees(ktrees, leafs, _rand); //assign to OOB and split using non-OOB only
 
+//      Log.info("5 before fitBestConstants\n", _train);
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
-      fitBestConstants(ktrees, leafs, gp);
+      fitBestConstants(ktrees, leafs, new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train));
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == Distribution.Family.gamma ||
@@ -412,7 +388,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _model._output.addKTrees(ktrees);
     }
 
-    private void growTrees(DTree[] ktrees, int[] leafs) {
+    private void growTrees(DTree[] ktrees, int[] leafs, Random rand) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
@@ -420,14 +396,25 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Adjust real bins for the top-levels
       int adj_nbins = Math.max(_parms._nbins_top_level,_parms._nbins);
 
+      long rseed = rand.nextLong();
       // initialize trees
       for (int k = 0; k < _nclass; k++) {
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
-          ktrees[k] = new DTree(_train._names, _ncols, (char) _parms._nbins, (char) _parms._nbins_cats, (char) _nclass, _parms._min_rows);
-          new GBMUndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
+          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, rseed);
+          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
         }
+      }
+
+      // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
+      if (_parms._sample_rate < 1) {
+        Sample ss[] = new Sample[_nclass];
+        for (int k = 0; k < _nclass; k++)
+          if (ktrees[k] != null)
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(0, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
+        for (int k = 0; k < _nclass; k++)
+          if (ss[k] != null) ss[k].getResult();
       }
 
       // ----
@@ -437,7 +424,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int depth = 0;
       for (; depth < _parms._max_depth; depth++) {
         if (!isRunning()) return;
-        hcs = buildLayer(_train, adj_nbins, _parms._nbins_cats, ktrees, leafs, hcs, false, _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if (hcs == null) break;
       }
@@ -453,7 +440,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             DecidedNode dn = tree.decided(nid);
             if (dn._split._col == -1) { // No decision here, no row should have this NID now
               if (nid == 0)               // Handle the trivial non-splitting tree
-                new GBMLeafNode(tree, -1, 0);
+                new LeafNode(tree, -1, 0);
               continue;
             }
             for (int i = 0; i < dn._nids.length; i++) {
@@ -462,7 +449,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode) tree.node(cnid))._split.col() == -1))
-                dn._nids[i] = new GBMLeafNode(tree, nid).nid(); // Mark a leaf here
+                dn._nids[i] = new LeafNode(tree, nid).nid(); // Mark a leaf here
             }
           }
         }
@@ -553,12 +540,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
           for( int row=0; row<nids._len; row++ ) { // For all rows
             int nid = (int)nids.at8(row);          // Get Node to decide from
+
+            final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,k).at8(row)); //same for all k
+            if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
+
             if( nid < 0 ) continue;                // Missing response
             if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
-              nid = tree.node(nid)._pid;                  // Then take parent's decision
+              nid = tree.node(nid).pid();                  // Then take parent's decision
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
             if( dn._split._col == -1 )                    // Unable to decide?
-              dn = tree.decided(dn._pid);  // Then take parent's decision
+              dn = tree.decided(dn.pid());  // Then take parent's decision
             int leafnid = dn.ns(chks,row); // Decide down to a leafnode
             assert leaf <= leafnid && leafnid < tree._len :
                     "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
@@ -569,6 +560,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // leaf, and get our prediction from that.
             nids.set(row, leafnid);
             assert !ress.isNA(row);
+
+            // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
+            if (wasOOBRow) continue;
 
             // Compute numerator and denominator of terminal node estimate (gamma)
             double w = hasWeightCol() ? chk_weight(chks).atd(row) : 1; //weight
@@ -613,59 +607,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this,mse_train,mse_valid));
     }
 
-  }
-
-  @Override protected DecidedNode makeDecided( UndecidedNode udn, DHistogram hs[] ) {
-    return new GBMDecidedNode(udn,hs);
-  }
-
-  // ---
-  // GBM DTree decision node: same as the normal DecidedNode, but
-  // specifies a decision algorithm given complete histograms on all
-  // columns.  GBM algo: find the lowest error amongst *all* columns.
-  static class GBMDecidedNode extends DecidedNode {
-    GBMDecidedNode( UndecidedNode n, DHistogram[] hs ) { super(n,hs); }
-    @Override public UndecidedNode makeUndecidedNode(DHistogram[] hs ) {
-      return new GBMUndecidedNode(_tree,_nid,hs);
-    }
-
-    // Find the column with the best split (lowest score).  Unlike RF, GBM
-    // scores on all columns and selects splits on all columns.
-    @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
-      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
-      if( hs == null ) return best;
-      for( int i=0; i<hs.length; i++ ) {
-        if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
-        DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
-        if( s == null )
-          continue;
-        if( s.se() < best.se() )
-          best = s;
-        if( s.se() <= 0 ) break; // No point in looking further!
-      }
-      return best;
-    }
-  }
-
-  // ---
-  // GBM DTree undecided node: same as the normal UndecidedNode, but specifies
-  // a list of columns to score on now, and then decide over later.
-  // GBM algo: use all columns
-  static class GBMUndecidedNode extends UndecidedNode {
-    GBMUndecidedNode( DTree tree, int pid, DHistogram hs[] ) { super(tree,pid,hs); }
-    // Randomly select mtry columns to 'score' in following pass over the data.
-    // In GBM, we use all columns (as opposed to RF, which uses a random subset).
-    @Override public int[] scoreCols( DHistogram[] hs ) { return null; }
-  }
-
-  // ---
-  static class GBMLeafNode extends LeafNode {
-    GBMLeafNode( DTree tree, int pid ) { super(tree,pid); }
-    GBMLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
-    // Insert just the predictions: a single byte/short if we are predicting a
-    // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
-    @Override protected int size() { return 4; }
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

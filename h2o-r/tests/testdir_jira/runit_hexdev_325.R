@@ -9,7 +9,7 @@ test.parse.mismatching.col.length <- function(){
 
   expect_equal(expected, actual)
 
-  testEnd()
+  
 }
 
 doTest("Testing Parsing of Mismatching Header and Data length", test.parse.mismatching.col.length)

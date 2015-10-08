@@ -20,7 +20,7 @@ readMultiChar <- function(fileName, separators) {
 locate       <- h2o:::.h2o.locate
 pathToData   <- locate("smalldata/demos/movielens_1m.zip")
 pathToMovies <- locate("smalldata/demos/movies.dat")
-movieInfo    <- readMultiChar(pathToMovies, separators = "::")
+# movieInfo    <- readMultiChar(pathToMovies, separators = "::")
 print("Importing MovieLens 1M dataset into H2O...")
 ratings.hex <- h2o.importFile(path = pathToData, header = TRUE, destination_frame = "ratings.hex")
 
@@ -44,9 +44,9 @@ ratings.y
 print("Plot first archetype on a subset of movies")
 movie_idx <- 1:50
 plot(1:length(movie_idx), ratings.y[1,movie_idx], xlab = "Movie", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights", col = "blue", pch = 19, lty = "solid")
-text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,2], cex = 0.7, pos = 3)
+# text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,2], cex = 0.7, pos = 3)
 plot(1:length(movie_idx), ratings.y[1,movie_idx], xlab = "Movie", ylab = "Archetypal Weight", main = "First Archetype's Movie Weights by Genre", col = "blue", pch = 19, lty = "solid")
-text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,3], cex = 0.7, pos = 3)
+# text(1:length(movie_idx), ratings.y[1,movie_idx], labels = movieInfo[1:50,3], cex = 0.7, pos = 3)
 
 # print("Plot subset of movies in 2-dimensional archetype space")
 # movie_idx <- 1:20
@@ -82,7 +82,8 @@ ratings_new.hex <- as.h2o(t(data.frame(ratings_new.df)))
 
 ## Run GLRM on new user rating vector with initial Y from previous model
 ratings_new.glrm <- h2o.glrm(ratings_new.hex, k = 15, ignore_const_cols = FALSE, transform = "NONE", 
-                             init = ratings.y, loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", 
+                             init = "User", user_y = ratings.y, loss = "Quadratic", 
+                             regularization_x = "Quadratic", regularization_y = "Quadratic", 
                              gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000)
 ratings_new.glrm
 

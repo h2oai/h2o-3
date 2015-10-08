@@ -13,7 +13,6 @@ test.pubdev.1725 <- function() {
   Log.info("Building GLRM model with init = 'SVD'")
   fitH2O_svd <- h2o.glrm(cancar.hex, k = 4, transform = "NONE", init = "SVD", loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 1000)
   print(fitH2O_svd)
-  testEnd()
 }
 
 doTest("PUBDEV-1725: GLRM poor fit with k-means++ initialization", test.pubdev.1725)

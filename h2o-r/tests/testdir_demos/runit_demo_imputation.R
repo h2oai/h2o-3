@@ -67,7 +67,7 @@ check.demo_imputation <- function() {
   mean(air$DepTime)
 
 
-  testEnd()
+  
 }
 
 doTest("Basic imputation", check.demo_imputation)

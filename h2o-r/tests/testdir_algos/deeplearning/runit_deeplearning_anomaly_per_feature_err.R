@@ -79,7 +79,7 @@ check.deeplearning_anomaly_mse <- function(conn) {
   mse2 <- as.matrix(iris_mse)[,1]
   checkEqualsNumeric(mse1, mse2)
   
-  testEnd()
+  
 }
 
 doTest("Deep Learning Anomaly Detection Per Feature Error", check.deeplearning_anomaly_mse)

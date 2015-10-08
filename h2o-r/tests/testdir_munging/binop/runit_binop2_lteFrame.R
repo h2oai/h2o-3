@@ -21,7 +21,7 @@ test.lte.frame <- function() {
   # else hexLTEHex <- hex <= hex
   hexLTEHex <- hex <= hex
 
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '<=' on frames", test.lte.frame)

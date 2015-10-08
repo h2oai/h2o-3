@@ -14,7 +14,7 @@ nrow(prostate.train) + nrow(prostate.test)
 count <- nrow(prostate.train) + nrow(prostate.test)
 sum <- summary(prostate.test)
 
-testEnd()
+
 }
 
 doTest("R Doc Runif", test.rdocrunif.golden)

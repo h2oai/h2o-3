@@ -40,7 +40,7 @@ check.demo_notequal_factor <- function() {
   not.sfo <- air[air$Origin != "SFO",]
   print(dim(not.sfo))
 
-  testEnd()
+  
 }
 
 doTest("Slice by != factor_level", check.demo_notequal_factor)

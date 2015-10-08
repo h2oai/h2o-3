@@ -82,7 +82,7 @@ check.demo_random_svd <- function() {
   #R# print("(H2O - R) Runtime:")
   #R# print(algo_run_time_cmp)
   
-  testEnd()
+  
 }
 
 doTest("Randomized subspace iteration SVD using random data", check.demo_random_svd)

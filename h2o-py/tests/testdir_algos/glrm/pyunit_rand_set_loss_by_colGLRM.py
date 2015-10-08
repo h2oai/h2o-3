@@ -11,7 +11,7 @@ def glrm_set_loss_by_col_rand():
     CAT_COLS = [0, 2, 3, 4]
     
     print "Importing prostate_cat.csv data..."
-    prostateH2O = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_cat.csv"), na_strings = ["NA"]*8)
+    prostateH2O = h2o.upload_file(tests.locate("smalldata/prostate/prostate_cat.csv"), na_strings = ["NA"]*8)
     prostateH2O.describe()
     
     # Fully specify every column's loss function (no need for loss_by_col_idx)

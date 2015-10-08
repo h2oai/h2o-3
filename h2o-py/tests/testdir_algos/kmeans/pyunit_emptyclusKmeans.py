@@ -12,8 +12,8 @@ def emptyclusKmeans():
       # connect to localhost:54321
 
     #Log.info("Importing ozone.csv data...\n")
-    ozone_sci = np.loadtxt(h2o.locate("smalldata/glm_test/ozone.csv"), delimiter=',', skiprows=1)
-    ozone_h2o = h2o.import_file(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+    ozone_sci = np.loadtxt(tests.locate("smalldata/glm_test/ozone.csv"), delimiter=',', skiprows=1)
+    ozone_h2o = h2o.import_file(path=tests.locate("smalldata/glm_test/ozone.csv"))
 
     ncent = 10
     nempty = random.randint(1,ncent/2)

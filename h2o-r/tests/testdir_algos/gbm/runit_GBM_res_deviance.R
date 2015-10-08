@@ -55,6 +55,6 @@ test <- function() {
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,0.4799194689)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 	
-	testEnd()
+	
 }
 doTest("GBM residual deviance Test: GBM deviance for poisson/gamma/tweedie distributions", test)

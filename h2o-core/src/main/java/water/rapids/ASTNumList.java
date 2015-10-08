@@ -96,7 +96,7 @@ public class ASTNumList extends ASTParameter {
     _strides= new double[list.length];
     _cnts   = new long[list.length];
     _isList = true;
-    Arrays.fill(_strides,0);
+    Arrays.fill(_strides,1);
     Arrays.fill(_cnts,1);
   }
 
@@ -228,4 +228,7 @@ public class ASTNumList extends ASTParameter {
     } while( m!=lb );
     res[1]=new int[]{lb,ub}; // return 2 closest bases
   }
+
+  // Select columns by number or String.
+  @Override int[] columns( String[] names ) { return expand4(); }
 }

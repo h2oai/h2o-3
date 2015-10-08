@@ -491,7 +491,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
     public final double[] moffset(Vec v, Loss multi_loss) {
-      assert v.isEnum() : "Vector must be enum type";
+      assert v.isCategorical() : "Vector must be enum type";
       switch(multi_loss) {
         case Categorical:
         case Ordinal:
@@ -527,7 +527,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
     public final double mscale(Vec v, Loss multi_loss) {
-      assert v.isEnum() : "Vector must be enum type";
+      assert v.isCategorical() : "Vector must be enum type";
       switch(multi_loss) {
         case Categorical:
         case Ordinal:
@@ -692,7 +692,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Frame key of X matrix
     public Key<Frame> _loading_key;
-    public int _ncolX;    // Number of columns in X (k)
+    public Key<? extends Model> _init_key;
 
     // Number of categorical and numeric columns
     public int _ncats;
@@ -738,6 +738,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey, parms, output); }
 
+  @Override protected Futures remove_impl( Futures fs ) {
+    if(null != _output._init_key)
+      _output._init_key.remove(fs);
+    if(null != _output._loading_key)
+      _output._loading_key.remove(fs);
+    return super.remove_impl(fs);
+  }
+
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     final int ncols = _output._names.length;
@@ -763,7 +771,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    gs._mb.makeModelMetrics(GLRMModel.this, orig);   // save error metrics based on imputed data
     return f;
   }
 
@@ -862,6 +870,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_output._ncolX, _output._permutation, _output._impute_orig);
+    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation, _output._impute_orig);
   }
 }

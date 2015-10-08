@@ -1,7 +1,6 @@
 import warnings
 warnings.simplefilter('always', DeprecationWarning)
 import os
-import itertools
 import functools
 import os.path
 import re
@@ -43,19 +42,18 @@ Parameters
 ----------
   path : str
     A path specifying the location of the data to upload.
-  destination_frame : H2OFrame
-    The name of the H2O Frame in the H2O Cluster.
-  header :
-   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep :
-    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names :
-    (Optional) A list of column names for the file.
-  col_types :
-    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings :
-    (Optional) A list of strings which are to be interpreted as missing values. 
-
+  destination_frame : str, optional
+    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  header : int, optional
+   -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep : str, optional
+    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names : list, optional
+    A list of column names for the file.
+  col_types : list or dict, optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+  na_strings : list or dict, optional
+    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
  :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
@@ -72,20 +70,20 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   ----------
   path : str
     A path specifying the location of the data to import.
-  destination_frame :
-    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse :
-    (Optional) A logical value indicating whether the file should be parsed after import.
-  header :
-   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep :
-    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names :
-    (Optional) A list of column names for the file.
-  col_types :
-    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings :
-    (Optional) A list of strings which are to be interpreted as missing values.
+  destination_frame : str, optional
+    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse : boolean, optional
+    A logical value indicating whether the file should be parsed after import.
+  header : int, optional
+   -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep : str, optional
+    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names : list, optional
+    A list of column names for the file.
+  col_types : list or dict, optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+  na_strings : list or dict, optional
+    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
   :return: A new H2OFrame
   """
   if not parse:
@@ -101,20 +99,20 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   raw_frames : H2OFrame
     A collection of imported file frames
-  destination_frame :
-    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse :
-    (Optional) A logical value indicating whether the file should be parsed after import.
-  header :
-    (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep :
-    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names :
-    (Optional) A list of column names for the file.
-  col_types :
-    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
-  na_strings :
-    (Optional) A list of strings which are to be interpreted as missing values.
+  destination_frame : str, optional
+    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse : boolean, optional
+    A logical value indicating whether the file should be parsed after import.
+  header : int, optional
+   -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep : str, optional
+    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names : list, optional
+    A list of column names for the file.
+  col_types : list or dict, optional
+    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+  na_strings : list or dict, optional
+    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
   :return: A ParseSetup "object"
   """
 
@@ -122,78 +120,90 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
-  if destination_frame: j["destination_frame"] = destination_frame
+  if destination_frame: j["destination_frame"] = _quoted(destination_frame).replace("%",".").replace("&",".") # TODO: really should be url encoding...
   if not isinstance(header, tuple):
-      if header not in (-1, 0, 1):
-          raise ValueError("header should be -1, 0, or 1")
-      j["check_header"] = header
+    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
+    j["check_header"] = header
   if separator:
-      if not isinstance(separator, basestring) or len(separator) != 1:
-          raise ValueError("separator should be a single character string")
-      j["separator"] = separator
-  if column_names: j["column_names"] = column_names
-  if column_types: j["column_types"] = column_types
-  if na_strings: j["na_strings"] = na_strings
+    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
+    j["separator"] = ord(separator)
+  if column_names:
+    if not isinstance(column_names, list): raise ValueError("col_names should be a list")
+    if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
+    j["column_names"] = column_names
+  if column_types:
+    if isinstance(column_types, dict):
+      #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
+      if not j["column_names"]: raise ValueError("column names should be specified")
+      if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
+      idx = 0
+      column_types_list = []
+      for name in j["column_names"]:
+        if name in column_types:
+          column_types_list.append(column_types[name])
+        else:
+          column_types_list.append(j["column_types"][idx])
+        idx += 1
+      column_types = column_types_list
+    elif isinstance(column_types, list):
+      if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
+      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
+    else: #not dictionary or list
+      raise ValueError("col_types should be a list of types or a dictionary of column names to types")
+    j["column_types"] = column_types
+  if na_strings:
+    if isinstance(na_strings, dict):
+      #overwrite dictionary to ordered list of lists of na_strings
+      if not j["column_names"]: raise ValueError("column names should be specified")
+      if not set(na_strings.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in na_strings is not a subset of the column names")
+      j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
+      for name, na in na_strings.items():
+        idx = j["column_names"].index(name)
+        if isinstance(na, basestring): na = [na]
+        for n in na: j["na_strings"][idx].append(_quoted(n))
+    elif _is_list_of_lists(na_strings):
+      if len(na_strings) != len(j["column_types"]): raise ValueError("length of na_strings should be equal to the number of columns")
+      j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
+    elif isinstance(na_strings, list):
+      j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_names"])
+    else: #not a dictionary or list
+      raise ValueError("na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
+                       "names to strings which are to be interpreted as missing values")
 
+  #quote column names and column types also when not specified by user
+  if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
+  j["column_types"] = map(_quoted, j["column_types"])
   return j
 
 
-def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
+def parse(setup):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
 
   Parameters
   ----------
-  setup : dict 
+  setup : dict
     The result of calling parse_setup.
-  h2o_name : H2OFrame
-    The name of the H2O Frame on the back end.
-  first_line_is_header : int
-    -1 means data, 0 means guess, 1 means header.
 
 :return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
-  p = { 'destination_frame' : h2o_name,
-        'parse_type' : None,
-        'separator' : None,
-        'single_quotes' : None,
-        'check_header'  : None,
-        'number_columns' : None,
-        'chunk_size'    : None,
-        'delete_on_done' : True,
-        'blocking' : False,
+  p = { "destination_frame" : _py_tmp_key(),
+        "parse_type" : None,
+        "separator" : None,
+        "single_quotes" : None,
+        "check_header"  : None,
+        "number_columns" : None,
+        "chunk_size"    : None,
+        "delete_on_done" : True,
+        "blocking" : False,
+        "column_types" : None
         }
 
-  if setup["destination_frame"]:
-    setup["destination_frame"] = _quoted(setup["destination_frame"])
+  if setup["column_names"]: p["column_names"] = None
+  if setup["na_strings"]: p["na_strings"] = None
 
-  if isinstance(first_line_is_header, tuple):
-    first_line_is_header = setup["check_header"]
-
-  if isinstance(setup["separator"], basestring):
-    setup["separator"] = ord(setup["separator"])
-
-  if setup["column_names"]:
-    setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
-    p["column_names"] = None
-
-  if setup["column_types"]:
-    setup["column_types"] = [_quoted(name) for name in setup["column_types"]]
-    p["column_types"] = None
-
-  if setup["na_strings"]:
-    if _is_list_of_lists(setup["na_strings"]): setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
-    else:
-      setup["na_strings"] = [_quoted(na) for na in setup["na_strings"]] # quote the strings
-      setup["na_strings"] = '\"' + str(list(itertools.repeat(setup["na_strings"], len(setup["column_types"])))) + '\"'
-    p["na_strings"] = None
-
-
-  # update the parse parameters with the parse_setup values
   p.update({k: v for k, v in setup.iteritems() if k in p})
-
-  p["check_header"] = first_line_is_header
 
   # Extract only 'name' from each src in the array of srcs
   p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -221,7 +231,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   """
   id = setup["destination_frame"]
   fr = H2OFrame()
-  parsed = parse(setup, id, first_line_is_header)
+  parsed = parse(setup)
   fr._computed = True
   fr._id = id
   fr._keep = True
@@ -230,11 +240,11 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
-def _quoted(key, replace=True):
+def _quoted(key):
   if key == None: return "\"\""
   #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
-  key = key.replace("%", ".")
-  key = key.replace("&", ".")
+  # key = key.replace("%", ".")
+  # key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else '"' + key + '"'
   return key
@@ -288,7 +298,7 @@ def get_future_model(future_model):
 
   future_model : H2OModelFuture
     an H2OModelFuture object
-  
+
   :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
   """
   return h2o_model_builder._resolve_model(future_model)
@@ -303,7 +313,7 @@ def get_model(model_id):
   model_id : str
     The model identification in h2o
 
-  :return: H2OModel 
+  :return: H2OModel
 
   """
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
@@ -470,7 +480,7 @@ def download_pojo(model,path="", get_jar=True):
   path : str
     An absolute path to the directory where POJO should be saved.
   get_jar : bool
-    Retreive the h2o genmodel jar also. 
+    Retreive the h2o genmodel jar also.
 
   :return: None
   """
@@ -545,7 +555,7 @@ def save_model(model, path="", force=False):
   ----------
 
   model :  H2OModel
-    The model object to save. 
+    The model object to save.
   path : str
     A path to save the model at (hdfs, s3, local)
   force : bool
@@ -631,7 +641,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
 
-  
+
   :return: None
   """
   H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check)
@@ -716,14 +726,14 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   overwrite_with_best_model : bool
     Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
   validation_frame : H2OFrame
-    (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the 
+    (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the
     training data when nfolds = 0
   checkpoint : H2ODeepLearningModel
     "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
   autoencoder : bool
     Enable auto-encoder for model building.
   use_all_factor_levels : bool
-    Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable 
+    Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable
     importances and auto-enabled for autoencoder.
   activation : str
     A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
@@ -732,7 +742,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   epochs : float
     How many times the dataset should be iterated (streamed), can be fractional
   train_samples_per_iteration : int
-    Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data); 
+    Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
     or -2 auto-tuning (default)
   seed : int
     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
@@ -773,7 +783,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   loss : str
     Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute" (experimental) or "Huber" (experimental)
   distribution : str
-     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", 
+     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace",
      "huber" or "gaussian"
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
@@ -798,14 +808,14 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   balance_classes : bool
     Balance training data class counts via over/under-sampling (for imbalanced data)
   class_sampling_factors : list
-    Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to 
+    Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to
     obtain class balance during training. Requires balance_classes.
   max_after_balance_size : float
     Maximum relative size of the training data after balancing class counts (can be less than 1.0)
-  score_validation_sampling : 
+  score_validation_sampling :
     Method used to sample validation dataset for scoring
   diagnostics : bool
-    Enable diagnostics for hidden layers  
+    Enable diagnostics for hidden layers
   variable_importances : bool
     Compute variable importances for input features (Gedeon method) - can be slow for large networks)
   fast_mode : bool
@@ -882,7 +892,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     checkpoint : H2ODeepLearningModel
       "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
     use_all_factor_levels : bool
-      Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). 
+      Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy).
       Useful for variable importances and auto-enabled for autoencoder.
     activation : str
       A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
@@ -891,11 +901,11 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     epochs : float
       How many times the dataset should be iterated (streamed), can be fractional
     train_samples_per_iteration : int
-      Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data 
+      Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data
       (e.g., replicated training data); or -2 auto-tuning (default)
     seed : int
       Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
-    adaptive_rate : bool   
+    adaptive_rate : bool
       Logical. Adaptive learning rate (ADAELTA)
     rho : float
       Adaptive learning rate time decay factor (similarity to prior updates)
@@ -915,8 +925,8 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
       Final momentum after the amp is over (try 0.99)
     nesterov_accelerated_gradient : bool
       Logical. Use Nesterov accelerated gradient (recommended)
-    input_dropout_ratio : float   
-      A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling). 
+    input_dropout_ratio : float
+      A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
     hidden_dropout_ratios : float
       Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
     l1 : float
@@ -932,7 +942,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     loss : str
       Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute" (experimental) or "Huber" (experimental)
     distribution : str
-      A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", 
+      A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma",
       "tweedie", "laplace", "huber" or "gaussian"
     tweedie_power : float
       Tweedie power (only for Tweedie distribution, must be between 1 and 2)
@@ -955,10 +965,10 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     balance_classes : bool
       Balance training data class counts via over/under-sampling (for imbalanced data)
     class_sampling_factors : list
-      Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain 
+      Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain
       class balance during training. Requires balance_classes.
     max_after_balance_size : float
-      Maximum relative size of the training data after balancing class counts (can be less than 1.0)      
+      Maximum relative size of the training data after balancing class counts (can be less than 1.0)
     diagnostics : bool
       Enable diagnostics for hidden layers
     variable_importances : bool
@@ -976,10 +986,10 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     shuffle_training_data : bool
       Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes
     sparse : bool
-      Sparse data handling (Experimental)  
+      Sparse data handling (Experimental)
     col_major : bool
       Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental)
-    average_activation : float 
+    average_activation : float
       Average activation for sparse auto-encoder (Experimental)
     sparsity_beta : float
       Sparsity regularization (Experimental)
@@ -991,9 +1001,9 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
       Whether to export Neural Network weights and biases to H2O Frames"
 
   :return: H2OAutoEncoderModel
- 
- 
-  
+
+
+
   """
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
@@ -1003,7 +1013,8 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
         distribution=None,tweedie_power=None,ntrees=None,max_depth=None,min_rows=None,
-        learn_rate=None,nbins=None,nbins_cats=None,validation_frame=None,
+        learn_rate=None,sample_rate=None,col_sample_rate=None,nbins=None,
+        nbins_top_level=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
         score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None):
@@ -1034,11 +1045,17 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   min_rows : int
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
-    An integer from 0.0 to 1.0
+    Learning rate (from 0.0 to 1.0)
+  sample_rate : float
+    Row sample rate (from 0.0 to 1.0)
+  col_sample_rate : float
+    Column sample rate (from 0.0 to 1.0)
   nbins : int
-    For numerical columns (real/int), build a histogram of this many bins, then split at the best point
+    For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+  nbins_top_level : int
+    For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
   nbins_cats : int
-    For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+    For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
   validation_frame : H2OFrame
     An H2OFrame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when nfolds = 0
   balance_classes : bool
@@ -1098,7 +1115,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   max_iterations : int
     A non-negative integer specifying the maximum number of iterations.
   beta_epsilon : int
-     A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations. 
+     A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
      Defines the convergence criterion for h2o.glm.
   solver : str
     A character string specifying the solver used: IRLSM (supports more features), L_BFGS (scales better for datasets with many columns)
@@ -1129,7 +1146,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
 
   Lambda : float
-    A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in the objective function. 
+    A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in the objective function.
     When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear models are fit.
   prior : float
     (Optional) A numeric specifying the prior probability of class 1 in the response when family = "binomial". The default prior is the observational frequency of class 1.
@@ -1138,10 +1155,10 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   nlambdas : int
     The number of lambda values to use when lambda_search = TRUE.
   lambda_min_ratio : float
-    Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the the number of 
+    Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the the number of
     variables then lambda_min_ratio = 0.0001; if the number of observations is less than the number of variables then lambda_min_ratio = 0.01.
   beta_constraints : H2OFrame
-    A data.frame or H2OParsedData object with the columns ["names", "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor 
+    A data.frame or H2OParsedData object with the columns ["names", "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
     in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower and upper bounds of beta, and "beta_given" is some supplied starting
     values for the
   offset_column : H2OFrame
@@ -1161,8 +1178,8 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   max_active_predictors : int
     (Optional) Convergence criteria for number of predictors when using L1 penalty.
 
-   
-  
+
+
   Returns: A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand (if
   it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a H2ORegressionModel is
   returned). The default print-out of the models is shown, but further GLM-specifc information can be queried out of
@@ -1231,10 +1248,10 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
-                  build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_cats=None,
-                  binomial_double_trees=None,validation_frame=None,balance_classes=None,max_after_balance_size=None,
-                  seed=None,offset_column=None,weights_column=None,nfolds=None,fold_column=None,fold_assignment=None,
-                  keep_cross_validation_predictions=None,checkpoint=None):
+                  build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
+                  nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
+                  max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
+                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,checkpoint=None):
   """
   Build a Big Data Random Forest Model
   Builds a Random Forest Model on an H2OFrame
@@ -1252,7 +1269,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
   model_id : str
     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
   mtries : int
-    Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification, and p/3 for regression, 
+    Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
     where p is the number of predictors.
   sample_rate : float
     Sample rate, from 0 to 1.0.
@@ -1265,9 +1282,11 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
   min_rows : int
     Minimum number of rows to assign to teminal nodes.
   nbins : int
-    For numerical columns (real/int), build a histogram of this many bins, then split at the best point.
+    For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+  nbins_top_level : int
+    For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
   nbins_cats : int
-    For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
+    For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
   binomial_double_trees : bool
     or binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
   validation_frame : H2OFrame
@@ -1320,12 +1339,12 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   seed : int
     (Optional) Random seed used to initialize the right singular vectors at the beginning of each power method iteration.
   use_all_factor_levels : bool
-    (Optional) A logical value indicating whether all factor levels should be included in each categorical column expansion. 
+    (Optional) A logical value indicating whether all factor levels should be included in each categorical column expansion.
     If FALSE, the indicator column corresponding to the first factor level of every categorical variable will be dropped. Defaults to FALSE.
   pca_method : str
     A character string that indicates how PCA should be calculated.
-    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
-    "Power": computation of the SVD using the power iteration method, "GLRM": fit a generalized low rank model with an l2 loss function 
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
+    "Power": computation of the SVD using the power iteration method, "GLRM": fit a generalized low rank model with an l2 loss function
     (no regularization) and solve for the SVD using local matrix algebra.
 
   :return: a new dim reduction model
@@ -1343,11 +1362,11 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   ----------
 
   nv : int
-    The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame), snrow(training_frame)) inclusive. 
+    The number of right singular vectors to be computed. This must be between 1 and min(ncol(training_frame), snrow(training_frame)) inclusive.
   max_iterations : int
     The maximum number of iterations to run each power iteration loop. Must be between 1 and
     1e6 inclusive.max_iterations The maximum number of iterations to run each power iteration loop. Must be between 1
-    and 1e6 inclusive.   
+    and 1e6 inclusive.
   transform : str
     A character string that indicates how the training data should be transformed before running SVD.
     Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
@@ -1356,14 +1375,14 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   seed : int
     (Optional) Random seed used to initialize the right singular vectors at the beginning of each power method iteration.
   use_all_factor_levels : bool
-    (Optional) A logical value indicating whether all factor levels should be included in each categorical column expansion. 
+    (Optional) A logical value indicating whether all factor levels should be included in each categorical column expansion.
     If FALSE, the indicator column corresponding to the first factor level of every categorical variable will be dropped. Defaults to TRUE.
   svd_method : str
     A character string that indicates how SVD should be calculated.
-    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
     "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
-  
- 
+
+
   :return: a new dim reduction model
   """
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
@@ -1377,14 +1396,14 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
          user_y=None,user_x=None,recover_svd=None):
   """
   Builds a generalized low rank model of a H2O dataset.
-  
+
   Parameters
   ----------
-  
+
   k : int
     The rank of the resulting decomposition. This must be between 1 and the number of columns in the training frame inclusive.
   max_iterations : int
-    The maximum number of iterations to run the optimization loop. Each iteration consists of an update of the X matrix, followed by an 
+    The maximum number of iterations to run the optimization loop. Each iteration consists of an update of the X matrix, followed by an
     update of the Y matrix.
   transform : str
     A character string that indicates how the training data should be transformed before running GLRM.
@@ -1402,39 +1421,43 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   multi_loss : str
     A character string indicating the default loss function for enum columns. Possible values are "Categorical" and "Ordinal".
   loss_by_col : str
-    (Optional) A list of strings indicating the loss function for specific columns by corresponding index in loss_by_col_idx. 
+    (Optional) A list of strings indicating the loss function for specific columns by corresponding index in loss_by_col_idx.
     Will override loss for numeric columns and multi_loss for enum columns.
   loss_by_col_idx : str
     (Optional) A list of column indices to which the corresponding loss functions in loss_by_col are assigned. Must be zero indexed.
   regularization_x : str
-    A character string indicating the regularization function for the X matrix. Possible values are "None" (default), "Quadratic", 
+    A character string indicating the regularization function for the X matrix. Possible values are "None" (default), "Quadratic",
     "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", and "Simplex".
   regularization_y : str
-    A character string indicating the regularization function for the Y matrix. Possible values are "None" (default), "Quadratic", 
+    A character string indicating the regularization function for the Y matrix. Possible values are "None" (default), "Quadratic",
     "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", and "Simplex".
   gamma_x : float
     The weight on the X matrix regularization term.
   gamma_y : float
     The weight on the Y matrix regularization term.
   init_step_size : float
-    Initial step size. Divided by number of columns in the training frame when calculating the proximal gradient update. The algorithm 
+    Initial step size. Divided by number of columns in the training frame when calculating the proximal gradient update. The algorithm
     begins at init_step_size and decreases the step size at each iteration until a termination condition is reached.
   min_step_size : float
     Minimum step size upon which the algorithm is terminated.
   init : str
-    A character string indicating how to select the initial Y matrix. 
-    Possible values are "Random": for initialization to a random array from the standard normal distribution, "PlusPlus": for initialization 
-    using the clusters from k-means++ initialization, "SVD": for initialization using the first k (approximate) right singular vectors, and 
+    A character string indicating how to select the initial X and Y matrices.
+    Possible values are "Random": for initialization to a random array from the standard normal distribution, "PlusPlus": for initialization
+    using the clusters from k-means++ initialization, "SVD": for initialization using the first k (approximate) right singular vectors, and
     "User": user-specified initial X and Y frames (must set user_y and user_x arguments).
   svd_method : str
     A character string that indicates how SVD should be calculated during initialization.
-    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package, 
+    Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
     "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
+  user_x : H2OFrame
+    (Optional) An H2OFrame object specifying the initial X matrix. Only used when init = "User".
+  user_y : H2OFrame
+    (Optional) An H2OFrame object specifying the initial Y matrix. Only used when init = "User".
   recover_svd : bool
-    A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized 
+    A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
     low rank decomposition.
-  
-  
+
+
   :return: a new dim reduction model
   """
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
@@ -1480,7 +1503,7 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,vali
     Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   keep_cross_validation_predictions :  bool
     Whether to keep the predictions of the cross-validation models
-  
+
   :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
   """
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
@@ -1526,7 +1549,7 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
   response_factors : int
     If has_response == TRUE, then this is the number of factor levels in the response column.
   has_response : bool
-    A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number 
+    A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number
     of columns will be cols+1.
   seed : int
     A seed used to generate random values when randomize = TRUE.
@@ -1571,7 +1594,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     Whether to create pairwise interactions between factors (otherwise create one higher-order interaction). Only applicable if there are 3 or more factors.
   max_factors : int
     Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all factor will be made)
-  min_occurrence : int 
+  min_occurrence : int
     Min. occurrence threshold for factor levels in pair-wise interaction terms
   destination_frame : str
     A string indicating the destination key. If empty, this will be auto-generated by H2O.
@@ -1606,7 +1629,7 @@ def locate(path):
   ----------
   path : str
     Path to search for
-  
+
   :return: Absolute path if it is found.  None otherwise.
   """
 
@@ -1661,7 +1684,7 @@ def as_list(data, use_pandas=True):
 
   :return: List of list (Rows x Columns).
   """
-  return H2OFrame.as_data_frame(data, use_pandas)
+  return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
 
 
 def set_timezone(tz):
@@ -1809,7 +1832,7 @@ def h2o_deprecated(newfun=None):
       print
       print
       warnings.warn(m, category=DeprecationWarning, stacklevel=2)
-      return fun(*args, **kwargs)
+      return newfun(*args, **kwargs)
     return i
   return o
 

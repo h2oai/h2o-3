@@ -20,7 +20,7 @@ test.pubdev.1846.deeplearning <- function(conn){
   gg_size <- length(gg@failed_params)
   expect_equal(grid_space_size, gg_size)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1846", test.pubdev.1846.deeplearning)

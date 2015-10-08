@@ -57,7 +57,7 @@ test.checkpointing <- function() {
   } else if ( problem == 1) { expect_mm_binomial_equal(a, b)
   } else {                    expect_mm_multinomial_equal(a, b) }
 
-  testEnd()
+  
 }
 
 expect_mm_regression_equal <- function(a, b, msg) {

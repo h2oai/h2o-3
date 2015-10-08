@@ -10,7 +10,7 @@ test.na.strings <- function() {
     fhex_na_strings <- h2o.importFile(path, na.strings=list(NULL, c("fish"), NULL))
     expect_equal(sum(sapply(1:ncol(fhex_na_strings), function (c) sum(is.na(fhex_na_strings[,c])))), 2)
 
-    testEnd()
+    
 }
 
 doTest("NA strings", test.na.strings)
