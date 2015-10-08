@@ -5,15 +5,19 @@ debug_rest = False
 verbosity = 0  # 0, 1, 2, 3
 
 def setVerbosity(level):
+    global verbosity
     verbosity = level
 
 def isVerbose():
+    global verbosity
     return True if verbosity > 0 else False
 
 def isVerboser():
+    global verbosity
     return True if verbosity > 1 else False
 
 def isVerbosest():
+    global verbosity
     return True if verbosity > 2 else False
 
 def sleep(secs):
