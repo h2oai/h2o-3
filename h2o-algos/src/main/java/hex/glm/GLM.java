@@ -346,7 +346,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       _tInfos = new GLMTaskInfo[_parms._nfolds + 1];
-      InitTsk itsk = new InitTsk(0, _parms._intercept, null);
+      InitTsk itsk = new InitTsk(0, _parms._intercept);
       H2O.submitTask(itsk).join();
 
       assert itsk._nobs == 0 || itsk._gtNull != null;
@@ -445,6 +445,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private class InitTsk extends H2OCountedCompleter {
     final int _foldId;
     final boolean _intercept;
+    public InitTsk(int foldId, boolean intercept) { super(true); _foldId = foldId; _intercept = intercept; }
     public InitTsk(int foldId, boolean intercept, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId; _intercept = intercept; }
     long _nobs;
     double _ymu;
@@ -781,7 +782,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       _parms.read_lock_frames(GLM.this);
       //todo: fill in initialization for n-folds
-      new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
+      H2O.submitTask(new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]));
     }
     private class LambdaSearchIteration extends H2O.H2OCallback {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }

@@ -1,7 +1,6 @@
 import warnings
 warnings.simplefilter('always', DeprecationWarning)
 import os
-import functools
 import os.path
 import re
 import urllib
@@ -121,7 +120,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
   if destination_frame: j["destination_frame"] = _quoted(destination_frame).replace("%",".").replace("&",".") # TODO: really should be url encoding...
-  if not isinstance(header, tuple):
+  if header != (-1, 0, 1):
     if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
     j["check_header"] = header
   if separator:
@@ -165,7 +164,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
       if len(na_strings) != len(j["column_types"]): raise ValueError("length of na_strings should be equal to the number of columns")
       j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
     elif isinstance(na_strings, list):
-      j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_names"])
+      j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_types"])
     else: #not a dictionary or list
       raise ValueError("na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
                        "names to strings which are to be interpreted as missing values")
@@ -176,7 +175,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   return j
 
 
-def parse(setup):
+def _parse(setup):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
 
@@ -222,26 +221,24 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
 
   setup : dict
     Result of h2o.parse_setup
-  id : str
-    An optional id for the frame.
-  first_line_is_header : int
+  id : str, optional
+    An id for the frame.
+  first_line_is_header : int, optional
     -1,0,1 if the first line is to be used as the header
 
  :return: An H2OFrame object
   """
-  id = setup["destination_frame"]
+  if id: setup["destination_frame"] = _quoted(id).replace("%",".").replace("&",".")
+  if first_line_is_header != (-1, 0, 1):
+    if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
+    setup["check_header"] = first_line_is_header
+  parsed = _parse(setup)
   fr = H2OFrame()
-  parsed = parse(setup)
-  fr._computed = True
-  fr._id = id
-  fr._keep = True
-  fr._nrows = int(H2OFrame(expr=ExprNode("nrow", fr))._scalar())  #parsed['rows']
-  fr._ncols = parsed["number_columns"]
-  fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
+  fr._update_post_parse(parsed)
   return fr
 
 def _quoted(key):
-  if key == None: return "\"\""
+  if key is None: return "\"\""
   #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
   # key = key.replace("%", ".")
   # key = key.replace("&", ".")
@@ -1825,28 +1822,36 @@ def can_use_pandas():
 
 def h2o_deprecated(newfun=None):
   def o(fun):
-    if newfun is not None: m = "{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__)
-    else:                  m = "{} is deprecated.".format(fun.__name__)
-    @functools.wraps(fun)
     def i(*args, **kwargs):
-      print
-      print
-      warnings.warn(m, category=DeprecationWarning, stacklevel=2)
+      print '\n'
+      if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
+      warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
       return newfun(*args, **kwargs)
     return i
   return o
 
 @h2o_deprecated(import_file)
-def import_frame(path=None):
+def import_frame():
   """
   Deprecated for import_file.
 
   Parameters
   ----------
   path : str
-    A path specifiying the location of the data to import.
+    A path specifying the location of the data to import.
 
   :return: A new H2OFrame
   """
-  warnings.warn("deprecated: Use import_file", DeprecationWarning)
-  return import_file(path)
+
+@h2o_deprecated()
+def parse():
+  """
+  External use of parse is deprecated. parse has been renamed _parse for internal use.
+
+  Parameters
+  ----------
+  setup : dict
+    The result of calling parse_setup.
+
+  :return: A new H2OFrame
+  """

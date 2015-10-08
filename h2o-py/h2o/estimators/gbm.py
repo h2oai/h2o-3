@@ -3,9 +3,10 @@ from .estimator_base import H2OEstimator
 
 class H2OGradientBoostingEstimator(H2OEstimator):
   """
-  Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
-  The default distribution function will guess the model type based on the response column typerun properly the
-  response column must be an numeric for "gaussian" or an enum for "bernoulli" or "multinomial".
+  Builds gradient boosted classification trees, and gradient boosted regression trees on
+  a parsed data set. The default distribution function will guess the model type based on
+  the response column type run properly the response column must be an numeric for
+  "gaussian" or an enum for "bernoulli" or "multinomial".
 
   Parameters
   ----------

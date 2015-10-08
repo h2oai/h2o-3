@@ -1,5 +1,9 @@
 package hex;
 
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.AbstractPredictException;
+import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
 
 import java.io.ByteArrayOutputStream;
@@ -261,7 +265,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         count++;
       }
-      xs ^= (train() == null ? 43 : train().checksum()) * (_valid == null ? 17 : valid().checksum());
+      xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }
   }
@@ -1121,6 +1125,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Compare predictions, counting mis-predicts
       int miss = 0;
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+
+        // Native Java API
         for( int col=0; col<features.length; col++ ) // Build feature set
           features[col] = dvecs[col].at(row);
         genmodel.score0(features,predictions);            // POJO predictions
@@ -1132,6 +1138,65 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
           }
         }
+
+        // EasyPredict API
+        RowData rowData = new RowData();
+        for( int col=0; col<features.length; col++ ) {
+          double val = dvecs[col].at(row);
+          rowData.put(
+                  genmodel._names[col],
+                  genmodel._domains[col] == null ? (Double) val
+                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel");
+        }
+        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
+        AbstractPrediction p=null;
+
+        if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) {
+          continue;
+        }
+
+        try { p = epmw.predictClustering(rowData); } catch (AbstractPredictException e) { }
+        try { if (p==null) p = epmw.predictRegression(rowData); } catch (AbstractPredictException e) { }
+        try { if (p==null) p = epmw.predictBinomial(rowData); } catch (AbstractPredictException e) { }
+        try { if (p==null) p = epmw.predictMultinomial(rowData); } catch (AbstractPredictException e) { }
+        if  (p==null) continue;
+        miss=0;
+        int oldmiss=0;
+        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+          double d = pvecs[col].at(row);                  // Load internal scoring predictions
+          if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
+
+          if (genmodel.getModelCategory() == ModelCategory.Clustering) {
+            if (!MathUtils.compare(((ClusteringModelPrediction) p).cluster, d, 1e-15, rel_epsilon))
+              miss++;
+          }
+          if (genmodel.getModelCategory() == ModelCategory.Regression) {
+            if (!MathUtils.compare(((RegressionModelPrediction) p).value, d, 1e-15, rel_epsilon))
+              miss++;
+          }
+          if (genmodel.getModelCategory() == ModelCategory.Binomial) {
+            if (col == 0) {
+              if (!MathUtils.compare(((BinomialModelPrediction) p).labelIndex, d, 1e-15, rel_epsilon))
+                miss++;
+            } else {
+              if (!MathUtils.compare(((BinomialModelPrediction) p).classProbabilities[col-1], d, 1e-15, rel_epsilon))
+                miss++;
+            }
+          }
+          if (genmodel.getModelCategory() == ModelCategory.Multinomial) {
+            if (col == 0) {
+              if (!MathUtils.compare(((MultinomialModelPrediction) p).labelIndex, d, 1e-15, rel_epsilon))
+                miss++;
+            } else {
+              if (!MathUtils.compare(((MultinomialModelPrediction) p).classProbabilities[col-1], d, 1e-15, rel_epsilon))
+                miss++;
+            }
+          }
+          if (miss > oldmiss)
+            System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+          oldmiss = miss;
+        }
+
       }
       if (miss != 0) System.err.println("Number of mismatches: " + miss);
       return miss==0;

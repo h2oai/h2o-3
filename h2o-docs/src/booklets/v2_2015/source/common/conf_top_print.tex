@@ -20,6 +20,10 @@
 \usepackage{lipsum}% http://ctan.org/pkg/lipsum
 \usepackage{listings}% http://ctan.org/pkg/listings
 \usepackage{spverbatim}
+\usepackage{hyperref}
+\usepackage{xcolor} 
+\usepackage[scaled=1]{couriers}
+\xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 
 \Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
 \usepackage{microtype}
 \hypersetup{colorlinks=false}
@@ -30,6 +34,8 @@
 \titleformat{\section}{\normalfont\bfseries}{\thesection}{1em}{}
 \titlespacing*{\section}{0pt}{*2}{0pt}
 \titlespacing*{\subsection}{0pt}{*2}{0pt}
+\usepackage[square, sort, comma, numbers]{natbib} %%uses titles for cited references
+
 %\usepackage[square,authoryear,sort&compress]{natbib}
 %[square, sort, comma, numbers]{natbib} %%uses titles for cited references
 
@@ -39,4 +45,6 @@
 \xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 
 \usepackage{setspace}
 \usepackage{adjustbox} 
-\usepackage{nowidow} %prevent widows/orphans [all,defaultlines]
+\usepackage[all]{nowidow} %prevent widows/orphans [all,defaultlines]
+\usepackage{standalone}
+

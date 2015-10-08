@@ -663,6 +663,12 @@ public class Vec extends Keyed<Vec> {
   @Override protected long checksum_impl() { return rollupStats()._checksum;}
 
 
+  private static class SetMutating extends TAtomic<RollupStats> {
+    @Override protected RollupStats atomic(RollupStats rs) {
+      return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
+    }
+  }
+
   /** Begin writing into this Vec.  Immediately clears all the rollup stats
    *  ({@link #min}, {@link #max}, {@link #mean}, etc) since such values are
    *  not meaningful while the Vec is being actively modified.  Can be called
@@ -677,23 +683,21 @@ public class Vec extends Keyed<Vec> {
       if( rs.isMutating() ) return; // Vector already locked against rollups
     }
     // Set rollups to "vector isMutating" atomically.
-    new TAtomic<RollupStats>() {
-      @Override protected RollupStats atomic(RollupStats rs) {
-        return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
-      }
-    }.invoke(rskey);
+    new SetMutating().invoke(rskey);
   }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be
    *  computed. */
   public Futures postWrite( Futures fs ) {
     // Get the latest rollups *directly* (do not compute them!).
-    final Key rskey = rollupStatsKey();
-    Value val = DKV.get(rollupStatsKey());
-    if( val != null ) {
-      RollupStats rs = val.get(RollupStats.class);
-      if( rs.isMutating() )  // Vector was mutating, is now allowed for rollups
-        DKV.remove(rskey,fs);// Removing will cause them to be rebuilt, on demand
+    if (writable()) { // skip this for immutable vecs (like FileVec)
+      final Key rskey = rollupStatsKey();
+      Value val = DKV.get(rollupStatsKey());
+      if (val != null) {
+        RollupStats rs = val.get(RollupStats.class);
+        if (rs.isMutating())  // Vector was mutating, is now allowed for rollups
+          DKV.remove(rskey, fs);// Removing will cause them to be rebuilt, on demand
+      }
     }
     return fs;                  // Flow-coding
   }
