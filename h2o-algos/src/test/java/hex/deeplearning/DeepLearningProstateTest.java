@@ -51,13 +51,13 @@ public class DeepLearningProstateTest extends TestUtil {
           if (classification && !frame.vec(resp).isCategorical()) {
             DKV.remove(frame._key);
             String respname = frame.name(resp);
-            Vec r = frame.vec(respname).toCategorical();
+            Vec r = frame.vec(respname).toCategoricalVec();
             frame.remove(respname).remove();
             frame.add(respname, r);
             DKV.put(frame);
 
             DKV.remove(vframe._key);
-            Vec vr = vframe.vec(respname).toCategorical();
+            Vec vr = vframe.vec(respname).toCategoricalVec();
             vframe.remove(respname).remove();
             vframe.add(respname, vr);
             DKV.put(vframe);

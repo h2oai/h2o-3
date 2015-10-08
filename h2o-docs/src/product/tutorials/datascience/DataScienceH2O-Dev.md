@@ -358,7 +358,7 @@ Relative to P, the larger that (N/CPUs) becomes, the more trivial p becomes to t
 
    &nbsp;&nbsp;&nbsp;&nbsp;\(Complexity = O(p^3 + N*p^2)\) 
 
-
+For more information about how GLM works, refer to the [Generalized Linear Modeling booklet](http://h2o.ai/resources). 
 
 
 ###References
@@ -439,7 +439,7 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
 
-- **nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  
+- **nbins_cats**: (Categorical/enums only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  The levels are ordered alphabetically; if there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.
 
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
@@ -956,13 +956,17 @@ There was some code cleanup and refactoring to support the following features:
 
 - **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
 
-- **nbins_cats**: (Categorical/enums only) Specify the number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.   
+- **nbins_cats**: (Categorical/enums only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  The levels are ordered alphabetically; if there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.  
 
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **learn_rate**: Specify the learning rate. The range is 0.0 to 1.0. 
 
 - **distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
+
+- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
+
+- **col\_sample_rate**: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
 
 - **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
@@ -1082,6 +1086,8 @@ val weight
 3.5    0
 
 The above vec has a real-valued type if passed as a whole, but if the zero-weighted rows are sliced away first, the integer weight is used. The resulting histogram is either kept at full `nbins` resolution or potentially shrunk to the discrete integer range, which affects the split points. 
+
+For more information about the GBM algorithm, refer to the [Gradient Boosted Machines booklet](http://h2o.ai/resources). 
 
 ###References
 
@@ -1348,7 +1354,7 @@ To compute deviance for a Deep Learning regression model, the following formula 
 Loss = Quadratic -> MSE==Deviance
 For Absolute/Laplace or Huber -> MSE != Deviance
 
-For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](https://leanpub.com/deeplearning/read). 
+For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](http://h2o.ai/resources). 
 
 ###References
 

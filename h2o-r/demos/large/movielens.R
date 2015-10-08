@@ -20,7 +20,7 @@ readMultiChar <- function(fileName, separators) {
 locate       <- h2o:::.h2o.locate
 pathToData   <- locate("smalldata/demos/movielens_1m.zip")
 pathToMovies <- locate("smalldata/demos/movies.dat")
-movieInfo    <- readMultiChar(pathToMovies, separators = "::")
+# movieInfo    <- readMultiChar(pathToMovies, separators = "::")
 print("Importing MovieLens 1M dataset into H2O...")
 ratings.hex <- h2o.importFile(path = pathToData, header = TRUE, destination_frame = "ratings.hex")
 
@@ -82,7 +82,8 @@ ratings_new.hex <- as.h2o(t(data.frame(ratings_new.df)))
 
 ## Run GLRM on new user rating vector with initial Y from previous model
 ratings_new.glrm <- h2o.glrm(ratings_new.hex, k = 15, ignore_const_cols = FALSE, transform = "NONE", 
-                             init = ratings.y, loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", 
+                             init = "User", user_y = ratings.y, loss = "Quadratic", 
+                             regularization_x = "Quadratic", regularization_y = "Quadratic", 
                              gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000)
 ratings_new.glrm
 

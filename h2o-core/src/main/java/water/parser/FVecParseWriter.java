@@ -11,10 +11,10 @@ import water.fvec.Vec;
  * @author tomasnykodym
  */
 public class FVecParseWriter extends Iced implements StreamParseWriter {
-  protected transient NewChunk[] _nvs;
   protected AppendableVec[] _vecs;
-  protected final Categorical[] _categoricals;
-  protected final transient byte[] _ctypes;
+  protected transient NewChunk[] _nvs;
+  protected transient final Categorical [] _categoricals;
+  protected transient final byte[] _ctypes;
   long _nLines;
   int _nCols;
   int _col = -1;
@@ -55,7 +55,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   }
   @Override public FVecParseWriter close(Futures fs){
     if( _nvs == null ) return this; // Might call close twice
-    for(NewChunk nv:_nvs) nv.close(_cidx, fs);
+    for(int i=0; i < _nvs.length; i++) {
+      _nvs[i].close(_cidx, fs);
+      _nvs[i] = null; // free immediately, don't wait for all columns to close
+    }
     _nvs = null;  // Free for GC
     return this;
   }

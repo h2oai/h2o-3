@@ -31,7 +31,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("randomForest",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+    doJavapredictTest("randomForest",test_file,test_frame,params)
 }
 
 doTest("RF test", test.drf.javapredict.chess)

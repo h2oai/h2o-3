@@ -12,7 +12,7 @@ def checkpoint_new_category_in_response():
     # attempt to continue building model, but with an expanded categorical response domain.
     # this should fail
     try:
-        m2 = h2o.gbm(x=iris[[0,1,2,3]], y=iris[4], ntrees=200, checkpoint=m1.id)
+        m2 = h2o.gbm(x=iris[[0,1,2,3]], y=iris[4], ntrees=200, checkpoint=m1.model_id)
         assert False, "Expected continued model-building to fail with new categories introduced in response"
     except EnvironmentError:
         pass

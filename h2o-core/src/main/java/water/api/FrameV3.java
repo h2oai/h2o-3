@@ -204,7 +204,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   FrameV3(Key frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   FrameV3(Frame fr) {
-    this(fr, 1, (int)fr.numRows(), 0, 0); // NOTE: possible row len truncation
+    this(fr, 1, (int) fr.numRows(), 0, 0); // NOTE: possible row len truncation
   }
 
   FrameV3(Frame f, long row_offset, int row_count) {
@@ -286,36 +286,15 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
 
 
   private String formatCell( double d, String str, ColV3 c, int precision ) {
-    if( Double.isNaN(d) ) return "-";
-    if( c.domain!=null ) return c.domain[(int)d];
-    if( "uuid".equals(c.type) || "string".equals(c.type)) {
+    if (Double.isNaN(d)) return "-";
+    if (c.domain != null) return c.domain[(int) d];
+    if ("uuid".equals(c.type) || "string".equals(c.type)) {
       // UUID and String handling
-      if( str==null ) return "-";
-      return "<b style=\"font-family:monospace;\">"+str+"</b>";
+      if (str == null) return "-";
+      return "<b style=\"font-family:monospace;\">" + str + "</b>";
+    } else {
+      Chunk chk = c._vec.chunkForRow(row_offset);
+      return PrettyPrint.number(chk, d, precision);
     }
-
-    long l = (long)d;
-    if( (double)l == d ) return Long.toString(l);
-    if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
-    Chunk chk = c._vec.chunkForRow(row_offset);
-    Class Cc = chk.getClass();
-    if( Cc == C1SChunk.class ) return x2(d,((C1SChunk)chk).scale());
-    if( Cc == C2SChunk.class ) return x2(d,((C2SChunk)chk).scale());
-    if( Cc == C4SChunk.class ) return x2(d,((C4SChunk)chk).scale());
-    return Double.toString(d);
-  }
-
-  private static String x2( double d, double scale ) {
-    String s = Double.toString(d);
-    // Double math roundoff error means sometimes we get very long trailing
-    // strings of junk 0's with 1 digit at the end... when we *know* the data
-    // has only "scale" digits.  Chop back to actual digits
-    int ex = (int)Math.log10(scale);
-    int x = s.indexOf('.');
-    int y = x+1+(-ex);
-    if( x != -1 && y < s.length() ) s = s.substring(0,x+1+(-ex));
-    while( s.charAt(s.length()-1)=='0' )
-      s = s.substring(0,s.length()-1);
-    return s;
   }
 }

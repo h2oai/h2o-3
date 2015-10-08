@@ -341,25 +341,16 @@ public class Vec extends Keyed<Vec> {
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
-    int nchunks = (int)Math.max(1,len >> log_rows_per_chunk);
+    int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
+    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
+    int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
     long[] espc = new long[nchunks+1];
-    for( int i=0; i<nchunks; i++ )
-      espc[i] = ((long)i)<<log_rows_per_chunk;
+    espc[0] = 0;
+    for( int i=1; i<nchunks; i++ )
+      espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    Vec v0 = makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
-    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), v0.length());
-    if( redistribute && v0.nChunks() < chunks && v0.length() > 10*chunks ) { // Rebalance
-      Key newKey = Key.make(Key.rand()+".makeConRebalance" + chunks);
-      Frame f = new Frame(v0);
-      RebalanceDataSet rb = new RebalanceDataSet(f, newKey, chunks);
-      H2O.submitTask(rb);
-      rb.join();
-      Keyed.remove(v0._key);
-      v0 = (((Frame)DKV.getGet(newKey)).anyVec()).makeCopy(); // this is gross.
-      Keyed.remove(newKey);
-    }
-    return v0;
+    return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
   }
 
   /** Make a new vector with the same size and data layout as the current one,
@@ -677,6 +668,12 @@ public class Vec extends Keyed<Vec> {
   @Override protected long checksum_impl() { return rollupStats()._checksum;}
 
 
+  private static class SetMutating extends TAtomic<RollupStats> {
+    @Override protected RollupStats atomic(RollupStats rs) {
+      return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
+    }
+  }
+
   /** Begin writing into this Vec.  Immediately clears all the rollup stats
    *  ({@link #min}, {@link #max}, {@link #mean}, etc) since such values are
    *  not meaningful while the Vec is being actively modified.  Can be called
@@ -691,11 +688,7 @@ public class Vec extends Keyed<Vec> {
       if( rs.isMutating() ) return; // Vector already locked against rollups
     }
     // Set rollups to "vector isMutating" atomically.
-    new TAtomic<RollupStats>() {
-      @Override protected RollupStats atomic(RollupStats rs) {
-        return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
-      }
-    }.invoke(rskey);
+    new SetMutating().invoke(rskey);
   }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be
@@ -1071,7 +1064,7 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link CategoricalWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new categorical Vec  */
-//  public CategoricalWrappedVec toCategorical() {
+//  public CategoricalWrappedVec toCategoricalVec() {
 //    if( isCategorical() ) return adaptTo(domain()); // Use existing domain directly
 //    if( !isInt() ) throw new IllegalArgumentException("Categorical conversion only works on integer columns");
 //    int min = (int) min(), max = (int) max();
@@ -1084,7 +1077,7 @@ public class Vec extends Keyed<Vec> {
 
   /** Create a new Vec (as opposed to wrapping it) that is the categorical'ified version of the original.
    *  The original Vec is not mutated.  */
-  public Vec toCategorical() {
+  public Vec toCategoricalVec() {
     if( isCategorical() ) return makeCopy(domain());
     if( !isInt() ) throw new IllegalArgumentException("Categorical conversion only works on integer columns");
     int min = (int) min(), max = (int) max();
@@ -1093,6 +1086,24 @@ public class Vec extends Keyed<Vec> {
     if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
       throw new IllegalArgumentException("Column domain is too large to be represented as an categorical: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
     return copyOver(dom);
+  }
+
+  /** Create a new Vec (as opposed to wrapping it) that is the Numeric'd version of the original.
+   *  The original Vec is not mutated.  */
+  public Vec toNumeric() {
+    if( isString() ) {
+      return new MRTask() {
+        @Override public void map(Chunk c, NewChunk nc) {
+          BufferedString bStr = new BufferedString();
+          for( int row=0;row<c._len;++row) {
+           if( c.isNA(row) ) nc.addNA();
+            else if( c.atStr(bStr,row).toString().equals("") ) nc.addNA();
+            else              nc.addNum(Double.valueOf(c.atStr(bStr,row).toString()));
+          }
+        }
+      }.doAll_numericResult(1,new Frame(this)).outputFrame().anyVec();
+    }
+    return makeCopy(null, T_NUM);
   }
 
   private Vec copyOver(long[] domain) {
@@ -1127,9 +1138,9 @@ public class Vec extends Keyed<Vec> {
    * Otherwise, the this pointer is copied to a new Vec whose domain is null.
    * @return A new Vec
    */
-  public Vec toInt() {
+  public Vec toIntVec() {
     if( isInt() && _domain==null ) return copyOver(null);
-    if( !isCategorical() ) throw new IllegalArgumentException("toInt conversion only works on categorical and Int vecs");
+    if( !isCategorical() ) throw new IllegalArgumentException("toIntVec conversion only works on categorical and Int vecs");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
     Vec newVec = copyOver(null);

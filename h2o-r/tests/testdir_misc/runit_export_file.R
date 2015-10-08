@@ -18,7 +18,7 @@ test.export.file <- function() {
   fname <- paste(paste0(sample(letters, 3, replace = TRUE), collapse = ""),
                  paste0(sample(0:9, 3, replace = TRUE), collapse = ""),
                  "predict.csv", sep = "_")
-  dname <- paste(tempdir(), fname, sep = "/")
+  dname <- paste(sandbox(), fname, sep = .Platform$file.sep)
 
   Log.info("Exporting File...")
   h2o.exportFile(mypred, dname)

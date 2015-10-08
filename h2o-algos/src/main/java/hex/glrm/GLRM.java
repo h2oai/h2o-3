@@ -23,6 +23,7 @@ import hex.util.LinearAlgebraUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.api.ModelCacheManager;
 import water.fvec.*;
 import water.util.*;
 
@@ -87,11 +88,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    // if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
-    if (_parms._loading_name == null || _parms._loading_name.length() == 0)
-      _parms._loading_name = "GLRMLoading_" + Key.rand();
-    if (!_parms._loss.isForNumeric()) error("_loss", _parms._loss + " is not a univariate loss function");
-    if (!_parms._multi_loss.isForCategorical()) error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
+    if (!_parms._loss.isForNumeric())
+      error("_loss", _parms._loss + " is not a univariate loss function");
+    if (!_parms._multi_loss.isForCategorical())
+      error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
     if (_parms._period <= 0) error("_period", "_period must be a positive integer");
     if (_parms._gamma_x < 0) error("_gamma_x", "gamma must be a non-negative number");
     if (_parms._gamma_y < 0) error("_gamma_y", "gamma_y must be a non-negative number");
@@ -267,9 +267,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     protected GLRMDriver() { super(true); } // bump driver priority
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
-    private double[][] initialXY(DataInfo tinfo, Frame dfrm, long na_cnt) {
+    private double[][] initialXY(DataInfo tinfo, Frame dfrm, GLRMModel model, long na_cnt) {
       double[][] centers, centers_exp = null;
-      Random rand = RandomUtils.getRNG(_parms._seed);
 
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
@@ -331,11 +330,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._impute_missing = true;
         parms._save_v_frame = false;
 
-        SVDModel svd = null;
+        ModelCacheManager MCM = H2O.getMCM();
+        SVDModel svd = MCM.<SVDModel, SVDParameters>get(parms);
         SVD job = null;
         try {
-          job = new EmbeddedSVD(_key, _progressKey, parms);
-          svd = job.trainModel().get();
+          if(svd == null) {
+            job = new EmbeddedSVD(_key, _progressKey, parms);
+            svd = job.trainModel().get();
+          }
 
           // Ensure SVD centers align with adapted training frame cols
           assert svd._output._permutation.length == tinfo._permutation.length;
@@ -360,9 +362,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         } finally {
           if (job != null) job.remove();
           if (svd != null) {
-            if(svd._parms._keep_u)
-              svd._output._u_key.get().delete();
-            svd.remove();
+            model._output._init_key = svd._key;
+            // svd.remove();
           }
         }
 
@@ -379,11 +380,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._seed = _parms._seed;
         parms._pred_indicator = true;
 
-        KMeansModel km = null;
+        ModelCacheManager MCM = H2O.getMCM();
+        KMeansModel km = MCM.<KMeansModel, KMeansModel.KMeansParameters>get(parms);
         KMeans job = null;
         try {
-          job = new EmbeddedKMeans(_key, _progressKey, parms);
-          km = job.trainModel().get();
+          if (km == null) {
+            job = new EmbeddedKMeans(_key, _progressKey, parms);
+            km = job.trainModel().get();
+          }
 
           // Score only if clusters well-defined and closed-form solution does not exist
           double frob = frobenius2(km._output._centers_raw);
@@ -395,7 +399,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
         } finally {
           if (job != null) job.remove();
-          if (km != null) km.remove();
+          if (km != null) {
+            model._output._init_key = km._key;
+            // km.remove();
+          }
         }
 
         // Permute cluster columns to align with dinfo, normalize nums, and expand out cats to indicator cols
@@ -414,6 +421,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       }
 
       // Project rows of Y into appropriate subspace for regularizer
+      Random rand = RandomUtils.getRNG(_parms._seed);
       for(int i = 0; i < _parms._k; i++)
         centers_exp[i] = _parms.project_y(centers_exp[i], rand);
       return centers_exp;
@@ -589,7 +597,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Use closed form solution for X if quadratic loss and regularization
         update(1, "Initializing X and Y matrices");   // One unit of work
-        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, na_cnt);
+        double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
@@ -669,7 +677,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        model._output._loading_key = Key.make(_parms._loading_name);
+        String loading_name = (_parms._loading_name == null || _parms._loading_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._loading_name;
+        model._output._loading_key = Key.make(loading_name);
         Frame x = new Frame(model._output._loading_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
@@ -948,10 +957,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     @Override public void map( Chunk chks[] ) {
-      Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+      Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
         double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
+        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
         xrow = _parms.project_x(xrow, rand);
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
@@ -1003,12 +1013,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     @Override public void map( Chunk chks[] ) {
       double tmp [] = new double[_ncolA];
-      Random rand = RandomUtils.getRNG(_parms._seed + chks[0].start());
+      Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
         // double preds[] = new double[_ncolX];
         // double p[] = _model.score_indicator(chks, row, tmp, preds);
         double p[] = _model.score_ratio(chks, row, tmp);
+        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
         p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
         for(int c = 0; c < p.length; c++) {
           chks[_ncolA+c].set(row, p[c]);

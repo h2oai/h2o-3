@@ -417,7 +417,7 @@ public final class ParseDataset extends Job<Frame> {
         _packedDomains[i] = packDomain(_perColDomains[i]);
         i++;
       }
-      Log.trace("Done collecting local domains.");
+      Log.trace("Done locally collecting domains on each node.");
     }
 
     @Override
@@ -946,8 +946,8 @@ public final class ParseDataset extends Job<Frame> {
 
     int namelen = 0;
     for (String s : fr.names()) namelen = Math.max(namelen, s.length());
-    String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
-    Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "cardinality"));
+    String format = " %"+namelen+"s %7s %12.12s %12.12s %12.12s %12.12s %11s %8s %6s";
+    Log.info(String.format(format, "ColV2", "type", "min", "max", "mean", "sigma", "NAs", "constant", "cardinality"));
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     for( int i = 0; i < vecArr.length; i++ ) {
@@ -958,12 +958,19 @@ public final class ParseDataset extends Job<Frame> {
       String typeStr;
       String minStr;
       String maxStr;
+      String meanStr="";
+      String sigmaStr="";
 
       switch( v.get_type() ) {
         case Vec.T_BAD :   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
-        case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
+        case Vec.T_NUM :  typeStr = "numeric";
+          minStr = String.format("%g", v.min());
+          maxStr = String.format("%g", v.max());
+          meanStr = String.format("%g", v.mean());
+          sigmaStr = String.format("%g", v.sigma());
+          break;
         case Vec.T_CAT :  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
         case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
         default: throw H2O.unimpl();
@@ -1001,7 +1008,7 @@ public final class ParseDataset extends Job<Frame> {
       if (printLogSeparatorToStdout)
         Log.info("Additional column information only sent to log file...");
 
-      String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
+      String s = String.format(format, CStr, typeStr, minStr, maxStr, meanStr, sigmaStr, naStr, isConstantStr, numLevelsStr);
       Log.info(s,printColumnToStdout);
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());
