@@ -463,11 +463,6 @@ class RollupStats extends Iced {
         nbins = (int)span+1;      // 1 bin per int
         int lim = vec.isCategorical() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels
-        if (lim > 100000) { //don't actually populate the histogram for more than 100k levels - would be too slow and won't display well anyway
-          rs._bins = new long[0];
-          installResponse(nnn, rs);
-          return;
-        }
       }
       addToPendingCount(1);
       new Histo(new H2OCallback<Histo>(this){
