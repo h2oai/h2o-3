@@ -46,7 +46,7 @@ class ASTStrSplit extends ASTPrim {
             for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
         }
       }
-    }.doAll(new_domains.length, fr).outputFrame(null,null,new_domains);
+    }.doAll_numericResult(new_domains.length, fr).outputFrame(null,null,new_domains);
     return new ValFrame(fr2);
   }
 
@@ -137,7 +137,7 @@ class ASTCountMatches extends ASTPrim {
           } else ncs[i].addNA();
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll_numericResult(1, new Frame(vec)).outputFrame().anyVec();
   }
 
   int[] countDomainMatches(String[] domain, String[] pattern) {
@@ -168,7 +168,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll_numericResult(1, new Frame(vec)).outputFrame().anyVec();
   }
 }
 
@@ -232,7 +232,7 @@ class ASTToLower extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -296,7 +296,7 @@ class ASTToUpper extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -377,7 +377,7 @@ class ASTReplaceFirst extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -458,7 +458,7 @@ class ASTReplaceAll extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -513,7 +513,7 @@ class ASTTrim extends ASTPrim {
         // so UTF-8 safe methods are not needed here.
         else ((CStrChunk)chk).asciiTrim(newChk);
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -554,23 +554,23 @@ class ASTStrLength extends ASTPrim {
     int[] catLengths = new int[doms.length];
     for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
     Vec res = new MRTask() {
-      transient int[] catLengths;
-      @Override public void setupLocal() {
-        String[] doms = _fr.anyVec().domain();
-        catLengths = new int[doms.length];
-        for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
-      }
-      @Override public void map(Chunk chk, NewChunk newChk){
-        // pre-allocate since the size is known
-        newChk._ls = MemoryManager.malloc8(chk._len);
-        newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
-        for (int i =0; i < chk._len; i++)
-          if(chk.isNA(i))
-            newChk.addNA();
-          else
-            newChk.addNum(catLengths[(int)chk.atd(i)],0);
-      }
-    }.doAll(1, vec).outputFrame().anyVec();
+        transient int[] catLengths;
+        @Override public void setupLocal() {
+          String[] doms = _fr.anyVec().domain();
+          catLengths = new int[doms.length];
+          for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+        }
+        @Override public void map(Chunk chk, NewChunk newChk){
+          // pre-allocate since the size is known
+          newChk._ls = MemoryManager.malloc8(chk._len);
+          newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
+          for (int i =0; i < chk._len; i++)
+            if(chk.isNA(i))
+              newChk.addNA();
+            else
+              newChk.addNum(catLengths[(int)chk.atd(i)],0);
+        }
+      }.doAll_numericResult(1, new Frame(vec)).outputFrame().anyVec();
     return res;
   }
 
@@ -590,6 +590,6 @@ class ASTStrLength extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
   }
 }

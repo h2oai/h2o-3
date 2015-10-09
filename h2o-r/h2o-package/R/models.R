@@ -339,6 +339,9 @@ h2o.getFutureModel <- function(object) {
 #'
 #' This method dispatches on the type of H2O model to select the correct
 #' prediction/scoring algorithm.
+#' The order of the rows in the results is the same as the order in which the
+#' data was loaded, even if some rows fail (for example, due to missing
+#' values or unseen factor levels).
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired

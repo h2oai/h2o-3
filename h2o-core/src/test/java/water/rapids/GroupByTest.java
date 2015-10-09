@@ -9,7 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -183,6 +183,31 @@ public class GroupByTest extends TestUtil {
       Keyed.remove(Key.make("hex"));
     }
   }
+
+
+  // covtype.altered response column has this distribution:
+  //      -1  20510
+  //       1 211840
+  //       2 283301
+  //       3  35754
+  //       4   2747
+  //       6  17367
+  //   10000   9493
+  @Test public void testSplitCats() {
+    Frame cov = parse_test_file(Key.make("cov"),"smalldata/jira/covtype.altered.gz");
+    System.out.println(cov.toString(0,10));
+
+    Val v_ddply = Exec.exec("(ddply cov [54] nrow)");
+    System.out.println(v_ddply.toString());
+    ((ValFrame)v_ddply)._fr.delete();
+
+    Val v_groupby = Exec.exec("(GB cov [54] [0] nrow 54 \"all\")");
+    System.out.println(v_groupby.toString());
+    ((ValFrame)v_groupby)._fr.delete();
+
+    cov.delete();
+  }
+    
 
 
   private void chkDim( Frame fr, int col, int row ) {

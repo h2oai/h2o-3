@@ -175,12 +175,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         valid().read_lock(job._key);
     }
 
-    /** Read-UnLock both training and validation User frames. */
+    /** Read-UnLock both training and validation User frames.  This method is
+     *  called on crashing cleanup pathes, so handles the case where the frames
+     *  are not actually locked. */
     public void read_unlock_frames(Job job) {
       Frame tr = train();
-      if( tr != null ) tr.unlock(job._key);
+      if( tr != null ) tr.unlock(job._key,false);
       if( _valid != null && !_train.equals(_valid) )
-        valid().unlock(job._key);
+        valid().unlock(job._key,false);
     }
 
     // Override in subclasses to change the default; e.g. true in GLM
@@ -688,7 +690,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
         if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual.get_espc(), sdomain, predicted._key));
+          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
       }
     }
 
@@ -734,7 +736,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll_numericResult(ncols,adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
@@ -1100,9 +1102,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         String sdomain[] = actual == null ? null : actual.domain(); // Scored/test domain; can be null
         String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
         if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
-          CategoricalWrappedVec ewv = new CategoricalWrappedVec(mdomain,sdomain);
-          omap = ewv.getDomainMap(); // Map from model-domain to scoring-domain
-          ewv.remove();
+          omap = CategoricalWrappedVec.computeMap(mdomain,sdomain); // Map from model-domain to scoring-domain
         }
       }
 

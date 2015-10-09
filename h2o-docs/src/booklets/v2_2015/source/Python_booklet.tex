@@ -54,7 +54,7 @@
 
 {\raggedright 
 
-Python with H2O\\
+TODO PLACEHOLDER Python with H2O\\
 
   by Spencer Aiello, Cliff Click, \\ 
 Jessica Lanford, Ludi Rehak \\
@@ -92,13 +92,112 @@ Printed in the United States of America.
 
 \newpage
 
+\section{Preface}
+What is this book all about:
+Plan for the book, small explanatory examples through out
+Larger example at end of each section putting it all together, Citibike
+What is H2O, install H2O for Python, load data, data preparation,
+modeling data (ML), evaluating models, making predictions, moving to production.
+
+What the book is not:
+Comprehensive documentation on H2O for Python.  Enough to get started and understand
+a simple but typical workflow.  More documentation available as part of H2O's
+other documentation.
+
 \input{common/what_is_h2o.tex}
+Need to put into something about where H2O fits into the PyData / SciKit ecosystem.
 
-\newpage
+\section{Getting setup}
 
-\section{Requirements and Configuration}
-
+\subsection{Installing H2O}
 \input{common/installation.tex}
+
+\subsection{Getting the data}
+
+\section{Data Preparation}
+H2OFrame what is it, how does it compare to PD Series and DataFrames?
+
+\subsection{Loading}
+From disk
+Also from local computer (upload), from URI, from Python local
+File types supported
+df (just looking at the data frame)
+df data types
+df column names
+setting column types on load
+setting column types after load
+
+\subsection{Viewing}
+head
+tail
+describe
+
+\subsection{Selection}
+column, by name and index, multi-column by name and indexes
+row, by index, slicing
+boolean indexing
+setting data, adding columns, setting individual entries
+
+\subsection{Missing data}
+how does h2o denote missing data, how does it know what is missing on disk
+setting missing data (can we do something like this: df[df["A"].isna(), "A"] = 5)
+find all rows where A is na and set the column A for those rows to 5
+
+\subsection{Operations}
+stats
+apply
+histograms (and other plots)
+string methods
+
+\subsection{Merging}
+row bind
+column bind
+merge
+
+\subsection{Grouping}
+operations on groups
+
+
+\subsection{Categoricals}
+what are they
+how does h2o handle them
+determine levels
+interactions
+
+\subsection{Saving Data}
+
+\subsection{Gotchas}
+
+\subsection{Use Case}
+\subsection{Motivating example}
+Citibike
+Relatively small , but easily downloaded.  Everything you see here works with much larger data.
+Tell about the example, what is our goal
+Show data prep steps for it
+
+\section{Machine Learning}
+\subsection{Modeling}
+\subsection{Model outputs}
+
+\section{Model Evaluation}
+\subsection{Validation}
+Cover validation, n-fold cross validation, hold-out performance
+\subsection{Grid Search}
+
+\section{Making and Saving Predictions}
+\subsection{Saving Models}
+\subsection{Loading Models}
+\subsection{Creating Predictions}
+Differences in regression, bionomial, and multinomial predictions
+\subsection{Saving Predictions}
+
+\section{Transitioning to Production}
+POJO, Scoring, Fitting into Python pipeline using Py4J
+
+\section{H2O Python in Enterprise Environments}
+Hadoop, Spark
+
+\section{Where to go from here}
 
 \section{Quickstart Example}
 

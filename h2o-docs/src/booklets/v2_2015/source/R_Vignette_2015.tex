@@ -1,23 +1,14 @@
 
 
-
 %\input{common/conf_top.tex}
 \input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
 
-
-
-%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
-
-%\usepackage{syntonly}
-
-%\syntaxonly
-
-%\usepackage{jurabib}
-
 \begin{document}
+
+\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+%\input{common/conf_listings_colorized.tex}  %Use this for online version
 
 
 \thispagestyle{empty} %removes page number
@@ -131,6 +122,7 @@ This document describes the four steps of data analysis with H2O:
 
 
 \section{Installation}
+H2O requires Java; if you do not already have Java installed, install it from {\url{https://java.com/en/download/}} before installing H2O.
 
 To use H2O with R, start H2O outside of R and connect to it, or launch H2O from R. However, if you launch H2O from R and close the R session, the H2O session closes as well. The H2O session directs R to the datasets and models located in H2O.
 
@@ -172,8 +164,6 @@ latest stable H2O-3 build from the H2O download page:
 \item Click the ``Install in R'' tab.
 \item Copy and paste the commands into your R session.
 \end{enumerate}
-
-\bigskip
 
 After H2O is installed on your system, verify the installation completed successfully by initializing H2O:
 
@@ -224,7 +214,6 @@ Aiello, S., Eckstrand, E., Fu, A., Landry, M., Lanford, J., and Aboyoun, P. (Aug
 %* DONE (h2o)
 %\end{lstlisting}
 
-\newpage
 \section{H2O Initialization}
 
 This section describes how to launch H2O: 
@@ -248,6 +237,7 @@ For best performance, the allocated memory should be 4x the size of your data, b
 
 H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine. 
 
+\begin{minipage}{\textwidth}
 To launch H2O locally from R, run the following in R:
 \begin{lstlisting}[style=R]
 library(h2o)
@@ -268,6 +258,7 @@ R is connected to H2O cluster:
    H2O cluster allowed cores:  8
    H2O cluster healthy:        TRUE
 \end{lstlisting}
+\end{minipage}
 
 To launch H2O locally with default initialization arguments, use the following:
 \begin{lstlisting}[style=R]
@@ -294,7 +285,6 @@ java -jar h2o.jar
 See the H2O Documentation for additional JVM and H2O command line options.
 After launching the H2O instance, connect to it from R with {\texttt{h2o.init()}} as described above.
 
-\newpage
 \subsection{Launching on Hadoop}
 
 To launch H2O nodes and form a cluster on the Hadoop cluster, run:
@@ -552,7 +542,7 @@ The following demo demonstrates how to:
 > summary(pred$p1)
 
 \end{lstlisting}
-\newpage
+
 \section{Data Manipulation in R}
 
 The following section describes some common R commands. For a complete command list, including parameters, refer to {\url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}}.
@@ -594,7 +584,7 @@ iris.hex = h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 
 \subsection{Finding Factors}
 
-To determine if any column in a data set contains categorical data (also known as a factor), use {\texttt{h2o.anyFactor()}} with the name of the R reference object in the parentheses.
+To determine if any column contains categorical data (also known as a factor), use {\texttt{h2o.anyFactor()}}, with the R reference object in the parentheses.
 \begin{lstlisting}[style=R]
 > irisPath = system.file("extdata", "iris_wheader.csv", package="h2o")
 > iris.hex = h2o.importFile(path = irisPath)
@@ -632,7 +622,7 @@ To convert an integer into a non-ordered factor (also called an enum or categori
 To convert an H2O parsed data object into an R data frame that can be manipulated using R commands, use {\texttt{as.data.frame()}} with the name of the R reference object in the parentheses.
 
 {\textbf{Caution}}: While this can be very useful, be careful when using this command to convert H2O parsed data objects. H2O can easily handle data sets that are often too large to be handled equivalently well in R. 
-\small
+\footnotesize
 \begin{lstlisting}[style=R]
 # Creates object that defines path
 prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -648,12 +638,13 @@ Min.   :  1.00   Min.   :0.0000   Min.   :43.00   Min.   :0.000
 1st Qu.: 95.75   1st Qu.:0.0000   1st Qu.:62.00   1st Qu.:1.000
        .... 
 \end{lstlisting}
-\newpage
+
+\normalsize
 
 \subsection{Transferring Data Frames}
 To transfer a data frame from the R environment to the H2O instance, use  {\texttt{as.h2o()}}. In the parentheses, specify the object in the R environment to convert to an H2O object. Optionally, include the name of the destination frame in H2O. Precede the destination frame name with {\texttt{destination\_frame = }} and enclose the name in quotes as in the following example.
 
-\small
+\footnotesize
 \begin{lstlisting}[style=R]
 # Import the iris data into H2O
 > data(iris)
@@ -684,7 +675,6 @@ To transfer a data frame from the R environment to the H2O instance, use  {\text
 
 To rename a dataframe on the server running H2O for a data set manipulated in R, use {\texttt{h2o.assign()}}. In the following example, the prostate data set was uploaded to the H2O instance and the data was manipulated to remove outliers. {\texttt{h2o.assign()}} saves the new data set on the H2O server so it can be analyzed using H2O without overwriting the original data set.  
 
-\newpage
 \begin{lstlisting}[style=R]
 > prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 > prostate.hex<-h2o.importFile(path = prosPath)
@@ -713,7 +703,7 @@ To view a list of the column names in the data set, use {\texttt{colnames()}} or
 [1] "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"     
 \end{lstlisting}
 
-
+\begin{minipage}{\textwidth}
 \subsection{Getting Minimum and Maximum Values}
 
 To view the maximum values for the real-valued columns in a data set, use {\texttt{max()}} with the name of the R reference object in the parentheses.
@@ -726,12 +716,13 @@ To obtain the minimum values for the real-valued columns in a data set, use {\te
 > max(prostate.hex$AGE)
 [1] 79
 \end{lstlisting}
-
+\end{minipage}
 
 
 \subsection{Getting Quantiles}
 
 To request quantiles for an H2O parsed data set, use {\texttt{quantile()}} with the name of the R reference object in the parentheses.
+
 To request a quantile for a single numerical column, use  {\texttt{quantile(ReferenceObject\$ColumnName)}},  where {\texttt{ReferenceObject}} represents the R reference object name and \\{\texttt{ColumnName}} represents the name of the specified column. 
 
 When you request for a full parsed data set consisting of a single column, {\texttt{quantile()}} displays a matrix with quantile information for the data set. 
@@ -759,8 +750,8 @@ When you request for a full parsed data set consisting of a single column, {\tex
 \newpage
 \subsection{Summarizing Data}
 
+To generate a summary similar to the one in R for each of the columns in the data set, use {\texttt{summary()}} with the name of the R reference object in the parentheses. 
 
-To generate a summary (similar to the one in R) for each of the columns in the data set, use {\texttt{summary()}} with the name of the R reference object in the parentheses.
 For continuous real functions, this produces a summary that includes information on quartiles, min, max, and mean. 
 For factors, this produces information about counts of elements within each factor level. 
 
@@ -782,8 +773,6 @@ For factors, this produces information about counts of elements within each fact
  Max.   :2.000   Max.   :139.700   Max.   :97.60   Max.   :9.000
 \end{lstlisting}
 
-\newpage
-
 \subsection{Summarizing Data in a Table}
 
 To summarize data, use {\texttt{h2o.table()}}. Because H2O can handle larger data sets, it is possible to generate tables that are larger than R`s capacity, so use caution when executing this command. 
@@ -792,6 +781,7 @@ To summarize multiple columns, use {\texttt{head(h2o.table (ObjectName[, c(Colum
 
 
 \begin{lstlisting}[style=R]
+
 # Counts of the ages of all patients
 > head(as.data.frame(h2o.table(prostate.hex[,"AGE"])))
    AGE Count
@@ -820,7 +810,6 @@ First 10 rows:
 9   61    2     1
 10  60    1     9
 \end{lstlisting}
-\newpage
 \subsection{Generating Random Numbers}
 
 To append a column of random numbers to an H2O data frame for testing/training data splits that are used for analysis and validation in H2O, use {\texttt{h2o.runif()}} with the name of the R reference object in the parentheses. This method is best for customized frame splitting; otherwise, use {\texttt{h2o.splitFrame()}}. However, {\texttt{h2o.runif()}} is not as fast or stable as {\texttt{h2o.splitFrame()}}. 
@@ -891,7 +880,7 @@ To create a reference object for the model in H2O, use {\texttt{h2o.getModel()}}
 
 To generate a list of all H2O objects generated during a session and each object’s size in bytes, use {\texttt{h2o.ls()}}.
 \smallskip
-\small
+\footnotesize
 \begin{lstlisting}[style=R]
 > h2o.ls()
                                             Key   Bytesize
@@ -1069,6 +1058,7 @@ Maximum Metrics:
 
 \end{lstlisting}
 
+
 \subsection{K-Means}
 
 To generate a K-Means model for data characterization, use {\texttt{h2o.kmeans()}}. This algorithm does not rely on a dependent variable. For more information, use {\texttt{help(h2o.kmeans)}}.
@@ -1124,6 +1114,7 @@ Proportion of Variance 0.383120 0.285822 0.132917
 Cumulative Proportion  0.383120 0.668942 0.801859
 \end{lstlisting}
 
+
 \subsection{Predictions}
 \label{ssec:Predictions}
 
@@ -1143,6 +1134,7 @@ The following section describes some of the prediction methods available in H2O.
 
 To apply an H2O model to a holdout set for predictions based on model results, use {\texttt{h2o.predict()}}.  
 In the following example, H2O generates a model and then displays the predictions for that model.
+
 For classification, the predict column is the model's discrete prediction, based on maximum F1 by default; the individual class probabilities are the remaining columns in the data frame. 
 It is common to utilize the p1 column for binary classification, if a raw probability is desired.
 \smallskip
@@ -1456,9 +1448,9 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 %TODO: Fix this doc so that everything in this section that is commented out works. It should be able to reference the bibliography the same way as GLM_Vignette.tex and GBM_Vignette.tex. Can't get it to work right, so hard-coding this section for now. 
 
-%\bibliographystyle{plain}  %alphadin}
- %\nobibliography{bibliography.bib}
- %hides entire bibliography so just \bibentry items are included
+\bibliographystyle{plain}  %alphadin}
+
+\nobibliography{bibliography.bib}  %hides entire bibliography so just \bibentry items are included
 %use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
 
 %\bibentry{h2odocs}
@@ -1475,15 +1467,11 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 
 %\bibentry{rensemble}
 
-{\bfseries{R Package}}:  \url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}
-
-{\bfseries{R Ensemble documentation}}: \url{http://www.stat.berkeley.edu/~ledell/R/h2oEnsemble.pdf} 
-
-{\bfseries{R project website}}: \url{http://www.r-project.org} 
-
-{\bfseries{Slide deck}}: \url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/} 
-
-
+Anqi Fu. {\textbf{Big Data Science in H2O with R}}, 2013. URL {\url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/}}
+H2O.ai Team. {\textbf{H2O website}}, 2015. URL {\url{http://h2o.ai}}H2O.ai Team. {\textbf{H2O documentation}}, 2015. URL {\url{http://docs.h2o.ai}}H2O.ai Team. {\textbf{H2O GitHub Repository}}, 2015. URL {\url{https://github. com/h2oai}}H2O.ai Team. {\textbf{H2O Datasets}}, 2015. URL {\url{http://data.h2o.ai}}
+ H2O.ai Team. {\textbf{H2O JIRA}}, 2015. URL {\url{https://jira.h2o.ai}}H2O.ai Team. {\textbf{H2Ostream}}, 2015. URL {\url{https://groups.google.com/ d/forum/h2ostream}}H2O.ai Team. {\textbf{H2O R Package Documentation}}, 2015. URL {\url{http:// h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}}
+Erin LeDell. {\textbf{R Ensemble Documentation}}, 2014. URL {\url{http://www.stat.berkeley.edu/~ledell/R/h2oEnsemble.pdf}}
+R Core Team. {\textbf{R: A Language and Environment for Statistical Computing}}, 2015. URL {\url{https://www.R-project.org}}
 
 \newpage
 
