@@ -194,7 +194,7 @@ public class GroupByTest extends TestUtil {
   //       6  17367
   //   10000   9493
   @Test public void testSplitCats() {
-    Frame cov = parse_test_file(Key.make("cov"),"smalldata/jira/covtype.altered.gz");
+    Frame cov = parse_test_file(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
     System.out.println(cov.toString(0,10));
 
     Val v_ddply = Exec.exec("(ddply cov [54] nrow)");
