@@ -1843,6 +1843,8 @@ def parse_args(argv):
             g_no_run = True
         elif (s == "--noxunit"):
             g_produce_unit_reports = False
+        elif (s == "--rPkgVerChk"):
+            pass # do nothing, this is just compatibility check
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:
