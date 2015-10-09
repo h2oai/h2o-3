@@ -81,8 +81,9 @@ class H2OEstimator(ModelBase):
     warn = True
     for s in stk:
       mod = inspect.getmodule(s[0])
-      warn = "sklearn" not in mod.__name__
-      if not warn: break
+      if mod: 
+        warn = "sklearn" not in mod.__name__
+        if not warn: break
     if warn:
       warnings.warn("\n\n\t`fit` is not recommended outside of the sklearn framework. Use `train` instead.", UserWarning, stacklevel=2)
     training_frame = X.cbind(y) if y is not None else X
