@@ -91,9 +91,10 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
 
   # set the column names
-  if (!is.null(col.names)) parseSetup$column_names <- if(is.Frame(col.names)) colnames(col.names) else col.names
-  if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) {
-                  stop("length of col.names must equal to the number of columns in dataset") }
+  if (!is.null(col.names)) {
+    parseSetup$column_names <- if(is.Frame(col.names)) colnames(col.names) else col.names
+    if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) {
+                  stop("length of col.names must equal to the number of columns in dataset") } }
 
   # set col.types
   if( !is.null(col.types) ) {
