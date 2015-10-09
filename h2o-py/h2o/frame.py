@@ -91,14 +91,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(file_path)
     setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
-    parse = h2o.parse(setup)
-    self._id = parse["job"]["dest"]["name"]
-    self._computed=True
-    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
-    self._ncols = parse["number_columns"]
-    self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
-    self._types = dict(zip(self._col_names,parse["column_types"]))
-    self._keep = True
+    parse = h2o._parse(setup)
+    self._update_post_parse(parse)
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
@@ -150,15 +144,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     # perform the parse setup
     setup = h2o.parse_setup(text_key)
     if check_header is not None: setup["check_header"] = check_header
-    parse = h2o.parse(setup)
-    self._computed=True
-    self._id = parse["destination_frame"]["name"]
-    self._ncols = parse["number_columns"]
-    self._col_names = cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
-    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
-    self._keep = True
+    parse = h2o._parse(setup)
+    self._update_post_parse(parse)
     thousands_sep = h2o.H2ODisplay.THOUSANDS
-    print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(len(cols)))
+    print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
 
   def _upload_raw_data(self, tmp_file_path):
     fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
@@ -1465,6 +1454,16 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._types = dict(zip(self._col_names, [c["type"] for c in res["columns"]]))
     self._computed=True
     self._ast=None
+
+  def _update_post_parse(self, parse):
+    self._id = parse["destination_frame"]["name"]
+    self._computed=True
+    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
+    self._ncols = parse["number_columns"]
+    self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
+    self._types = dict(zip(self._col_names,parse["column_types"]))
+    self._keep = True
+
   #### DO NOT ADD ANY MEMBER METHODS HERE ####
 
 

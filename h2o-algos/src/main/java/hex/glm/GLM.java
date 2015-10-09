@@ -778,7 +778,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       _parms.read_lock_frames(GLM.this);
       //todo: fill in initialization for n-folds
-      new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
+      H2O.submitTask(new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]));
     }
     private class LambdaSearchIteration extends H2O.H2OCallback {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }

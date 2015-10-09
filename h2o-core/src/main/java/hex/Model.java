@@ -208,6 +208,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Sort the fields first, since reflection gives us the fields in random order and we don't want the checksum to be affected by the field order.
      * NOTE: if a field is added to a Parameters class the checksum will differ even when all the previous parameters have the same value.  If
      * a client wants backward compatibility they will need to compare parameter values explicitly.
+     *
+     * The method is motivated by standard hash implementation `hash = hash * P + value` but we use high prime numbers in random order.
      * @return checksum
      */
     protected long checksum_impl() {
@@ -230,22 +232,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (f.get(this) != null) {
               if (c.getComponentType() == Integer.TYPE){
                 int[] arr = (int[]) f.get(this);
-                xs = xs  + P * (long) Arrays.hashCode(arr);
+                xs = xs * P  + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Float.TYPE) {
                 float[] arr = (float[]) f.get(this);
-                xs = xs + P * (long) Arrays.hashCode(arr);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Double.TYPE) {
                 double[] arr = (double[]) f.get(this);
-                xs = xs + P * (long) Arrays.hashCode(arr);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
-                xs = xs + P * (long) Arrays.hashCode(arr);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
-                xs = xs + P * (long) Arrays.deepHashCode(arr);
+                xs = xs * P + (long) Arrays.deepHashCode(arr);
               } //else lead to ClassCastException
             } else {
-              xs = xs + P;
+              xs = xs * P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -257,9 +259,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             f.setAccessible(true);
             Object value = f.get(this);
             if (value != null) {
-              xs = xs + P * (long)(value.hashCode());
+              xs = xs * P + (long)(value.hashCode());
             } else {
-              xs = xs + P;
+              xs = xs * P + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -267,7 +269,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         count++;
       }
-      xs ^= (train() == null ? 43 : train().checksum()) * (_valid == null ? 17 : valid().checksum());
+      xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }
   }
