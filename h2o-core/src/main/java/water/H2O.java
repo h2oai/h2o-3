@@ -8,6 +8,7 @@ import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+import water.UDPRebooted.ShutdownTsk;
 import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
@@ -501,10 +502,31 @@ final public class H2O {
 
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
-    (status==0 ? UDPRebooted.T.shutdown : UDPRebooted.T.error).send(H2O.SELF);
+    if(status == 0) H2O.orderlyShutdown();
+    UDPRebooted.T.error.send(H2O.SELF);
     H2O.exit(status);
   }
 
+  public static int orderlyShutdown(){return orderlyShutdown(-1);}
+  public static int orderlyShutdown(int timeout){
+    boolean [] confirmations = new boolean[H2O.CLOUD.size()];
+    confirmations[H2O.SELF.index()] = true;
+    Futures fs = new Futures();
+    for(H2ONode n:H2O.CLOUD._memary) {
+      if(n != H2O.SELF)
+        fs.add(new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call());
+    }
+    if(timeout > 0)
+      try { Thread.sleep(timeout); }
+      catch (Exception ignore) {}
+    else fs.blockForPending(); // todo, should really have block for pending with a timeout
+
+    int failedToShutdown = 0;
+    // shutdown failed
+    for(boolean b:confirmations)
+      if(!b) failedToShutdown++;
+    return failedToShutdown;
+  }
   private static volatile boolean _shutdownRequested = false;
 
   public static void requestShutdown() {
@@ -1457,13 +1479,18 @@ final public class H2O {
     }
     return old; // Return success
   }
+  public static String foo( Value v ) {
+    if( v==null ) return null;
+    if( v.isNull() ) return "Null";
+    return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
+  }
 
   // Get the value from the store
-  public static Value get( Key key ) { return STORE.get(key); }
-  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
+  public static Value     get(Key key) { return STORE.get(key); }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
   public static void raw_clear() { STORE.clear(); }
+  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
@@ -1479,6 +1506,7 @@ final public class H2O {
       Object ov = kvs[i+1];
       if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
       Value val = (Value)ov;
+      if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another variant of NULL
       int t = val.type();
       while( t >= cnts.length ) cnts = Arrays.copyOf(cnts,cnts.length<<1);
       cnts[t]++;

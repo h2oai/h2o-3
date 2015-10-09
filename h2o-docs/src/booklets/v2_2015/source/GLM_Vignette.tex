@@ -20,7 +20,7 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Generalized Linear Modeling with H2O's R Package}}
+\textsc{\Large\bf{Generalized Linear Modeling with H2O}}
 \\
 \small
 
@@ -292,7 +292,8 @@ H2O supports elastic net regularization, which is a combination of the $\ell_1$ 
 in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM using ridge regression. If $\alpha = 1$, the Lasso penalty is used. \nowidow[3]
 \item $\lambda$ controls the penalty strength. The range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
-all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. \end{itemize}
+all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
+\end{itemize}
 
 The combination of the $\ell_1$ and $\ell_2$ penalties is beneficial, since the $\ell_1$ induces sparsity while the $\ell_2$ gives
 stability and encourages the grouping effect (where a group of correlated variables tends to be dropped or added
@@ -709,11 +710,11 @@ constraints are upper and lower bounds and the proximal operator interface, as d
 The constraints are specified as a frame with following vecs (matched by name; all vecs can be sparse):
 
 \begin{itemize}
-\item \texttt{names (mandatory)}  - coefficient names. 
-\item \texttt{lower\_bounds (optional)} - coefficient lower bounds , must be $<= 0$
-\item \texttt{upper\_bounds (optional)} - coefficient upper bounds , must be $>= 0$
-\item \texttt{beta\_given (optional)} - specifies the given solution in proximal operator interface
-\item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored) - specifies per-column  $\ell_2$ penalties on the distance from the given solution
+\item \texttt{names}: (mandatory) coefficient names
+\item \texttt{lower\_bounds}: (optional) coefficient lower bounds , must be less than or equal to \texttt{upper\_bounds}
+\item \texttt{upper\_bounds}: (optional) coefficient upper bounds , must be greater than or equal to \texttt{lower\_bounds}
+\item \texttt{beta\_given}: (optional) specifies the given solution in proximal operator interface
+\item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored): specifies per-column  $\ell_2$ penalties on the distance from the given solution
 \end{itemize}
  
 \subsubsection{Proximal Operators}
@@ -1131,6 +1132,7 @@ The cost of the coefficient update is $k*N$, where $N$ is number of predictors a
 H2O supports binomial models only; any extra levels in the test response will generate an error.
 \end{itemize}
 
+\newpage
 \section{Appendix: Parameters}
 \begin{itemize}
 \item \texttt{x}: A vector containing the names of the predictors to use while building the GLM model. No default.
@@ -1155,7 +1157,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}. 
 \item \texttt{alpha}: The elastic-net mixing parameter, which must be in $[0,1]$. The penalty is defined to be $P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|] $ so \texttt{alpha=1} is the Lasso penalty, while \texttt{alpha=0} is the ridge penalty. Default is 0.5.
 \item \texttt{prior}: (Optional) A numeric specifying the prior probability of class 1 in the response when \texttt{family = "binomial"}. The default value is the observation frequency of class 1. 
-\item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, no elastic-net penalty is applied and ordinary generalized linear models are fit. Default is 1e-05.
+\item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, regularization is disabled and ordinary generalized linear models are fit. The default is 1e-05.
 \item \texttt{lambda\_search}: A logical value indicating whether to conduct a search over the space of lambda values, starting from the max lambda, given lambda will be interpreted as the min. lambda. Default is false.
 \item \texttt{nlambdas}: The number of lambda values when \texttt{lambda\_search = TRUE}. Default is -1.
 \item \texttt{lambda\_min\_ratio}: Smallest value for lambda as a fraction of \\ lambda.max, the entry value, which is the smallest value for which all coefficients in the model are zero. If the number of observations is greater than the number of variables then \texttt{lambda\_min\_ratio = 0.0001}; if the number of observations is less than the number of variables then \texttt{lambda\_min\_ratio = 0.01}. Default is -1.0.

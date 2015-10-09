@@ -28,7 +28,7 @@ public class FrameTestUtil {
   }
 
   public static NewChunk createNC(String fname, String[] data, int cidx, int len) {
-    NewChunk[] nchunks = Frame.createNewChunks(fname, cidx);
+    NewChunk[] nchunks = Frame.createNewChunks(fname, Vec.T_STR, cidx);
     for (int i=0; i<len; i++) {
       nchunks[0].addStr(data[i] != null ? data[i] : null);
     }
@@ -53,7 +53,7 @@ public class FrameTestUtil {
   }
 
   public static NewChunk createNC(String fname, int cidx, int len) {
-    NewChunk[] nchunks = Frame.createNewChunks(fname, cidx);
+    NewChunk[] nchunks = Frame.createNewChunks(fname, Vec.T_NUM, cidx);
     int starVal = cidx * 1000;
     for (int i=0; i<len; i++) {
       nchunks[0].addNum(starVal + i);

@@ -9,7 +9,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
 public class ParseFolderTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
 
   @Test public void testProstate() {
     Frame k1 = null, k2 = null;

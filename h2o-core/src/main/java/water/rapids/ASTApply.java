@@ -94,7 +94,7 @@ class ASTApply extends ASTPrim {
               }
           }
         }
-      }.doAll(noutputs,fr).outputFrame();
+      }.doAll_numericResult(noutputs,fr).outputFrame();
     return new ValFrame(res);
   }
 }
