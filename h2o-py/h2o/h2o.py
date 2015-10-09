@@ -15,18 +15,6 @@ from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMul
 import h2o_model_builder
 
 
-# @h2o_deprecated decorator
-def h2o_deprecated(newfun=None):
-  def o(fun):
-    def i(*args, **kwargs):
-      print '\n'
-      if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
-      warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
-      return newfun(*args, **kwargs)
-    return i
-  return o
-
-
 def lazy_import(path):
   """
   Import a single file or collection of files.
@@ -704,7 +692,6 @@ def shutdown(conn=None, prompt=True):
   if conn == None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
-@h2o_deprecated
 def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=None,model_id=None,
                  overwrite_with_best_model=None,validation_frame=None,checkpoint=None,autoencoder=None,
                  use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
@@ -723,62 +710,62 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   Build a supervised Deep Learning model
   Performs Deep Learning neural networks on an H2OFrame
 
- Parameters
- ----------
+  Parameters
+  ----------
 
-  x : H2OFrame
-    An H2OFrame containing the predictors in the model.
-  y : H2OFrame
-    An H2OFrame of the response variable in the model.
-  training_frame : H2OFrame
-    (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
-  model_id : str
-    (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-  overwrite_with_best_model : bool
-    Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
-  validation_frame : H2OFrame
-    (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the
-    training data when nfolds = 0
-  checkpoint : H2ODeepLearningModel
-    "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
-  autoencoder : bool
-    Enable auto-encoder for model building.
-  use_all_factor_levels : bool
-    Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable
-    importances and auto-enabled for autoencoder.
-  activation : str
-    A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
-  hidden : list
-    Hidden layer sizes (e.g. c(100,100))
-  epochs : float
-    How many times the dataset should be iterated (streamed), can be fractional
-  train_samples_per_iteration : int
-    Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
-    or -2 auto-tuning (default)
-  seed : int
-    Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
-  adaptive_rate : bool
-    Logical. Adaptive learning rate (ADAELTA)
-  rho : float
-    Adaptive learning rate time decay factor (similarity to prior updates)
-  epsilon : float
-    Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
-  rate : float
-    Learning rate (higher => less stable, lower => slower convergence)
-  rate_annealing : float
-    Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
-  rate_decay : float
-    Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
-  momentum_start : float
-    Initial momentum at the beginning of training (try 0.5)
-  momentum_ramp : float
-    Number of training samples for which momentum increases
-  momentum_stable : float
-    Final momentum after the amp is over (try 0.99)
-  nesterov_accelerated_gradient : bool
-    Logical. Use Nesterov accelerated gradient (recommended)
-  input_dropout_ratio : float
-    A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
+   x : H2OFrame
+     An H2OFrame containing the predictors in the model.
+   y : H2OFrame
+     An H2OFrame of the response variable in the model.
+   training_frame : H2OFrame
+     (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+   model_id : str
+     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+   overwrite_with_best_model : bool
+     Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
+   validation_frame : H2OFrame
+     (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the
+     training data when nfolds = 0
+   checkpoint : H2ODeepLearningModel
+     "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+   autoencoder : bool
+     Enable auto-encoder for model building.
+   use_all_factor_levels : bool
+     Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable
+     importances and auto-enabled for autoencoder.
+   activation : str
+     A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
+   hidden : list
+     Hidden layer sizes (e.g. c(100,100))
+   epochs : float
+     How many times the dataset should be iterated (streamed), can be fractional
+   train_samples_per_iteration : int
+     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
+     or -2 auto-tuning (default)
+   seed : int
+     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+   adaptive_rate : bool
+     Logical. Adaptive learning rate (ADAELTA)
+   rho : float
+     Adaptive learning rate time decay factor (similarity to prior updates)
+   epsilon : float
+     Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
+   rate : float
+     Learning rate (higher => less stable, lower => slower convergence)
+   rate_annealing : float
+     Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
+   rate_decay : float
+     Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
+   momentum_start : float
+     Initial momentum at the beginning of training (try 0.5)
+   momentum_ramp : float
+     Number of training samples for which momentum increases
+   momentum_stable : float
+     Final momentum after the amp is over (try 0.99)
+   nesterov_accelerated_gradient : bool
+     Logical. Use Nesterov accelerated gradient (recommended)
+   input_dropout_ratio : float
+     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
   hidden_dropout_ratios : float
     Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
   l1 : float
@@ -868,9 +855,9 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
 
-
- :return: Return a new classifier or regression model.
+  :return: Return a new classifier or regression model.
   """
+  warnings.warn("`h2o.deeplearning` is deprecated. Use the estimators sub module to build an H2ODeepLearningEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["y","training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   return h2o_model_builder.supervised(parms)
@@ -1016,6 +1003,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 
   """
+  warnings.warn("`h2o.autoencoder` is deprecated. Use the estimators sub module to build an H2OAutoEncoderEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   parms["autoencoder"]=True
@@ -1834,6 +1822,18 @@ def can_use_pandas():
 
 
 #  ALL DEPRECATED METHODS BELOW #
+
+# the @h2o_deprecated decorator
+def h2o_deprecated(newfun=None):
+  def o(fun):
+    def i(*args, **kwargs):
+      print '\n'
+      if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
+      warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
+      return newfun(*args, **kwargs)
+    return i
+  return o
+
 @h2o_deprecated(import_file)
 def import_frame():
   """

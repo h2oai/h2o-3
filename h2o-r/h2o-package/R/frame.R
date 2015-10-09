@@ -673,7 +673,7 @@ as.Date.Frame <- function(x, format, ...) {
 #'
 #' @param tz The desired timezone.
 #' @export
-h2o.setTimezone <- function(tz) .fetch.data(.newExpr("setTimeZone",.quote(tz)),1000)
+h2o.setTimezone <- function(tz) invisible(.fetch.data(.newExpr("setTimeZone",.quote(tz)),1000))
 
 #' Get the Time Zone on the H2O Cloud
 #' Returns a string
