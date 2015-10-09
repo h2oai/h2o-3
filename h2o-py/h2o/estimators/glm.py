@@ -1,7 +1,7 @@
 from .estimator_base import H2OEstimator
 
 
-class H2OGLMEstimator(H2OEstimator):
+class H2OGeneralizedLinearEstimator(H2OEstimator):
   def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
                standardize=None, family=None, link=None, tweedie_variance_power=None,
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
@@ -91,7 +91,7 @@ class H2OGLMEstimator(H2OEstimator):
       aic, and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion
       matrices.
     """
-    super(H2OGLMEstimator, self).__init__()
+    super(H2OGeneralizedLinearEstimator, self).__init__()
     self.parms = locals()
     self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
     self.parms["algo"] = "glm"

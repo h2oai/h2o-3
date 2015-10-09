@@ -808,7 +808,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     if isinstance(item, (int,basestring,list)): return H2OFrame(expr=ExprNode("cols",self,item))  # just columns
     elif isinstance(item, slice):
-      item = slice(item.start,min(self.ncol,item.stop))
+      stop = self.ncol
+      if item.stop is not None:
+        stop = min( item.stop, stop )
+      item = slice(item.start,stop)
       return H2OFrame(expr=ExprNode("cols",self,item))
     elif isinstance(item, H2OFrame): return H2OFrame(expr=ExprNode("rows",self,item))  # just rows
     elif isinstance(item, tuple):

@@ -57,6 +57,7 @@ class H2OEstimator(ModelBase):
     if y is not None:
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
     self.__dict__=build_model(self.parms).__dict__.copy()
+    return self
 
 
   ##### Scikit-learn Interface Methods #####
@@ -91,6 +92,7 @@ class H2OEstimator(ModelBase):
     X = X.names
     y = y.names[0] if y is not None else None
     self.train(X, y, training_frame, **params)
+    return self
 
   def get_params(self, deep=True):
     """Useful method for obtaining parameters for this estimator. Used primarily for
