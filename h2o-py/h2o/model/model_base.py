@@ -37,6 +37,12 @@ class ModelBase(object):
     """
     return self._id
 
+  @model_id.setter
+  def model_id(self, value):
+    oldname = self.model_id
+    self._id = value
+    h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
+
   @property
   def params(self):
     """

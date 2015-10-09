@@ -10,7 +10,7 @@ from group_by import GroupBy
 # TODO: Automatically convert column names into Frame properties!
 
 
-class H2OFrameWeakRefMixin:
+class H2OFrameWeakRefMixin(object):
   __refs__ = collections.defaultdict(list)
   def __init__(self):
     self.__refs__[self.__class__].append(weakref.ref(self))
@@ -257,6 +257,17 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return self.col_names
 
+  @columns.setter
+  def columns(self, value):
+    """
+    Set the column names of this H2OFrame.
+
+    Parameters
+    ----------
+      value : list
+    """
+    self.set_names(value)
+
   @property
   def col_names(self):
     """
@@ -267,6 +278,17 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._eager()
     return copy.deepcopy(self._col_names)
 
+  @col_names.setter
+  def col_names(self, value):
+    """
+    Set the column names of this H2OFrame.
+
+    Parameters
+    ----------
+      value : list
+    """
+    self.set_names(value)
+
   @property
   def names(self,i=None):
     """
@@ -276,6 +298,17 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     self._eager()
     return self.col_names if i is None else self.columns[i]
+
+  @names.setter
+  def names(self,value):
+    """
+    Set the column names of this H2OFrame.
+
+    Parameters
+    ----------
+      value : list
+    """
+    self.set_names(value)
 
   @property
   def nrow(self):
@@ -340,6 +373,16 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: Get the name of this frame.
     """
     return self._id
+
+  @frame_id.setter
+  def frame_id(self, value):
+    oldname = self.frame_id
+    keep    = self._keep
+    if keep:
+      h2o.assign(self,value)
+    else:
+      self._id = value
+      h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
 
   def unique(self):
     """

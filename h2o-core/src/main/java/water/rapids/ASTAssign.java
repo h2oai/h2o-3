@@ -1,7 +1,11 @@
 package water.rapids;
 
+import hex.Model;
 import water.*;
-import water.fvec.*;
+import water.fvec.C0DChunk;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 
 /** Assign into a row slice */
 class ASTAssign extends ASTPrim {
@@ -220,15 +224,31 @@ class ASTAssign extends ASTPrim {
  *  temp can be deleted.  Temp is returned for immediate use, and also set in
  *  the DKV.  Must be globally unique in the DKV.  */
 class ASTTmpAssign extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"id", "frame"}; }
+  @Override public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (tmp= id frame)
-  @Override
-  public String str() { return "tmp=" ; }
+  @Override public String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     String id = ((ASTId)asts[1])._id;
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     Frame dst = src.deepCopy(id);  // Stomp temp down
     return env.addGlobals(dst);
+  }
+}
+
+class ASTRename extends ASTPrim {
+  @Override public String[] args() { return new String[]{"oldId", "newId"}; }
+  @Override int nargs() { return 1+2; } // (rename oldId newId)
+  @Override public String str() { return "rename" ; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Key oldKey = Key.make(asts[1].exec(env).getStr());
+    Key newKey = Key.make(asts[2].exec(env).getStr());
+    Iced o = DKV.remove(oldKey).get();
+    if( o instanceof Frame )     DKV.put(newKey, new Frame(newKey, ((Frame)o)._names, ((Frame)o).vecs()));
+    else if( o instanceof Model) {
+      ((Model) o)._key = newKey;
+      DKV.put(newKey, o);
+    }
+    else throw new IllegalArgumentException("Trying to rename Value of type " + o.getClass());
+    return new ValNum(Double.NaN);
   }
 }
