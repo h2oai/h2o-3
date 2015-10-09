@@ -2,6 +2,26 @@
 
 ##H2O
 
+###Slater (3.2.0.7) - 10/09/15
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bc6f15ab71f5d41553bbe566bcc0585ef2a2bdf1): Fix Java 6 compatibility
+
+	The Java 7 API call
+`_rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);`
+has been replaced by the Java 6 API call
+`_rawChannel.socket().setTcpNoDelay(true);`
+
+  The Java 7 API call 
+`sock.getRemoteAddress())`
+has been replaced by
+`sock.socket().getRemoteSocketAddress()`
+
+---
+
 ###Slater (3.2.0.5) - 09/24/15
 
 ####Enhancements
