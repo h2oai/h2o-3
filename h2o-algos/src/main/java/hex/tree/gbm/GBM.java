@@ -412,7 +412,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)
-            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(0, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(null, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
         for (int k = 0; k < _nclass; k++)
           if (ss[k] != null) ss[k].getResult();
       }

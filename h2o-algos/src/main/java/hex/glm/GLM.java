@@ -721,12 +721,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup(){
       updateModelOutput();
-      try {
-        _parms.read_unlock_frames(GLM.this);
-      }
-      catch (Throwable t) {
-        // nada
-      }
+      _parms.read_unlock_frames(GLM.this);
       if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
         for( Key k : _adapt_keys ) Keyed.remove(k);
       if(_dinfo      != null) _dinfo     .remove();
@@ -761,7 +756,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           return false;
         }
         try {
-          doCleanup();
+          if( !(ex instanceof IllegalArgumentException) ) // e.g. Illegal beta constraints file, got duplicate constraint for predictor
+            doCleanup();
           new RemoveCall(null, _dest).invokeTask();
         } catch(Throwable t) {Log.err(t);}
         failed(ex);

@@ -67,7 +67,7 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
    *  Useful as an array index.
    *  @return Small integer, unique per-type */
   @Override final public int frozenType() { return icer().frozenType(); }
-  /** Clone, without the annoying exception*/
+  /** Clone, without the annoying exception */
   @Override public final D clone() {
     try { return (D)super.clone(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }

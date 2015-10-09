@@ -38,45 +38,45 @@ public class VecTest extends TestUtil {
 
     v = makeCon(0xCAFE,2*FileVec.DFLT_CHUNK_SIZE,false);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v._espc.length == 3);
+    assertTrue(v.espc().length == 3);
     assertTrue(
-            v._espc[0] == 0              &&
-                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE
+            v.espc()[0] == 0              &&
+                    v.espc()[1] == FileVec.DFLT_CHUNK_SIZE
     );
     v.remove(new Futures()).blockForPending();
 
     v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE,false);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(3*FileVec.DFLT_CHUNK_SIZE-1) == 0xCAFE);
-    assertTrue(v._espc.length == 4);
+    assertTrue(v.espc().length == 4);
     assertTrue(
-            v._espc[0] == 0              &&
-                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
-                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2
+            v.espc()[0] == 0              &&
+                    v.espc()[1] == FileVec.DFLT_CHUNK_SIZE   &&
+                    v.espc()[2] == FileVec.DFLT_CHUNK_SIZE*2
     );
     v.remove(new Futures()).blockForPending();
 
     v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE+1,false);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(3*FileVec.DFLT_CHUNK_SIZE) == 0xCAFE);
-    assertTrue(v._espc.length == 4);
+    assertTrue(v.espc().length == 4);
     assertTrue(
-            v._espc[0] == 0              &&
-                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
-                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
-                    v._espc[3] == FileVec.DFLT_CHUNK_SIZE*3+1
+            v.espc()[0] == 0              &&
+                    v.espc()[1] == FileVec.DFLT_CHUNK_SIZE   &&
+                    v.espc()[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
+                    v.espc()[3] == FileVec.DFLT_CHUNK_SIZE*3+1
     );
     v.remove(new Futures()).blockForPending();
 
     v = makeCon(0xCAFE,4*FileVec.DFLT_CHUNK_SIZE,false);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(4*FileVec.DFLT_CHUNK_SIZE-1) == 0xCAFE);
-    assertTrue(v._espc.length == 5);
+    assertTrue(v.espc().length == 5);
     assertTrue(
-            v._espc[0] == 0              &&
-                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
-                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
-                    v._espc[3] == FileVec.DFLT_CHUNK_SIZE*3
+            v.espc()[0] == 0              &&
+                    v.espc()[1] == FileVec.DFLT_CHUNK_SIZE   &&
+                    v.espc()[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
+                    v.espc()[3] == FileVec.DFLT_CHUNK_SIZE*3
     );
     v.remove(new Futures()).blockForPending();
   }
@@ -86,11 +86,11 @@ public class VecTest extends TestUtil {
     assertTrue(v.at(0) == 1);
     assertTrue(v.at(234) == 235);
     assertTrue(v.at(2*FileVec.DFLT_CHUNK_SIZE) == 2*FileVec.DFLT_CHUNK_SIZE+1);
-    assertTrue(v._espc.length == 4);
+    assertTrue(v.espc().length == 4);
     assertTrue(
-            v._espc[0] == 0 &&
-                    v._espc[1] == FileVec.DFLT_CHUNK_SIZE &&
-                    v._espc[2] == FileVec.DFLT_CHUNK_SIZE * 2
+            v.espc()[0] == 0 &&
+                    v.espc()[1] == FileVec.DFLT_CHUNK_SIZE &&
+                    v.espc()[2] == FileVec.DFLT_CHUNK_SIZE * 2
     );
     v.remove(new Futures()).blockForPending();
   }

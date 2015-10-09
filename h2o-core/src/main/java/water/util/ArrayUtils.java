@@ -1101,12 +1101,14 @@ public class ArrayUtils {
     Futures fs = new Futures();
     Vec[] vecs = new Vec[rows[0].length];
     Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+    int rowLayout = -1;
     for( int c = 0; c < vecs.length; c++ ) {
-      AppendableVec vec = new AppendableVec(keys[c]);
+      AppendableVec vec = new AppendableVec(keys[c], Vec.T_NUM);
       NewChunk chunk = new NewChunk(vec, 0);
       for (double[] row : rows) chunk.addNum(row[c]);
       chunk.close(0, fs);
-      vecs[c] = vec.close(fs);
+      if( rowLayout== -1) rowLayout = vec.compute_rowLayout();
+      vecs[c] = vec.close(rowLayout,fs);
     }
     fs.blockForPending();
     Frame fr = new Frame(key, names, vecs);
