@@ -77,15 +77,18 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   # Prep srcs: must be of the form [src1,src2,src3,...]
   parseSetup.params$source_frames <- .collapse.char(sapply(data, function (d) attr(d, "id")))
 
-  parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
+  # check the header
+  if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
+  else if( !isTRUE(header) )                parseSetup.params$check_header <- -1
+  else                                      parseSetup.params$check_header <-  1
 
   # set field sep
-  if( nzchar(sep) ) parseSetup$separator <- .asc(sep)
+  if( nzchar(sep) ) parseSetup.params$separator <- .asc(sep)
 
-  # check the header
-  if( is.na(header) && is.null(col.names) ) parseSetup$check_header <-  0
-  else if( !isTRUE(header) )                parseSetup$check_header <- -1
-  else                                      parseSetup$check_header <-  1
+  # check the na.strings
+  if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
+
+  parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
 
   # set the column names
   if(!is.null(col.names)) parseSetup$column_names <- if(is.Frame(col.names)) colnames(col.names) else col.names
@@ -110,9 +113,6 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
         }
     } else { stop("col.types must be a character vector or a named list") }
   }
-
-  # check the na.strings
-  if( !is.null(na.strings) ) parseSetup$na_strings <- .collapse.array(na.strings)
 
   # check the parse_type
   # currently valid types are ARFF, XLS, CSV, SVMLight
