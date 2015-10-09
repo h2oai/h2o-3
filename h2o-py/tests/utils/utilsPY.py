@@ -125,6 +125,8 @@ def javapredict(algo, equality, train, test, x, y, **kwargs):
         model = h2o.random_forest(x=train[x], y=train[y], **kwargs)
     elif algo == "deeplearning":
         model = h2o.deeplearning(x=train[x], y=train[y], **kwargs)
+    elif algo == "glm":
+        model = h2o.glm(x=train[x], y=train[y], **kwargs)
     else:
         raise(ValueError, "algo {0} is not supported".format(algo))
     print model
