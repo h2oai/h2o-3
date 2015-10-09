@@ -14,7 +14,7 @@ import time
 import json
 import requests
 
-sys.path.insert(1, 'rest_tests')
+sys.path.insert(1, '../rest_tests')
 
 #################
 # Config 
