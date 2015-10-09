@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.parser.Categorical;
 import water.util.*;
@@ -9,7 +10,6 @@ import water.util.*;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *
@@ -148,20 +148,35 @@ import java.util.concurrent.Future;
  *              byte:    0      1   2 3 4 5  6 7 8 9  10+
  *  Vec   Key layout: Key.VEC  -1   vec#grp    -1     normal Key bytes; often e.g. a function of original file name
  *  Chunk Key layout: Key.CHK  -1   vec#grp  chunk#   normal Key bytes; often e.g. a function of original file name
- *  Group Key layout: Key.GRP  -1     -1       -1     normal Key bytes; often e.g. a function of original file name
  *  RollupStats Key : Key.CHK  -1   vec#grp    -2     normal Key bytes; often e.g. a function of original file name
+ *  Group Key layout: Key.GRP  -1     -1       -1     normal Key bytes; often e.g. a function of original file name
+ *  ESPC  Key layout: Key.GRP  -1     -1       -2     normal Key bytes; often e.g. a function of original file name
  * </pre>
  *
  * @author Cliff Click
  */
 public class Vec extends Keyed<Vec> {
-  /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
-   *  chunks, so the last entry is the total number of rows.  This field is
-   *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
-   *  such as file-backed Vecs. */
-  final public long[] _espc;
+  // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
+  byte _type;                   // Vec Type
 
-  private String [] _domain;
+  /** Element-start per chunk, i.e. the row layout.  Defined in the
+   *  VectorGroup.  This field is dead/ignored in subclasses that are
+   *  guaranteed to have fixed-sized chunks such as file-backed Vecs. */
+  public int _rowLayout;
+  // Carefully set in the constructor and read_impl to be pointer-equals to a
+  // common copy one-per-node.  These arrays can get both *very* common
+  // (one-per-Vec at least, sometimes one-per-Chunk), and very large (one per
+  // Chunk, could run into the millions).
+  private transient long _espc[];
+
+  // String domain, only for Categorical columns
+  private String[] _domain;
+
+  // Rollup stats key.  Every ask of a rollup stats (e.g. min/mean/max or
+  // bytesize) bounces through the DKV to fetch the latest copy of the Rollups
+  // - lest a Vec.set changes the rollups and we return a stale copy.
+  transient private Key _rollupStatsKey;
+
   /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
@@ -184,14 +199,12 @@ public class Vec extends Keyed<Vec> {
   public static final byte T_NUM  =  3; // Numeric, but not categorical or time
   public static final byte T_CAT  =  4; // Integer, with a categorical/factor String mapping
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
-  byte _type;                   // Vec Type
   public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
   public static final boolean DO_HISTOGRAMS = true;
-  final private Key _rollupStatsKey;
 
-  /** True if this is an categorical column.  All categorical columns are also {@link #isInt}, but
-   *  not vice-versa.
+  /** True if this is an categorical column.  All categorical columns are also
+   *  {@link #isInt}, but not vice-versa.
    *  @return true if this is an categorical column.  */
   public final boolean isCategorical() {
     assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null);
@@ -214,64 +227,60 @@ public class Vec extends Keyed<Vec> {
    *  not vice-versa.
    *  @return true if this is a time column.  */
   public final boolean isTime   (){ return _type==T_TIME; }
-//  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
-  /** Time formatting string.
-   *  @return Time formatting string
-   */
-//  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
-
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array).
    */
-  public Vec( Key<Vec> key, long espc[]) { this(key, espc, null, T_NUM); }
+  public Vec( Key<Vec> key, int rowLayout) { this(key, rowLayout, null, T_NUM); }
 
   /** Build a numeric-type or categorical-type Vec; the caller understands Chunk
    *  layout (via the {@code espc} array); categorical Vecs need to pass the
    *  domain.
    */
-  Vec( Key<Vec> key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_CAT)); }
+  Vec( Key<Vec> key, int rowLayout, String[] domain) { this(key,rowLayout,domain, (domain==null?T_NUM:T_CAT)); }
 
   /** Main default constructor; the caller understands Chunk layout (via the
    *  {@code espc} array), plus categorical/factor the {@code domain} (or null for
    *  non-categoricals), and the Vec type. */
-  public Vec( Key<Vec> key, long espc[], String[] domain, byte type ) {
+  public Vec( Key<Vec> key, int rowLayout, String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_CAT;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
     setMeta(type,domain);
+    _rowLayout = rowLayout;
     _type = type;
     _domain = domain;
-    _espc = espc;
-    _rollupStatsKey = chunkKey(-2);
+    _espc = ESPC.espc(this);
   }
+
+  public long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
    *  an {@code int} because Vecs support more than 2^32 elements. Overridden
    *  by subclasses that compute length in an alternative way, such as
    *  file-backed Vecs.
    *  @return Number of elements in the vector */
-  public long length() { return _espc[_espc.length-1]; }
+  public long length() { espc(); return _espc[_espc.length-1]; }
 
   /** Number of chunks, returned as an {@code int} - Chunk count is limited by
    *  the max size of a Java {@code long[]}.  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs.
    *  @return Number of chunks */
-  public int nChunks() { return _espc.length-1; }
+  public int nChunks() { return espc().length-1; }
 
   /** Convert a chunk-index into a starting row #.  For constant-sized chunks
    *  this is a little shift-and-add math.  For variable-sized chunks this is a
    *  table lookup. */
-  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
+  long chunk2StartElem( int cidx ) { return espc()[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
-  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
+  private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
-    return (_espc == v._espc || Arrays.equals(_espc, v._espc)) &&
+    return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e5);
   }
 
@@ -279,8 +288,7 @@ public class Vec extends Keyed<Vec> {
   boolean readable() { return true ; }
   /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
   boolean writable() { return true; }
-  /** Get the _espc long[]. */
-  public long[] get_espc() { return _espc; }
+  public void setBad() { _type = T_BAD; }
   /** Get the column type. */
   public byte get_type() { return _type; }
   public String get_type_str() { return TYPE_STR[_type]; }
@@ -291,7 +299,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   private void setMeta( byte type, String[] domain) {
-    assert (type==T_CAT && domain!=null) || (type!=T_CAT && domain==null);
+    if( domain==null && type==T_CAT ) type = T_NUM; // Until you have some strings, you are just a numeric column
     _domain = domain;
     _type = type;
   }
@@ -341,20 +349,21 @@ public class Vec extends Keyed<Vec> {
     for( int i=1; i<nchunks; i++ )
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    return makeCon(x,VectorGroup.VG_LEN1,espc);
+    VectorGroup vg = VectorGroup.VG_LEN1;
+    return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
   }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to zero.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to zero.  */
-  public Vec makeZero() { return makeCon(0, null, group(), _espc); }
+  public Vec makeZero() { return makeCon(0, null, group(), _rowLayout); }
 
   /** A new vector with the same size and data layout as the current one, and
    *  initialized to zero, with the given categorical domain.
    *  @return A new vector with the same size and data layout as the current
    *  one, and initialized to zero, with the given categorical domain. */
-  public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
+  public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _rowLayout); }
 
   /** A new vector which is a copy of {@code this} one.
    *  @return a copy of the vector.  */
@@ -372,7 +381,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec doCopy() {
-    final Vec v = new Vec(group().addVec(),_espc.clone());
+    final Vec v = new Vec(group().addVec(),_rowLayout);
     new MRTask(){
       @Override public void map(Chunk c){
         Chunk c2 = c.deepCopy();
@@ -382,9 +391,9 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  public static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
-    final int nchunks = espc.length-1;
-    final Vec v0 = new Vec(group.addVec(), espc, domain);
+  public static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
+    final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
@@ -398,9 +407,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
-    long [] espc = new long[2];
-    espc[1] = vals.length;
-    Vec v = new Vec(vecKey,espc);
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
     for(double d:vals)
@@ -411,9 +418,7 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
   public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
-    long [] espc = new long[2];
-    espc[1] = vals.length;
-    Vec v = new Vec(vecKey,espc, domain);
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}), domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
     for(long d:vals)
@@ -435,12 +440,12 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d, group(), _espc); }
+  public Vec makeCon( final double d ) { return makeCon(d, group(), _rowLayout); }
 
-  private static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
-    if( (long)d==d ) return makeCon((long)d, null, group, espc);
-    final int nchunks = espc.length-1;
-    final Vec v0 = new Vec(group.addVec(), espc, null, T_NUM);
+  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
+    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout);
+    final Vec v0 = new Vec(group.addVec(), rowLayout, null, T_NUM);
+    final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
@@ -462,7 +467,7 @@ public class Vec extends Keyed<Vec> {
     Key<Vec>[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
     for(int i = 0; i < vs.length; ++i)
-      vs[i] = new Vec(keys[i],_espc, 
+      vs[i] = new Vec(keys[i],_rowLayout, 
                       domains== null ? null : domains[i], 
                       types  == null ? T_NUM: types[i]);
     new MRTask() {
@@ -482,14 +487,14 @@ public class Vec extends Keyed<Vec> {
   /** A Vec from an array of doubles
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec makeCon(Key k, double ...rows) {
+  public static Vec makeCon(Key<Vec> k, double ...rows) {
     k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
     Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k);
+    AppendableVec avec = new AppendableVec(k, T_NUM);
     NewChunk chunk = new NewChunk(avec, 0);
     for( double r : rows ) chunk.addNum(r);
     chunk.close(0, fs);
-    Vec vec = avec.close(fs);
+    Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
   }
@@ -690,12 +695,14 @@ public class Vec extends Keyed<Vec> {
    *  computed. */
   public Futures postWrite( Futures fs ) {
     // Get the latest rollups *directly* (do not compute them!).
-    final Key rskey = rollupStatsKey();
-    Value val = DKV.get(rollupStatsKey());
-    if( val != null ) {
-      RollupStats rs = val.get(RollupStats.class);
-      if( rs.isMutating() )  // Vector was mutating, is now allowed for rollups
-        DKV.remove(rskey,fs);// Removing will cause them to be rebuilt, on demand
+    if (writable()) { // skip this for immutable vecs (like FileVec)
+      final Key rskey = rollupStatsKey();
+      Value val = DKV.get(rollupStatsKey());
+      if (val != null) {
+        RollupStats rs = val.get(RollupStats.class);
+        if (rs.isMutating())  // Vector was mutating, is now allowed for rollups
+          DKV.remove(rskey, fs);// Removing will cause them to be rebuilt, on demand
+      }
     }
     return fs;                  // Flow-coding
   }
@@ -709,13 +716,14 @@ public class Vec extends Keyed<Vec> {
    *  compute chunks in an alternative way, such as file-backed Vecs. */
    int elem2ChunkIdx( long i ) {
     if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
+    long[] espc = espc();       // Preload
     int lo=0, hi = nChunks();
     while( lo < hi-1 ) {
       int mid = (hi+lo)>>>1;
-      if( i < _espc[mid] ) hi = mid;
-      else                 lo = mid;
+      if( i < espc[mid] ) hi = mid;
+      else                lo = mid;
     }
-    while( _espc[lo+1] == i ) lo++;
+    while( espc[lo+1] == i ) lo++;
     return lo;
   }
 
@@ -742,7 +750,11 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
   }
-  Key rollupStatsKey() { return _rollupStatsKey; }
+  // Filled in lazily and racily... but all writers write the exact identical Key
+  Key rollupStatsKey() { 
+    if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
+    return _rollupStatsKey;
+  }
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
@@ -787,6 +799,15 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
+  /** Make a ESPC-group key.  */
+  private static Key espcKey(Key key) { 
+    byte [] bits = key._kb.clone();
+    bits[0] = Key.GRP;
+    UnsafeUtils.set4(bits, 2, -1);
+    UnsafeUtils.set4(bits, 6, -2);
+    return Key.make(bits);
+  }
+
   /** Make a Vector-group key.  */
   private Key groupKey(){
     byte [] bits = _key._kb.clone();
@@ -797,7 +818,8 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Get the group this vector belongs to.  In case of a group with only one
-   *  vector, the object actually does not exist in KV store.
+   *  vector, the object actually does not exist in KV store.  This is the ONLY
+   *  place VectorGroups are fetched.
    *  @return VectorGroup this vector belongs to */
   public final VectorGroup group() {
     Key gKey = groupKey();
@@ -1010,7 +1032,7 @@ public class Vec extends Keyed<Vec> {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);
     }
-    Key kr = chunkKey(vkey,-2);
+    Key kr = chunkKey(vkey,-2); // Rollup Stats
     H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
   }
@@ -1081,7 +1103,7 @@ public class Vec extends Keyed<Vec> {
             else              nc.addNum(Double.valueOf(c.atStr(bStr,row).toString()));
           }
         }
-      }.doAll(1,this).outputFrame().anyVec();
+      }.doAll_numericResult(1,new Frame(this)).outputFrame().anyVec();
     }
     return makeCopy(null, T_NUM);
   }
@@ -1089,7 +1111,7 @@ public class Vec extends Keyed<Vec> {
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain==null?null:ArrayUtils.toString(domain);
-    return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
+    return new CPTask(domain).doAll(new byte[]{T_NUM},this).outputFrame(null,dom).anyVec();
   }
 
   private static class CPTask extends MRTask<CPTask> {
@@ -1147,7 +1169,7 @@ public class Vec extends Keyed<Vec> {
    *  domain (or just past it, if 'this' has elements not appearing in the 'to'
    *  domain). */
   public CategoricalWrappedVec adaptTo( String[] domain ) {
-    return new CategoricalWrappedVec(group().addVec(),_espc,domain,this._key);
+    return new CategoricalWrappedVec(group().addVec(),_rowLayout,domain,this._key);
   }
 
   /** Transform this vector to strings.  If the
@@ -1157,7 +1179,7 @@ public class Vec extends Keyed<Vec> {
    *  @return A new String Vec  */
   public Vec toStringVec() {
     if( !isCategorical() ) throw new IllegalArgumentException("String conversion only works on categorical columns");
-    return new Categorical2StrChkTask(_domain).doAll(1,this).outputFrame().anyVec();
+    return new Categorical2StrChkTask(_domain).doAll(new byte[]{T_STR},this).outputFrame().anyVec();
   }
 
   private class Categorical2StrChkTask extends MRTask<Categorical2StrChkTask> {
@@ -1275,15 +1297,16 @@ public class Vec extends Keyed<Vec> {
    *  
    *  @author tomasnykodym
    */
-  public static class VectorGroup extends Iced {
+  public static class VectorGroup extends Keyed<VectorGroup> {
     /** The common shared vector group for very short vectors */
     public static final VectorGroup VG_LEN1 = new VectorGroup();
-
+    // The number of Vec keys handed out by the this VectorGroup already.
+    // Updated by overwriting in a TAtomic.
     final int _len;
-    final Key _key;
-    private VectorGroup(Key key, int len){_key = key;_len = len;}
 
-    public VectorGroup() {
+    // New empty VectorGroup (no Vecs handed out)
+    public VectorGroup() { super(init_key()); _len = 0; }
+    static private Key init_key() { 
       byte[] bits = new byte[26];
       bits[0] = Key.GRP;
       bits[1] = -1;
@@ -1292,31 +1315,24 @@ public class Vec extends Keyed<Vec> {
       UUID uu = UUID.randomUUID();
       UnsafeUtils.set8(bits,10,uu.getLeastSignificantBits());
       UnsafeUtils.set8(bits,18,uu. getMostSignificantBits());
-      _key = Key.make(bits);
-      _len = 0;
+      return Key.make(bits);
     }
 
-    public static boolean sameGroup(Vec v1, Vec v2) {
-      byte [] bits1 = v1._key._kb;
-      byte [] bits2 = v2._key._kb;
-      if(bits1.length != bits2.length)
-        return false;
-      int res  = 0;
-      for(int i = 10; i < bits1.length; ++i)
-        res |= bits1[i] ^ bits2[i];
-      return res == 0;
-    }
-    /** Returns Vec Key from Vec id# 
+    // Clone an old vector group, setting a new len
+    private VectorGroup(Key key, int newlen) { super(key); _len = newlen; }
+
+    /** Returns Vec Key from Vec id#.  Does NOT allocate a Key id#
      *  @return Vec Key from Vec id# */
     public Key<Vec> vecKey(int vecId) {
       byte [] bits = _key._kb.clone();
       bits[0] = Key.VEC;
-      UnsafeUtils.set4(bits,2,vecId);//
+      UnsafeUtils.set4(bits,2,vecId);
       return Key.make(bits);
     }
+
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */
-    private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
+    private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup> {
       final Key _key;
       int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
       private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
@@ -1338,22 +1354,6 @@ public class Vec extends Keyed<Vec> {
       return tsk._n;
     }
 
-
-    /**
-     * Task to atomically add vectors into existing group.
-     * @author tomasnykodym
-     */
-    private final static class ReturnKeysTsk extends TAtomic<VectorGroup>{
-      final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
-      final int _oldCnt;
-      private ReturnKeysTsk(int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}
-      @Override public VectorGroup atomic(VectorGroup old) {
-        return (old._len == _oldCnt)? new VectorGroup(_key, _newCnt):old;
-      }
-    }
-    public Future tryReturnKeys(final int oldCnt, int newCnt) { return new ReturnKeysTsk(oldCnt,newCnt).fork(_key);}
-
-
     /** Gets the next n keys of this group.
      *  @param n number of keys to make
      *  @return arrays of unique keys belonging to this group.  */
@@ -1369,6 +1369,18 @@ public class Vec extends Keyed<Vec> {
      *  @return a new Vec Key in this group   */
     public Key<Vec> addVec() { return addVecs(1)[0]; }
 
+    // -------------------------------------------------
+    static boolean sameGroup(Vec v1, Vec v2) {
+      byte[] bits1 = v1._key._kb;
+      byte[] bits2 = v2._key._kb;
+      if( bits1.length != bits2.length )
+        return false;
+      int res  = 0;
+      for( int i = KEY_PREFIX_LEN; i < bits1.length; i++ )
+        res |= bits1[i] ^ bits2[i];
+      return res == 0;
+    }
+
     /** Pretty print the VectorGroup
      *  @return String representation of a VectorGroup */
     @Override public String toString() {
@@ -1382,8 +1394,142 @@ public class Vec extends Keyed<Vec> {
     }
     /** VectorGroups's hashcode
      *  @return VectorGroups's hashcode */
-    @Override public int hashCode() {
-      return _key.hashCode();
+    @Override public int hashCode() { return _key.hashCode(); }
+    @Override protected long checksum_impl() { throw H2O.fail(); }
+    // Fail to remove a VectorGroup unless you also remove all related Vecs,
+    // Chunks, Rollups (and any Frame that uses them), etc.
+    @Override protected Futures remove_impl( Futures fs ) { throw H2O.fail(); }
+  }
+
+  // ---------------------------------------
+  // Unify ESPC arrays on the local node as much as possible.  This is a
+  // similar problem to what TypeMap solves: sometimes I have a rowLayout index
+  // and want the matching ESPC array, and sometimes I have the ESPC array and
+  // want an index.  The operation is frequent and must be cached locally, but
+  // must be globally consistent.  Hence a "miss" in the local cache means we
+  // need to fetch from global state, and sometimes update the global state
+  // before fetching.
+
+  public static class ESPC extends Keyed<ESPC> {
+    static private NonBlockingHashMap<Key,ESPC> ESPCS = new NonBlockingHashMap<>();
+
+    // Array of Row Layouts (Element Start Per Chunk) ever seen by this
+    // VectorGroup.  Shared here, amongst all Vecs using the same row layout
+    // (instead of each of 1000's of Vecs having a copy, each of which is
+    // nChunks long - could be millions).
+    //
+    // Element-start per chunk.  Always zero for chunk 0.  One more entry than
+    // chunks, so the last entry is the total number of rows.
+    public long[][] _espcs;
+
+    private ESPC(Key key) { this(key,new long[0][]); }
+    private ESPC(Key key, long[][] espcs) { super(key); _espcs = espcs;}
+    // Fetch from the local cache
+    private static ESPC getLocal( Key kespc ) {
+      ESPC local = ESPCS.get(kespc);
+      if( local != null ) return local;
+      ESPCS.putIfAbsent(kespc,new ESPC(kespc)); // Racey, not sure if new or old is returned
+      return ESPCS.get(kespc);
     }
+
+    // Fetch from remote, and unify as needed
+    private static ESPC getRemote( ESPC local, Key kespc ) {
+      final ESPC remote = DKV.getGet(kespc);
+      if( remote == null || remote == local ) return local; // No change
+
+      // Something New?  If so, we need to unify the sharable arrays with a
+      // "smashing merge".  Every time a remote instance of a ESPC is updated
+      // (to add new ESPC layouts), and it is pulled locally, the new copy
+      // brings with it a complete copy of all ESPC arrays - most of which
+      // already exist locally in the old ESPC instance.  Since these arrays
+      // are immutable and monotonically growing, it's safe (and much more
+      // efficient!) to make the new copy use the old copies arrays where
+      // possible.
+      long[][] local_espcs = local ._espcs;
+      long[][] remote_espcs= remote._espcs;
+      // Spin attempting to move the larger remote value into the local cache
+      while( true ) {
+        // Is the remote stale, and the local value already larger?  Can happen
+        // if the local is racily updated by another thread, after this thread
+        // reads the remote value (which then gets invalidated, and updated to
+        // a new larger value).
+        if( local_espcs.length >= remote_espcs.length ) return local;
+        // Use my (local, older, more heavily shared) ESPCs where possible.
+        // I.e., the standard remote read will create new copies of all ESPC
+        // arrays, but the *local* copies are heavily shared.  All copies are
+        // equal, but using the same shared copies cuts down on copies.
+        System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
+        ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
+        local = res;
+        local_espcs = local ._espcs;
+        remote_espcs= remote._espcs;
+      }
+    }
+
+    /** Get the ESPC for a Vec.  Called once per new construction or read_impl.  */
+    public static long[] espc( Vec v ) {
+      // Check the local cache
+      final Key kespc = espcKey(v._key);
+      ESPC local = getLocal(kespc);
+      final int r = v._rowLayout;
+      if( r < local._espcs.length ) return r==-1 ? null : local._espcs[r];
+      // Now try to refresh the local cache from the remote cache
+      final ESPC remote = getRemote( local, kespc);
+      if( r < remote._espcs.length ) return remote._espcs[r];
+      throw H2O.fail("Vec "+v._key+" asked for layout "+r+", but only "+remote._espcs.length+" layouts defined");
+    }
+
+    // Check for a prior matching ESPC
+    private static int find_espc( long[] espc, long[][] espcs ) {
+      // Check for a local pointer-hit first:
+      for( int i=0; i<espcs.length; i++ ) if( espc==espcs[i] ) return i;
+      // Check for a local deep equals next:
+      for( int i=0; i<espcs.length; i++ )
+        if( espc.length==espcs[i].length && Arrays.equals(espc,espcs[i]) ) 
+          return i;
+      return -1;                // No match
+    }
+
+    /** Get the shared ESPC index for this layout.  Will return an old layout
+     *  if one matches, otherwise will atomically update the ESPC to set
+     *  a new layout.  The expectation is that new layouts are rare: once per
+     *  parse, and perhaps from filtering MRTasks, or data-shuffling.  */
+    public static int rowLayout( Key key, final long[] espc ) {
+      Key kespc = espcKey(key);
+      ESPC local = getLocal(kespc);
+      int idx = find_espc(espc,local._espcs);
+      if( idx != -1 ) return idx;
+
+      // See if the ESPC is in the LOCAL DKV - if not it might have been
+      // invalidated, and a refetch might get a new larger ESPC with the
+      // desired layout.
+      if( !H2O.containsKey(kespc) ) {
+        local = getRemote(local,kespc);      // Fetch remote, merge as needed
+        idx = find_espc(espc, local._espcs); // Retry
+        if( idx != -1 ) return idx;
+      }
+      
+      // Send the ESPC over to the ESPC master, and request it get
+      // inserted.
+      new TAtomic<ESPC>() {
+        @Override public ESPC atomic( ESPC old ) {
+          if( old == null ) return new ESPC(_key,new long[][]{espc});
+          long[][] espcs = old._espcs;
+          int idx = find_espc(espc,espcs);
+          if( idx != -1 ) return null; // Abort transaction, idx exists; client needs to refresh
+          int len = espcs.length;
+          espcs = Arrays.copyOf(espcs,len+1);
+          espcs[len] = espc;    // Insert into array
+          return new ESPC(_key,espcs);
+        }
+      }.invoke(kespc);
+      // Refetch from master, try again
+      ESPC reloaded = getRemote(local,kespc); // Fetch remote, merge as needed
+      idx = find_espc(espc,reloaded._espcs);  // Retry
+      assert idx != -1;                       // Must work now (or else the install failed!)
+      return idx;
+    }
+    public static void clear() { ESPCS.clear(); }
+    @Override protected long checksum_impl() { throw H2O.fail(); }
   }
 }

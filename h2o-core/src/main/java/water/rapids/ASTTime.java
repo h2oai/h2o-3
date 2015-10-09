@@ -84,7 +84,7 @@ abstract class ASTTime extends ASTPrim {
             for( int i=0; i<chk._len; i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
-        }.doAll(1,fr).outputFrame(fr._names, factors()));
+        }.doAll_numericResult(1,fr).outputFrame(fr._names, factors()));
     default: throw water.H2O.fail();
     }
   }
@@ -142,7 +142,7 @@ class ASTasDate extends ASTPrim {
           } else nc.addNA();
         }
       }
-    }.doAll(1,fr).outputFrame(fr._names, null);
+    }.doAll_numericResult(1,fr).outputFrame(fr._names, null);
     return new ValFrame(fr2);
   }
 }
@@ -206,7 +206,7 @@ class ASTMktime extends ASTPrim {
           n.addNum(dt.getMillis());
         }
       }
-    }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    }.doAll(new byte[]{Vec.T_NUM},vecs).outputFrame(new String[]{"msec"},null);
     // Clean up the constants
     for( int i=0; i<nargs()-1; i++ )
       if( fs[i] == null )

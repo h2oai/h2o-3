@@ -721,12 +721,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup(){
       updateModelOutput();
-      try {
-        _parms.read_unlock_frames(GLM.this);
-      }
-      catch (Throwable t) {
-        // nada
-      }
+      _parms.read_unlock_frames(GLM.this);
       if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
         for( Key k : _adapt_keys ) Keyed.remove(k);
       if(_dinfo      != null) _dinfo     .remove();
@@ -761,7 +756,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           return false;
         }
         try {
-          doCleanup();
+          if( !(ex instanceof IllegalArgumentException) ) // e.g. Illegal beta constraints file, got duplicate constraint for predictor
+            doCleanup();
           new RemoveCall(null, _dest).invokeTask();
         } catch(Throwable t) {Log.err(t);}
         failed(ex);
@@ -782,7 +778,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       _parms.read_lock_frames(GLM.this);
       //todo: fill in initialization for n-folds
-      new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
+      H2O.submitTask(new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]));
     }
     private class LambdaSearchIteration extends H2O.H2OCallback {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }

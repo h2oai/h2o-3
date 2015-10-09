@@ -138,27 +138,43 @@ java -jar build/h2o.jar
 git clone https://github.com/h2oai/h2o-3.git
 cd h2o-3
 ./gradlew syncSmalldata
+./gradlew syncRPackages
 ./gradlew build
 ```
 
->**Note**: Running tests starts five test JVMs that form an H2O cluster and requires at least 8GB of RAM (preferably 16GB of RAM).
+>**Notes**: 
+>
+> - Running tests starts five test JVMs that form an H2O cluster and requires at least 8GB of RAM (preferably 16GB of RAM).
+> - Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE} can be any path):
+>  
+>  ```
+> mkdir -p ${WORKSPACE}/Rlibrary
+export R_LIBS_USER=${WORKSPACE}/Rlibrary
+```
 
 #### Recipe 3:  Pull, clean, build, and run tests
 
 ```
 git pull
 ./gradlew syncSmalldata
+./gradlew syncRPackages
 ./gradlew clean
 ./gradlew build
 ```
 
 #### Notes
 
-A `./gradlew clean` is recommended after each `git pull`.
+ - We recommend using `./gradlew clean` after each `git pull`.
 
-Skip tests by adding `-x test` at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
+- Skip tests by adding `-x test` at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
 
-Syncing smalldata is not required after each pull, but if tests fail due to missing data files, then try `./gradlew syncSmalldata` as the first troubleshooting step.  Syncing smalldata grabs data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check in these files.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
+- Syncing smalldata is not required after each pull, but if tests fail due to missing data files, then try `./gradlew syncSmalldata` as the first troubleshooting step.  Syncing smalldata downloads data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check in these files.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
+- Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE} can be any path):
+
+  ```
+  mkdir -p ${WORKSPACE}/Rlibrary
+  export R_LIBS_USER=${WORKSPACE}/Rlibrary
+  ```
 
 ### 4.2. Setup on all Platforms
 

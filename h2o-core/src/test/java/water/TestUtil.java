@@ -50,9 +50,9 @@ public class TestUtil extends Iced {
     int cnt=0;
     if( leaked_keys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
-        Value value = H2O.raw_get(k);
+        Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value.isVecGroup() || k == Job.LIST ||
+        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
             // Also leave around all attempted Jobs for the Jobs list
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
@@ -67,7 +67,7 @@ public class TestUtil extends Iced {
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
       @Override public byte priority() { return H2O.GUI_PRIORITY; }
-      @Override public void setupLocal() {  H2O.raw_clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
@@ -182,12 +182,12 @@ public class TestUtil extends Iced {
   public static Vec vec(String[] domain, int ...rows) { 
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k);
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
     avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
     chunk.close(0, fs);
-    Vec vec = avec.close(fs);
+    Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
   }

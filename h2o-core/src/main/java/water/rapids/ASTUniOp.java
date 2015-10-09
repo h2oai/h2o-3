@@ -33,7 +33,7 @@ abstract class ASTUniOp extends ASTPrim {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
       case Val.ROW:
         ValRow v = (ValRow)val;
         double[] ds = new double[v._ds.length];
@@ -106,7 +106,7 @@ class ASTIsNA  extends ASTPrim {
                 nc.addNum(c.isNA(i) ? 1 : 0);
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
     default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
@@ -162,7 +162,7 @@ class ASTStratifiedSplit extends ASTPrim {
           }
         }
       }
-    }.doAll(1,y).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
+    }.doAll_numericResult(1,new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
   }
 }
 
@@ -225,8 +225,9 @@ class ASTLevels extends ASTPrim {
       if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
+    final int rowLayout = Vec.ESPC.rowLayout(keys[0],new long[]{0,max});
     for( int i=0;i<f.numCols();++i ) {
-      AppendableVec v = new AppendableVec(keys[i]);
+      AppendableVec v = new AppendableVec(keys[i],Vec.T_NUM);
       NewChunk nc = new NewChunk(v,0);
       String[] dom = f.vec(i).domain();
       int numToPad = dom==null?max:max-dom.length;
@@ -234,7 +235,7 @@ class ASTLevels extends ASTPrim {
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
       nc.close(0,fs);
-      vecs[i] = v.close(fs);
+      vecs[i] = v.close(rowLayout,fs);
       vecs[i].setDomain(dom);
     }
     fs.blockForPending();
@@ -268,7 +269,7 @@ class ASTSetLevel extends ASTPrim {
         for (int i=0;i<c._len;++i)
           nc.addNum(idx);
       }
-    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
     return new ValFrame(fr2);
   }
 }
@@ -366,7 +367,7 @@ class ASTMatch extends ASTPrim {
         else
           for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
-    }.doAll(1, fr.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
   private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
@@ -406,14 +407,14 @@ class ASTWhich extends ASTPrim {
       for(int i=0;i<in.length;++i) in[i] = f.vecs()[i].at(0)==1?i:-1;
       Futures fs = new Futures();
       Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-      AppendableVec v = new AppendableVec(key);
+      AppendableVec v = new AppendableVec(key,Vec.T_NUM);
       NewChunk chunk = new NewChunk(v, 0);
       for (double d : in) {
         if( d!=-1)
           chunk.addNum(d);
       }
       chunk.close(0, fs);
-      Vec vec = v.close(fs);
+      Vec vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }
@@ -423,7 +424,7 @@ class ASTWhich extends ASTPrim {
         for(int i=0;i<c._len;++i)
           if( c.at8(i)==1 ) nc.addNum(start+i);
       }
-    }.doAll(1,f.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM},f.anyVec()).outputFrame();
     return new ValFrame(f2);
   }
 }
