@@ -100,16 +100,22 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
     } else if ((typeof(col.types) == "list")) {
         nms <- names(col.types)
         if (is.null(nms)) stop("col.types must be named list")
-        if (is.null(col.names)) stop("if col.types is a named list, then col.names must be specified")
-        if (length(setdiff(nms, col.names)) > 0) stop("names specified in col.types must be a subset of col.names")
-        if (length(col.names) != parseSetup$number_columns) stop("length of col.names must equal to the number of columns in dataset")
         for (n in nms) {
-            i <- 1
-            for (cn in parseSetup$column_names) {
-                if (n == cn) break
-                i <- i + 1
+            valid_col_name <- if (is.null(parseSetup$column_names)) .valid.generated.col(n,parseSetup$number_columns) else n %in% parseSetup$column_names
+            if (!valid_col_name) stop("the names specified in col.types must be a subset of the column names")
+        }
+        if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) stop("length of col.names must equal to the number of columns in dataset")
+        for (n in nms) {
+            if (is.null(parseSetup$column_names)) {
+                parseSetup$column_types[[as.numeric(substring(n,2))]] <- col.types[[n]]
+            } else {
+                i <- 1
+                for (cn in parseSetup$column_names) {
+                    if (n == cn) break
+                    i <- i + 1
+                }
+                parseSetup$column_types[[i]] <- col.types[[n]]
             }
-            parseSetup$column_types[[i]] <- col.types[[n]]
         }
     } else { stop("col.types must be a character vector or a named list") }
   }
@@ -155,4 +161,10 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
 # ASCII lookup on sep
 .asc <- function(c) strtoi(charToRaw(c),16L)
+
+.valid.generated.col <- function(name,ncols) {
+     if (!grepl("^C[1-9]+",name)) return(FALSE)
+     if (as.numeric(substring(name,2)) > ncols) return(FALSE)
+     return(TRUE)
+}
 

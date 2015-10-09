@@ -17,96 +17,87 @@ test.continuous.or.categorical <- function() {
 
   ##### single file #####
   # col.types as named list
-  df.hex <- h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5"), col.types=list(C4="Enum"))
-  expect_true(length(setdiff(names(df.hex),c("C1","C2","C3","C4","C5"))) == 0)
-  expect_true(is.numeric(df.hex$C1))
-  expect_true(is.numeric(df.hex$C2))
-  expect_true(is.numeric(df.hex$C3))
-  expect_true(is.factor(df.hex$C4))
-  expect_true(is.factor(df.hex$C5))
+  df.hex1 <- h2o.importFile(locate("smalldata/iris/iris.csv"), col.types=list(C4="Enum"))
+  expect_true(length(setdiff(names(df.hex1),c("C1","C2","C3","C4","C5"))) == 0)
+  expect_true(is.numeric(df.hex1$C1))
+  expect_true(is.numeric(df.hex1$C2))
+  expect_true(is.numeric(df.hex1$C3))
+  expect_true(is.factor(df.hex1$C4))
+  expect_true(is.factor(df.hex1$C5))
 
   e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.types=list("Numeric","Numeric","Numeric","Numeric","Enum")), error = function(x) x)
   expect_true(e[[1]] == "col.types must be named list")
 
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.types=list(C4="Enum")), error = function(x) x)
-  expect_true(e[[1]] == "if col.types is a named list, then col.names must be specified")
+  e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.types=list(foo="Enum")), error = function(x) x)
+  expect_true(e[[1]] == "the names specified in col.types must be a subset of the column names")
 
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5"), col.types=list(C6="Enum")), error = function(x) x)
-  expect_true(e[[1]] == "names specified in col.types must be a subset of col.names")
-
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5","C6"), col.types=list(C6="Enum")), error = function(x) x)
+  e <- tryCatch(h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5","C6"), col.types=list(C5="Enum")), error = function(x) x)
   expect_true(e[[1]] == "length of col.names must equal to the number of columns in dataset")
 
   # col.types as character vector
-  df.hex <- h2o.importFile(locate("smalldata/iris/iris.csv"), col.names=c("C1","C2","C3","C4","C5"), col.types=c("Numeric","Numeric","Numeric","Numeric","Enum"))
-  expect_true(length(setdiff(names(df.hex),c("C1","C2","C3","C4","C5"))) == 0)
-  expect_true(is.numeric(df.hex$C1))
-  expect_true(is.numeric(df.hex$C2))
-  expect_true(is.numeric(df.hex$C3))
-  expect_true(is.numeric(df.hex$C4))
-  expect_true(is.factor(df.hex$C5))
+  df.hex2 <- h2o.importFile(locate("smalldata/iris/iris.csv"), col.types=c("Numeric","Numeric","Enum","Numeric","Enum"))
+  expect_true(length(setdiff(names(df.hex2),c("C1","C2","C3","C4","C5"))) == 0)
+  expect_true(is.numeric(df.hex2$C1))
+  expect_true(is.numeric(df.hex2$C2))
+  expect_true(is.factor(df.hex2$C3))
+  expect_true(is.numeric(df.hex2$C4))
+  expect_true(is.factor(df.hex2$C5))
 
   ##### folder #####
   # col.types as named list
-  df.hex <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.names=c("C1","C2","C3","C4","C5"), col.types=list(C4="Enum"))
-  expect_true(length(setdiff(names(df.hex),c("C1","C2","C3","C4","C5"))) == 0)
-  expect_true(is.numeric(df.hex$C1))
-  expect_true(is.numeric(df.hex$C2))
-  expect_true(is.numeric(df.hex$C3))
-  expect_true(is.factor(df.hex$C4))
-  expect_true(is.factor(df.hex$C5))
+  df.hex3 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.types=list(C4="Enum"))
+  expect_true(length(setdiff(names(df.hex3),c("C1","C2","C3","C4","C5"))) == 0)
+  expect_true(is.numeric(df.hex3$C1))
+  expect_true(is.numeric(df.hex3$C2))
+  expect_true(is.numeric(df.hex3$C3))
+  expect_true(is.factor(df.hex3$C4))
+  expect_true(is.factor(df.hex3$C5))
 
   e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.types=list("Numeric","Numeric","Numeric","Numeric","Enum")), error = function(x) x)
   expect_true(e[[1]] == "col.types must be named list")
 
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.types=list(C4="Enum")), error = function(x) x)
-  expect_true(e[[1]] == "if col.types is a named list, then col.names must be specified")
+  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.types=list(bar="Enum")), error = function(x) x)
+  expect_true(e[[1]] == "the names specified in col.types must be a subset of the column names")
 
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.names=c("C1","C2","C3","C4","C5"), col.types=list(C6="Enum")), error = function(x) x)
-  expect_true(e[[1]] == "names specified in col.types must be a subset of col.names")
-
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.names=c("C1","C2","C3","C4","C5","C6"), col.types=list(C6="Enum")), error = function(x) x)
+  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.names=c("C1","C2","C3","C4","C5","C6"), col.types=list(C5="Enum")), error = function(x) x)
   expect_true(e[[1]] == "length of col.names must equal to the number of columns in dataset")
 
   # col.types as character vector
-  df.hex <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.names=c("C1","C2","C3","C4","C5"), col.types=c("Enum","Numeric","Numeric","Numeric","Enum"))
-  expect_true(length(setdiff(names(df.hex),c("C1","C2","C3","C4","C5"))) == 0)
-  expect_true(is.factor(df.hex$C1))
-  expect_true(is.numeric(df.hex$C2))
-  expect_true(is.numeric(df.hex$C3))
-  expect_true(is.numeric(df.hex$C4))
-  expect_true(is.factor(df.hex$C5))
+  df.hex4 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"), col.types=c("Enum","Numeric","Numeric","Numeric","Enum"))
+  expect_true(length(setdiff(names(df.hex4),c("C1","C2","C3","C4","C5"))) == 0)
+  expect_true(is.factor(df.hex4$C1))
+  expect_true(is.numeric(df.hex4$C2))
+  expect_true(is.numeric(df.hex4$C3))
+  expect_true(is.numeric(df.hex4$C4))
+  expect_true(is.factor(df.hex4$C5))
 
   ##### folder w/ header#####
   # col.types as named list
-  df.hex <- h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5"), col.types=list(C3="Enum"))
-  expect_true(length(setdiff(names(df.hex),c("C1","C2","C3","C4","C5"))) == 0)
-  expect_true(is.numeric(df.hex$C1))
-  expect_true(is.numeric(df.hex$C2))
-  expect_true(is.factor(df.hex$C3))
-  expect_true(is.numeric(df.hex$C4))
-  expect_true(is.factor(df.hex$C5))
+  df.hex5 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.types=list(sepal_wid="Enum",petal_len="Enum"))
+  expect_true(length(setdiff(names(df.hex5),c("sepal_len","sepal_wid","petal_len","petal_wid","class"))) == 0)
+  expect_true(is.numeric(df.hex5$sepal_len))
+  expect_true(is.factor(df.hex5$sepal_wid))
+  expect_true(is.factor(df.hex5$petal_len))
+  expect_true(is.numeric(df.hex5$petal_wid))
+  expect_true(is.factor(df.hex5$class))
 
   e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.types=list("Numeric","Numeric","Numeric","Numeric","Enum")), error = function(x) x)
   expect_true(e[[1]] == "col.types must be named list")
 
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.types=list(C4="Enum")), error = function(x) x)
-  expect_true(e[[1]] == "if col.types is a named list, then col.names must be specified")
+  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.types=list(baz="Enum")), error = function(x) x)
+  expect_true(e[[1]] == "the names specified in col.types must be a subset of the column names")
 
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5"), col.types=list(C6="Enum")), error = function(x) x)
-  expect_true(e[[1]] == "names specified in col.types must be a subset of col.names")
-
-  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5","C6"), col.types=list(C6="Enum")), error = function(x) x)
+  e <- tryCatch(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5","C6"), col.types=list(C5="Enum")), error = function(x) x)
   expect_true(e[[1]] == "length of col.names must equal to the number of columns in dataset")
 
   # col.types as character vector
-  df.hex <- h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5"), col.types=c("Numeric","Enum","Numeric","Numeric","Enum"), header=T)
-  expect_true(length(setdiff(names(df.hex),c("C1","C2","C3","C4","C5"))) == 0)
-  expect_true(is.numeric(df.hex$C1))
-  expect_true(is.factor(df.hex$C2))
-  expect_true(is.numeric(df.hex$C3))
-  expect_true(is.numeric(df.hex$C4))
-  expect_true(is.factor(df.hex$C5))
+  df.hex6 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"), col.names=c("C1","C2","C3","C4","C5"), col.types=c("Numeric","Enum","Numeric","Numeric","Enum"))
+  expect_true(length(setdiff(names(df.hex6),c("C1","C2","C3","C4","C5"))) == 0)
+  expect_true(is.numeric(df.hex6$C1))
+  expect_true(is.factor(df.hex6$C2))
+  expect_true(is.numeric(df.hex6$C3))
+  expect_true(is.numeric(df.hex6$C4))
+  expect_true(is.factor(df.hex6$C5))
 
 }
 
