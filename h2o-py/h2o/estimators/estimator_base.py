@@ -22,6 +22,7 @@ class H2OEstimator(ModelBase):
     super(H2OEstimator, self).__init__(None, None, None)
     self.estimator=None
     self.parms=None
+    self._estimator_type = ""
 
   def train(self,X,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any

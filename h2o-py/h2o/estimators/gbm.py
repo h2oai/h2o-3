@@ -58,7 +58,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   score_each_iteration : bool
     Attempts to score each tree.
 
-  :return: A new classifier or regression model.
+  Returns
+  -------
+    A new H2OGradientBoostedEstimator object.
   """
   def __init__(self, model_id=None, distribution=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
@@ -70,4 +72,3 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     self.parms = locals()
     self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
     self.parms["algo"] = "gbm"
-    self._estimator_type = ""

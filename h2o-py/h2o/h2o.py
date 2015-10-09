@@ -10,9 +10,21 @@ import tabulate
 from connection import H2OConnection
 from job import H2OJob
 from expr import ExprNode
-from frame import H2OFrame, _py_tmp_key, _is_list_of_lists
+from frame import H2OFrame, _py_tmp_key, _is_list_of_lists, _gen_header
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
+
+
+# @h2o_deprecated decorator
+def h2o_deprecated(newfun=None):
+  def o(fun):
+    def i(*args, **kwargs):
+      print '\n'
+      if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
+      warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
+      return newfun(*args, **kwargs)
+    return i
+  return o
 
 
 def lazy_import(path):
@@ -133,7 +145,8 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if column_types:
     if isinstance(column_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
-      if not j["column_names"]: raise ValueError("column names should be specified")
+      if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
+        j["column_names"] = _gen_header(j["number_columns"])
       if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
       idx = 0
       column_types_list = []
@@ -691,6 +704,7 @@ def shutdown(conn=None, prompt=True):
   if conn == None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
+@h2o_deprecated
 def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=None,model_id=None,
                  overwrite_with_best_model=None,validation_frame=None,checkpoint=None,autoencoder=None,
                  use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
@@ -1080,6 +1094,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
 
   :return: A new classifier or regression model.
   """
+  warnings.warn("`h2o.gbm` is deprecated. Use the estimators sub module to build an H2OGradientBoostedEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="gbm"
   return h2o_model_builder.supervised(parms)
@@ -1819,17 +1834,6 @@ def can_use_pandas():
 
 
 #  ALL DEPRECATED METHODS BELOW #
-
-def h2o_deprecated(newfun=None):
-  def o(fun):
-    def i(*args, **kwargs):
-      print '\n'
-      if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
-      warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
-      return newfun(*args, **kwargs)
-    return i
-  return o
-
 @h2o_deprecated(import_file)
 def import_frame():
   """

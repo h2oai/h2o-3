@@ -1,5 +1,6 @@
 from .estimator_base import H2OEstimator
 
+
 class H2ORandomForestEstimator(H2OEstimator):
   def __init__(self, model_id=None, mtries=None, sample_rate=None, build_tree_one_node=None,
                ntrees=None, max_depth=None, min_rows=None, nbins=None, nbins_cats=None,
@@ -63,4 +64,3 @@ class H2ORandomForestEstimator(H2OEstimator):
     self.parms = locals()
     self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
     self.parms["algo"] = "drf"
-    self._estimator_type=""
