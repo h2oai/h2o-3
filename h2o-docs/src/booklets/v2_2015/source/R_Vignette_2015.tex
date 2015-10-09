@@ -1,10 +1,7 @@
-
-
-%\input{common/conf_top.tex}
-\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+\input{common/conf_top.tex}
+%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
-
 \begin{document}
 
 \input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
@@ -1164,7 +1161,7 @@ First 10 rows:
 The following section lists some common R commands by function and a brief description of each command. 
 
 \subsection {Data Set Operations}
-\bgroup\obeylines %needed for formatting
+{\bgroup\obeylines %needed for formatting
 
 {\emph{Data Import/Export}}
 {\texttt{h2o.downloadCSV}}: Download a H2O dataset to a CSV file on local disk.
@@ -1185,14 +1182,14 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.interaction}}: Create interaction terms between categorical features of an H2O Frame. 
 \medskip
 \emph{Data Sampling/Splitting}\par
-{\texttt{h2o.splitFrame}: Split an existing H2O data set according to user-specified ratios. 
+{\texttt{h2o.splitFrame}}: Split an existing H2O data set according to user-specified ratios. 
 \newpage
 \emph{Missing Data Handling}\par
 {\texttt{h2o.impute}}: Impute a column of data using the mean, median, or mode. 
 {\texttt{h2o.insertMissingValues}}: Replaces a user-specified fraction of entries in a H2O dataset with missing values. 
-
+}
 \subsection{General Data Operations}
-
+{\bgroup\obeylines %needed for formatting
 \emph{Subscripting example to pull pieces from data object.} 
 \begin{lstlisting}[style=R]
   x[j]  ## note: chooses column J, not row J
@@ -1228,8 +1225,10 @@ The following section lists some common R commands by function and a brief descr
 {\emph{Data Type Coercion}}\par
 {\texttt{as.factor}}: Convert a column from numeric to factor. 
 {\texttt{as.Date}}: Converts a column from factor to date. 
+}
 
 \subsection{Methods from Group Generics}
+{\bgroup\obeylines %needed for formatting
 \medskip
 {\emph{Math (H2O)}}\par
 {\texttt{abs}}: Compute the absolute value of x.  
@@ -1285,9 +1284,9 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{prod}}: Display the product of all values present in its arguments.  
 {\texttt{any}}: Given a set of logical vectors, determine if at least one of the values is true.  
 {\texttt{all}}: Given a set of logical vectors, determine if all of the values are true.
-
+}
 \subsection{Other Aggregations}
-
+{\bgroup\obeylines %needed for formatting
 \medskip
 \emph{Non-Group Generic Summaries}\par
 {\texttt{mean}}: Generic function for the (trimmed) arithmetic mean.  
@@ -1298,7 +1297,7 @@ The following section lists some common R commands by function and a brief descr
 
 \medskip
 \emph{Row / Column Aggregation}\par
-{\texttt{apply}: Apply a function over an H2O parsed data object (an array). 
+{\texttt{apply}}: Apply a function over an H2O parsed data object (an array). 
 
 \medskip
 \emph{Group By Aggregation}\par
@@ -1308,9 +1307,9 @@ The following section lists some common R commands by function and a brief descr
 \medskip
 \emph{Tabulation}\par
 {\texttt{h2o.table}}: Use the cross-classifying factors to build a table of counts at each combination of factor levels.
-
+}
 \subsection{Data Munging}\par
-
+{\bgroup\obeylines %needed for formatting
 \medskip
 \emph{General Column Manipulations}\par
 {\texttt{is.na}}: Display missing elements.   
@@ -1348,9 +1347,9 @@ The following section lists some common R commands by function and a brief descr
 \emph{Matrix Operations}\par
 {\texttt{\%$*$\%}}}: Multiply two matrices, if they are conformable. 
 {\texttt{t}}: Given a matrix or data.frame x, t returns the transpose of x. 
-
+}
 \subsection{Data Modeling}
-
+{\bgroup\obeylines %needed for formatting
 \medskip
 \emph{Model Training: Supervised Learning}\par
 {\texttt{h2o.deeplearning}}: Perform Deep Learning neural networks on an\\ H2OParsedData object. 
@@ -1379,8 +1378,8 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.accuracy}}: Get the between cluster sum of squares. 
 {\texttt{h2o.auc}}: Retrieve the AUC (area under ROC curve). 
 {\texttt{h2o.confusionMatrix}}: Display prediction errors for classification data from a column of predicted responses and a column of actual (reference) responses in H2O. 
-{\texttt{h2o.hit\_ratio\_table}}: Retrieve the Hit Ratios. If {\texttt{train}, {\texttt{valid}}, and {\texttt{xval}} parameters are FALSE (default), then the training Hit Ratios value is returned. If more than one parameter is set to TRUE, then a named list
-of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{valid}}, or {\texttt{xval}}. 
+{\texttt{h2o.hit\_ratio\_table}}: Retrieve the Hit Ratios. If {\texttt{train}}, {\texttt{valid}}, and {\texttt{xval}} parameters are FALSE (default), then the training Hit Ratios value is returned. If more than one parameter is set to TRUE, then a named list
+of Hit Ratio tables are returned, where the names are {\texttt{train}}, {\texttt{valid}}, or {\texttt{xval}}. 
 {\texttt{h2o.performance}}: Evaluate the predictive performance of a model via various measures. 
 
 \medskip
@@ -1391,8 +1390,9 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 \emph{Clustering Model Helper}\par
 {\texttt{h2o.betweenss}}: Get the between cluster sum of squares. 
 {\texttt{h2o.centers}}: Retrieve the Model Centers. 
-
+}
 \subsection{H2O Cluster Operations}
+{\bgroup\obeylines %needed for formatting
 \medskip
 \emph{H2O Key Value Store Access}\par
 {\texttt{h2o.assign}}: Assign H2O hex.keys to objects in their R environment. 
@@ -1437,41 +1437,12 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}, {\texttt{
 {\texttt{h2o.tolower}}: Convert characters to lower case. 
 {\texttt{h2o.toupper}}: Convert characters to upper case. 
 {\texttt{h2o.trim}}: Trim spaces. 
-
-\egroup %needed for formatting
+}
+%\egroup %needed for formatting
 
 
 
 \newpage
-
-\section{References}
-
-%TODO: Fix this doc so that everything in this section that is commented out works. It should be able to reference the bibliography the same way as GLM_Vignette.tex and GBM_Vignette.tex. Can't get it to work right, so hard-coding this section for now. 
-
-\bibliographystyle{plain}  %alphadin}
-
-\nobibliography{bibliography.bib}  %hides entire bibliography so just \bibentry items are included
-%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
-
-%\bibentry{h2odocs}
-
-%\bibentry{h2ogithubrepo}
-
-%\bibentry{h2odatasets}
-
-%\bibentry{h2ojira}
-
-%\bibentry{stream}
-
-%\bibentry{rdocs}
-
-%\bibentry{rensemble}
-
-Anqi Fu. {\textbf{Big Data Science in H2O with R}}, 2013. URL {\url{http://h2o.ai/blog/2013/08/big-data-science-in-h2o-with-r/}}
-H2O.ai Team. {\textbf{H2O website}}, 2015. URL {\url{http://h2o.ai}}H2O.ai Team. {\textbf{H2O documentation}}, 2015. URL {\url{http://docs.h2o.ai}}H2O.ai Team. {\textbf{H2O GitHub Repository}}, 2015. URL {\url{https://github. com/h2oai}}H2O.ai Team. {\textbf{H2O Datasets}}, 2015. URL {\url{http://data.h2o.ai}}
- H2O.ai Team. {\textbf{H2O JIRA}}, 2015. URL {\url{https://jira.h2o.ai}}H2O.ai Team. {\textbf{H2Ostream}}, 2015. URL {\url{https://groups.google.com/ d/forum/h2ostream}}H2O.ai Team. {\textbf{H2O R Package Documentation}}, 2015. URL {\url{http:// h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}}
-Erin LeDell. {\textbf{R Ensemble Documentation}}, 2014. URL {\url{http://www.stat.berkeley.edu/~ledell/R/h2oEnsemble.pdf}}
-R Core Team. {\textbf{R: A Language and Environment for Statistical Computing}}, 2015. URL {\url{https://www.R-project.org}}
 
 \newpage
 
@@ -1501,5 +1472,32 @@ Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brin
 \textbf{Patrick Aboyoun}
 
 Patrick is a former math and data hacker at H2O.ai who has made a career out of creating and delivering software and training for data scientists, particularly those who love R.  Patrick received an M.S. in Statistics from the University of Washington and a B.S. in Statistics from Carnegie Mellon University.
+
+\newpage
+\section{References}
+
+\bibliographystyle{plainnat}  
+
+\nobibliography{bibliography}
+
+\bibentry{h2osite}
+%
+\bibentry{h2odocs}
+%
+\bibentry{h2ogithubrepo}
+%
+\bibentry{h2odatasets}
+%
+\bibentry{h2ojira}
+%
+\bibentry{rdocs}
+%
+\bibentry{rlanguage}
+%
+\bibentry{stream}
+%
+\bibentry{rensemble}
+
+\bibentry{h2o_R_package}
 
 \end{document}
