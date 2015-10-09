@@ -91,33 +91,43 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
 
   # set the column names
-  if(!is.null(col.names)) parseSetup$column_names <- if(is.Frame(col.names)) colnames(col.names) else col.names
+  if (!is.null(col.names)) parseSetup$column_names <- if(is.Frame(col.names)) colnames(col.names) else col.names
+  if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) {
+                  stop("length of col.names must equal to the number of columns in dataset") }
 
   # set col.types
   if( !is.null(col.types) ) {
     if (typeof(col.types) == "character") {
         parseSetup$column_types <- col.types
     } else if ((typeof(col.types) == "list")) {
-        nms <- names(col.types)
-        if (is.null(nms)) stop("col.types must be named list")
-        for (n in nms) {
-            valid_col_name <- if (is.null(parseSetup$column_names)) .valid.generated.col(n,parseSetup$number_columns) else n %in% parseSetup$column_names
-            if (!valid_col_name) stop("the names specified in col.types must be a subset of the column names")
+        list.names <- names(col.types)
+        by.col.name <- ("by.col.name" %in% list.names)
+        by.col.idx <- ("by.col.idx" %in% list.names)
+        if (!(("types" %in% list.names) && xor(by.col.name,by.col.idx))) stop(.col.type.usage())
+        if (by.col.name && typeof(col.types$by.col.name) != "character") stop("`by.col.name` must be character vector.")
+        if (by.col.idx  && typeof(col.types$by.col.idx) != "double")     stop("`by.col.idx` must be vector of doubles.")
+
+        if (by.col.name) {
+            lapply(col.types$by.col.name, function(n) {
+                c <- 1
+                valid_col_name <- FALSE
+                if (is.null(parseSetup$column_names)) {
+                    valid_col_name <- .valid.generated.col(n,parseSetup$number_columns)
+                } else {
+                    valid_col_name <- n %in% parseSetup$column_names }
+                if (!valid_col_name) stop("by.col.name must be a subset of the actual column names")
+                if (is.null(parseSetup$column_names)) {
+                    parseSetup$column_types[[as.numeric(substring(n,2))]] <<- col.types$types[c]
+                } else {
+                    parseSetup$column_types[[which(n == parseSetup$column_names)]] <<- col.types$types[c] }
+                c <- c + 1 })
+        } else {
+            c <- 1
+            lapply(col.types$by.col.idx, function (i) {
+                parseSetup$column_types[[i]] <<- col.types$types[c]
+                c <- c + 1 })
         }
-        if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) stop("length of col.names must equal to the number of columns in dataset")
-        for (n in nms) {
-            if (is.null(parseSetup$column_names)) {
-                parseSetup$column_types[[as.numeric(substring(n,2))]] <- col.types[[n]]
-            } else {
-                i <- 1
-                for (cn in parseSetup$column_names) {
-                    if (n == cn) break
-                    i <- i + 1
-                }
-                parseSetup$column_types[[i]] <- col.types[[n]]
-            }
-        }
-    } else { stop("col.types must be a character vector or a named list") }
+    } else { stop("`col.types` must be a character vector or list") }
   }
 
   # check the parse_type
@@ -166,5 +176,13 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
      if (!grepl("^C[1-9]+",name)) return(FALSE)
      if (as.numeric(substring(name,2)) > ncols) return(FALSE)
      return(TRUE)
+}
+
+.col.type.usage <- function() {
+    print("col.types must be a character vector of types (i.e. col.types=c('Numeric','Numeric','Enum')), or")
+    print("a named list, where the names are `by.col.names` or `by.col.idx` and `types`. For example:")
+    print("col.types=list(by.col.names=c('C1','C3','C99'),types=c('Numeric','Numeric','Enum')), or equivalently")
+    print("col.types=list(by.col.idx=c(1,3,99),types=c('Numeric','Numeric','Enum')). Note: `by.col.names` and")
+    print("`by.col.idx` cannot be specified simultaneously.")
 }
 
